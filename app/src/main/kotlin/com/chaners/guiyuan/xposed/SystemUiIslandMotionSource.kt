@@ -32,6 +32,7 @@ internal object SystemUiIslandMotionSource {
     private var diagnosticFields: List<Pair<String, Field>> = emptyList()
     @Volatile
     private var islandShowing: Boolean? = null
+    private var lastDiagnosticShowing: Boolean? = null
 
     fun install(
         module: XposedModule,
@@ -91,21 +92,24 @@ internal object SystemUiIslandMotionSource {
                                 injectorRef = WeakReference(injector)
                             }
                         }
-                        if (onEvent == null || !isProbeEnabled()) {
+                        if (onEvent == null || !isProbeEnabled() || injector == null) {
                             return@Hooker result
                         }
-
-                        if (injector != null) {
-                            val views =
-                                resolvedDiagnosticFields.mapNotNull { (name, field) ->
-                                    (runCatching { field.get(injector) as? View }.getOrNull())
-                                        ?.let { name to it }
-                                }.toMap()
+                        val shouldReport =
+                            synchronized(this) {
+                                val changed = lastDiagnosticShowing != showing
+                                if (changed) {
+                                    lastDiagnosticShowing = showing
+                                }
+                                changed
+                            }
+                        if (shouldReport) {
                             onEvent(
                                 "islandOwner event showing=" + showing +
                                     " secondary=" + secondary +
                                     " animate=" + animate +
-                                    " fields=" + views.keys.joinToString(",") +
+                                    " fields=" +
+                                    resolvedDiagnosticFields.joinToString(",") { (name, _) -> name } +
                                     " geometryWrites=0",
                             )
                         }
@@ -139,6 +143,7 @@ internal object SystemUiIslandMotionSource {
             injectorRef = WeakReference(null)
             diagnosticFields = emptyList()
             islandShowing = null
+            lastDiagnosticShowing = null
         }
     }
 

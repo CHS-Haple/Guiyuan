@@ -254,28 +254,8 @@ internal object SystemUiPanelTransitionSource {
                                 onFailure = onRuntimeFailure,
                             )
                             val result = chain.proceed()
-                            val anchorSnapshot =
-                                if (
-                                    onEvent != null &&
-                                    isProbeEnabled() &&
-                                    shouldCaptureControlAnchor(fraction)
-                                ) {
-                                    controlAnchorContract
-                                        ?.snapshotFromCallback(chain.thisObject)
-                                } else {
-                                    null
-                                }
                             emitDiagnostic(
-                                update =
-                                    preNativeUpdate.copy(
-                                        controlCenterAnchor = anchorSnapshot,
-                                        homeMotion =
-                                            if (anchorSnapshot != null) {
-                                                SystemUiIslandMotionSource.currentOwnerSnapshot()
-                                            } else {
-                                                null
-                                            },
-                                    ),
+                                update = preNativeUpdate,
                                 onEvent = onEvent,
                                 isProbeEnabled = isProbeEnabled,
                             )
@@ -312,21 +292,19 @@ internal object SystemUiPanelTransitionSource {
                                 callback = onUpdate?.let { callback -> { callback(update) } },
                                 onFailure = onRuntimeFailure,
                             )
-                            if (onEvent != null && isProbeEnabled()) {
+                            if (
+                                onEvent != null &&
+                                isProbeEnabled() &&
+                                shouldEmitAppearanceDiagnostic(first, second)
+                            ) {
                                 dispatchRuntimeCallback(
                                     callback = {
                                         onEvent(
                                             appearanceDiagnostic(
                                                 first = first,
                                                 second = second,
-                                                snapshot =
-                                                    controlAnchorContract
-                                                        ?.snapshotFromCallback(chain.thisObject),
-                                                fakePresentation =
-                                                    controlAnchorContract
-                                                        ?.fakePresentationFromCallback(
-                                                            chain.thisObject,
-                                                        ),
+                                                snapshot = null,
+                                                fakePresentation = null,
                                             ),
                                         )
                                     },
@@ -528,16 +506,6 @@ internal object SystemUiPanelTransitionSource {
                 .coerceIn(0, DIAGNOSTIC_BUCKETS)
         }
 
-    internal fun isBoundaryDiagnosticBucket(bucket: Int?): Boolean =
-        bucket == 0 || bucket == 1 || bucket == 7 || bucket == 8
-
-    @Synchronized
-    private fun shouldCaptureControlAnchor(fraction: Float?): Boolean {
-        val bucket = diagnosticBucket(fraction)
-        return isBoundaryDiagnosticBucket(bucket) &&
-            bucket != controlProbe.bucket
-    }
-
     private fun resolveControlCenterHeader(delegate: Any?): Any? {
         delegate ?: return null
         val contract = controlAnchorContract ?: return null
@@ -608,6 +576,27 @@ internal object SystemUiPanelTransitionSource {
         }
 
     @Synchronized
+    private fun shouldEmitAppearanceDiagnostic(
+        first: Boolean?,
+        second: Boolean?,
+    ): Boolean {
+        val probe = controlProbe
+        val firstChanged = first != null && first != probe.appearance
+        val animatedChanged =
+            second != null && second != probe.appearanceAnimated
+        if (first != null) {
+            probe.appearance = first
+        }
+        if (second != null) {
+            probe.appearanceAnimated = second
+        }
+        return DiagnosticPolicy.shouldReportAppearanceEvent(
+            appearanceChanged = firstChanged,
+            animatedChanged = animatedChanged,
+        )
+    }
+
+    @Synchronized
     private fun emitDiagnostic(
         update: Update,
         onEvent: ((String) -> Unit)?,
@@ -618,42 +607,48 @@ internal object SystemUiPanelTransitionSource {
         }
         val probe = controlProbe
         val bucket = diagnosticBucket(update.fraction)
-        val changed =
-            (bucket != null && bucket != probe.bucket) ||
-                (update.expanded != null && update.expanded != probe.expanded) ||
-                (update.tracking != null && update.tracking != probe.tracking) ||
-                (update.visible != null && update.visible != probe.visible)
-        if (!changed) {
+        val bucketChanged = bucket != null && bucket != probe.bucket
+        val expandedChanged =
+            update.expanded != null && update.expanded != probe.expanded
+        val trackingChanged =
+            update.tracking != null && update.tracking != probe.tracking
+        val visibleChanged =
+            update.visible != null && update.visible != probe.visible
+        val sourceSceneChanged =
+            update.controlCenterSourceScene != null &&
+                update.controlCenterSourceScene != probe.sourceScene
+        val batteryIslandChanged =
+            update.controlCenterBatteryIslandActive != null &&
+                update.controlCenterBatteryIslandActive != probe.batteryIsland
+
+        if (bucket != null) probe.bucket = bucket
+        if (update.expanded != null) probe.expanded = update.expanded
+        if (update.tracking != null) probe.tracking = update.tracking
+        if (update.visible != null) probe.visible = update.visible
+        if (update.controlCenterSourceScene != null) {
+            probe.sourceScene = update.controlCenterSourceScene
+        }
+        if (update.controlCenterBatteryIslandActive != null) {
+            probe.batteryIsland = update.controlCenterBatteryIslandActive
+        }
+
+        if (
+            !DiagnosticPolicy.shouldReportPanelEvent(
+                bucketChanged = bucketChanged,
+                expandedChanged = expandedChanged,
+                trackingChanged = trackingChanged,
+                visibleChanged = visibleChanged,
+                sourceSceneChanged = sourceSceneChanged,
+                batteryIslandChanged = batteryIslandChanged,
+            )
+        ) {
             return
         }
-        if (bucket != null) {
-            probe.bucket = bucket
-        }
-        if (update.expanded != null) {
-            probe.expanded = update.expanded
-        }
-        if (update.tracking != null) {
-            probe.tracking = update.tracking
-        }
-        if (update.visible != null) {
-            probe.visible = update.visible
-        }
-        val anchorSummary =
-            update.controlCenterAnchor?.let { snapshot ->
-                " controlAnchor=" + snapshot.summary
-            }.orEmpty()
-        val homeMotionSummary =
-            update.homeMotion?.let { snapshot ->
-                " homeMotion=" + snapshot.summary
-            }.orEmpty()
+
         val sourceSceneSummary =
-            update.controlCenterSourceScene?.let { sourceScene ->
-                " sourceScene=" + sourceScene.name
-            }.orEmpty()
+            update.controlCenterSourceScene?.let { " sourceScene=" + it.name }.orEmpty()
         val batteryIslandSummary =
-            update.controlCenterBatteryIslandActive?.let { active ->
-                " batteryIsland=" + active
-            }.orEmpty()
+            update.controlCenterBatteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
         dispatchRuntimeCallback(
             callback = {
                 onEvent(
@@ -663,8 +658,6 @@ internal object SystemUiPanelTransitionSource {
                         " expanded=" + (update.expanded ?: probe.expanded ?: "none") +
                         " tracking=" + (update.tracking ?: probe.tracking ?: "none") +
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
-                        anchorSummary +
-                        homeMotionSummary +
                         sourceSceneSummary +
                         batteryIslandSummary +
                         " authority=hyperos-native-callback" +
@@ -1038,11 +1031,36 @@ internal object SystemUiPanelTransitionSource {
     private fun Field.accessible(): Field =
         apply { isAccessible = true }
 
+    internal object DiagnosticPolicy {
+        fun shouldReportPanelEvent(
+            bucketChanged: Boolean,
+            expandedChanged: Boolean,
+            trackingChanged: Boolean,
+            visibleChanged: Boolean,
+            sourceSceneChanged: Boolean,
+            batteryIslandChanged: Boolean,
+        ): Boolean =
+            expandedChanged ||
+                trackingChanged ||
+                visibleChanged ||
+                sourceSceneChanged ||
+                batteryIslandChanged
+
+        fun shouldReportAppearanceEvent(
+            appearanceChanged: Boolean,
+            animatedChanged: Boolean,
+        ): Boolean = appearanceChanged || animatedChanged
+    }
+
     private data class ProbeState(
         var bucket: Int = -1,
         var expanded: Boolean? = null,
         var tracking: Boolean? = null,
         var visible: Boolean? = null,
+        var sourceScene: CombinedStatusSourceScene? = null,
+        var batteryIsland: Boolean? = null,
+        var appearance: Boolean? = null,
+        var appearanceAnimated: Boolean? = null,
     )
 
     private const val DIAGNOSTIC_BUCKETS = 8

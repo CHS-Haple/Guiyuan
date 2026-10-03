@@ -7,8 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 687 (`20261004-687`) follows device evidence of progressive jank only under Keyguard combined status + active island + repeated full Control Center pull/down-up cycles.
-- Build 687 is observation-path-only: no animation curve, scene ownership, island reservation, transition geometry, native writer, or presentation lifecycle semantics change.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 689 (`20261004-689`) continues the observation-only performance line after Build 687 failed its Keyguard + active-island repeated-pull device gate.
+- Build 689 keeps all Build 687 reductions and removes the remaining heavy Detailed-diagnostic work from Control Center gesture/layout callbacks; no animation curve, scene ownership, functional steady-peer mirror, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -86,17 +86,23 @@ Build 686 keeps the same native evidence and refresh seams while reducing those 
 
 Remaining audit: review Home / Keyguard / AOD hot paths and the residual QS_FAKE draw-layer allocations. Do not pursue Painter-spec caching or `saveLayerAlpha` replacement without stronger evidence because those paths begin to affect drawing-state semantics. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changed in Build 686.
 
-## Build 687 Keyguard-island diagnostic hot-path follow-up
+## Build 689 Keyguard-island diagnostic hot-path follow-up
 
-Device evidence from Build 686 isolates visible frame loss to repeated complete Control Center cycles while Keyguard combined status and an island are active. The retained Detailed diagnostic window shows 22 native island show/hide callbacks and 146 `controlCenterTransitionGeometry` entries in about seven seconds. Those geometry entries alone are roughly 450 KB of synchronous log text; `nativeSourceSyncDiag` contributes another roughly 52 KB.
+Build 687 reduced two diagnostic sources but failed the focused device gate: Keyguard combined status + active island still becomes visibly janky under repeated complete Control Center pull/down-up cycles.
 
-Static review found two observation-only costs on the SystemUI layout/gesture path:
-- Home native-source diagnostics built the full peer traversal/string snapshot after every intercepted native `onLayout` before the outer event sink decided whether Detailed diagnostics would emit it.
-- Detailed Control Center geometry diagnostics still generated a full projection/transition snapshot for every new 1/8 transition bucket.
+The reproduced LSPosed window shows the remaining Detailed path still runs synchronously on the SystemUI main thread and emits hundreds of records during the stress gesture. The dominant avoidable work is:
+- repeated multi-KB `controlCenterTransitionGeometry` snapshots when the gesture re-crosses selected buckets;
+- bucket-only `panelTransition` logging and diagnostic anchor/Home-motion snapshots;
+- QS_FAKE `nativeSourceSyncDiag` construction from native layout callbacks;
+- repeated appearance and island-owner observation records.
 
-Build 687 keeps functional island peer mirroring and the lightweight panel-transition trace unchanged, while:
-- gating Home native-source snapshot construction on Detailed diagnostics plus an actual steady-peer-mirror state change;
-- retaining Control Center full geometry snapshots only at the mid-transition and handoff checkpoints (4/8 and 7/8);
-- adding unit coverage for both hot-path gates.
+Build 689 preserves every Build 687 reduction and further limits observation to semantic/lifecycle edges:
+- no full transition geometry/state/projection snapshot is built from expansion callbacks;
+- fraction-bucket changes alone no longer emit `panelTransition` diagnostics;
+- diagnostic-only control-anchor/Home-motion snapshots are not captured during expansion;
+- QS_FAKE native-source layout snapshots are disabled; Home retains only steady-peer-mirror change diagnostics;
+- appearance and island-owner diagnostics are deduplicated to state changes.
 
-Device gate: repeat the exact Keyguard + island complete pull/down-up stress case. If progressive jank remains after Build 687, the next suspect is the functional Home steady-peer-mirror scan during island-active layouts; do not change that functional path or draw-layer compositing until this observation-only A/B is known.
+Functional callbacks, native source resolution, Keyguard lease, steady-peer-mirror scanning, transition reservation, geometry, tint, alpha/translation/visibility ownership and drawable compositing are unchanged.
+
+Device gate: repeat the exact Keyguard + active-island rapid full pull/down-up stress case. If visible jank remains, the observation path is no longer the primary suspect; only then review the functional steady-peer-mirror/layout work and residual draw/compositing cost.

@@ -2810,3 +2810,37 @@ Reduce only those hot-path costs:
 No geometry, transition timing, reservation curve, capacity lease, clip mask, source-scene policy, native appearance ownership, alpha/translation/visibility writer, or fail-native contract changes.
 ### Validation
 Draft PR uses Light validation while the diff is reviewed. Mark ready only after static review; exact-head Runtime CI is required before merge. No Canary is justified by this checkpoint alone because default behavior and device-visible geometry are unchanged.
+
+## 2026-10-04 — Build 689 remove gesture-frame diagnostics
+
+**Type:** performance / diagnostic hot-path follow-up
+**Display version:** 0.0.5
+**Build:** 689 / `20261004-689`
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Problem
+
+Build 687 retained visible jank during repeated complete Control Center pull/down-up cycles from Keyguard with an active island.
+
+### Evidence
+
+The reproduced LSPosed window still showed hundreds of Guiyuan records emitted synchronously on the SystemUI main thread, including repeated multi-KB transition geometry snapshots, fraction-bucket panel traces, QS_FAKE native-source snapshots and repeated island-owner observations. A bucket gate reduced frequency but did not move those diagnostics out of the gesture path; reversals repeatedly crossed the selected buckets.
+
+### Conclusion
+
+Build 687's reductions remain valid but are insufficient. Finish eliminating avoidable observation work before changing functional island mirroring or drawable/compositing behavior.
+
+### Change
+
+- keep all Build 687 diagnostic gates;
+- stop full transition geometry/state/projection snapshot construction from expansion callbacks;
+- stop fraction-bucket-only panel diagnostics and diagnostic-only anchor/Home-motion capture;
+- stop QS_FAKE native-source layout snapshot generation;
+- retain Home native-source diagnostics only for actual steady-peer-mirror changes;
+- deduplicate appearance and island-owner diagnostics to semantic state changes.
+
+No transition geometry, reservation, functional steady-peer-mirror scan, scene ownership, native writer, animation timing or draw-layer compositing changes.
+
+### Validation
+
+Unit coverage asserts that fraction bucket changes alone are non-reporting while lifecycle/semantic edges remain observable. Exact-head Runtime CI and a focused Keyguard + active-island repeated-pull Canary device gate are required.

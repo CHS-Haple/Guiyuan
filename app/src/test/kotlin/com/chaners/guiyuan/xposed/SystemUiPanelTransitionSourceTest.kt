@@ -119,14 +119,47 @@ class SystemUiPanelTransitionSourceTest {
     }
 
     @Test
-    fun controlAnchorProbeOnlyUsesTransitionBoundaryBuckets() {
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(0))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(1))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(2))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(6))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(7))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(8))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(null))
+    fun diagnosticPolicySuppressesFractionBucketOnlyChanges() {
+        assertFalse(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+                bucketChanged = true,
+                expandedChanged = false,
+                trackingChanged = false,
+                visibleChanged = false,
+                sourceSceneChanged = false,
+                batteryIslandChanged = false,
+            ),
+        )
+    }
+
+    @Test
+    fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
+        assertTrue(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+                bucketChanged = false,
+                expandedChanged = false,
+                trackingChanged = false,
+                visibleChanged = true,
+                sourceSceneChanged = false,
+                batteryIslandChanged = false,
+            ),
+        )
+        assertTrue(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+                bucketChanged = false,
+                expandedChanged = false,
+                trackingChanged = false,
+                visibleChanged = false,
+                sourceSceneChanged = false,
+                batteryIslandChanged = true,
+            ),
+        )
+        assertTrue(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportAppearanceEvent(
+                appearanceChanged = false,
+                animatedChanged = true,
+            ),
+        )
     }
 
     @Test

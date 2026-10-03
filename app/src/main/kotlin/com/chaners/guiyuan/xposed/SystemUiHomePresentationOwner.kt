@@ -2826,15 +2826,9 @@ internal object SystemUiHomePresentationOwner {
             steadyPeerMirrorChanged: Boolean,
         ): Boolean {
             if (!detailedDiagnosticsEnabled) return false
-            return if (controlCenterSurface) {
-                !transitionReservationActive
-            } else {
-                steadyPeerMirrorChanged
-            }
+            if (controlCenterSurface) return false
+            return steadyPeerMirrorChanged
         }
-
-        fun shouldCaptureControlCenterGeometryBucket(bucket: Int): Boolean =
-            bucket == 4 || bucket == 7
     }
     internal object EndReservationPolicy {
         fun shouldDeferLiveBatteryWidthUnavailable(

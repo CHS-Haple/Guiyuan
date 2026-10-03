@@ -524,7 +524,7 @@ class SystemUiHomePresentationOwnerTest {
                     steadyPeerMirrorChanged = true,
                 ),
         )
-        assertTrue(
+        assertFalse(
             SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
                 .shouldReportNativeSourceLayoutState(
                     detailedDiagnosticsEnabled = true,
@@ -532,22 +532,6 @@ class SystemUiHomePresentationOwnerTest {
                     transitionReservationActive = false,
                     steadyPeerMirrorChanged = false,
                 ),
-        )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldCaptureControlCenterGeometryBucket(3),
-        )
-        assertTrue(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldCaptureControlCenterGeometryBucket(4),
-        )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldCaptureControlCenterGeometryBucket(6),
-        )
-        assertTrue(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldCaptureControlCenterGeometryBucket(7),
         )
     }
 
