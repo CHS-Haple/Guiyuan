@@ -491,4 +491,31 @@ class SystemUiHomePresentationOwnerTest {
     }
 
 
+
+    @Test
+    fun deferredFamilyOwnershipResumesWhenRetargetLeavesVisualOnlyBoundary() {
+        assertTrue(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldResumeOwnershipForRetarget(
+                    nativeLayoutOwnershipDeferred = true,
+                    nextDeferNativeLayoutOwnership = false,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldResumeOwnershipForRetarget(
+                    nativeLayoutOwnershipDeferred = true,
+                    nextDeferNativeLayoutOwnership = true,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldResumeOwnershipForRetarget(
+                    nativeLayoutOwnershipDeferred = false,
+                    nextDeferNativeLayoutOwnership = false,
+                ),
+        )
+    }
+
+
 }

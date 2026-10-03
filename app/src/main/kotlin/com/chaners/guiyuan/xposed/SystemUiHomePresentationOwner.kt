@@ -1348,6 +1348,30 @@ internal object SystemUiHomePresentationOwner {
             this.layoutReadyCallback = onLayoutReady
             if (started) {
                 if (
+                    DeferredNativeLayoutPolicy.shouldResumeOwnershipForRetarget(
+                        nativeLayoutOwnershipDeferred = nativeLayoutOwnershipDeferred,
+                        nextDeferNativeLayoutOwnership =
+                            deferNativeLayoutOwnershipUntilCommit,
+                    )
+                ) {
+                    val group =
+                        statusIcons.get()
+                            ?: run {
+                                onFailNative("status-icon-group-released")
+                                return 0
+                            }
+                    nativeLayoutOwnershipDeferred = false
+                    compactLayoutReady = false
+                    if (!applyPersistentIgnoredSlotsIfNeeded(group)) return 0
+                    if (!syncEndReservation()) return 0
+                    onEvent(
+                        eventPrefix +
+                            " deferredLayoutRetarget state=resumed" +
+                            " nativeLayoutOwnership=active" +
+                            " next=native-status-icons-onLayout",
+                    )
+                }
+                if (
                     deferNativeLayoutOwnershipUntilCommit &&
                     !persistentIgnoredSlotsApplied &&
                     appliedPadding == null
@@ -2669,6 +2693,12 @@ internal object SystemUiHomePresentationOwner {
         fun shouldCompleteCompactLayout(
             nativeLayoutOwnershipDeferred: Boolean,
         ): Boolean = !nativeLayoutOwnershipDeferred
+
+        fun shouldResumeOwnershipForRetarget(
+            nativeLayoutOwnershipDeferred: Boolean,
+            nextDeferNativeLayoutOwnership: Boolean,
+        ): Boolean =
+            nativeLayoutOwnershipDeferred && !nextDeferNativeLayoutOwnership
     }
 
     internal object HotPathDiagnosticPolicy {
