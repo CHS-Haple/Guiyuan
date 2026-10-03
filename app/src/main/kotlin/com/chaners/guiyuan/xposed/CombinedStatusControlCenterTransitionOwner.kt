@@ -413,34 +413,20 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ).roundToInt().coerceAtLeast(compact)
         }
 
-        fun resolveBatteryIslandNativeReservationWidth(
+        fun resolveBatteryIslandNativePeerReservationWidth(
             compactWidthPx: Int,
+            spans: List<ReservationSpan>,
             semanticWidthPx: Int,
             progress: Float,
-            fakeBaseContentWidthPx: Int,
-            finalUsableWidthPx: Int,
-        ): Int? {
+        ): Int {
             val compact = compactWidthPx.coerceAtLeast(0)
             val semantic = semanticWidthPx.coerceAtLeast(compact)
-            if (
-                compact <= 0 ||
-                fakeBaseContentWidthPx <= 0 ||
-                finalUsableWidthPx <= 0 ||
-                finalUsableWidthPx > fakeBaseContentWidthPx
-            ) {
-                return null
-            }
-            val finalNativeReservation =
-                (fakeBaseContentWidthPx - finalUsableWidthPx)
-                    .coerceAtLeast(compact)
-            val p = geometryProgress(progress)
-            val native =
-                (
-                    compact +
-                        (finalNativeReservation - compact) * p
-                    ).roundToInt()
-                    .coerceAtLeast(compact)
-            return native.coerceAtMost(semantic)
+            if (compact == 0) return 0
+            return resolveReservationWidth(
+                compactWidthPx = compact,
+                spans = spans,
+                progress = progress,
+            ).coerceAtMost(semantic)
         }
 
         fun transitionTintProgress(progress: Float): Float {
@@ -2418,29 +2404,12 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             val nativeRequestedWidth =
                 if (nativeBatteryIslandActive) {
-                    val priorNativeReservation =
-                        lastNativeReservationWidthPx ?: compactWidth
-                    val inferredBasePaddingEnd =
-                        fakeStatusIcons.paddingEnd - priorNativeReservation
-                    val fakeBaseContentWidth =
-                        (
-                            fakeStatusIcons.width -
-                                fakeStatusIcons.paddingStart -
-                                inferredBasePaddingEnd
-                        ).coerceAtLeast(0)
-                    val finalUsableWidth =
-                        (
-                            finalStatusIcons.width -
-                                finalStatusIcons.paddingStart -
-                                finalStatusIcons.paddingEnd
-                        ).coerceAtLeast(0)
-                    Policy.resolveBatteryIslandNativeReservationWidth(
+                    Policy.resolveBatteryIslandNativePeerReservationWidth(
                         compactWidthPx = compactWidth,
+                        spans = spans,
                         semanticWidthPx = requestedWidth,
                         progress = progress,
-                        fakeBaseContentWidthPx = fakeBaseContentWidth,
-                        finalUsableWidthPx = finalUsableWidth,
-                    ) ?: requestedWidth
+                    )
                 } else {
                     requestedWidth
                 }
