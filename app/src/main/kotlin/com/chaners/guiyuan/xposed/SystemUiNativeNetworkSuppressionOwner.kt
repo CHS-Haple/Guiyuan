@@ -1068,14 +1068,6 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         return null
     }
 
-    private fun isTintAuthorityCandidate(child: View): Boolean =
-        isTintAuthorityCandidate(
-            slot = NativeParticipantRuntimeAccess.slotOf(child),
-            visible = child.visibility == View.VISIBLE,
-            width = child.width,
-            height = child.height,
-        )
-
     private fun findAppliedTint(view: View): Int? {
         if (view is ImageView) {
             view.imageTintList
