@@ -648,6 +648,7 @@ internal object CombinedStatusControlCenterRenderSession {
                         battery = batteryView,
                         batteryCarrier = carrierView,
                         onEvent = onEvent,
+                        isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                         onFailNative = { reason ->
                             setNativePresentationReady(
                                 ready = false,
