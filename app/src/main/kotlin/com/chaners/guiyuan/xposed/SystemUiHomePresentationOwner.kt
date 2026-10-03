@@ -365,8 +365,17 @@ internal object SystemUiHomePresentationOwner {
 
         val existing = current
         if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
-            existing.syncEndReservation()
+            if (!existing.syncEndReservation()) {
+                return StateResult.Failure("home-reuse-sync-failed-native-restored")
+            }
             val masked = existing.refreshClipMasks()
+            if (
+                !ActivationCommitPolicy.canReportSuccess(
+                    ownerStillCurrent = current === existing,
+                )
+            ) {
+                return StateResult.Failure("home-reuse-aborted-after-fail-native")
+            }
             batteryContainer.requestLayout()
             return StateResult.Active(representedSlots.size, masked, true)
         }
@@ -392,6 +401,13 @@ internal object SystemUiHomePresentationOwner {
             )
         current = session
         val masked = session.start()
+        if (
+            !ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = current === session,
+            )
+        ) {
+            return StateResult.Failure("home-activation-aborted-after-fail-native")
+        }
         batteryContainer.requestLayout()
         eventSink?.invoke(
             "homePresentation active carrier=MiuiStatusBatteryContainer.overlay " +
@@ -445,6 +461,17 @@ internal object SystemUiHomePresentationOwner {
                 ?: return StateResult.Failure(
                     "keyguard-deferred-layout-commit-unavailable",
                 )
+        if (
+            !ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = keyguardFamilyCurrent === session,
+                surfaceStillCurrent =
+                    keyguardFamilySurface == KeyguardFamilySurface.KEYGUARD,
+            )
+        ) {
+            return StateResult.Failure(
+                "keyguard-deferred-layout-commit-aborted-after-fail-native",
+            )
+        }
         return if (session.isLayoutCutoverReady()) {
             StateResult.Active(
                 representedSlots = representedSlots.size,
@@ -557,6 +584,16 @@ internal object SystemUiHomePresentationOwner {
                         )
                     },
                 )
+            if (
+                !ActivationCommitPolicy.canReportSuccess(
+                    ownerStillCurrent = keyguardFamilyCurrent === existing,
+                    surfaceStillCurrent = keyguardFamilySurface == surface,
+                )
+            ) {
+                return StateResult.Failure(
+                    surface.surfaceName + "-reuse-aborted-after-fail-native",
+                )
+            }
             return if (existing.isLayoutCutoverReady()) {
                 StateResult.Active(representedSlots.size, masked, true)
             } else {
@@ -600,6 +637,16 @@ internal object SystemUiHomePresentationOwner {
                     )
                 },
             )
+        if (
+            !ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = keyguardFamilyCurrent === session,
+                surfaceStillCurrent = keyguardFamilySurface == surface,
+            )
+        ) {
+            return StateResult.Failure(
+                surface.surfaceName + "-activation-aborted-after-fail-native",
+            )
+        }
         return if (session.isLayoutCutoverReady()) {
             StateResult.Active(representedSlots.size, masked, false)
         } else {
@@ -717,6 +764,15 @@ internal object SystemUiHomePresentationOwner {
                         )
                     },
                 )
+            if (
+                !ActivationCommitPolicy.canReportSuccess(
+                    ownerStillCurrent = controlCenterCurrent === existing,
+                )
+            ) {
+                return ControlCenterStateResult.Failure(
+                    "control-center-reuse-aborted-after-fail-native",
+                )
+            }
             return if (existing.isLayoutCutoverReady()) {
                 ControlCenterStateResult.Active(
                     representedSlots = representedSlots.size,
@@ -763,6 +819,15 @@ internal object SystemUiHomePresentationOwner {
                     )
                 },
             )
+        if (
+            !ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = controlCenterCurrent === session,
+            )
+        ) {
+            return ControlCenterStateResult.Failure(
+                "control-center-activation-aborted-after-fail-native",
+            )
+        }
         return if (session.isLayoutCutoverReady()) {
             ControlCenterStateResult.Active(
                 representedSlots = representedSlots.size,
@@ -787,6 +852,15 @@ internal object SystemUiHomePresentationOwner {
                 ?: return ControlCenterStateResult.Failure(
                     "transferred-compact-layout-adoption-failed",
                 )
+        if (
+            !ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = controlCenterCurrent === session,
+            )
+        ) {
+            return ControlCenterStateResult.Failure(
+                "transferred-compact-layout-aborted-after-fail-native",
+            )
+        }
         return ControlCenterStateResult.Active(
             representedSlots = representedSlots.size,
             maskedViews = masked,
@@ -2642,6 +2716,14 @@ internal object SystemUiHomePresentationOwner {
         fun shouldUseNativeSetterOnRestore(
             requestLayout: Boolean,
         ): Boolean = requestLayout
+    }
+
+    internal object ActivationCommitPolicy {
+        fun canReportSuccess(
+            ownerStillCurrent: Boolean,
+            surfaceStillCurrent: Boolean = true,
+        ): Boolean =
+            ownerStillCurrent && surfaceStillCurrent
     }
 
     internal object HotReloadHandoffPolicy {

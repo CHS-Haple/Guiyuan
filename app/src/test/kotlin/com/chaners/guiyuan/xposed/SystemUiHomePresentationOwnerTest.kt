@@ -518,4 +518,28 @@ class SystemUiHomePresentationOwnerTest {
     }
 
 
+
+    @Test
+    fun activationSuccessRequiresOwnerAndFamilySurfaceToStillBeCurrent() {
+        assertTrue(
+            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = true,
+                surfaceStillCurrent = true,
+            ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = false,
+                surfaceStillCurrent = true,
+            ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+                ownerStillCurrent = true,
+                surfaceStillCurrent = false,
+            ),
+        )
+    }
+
+
 }
