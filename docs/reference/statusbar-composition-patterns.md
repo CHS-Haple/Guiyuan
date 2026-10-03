@@ -891,6 +891,10 @@ This differs from both rejected extremes:
 
 For latent 0→1 / 1→N participants, layout occupancy and pixel reveal remain separate. Reservation follows the frozen semantic-width contract; pixels appear only when the real target visual envelope is spatially available. This keeps **layout occupancy**, **native motion**, and **visual reveal** as distinct responsibilities without creating a second animation engine.
 
+Build 679 adds one narrow Battery-island exception to the **native peer-spacing adapter**, not to logical occupancy. Device evidence shows that when HyperOS keeps the Battery-island QS_FAKE row visibly authoritative, committing future total semantic width to that row creates an empty gap before Guiyuan has visually occupied the space. While native Battery island is active, the native peer reservation may therefore use the current union of the same frozen spans at the same raw HyperOS progress, bounded by the logical semantic reservation. The logical reservation itself still follows the frozen-final-total-width contract above, and latent reveal still consumes that logical reservation.
+
+This does not restore per-span occupancy as the general transition policy. It is a scene-specific projection from existing semantic spans to the one native `statusIcons.paddingEnd` writer so native peers remain adjacent to currently occupied Guiyuan space while HyperOS retains island/root/appearance authority.
+
 
 ---
 
