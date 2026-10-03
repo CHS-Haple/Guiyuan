@@ -1,3 +1,25 @@
+## 2026-10-04 — Build 688: stabilize Battery-Island ring exit direction
+
+**Type:** device-evidence transition choreography correction
+**Branch:** `fix/charging-island-ring-direction`
+**Build:** 688 / `20261004-688`
+
+### Evidence / root cause
+
+Build 686 recording shows the charging-island battery ring beginning to retract in the opposite direction and then snapping onto the normal clockwise path. Detailed diagnostics show native Battery-Island authority is already true before the first meaningful transition fraction, so delayed island detection is excluded.
+
+Build 544 made ring yielding direction stateless and recomputed it every draw from CENTER source->live native target X. That is correct for steady native target geometry, but Battery-Island expansion actively reflows the final status row. The transient early target X can therefore classify as RIGHT/NONE before settling to LEFT, switching the retained arc window while the ring is visible.
+
+### Change
+
+- Outside native Battery-Island, keep the Build 544 live geometry direction unchanged.
+- While native Battery-Island is active, treat live target X as transient and derive the ring-yield side from the final status row's stable logical-start structure: LTR -> LEFT, RTL -> RIGHT.
+- Add policy coverage proving island mode overrides an opposite transient live direction and non-island mode preserves LEFT/RIGHT/NONE exactly.
+
+### Safety boundary
+
+No change to ring progress/easing, CENTER or Battery target geometry, top-gap geometry, tint, native appearance, semantic reservation, Battery-Island collision projection, peer visibility, or SystemUI property ownership. No timer, delay, cross-frame latch, fixed pixel geometry, or additional writer.
+
 ## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
 
 **Type:** integration / lifecycle + Control Center recovery reconciliation  
