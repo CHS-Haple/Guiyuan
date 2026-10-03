@@ -45,6 +45,8 @@
     <string name="section_hyperos_display">System UI</string>
     <string name="section_color_linkage">Color linkage</string>
     <string name="section_battery_top_readout">Battery top readout</string>
+    <string name="battery_fill_follow_retract">Battery fill follows retraction</string>
+    <string name="battery_fill_follow_retract_summary">Move the solid battery fill with the retract endpoint, then shrink it after the hollow segment is exhausted</string>
     <string name="battery_top_readout">Show battery percentage</string>
     <string name="battery_top_readout_summary">Show battery percentage; the ring clears space automatically</string>
     <string name="battery_top_text_size">Number size</string>
@@ -86,6 +88,8 @@
     <string name="combined_size">Overall size</string>
     <string name="outer_weight">Outer weight</string>
     <string name="outer_weight_summary">Adjusts the ring, signal dots, and unavailable mark together</string>
+    <string name="control_center_tint_transition">Pull-down tint transition</string>
+    <string name="control_center_tint_transition_summary">While opening Control Center, smoothly return colorized elements to the system status-bar tint</string>
     <string name="wifi_size">Wi-Fi size</string>
     <string name="airplane_size">Airplane mode size</string>
     <string name="no_sim_size">No SIM size</string>

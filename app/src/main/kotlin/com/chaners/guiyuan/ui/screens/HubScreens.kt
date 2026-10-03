@@ -254,6 +254,13 @@ internal fun FeaturesScreen(
                 },
             )
             SwitchPreference(
+                title = stringResource(R.string.battery_fill_follow_retract),
+                summary = stringResource(R.string.battery_fill_follow_retract_summary),
+                checked = visualSettings.batteryFillFollowsRetractEndpoint,
+                enabled = featureSettings.enabled,
+                onCheckedChange = visualRepository::setBatteryFillFollowsRetractEndpoint,
+            )
+            SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
                 summary = stringResource(R.string.battery_top_readout_summary),
                 checked = visualSettings.batteryTopReadoutEnabled,
@@ -491,6 +498,13 @@ internal fun FeaturesScreen(
             keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
             magnetThreshold = 0.035f,
             enabled = featureSettings.enabled,
+        )
+        SwitchPreference(
+            title = stringResource(R.string.control_center_tint_transition),
+            summary = stringResource(R.string.control_center_tint_transition_summary),
+            checked = visualSettings.controlCenterTintTransitionEnabled,
+            enabled = featureSettings.enabled,
+            onCheckedChange = visualRepository::setControlCenterTintTransitionEnabled,
         )
     }
 }
