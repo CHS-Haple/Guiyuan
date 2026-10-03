@@ -96,3 +96,17 @@ Required device gate after Runtime success:
 6. no `fake-carrier-capacity-insufficient` or new fail-native loop.
 
 Runtime is frozen once the exact-head signed Canary is produced for this gate.
+
+
+## Build 682 device acceptance / Build 683 lifecycle hardening
+
+Build 682 is device-accepted for charging-island peer spacing and reverse motion. The post-acceptance lifecycle audit found one remaining ownership leak: after the Control Center visible cycle ends, transition reservation returns to compact but the QS_FAKE carrier-capacity lease can remain applied while the fake row is hidden.
+
+Build 683 scopes that lease to the native Control Center visible cycle:
+- visible -> hidden first clears transition reservation while native layout writes are still allowed, then releases only the fake-carrier capacity lease while keeping the QS_FAKE compact presentation prearmed;
+- if HyperOS already changed the hidden carrier width, Guiyuan adopts that live native width instead of racing it;
+- the next visible cycle re-establishes the lease from the current native width;
+- transition reservation, Build 682 Battery-island peer-side intrusion geometry, native peer mirror, and fail-native ownership remain unchanged;
+- no timer, fixed geometry, translation/alpha/visibility writer, or second presentation owner is added.
+
+Device gate: repeated open/close and charging-island forward/reverse. Hidden diagnostics should show `transitionReservation=-1`, `fakeCarrierWidth=-1`, and `fakeCarrierLeaseSuppressed=true`. Full AOD/Keyguard cross-scene regression remains for the later explicit reconciliation with latest dev.

@@ -158,4 +158,36 @@ class CombinedStatusControlCenterRenderSessionTest {
         )
     }
 
+    @Test
+    fun carrierCapacityLeaseEndsOnlyWhenVisibleCycleActuallyCloses() {
+        assertTrue(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = false,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = false,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = true,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = true,
+                ),
+        )
+    }
+
 }

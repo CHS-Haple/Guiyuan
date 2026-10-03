@@ -1125,6 +1125,7 @@ class CombinedStatusModule : XposedModule() {
         }
 
         controlCenterSceneVisible = true
+        CombinedStatusControlCenterRenderSession.beginVisibleCycle()
         updateControlCenterSourceSceneEligibility(
             sourceScene =
                 update.controlCenterSourceScene

@@ -667,6 +667,10 @@ internal object SystemUiHomePresentationOwner {
     }
 
     @Synchronized
+    fun onControlCenterVisibilityChanged(visible: Boolean): Boolean =
+        controlCenterCurrent?.onControlCenterVisibilityChanged(visible) ?: true
+
+    @Synchronized
     fun updateControlCenterTransitionReservation(
         requestedSlotWidthPx: Int,
     ): Boolean =
@@ -1080,6 +1084,8 @@ internal object SystemUiHomePresentationOwner {
         private var appliedFakeCarrierWidthPx: Int? = null
         private var fakeCarrierCapacityDeltaPx: Int? = null
         private var fakeCarrierCapacityLeaseAwaitingLayout = false
+        private var fakeCarrierCapacityLeaseSuppressed = false
+        private var pendingFakeCarrierNativeBaselineWidthPx: Int? = null
         private var transientLiveBatteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
         private var ownedPersistentIgnoredSlots: List<String> = emptyList()
@@ -1438,6 +1444,26 @@ internal object SystemUiHomePresentationOwner {
             return restored
         }
 
+        fun onControlCenterVisibilityChanged(visible: Boolean): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
+            if (visible) {
+                if (!fakeCarrierCapacityLeaseSuppressed) return true
+                fakeCarrierCapacityLeaseSuppressed = false
+                return syncEndReservation()
+            }
+            if (fakeCarrierCapacityLeaseSuppressed) return true
+
+            // Close the transition reservation while native layout writes are
+            // still allowed. Only then suppress/release the capacity lease.
+            // This keeps abrupt visible=false edges from retaining expanded
+            // peer padding if HyperOS skips a fraction=0 sample.
+            if (!clearTransitionReservation("visible-cycle-hidden")) {
+                return false
+            }
+            fakeCarrierCapacityLeaseSuppressed = true
+            return releaseFakeCarrierCapacityLeaseAtHiddenBoundary()
+        }
+
         fun updateTransitionReservation(
             requestedSlotWidthPx: Int,
         ): Boolean {
@@ -1463,6 +1489,12 @@ internal object SystemUiHomePresentationOwner {
 
         fun syncEndReservation(): Boolean {
             if (!active) return true
+            if (
+                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                fakeCarrierCapacityLeaseSuppressed
+            ) {
+                return true
+            }
             val group = statusIcons.get() ?: run { onFailNative("status-icon-group-released"); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
@@ -1702,14 +1734,25 @@ internal object SystemUiHomePresentationOwner {
                 return fakeCarrierCapacityDeltaPx
             }
 
+            val pendingNativeBaselineWidthPx =
+                pendingFakeCarrierNativeBaselineWidthPx
             val baselineWidthPx =
-                hostView.width.takeIf { width -> width > 0 }
-                    ?: run {
-                        onFailNative("fake-carrier-width-unavailable")
+                when {
+                    pendingNativeBaselineWidthPx != null &&
+                        params.width == pendingNativeBaselineWidthPx ->
+                        pendingNativeBaselineWidthPx
+
+                    hostView.width > 0 &&
+                        params.width == hostView.width ->
+                        hostView.width
+
+                    else -> {
+                        onFailNative("fake-carrier-width-contract-unavailable")
                         return null
                     }
-            if (params.width <= 0 || params.width != baselineWidthPx) {
-                onFailNative("fake-carrier-width-contract-unavailable")
+                }
+            if (baselineWidthPx <= 0) {
+                onFailNative("fake-carrier-width-unavailable")
                 return null
             }
             val capacityDeltaPx =
@@ -1721,9 +1764,10 @@ internal object SystemUiHomePresentationOwner {
                     return null
                 }
 
-            nativeFakeCarrierLayoutWidthPx = params.width
+            nativeFakeCarrierLayoutWidthPx = baselineWidthPx
             nativeFakeCarrierParentContentWidthPx = parentContentWidthPx
             fakeCarrierCapacityDeltaPx = capacityDeltaPx
+            pendingFakeCarrierNativeBaselineWidthPx = null
 
             if (params.width != parentContentWidthPx) {
                 params.width = parentContentWidthPx
@@ -1761,6 +1805,62 @@ internal object SystemUiHomePresentationOwner {
             }
         }
 
+        private fun releaseFakeCarrierCapacityLeaseAtHiddenBoundary(): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
+            val appliedWidthPx = appliedFakeCarrierWidthPx
+            if (appliedWidthPx == null) {
+                clearFakeCarrierCapacityLeaseSnapshot()
+                return true
+            }
+            val hostView = host.get()
+            val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
+            val params = hostView?.layoutParams
+            if (hostView == null || baselineLayoutWidthPx == null || params == null) {
+                clearFakeCarrierCapacityLeaseSnapshot()
+                return false
+            }
+
+            val liveWidthPx = params.width
+            var nextNativeBaselineWidthPx = liveWidthPx
+            val restored =
+                when (liveWidthPx) {
+                    appliedWidthPx -> {
+                        params.width = baselineLayoutWidthPx
+                        hostView.layoutParams = params
+                        nextNativeBaselineWidthPx = baselineLayoutWidthPx
+                        hostView.layoutParams?.width == baselineLayoutWidthPx
+                    }
+
+                    baselineLayoutWidthPx -> true
+
+                    else -> {
+                        // HyperOS may replace the hidden fake-carrier width before
+                        // this callback. End ownership without racing that writer;
+                        // the next visible cycle adopts the live native width.
+                        onEvent(
+                            eventPrefix +
+                                " fakeCarrierCapacity release=adopt-native-hidden-width" +
+                                " liveWidth=" + liveWidthPx +
+                                " appliedWidth=" + appliedWidthPx +
+                                " baselineWidth=" + baselineLayoutWidthPx,
+                        )
+                        true
+                    }
+                }
+            clearFakeCarrierCapacityLeaseSnapshot()
+            pendingFakeCarrierNativeBaselineWidthPx =
+                nextNativeBaselineWidthPx.takeIf { width -> width > 0 }
+            onEvent(
+                eventPrefix +
+                    " fakeCarrierCapacity lease=hidden-released" +
+                    " restored=" + restored +
+                    " nextNativeBaselineWidth=" +
+                    (pendingFakeCarrierNativeBaselineWidthPx ?: -1) +
+                    " owner=control-center-fake-visible-cycle",
+            )
+            return restored
+        }
+
         private fun restoreFakeCarrierCapacityLease(): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
 
@@ -1795,6 +1895,7 @@ internal object SystemUiHomePresentationOwner {
             hostView.layoutParams = params
             val restored = hostView.layoutParams?.width == baselineLayoutWidthPx
             clearFakeCarrierCapacityLeaseSnapshot()
+            pendingFakeCarrierNativeBaselineWidthPx = null
             return restored
         }
 
@@ -1930,6 +2031,9 @@ internal object SystemUiHomePresentationOwner {
                     " paddingEnd=" + group.paddingEnd +
                     " transitionReservation=" + (transitionRequestedSlotWidthPx ?: -1) +
                     " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
+                    " fakeCarrierLeaseSuppressed=" + fakeCarrierCapacityLeaseSuppressed +
+                    " fakeCarrierPendingNativeWidth=" +
+                    (pendingFakeCarrierNativeBaselineWidthPx ?: -1) +
                     " steadyMirrorActive=" + steadyPeerMirrorActive +
                     " steadyMirrorHidden=[" +
                     steadyPeerMirrorHiddenSlots.sorted().joinToString(",") +

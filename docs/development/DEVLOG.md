@@ -1,5 +1,37 @@
 ## 2026-10-02 — Build 617 off-center Wi-Fi badge ring avoidance
 
+## 2026-10-04 — Build 683: scope QS_FAKE capacity lease to visible cycle
+
+**Type:** Control Center lifecycle hardening after Build 682 device acceptance  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200  
+**Build:** 683 / `20261003-683`
+
+### Evidence
+
+Build 682 device video is visually accepted. Its detailed diagnostic shows transition reservation clears at the hidden boundary, but the QS_FAKE fake-carrier width lease remains applied afterward. This is not a current visible defect, but it leaves a stale native-width baseline across hidden lifecycle changes.
+
+### Change
+
+- port only the established visible-cycle lease concept from latest dev; do not merge unrelated AOD runtime behavior;
+- strengthen the hidden boundary for this recovery branch: clear transition reservation before suppressing native layout writes, so an abrupt `visible=false` cannot retain expanded peer padding even if HyperOS skips a fraction-zero sample;
+- release the fake-carrier capacity lease while keeping compact QS_FAKE presentation prearmed;
+- if native hidden geometry already changed, adopt the live width rather than overwrite it;
+- cache only that live native baseline for the next visible cycle, then re-establish the lease from runtime geometry;
+- add diagnostics for lease suppression and pending native width;
+- keep Build 682 peer-side reservation semantics and capacity saturation untouched.
+
+### Lifecycle review
+
+Reviewed before commit:
+- hidden order is reservation clear -> lease suppression -> lease release;
+- repeated hidden callbacks are idempotent;
+- visible re-entry unsuppresses before re-establishing runtime reservation;
+- hidden native width replacement is adopted without writing over it;
+- pending baseline only bridges the release/re-layout window and is cleared after a normal full stop;
+- host detach, host replacement, fail-native, feature disable and Hot Reload retain their existing full restore paths;
+- no new translation/alpha/visibility writer, timer, Handler, animator or fixed geometry is introduced.
+
+
 **Type:** Battery-ring optical geometry  
 **Display version:** 0.0.4  
 **Build:** 617 / `20261002-617`  

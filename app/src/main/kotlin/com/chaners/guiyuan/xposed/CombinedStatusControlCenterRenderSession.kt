@@ -122,6 +122,10 @@ internal object CombinedStatusControlCenterRenderSession {
     }
 
     @Synchronized
+    fun beginVisibleCycle(): Boolean =
+        SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+
+    @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
         current?.setRequestedVisible(visible) ?: false
 
@@ -451,6 +455,12 @@ internal object CombinedStatusControlCenterRenderSession {
     ): Boolean =
         hostAttached && nativePresentationReady
 
+    internal fun shouldEndCapacityLeaseOnVisibilityChange(
+        previousRequestedVisible: Boolean,
+        nextRequestedVisible: Boolean,
+    ): Boolean =
+        previousRequestedVisible && !nextRequestedVisible
+
     internal fun resolveProjectionReady(
         featureEnabled: Boolean,
         sceneEligible: Boolean,
@@ -601,6 +611,14 @@ internal object CombinedStatusControlCenterRenderSession {
         }
 
         fun setRequestedVisible(visible: Boolean): Boolean {
+            if (
+                shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = requestedVisible,
+                    nextRequestedVisible = visible,
+                )
+            ) {
+                SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(false)
+            }
             requestedVisible = visible
             syncPresentation("visibility")
             return projectionReady()
