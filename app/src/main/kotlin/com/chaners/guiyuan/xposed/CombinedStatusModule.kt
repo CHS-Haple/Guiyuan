@@ -1083,13 +1083,14 @@ class CombinedStatusModule : XposedModule() {
             }
         CombinedStatusControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
 
-        if (detailedDiagnosticsEnabled) {
+        if (
+            detailedDiagnosticsEnabled &&
+            update.fraction != null &&
+            lastBatteryNumberProbeDiagnosticSummary == null
+        ) {
             val batteryNumberProbe =
                 CombinedStatusControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
-            if (
-                batteryNumberProbe != null &&
-                batteryNumberProbe != lastBatteryNumberProbeDiagnosticSummary
-            ) {
+            if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeDiagnosticSummary = batteryNumberProbe
                 logDiagnostic(
                     level = Log.INFO,

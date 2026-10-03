@@ -8,7 +8,6 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import kotlin.math.floor
 
 internal object SystemUiPanelTransitionSource {
     const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
@@ -253,13 +252,7 @@ internal object SystemUiPanelTransitionSource {
                                     },
                                 onFailure = onRuntimeFailure,
                             )
-                            val result = chain.proceed()
-                            emitDiagnostic(
-                                update = preNativeUpdate,
-                                onEvent = onEvent,
-                                isProbeEnabled = isProbeEnabled,
-                            )
-                            result
+                            chain.proceed()
                         },
                     )
 
@@ -498,14 +491,6 @@ internal object SystemUiPanelTransitionSource {
     internal fun controlCenterAllowsHome(visible: Boolean?): Boolean =
         visible == false
 
-    internal fun diagnosticBucket(fraction: Float?): Int? =
-        fraction?.let { rawValue ->
-            val value = rawValue.coerceIn(0f, 1f)
-            floor(value * DIAGNOSTIC_BUCKETS)
-                .toInt()
-                .coerceIn(0, DIAGNOSTIC_BUCKETS)
-        }
-
     private fun resolveControlCenterHeader(delegate: Any?): Any? {
         delegate ?: return null
         val contract = controlAnchorContract ?: return null
@@ -606,8 +591,6 @@ internal object SystemUiPanelTransitionSource {
             return
         }
         val probe = controlProbe
-        val bucket = diagnosticBucket(update.fraction)
-        val bucketChanged = bucket != null && bucket != probe.bucket
         val expandedChanged =
             update.expanded != null && update.expanded != probe.expanded
         val trackingChanged =
@@ -621,7 +604,6 @@ internal object SystemUiPanelTransitionSource {
             update.controlCenterBatteryIslandActive != null &&
                 update.controlCenterBatteryIslandActive != probe.batteryIsland
 
-        if (bucket != null) probe.bucket = bucket
         if (update.expanded != null) probe.expanded = update.expanded
         if (update.tracking != null) probe.tracking = update.tracking
         if (update.visible != null) probe.visible = update.visible
@@ -634,7 +616,6 @@ internal object SystemUiPanelTransitionSource {
 
         if (
             !DiagnosticPolicy.shouldReportPanelEvent(
-                bucketChanged = bucketChanged,
                 expandedChanged = expandedChanged,
                 trackingChanged = trackingChanged,
                 visibleChanged = visibleChanged,
@@ -654,7 +635,6 @@ internal object SystemUiPanelTransitionSource {
                 onEvent(
                     "panelTransition source=" + update.source.logName +
                         " fraction=" + (update.fraction ?: "none") +
-                        " bucket=" + (bucket ?: probe.bucket) + "/" + DIAGNOSTIC_BUCKETS +
                         " expanded=" + (update.expanded ?: probe.expanded ?: "none") +
                         " tracking=" + (update.tracking ?: probe.tracking ?: "none") +
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
@@ -1033,7 +1013,6 @@ internal object SystemUiPanelTransitionSource {
 
     internal object DiagnosticPolicy {
         fun shouldReportPanelEvent(
-            bucketChanged: Boolean,
             expandedChanged: Boolean,
             trackingChanged: Boolean,
             visibleChanged: Boolean,
@@ -1053,7 +1032,6 @@ internal object SystemUiPanelTransitionSource {
     }
 
     private data class ProbeState(
-        var bucket: Int = -1,
         var expanded: Boolean? = null,
         var tracking: Boolean? = null,
         var visible: Boolean? = null,
@@ -1062,6 +1040,4 @@ internal object SystemUiPanelTransitionSource {
         var appearance: Boolean? = null,
         var appearanceAnimated: Boolean? = null,
     )
-
-    private const val DIAGNOSTIC_BUCKETS = 8
 }
