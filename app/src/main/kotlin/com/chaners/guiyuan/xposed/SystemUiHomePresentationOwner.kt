@@ -1795,12 +1795,6 @@ internal object SystemUiHomePresentationOwner {
             ) {
                 return true
             }
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                fakeCarrierCapacityLeaseSuppressed
-            ) {
-                return true
-            }
             val group = statusIcons.get() ?: run { onFailNative("status-icon-group-released"); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
