@@ -4027,9 +4027,9 @@ No observed Xiaomi 15 Pro values are encoded. In particular, the device-observed
 
 ## 2026-10-04 — Build 686 QS_FAKE hot-path reduction
 
-**Type:** performance / post-integration audit  
-**Display version:** 0.0.5  
-**Build:** 686 / `20261004-686`  
+**Type:** performance / post-integration audit
+**Display version:** 0.0.5
+**Build:** 686 / `20261004-686`
 **Branch:** `fix/qs-fake-hotpath-overhead`
 
 ### Review finding
