@@ -1032,9 +1032,16 @@ internal object SystemUiHomePresentationOwner {
                 } ?: return@Hooker chain.proceed()
 
             val result = session.withRepresentedSlotsIgnored { chain.proceed() }
+            val steadyPeerMirrorChanged =
+                if (refreshMasksAfter) {
+                    syncSteadyPeerMirrorAfterNativeLayout(session)
+                } else {
+                    false
+                }
             if (refreshMasksAfter) {
-                syncSteadyPeerMirrorAfterNativeLayout(session)
-                session.reportNativeSourceSyncDiagnosticAfterLayout()
+                session.reportNativeSourceSyncDiagnosticAfterLayout(
+                    steadyPeerMirrorChanged = steadyPeerMirrorChanged,
+                )
             }
             if (
                 refreshMasksAfter &&
@@ -1071,7 +1078,7 @@ internal object SystemUiHomePresentationOwner {
             exposed
         }
 
-    private fun syncSteadyPeerMirrorAfterNativeLayout(session: Session) {
+    private fun syncSteadyPeerMirrorAfterNativeLayout(session: Session): Boolean {
         val role =
             synchronized(this) {
                 when {
@@ -1079,13 +1086,14 @@ internal object SystemUiHomePresentationOwner {
                     controlCenterCurrent === session -> CONTROL_CENTER_FAKE_SURFACE
                     else -> null
                 }
-            } ?: return
+            } ?: return false
 
         if (role == HOME_SURFACE) {
             val snapshot = session.captureSteadyPeerMirror()
+            var changed = false
             val fake =
                 synchronized(this) {
-                    val changed =
+                    changed =
                         steadyPeerMirrorActive != snapshot.active ||
                             steadyPeerMirrorHiddenSlots != snapshot.hiddenSlots
                     steadyPeerMirrorActive = snapshot.active
@@ -1104,7 +1112,7 @@ internal object SystemUiHomePresentationOwner {
                 active = snapshot.active,
                 hiddenSlots = snapshot.hiddenSlots,
             )
-            return
+            return changed
         }
 
         val snapshot =
@@ -1118,6 +1126,7 @@ internal object SystemUiHomePresentationOwner {
             active = snapshot.active,
             hiddenSlots = snapshot.hiddenSlots,
         )
+        return false
     }
     private fun batteryHideStateHooker(): Hooker =
         Hooker { chain ->
@@ -2397,7 +2406,9 @@ internal object SystemUiHomePresentationOwner {
             callback?.invoke(maskedViews)
         }
 
-        fun reportNativeSourceSyncDiagnosticAfterLayout() {
+        fun reportNativeSourceSyncDiagnosticAfterLayout(
+            steadyPeerMirrorChanged: Boolean,
+        ) {
             if (
                 !active ||
                 (surfaceName != HOME_SURFACE && surfaceName != CONTROL_CENTER_FAKE_SURFACE)
@@ -2405,10 +2416,11 @@ internal object SystemUiHomePresentationOwner {
                 return
             }
             if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                !HotPathDiagnosticPolicy.shouldReportControlCenterLayoutState(
+                !HotPathDiagnosticPolicy.shouldReportNativeSourceLayoutState(
                     detailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled(),
+                    controlCenterSurface = surfaceName == CONTROL_CENTER_FAKE_SURFACE,
                     transitionReservationActive = transitionRequestedSlotWidthPx != null,
+                    steadyPeerMirrorChanged = steadyPeerMirrorChanged,
                 )
             ) {
                 return
@@ -2806,6 +2818,20 @@ internal object SystemUiHomePresentationOwner {
             transitionReservationActive: Boolean,
         ): Boolean =
             detailedDiagnosticsEnabled && !transitionReservationActive
+
+        fun shouldReportNativeSourceLayoutState(
+            detailedDiagnosticsEnabled: Boolean,
+            controlCenterSurface: Boolean,
+            transitionReservationActive: Boolean,
+            steadyPeerMirrorChanged: Boolean,
+        ): Boolean {
+            if (!detailedDiagnosticsEnabled) return false
+            return if (controlCenterSurface) {
+                !transitionReservationActive
+            } else {
+                steadyPeerMirrorChanged
+            }
+        }
     }
     internal object EndReservationPolicy {
         fun shouldDeferLiveBatteryWidthUnavailable(
