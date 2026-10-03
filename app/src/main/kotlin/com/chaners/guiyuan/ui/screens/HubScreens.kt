@@ -424,6 +424,13 @@ internal fun FeaturesScreen(
             enabled = featureSettings.enabled,
             onCheckedChange = featureRepository::setKeyguardEnabled,
         )
+        SwitchPreference(
+            title = stringResource(R.string.aod_combined_status_title),
+            summary = stringResource(R.string.aod_combined_status_summary),
+            checked = featureSettings.aodEnabled,
+            enabled = featureSettings.enabled,
+            onCheckedChange = featureRepository::setAodEnabled,
+        )
         OverlayDropdownPreference(
             items = layoutOptions,
             selectedIndex = visualSettings.contentLayout.ordinal,

@@ -27,24 +27,20 @@ Remaining:
 - preserve accepted steady Home/Keyguard geometry and Build-473 Wi-Fi optical behavior;
 - avoid project-owned gesture timing, duplicate translation writers, endpoint snaps, or duplicate occupancy.
 
-## Phase 3 — Keyguard / AOD ownership — steady Keyguard complete; optional AOD planned
+## Phase 3 — Keyguard / AOD ownership — Build 625 family-ownership candidate pending device validation
 
 Established:
 - optional steady Keyguard Guiyuan with independent host/session;
-- AOD remains native-only in the accepted runtime baseline;
 - Keyguard-originated QS_FAKE uses the same verified transition boundary;
-- session-owned slot exclusions are reversible and fail native on ambiguity.
-
-Planned AOD control contract:
-- add a dedicated AOD display toggle; AOD must remain disabled when this toggle is off;
-- the global combined-status enable switch is the parent gate for Home, Keyguard, and AOD, so disabling Guiyuan must also release any AOD replacement and restore native AOD;
-- Keyguard display and AOD display are independent child preferences: enabling/disabling either one must not change the other;
-- AOD must use its own bounded scene/host/session ownership and lifecycle cleanup rather than reusing Keyguard visibility as a proxy;
-- unsupported or ambiguous AOD topology fails native without affecting Home or Keyguard.
+- session-owned slot exclusions are reversible and fail native on ambiguity;
+- Build 620/621 adds a dedicated default-off AOD display preference while preserving the global Guiyuan enable as the parent runtime gate;
+- Keyguard and AOD child preferences persist independently; changing either one does not rewrite the other;
+- Build 623 device evidence rejects separate Keyguard/AOD presentation/render sessions because restore/reacquire exposes native represented icons between sessions; Build 625 instead keeps one Keyguard-family presentation owner and one RenderView across same-host Keyguard<->AOD retargeting, while Home->AOD uses bounded reversible pre-mask without declaring compact layout ready early;
+- unsupported or ambiguous AOD authority/topology fails native without affecting accepted Home behavior.
 
 Remaining:
-- shared Control Center transition presentation from the Keyguard source scene;
-- exact-target AOD host/lifecycle evidence before implementing the optional AOD scene.
+- focused exact-target device validation of Build 625 Home/Keyguard/AOD continuity, transition visual coherence, master-switch cleanup, and Keyguard/AOD preference independence;
+- shared Control Center transition presentation from the Keyguard source scene; AOD remains ineligible as a Control Center transition source.
 
 ## Phase 4 — Companion app and customization — product polish
 
@@ -79,7 +75,7 @@ Before 1.0.0:
 
 Preserve:
 - authoritative native state -> domain state -> scene/presentation policy -> renderer;
-- independent Home, Keyguard, and optional AOD scene ownership;
+- independent Home ownership plus one host-scoped Keyguard-family presentation owner that retargets Keyguard/AOD scene semantics without duplicate mutable owners;
 - native final Control Center ownership; AOD remains native unless the dedicated AOD scene safely acquires its own bounded replacement contract;
 - native resource identity/tint authority where available;
 - custom colors/sizing as presentation policy, not duplicate platform state;

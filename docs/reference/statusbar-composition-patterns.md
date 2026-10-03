@@ -152,6 +152,20 @@ Multi-host awareness alone does **not** prove keyguard/AOD compatibility. Each t
 
 ---
 
+### Same-host scene retargeting and cross-host pre-mask
+
+**Candidate for Guiyuan; Build 625 device validation pending.**
+
+When two scene semantics resolve to the same verified native host and consume the same represented-slot suppression/layout contract, switching between two project Session objects can create an artificial native interval even though SystemUI never changed the underlying host. In that case, one host-scoped presentation owner may retarget scene semantics while retaining its exact owned ignored-slot delta, visual mask and reservation. The render layer should likewise retain one module child View and retarget scene-specific visibility/tint semantics rather than creating simultaneous writers.
+
+This does not generalize across distinct native hosts. For a cross-host handoff such as Home -> AOD, target visual suppression may be prepared before compact layout only when it is reversible and explicitly scoped to the handoff; layout readiness and renderer ownership must remain false until the native target layout is actually valid. Visual masking is not layout ownership.
+
+Reusable boundary:
+- same verified host + same owned presentation contract -> retarget one owner;
+- distinct host -> acquire a bounded target claim without borrowing source layout readiness;
+- restore native only when the owning host family is exited, invalidated or fails;
+- never keep two project overlays or two mutable presentation writers alive merely to hide a handoff gap.
+
 ## 5. Slot size, glyph size, per-glyph scale, and optical adjustment are independent
 
 **Observed.**
@@ -327,9 +341,9 @@ Keyguard also has independent lifecycle and tint authority:
 - `updateIconsAndTextColors()` derives Keyguard light/dark colors and applies them to Keyguard icon/battery presentation while forwarding the same source tint to QS_FAKE;
 - child `animateIconContainer()` targets `mStatusIconContainer`, not the whole system-icons carrier.
 
-AOD is separate. `KeyguardStatusBarViewControllerInject.animateFullAod()` independently changes Battery alpha/AOD mode and status-icon alpha/visibility/animation flags. A future Keyguard Combined adapter must therefore remain inactive for AOD until a distinct AOD contract is verified.
+AOD is separate. `KeyguardStatusBarViewControllerInject.animateFullAod()` independently changes Battery alpha/AOD mode and status-icon alpha/visibility/animation flags. Therefore Keyguard ownership must remain inactive whenever the native AOD authority reports an AOD transition or stable AOD.
 
-**Project implication:** the strongest steady Keyguard carrier candidate is the native `mSystemIconsContainer` host with a Keyguard-specific session, sharing only renderer/domain semantics with Home. Build 442 verifies only that steady carrier/source identity using the existing scene callback; lifecycle/tint/AOD runtime observation remains deferred until this first gate is positive.
+**Build 620 candidate implication:** reuse the verified Keyguard-family host structure, but not the mutable Keyguard session. Stable AOD (`mToAod=true && mIsAodAnimate=false`) gets a separate bounded render/presentation session; AOD enter/exit remains native HyperOS, and AOD never becomes a Control Center source. This candidate still requires focused device verification before becoming accepted runtime evidence.
 
 ---
 

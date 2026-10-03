@@ -1,3 +1,27 @@
+## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
+
+**Type:** integration / lifecycle + Control Center recovery reconciliation  
+**Parents:** Build 672 dev AOD lifecycle + Build 684 QS_FAKE recovery/performance checkpoint  
+**Build:** 685 / `20261004-685`
+
+### Integration strategy
+
+- Preserve the full #196 Home/Keyguard/AOD state machine, same-host Keyguard-family renderer retargeting, AOD presentation claims, source reconciliation and feature-toggle lifecycle.
+- Preserve Build 676-684 QS_FAKE peer mirror, fake-carrier capacity lease, Battery-island peer-side reservation, fail-native frame-loss cleanup, visible-cycle lease release and hot-path diagnostic gating.
+- Where both branches touched the same Control Center lifetime, keep Build 684's stricter hidden ordering: clear transition reservation before suppressing/releasing the fake-carrier lease.
+- In shared presentation sessions, keep #196 deferred-native-layout ownership and Build 684 fake-carrier suppression as independent guards.
+- No alpha/translation/visibility writer, timer, custom gesture clock, hardcoded device geometry or second presentation owner is added.
+
+### Pre-merge audit
+
+- Keyguard and AOD share one renderer/session on the verified family host; retargeting does not restore/reacquire represented slots between same-host scenes.
+- Family fail-native restores the native presentation inside the owner before notifying the module.
+- Feature disable, child-toggle disable, resolver loss, stable Home return and Hot Reload all have explicit cleanup paths.
+- AOD remains ineligible as a Control Center source.
+- Keyguard Control Center lease is bounded by source/readiness/fraction and is released on authoritative Home.
+- Build 682 charging-island peer geometry and Build 683 visible-cycle capacity lifecycle remain unchanged.
+- Remaining performance risks (per-frame native padding/layout, repeated tint scan, per-component alpha layers) are tracked for the post-integration audit and are not changed in this merge.
+
 ## 2026-10-04 — Build 684: bound Control Center hot-path diagnostics
 
 **Type:** low-risk performance / observation-only hot-path cleanup  
@@ -2272,6 +2296,1100 @@ This correction is CI presentation/branch hygiene only and does not affect the A
 - AOD remains on the existing native/read-only path in this Build; the future independent AOD control recorded in ROADMAP is not implemented here.
 - Diagnostic limitation noted: the current `visualSettings.changed` summary does not yet emit `airplaneSizeScale` / `noSimSizeScale`, so exact per-profile value evidence comes from the profile-key/unit coverage plus maintainer visual validation rather than the runtime summary line itself.
 - Build 619 is accepted for integration into `dev`; no further runtime change is required for this feature.
+
+## 2026-10-02 — Build 620 AOD continuity rejected on device; Build 621 narrow correction
+
+**Type:** device evidence / AOD lifecycle root cause / presentation continuity  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 620 -> 621
+
+### Build 620 device evidence
+
+- Xiaomi 15 Pro / `haotian`, Android 17 / SDK 37, HyperOS 4, SystemUI `17.03.260226.r`.
+- Stable Keyguard and stable AOD Guiyuan presentation both acquire successfully with both child switches enabled.
+- Maintainer video reports a visible temporary return to native status presentation whenever Keyguard and AOD switch states.
+- The diagnostic matches that visual symptom directly: when `setIsAodAnimate` enters the transition state, the outgoing AOD renderer becomes ineligible, readiness drops, the AOD presentation restores clip bounds/end reservation/ignored slots, and native presentation is exposed until the destination stable scene reacquires Guiyuan.
+- This is not a timing race or host-resolution failure. It is the explicit Build-620 policy that classified every AOD animation interval as native-only.
+
+### Root-cause correction
+
+Build 621 keeps the existing native AOD authority and changes only scene eligibility during the verified transition interval:
+
+- with both Keyguard and AOD child switches enabled, entering AOD retains the existing Keyguard Guiyuan scene while `toAod=true && isAodAnimate=true`;
+- exiting AOD retains the existing AOD Guiyuan scene while `toAod=false && isAodAnimate=true`;
+- stable destination boundaries still select their independent Keyguard or AOD session;
+- if either child switch is disabled, the transition remains native-only;
+- the global Guiyuan master switch still releases both scenes immediately;
+- AOD never becomes a Control Center transition source.
+
+No timer, delayed cleanup, polling, copied AOD animation, native translation writer, or duplicate alpha animator is introduced. HyperOS remains the transition clock/motion authority; Guiyuan only avoids voluntarily dropping its already-valid presentation during the dual-enabled handoff interval.
+
+### Review / automated validation
+
+- Scene policy tests cover enter/exit retention only when both child switches are enabled, plus native fallback for single-enabled and master-disabled combinations.
+- Render-session tests cover outgoing-scene eligibility continuity.
+- Runtime CI #2245 passed Build 621 code/test compilation and the pinned HyperOS target-profile checks.
+- Focused real-device validation remains mandatory before integration.
+
+## 2026-10-02 — Build 621 transition-direction hypothesis rejected; Build 623 ownership-driven AOD handoff
+
+**Type:** exact-target device evidence / AOD-Keyguard-Home presentation ownership  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 621 -> 623
+
+### Device evidence
+
+Build 621 still visibly restored native represented status icons during both non-Keyguard Home <-> AOD switching and Keyguard <-> AOD switching.
+
+The detailed exact-target trace shows why the Build-621 rule was invalid: while AOD animation is active, HyperOS can expose `toAod=true` together with `animToAod=false`, and later publish `toggleAodMode(false)`. Build 621 used `toAod` as transition direction, causing the actually owned scene to become ineligible, readiness to drop, and the presentation session to restore ignored slots / clip masks / reservation before the destination scene was ready.
+
+Historical architecture already classifies `mAnimToAod` as diagnostic-only, so replacing one direction guess with another is rejected.
+
+### Build 623 correction
+
+- Track the authoritative steady Home/Keyguard source from the existing native scene callback.
+- During `isAodAnimate=true`, resolve continuity from actual Home/Keyguard/AOD presentation ownership rather than `toAod` direction.
+- Keep an already-owned AOD scene eligible for the whole native animation while AOD remains enabled.
+- Keep visible Keyguard ownership during Keyguard -> AOD when AOD is enabled.
+- When Home is the actual source, allow AOD render/presentation prearm during the native AOD animation so the AOD host does not expose its native represented icons first.
+- When Home appears while AOD still owns presentation, defer AOD cleanup to the AOD lifecycle boundary.
+- Stable scene resolution still releases unsupported/disabled destinations to native and keeps AOD out of Control Center source ownership.
+
+No timer, delay, polling, copied AOD motion, alpha/translation writer, or project-owned animation clock is introduced.
+
+### Validation
+
+- Unit coverage now verifies ownership-driven animation routing, Home->AOD prearm eligibility, AOD-owner retention across scene callback ordering, and direction-independent render-session retention.
+- Runtime CI #2257 passes Build 623 on the pinned HyperOS target profile.
+- Signed Canary and focused device validation are still required before integration.
+
+## 2026-10-03 — Build 623 device rejection; Build 625 Keyguard-family continuous ownership
+
+**Type:** Keyguard/AOD presentation ownership / lifecycle handoff  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 623 -> 625
+
+### Problem
+
+Build 623 removed AOD-direction guessing, but device testing still shows native represented status icons flashing during both Home <-> AOD and Keyguard <-> AOD transitions.
+
+### Evidence
+
+The retained Build-623 trace shows a structural handoff gap rather than another direction-state error:
+- the outgoing Keyguard/AOD presentation loses readiness and performs cleanup, restoring clip bounds, end reservation and ignored-slot ownership;
+- the target presentation then enters `prepared` with `fallbackVisual=native-until-native-layout`;
+- only the next native status-icon layout marks the target presentation `active` and releases native handoff.
+
+That sequence deliberately exposes native represented visuals between two otherwise valid Guiyuan sessions.
+
+### Conclusion
+
+Keyguard and AOD are distinct scene semantics but, on the verified target, they resolve to the same native Keyguard-family host. Their represented-slot suppression, reversible visual mask and end reservation therefore require one continuous host-scoped presentation owner across an internal family scene change. Likewise, one module render View should retarget scene semantics rather than detach/re-add at the same host.
+
+Home remains a distinct host. Home -> AOD may pre-mask the target native represented visuals during explicit prearm, but compact-layout readiness remains a separate native-layout fact; pre-mask does not grant layout ownership or renderer readiness.
+
+### Change
+
+- Collapse separate Keyguard/AOD presentation sessions into one role-retargetable Keyguard-family Session.
+- Collapse separate Keyguard/AOD render sessions into one role-retargetable Session / RenderView.
+- Guard role-specific cleanup so an outgoing-role cleanup cannot stop the already-retargeted target.
+- Distinguish presentation claim from compact-layout readiness for transition routing.
+- Permit reversible AOD pre-mask only during explicit Home -> AOD prearm.
+- Reset child alpha to 1 when leaving AOD for Keyguard.
+- Keep child feature gates independent and preserve fail-native restoration when the family host/topology is invalid.
+
+No native animation clock, timer, delay, polling loop, native translation writer or native visibility writer is added.
+
+### Validation
+
+- Focused unit coverage protects role-retarget cleanup, AOD pre-mask gating, independent child feature gates and AOD->Keyguard alpha reset.
+- Runtime CI #2278 succeeds on reviewed runtime head `5aa8752197ce8328496d3ca68c8ee5875e98ef91`.
+- Manual ownership review confirms one family presentation owner and one family RenderView.
+- Signed Canary and focused device validation remain required before integration.
+
+
+
+## 2026-10-03 — Build 625 device rejection; Build 626 retarget-before-readiness handoff
+
+**Type:** device evidence / Keyguard-AOD family ordering / root-cause correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 625 -> 626
+
+### Device evidence
+
+Build 625 keeps one Keyguard-family presentation owner and one RenderView, but maintainer testing still shows a short restoration of native represented status icons while switching into/out of AOD. The supplied Build-625 diagnostics are otherwise healthy and repeatedly show an outgoing presentation/readiness cleanup followed by the destination AOD/Keyguard presentation taking over.
+
+### Root cause
+
+The shared owner removed the old stop/recreate topology, but module callback ordering still created an ownership gap:
+
+1. HyperOS AOD state is already stored by `SystemUiKeyguardAodStateSource`.
+2. `onKeyguardAodStateUpdate()` first called `CombinedStatusKeyguardRenderSession.onAodState(update)`.
+3. The session was still labelled as the outgoing family scene, so the new state could make that scene ineligible and publish `readiness=false`.
+4. That readiness loss restored native represented slots.
+5. Only after that did `onKeyguardHostResolution()` read the same new state and retarget the family session to the destination scene.
+
+Thus the remaining flash is an ordering bug inside a single owner, not evidence that separate Keyguard/AOD sessions should return.
+
+### Build 626 correction
+
+Build 626 resolves/retargets the Keyguard-family scene first and delivers the same AOD update to the render session second. The destination scene therefore consumes the update under the correct family role before any old-role readiness cleanup can run.
+
+No timing compensation, delay, timer, polling loop, direction guess, duplicate animator, new native visibility/translation writer, or host topology change is introduced.
+
+### Review / validation
+
+- The correction is limited to `CombinedStatusModule.onKeyguardAodStateUpdate()`.
+- Build-625 family ownership, render-session reuse, pre-mask, compact-layout, child-gate and fail-native rules remain unchanged.
+- Runtime CI #2289 passed the exact source change before the Build-id bump.
+- Build 626 requires focused signed-Canary device validation because the defect is visible only across the live HyperOS AOD callback sequence.
+
+
+## 2026-10-03 — Build 626 device rejection; Build 628 single AOD eligibility authority
+
+**Type:** exact-device evidence / ownership authority / rejected hypothesis  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 626 -> 628
+
+### Device evidence
+
+Build 626 remains visually incorrect on Xiaomi 15 Pro / HyperOS SystemUI `17.03.260226.r`: during AOD enter/exit, the combined presentation gives way to native battery/status icons before Guiyuan returns.
+
+The detailed trace proves the failure occurs even after the Build-626 callback reorder:
+- Keyguard RenderSession reports `sceneEligible=false` during the native AOD animation, readiness drops, and `readiness-lost:aod:setIsAodAnimate` restores clip masks, reservation and ignored slots.
+- AOD can subsequently reach `presentation.cutover state=combined`, yet a later scene transfer still invokes `aod-not-eligible` and restores the same presentation state.
+- Both paths occur while the shared Keyguard-family host/session architecture is otherwise healthy.
+
+### Root cause
+
+Build 626 fixed event ordering but left multiple eligibility writers:
+1. Module/ScenePolicy selected the family projection from current ownership and native state.
+2. RenderSession attach/update independently re-derived scene eligibility from raw `blocksProjection` / stable-AOD fields.
+3. AOD readiness/cutover independently required stable AOD or Home prearm again.
+
+Those secondary rules could invalidate a projection that ScenePolicy intentionally retained for continuity. The defect is therefore authority duplication, not missing delay or another AOD direction signal.
+
+### Build 628 correction
+
+- Make `CombinedStatusScenePolicy.resolveKeyguardAodProjection()` the sole family projection authority.
+- Pass the selected scene eligibility into RenderSession instead of recomputing it there.
+- Raw AOD callbacks no longer mutate RenderSession eligibility or presentation readiness.
+- Keyguard/AOD readiness and final cutover query the same current ScenePolicy projection.
+- Keep one family presentation Session, one RenderView, same-host retarget and role-specific release guards.
+- Keep raw AOD fields for state evidence/diagnostics and Home pre-mask mode only where appropriate; they no longer constitute a second ownership policy.
+
+No timer, delay, polling, guessed direction, duplicate animation clock or new native translation/visibility writer is introduced.
+
+### Review / validation
+
+- Obsolete unit coverage for the removed RenderSession eligibility policy is deleted; ScenePolicy tests remain the projection-matrix contract.
+- Runtime CI passes the source-level Build-628 correction on the pinned target before the identity/docs closure.
+- Signed Canary/device evidence remains mandatory before integration.
+
+
+## 2026-10-03 — Build 628 device finding; Build 630 family-child alpha correction
+
+**Type:** device evidence / render alpha ownership / root-cause correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 628 -> 630
+
+### Device evidence
+
+Build 628 fixes the earlier native represented-icon restoration: during AOD/Keyguard family switching, native Wi-Fi/mobile/battery no longer flash back. The remaining visible defect is different: the Guiyuan combined visual itself disappears for roughly ten video frames before returning.
+
+The matching detailed trace keeps the family projection healthy across the same interval: readiness stays true, scene eligibility stays true, and presentation cutover remains combined. This excludes another presentation cleanup/reacquire gap.
+
+### Root cause
+
+Build 628 still applied AOD alpha with:
+
+`renderView.alpha = batteryView.alpha`
+
+for the whole combined child.
+
+Exact-target architecture evidence already distinguishes HyperOS AOD animation layers: `animateFullAod()` independently drives Battery alpha/AOD state and status-icon alpha/visibility. Battery alpha can therefore reach zero while the verified family/status-icons carrier remains the correct owner for Guiyuan. Copying Battery alpha onto the entire module child incorrectly turned one native child animation into Guiyuan's global alpha clock.
+
+### Build 630 correction
+
+- Keep the module child alpha at 1 whenever ScenePolicy/presentation says the family overlay is visible.
+- Continue inheriting the verified `system_icons` parent carrier's native visibility/motion; no native parent alpha/visibility is written.
+- Keep Battery, status-icons and system-icons alpha as read-only diagnostics so any surviving device artifact can be assigned to the correct native layer.
+- Preserve Build-628 single ScenePolicy eligibility authority, one family Session/RenderView and role-retarget ownership.
+
+No custom AOD animator, delay, timer, threshold, native alpha writer or duplicate scene state machine is added.
+
+### Review / validation
+
+- Unit coverage now locks that family child alpha does not copy independent Battery AOD alpha.
+- Exact Build-630 Runtime CI #2322 succeeds.
+- Focused signed-Canary device evidence remains mandatory.
+
+
+## 2026-10-03 — Build 630 device narrowing; Build 634 ancestor-visibility diagnostic
+
+**Type:** device evidence / cross-host AOD handoff / diagnostic checkpoint  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 630 -> 634
+
+### Device evidence
+
+Build 630 succeeds for Keyguard <-> AOD: the earlier Guiyuan-only blank interval is gone and native represented icons do not flash back.
+
+One edge remains: Home -> AOD flashes once.
+
+The matching Build-630 trace shows:
+- Home -> AOD traverses HOME -> KEYGUARD -> AOD;
+- Keyguard presentation reaches `state=combined` almost immediately after the steady scene changes;
+- family RenderSession readiness remains true;
+- AOD retarget later reuses the same family session and remains `overlayVisible=true`;
+- `childAlpha=1` throughout the relevant AOD callbacks;
+- `systemIconsAlphaReadOnly=1` while the flash can still be observed.
+
+This excludes the Build-628/630 child-alpha failure and another native-slot ownership gap.
+
+### Exact-target evidence
+
+SystemUI-Reference verifies:
+- `MiuiKeyguardStatusBarView`;
+- field `mKeyguardStatusBarContent`;
+- `mStatusIconAnim`, `mHideStatusIconAnim`, `mShowStatusIconAnim`;
+- method `animateIconContainer(boolean)`;
+- `KeyguardStatusBarViewControllerInject.animateFullAod(boolean, boolean)`.
+
+The existing reference rule also states that a child / ViewOverlay inherits its host ancestor visibility and alpha lifecycle. Therefore `system_icons.alpha == 1` alone does not prove the on-screen family host is visible.
+
+### Build 634 diagnostic
+
+- Add read-only visual-chain summaries for:
+  - `MiuiKeyguardStatusBarView`;
+  - reflected `mKeyguardStatusBarContent`;
+  - `mSystemIconsContainer`.
+- Each summary records:
+  - each ancestor class;
+  - `visibility`;
+  - local `alpha`;
+  - `isShown`;
+  - accumulated effective alpha / all-visible result.
+- Emit these fields on the existing AOD state diagnostic path.
+
+No visual behavior, ownership, masking, scene policy, geometry, timer, animator, delay, or native writer is changed.
+
+### Decision gate
+
+One detailed Home -> AOD device trace from Build 634 is required. The first ancestor whose effective visibility collapses during the flash determines the correct bridge host. Do not introduce a root-level bridge before that evidence identifies the failing native layer.
+
+
+## 2026-10-03 — Build 634 device audit; Build 636 same-scene lifecycle dedupe
+
+**Type:** AOD lifecycle audit / ownership hygiene  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 634 -> 636
+
+### Device evidence
+
+The Build-634 trace captures repeated Home -> AOD transitions. The early transfer passes through KEYGUARD while `MiuiKeyguardStatusBarView` is not yet shown; later native AOD callbacks show the complete Keyguard host/content/system-icons chain visible with effective alpha 1.
+
+The same device observation also confirms stock HyperOS performs a visible Home -> AOD status-bar transition because the visual style changes across that boundary. Therefore a single flash is not by itself proof of a Guiyuan bug.
+
+### Lifecycle audit
+
+Across the captured session there is no:
+- Keyguard/AOD RenderSession detach;
+- Keyguard/AOD presentation cleanup or inactive event;
+- host replacement;
+- fail-native path;
+- represented-slot suppression release/reacquire.
+
+The family renderer and presentation both reuse their existing same-host Session objects. Repeated `renderer.attach` / `presentation.cutover=combined` diagnostics are therefore not real re-attachments.
+
+One unnecessary lifecycle action remains: `CombinedStatusKeyguardRenderSession.Session.retarget()` always calls `dispatchPresentationReadiness(..., force=true)`, even when the target family scene has not changed. That causes repeated cutover work and mask/reservation refreshes under multiple callbacks, although the Session itself remains stable.
+
+### Build 636 correction
+
+- Force readiness dispatch only when the family scene actually changes.
+- Same-scene retargets rely on the normal readiness-delta check.
+- KEYGUARD <-> AOD role changes still force dispatch so the presentation surface can retarget while readiness remains true.
+
+No cross-host bridge, timer, delay, alpha patch, visibility patch, geometry writer, or native animation override is introduced.
+
+### Review intent
+
+This correction is lifecycle hygiene, not an attempt to eliminate native Home -> AOD visual switching. Future AOD work should only resume if device evidence shows Guiyuan adds an extra artifact beyond the stock transition.
+
+
+## 2026-10-03 — Build 643: single-child AOD handoff + authoritative unlock boundary
+
+**Type:** device evidence / lifecycle root cause / performance isolation  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 636 -> 643
+
+### Device evidence
+
+Build 636 exposed three related lifecycle symptoms on the AOD branch:
+- Keyguard ON / AOD OFF: AOD -> Keyguard waits for the late native AOD-animation teardown callback before Guiyuan reappears.
+- Keyguard OFF / AOD ON: AOD -> Keyguard retains Guiyuan AOD ownership after the verified steady source has already returned to Keyguard.
+- With both Keyguard and AOD enabled, lockscreen -> Home -> immediate Control Center pull-down reproducibly can show native status-bar icons on the first fast pull. Ordinary Home pull-down can also occasionally feel non-responsive/stuttery.
+
+### Root causes
+
+1. Single-enabled Keyguard/AOD children were still using the dual-enabled animation-interval retention rule, so ownership transfer lagged the verified steady source boundary.
+2. HOME scene updates entered AOD ownership/cleanup code even when no AOD runtime was attached, adding avoidable synchronized lifecycle work to ordinary desktop pull-down.
+3. A stale Keyguard Control Center lease could survive the verified unlocked HOME boundary. Because the fraction callback can arrive before the next visible/source callback, the first fast pull after unlock could consume cached `controlCenterSourceScene=KEYGUARD`. Existing HOME handling then deferred the source rewrite because the stale lease was already active, producing a short native-QS fallback window.
+4. Cleanup ordering could also refresh Control Center eligibility from stale KEYGUARD state if Keyguard runtime teardown happened before HOME source ownership was committed.
+
+The existing ScenePolicy already rejects retaining a Keyguard Control Center lease for HOME; the defect was the module feeding it cached KEYGUARD state rather than honoring the newly verified HOME source.
+
+### Build 643 correction
+
+- Keyguard-only mode acquires Keyguard as soon as verified steady Keyguard is observed.
+- AOD-only mode releases AOD at the same verified steady-Keyguard boundary once Home no longer owns the source.
+- AOD-only Home -> AOD preserves/prearms AOD ownership across the transient native Keyguard source while Home ownership is still present.
+- Ordinary HOME updates skip AOD ownership/cleanup work entirely when no AOD runtime is attached.
+- `UNLOCKED_STATUS_BAR + HOME ancestry` is now authoritative over any stale Keyguard Control Center lease:
+  - release old lease with no Keyguard-readiness reconciliation;
+  - publish Control Center source ownership as HOME;
+  - only then tear down the old Keyguard renderer.
+- `aodRuntimeAttached` is reset on AOD activation failure, readiness loss, fail-native, Keyguard retarget, explicit deactivation, hot reload takeover, and old-generation teardown.
+
+No timer, delay, polling, guessed transition direction, geometry writer, or copied native animation was added. Build-621 `toAod/animToAod` direction inference remains rejected.
+
+### Device gate
+
+Validate:
+- Keyguard ON / AOD OFF: AOD -> Keyguard has no delayed Guiyuan entrance.
+- Keyguard OFF / AOD ON: AOD -> Keyguard has no delayed Guiyuan exit; Home -> AOD has no transient native represented-icon frame.
+- Keyguard ON / AOD ON: lockscreen -> Home -> immediate fast pull-down repeatedly; first pull must stay Guiyuan-projected with no native-status-bar flash.
+- Repeated ordinary Home pull-downs: no intermittent stutter attributable to AOD lifecycle bookkeeping.
+- Dual-enabled Keyguard <-> AOD continuity remains unchanged.
+
+
+### Renderer-lifetime review correction
+
+A post-fix review found that the initial AOD hot-path flag was being cleared on presentation readiness loss / presentation failure even though the AOD RenderSession can remain attached. Build 642 corrects the flag semantics:
+- track renderer lifetime, not presentation readiness;
+- set true only after AOD renderer attach;
+- clear only on Keyguard retarget, explicit AOD detach, hot reload takeover, or old-generation teardown;
+- presentation readiness/failure does not suppress a later real renderer cleanup.
+
+
+### Hidden Control Center lifecycle isolation
+
+Build-636 diagnostics showed `controlCenterProjection state=native authority=keyguard-readiness-lost controlCenterVisible=false`: Keyguard lifecycle loss was mutating Control Center projection while Control Center was not even open. Build 643 isolates that path:
+- when Control Center is hidden, native fraction is zero, and no Keyguard Control Center lease is active, Keyguard readiness-lost/fail/deactivate no longer changes Control Center projection;
+- the next native Control Center visible callback resolves the actual `realSystemIcons` source scene and selects HOME/KEYGUARD projection from current state;
+- active/visible Control Center and a live Keyguard lease still reconcile immediately.
+
+
+## 2026-10-03 — Build 645: outgoing-child ownership fixes Keyguard/AOD cutover
+
+**Type:** device evidence / Keyguard-AOD lifecycle ownership  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 643 -> 645
+
+### Build-643 evidence
+
+Device feedback identified three failures:
+- with Keyguard and AOD Guiyuan both enabled, AOD -> Keyguard followed by an immediate fast Control Center pull can start with no Guiyuan transition and later jump into the already-progressed transition;
+- with Keyguard enabled and AOD disabled, Keyguard -> native AOD keeps Guiyuan visible too long;
+- with Keyguard disabled and AOD enabled, the Keyguard screen can still show Guiyuan.
+
+The detailed log proves the third issue is a child-ownership defect rather than preference propagation: Keyguard feature teardown completes, then the enabled AOD renderer is attached from the same `feature-settings` update and AOD presentation becomes active on the Keyguard host.
+
+### Root cause
+
+The animating family policy treated an existing AOD/Keyguard presentation claim mainly as a retention preference. During a real family transition, however, that claim is stronger evidence of the **outgoing** child:
+- outgoing AOD + verified steady Keyguard means transfer to the enabled Keyguard child, or Native if Keyguard is disabled;
+- outgoing Keyguard during AOD animation means transfer to the enabled AOD child, or Native if AOD is disabled.
+
+The Home -> AOD transient Keyguard interval remains distinguishable through still-owned Home presentation and does not require `toAod` / `animToAod`.
+
+### Build-645 correction
+
+- Interpret family presentation ownership as outgoing-child evidence during AOD animation.
+- Preserve Home-owned AOD prearm as the higher-priority Home -> AOD exception.
+- AOD-owned + steady Keyguard -> Keyguard when enabled, otherwise Native.
+- Keyguard-owned + AOD animation -> AOD when enabled, otherwise Native.
+- No currently-owned family child + steady Keyguard -> acquire Keyguard when enabled.
+- UNKNOWN scene preserves only a currently-owned enabled child; otherwise Native.
+
+The existing single family RenderSession is retargeted in place. No timer, polling, second owner, native geometry writer, or rejected direction-field inference is introduced.
+
+
+## 2026-10-03 — Build 651: stable family-scene latch and authoritative first-pull source
+
+**Type:** device evidence / lifecycle state-machine correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 645 -> 651
+
+### Build-645 evidence
+
+Device feedback showed:
+- both child features ON: AOD -> Home and Keyguard -> Home followed by immediate fast Control Center pull can probabilistically remain native for the whole gesture;
+- disabling Keyguard Guiyuan does not reliably keep Keyguard native;
+- with AOD Guiyuan disabled, AOD <-> Keyguard switching can expose native represented icons for one interval before Guiyuan reappears;
+- AOD -> Keyguard + immediate partial pull can start native and recover only after holding the gesture.
+
+The diagnostic repeatedly records:
+`prepared/active -> cleanup(keyguard-aod-native or cutover-projection-ineligible) -> fresh attach`.
+
+### Root cause
+
+Build 645 interpreted **current presentation ownership** as AOD-animation direction evidence. Ownership is mutable output of the same attach/cleanup state machine, so repeated native callbacks can flip the decision after each mutation and create a self-sustaining KEYGUARD -> NATIVE -> KEYGUARD oscillation.
+
+Two related lifecycle races also remained:
+- direct AOD -> Home could clear family origin before the outgoing AOD animation finished, allowing a later callback to look like Home -> AOD prearm;
+- the first Control Center visible callback after unlock can still carry stale KEYGUARD `realSystemIcons` identity even after the scene source has authoritatively reached HOME.
+
+### Build-651 correction
+
+- Add `StableKeyguardAodScene { UNKNOWN, KEYGUARD, AOD }`.
+- Update it only from non-animating runtime evidence; freeze it for the duration of AOD animation.
+- Remove `keyguardPresentationOwned/aodPresentationOwned` from ScenePolicy direction inputs.
+- Latched KEYGUARD routes only to enabled AOD, else Native.
+- Latched AOD routes only to enabled Keyguard, else Native.
+- Home -> AOD prearm is allowed only from UNKNOWN family history while Home still owns the visible source.
+- AOD -> Home retains AOD history through the outgoing animation and clears it only after stable HOME + non-animating + `toAod=false` evidence.
+- Verified steady scene overrides a stale first Control Center callback source after lifecycle transitions.
+- Feed the same effective scene to Control Center eligibility and TransitionOwner.
+- Reset the family latch on both hot-reload reset and old-generation teardown.
+
+### Review notes
+
+Lifecycle review additionally verified:
+- SceneUpdate and AOD state are both sourced from `MiuiBatteryMeterView`, so the latch reads the same host object rather than crossing view classes;
+- hidden Control Center remains isolated from unrelated Keyguard readiness churn;
+- the family renderer remains single-writer;
+- no `toAod/animToAod` direction inference is restored.
+
+No timer, delay, polling, extra owner, native visibility/alpha/geometry write, or copied SystemUI animation is introduced.
+
+## 2026-10-03 — Build 652: direction-aware first-pull source and outgoing-child retention
+
+**Type:** device evidence / lifecycle boundary correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 651 -> 652
+
+### Problem
+
+Build-651 device validation found three related boundary failures:
+- with both child features enabled, AOD -> Keyguard or Keyguard -> Home followed by an immediate fast Control Center pull can begin native and recover only after the gesture is held;
+- with Keyguard projection disabled, steady Keyguard can still be occupied by the AOD child and Home Control Center can become native;
+- with AOD projection disabled, Keyguard -> AOD restores native represented icons while the visible Keyguard scene is still outgoing.
+
+### Evidence
+
+The returned diagnostic captures Control Center becoming `state=native` with effective `sourceScene=KEYGUARD` and `keyguardRuntimeReady=false`, immediately while the native panel callback already reports `sourceScene=HOME`. A later stable-family callback restores Keyguard readiness and reattaches the projection, matching the visible late recovery.
+
+Code review also found:
+- the non-animating AOD-only shortcut treated `homePresentationOwned` as sufficient evidence to attach AOD on a steady Keyguard source;
+- the animating route let stale Home ownership override a latched family origin;
+- a disabled destination child forced Native at animation start rather than at the stable destination boundary.
+
+### Conclusion
+
+Neither native source witness is globally newest. A HOME/KEYGUARD disagreement needs transition direction, not a fixed winner. The existing non-animating stable-family latch supplies that direction without borrowing mutable ownership: a latched KEYGUARD/AOD child is outgoing toward Home, while UNKNOWN is the stable-Home origin entering the family.
+
+AOD prearm must require an actual animation plus UNKNOWN family origin. During a native Keyguard/AOD animation, a disabled destination does not justify restoring native beneath a still-visible enabled outgoing child; retain the outgoing child until stable target evidence, then enforce the disabled child.
+
+### Change
+
+- Resolve HOME/KEYGUARD Control Center conflicts from stable-family history.
+- Feed the same resolved source to projection eligibility and TransitionOwner.
+- Remove non-animating speculative AOD prearm.
+- Restrict transient-Keyguard AOD prearm to UNKNOWN family origin.
+- Retain the enabled outgoing family child when the destination child is disabled, only for the native animation interval.
+- Keep stable disabled child states native.
+
+No timer, delay, polling, duplicate owner, native geometry/alpha/visibility writer, or `animToAod` direction inference is added.
+
+### Validation
+
+Focused tests cover both unlock and lock conflict directions, prearm gating, stale Home ownership, and disabled-destination outgoing retention. Exact-HEAD Runtime is required, followed by signed Canary device validation because the change affects scene ownership and first-pull lifecycle ordering.
+
+## 2026-10-03 — Build 653: visible-host scene authority and native visual cutover
+
+**Type:** device evidence / lifecycle authority correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 652 -> 653
+
+### Device evidence
+
+Build-652 validation separates two remaining defects:
+- with Keyguard enabled, Keyguard/AOD -> Home followed by an immediate fast Control Center pull can start fully native and remain native for the whole gesture;
+- single-child Keyguard/AOD mode now releases the outgoing Guiyuan presentation too late because Build 652 waits for the native AOD animation flag to end.
+
+### Root cause
+
+`SystemUiSceneStateSource` hooks class-wide `MiuiBatteryMeterView.updateState()`. More than one Home/Keyguard Battery view can publish structurally valid state in the same lifecycle interval. Build 652 stored the last matching callback in one global `steadyStatusSourceScene` without checking whether that source host was actually shown.
+
+Historical Build-634 evidence already proved that HyperOS can report Keyguard ancestry while `MiuiKeyguardStatusBarView` is not shown. A hidden structural callback is therefore observation/host-discovery evidence, not ownership authority.
+
+Waiting for `isAodAnimate=false` is also not the visual cutover boundary. Exact-target evidence shows `animateFullAod()` independently changes native Keyguard status-icon/Battery visual state during the animation.
+
+### Build-653 correction
+
+- Separate structural host discovery from visible scene ownership.
+- Only a shown Home/Keyguard native host can update the steady source and stable-family latch.
+- Hidden Keyguard events still feed the host resolver so Home -> AOD can prepare the verified family host without granting it scene authority.
+- Add a read-only native Keyguard status-presentation fact: the host must be shown and either status-icons or Battery must be shown with positive native alpha.
+- In Keyguard-only mode, hand off to Native as soon as that Keyguard presentation has yielded during AOD animation.
+- In AOD-only mode, hand off to Native only when qualified visible KEYGUARD source evidence and visible native Keyguard presentation agree.
+- If the native visual fact is unavailable, keep the existing conservative retention path.
+- Dual-enabled family transfer remains driven by the stable family latch.
+
+No timer, delay, polling, alpha/visibility/geometry writer, copied native animator, or `animToAod` direction inference is introduced.
+
+
+
+## 2026-10-03 — Build 654: close QS_FAKE lease per visible cycle and restore structural scene authority
+
+**Type:** device evidence / lifecycle ownership correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 653 -> 654
+
+### Device evidence
+
+Build-653 validation rejected the visible-host scene gate:
+- steady Keyguard could become fully native even with Keyguard projection enabled;
+- AOD/Keyguard -> Home immediate fast Control Center pull could remain native;
+- when only one family child was enabled, AOD <-> Keyguard could briefly show Guiyuan before returning native.
+
+The diagnostic additionally captures a failing Home pull where HyperOS already reports `sourceScene=HOME`, followed by `controlCenterPresentation failNative reason=fake-carrier-width-writer-conflict`.
+
+### Root cause
+
+Two independent ownership mistakes remained.
+
+First, `View.isShown` is a visual/lifecycle fact during HyperOS Keyguard/AOD animation, not a valid steady scene authority. Build 653 used it to reject structurally valid Keyguard state and therefore removed the steady Keyguard owner.
+
+Second, QS_FAKE carrier-width ownership was scoped to the fake-root session instead of the visible Control Center cycle. HyperOS can restore the fake carrier width when Control Center closes while the root stays attached. The next pull then sees a live native width different from Guiyuan's previous leased width and correctly trips the existing single-writer conflict guard.
+
+For single-child AOD/Keyguard handoff, the whole-host/Battery visibility aggregate was also too broad: native Battery AOD animation is independent of the Keyguard status-icons layer.
+
+### Build-654 correction
+
+- Restore Build-652 structural ancestry + native status-bar-state steady-scene authority.
+- Do not use `isShown` to choose steady scene ownership or Keyguard host ownership.
+- Preserve the Build-652 direction-aware Control Center source arbitration; the Build-653 failing trace already resolves effective HOME before failing, so source routing is not the defect.
+- Preserve the prearmed QS_FAKE presentation owner, represented-slot exclusion, clip masks and compact readiness across pulls. On a real visible -> hidden boundary, release only the carrier-width capacity lease and suppress hidden-state lease reacquisition; remember the native hidden-boundary layout width as a one-cycle read-only baseline witness so the next visible cycle does not confuse pending layout with a writer conflict, then clear that witness immediately after lease reacquisition.
+- Use only the read-only native Keyguard status-icons alpha/visibility as the single-child visual cutover witness; Battery AOD alpha does not extend the whole combined child.
+- Preserve the existing dual-enabled single-family renderer/presentation owner.
+
+### Review boundaries
+
+No timer, retry loop, polling, native alpha/visibility/translation writer, geometry hard patch, or second presentation owner is added. The existing width-conflict guard remains fail-native for genuine concurrent writers; Build 654 narrows only the capacity-lease lifetime while retaining the already-verified long-lived QS_FAKE prearm owner.
+
+### Validation
+
+Focused tests preserve the existing direction-aware Control Center arbitration and cover visible-cycle capacity-lease release, Keyguard status-icons cutover and Home->AOD prearm ordering. Exact-HEAD Runtime and signed Canary device validation are required.
+
+## 2026-10-03 — Build 655: use native full-AOD target boundary for single-child handoff
+
+**Type:** exact-device timing evidence / Keyguard-AOD native lifecycle source  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 654 -> 655
+
+### Build-654 device result
+
+The major Build-653 regressions are no longer the reported blocker. Remaining focused timing feedback is directional:
+
+- Keyguard OFF / AOD ON: AOD -> Keyguard is about half a beat late.
+- Keyguard ON / AOD OFF: AOD -> Keyguard is about half a beat late; Keyguard -> AOD is about half a beat early.
+- With both enabled, Home -> AOD can still flash once; the tester accepts that flash for this gate.
+
+The diagnostic shows why a symmetric alpha/end-state adjustment cannot solve both directions. Keyguard -> AOD drops the Keyguard presentation at the first `setIsAodAnimate(true)` edge, before the later AOD-mode callback. AOD -> Keyguard does not rebuild until the final `setIsAodAnimate(false)` stable-family edge. Once that late edge arrives, renderer attach and native-layout cutover complete within a few milliseconds, so layout readiness is not the source of the visible delay.
+
+### Build-655 candidate
+
+The exact target already verifies `KeyguardStatusBarViewControllerInject.animateFullAod(boolean, boolean)` and `MiuiKeyguardStatusBarView.mToLockScreen`. Build 655 adds a read-only event hook at that full-AOD callback and re-evaluates the existing family owner after native code has committed its target state.
+
+For single-child mode only:
+- `mToLockScreen=true` selects Keyguard if Keyguard Guiyuan is enabled, otherwise Native;
+- `mToLockScreen=false` selects AOD if AOD Guiyuan is enabled, otherwise Native.
+
+The target rule is used only with a known stable family origin. UNKNOWN-origin Home -> AOD prearm remains higher priority, and dual-enabled family routing is unchanged. Status-icons alpha remains the compatibility fallback when the exact full-AOD target source is unavailable.
+
+No raw `animateFullAod` boolean argument is assigned product semantics. No native view geometry/alpha/visibility is written, and no local timing constant or animation is introduced.
+
+### Device hypothesis
+
+This should move AOD -> Keyguard earlier from animation completion to the native full-AOD target switch, while moving Keyguard -> AOD later from the generic `isAodAnimate` start flag to that same native target switch. Real-device Build-655 evidence is required before promotion.
+
+
+
+## 2026-10-03 — Build 656: separate full-AOD direction from status-icon visual cutover
+
+**Type:** device evidence / native lifecycle boundary correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 655 -> 656
+
+### Build-655 device result
+
+The exact full-AOD target removed the previous late handoff, but both focused single-child handoffs now occur about half a beat early: AOD -> Keyguard and Keyguard -> AOD.
+
+The Build-655 diagnostic shows Guiyuan switching immediately after `aod.target` / `animateFullAod`, before HyperOS has progressed the native status-icon presentation to its visual handoff. This proves `mToLockScreen` is useful direction evidence but is not itself the visual cutover event.
+
+### Build-656 correction
+
+- Keep `animateFullAod` and `mToLockScreen` read-only and use them only to latch the pending target direction.
+- Add an exact-target read-only event hook on `MiuiKeyguardStatusBarView.animateIconContainer(boolean)`; its raw Boolean argument is diagnostics only.
+- While the target is pending, a single-child family retains the enabled outgoing child, or Native when that outgoing child is disabled. Later `setIsAodAnimate` callbacks therefore cannot recreate Build-655's early cut.
+- The pending target may be consumed only by the native status-icon animation event. At that event, policy reads the already-committed `mToLockScreen` target and switches to the enabled incoming child or Native.
+- A non-animating native AOD state clears the pending latch. If the status-icon animation hook is unavailable, routing falls back to the Build-654 status-icons-alpha compatibility path.
+
+No timer, delay, polling loop, copied native duration/interpolator, native View alpha/visibility/translation writer, geometry hard patch, or second family owner is introduced.
+
+
+### Final review refinement
+
+The status-icon callback may occur inside `animateFullAod(...)` itself. Build 656 therefore opens its bounded pending scope **before** calling native `animateFullAod`, lets HyperOS run normally, and allows `animateIconContainer(...)` to consume the scope if it occurs during that call. The post-`animateFullAod` callback is diagnostics/direction confirmation only and never performs the cutover. This avoids missing a nested native lifecycle event and avoids re-entrant assumptions about callback order.
+
+The exact target verifies the method contract but not that method entry is a visual midpoint. Device validation remains mandatory: Build 656 is testing whether this native icon-container lifecycle boundary matches the observed visual handoff, not imposing a synthetic midpoint.
+
+
+## 2026-10-03 — Build 657: retain reverse pending and prearm Home -> AOD owner
+
+**Type:** device evidence / lifecycle handoff correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 656 -> 657
+
+### Build-656 device result
+
+Focused validation separates three paths:
+- Keyguard -> AOD now has acceptable timing.
+- AOD -> Keyguard is late.
+- Home -> AOD is late and can visibly lose the composed indicator before it returns.
+
+The 656 diagnostic provides direct evidence for the reverse delay. A full-AOD window opens, but the post-`animateFullAod` snapshot still reports the old non-animating AOD state, so 656 clears `keyguardAodFullTargetPending`. The native `animateIconContainer(true)` event arrives later and is then ignored; the family handoff waits until final stable Keyguard evidence.
+
+Home -> AOD has a different ownership problem. Native full-AOD/status-icon events can begin while SystemUI still reports `UNLOCKED_STATUS_BAR`, and the status-icon callback can precede `isAodAnimate=true`. Waiting for that generic animation flag means the outgoing Home host can yield before the AOD owner has been prepared.
+
+### Build-657 correction
+
+- Remove the post-`animateFullAod` pending clear. The single-child pending lease now survives until the native status-icon event consumes it or a later non-animating AOD state closes the transition.
+- Preserve the Build-656 Keyguard -> AOD status-icon boundary unchanged.
+- Add a bounded Home -> AOD target-prearm lease. It can arm only from an authoritative native AOD target while the observed origin is Home, family history is UNKNOWN, AOD is enabled, and Home still owns represented slots.
+- After arm, the lease may bridge transient Keyguard ancestry until native AOD state catches up. This is a continuity lease, not a new scene router.
+- The existing AOD presentation session uses its verified pre-mask / compact-layout cutover path while the outgoing Home renderer continues to inherit its own native host lifecycle.
+- Explicit AOD runtime teardown, stable non-animating state, feature ineligibility, or a reverse/non-Home target ends the prearm lease.
+
+No timer, delay, polling, project-owned animation progress, native alpha/visibility/translation writer, or geometry compensation is added.
+
+
+## 2026-10-03 — Build 660: latch Home origin before native full-AOD mutation
+
+**Type:** device evidence / lifecycle authority correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 657 -> 660
+
+### Build-657 device result
+
+Focused validation still reproduces one ownership gap:
+- Keyguard OFF / AOD ON and dual-enabled: Home -> AOD briefly loses Guiyuan and then reacquires it.
+- Keyguard ON / AOD OFF: Home -> AOD briefly loses Guiyuan, then transient Keyguard ancestry can reacquire Guiyuan before stable native AOD; AOD -> Keyguard still appears late.
+
+The diagnostic contains no successful `aod.homePrearm` event. It also shows that `animateIconContainer(false)` may run inside `animateFullAod` before the post-call native target snapshot is processed. Build 657 therefore asks mutable Home scene/ownership state for evidence after HyperOS has already started changing that state.
+
+A second lifetime defect remains in reverse single-child handoff: the pending full-AOD lease records only “pending”, not the target endpoint. A later non-animating snapshot can therefore close it without proving that the target endpoint was reached.
+
+### Build-660 correction
+
+- Capture only the Home/UNKNOWN origin witness and Home represented-slot ownership at `animateFullAod` entry. This is frozen origin evidence, not direction inference.
+- Continue reading direction only from native `mToLockScreen`.
+- Continue using `animateIconContainer` as the native status-icon visual boundary.
+- Once native direction confirms AOD, allow the frozen Home origin to arm the existing AOD family owner even if mutable scene ancestry or current Home ownership has already moved.
+- If AOD projection is disabled, the same verified Home-origin/AOD-target pair resolves to Native, preventing transient Keyguard ancestry from becoming an unintended Guiyuan child.
+- Persist the pending native target and release that lease only when a later non-animating AOD state matches the same endpoint.
+
+No timer, delay, polling, copied animation timeline, native alpha/visibility/translation writer, geometry compensation, or second family owner is introduced.
+
+## 2026-10-03 — Build 662: preserve native boundary through synchronous handoff
+
+**Type:** device evidence / lifecycle reentrancy and origin-authority correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 660 -> 662
+
+### Problem
+
+Build 660 closes the Keyguard-OFF/AOD-ON handoff, but two focused defects remain:
+- with AOD disabled, AOD -> Keyguard is visibly late although Keyguard -> AOD is responsive;
+- with both family projections enabled, Home -> AOD still loses Guiyuan briefly and then reacquires it.
+
+### Evidence
+
+The Build-660 AOD -> Keyguard trace reaches native `animateIconContainer(true)`, immediately attaches a layout-ready Keyguard renderer, and then emits `keyguardRenderReadiness source=stop` in the same synchronous call stack. Roughly 0.38 s later the stable Keyguard state attaches it again. The visual delay therefore comes from re-entrant policy evaluation after the correct native boundary, not from a late boundary or slow layout.
+
+For Home -> AOD, device video shows an actual composed-indicator disappearance/reappearance interval. At `animateFullAod:before`, Home still owns represented slots but `homeOriginLatched=false`; requiring historical `lastStableFamily=UNKNOWN` lets stale family history veto current Home evidence. The reverse AOD -> Keyguard trace also proves that Home ancestry/ownership can linger during stable AOD, so Home ownership alone is not sufficient authority.
+
+### Conclusion
+
+The exact native status-icon boundary must remain authoritative throughout its synchronous renderer/readiness/cutover re-entry. Home origin must be qualified by the current native AOD state rather than historical family state alone.
+
+### Change
+
+- Add a bounded in-call visual-boundary dispatch flag around `animateIconContainer` handling. Synchronous Keyguard readiness and cutover checks reuse that same boundary context; it is cleared in `finally` before returning to normal policy.
+- At full-AOD entry, latch Home origin only when Home is the current steady source, Home owns represented slots, and the native Keyguard/AOD state is explicitly non-AOD and non-animating.
+- An explicit native-qualified Home latch may override stale family history; stable or animating AOD cannot create that latch.
+- Preserve the Build-660 target-matched pending lifetime and the accepted Keyguard-OFF/AOD-ON path.
+
+No timer, delay, polling, copied animation timeline, native alpha/visibility/translation writer, geometry compensation, or second family owner is added.
+
+### Validation
+
+Focused policy tests cover the native-state-qualified Home origin and stale-family override after that explicit witness. Exact-HEAD Runtime and signed Canary device validation are required.
+
+## 2026-10-03 — Build 663: recover from boundary layout takeover
+
+**Type:** device rejection / ownership correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 662 -> 663
+
+### Device evidence
+
+Build 662 does not improve the reported timing and introduces a new AOD -> Keyguard regression in the Keyguard-enabled/AOD-disabled mode. Video shows the represented native mobile/battery row exposed as separated, stationary-looking components before Guiyuan finally composes.
+
+The diagnostic provides the ownership ordering: native `animateIconContainer(true)` is observed, then the Keyguard presentation writes its end reservation about 2 ms later, while stable Keyguard is not reached until roughly 0.38 s later. Build 662 therefore moved ignored-slot/end-reservation ownership into the middle of HyperOS's own status-icon animation.
+
+The Build-662 Home-origin change also has no accepted device benefit; Home -> AOD still flashes.
+
+### Conclusion
+
+The native status-icon boundary is useful as a **visual** boundary but is too early for Guiyuan to mutate native compact layout. Timing and layout ownership must be separated.
+
+### Build-663 change
+
+- Restore the Build-660 Home-origin policy and remove Build-662's synchronous boundary-layout propagation.
+- Only for incoming Keyguard from stable AOD when Keyguard projection is enabled and AOD projection is disabled, create a visual-only handoff lease at `animateIconContainer(true)`.
+- During that lease, the same presentation owner clip-masks represented native views and exposes the already-ready Guiyuan Keyguard renderer, but explicitly blocks ignored-slot/end-reservation writes and compact-layout completion.
+- At stable Keyguard, commit the deferred native layout ownership while the represented native views remain masked; then finish the normal compact-layout cutover.
+- Any failure restores native clip state and fails native.
+
+No timer, delay, polling, copied animation timeline, native alpha/visibility/translation writer, geometry compensation, or second presentation owner is added.
+
+## 2026-10-03 — Build 664: prearm Keyguard visual lease at native target commit
+
+**Type:** device-evidence timing/ownership correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 663 -> 664
+
+### Problem
+
+Build 663 removes the Build-662 layout takeover regression, but AOD -> Keyguard still shows native represented icons at the beginning of the transition before Guiyuan becomes visible.
+
+### Evidence
+
+The Build-663 diagnostic separates the two boundaries:
+- `animateFullAod:after` reports authoritative native target `keyguard` at 11:10:22.014;
+- `animateIconContainer(true)` / visual-only handoff is not reached until 11:10:22.304, roughly 290 ms later;
+- at the 663 visual lease, `ignoredSlotsWrites=0 paddingWrites=0`, so the two-phase ownership split is working;
+- stable Keyguard arrives at 11:10:22.700, then deferred ignored-slot/end-reservation ownership is committed and native compact layout completes at 11:10:22.705.
+
+Video evidence matches that interval: the raw native row appears at the transition start/left position before the compact Guiyuan presentation takes over.
+
+### Conclusion
+
+`animateIconContainer(true)` is too late to **start** visual suppression for this single-enabled AOD -> Keyguard path. It remains a valid native status-icon lifecycle event, but the authoritative `mToLockScreen=true` commit is already available earlier and can safely prearm only reversible visual ownership.
+
+### Change
+
+- Start the existing Build-663 visual-only Keyguard lease at `animateFullAod:after` when the native target is Keyguard and policy proves stable-AOD -> enabled-Keyguard / disabled-AOD.
+- Allow that explicitly armed lease to project the Keyguard renderer before `isAodAnimate=true` reaches the AOD state source.
+- Keep native ignored slots, end reservation, compact layout and stable cutover deferred exactly as in Build 663.
+- Treat the later `animateIconContainer(true)` callback as confirmation of an already-active lease, not a second attach.
+
+No timer, custom animation, native alpha/visibility/translation writer, or geometry compensation is added.
+
+### Validation
+
+Exact-head Runtime CI and one signed Canary are required. Primary device gate: no raw native row at AOD -> Keyguard start, no early native layout jump, and no regression in the accepted Keyguard-OFF/AOD-ON path.
+
+## 2026-10-03 — Build 665: prepare compact Keyguard layout before reveal
+
+**Type:** device-evidence lifecycle/ownership correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Builds:** 664 -> 665
+
+### Problem
+
+Build 664 fixes the raw native-row exposure at AOD -> Keyguard start, but two independent defects remain:
+- adjacent native Keyguard peers visibly collapse from a middle position toward Guiyuan late in the transition;
+- Home -> AOD with AOD disabled briefly attaches a transient Keyguard Guiyuan and releases it only after the native AOD transition has already progressed.
+
+### Evidence
+
+AOD -> Keyguard:
+- target Keyguard commits at 11:30:58.145;
+- visual-only Guiyuan handoff is active by 11:30:58.147 with `ignoredSlotsWrites=0 paddingWrites=0`;
+- the native Keyguard host is still not shown in this phase;
+- only at stable Keyguard, 11:30:58.846, are persistent ignored slots and end reservation committed.
+
+The resulting peer motion is therefore a layout-ownership cutover: represented native views are visually masked early but still occupy the native row until the stable edge.
+
+Home -> AOD:
+- the full-AOD entry records Home presentation ownership even after scene ancestry has transiently become Keyguard;
+- `mToLockScreen=false` later identifies native AOD, but the transient Keyguard projection remains until a later AOD callback.
+
+### Conclusion
+
+For incoming Keyguard, native compact occupancy must be established **before the hidden Keyguard host is revealed**, not after the native animation begins. This is distinct from rejected Build 662, which changed native layout inside the visible animation window.
+
+For Home -> disabled-AOD, the full-AOD start Home-ownership witness is the missing origin authority; once the native target is AOD and there is no established Keyguard/AOD family, the transient Keyguard owner has no valid lifetime.
+
+### Change
+
+- Latch Home presentation ownership at full-AOD entry and use it only to release a transient Keyguard owner when native target=AOD, AOD replacement is disabled, and family origin is UNKNOWN.
+- For stable AOD -> enabled Keyguard, precommit ignored slots/end reservation only if the Keyguard host is still hidden at authoritative target commit.
+- Keep the renderer behind native handoff until `animateIconContainer(true)`; reveal it after compact layout is ready.
+- If the hidden-host precondition is not met, fall back to Build-664 visual-only/deferred-layout behavior.
+- Keep Keyguard -> AOD unchanged.
+
+No timer, delay, peer translation, alpha/visibility writer, or geometry compensation is added.
+
+### Validation
+
+Exact-head Runtime CI, signed Canary, then the three focused device checks recorded in CURRENT.
+
+## 2026-10-03 — Build 666: native status-icon lifecycle gate
+
+**Type:** Keyguard/AOD presentation lifecycle  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 666 / `20261003-666`
+
+### Build-665 evidence
+
+The AOD -> Keyguard peer-icon inward merge still reproduces. Diagnostics consistently report `hostShownAtArm=true`, so Build 665 rejects its hidden-host prelayout path. The same incoming transition reports the exact native Keyguard status-icon container at `statusIconsAlpha=0.0`.
+
+Therefore the enclosing Keyguard host visibility is not the lifecycle authority for the animated status-icon presentation.
+
+### Build-666 correction
+
+- Preserve the Build-665 two-phase presentation owner and stable-AOD -> enabled-Keyguard / disabled-AOD eligibility.
+- Replace `View.isShown` with the read-only `MiuiStatusIconContainer` presentation alpha.
+- Allow compact occupancy precommit only when that exact native status-icon layer is attached and fully hidden (`alpha == 0f`).
+- Unknown or partially visible native status icons fail back to the existing deferred path.
+- Do not change Home -> AOD transient-owner handling in this focused checkpoint.
+
+### Boundaries
+
+No timer, delay, copied native duration/interpolator, peer translation, native alpha/visibility writer, or geometry compensation.
+
+### Validation gate
+
+Exact-head Runtime CI, then a signed Canary. Device focus is AOD -> Keyguard peer layout and Guiyuan continuity; Keyguard -> AOD is regression-only.
+
+## 2026-10-03 — Build 667: separate visual ownership from stable Keyguard readiness
+
+**Type:** Keyguard/AOD lifecycle ownership  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 667 / `20261003-667`
+
+### Problem
+
+Build 666 fixes AOD -> Keyguard peer-layout convergence, but device testing exposes two lifecycle-boundary defects:
+- Keyguard -> AOD releases Guiyuan as soon as native Keyguard status icons begin fading rather than when their visual lifetime ends.
+- AOD -> Keyguard can briefly fall back to native Control Center/status icons during a fast pull because the incoming Guiyuan presentation is already visually valid while stable `keyguardRuntimeReady` is still false.
+
+### Evidence
+
+- Outgoing Keyguard: native target resolves to AOD, then the first `isAodAnimate=true` callback deactivates Keyguard only milliseconds later, while stable AOD arrives hundreds of milliseconds afterward.
+- Incoming Keyguard: `aod.visualHandoff state=revealed` occurs before stable Keyguard. During that bounded interval Control Center logs `state=native ... keyguardRuntimeReady=false`, then automatically returns to combined when stable Keyguard commits.
+- Build 666 proves the exact Keyguard status-icon presentation lifecycle is the reliable visual authority; enclosing host visibility is not.
+
+### Conclusion
+
+Stable-family readiness and visual-presentation readiness are different lifecycle facts and must not share one boolean.
+
+### Change
+
+- Outgoing Keyguard remains owner while exact native Keyguard status-icons alpha is greater than zero. Native fade start is not cleanup.
+- Incoming AOD -> Keyguard derives a transient presentation-ready fact from the existing handoff state: visual handoff active, compact prelayout ready, visual boundary reached, host attached, Keyguard enabled, AOD projection disabled.
+- Control Center eligibility and lease acquisition may use stable readiness or this bounded transient readiness.
+- AOD-blocked state may not revoke an already-valid incoming Keyguard Control Center lease.
+- Fraction-zero/readiness churn does not tear down the incoming boundary owner while that transient presentation-ready fact remains true.
+- Stable `keyguardRuntimeReady` is not set early and remains owned by stable Keyguard cutover.
+
+### Lifecycle review
+
+Reviewed before Build-667 freeze:
+- one Keyguard presentation owner;
+- one Control Center compact owner;
+- no duplicate alpha/visibility/translation writer;
+- host detach, feature disable, AOD enable, resolver loss, Hot Reload and normal fail-native paths invalidate transient readiness;
+- stable AOD still forces native when AOD projection is disabled;
+- Home -> AOD origin handling remains intentionally separate.
+
+### Validation
+
+Exact-head Runtime CI and signed Canary are required. Device gate is in CURRENT.
+
+## 2026-10-03 — Build 668: preserve Home origin through transient Keyguard AOD entry
+
+**Type:** Home / Keyguard / AOD lifecycle ownership  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 668 / `20261003-668`
+
+### Build-667 device result
+
+Build 667 is accepted for the previously failing Keyguard/AOD paths:
+- no adjacent peer merge on AOD -> Keyguard;
+- no reproduced transient native status/QS row on fast or partial pull;
+- Keyguard -> AOD keeps Guiyuan until the native Keyguard status-icon visual lifetime ends.
+
+The only remaining issue is Home/Desktop -> AOD with AOD Guiyuan disabled: native takeover is visibly late.
+
+### Root cause
+
+The direct screen-off path is not a single Home -> AOD target. Device evidence shows:
+1. Home / `UNLOCKED_STATUS_BAR` is authoritative and Home still owns represented slots;
+2. the first Full-AOD target is Keyguard;
+3. before a stable Keyguard endpoint forms, native AOD state enters `toAod=true / isAodAnimate=true`.
+
+Build 667 therefore mistakes a transient Keyguard target for a genuine stable Keyguard -> AOD lifecycle and inherits the outgoing-alpha retention rule, delaying native takeover.
+
+### Build-668 correction
+
+- Arm a Home-native-AOD candidate only at Full-AOD entry from authoritative HOME with Home represented-slot ownership, Keyguard enabled and AOD disabled.
+- Do not consume the candidate on the intermediate Keyguard target.
+- If native AOD animation begins before stable Keyguard, promote the candidate to native-AOD fallback, reset any transient incoming-Keyguard boundary handoff, and release Keyguard presentation immediately.
+- Keep that fallback authoritative until stable AOD so subsequent animation callbacks cannot reattach Keyguard.
+- If stable Keyguard arrives first, clear the candidate; subsequent Keyguard -> AOD therefore remains on the accepted Build-667 alpha lifecycle.
+- Direct native target=AOD may consume the candidate immediately.
+- Reverse target, missing resolver, settings changes, stable endpoints, Hot Reload and teardown fail closed.
+
+### AOD -> Keyguard fast-pull risk audit
+
+A residual race was found even though Build 667 device testing passed: native expansion fraction may arrive before Control Center visible/source reconciliation. If the cached source is still HOME, lease acquisition can miss the already-valid incoming Keyguard presentation.
+
+Build 668 uses the existing incoming-boundary-ready fact only:
+- fraction > 0 promotes the CC source to KEYGUARD before lease acquisition when incoming Keyguard presentation is already valid;
+- HOME/KEYGUARD source disagreement resolves to KEYGUARD only while incoming-boundary-ready is true and at least one native witness explicitly reports KEYGUARD;
+- normal unlock is unaffected because that readiness fact is absent.
+
+### Boundaries
+
+No timer/delay, copied duration/interpolator, native alpha/visibility/translation writer, peer-motion writer, geometry compensation, or second presentation owner.
+
+## 2026-10-03 — Build 669: consume Home-origin fallback at native AOD animation start
+
+**Type:** Home / transient Keyguard / native AOD lifecycle ownership  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 669 / `20261003-669`
+
+### Build-668 device rejection
+
+With Keyguard Guiyuan enabled and AOD Guiyuan disabled, Home/Desktop -> AOD still frequently shows:
+1. Guiyuan disappears briefly;
+2. Guiyuan appears again;
+3. only afterward does native AOD take over.
+
+Detailed Build-668 diagnostics show the direct screen-off path:
+- authoritative Home immediately before transition;
+- Full-AOD first reports `target=keyguard`;
+- before stable Keyguard forms, native state changes to `toAod=true / isAodAnimate=true`;
+- tested Build 668 does not latch `homeNativeAodFallbackCandidate`, so the transient Keyguard presentation remains eligible through this native AOD transition start.
+
+### Root cause
+
+The native Full-AOD Keyguard target is a routing stage, not proof of a genuine stable Keyguard lifecycle. Home-origin must survive that transient target and be consumed when native AOD animation actually begins.
+
+### Build-669 correction
+
+- Arm a one-shot Home-native-AOD candidate only at Full-AOD entry from authoritative HOME while Home still owns represented slots, Keyguard is enabled and AOD projection is disabled.
+- Do not clear that candidate on the intermediate native Keyguard target.
+- Consume the candidate on native `toAod=true / isAodAnimate=true`, release transient Keyguard presentation, reset incoming-Keyguard boundary state, and mark native-AOD fallback active.
+- While fallback is active, Keyguard projection resolves NATIVE so later callbacks cannot reattach Guiyuan.
+- Clear candidate/active fallback on stable AOD, stable Keyguard, authoritative HOME after an aborted transition, reverse/failed resolution, settings changes, Hot Reload and teardown.
+- Direct native target=AOD can consume the same candidate without waiting for the AOD-state callback.
+
+### AOD -> Keyguard Control Center race audit
+
+Build 667 fixed the reproduced native-QS fallback, but callback-order review found a remaining theoretical race:
+- expansion fraction can arrive before visible/source reconciliation while cached CC source is still HOME.
+
+Build 669 keeps the same single incoming-Keyguard presentation owner and:
+- promotes CC source to KEYGUARD on fraction > 0 only when the existing incoming-boundary-ready fact is already true;
+- resolves HOME/KEYGUARD disagreement to KEYGUARD only under that same readiness and only when at least one source witness explicitly reports KEYGUARD.
+
+Normal unlock remains unaffected because incoming-boundary readiness is absent.
+
+### Lifecycle review
+
+Reviewed before freeze:
+- Home candidate creation has one authority: Full-AOD entry + authoritative HOME + Home presentation ownership;
+- intermediate Keyguard target does not consume the candidate;
+- native AOD animation start is the primary consumption boundary;
+- stable Keyguard invalidates Home-origin fallback;
+- stable AOD completes the native fallback lifetime;
+- authoritative HOME clears an aborted active fallback;
+- no second presentation owner, no timer, no custom motion/alpha/visibility/translation writer.
+
+### Validation
+
+Exact-head Runtime CI and one signed Canary are required. Device gate is recorded in CURRENT.
+
+## 2026-10-03 — Build 669 correction: Home provenance follows native `system_icons` lifetime
+
+**Type:** lifecycle authority correction after Build-668 device evidence  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 669 / `20261003-669`
+
+### Build-668 evidence
+
+Detailed Build-668 diagnostics show the failing Home -> AOD attempt immediately before `animateFullAod:before` still emits raw `UNLOCKED_STATUS_BAR` updates and still has Home represented-slot ownership, yet `homeNativeAodFallbackCandidate=false`. The candidate therefore never enters the state machine; transient Keyguard remains eligible and Guiyuan reappears before stable native AOD.
+
+The failure is not a missing consumer. It is an authority mismatch: candidate arming used cached `steadyStatusSourceScene`, whose structural ancestry requirement can remain non-Home while the actual Home end-side presentation is still visibly owned. Reusing raw Battery `mStatusBarState` as a second Home-visibility authority is explicitly forbidden by the existing architecture.
+
+### Correction
+
+- Expose a read-only Home presentation fact from the existing Home owner: the exact native `MiuiStatusBatteryContainer(system_icons)` carrier must be attached, visible, alpha > 0, and shown.
+- Candidate arming now requires both Home compact ownership and that exact native carrier presentation to be visible.
+- The candidate no longer depends on cached `steadyStatusSourceScene`.
+- Returning Home does not clear an inert candidate during the transient routing window; stable Keyguard, stable AOD, feature/settings teardown, resolver failure and Hot Reload still clear it.
+- No new Hook or visibility writer is added. Guiyuan only reads the carrier whose native alpha/visibility/translation it already inherits.
+
+### AOD -> Keyguard Control Center review
+
+The Build-667 incoming-boundary readiness fix remains. Build 669 retains the additional source-order guards: fraction-first acquisition and HOME/KEYGUARD witness disagreement prefer KEYGUARD only while the verified incoming Keyguard presentation-ready fact is true. No ordinary unlock path can use that guard.
+
+### Validation
+
+Exact-head Runtime CI and one signed Canary are required before device testing.
+
+## 2026-10-03 — Build 672: block Keyguard visual rearm during native AOD fallback
+
+**Type:** Home -> AOD lifecycle handoff correction  
+**Branch / PR:** `feat/aod-display-control` / #196  
+**Build:** 672 / `20261003-672`
+
+### Problem
+
+Build 669 still reproduces the Home/Desktop -> AOD sequence “Guiyuan disappears -> Guiyuan returns -> native” when Keyguard Guiyuan is enabled and AOD Guiyuan is disabled.
+
+### Evidence
+
+- Build 669 successfully arms Home provenance: `homeCarrierVisibleAtStart=true`, `homePresentationOwnedAtStart=true`, `homeNativeAodFallbackCandidate=true`.
+- Native `toAod=true / isAodAnimate=true` consumes the candidate, releases transient Keyguard presentation, and records `homeNativeAodFallbackActive=true`.
+- While that fallback is still active, HyperOS later emits a Keyguard-directed status-icon visual boundary; `aod.visualHandoff state=armed` and `renderer.attach` occur again.
+- The main scene resolver already returns NATIVE while the fallback is active. The reappearance therefore bypasses the projection resolver through the dedicated incoming-Keyguard visual-handoff path.
+
+### Conclusion
+
+The remaining Build-669 defect is not Home-origin detection and not fallback consumption. `armKeyguardBoundaryVisualHandoffIfEligible()` had an eligibility contract that did not include the already-authoritative Home-native-AOD fallback, allowing one side-channel renderer reacquire.
+
+### Change
+
+- Add `homeNativeAodFallbackActive` to incoming Keyguard visual-handoff eligibility and reject the handoff while active.
+- Apply the same veto to Keyguard boundary layout precommit.
+- Keep Build-669 Home carrier provenance, fallback consumption, stable-family cleanup and native animation ownership unchanged.
+- Add focused unit coverage for both visual-handoff and precommit rejection under an active fallback.
+
+### Boundaries
+
+No timer, delay, copied native duration/interpolator, geometry compensation, native alpha/visibility/translation write, extra Hook, second presentation owner, or new lifecycle authority.
+
+### Validation
+
+Exact-head Runtime CI, then one signed Canary. Device focus remains Home/Desktop -> AOD with Keyguard ON / AOD OFF, plus Build-667 Keyguard/AOD regressions.
 
 
 

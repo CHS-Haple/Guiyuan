@@ -280,6 +280,50 @@ class SystemUiHomePresentationOwnerTest {
     }
 
     @Test
+    fun keyguardFamilyReleaseIgnoresOldSceneAfterSuccessfulRetarget() {
+        assertFalse(
+            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.KEYGUARD,
+            ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.KEYGUARD,
+                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+            ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+            ),
+        )
+    }
+
+    @Test
+    fun aodPreMaskRequiresDeferredLayoutAndExplicitHandoffRequest() {
+        assertTrue(
+            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+                deferVisualMaskUntilLayout = true,
+                preMaskBeforeLayout = true,
+            ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+                deferVisualMaskUntilLayout = true,
+                preMaskBeforeLayout = false,
+            ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+                deferVisualMaskUntilLayout = false,
+                preMaskBeforeLayout = true,
+            ),
+        )
+    }
+
+    @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
             SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
@@ -326,6 +370,34 @@ class SystemUiHomePresentationOwnerTest {
                 width = 0,
                 height = 108,
             ),
+        )
+    }
+
+    @Test
+    fun visualOnlyKeyguardHandoffDefersNativeLayoutMutationAndCompletion() {
+        assertFalse(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldWriteNativeLayout(
+                    nativeLayoutOwnershipDeferred = true,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldCompleteCompactLayout(
+                    nativeLayoutOwnershipDeferred = true,
+                ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldWriteNativeLayout(
+                    nativeLayoutOwnershipDeferred = false,
+                ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+                .shouldCompleteCompactLayout(
+                    nativeLayoutOwnershipDeferred = false,
+                ),
         )
     }
 

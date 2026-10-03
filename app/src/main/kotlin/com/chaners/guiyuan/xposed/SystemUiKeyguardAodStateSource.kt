@@ -135,6 +135,12 @@ internal object SystemUiKeyguardAodStateSource {
     ): Boolean =
         toAod || isAodAnimate
 
+    internal fun isStableAod(
+        toAod: Boolean,
+        isAodAnimate: Boolean,
+    ): Boolean =
+        toAod && !isAodAnimate
+
     private fun publish(
         sourceView: View,
         source: String,

@@ -58,7 +58,9 @@
     <string name="combined_status_feature_title">三合一状态图标</string>
     <string name="combined_status_feature_summary">控制所有已支持 SystemUI 场景中的三合一状态图标；关闭后恢复系统原生状态图标</string>
     <string name="keyguard_combined_status_title">锁屏显示三合一</string>
-    <string name="keyguard_combined_status_summary">在锁屏状态栏显示，AOD 暂不支持</string>
+    <string name="keyguard_combined_status_summary">在锁屏状态栏显示</string>
+    <string name="aod_combined_status_title">AOD 显示三合一</string>
+    <string name="aod_combined_status_summary">在稳定 AOD 状态显示；进入与退出动画保持系统原生</string>
     <string name="mobile_follow_battery_color">移动信号跟随电量环颜色</string>
     <string name="mobile_follow_battery_color_summary">四点与叉号跟随电量环颜色</string>
     <string name="center_follow_battery_color">网络状态跟随电量环颜色</string>
@@ -154,10 +156,10 @@
     <string name="diagnostics_package_label">包名</string>
 
     <string name="section_device_system">设备与系统</string>
-    <string name="device_model_label">型号（设备代号）</string>
-    <string name="android_version_label">Android（API）</string>
-    <string name="os_version_label">HyperOS</string>
-    <string name="systemui_version_label">SystemUI</string>
+    <string name="device_model_label">设备型号（设备代号）</string>
+    <string name="android_version_label">Android 版本（API 等级）</string>
+    <string name="os_version_label">HyperOS 版本</string>
+    <string name="systemui_version_label">SystemUI 版本</string>
 
     <string name="section_module_runtime">模块运行</string>
     <string name="runtime_framework_title">框架</string>
@@ -165,7 +167,7 @@
     <string name="runtime_scope_title">作用域</string>
     <string name="runtime_scope_summary">系统界面（com.android.systemui）</string>
     <string name="runtime_target_title">适配基线</string>
-    <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
+    <string name="runtime_target_summary">SystemUI 17.03.260226.r（HyperOS 4）</string>
     <string name="runtime_inventory_title">原生状态探针</string>
     <string name="runtime_inventory_summary">已启用 · 一次性记录状态栏结构与几何信息</string>
     <string name="diagnostics_mode_title">诊断等级</string>
