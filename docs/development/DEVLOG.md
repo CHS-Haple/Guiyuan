@@ -22,6 +22,23 @@
 - Build 682 charging-island peer geometry and Build 683 visible-cycle capacity lifecycle remain unchanged.
 - Remaining performance risks (per-frame native padding/layout, repeated tint scan, per-component alpha layers) are tracked for the post-integration audit and are not changed in this merge.
 
+### Pre-merge audit follow-up
+
+Before merging Build 685 into dev, the combined tree was re-audited across Home, Keyguard, AOD and Control Center lifecycle boundaries.
+
+Fixes made during the audit:
+- resume deferred native layout ownership when a same-host family retarget leaves the visual-only Keyguard boundary;
+- reject stale `Active/Prepared` results when synchronous fail-native has already removed the owning session;
+- stop same-callback Control Center reacquisition after visible-cycle rearm fails;
+- restore the full accepted Build 682 capacity-bounded reservation calculation and its capacity-requirement policy after three-way reconciliation exposed that only the diagnostic/test side had initially been carried over.
+
+Validation:
+- dev-only AOD/Keyguard APIs, state sources, resolver and same-host family owner are preserved;
+- 684-only QS_FAKE peer mirror, 4th island hook, capacity lease, fail-native API and diagnostic gate are preserved;
+- bidirectional incremental audit found no lost dev/684 statements in Module, ControlCenterRenderSession, settings UI, strings or core tests (intentional strengthened statements excluded);
+- Runtime CI #2575 passed the full runtime test/build chain on Build 685.
+
+
 ## 2026-10-04 — Build 684: bound Control Center hot-path diagnostics
 
 **Type:** low-risk performance / observation-only hot-path cleanup  
