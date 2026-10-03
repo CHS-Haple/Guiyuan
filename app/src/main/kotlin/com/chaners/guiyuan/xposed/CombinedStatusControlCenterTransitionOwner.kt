@@ -964,7 +964,11 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private var started = false
         private var lastStateVersion = sourceSnapshot.stateVersion
         private var lastWitnessSummary = "pending"
-        private var lastTintSummary = "pending"
+        private var lastTintSourceColors: CombinedStatusColors? = null
+        private var lastTintTransitionColors: CombinedStatusColors? = null
+        private var lastTintBatteryTinted: Boolean? = null
+        private var lastTintTransitionEnabled: Boolean? = null
+        private var lastTintMotionProgress: Float? = null
         private var batteryNumberProbeSummary = "pending"
         private var cachedNativePeerTint: Int? = null
         private var cachedNativePeerTintAuthority = "none"
@@ -976,6 +980,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
+        private val batteryIslandFakeLocationScratch = IntArray(2)
+        private val batteryIslandTargetLocationScratch = IntArray(2)
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -1008,9 +1014,11 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     latest.anchorView === sourceAnchor
                 ) {
                     currentSnapshot = latest
-                    lastStateVersion = latest.stateVersion
+                    if (latest.stateVersion != lastStateVersion) {
+                        lastStateVersion = latest.stateVersion
+                        refreshNativePeerTint()
+                    }
                 }
-                refreshNativePeerTint()
                 syncTransitionReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
                 drawable.invalidateSelf()
@@ -1032,7 +1040,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ",fake=" + (fakeRootRef.get()?.javaClass?.simpleName ?: "none") +
                 ",final=" + (finalRootRef.get()?.javaClass?.simpleName ?: "none") +
                 ",witness=" + lastWitnessSummary +
-                ",tintTransition=" + lastTintSummary +
+                ",tintTransition=" + tintDiagnosticSummary() +
                 ",batteryNumberProbe=" + batteryNumberProbeSummary +
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
@@ -1402,32 +1410,12 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     }
                     ?: currentSnapshot.colors
 
-            fun tintHex(color: Int): String =
-                color.toUInt().toString(16).padStart(8, '0')
-            lastTintSummary =
-                "{batteryTinted=" + batteryTinted +
-                    ",enabled=" +
-                    currentSnapshot.visualSettings.controlCenterTintTransitionEnabled +
-                    ",motion=" + motionProgress +
-                    ",target=" +
-                    (cachedNativePeerTint?.let(::tintHex) ?: "none") +
-                    ",battery=" +
-                    tintHex(currentSnapshot.colors.batteryTint) + "->" +
-                    tintHex(transitionColors.batteryTint) +
-                    ",number=" +
-                    tintHex(currentSnapshot.colors.batteryTextTint) + "->" +
-                    tintHex(transitionColors.batteryTextTint) +
-                    ",charging=" +
-                    tintHex(currentSnapshot.colors.chargingIconTint) + "->" +
-                    tintHex(transitionColors.chargingIconTint) +
-                    ",center=" +
-                    tintHex(currentSnapshot.colors.centerTint) + "->" +
-                    tintHex(transitionColors.centerTint) +
-                    ",mobile=" +
-                    tintHex(currentSnapshot.colors.mobileTint) + "->" +
-                    tintHex(transitionColors.mobileTint) +
-                    ",tintPhase=" + Policy.transitionTintProgress(motionProgress) +
-                    "}"
+            lastTintSourceColors = currentSnapshot.colors
+            lastTintTransitionColors = transitionColors
+            lastTintBatteryTinted = batteryTinted
+            lastTintTransitionEnabled =
+                currentSnapshot.visualSettings.controlCenterTintTransitionEnabled
+            lastTintMotionProgress = motionProgress
 
             val refreshWitnessDiagnostic =
                 lastWitnessSummary == "pending" ||
@@ -2366,6 +2354,40 @@ internal object CombinedStatusControlCenterTransitionOwner {
             return slots.any(represented::contains)
         }
 
+        private fun tintDiagnosticSummary(): String {
+            val sourceColors = lastTintSourceColors ?: return "pending"
+            val transitionColors = lastTintTransitionColors ?: return "pending"
+            val batteryTinted = lastTintBatteryTinted ?: return "pending"
+            val transitionEnabled = lastTintTransitionEnabled ?: return "pending"
+            val motionProgress = lastTintMotionProgress ?: return "pending"
+
+            fun tintHex(color: Int): String =
+                color.toUInt().toString(16).padStart(8, '0')
+
+            return "{batteryTinted=" + batteryTinted +
+                ",enabled=" + transitionEnabled +
+                ",motion=" + motionProgress +
+                ",target=" +
+                (cachedNativePeerTint?.let(::tintHex) ?: "none") +
+                ",battery=" +
+                tintHex(sourceColors.batteryTint) + "->" +
+                tintHex(transitionColors.batteryTint) +
+                ",number=" +
+                tintHex(sourceColors.batteryTextTint) + "->" +
+                tintHex(transitionColors.batteryTextTint) +
+                ",charging=" +
+                tintHex(sourceColors.chargingIconTint) + "->" +
+                tintHex(transitionColors.chargingIconTint) +
+                ",center=" +
+                tintHex(sourceColors.centerTint) + "->" +
+                tintHex(transitionColors.centerTint) +
+                ",mobile=" +
+                tintHex(sourceColors.mobileTint) + "->" +
+                tintHex(transitionColors.mobileTint) +
+                ",tintPhase=" + Policy.transitionTintProgress(motionProgress) +
+                "}"
+        }
+
         private fun refreshNativePeerTint() {
             val peerTint =
                 SystemUiNativeNetworkSuppressionOwner
@@ -2497,27 +2519,25 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 finalBattery.layoutDirection == View.LAYOUT_DIRECTION_RTL
             if (fakeRtl != targetRtl) return null
 
-            val fakeLocation = IntArray(2)
-            val targetLocation = IntArray(2)
             val located =
                 runCatching {
-                    fakeStatusIcons.getLocationInWindow(fakeLocation)
-                    finalBattery.getLocationInWindow(targetLocation)
+                    fakeStatusIcons.getLocationInWindow(batteryIslandFakeLocationScratch)
+                    finalBattery.getLocationInWindow(batteryIslandTargetLocationScratch)
                     true
                 }.getOrDefault(false)
             if (!located) return null
 
             val fakeEndPhysical =
                 if (fakeRtl) {
-                    fakeLocation[0].toFloat()
+                    batteryIslandFakeLocationScratch[0].toFloat()
                 } else {
-                    (fakeLocation[0] + fakeStatusIcons.width).toFloat()
+                    (batteryIslandFakeLocationScratch[0] + fakeStatusIcons.width).toFloat()
                 }
             val targetEndPhysical =
                 if (targetRtl) {
-                    targetLocation[0].toFloat()
+                    batteryIslandTargetLocationScratch[0].toFloat()
                 } else {
-                    (targetLocation[0] + finalBattery.width).toFloat()
+                    (batteryIslandTargetLocationScratch[0] + finalBattery.width).toFloat()
                 }
             val fakeEndLogical =
                 if (fakeRtl) -fakeEndPhysical else fakeEndPhysical
@@ -2583,10 +2603,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
                 val sourceA = logicalSourceX(spec.sourceBounds.left)
                 val sourceB = logicalSourceX(spec.sourceBounds.right)
-                val targetA = logicalTargetX(targetLocation[0].toFloat())
+                val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
                 val targetB =
                     logicalTargetX(
-                        (targetLocation[0] + slot.width).toFloat(),
+                        (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
                     )
                 result +=
                     Policy.ReservationSpan(
@@ -2615,10 +2635,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     slot.getLocationInWindow(targetLocation)
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
+                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
+                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
@@ -2640,10 +2660,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
+                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
+                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
@@ -2667,10 +2687,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
+                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
+                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
