@@ -7,8 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 689 (`20261004-689`) continues the observation-only performance line after Build 687 failed its Keyguard + active-island repeated-pull device gate.
-- Build 689 keeps all Build 687 reductions and removes the remaining heavy Detailed-diagnostic work from Control Center gesture/layout callbacks; no animation curve, scene ownership, functional steady-peer mirror, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 690 (`20261004-690`) advances from observation cleanup to a behavior-preserving functional hot-path optimization after Build 689 still reproduced Keyguard + active-island pull jank.
+- Build 690 keeps mirror cadence and semantics unchanged while caching native slot/transition-state reflection metadata and reading only the two island fields required by the steady peer mirror; no animation curve, hidden-slot policy, scene ownership, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -106,3 +106,18 @@ Build 689 preserves every Build 687 reduction and further limits observation to 
 Functional callbacks, native source resolution, Keyguard lease, steady-peer-mirror scanning, transition reservation, geometry, tint, alpha/translation/visibility ownership and drawable compositing are unchanged.
 
 Device gate: repeat the exact Keyguard + active-island rapid full pull/down-up stress case. If visible jank remains, the observation path is no longer the primary suspect; only then review the functional steady-peer-mirror/layout work and residual draw/compositing cost.
+
+
+## Build 690 native peer reflection hot-path follow-up
+
+Build 689 passed exact-head Runtime and removed the remaining gesture-frame geometry/anchor diagnostics, but the focused device gate still reports substantial jank with Keyguard combined status + active island + repeated full Control Center pull/down-up.
+
+The Build 689 evidence narrows the next functional cost:
+- island-active Home native layouts continue to sample the full non-represented peer row for the QS_FAKE steady-peer mirror;
+- `NativeParticipantRuntimeAccess.slotOf()` re-walks each concrete child class method hierarchy for `getSlot()` on every lookup;
+- `readTransitionIconState()` re-runs `Class.forName`, scans companion declared methods, calls `setAccessible`, invokes the state accessor, then re-walks the state class fields for every property of every sampled peer;
+- the stress log repeatedly reports mirror transitions while `hiddenSlots=[]`, so this reflection cost is paid even when no peer ultimately needs clipping.
+
+Build 690 preserves the exact native-layout sampling cadence and hidden-slot policy, but caches the stable reflection contracts by concrete SystemUI class. The steady peer mirror now reads only `visibleState` and `inIslandState`, the only fields used by `SteadyPeerMirrorPolicy.isIslandHidden()`; full transition diagnostics retain the full cached state reader.
+
+This is intentionally narrower than changing mirror cadence or native layout ownership. If the focused device gate remains poor after Build 690, inspect hidden Home tint work and residual TransitionDrawable/compositing cost next.

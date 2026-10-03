@@ -8,7 +8,9 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
+import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
 internal object SystemUiNativeNetworkSuppressionOwner {
     private const val WIFI_BINDING_CLASS =
@@ -53,6 +55,15 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     private var statusIconStaticColorAccessor: Method? = null
     private var lastStatusPresentation =
         CombinedStatusPresentationStateStore.StatusIconPresentation()
+
+    // The island peer mirror samples native icon state from onLayout. These
+    // reflective contracts are stable for the SystemUI process lifetime, so
+    // cache discovery by concrete class and keep the per-layout path to invoke
+    // + direct Field.get only.
+    private val transitionStateAccessorCache = ConcurrentHashMap<Class<*>, Method>()
+    private val transitionStateAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
+    private val transitionStateFieldCache =
+        ConcurrentHashMap<Class<*>, TransitionStateFields>()
 
     @Volatile
     private var suppressedBindings: Array<WeakReference<Any>> = emptyArray()
@@ -585,42 +596,105 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         group: ViewGroup,
         view: View,
     ): TransitionIconState? {
-        val companionClass =
-            runCatching {
-                Class.forName(
-                    group.javaClass.name + "\$Companion",
-                    false,
-                    group.javaClass.classLoader,
-                )
-            }.getOrNull()
-                ?: return null
-        val accessor =
-            companionClass.declaredMethods
-                .firstOrNull { method ->
-                    method.name == "access\$getViewStateFromChild" &&
-                        method.parameterTypes.contentEquals(arrayOf(View::class.java))
-                }
-                ?.apply { isAccessible = true }
-                ?: return null
-        val state =
-            runCatching {
-                accessor.invoke(null, view)
-            }.getOrNull()
-                ?: return null
-
+        val state = transitionStateObject(group, view) ?: return null
+        val fields = transitionStateFields(state.javaClass)
         return TransitionIconState(
-            slot = readObjectField(state, "slot") as? String,
-            visibleState = (readObjectField(state, "visibleState") as? Number)?.toInt(),
-            inIslandState = (readObjectField(state, "inIslandState") as? Number)?.toInt(),
+            slot = readCachedField(fields.slot, state) as? String,
+            visibleState = (readCachedField(fields.visibleState, state) as? Number)?.toInt(),
+            inIslandState = (readCachedField(fields.inIslandState, state) as? Number)?.toInt(),
             beforeInIslandState =
-                (readObjectField(state, "beforeInIslandState") as? Number)?.toInt(),
-            islandChanged = readObjectField(state, "islandChanged") as? Boolean,
-            supportAnim = readObjectField(state, "supportAnim") as? Boolean,
-            forceAppear = readObjectField(state, "forceAppear") as? Boolean,
+                (readCachedField(fields.beforeInIslandState, state) as? Number)?.toInt(),
+            islandChanged = readCachedField(fields.islandChanged, state) as? Boolean,
+            supportAnim = readCachedField(fields.supportAnim, state) as? Boolean,
+            forceAppear = readCachedField(fields.forceAppear, state) as? Boolean,
             layoutTranslationX =
-                (readObjectField(state, "layoutTranslationX") as? Number)?.toFloat(),
+                (readCachedField(fields.layoutTranslationX, state) as? Number)?.toFloat(),
         )
     }
+
+    internal fun readIslandVisibilityState(
+        group: ViewGroup,
+        view: View,
+    ): IslandVisibilityState? {
+        val state = transitionStateObject(group, view) ?: return null
+        val fields = transitionStateFields(state.javaClass)
+        return IslandVisibilityState(
+            visibleState = (readCachedField(fields.visibleState, state) as? Number)?.toInt(),
+            inIslandState = (readCachedField(fields.inIslandState, state) as? Number)?.toInt(),
+        )
+    }
+
+    private fun transitionStateObject(
+        group: ViewGroup,
+        view: View,
+    ): Any? {
+        val groupClass = group.javaClass
+        val accessor =
+            transitionStateAccessorCache[groupClass]
+                ?: run {
+                    if (groupClass in transitionStateAccessorMissing) {
+                        return null
+                    }
+                    val companionClass =
+                        runCatching {
+                            Class.forName(
+                                groupClass.name + "\$Companion",
+                                false,
+                                groupClass.classLoader,
+                            )
+                        }.getOrNull()
+                    val resolved =
+                        companionClass
+                            ?.declaredMethods
+                            ?.firstOrNull { method ->
+                                method.name == "access\$getViewStateFromChild" &&
+                                    method.parameterTypes.contentEquals(arrayOf(View::class.java))
+                            }
+                    if (resolved == null) {
+                        transitionStateAccessorMissing += groupClass
+                        return null
+                    }
+                    resolved.isAccessible = true
+                    transitionStateAccessorCache.putIfAbsent(groupClass, resolved) ?: resolved
+                }
+        return runCatching {
+            accessor.invoke(null, view)
+        }.getOrNull()
+    }
+
+    private fun transitionStateFields(stateClass: Class<*>): TransitionStateFields =
+        transitionStateFieldCache[stateClass]
+            ?: TransitionStateFields(
+                slot = resolveCachedField(stateClass, "slot"),
+                visibleState = resolveCachedField(stateClass, "visibleState"),
+                inIslandState = resolveCachedField(stateClass, "inIslandState"),
+                beforeInIslandState = resolveCachedField(stateClass, "beforeInIslandState"),
+                islandChanged = resolveCachedField(stateClass, "islandChanged"),
+                supportAnim = resolveCachedField(stateClass, "supportAnim"),
+                forceAppear = resolveCachedField(stateClass, "forceAppear"),
+                layoutTranslationX = resolveCachedField(stateClass, "layoutTranslationX"),
+            ).let { resolved ->
+                transitionStateFieldCache.putIfAbsent(stateClass, resolved) ?: resolved
+            }
+
+    private fun resolveCachedField(
+        clazz: Class<*>,
+        name: String,
+    ): Field? =
+        generateSequence(clazz) { candidate -> candidate.superclass }
+            .mapNotNull { candidate ->
+                candidate.declaredFields.firstOrNull { field -> field.name == name }
+            }
+            .firstOrNull()
+            ?.apply { isAccessible = true }
+
+    private fun readCachedField(
+        field: Field?,
+        target: Any,
+    ): Any? =
+        field?.let { resolved ->
+            runCatching { resolved.get(target) }.getOrNull()
+        }
 
     private fun transitionViewGeometry(view: View): TransitionViewGeometry {
         val location = IntArray(2)
@@ -657,6 +731,22 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     " wifi=" + (wifi?.summary ?: "missing") +
                     " mobile=" + (mobile?.summary ?: "missing")
     }
+
+    internal data class IslandVisibilityState(
+        val visibleState: Int?,
+        val inIslandState: Int?,
+    )
+
+    private data class TransitionStateFields(
+        val slot: Field?,
+        val visibleState: Field?,
+        val inIslandState: Field?,
+        val beforeInIslandState: Field?,
+        val islandChanged: Field?,
+        val supportAnim: Field?,
+        val forceAppear: Field?,
+        val layoutTranslationX: Field?,
+    )
 
     internal data class TransitionIconState(
         val slot: String?,

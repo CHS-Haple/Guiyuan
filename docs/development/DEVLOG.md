@@ -4103,3 +4103,33 @@ No transition geometry, reservation, functional steady-peer-mirror scan, scene o
 ### Validation
 
 Unit coverage asserts that fraction bucket changes alone are non-reporting while lifecycle/semantic edges remain observable. Exact-head Runtime CI and a focused Keyguard + active-island repeated-pull Canary device gate are required.
+
+## 2026-10-04 — Build 690 cache native peer reflection
+
+**Type:** performance / behavior-preserving functional hot-path optimization  
+**Display version:** 0.0.5  
+**Build:** 690 / `20261004-690`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 689 still reproduces substantial jank in the focused Keyguard + active-island repeated full pull/down-up stress case, so diagnostic construction is no longer treated as the primary suspect.
+
+The captured runtime shows the steady Home peer mirror repeatedly following island state during the stress case while `hiddenSlots=[]`. Static review found the mirror's per-native-layout peer sampling repeatedly discovers reflection metadata: `slotOf()` scans the child method hierarchy for `getSlot()`, while `readTransitionIconState()` resolves the Companion accessor and re-scans state fields for every peer.
+
+### Change
+
+- cache native `getSlot()` accessors by concrete status-icon view class;
+- cache native transition-state Companion accessors by concrete status-icon-group class;
+- cache transition-state Fields by concrete state class;
+- add a minimal island visibility reader that fetches only `visibleState` and `inIslandState` for steady-peer mirror decisions;
+- keep the full cached transition-state reader for diagnostic/other callers.
+
+### Safety boundary
+
+No reduction in native-layout sampling cadence, no hidden-slot decision change, no peer clip ownership change, no animation/timing/geometry/reservation change, and no new writer. If reflection resolution fails, the same existing null/fail-soft behavior is preserved.
+
+### Device gate
+
+Repeat the exact Keyguard + active-island rapid full Control Center pull/down-up stress case. If jank remains substantial, move next to hidden Home tint work and then residual draw/compositing cost rather than changing mirror semantics.
+

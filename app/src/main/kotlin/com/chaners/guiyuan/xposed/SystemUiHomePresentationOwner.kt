@@ -2492,7 +2492,7 @@ internal object SystemUiHomePresentationOwner {
                         if (slot in representedSlots) continue
                         val state =
                             SystemUiNativeNetworkSuppressionOwner
-                                .readTransitionIconState(group, child)
+                                .readIslandVisibilityState(group, child)
                                 ?: continue
                         if (
                             SteadyPeerMirrorPolicy.isIslandHidden(
