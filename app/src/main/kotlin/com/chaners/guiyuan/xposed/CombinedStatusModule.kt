@@ -1121,6 +1121,12 @@ class CombinedStatusModule : XposedModule() {
             return
         }
         controlCenterGeometryProbeBucket = bucket
+        if (
+            !SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldCaptureControlCenterGeometryBucket(bucket)
+        ) {
+            return
+        }
         val geometry =
             SystemUiNativeNetworkSuppressionOwner.currentTransitionTargetGeometry()
         val state =
