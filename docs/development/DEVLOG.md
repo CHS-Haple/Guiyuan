@@ -2672,3 +2672,49 @@ Build 649 and Build 650 bracket the desired charging-source disappearance point:
 - Ring geometry/easing and tint timing are unchanged.
 
 No timer, animator, secondary transition clock, geometry writer, alpha fade, or scale animation is added.
+
+
+## 2026-10-04 — Build 679: charging-island native peers follow current projected occupancy
+
+**Type:** device-feedback geometry ownership correction  
+**Display version:** 0.0.5  
+**Build:** 679 / `20261003-679`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Problem
+
+Build 678 reduced the charging-island native peer reservation endpoint by deriving it from fake/final status-row capacity, but device video still shows a large empty gap between native peers and Guiyuan while the combined status unfolds.
+
+### Evidence
+
+The Build-678 device recording and Detailed Diagnostic align at the early charging-island pull:
+- compact Guiyuan slot width is 105px;
+- around 25% native expansion, the visible Guiyuan left edge is still effectively inside that compact envelope;
+- native QS_FAKE reservation has already grown to about 134px;
+- VPN/mute therefore move left before Guiyuan has occupied the released space.
+
+This rejects final-row capacity as the correct spacing authority. The defect is not the Build-677 capacity saturation: the visible gap appears well before saturation.
+
+### Conclusion
+
+Two reservations have different responsibilities:
+- **logical semantic reservation** must keep the accepted frozen-final-total-width interpolation so latent participants receive deterministic layout capacity and do not reintroduce the previously rejected global dead-zone behavior;
+- **charging-island native-peer proximity** must describe the width occupied by the current projected spans, because the native fake row remains visibly authoritative while Guiyuan pixels are still unfolding.
+
+The previously rejected per-span trajectory remains rejected as the global logical occupancy contract. New exact Battery-island evidence narrows current-span union to the native peer-spacing adapter only.
+
+### Change
+
+- Keep `resolveTransitionReservationWidth()` unchanged for Guiyuan logical occupancy and latent reveal.
+- Replace Build-678 fake/final capacity-difference proxy with `resolveBatteryIslandNativePeerReservationWidth()`.
+- The charging-island native peer width uses `resolveReservationWidth()` over the already-frozen source/target spans at the same raw HyperOS progress and is bounded by the semantic reservation.
+- Ordinary-island reservation, steady Home peer mirror, Build-677 capacity saturation, native root motion, and fake/final appearance ownership are unchanged.
+- Remove the Build-678 dependence on final status-row usable-width measurements for native peer spacing.
+
+### Ownership / lifecycle
+
+No new Hook, timer, poller, animator, island geometry authority, native child state writer, alpha/visibility/translation writer, or fixed pixel spacing is added. The existing Session owns the same single `statusIcons.paddingEnd` writer and clears it through the existing transition teardown/fail-native paths.
+
+### Validation
+
+Focused unit coverage verifies that a latent target can advance semantic reservation while charging-island native peer reservation remains at the compact width until the current projected span actually extends beyond it, then converges to the target occupancy. Exact-head Runtime CI and one signed Canary are required before the focused device gate in CURRENT.
