@@ -1958,7 +1958,7 @@ internal object SystemUiHomePresentationOwner {
                     compactSlotWidthPx = compactSlotWidthPx,
                     transitionRequestedSlotWidthPx = transitionRequestedSlotWidthPx,
                 )
-            val reservationDelta =
+            val requestedReservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
                     nativeHide = nativeHide,
                     actualBatteryWidthPx = actualBatteryWidthPx,
@@ -1967,9 +1967,26 @@ internal object SystemUiHomePresentationOwner {
             val capacityDeltaPx =
                 ensureFakeCarrierCapacityLease(hostView)
                     ?: return false
+            val reservationDelta =
+                if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                    EndReservationPolicy.resolveCapacityBoundedReservationDelta(
+                        nativeHide = nativeHide,
+                        compactSlotWidthPx = compactSlotWidthPx,
+                        requestedReservationDeltaPx = requestedReservationDelta,
+                        capacityDeltaPx = capacityDeltaPx,
+                    )
+                } else {
+                    requestedReservationDelta
+                }
+            val capacityReservationDeltaPx =
+                EndReservationPolicy.resolveFakeCarrierCapacityRequirement(
+                    nativeHide = nativeHide,
+                    compactSlotWidthPx = compactSlotWidthPx,
+                    reservationDeltaPx = reservationDelta,
+                )
             if (
                 surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                reservationDelta.coerceAtLeast(0) > capacityDeltaPx
+                capacityReservationDeltaPx > capacityDeltaPx
             ) {
                 onFailNative("fake-carrier-capacity-insufficient")
                 return false
@@ -2818,6 +2835,32 @@ internal object SystemUiHomePresentationOwner {
                 requested
             } else {
                 requested - actual
+            }
+        }
+
+        fun resolveCapacityBoundedReservationDelta(
+            nativeHide: Boolean,
+            compactSlotWidthPx: Int,
+            requestedReservationDeltaPx: Int,
+            capacityDeltaPx: Int,
+        ): Int {
+            if (!nativeHide) return requestedReservationDeltaPx
+            val compact = compactSlotWidthPx.coerceAtLeast(0)
+            val capacity = capacityDeltaPx.coerceAtLeast(0)
+            val maxNativeReservation = compact + capacity
+            return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
+        }
+
+        fun resolveFakeCarrierCapacityRequirement(
+            nativeHide: Boolean,
+            compactSlotWidthPx: Int,
+            reservationDeltaPx: Int,
+        ): Int {
+            val reservation = reservationDeltaPx.coerceAtLeast(0)
+            return if (nativeHide) {
+                (reservation - compactSlotWidthPx.coerceAtLeast(0)).coerceAtLeast(0)
+            } else {
+                reservation
             }
         }
 
