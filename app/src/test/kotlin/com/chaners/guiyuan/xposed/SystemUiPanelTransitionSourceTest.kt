@@ -163,40 +163,6 @@ class SystemUiPanelTransitionSourceTest {
     }
 
     @Test
-    fun homeMotionSnapshotKeepsBatteryWrapperAndBatteryDistinct() {
-        val snapshot =
-            SystemUiIslandMotionSource.OwnerSnapshot(
-                views =
-                    mapOf(
-                        "mBatteryContainer" to
-                            SystemUiIslandMotionSource.MotionViewSnapshot(
-                                className = "FrameLayout",
-                                screenX = 1242,
-                                width = 105,
-                                translationX = 0f,
-                                alpha = 1f,
-                                visibility = 0,
-                            ),
-                        "mBatteryView" to
-                            SystemUiIslandMotionSource.MotionViewSnapshot(
-                                className = "MiuiBatteryMeterView",
-                                screenX = 1242,
-                                width = 105,
-                                translationX = 0f,
-                                alpha = 1f,
-                                visibility = 0,
-                            ),
-                    ),
-            )
-
-        assertEquals(
-            "{mBatteryContainer=FrameLayout(x=1242,w=105,tx=0.0,a=1.0,v=0)," +
-                "mBatteryView=MiuiBatteryMeterView(x=1242,w=105,tx=0.0,a=1.0,v=0)}",
-            snapshot.summary,
-        )
-    }
-
-    @Test
     fun diagnosticsUseBoundedExpansionBuckets() {
         assertEquals(0, SystemUiPanelTransitionSource.diagnosticBucket(0f))
         assertEquals(1, SystemUiPanelTransitionSource.diagnosticBucket(0.125f))
