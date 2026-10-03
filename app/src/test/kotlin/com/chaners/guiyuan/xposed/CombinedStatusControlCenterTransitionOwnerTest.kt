@@ -488,6 +488,40 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     }
 
     @Test
+    fun batteryIslandNativePeerReservationProjectsTargetIntoCurrentFakeEndFrame() {
+        val spans =
+            listOf(
+                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                    sourceLeft = -105f,
+                    sourceRight = 0f,
+                    targetLeft = -240f,
+                    targetRight = -135f,
+                ),
+            )
+
+        val unprojected =
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .resolveBatteryIslandNativePeerReservationWidth(
+                    compactWidthPx = 105,
+                    spans = spans,
+                    semanticWidthPx = 220,
+                    progress = 0.5f,
+                )
+        val projected =
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .resolveBatteryIslandNativePeerReservationWidth(
+                    compactWidthPx = 105,
+                    spans = spans,
+                    semanticWidthPx = 220,
+                    progress = 0.5f,
+                    targetEndOffsetPx = 120f,
+                )
+
+        assertEquals(173, unprojected)
+        assertEquals(113, projected)
+    }
+
+    @Test
     fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
         val spans =
             listOf(

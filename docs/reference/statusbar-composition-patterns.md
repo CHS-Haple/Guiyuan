@@ -896,6 +896,9 @@ Build 679 adds one narrow Battery-island exception to the **native peer-spacing 
 This does not restore per-span occupancy as the general transition policy. It is a scene-specific projection from existing semantic spans to the one native `statusIcons.paddingEnd` writer so native peers remain adjacent to currently occupied Guiyuan space while HyperOS retains island/root/appearance authority.
 
 
+Build 680 corrects the remaining coordinate-frame error in that adapter. The frozen target spans are expressed relative to the final QS Battery end, while `statusIcons.paddingEnd` is consumed relative to the currently translated QS_FAKE end. Under Battery-island motion those ends are not the same frame. The adapter must therefore project the final target end into the live fake-row end frame before interpolating the span union. This uses the observed native carrier positions; it does **not** read, duplicate or cancel HyperOS' `batteryWidthDiff` formula, and it does not create a new translation writer. Logical semantic reservation remains unchanged.
+
+
 ---
 
 ## Participant visual snapshot: topology, not provider identity

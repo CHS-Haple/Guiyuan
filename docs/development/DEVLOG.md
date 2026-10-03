@@ -2718,3 +2718,43 @@ No new Hook, timer, poller, animator, island geometry authority, native child st
 ### Validation
 
 Focused unit coverage verifies that a latent target can advance semantic reservation while charging-island native peer reservation remains at the compact width until the current projected span actually extends beyond it, then converges to the target occupancy. Exact-head Runtime CI and one signed Canary are required before the focused device gate in CURRENT.
+
+
+## 2026-10-04 — Build 680: project Battery-island peer reservation into the live QS_FAKE end frame
+
+**Type:** device feedback / coordinate-frame correction / lifecycle review  
+**Display version:** 0.0.5  
+**Build:** 680 / `20261003-680`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Build-679 device result
+
+The charging-island peer distance remains visibly too large. The Detailed Diagnostic still shows Battery-island native reservation growing while the visible fake row and Guiyuan projection are separating under native Control Center motion.
+
+### Root cause
+
+Build 679 corrected *which width* was measured but still mixed coordinate frames:
+- reservation target spans are frozen relative to the final QS Battery end;
+- native peers consume `QS_FAKE statusIcons.paddingEnd` relative to the live fake-row end;
+- the renderer rebases source geometry through the moving fake carrier before interpolating to the absolute final target.
+
+Therefore a target span cannot be used directly as a fake-row-local span while HyperOS applies charging-island fake-root translation.
+
+### Build-680 correction
+
+- Measure the current logical end offset between `finalBattery` and `fakeStatusIcons` on each reservation sync.
+- Project frozen target span X coordinates by that live offset before evaluating Battery-island current occupancy.
+- Keep semantic reservation, latent reveal, ordinary-island/no-island paths and physical capacity saturation unchanged.
+- Add `nativePeerTargetEndOffset` to detailed transition diagnostics.
+- Add a focused regression test proving that a final target to the right of the current fake end reduces fake-local reservation instead of opening a false gap.
+
+### Submission and lifecycle review
+
+Before commit:
+- one existing transition-reservation call site remains;
+- no native translation writer, timer, animator or Handler is added;
+- Session stop still clears transition reservation, removes overlay and restores source clip;
+- endpoint replacement and detached-view paths stop the old Session;
+- panel runtime failure still detaches to native;
+- Hot Reload detaches the transition owner before presentation/capacity-lease release;
+- island authority is refreshed per native expansion sample and reverse pull uses the same live sampling path.

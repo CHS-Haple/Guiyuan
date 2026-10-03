@@ -418,15 +418,32 @@ internal object CombinedStatusControlCenterTransitionOwner {
             spans: List<ReservationSpan>,
             semanticWidthPx: Int,
             progress: Float,
+            targetEndOffsetPx: Float = 0f,
         ): Int {
             val compact = compactWidthPx.coerceAtLeast(0)
             val semantic = semanticWidthPx.coerceAtLeast(compact)
             if (compact == 0) return 0
-            return resolveReservationWidth(
-                compactWidthPx = compact,
-                spans = spans,
-                progress = progress,
-            ).coerceAtMost(semantic)
+            val targetEndOffset =
+                targetEndOffsetPx
+                    .takeIf(Float::isFinite)
+                    ?: 0f
+            val p = geometryProgress(progress)
+            var left = -compact.toFloat()
+            var right = 0f
+            spans.forEach { span ->
+                val currentLeft =
+                    span.sourceLeft +
+                        (span.targetLeft + targetEndOffset - span.sourceLeft) * p
+                val currentRight =
+                    span.sourceRight +
+                        (span.targetRight + targetEndOffset - span.sourceRight) * p
+                left = min(left, currentLeft)
+                right = maxOf(right, currentRight)
+            }
+            return kotlin.math
+                .ceil((right - left).coerceAtLeast(compact.toFloat()))
+                .toInt()
+                .coerceAtMost(semantic)
         }
 
         fun transitionTintProgress(progress: Float): Float {
@@ -954,6 +971,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private var frozenReservationSpans: List<Policy.ReservationSpan>? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
+        private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
         private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
@@ -1018,6 +1036,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ",batteryNumberProbe=" + batteryNumberProbeSummary +
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
+                ",nativePeerTargetEndOffset=" +
+                (lastNativePeerTargetEndOffsetPx?.toString() ?: "none") +
                 ",batteryIsland=" + nativeBatteryIslandActive +
                 ",iconCapacity=" + statusIconCapacitySummary() +
                 ",nativeRows=" + nativeStatusRowSummary() +
@@ -2375,6 +2395,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 }
                 lastReservationWidthPx = null
                 lastNativeReservationWidthPx = null
+                lastNativePeerTargetEndOffsetPx = null
                 return
             }
             val source = sourceViewRef.get() ?: return
@@ -2404,13 +2425,24 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             val nativeRequestedWidth =
                 if (nativeBatteryIslandActive) {
+                    // Reservation spans store target X in the final-Battery end frame.
+                    // HyperOS translates the visible QS_FAKE carrier independently for
+                    // Battery Island, so project that target end into the current fake
+                    // end frame before measuring the current projected occupancy.
+                    lastNativePeerTargetEndOffsetPx = null
+                    val targetEndOffsetPx =
+                        resolveBatteryIslandNativePeerTargetEndOffsetPx()
+                            ?: return
+                    lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
                     Policy.resolveBatteryIslandNativePeerReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         semanticWidthPx = requestedWidth,
                         progress = progress,
+                        targetEndOffsetPx = targetEndOffsetPx,
                     )
                 } else {
+                    lastNativePeerTargetEndOffsetPx = null
                     requestedWidth
                 }
 
@@ -2435,6 +2467,50 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 }
                 lastNativeReservationWidthPx = nativeRequestedWidth
             }
+        }
+
+        private fun resolveBatteryIslandNativePeerTargetEndOffsetPx(): Float? {
+            if (
+                fakeStatusIcons.width <= 0 ||
+                finalBattery.width <= 0 ||
+                !fakeStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow
+            ) {
+                return null
+            }
+            val fakeRtl =
+                fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val targetRtl =
+                finalBattery.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            if (fakeRtl != targetRtl) return null
+
+            val fakeLocation = IntArray(2)
+            val targetLocation = IntArray(2)
+            val located =
+                runCatching {
+                    fakeStatusIcons.getLocationInWindow(fakeLocation)
+                    finalBattery.getLocationInWindow(targetLocation)
+                    true
+                }.getOrDefault(false)
+            if (!located) return null
+
+            val fakeEndPhysical =
+                if (fakeRtl) {
+                    fakeLocation[0].toFloat()
+                } else {
+                    (fakeLocation[0] + fakeStatusIcons.width).toFloat()
+                }
+            val targetEndPhysical =
+                if (targetRtl) {
+                    targetLocation[0].toFloat()
+                } else {
+                    (targetLocation[0] + finalBattery.width).toFloat()
+                }
+            val fakeEndLogical =
+                if (fakeRtl) -fakeEndPhysical else fakeEndPhysical
+            val targetEndLogical =
+                if (targetRtl) -targetEndPhysical else targetEndPhysical
+            return targetEndLogical - fakeEndLogical
         }
 
         private fun resolveReservationSpans(): List<Policy.ReservationSpan>? {
