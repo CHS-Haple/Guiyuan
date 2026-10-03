@@ -2603,10 +2603,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
                 val sourceA = logicalSourceX(spec.sourceBounds.left)
                 val sourceB = logicalSourceX(spec.sourceBounds.right)
-                val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
+                val targetA = logicalTargetX(targetLocation[0].toFloat())
                 val targetB =
                     logicalTargetX(
-                        (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
+                        (targetLocation[0] + slot.width).toFloat(),
                     )
                 result +=
                     Policy.ReservationSpan(
@@ -2635,10 +2635,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     slot.getLocationInWindow(targetLocation)
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
-                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
+                    val targetA = logicalTargetX(targetLocation[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
+                            (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
@@ -2660,10 +2660,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
+                    val targetA = logicalTargetX(targetLocation[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
+                            (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
@@ -2687,10 +2687,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(batteryIslandTargetLocationScratch[0].toFloat())
+                    val targetA = logicalTargetX(targetLocation[0].toFloat())
                     val targetB =
                         logicalTargetX(
-                            (batteryIslandTargetLocationScratch[0] + slot.width).toFloat(),
+                            (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
                         Policy.ReservationSpan(
