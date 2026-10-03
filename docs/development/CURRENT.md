@@ -100,4 +100,3 @@ Build 687 keeps functional island peer mirroring and the lightweight panel-trans
 - adding unit coverage for both hot-path gates.
 
 Device gate: repeat the exact Keyguard + island complete pull/down-up stress case. If progressive jank remains after Build 687, the next suspect is the functional Home steady-peer-mirror scan during island-active layouts; do not change that functional path or draw-layer compositing until this observation-only A/B is known.
-
