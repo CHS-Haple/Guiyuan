@@ -660,7 +660,6 @@ internal object SystemUiPanelTransitionSource {
         val controlCenterTransitionEndpoints: ControlCenterTransitionEndpoints? = null,
         val controlCenterBatteryIslandActive: Boolean? = null,
         val controlCenterAnchor: ControlCenterAnchorSnapshot? = null,
-        val homeMotion: SystemUiIslandMotionSource.OwnerSnapshot? = null,
     )
 
     internal enum class Source(
