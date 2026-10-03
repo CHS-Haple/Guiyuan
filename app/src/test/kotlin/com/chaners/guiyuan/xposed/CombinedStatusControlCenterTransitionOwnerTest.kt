@@ -522,6 +522,31 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     }
 
     @Test
+    fun batteryIslandNativePeerReservationIgnoresEndSideProjection() {
+        val spans =
+            listOf(
+                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                    sourceLeft = -40f,
+                    sourceRight = 0f,
+                    targetLeft = -140f,
+                    targetRight = 0f,
+                ),
+            )
+
+        assertEquals(
+            80,
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .resolveBatteryIslandNativePeerReservationWidth(
+                    compactWidthPx = 40,
+                    spans = spans,
+                    semanticWidthPx = 140,
+                    progress = 1f,
+                    targetEndOffsetPx = 60f,
+                ),
+        )
+    }
+
+    @Test
     fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
         val spans =
             listOf(

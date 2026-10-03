@@ -47,37 +47,52 @@ This rejects both a fixed-width subtraction and direct `batteryWidthDiff` compen
 
 Build 680 keeps every accepted ownership boundary and corrects only the Battery-island peer-spacing frame. Submission review then found one fail-native gap before device testing: if the live QS_FAKE/final end-frame sample becomes temporarily unavailable, the transition owner returned while the previous frame's native reservation could remain applied.
 
-## Build 681 candidate
+## Build 681 device rejection
 
-Build 681 retains the Build 680 coordinate-frame correction and closes that lifecycle gap:
+Build 681 fixes the end-frame loss lifecycle gap, but device video still shows the charging-island native-peer distance is wrong during the QS_FAKE phase.
 
-- end-frame loss now enters the existing Control Center presentation fail-native path instead of retaining stale transition padding;
-- that path restores native ignored slots / clips / reservation, drops projection readiness, and stops the transition overlay through the existing readiness callback;
-- if no Control Center presentation session is active, the transition owner detaches itself as the final local fallback;
-- logical Guiyuan reservation remains the frozen-final-total-width interpolation and is unchanged;
-- ordinary-island and no-island paths remain unchanged;
-- while native Battery island is active, each frozen target span is projected into the **current live QS_FAKE end frame** using the measured end offset between `finalBattery` and `fakeStatusIcons`;
-- the existing per-span union is then evaluated at the same native progress and remains bounded by the semantic reservation;
-- HyperOS still owns fake-root translation, Battery-island motion, appearance and collision. Guiyuan does not read or rewrite `batteryWidthDiff`; the live end-frame measurement inherits that native motion instead;
-- Build 677 capacity saturation and the sole `statusIcons.paddingEnd` writer remain unchanged.
+The new diagnostic closes the remaining geometry question:
+- `nativePeerTargetEndOffset` is stable for this gesture because HyperOS moves fake/final Control Center rows with the same progress-scaled normal translation and the Battery-island fake row carries one additional native end offset;
+- this means Build 680/681 frame projection is not the remaining fault;
+- the remaining fault is the **meaning of the value written to `statusIcons.paddingEnd`**.
 
-No new Hook, timer, animator, polling loop, fixed pixel compensation, alpha/visibility/translation writer, or second island authority is introduced.
+Build 681 measures the full projected span union as `right - left`. After final-QS spans are projected into the live QS_FAKE end frame, part of that union can lie at logical `x > 0`, on the end side of the fake-row boundary. That region is valid drawable/target occupancy, but it does not occupy the peer side of the QS_FAKE row and must not push native peers left.
 
-Submission review verifies Session stop, endpoint replacement, view detach, runtime failure and Hot Reload cleanup. Reentrancy is bounded: the existing presentation failure callback may synchronously drop projection readiness and stop the current Transition Session; the failing sync returns immediately afterward. Reverse pull reuses the same live progress/end-frame sampling rather than a second reverse path.
+The full-progress device sample makes the over-count visible: semantic/native union is 384px while the projected end-side extent is the live inter-frame offset. The applied fake-row capacity reaches its independent 249px expansion limit. The defect is therefore not a device-specific constant and must not be corrected by subtracting 135px or any other fixed value.
+
+## Build 682 candidate
+
+Build 682 changes only the Battery-island native peer-spacing adapter:
+
+- keep the final-QS -> live-QS_FAKE end-frame projection from Build 680;
+- keep the Build 681 fail-native lifecycle handling when that frame is unavailable;
+- keep logical semantic reservation, latent reveal, ordinary-island/no-island paths and physical capacity saturation unchanged;
+- for native `statusIcons.paddingEnd`, measure only the projected Guiyuan extent on the **peer side** of the live QS_FAKE end edge;
+- define that edge as logical `x = 0` and reserve from `0` leftward to the left-most current projected span, floored by the runtime compact width and capped by semantic reservation;
+- ignore any projected span extent at `x > 0` because it is on the end side and cannot collide with native peers.
+
+All geometry inputs remain runtime-derived from the actual View hierarchy. No device width, Battery width, island translation or pixel compensation is hard-coded.
 
 ## Validation state
 
-Candidate identity: `0.0.5` / versionCode `261003681` / Build `20261003-681`.
+Candidate identity: `0.0.5` / versionCode `261003682` / Build `20261003-682`.
+
+Submission review:
+- one existing transition-reservation writer remains;
+- no translation/alpha/visibility writer, Hook, timer, Handler or animator is added;
+- ordinary-island and no-island branches remain on semantic reservation;
+- Session stop, endpoint replacement, view detach, panel runtime failure, Battery-island frame-loss fail-native and Hot Reload cleanup remain unchanged;
+- reverse pull uses the same stateless live-progress intrusion calculation.
 
 Automated gate:
 - exact-head Runtime CI for PR #200.
 
 Required device gate after Runtime success:
-1. charging island, slow early/mid pull: native peers remain adjacent to the currently drawn Guiyuan envelope instead of the Build-679 expanding gap;
-2. charging island, full pull and reverse: spacing remains continuous with no overlap, native takeover or reverse flash;
-3. charging island + dual SIM: both mobile targets remain available and converge normally;
-4. ordinary island and no-island pull remain unchanged;
-5. no `fake-carrier-capacity-insufficient` or new fail-native loop;
-6. if spacing is still abnormal, export Detailed Diagnostic and inspect `nativePeerTargetEndOffset` beside `nativeReservation`.
+1. charging island, slow early/mid pull: VPN/mute/native peers remain adjacent to the visible Guiyuan peer-side envelope;
+2. charging island, near-full/full pull: no large empty fake-row gap before final appearance handoff;
+3. reverse pull: spacing retraces continuously with no flash or stale reservation;
+4. charging island + dual SIM: both mobile targets remain available;
+5. ordinary island and no-island pull remain unchanged;
+6. no `fake-carrier-capacity-insufficient` or new fail-native loop.
 
 Runtime is frozen once the exact-head signed Canary is produced for this gate.

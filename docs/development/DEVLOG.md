@@ -2789,3 +2789,47 @@ Build 680 correctly projects final-QS target spans into the live QS_FAKE end fra
 
 Focused unit coverage locks the idle failure entry as a no-op when no presentation session exists. Exact-head Runtime CI is required before the signed Canary/device gate.
 
+
+
+## 2026-10-04 — Build 682: reserve only peer-side Battery-island intrusion
+
+**Type:** device root-cause correction / cross-device geometry semantics  
+**Display version:** 0.0.5  
+**Build:** 682 / `20261003-682`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Build-681 device result
+
+The charging-island native-peer position remains wrong even though end-frame loss is now fail-native safe.
+
+Detailed Diagnostic proves the Build-680 live frame offset is not stale: its constancy in this gesture follows the native HyperOS relationship between the fake and final Control Center rows. The remaining spacing error tracks `statusIcons.paddingEnd` growth itself.
+
+### Root cause
+
+`resolveBatteryIslandNativePeerReservationWidth()` used the complete projected span union:
+
+`right - left`.
+
+After final-QS target spans are projected into the current QS_FAKE end frame, a valid portion of that union can live at logical `x > 0`, to the end side of the fake-row boundary. That portion belongs to Guiyuan drawable/target motion, but native status peers occupy only the opposite side of the boundary.
+
+Counting end-side extent as `paddingEnd` double-reserves empty horizontal space and pushes native peers too far left.
+
+### Correction
+
+- Keep the live final-QS -> QS_FAKE end-frame projection.
+- Define current QS_FAKE end as logical `x=0`.
+- Compute native peer reservation from `0` to the left-most projected Guiyuan span only.
+- Keep the runtime compact slot as the minimum and semantic reservation as the maximum.
+- Ignore projected extent at `x>0` for peer spacing.
+- Add a focused unit test where a target crosses the live fake end and verify only the peer-side 80px depth is reserved from arbitrary runtime geometry values.
+
+### Cross-device requirement
+
+No observed Xiaomi 15 Pro values are encoded. In particular, the device-observed 105/135/249px values remain diagnostic evidence only. Battery width, inter-frame offset, target span positions and compact width all come from live/frozen View geometry.
+
+### Submission / lifecycle review
+
+- one `updateControlCenterTransitionReservation()` call site remains;
+- ordinary-island/no-island behavior is unchanged;
+- no native translation, alpha, visibility, timing or collision ownership is added;
+- Session stop, endpoint replacement, pre-draw detach, panel runtime failure, frame-loss fail-native and Hot Reload teardown paths remain unchanged.

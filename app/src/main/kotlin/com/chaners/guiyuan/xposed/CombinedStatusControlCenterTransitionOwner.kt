@@ -429,19 +429,19 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     ?: 0f
             val p = geometryProgress(progress)
             var left = -compact.toFloat()
-            var right = 0f
             spans.forEach { span ->
                 val currentLeft =
                     span.sourceLeft +
                         (span.targetLeft + targetEndOffset - span.sourceLeft) * p
-                val currentRight =
-                    span.sourceRight +
-                        (span.targetRight + targetEndOffset - span.sourceRight) * p
                 left = min(left, currentLeft)
-                right = maxOf(right, currentRight)
             }
+
+            // statusIcons.paddingEnd reserves space only on the peer side of the
+            // live QS_FAKE end edge (logical x=0). A projected Guiyuan span may
+            // extend to x>0 while converging on the final QS surface; that
+            // end-side extent is drawable occupancy, not native-peer intrusion.
             return kotlin.math
-                .ceil((right - left).coerceAtLeast(compact.toFloat()))
+                .ceil((-left.coerceAtMost(0f)).coerceAtLeast(compact.toFloat()))
                 .toInt()
                 .coerceAtMost(semantic)
         }
