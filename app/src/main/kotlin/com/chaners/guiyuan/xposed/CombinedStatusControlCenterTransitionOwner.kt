@@ -27,6 +27,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     private const val BATTERY_SLOT = "battery"
     private const val BATTERY_NUMBER_SLOT = "battery_number"
+    private const val BATTERY_CHARGING_SLOT = "battery_charging"
     private const val AIRPLANE_SLOT = "airplane"
     private const val NO_SIM_SLOT = "no_sim"
     private const val MOBILE_SLOT = "mobile"
@@ -204,6 +205,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ),
             sourceScene = sourceScene,
             genericIslandShowing = SystemUiIslandMotionSource.currentIslandShowing(),
+            nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
 
@@ -256,9 +258,77 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
         }
 
-        fun unmatchedExitOpacity(rawProgress: Float): Float {
+        fun unmatchedExitVisibleFraction(rawProgress: Float): Float {
             val remaining = 1f - geometryProgress(rawProgress)
             return remaining * remaining * remaining
+        }
+
+        fun horizontalClipBounds(
+            left: Float,
+            top: Float,
+            right: Float,
+            bottom: Float,
+            visibleFraction: Float,
+            anchorRight: Boolean,
+        ): FloatArray? {
+            if (
+                !left.isFinite() ||
+                !top.isFinite() ||
+                !right.isFinite() ||
+                !bottom.isFinite() ||
+                right <= left ||
+                bottom <= top
+            ) {
+                return null
+            }
+            val fraction =
+                visibleFraction
+                    .takeIf(Float::isFinite)
+                    ?.coerceIn(0f, 1f)
+                    ?: 0f
+            if (fraction <= 0f) return null
+            if (fraction >= 1f) return floatArrayOf(left, top, right, bottom)
+            val width = (right - left) * fraction
+            return if (anchorRight) {
+                floatArrayOf(right - width, top, right, bottom)
+            } else {
+                floatArrayOf(left, top, left + width, bottom)
+            }
+        }
+
+        fun expandedClipBounds(
+            bounds: CombinedStatusPainter.TransitionBounds,
+            widthScale: Float,
+            heightScale: Float,
+        ): CombinedStatusPainter.TransitionBounds {
+            val resolvedWidthScale =
+                widthScale
+                    .takeIf { it.isFinite() && it > 0f }
+                    ?.coerceAtLeast(1f)
+                    ?: 1f
+            val resolvedHeightScale =
+                heightScale
+                    .takeIf { it.isFinite() && it > 0f }
+                    ?.coerceAtLeast(1f)
+                    ?: 1f
+            val halfWidth = bounds.width * resolvedWidthScale / 2f
+            val halfHeight = bounds.height * resolvedHeightScale / 2f
+            return CombinedStatusPainter.TransitionBounds(
+                left = bounds.centerX - halfWidth,
+                top = bounds.centerY - halfHeight,
+                right = bounds.centerX + halfWidth,
+                bottom = bounds.centerY + halfHeight,
+            )
+        }
+
+        fun selectNativeTransitionTint(
+            statusIconPeerTint: Int?,
+            cachedTint: Int?,
+        ): Int? {
+            fun valid(color: Int?): Int? =
+                color?.takeIf { candidate -> candidate ushr 24 != 0 }
+            return valid(statusIconPeerTint)
+                ?: valid(cachedTint)
         }
 
         fun usesSemanticTransitionReservation(
@@ -267,34 +337,22 @@ internal object CombinedStatusControlCenterTransitionOwner {
             nativeBatteryIslandActive: Boolean? = null,
         ): Boolean =
             when (sourceScene) {
-                CombinedStatusSourceScene.HOME ->
-                    !charging || nativeBatteryIslandActive == false
-                CombinedStatusSourceScene.KEYGUARD ->
-                    true
-                CombinedStatusSourceScene.UNKNOWN ->
-                    false
+                CombinedStatusSourceScene.HOME,
+                CombinedStatusSourceScene.KEYGUARD,
+                -> true
+                CombinedStatusSourceScene.UNKNOWN -> false
             }
 
         fun allowsNativeTransitionPaddingExpansion(
             sourceScene: CombinedStatusSourceScene,
             genericIslandShowing: Boolean?,
-            fakeIslandReservationBridgeReady: Boolean = false,
         ): Boolean =
             when (sourceScene) {
-                CombinedStatusSourceScene.HOME ->
-                    genericIslandShowing != true || fakeIslandReservationBridgeReady
-                CombinedStatusSourceScene.KEYGUARD -> true
+                CombinedStatusSourceScene.HOME,
+                CombinedStatusSourceScene.KEYGUARD,
+                -> true
                 CombinedStatusSourceScene.UNKNOWN -> false
             }
-
-        fun compensateFakeIslandWidth(
-            nativeIslandWidthPx: Int,
-            transitionPaddingDeltaPx: Int,
-        ): Int {
-            if (nativeIslandWidthPx <= 0) return nativeIslandWidthPx
-            return (nativeIslandWidthPx - transitionPaddingDeltaPx.coerceAtLeast(0))
-                .coerceAtLeast(0)
-        }
 
         data class ReservationSpan(
             val sourceLeft: Float,
@@ -353,6 +411,89 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 compact +
                     (finalWidth - compact) * p
                 ).roundToInt().coerceAtLeast(compact)
+        }
+
+        fun resolveBatteryIslandNativePeerReservationWidth(
+            compactWidthPx: Int,
+            spans: List<ReservationSpan>,
+            semanticWidthPx: Int,
+            progress: Float,
+            targetEndOffsetPx: Float = 0f,
+        ): Int {
+            val compact = compactWidthPx.coerceAtLeast(0)
+            val semantic = semanticWidthPx.coerceAtLeast(compact)
+            if (compact == 0) return 0
+            val targetEndOffset =
+                targetEndOffsetPx
+                    .takeIf(Float::isFinite)
+                    ?: 0f
+            val p = geometryProgress(progress)
+            var left = -compact.toFloat()
+            spans.forEach { span ->
+                val currentLeft =
+                    span.sourceLeft +
+                        (span.targetLeft + targetEndOffset - span.sourceLeft) * p
+                left = min(left, currentLeft)
+            }
+
+            // statusIcons.paddingEnd reserves space only on the peer side of the
+            // live QS_FAKE end edge (logical x=0). A projected Guiyuan span may
+            // extend to x>0 while converging on the final QS surface; that
+            // end-side extent is drawable occupancy, not native-peer intrusion.
+            return kotlin.math
+                .ceil((-left.coerceAtMost(0f)).coerceAtLeast(compact.toFloat()))
+                .toInt()
+                .coerceAtMost(semantic)
+        }
+
+        fun transitionTintProgress(progress: Float): Float {
+            val ringPhase =
+                CombinedStatusBatteryRingTransitionPolicy
+                    .transitionProgress(progress)
+                    .coerceIn(0f, 1f)
+            return ringPhase * ringPhase * (3f - 2f * ringPhase)
+        }
+
+        fun resolveTransitionTint(
+            source: Int,
+            target: Int,
+            progress: Float,
+            tinted: Boolean,
+            transitionEnabled: Boolean,
+        ): Int =
+            when {
+                !tinted -> target
+                !transitionEnabled -> source
+                else ->
+                    interpolateColor(
+                        source = source,
+                        target = target,
+                        progress = progress,
+                    )
+            }
+
+        fun interpolateColor(
+            source: Int,
+            target: Int,
+            progress: Float,
+        ): Int {
+            val p = transitionTintProgress(progress)
+            fun channel(
+                fromShift: Int,
+                toShift: Int = fromShift,
+            ): Int {
+                val from = source ushr fromShift and 0xff
+                val to = target ushr toShift and 0xff
+                return (from + (to - from) * p)
+                    .roundToInt()
+                    .coerceIn(0, 255)
+            }
+            return (
+                channel(24) shl 24 or
+                    (channel(16) shl 16) or
+                    (channel(8) shl 8) or
+                    channel(0)
+            )
         }
 
         fun interpolateGeometry(
@@ -567,7 +708,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             return normalized * normalized * (3f - 2f * normalized)
         }
 
-        fun latentRevealOpacity(
+        fun latentRevealVisibleFraction(
             current: FloatArray,
             target: FloatArray,
             visualExtent: Float,
@@ -704,6 +845,50 @@ internal object CombinedStatusControlCenterTransitionOwner {
             y: Float,
         ): Float = sqrt(x * x + y * y)
 
+        fun followAnchorGeometry(
+            follower: FloatArray,
+            sourceAnchor: FloatArray,
+            currentAnchor: FloatArray,
+        ): FloatArray? {
+            if (
+                follower.size != 6 ||
+                sourceAnchor.size != 6 ||
+                currentAnchor.size != 6
+            ) return null
+
+            val swx = sourceAnchor[2]
+            val swy = sourceAnchor[3]
+            val shx = sourceAnchor[4]
+            val shy = sourceAnchor[5]
+            val determinant = swx * shy - shx * swy
+            if (!determinant.isFinite() || kotlin.math.abs(determinant) < 0.0001f) {
+                return null
+            }
+
+            fun mapVector(x: Float, y: Float): Pair<Float, Float> {
+                val localX = (x * shy - shx * y) / determinant
+                val localY = (swx * y - x * swy) / determinant
+                return Pair(
+                    currentAnchor[2] * localX + currentAnchor[4] * localY,
+                    currentAnchor[3] * localX + currentAnchor[5] * localY,
+                )
+            }
+
+            val centerDeltaX = follower[0] - sourceAnchor[0]
+            val centerDeltaY = follower[1] - sourceAnchor[1]
+            val mappedCenterDelta = mapVector(centerDeltaX, centerDeltaY)
+            val mappedWidth = mapVector(follower[2], follower[3])
+            val mappedHeight = mapVector(follower[4], follower[5])
+            return floatArrayOf(
+                currentAnchor[0] + mappedCenterDelta.first,
+                currentAnchor[1] + mappedCenterDelta.second,
+                mappedWidth.first,
+                mappedWidth.second,
+                mappedHeight.first,
+                mappedHeight.second,
+            )
+        }
+
         fun componentGeometry(
             parentGeometry: FloatArray,
             parentWidth: Int,
@@ -779,16 +964,18 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private var started = false
         private var lastStateVersion = sourceSnapshot.stateVersion
         private var lastWitnessSummary = "pending"
+        private var lastTintSummary = "pending"
         private var batteryNumberProbeSummary = "pending"
         private var cachedNativePeerTint: Int? = null
+        private var cachedNativePeerTintAuthority = "none"
         private var frozenReservationSpans: List<Policy.ReservationSpan>? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
+        private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
         private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
-        private var fakeIslandBoundaryProjectionReady = false
-        private var fakeIslandBoundaryDeltaPx: Int? = null
+        private var nativeBatteryIslandActive = false
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -823,9 +1010,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     currentSnapshot = latest
                     lastStateVersion = latest.stateVersion
                 }
-                if (cachedNativePeerTint == null) {
-                    refreshNativePeerTint()
-                }
+                refreshNativePeerTint()
                 syncTransitionReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
                 drawable.invalidateSelf()
@@ -837,6 +1022,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ",appearance=" + nativeAppearance +
                 ",appearanceAnimated=" + nativeAppearanceAnimated +
                 ",nativePeers=systemui" +
+                ",nativeTint=" +
+                (cachedNativePeerTint?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none") +
+                ",nativeTintAuthority=" + cachedNativePeerTintAuthority +
                 ",sourceAnchor=" + (sourceAnchorRef.get()?.javaClass?.simpleName ?: "none") +
                 ",sourceOrigin=" + (frozenSource?.source ?: "qs-fake-live") +
                 ",sourceStateVersion=" + lastStateVersion +
@@ -844,28 +1032,25 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 ",fake=" + (fakeRootRef.get()?.javaClass?.simpleName ?: "none") +
                 ",final=" + (finalRootRef.get()?.javaClass?.simpleName ?: "none") +
                 ",witness=" + lastWitnessSummary +
+                ",tintTransition=" + lastTintSummary +
                 ",batteryNumberProbe=" + batteryNumberProbeSummary +
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
+                ",nativePeerTargetEndOffset=" +
+                (lastNativePeerTargetEndOffsetPx?.toString() ?: "none") +
+                ",batteryIsland=" + nativeBatteryIslandActive +
                 ",iconCapacity=" + statusIconCapacitySummary() +
                 ",nativeRows=" + nativeStatusRowSummary() +
                 ",fakeCarrier=" + fakeCarrierHierarchySummary() +
                 ",reservationMode=" +
                 when {
                     !transitionReservationEnabled -> "native-peer-motion"
-                    genericIslandShowing == true && fakeIslandBoundaryProjectionReady ->
-                        "native-progress-fake-island-projected"
-                    !nativePaddingExpansionAllowed ->
-                        "internal-progress-island-projection-unavailable"
+                    genericIslandShowing == true && nativePaddingExpansionAllowed ->
+                        "native-progress-total-padding+native-island-collision"
+                    genericIslandShowing == true -> "native-island-authority"
+                    !nativePaddingExpansionAllowed -> "native-padding-guard"
                     else -> "native-progress-total-padding"
                 } +
-                ",islandBoundaryProjection=" +
-                    when {
-                        fakeIslandBoundaryDeltaPx != null ->
-                            "active:delta=" + fakeIslandBoundaryDeltaPx
-                        fakeIslandBoundaryProjectionReady -> "ready"
-                        else -> "inactive"
-                    } +
                 "}"
 
         private fun statusIconCapacitySummary(): String {
@@ -994,6 +1179,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             transitionReservationEnabled: Boolean,
             sourceScene: CombinedStatusSourceScene,
             genericIslandShowing: Boolean?,
+            nativeBatteryIslandActive: Boolean?,
         ) {
             val appearanceChanged =
                 this.nativeAppearance != nativeAppearance ||
@@ -1004,26 +1190,12 @@ internal object CombinedStatusControlCenterTransitionOwner {
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
             this.genericIslandShowing = genericIslandShowing
+            this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
-            val projectionRequired =
-                transitionReservationEnabled &&
-                    sourceScene == CombinedStatusSourceScene.HOME &&
-                    genericIslandShowing == true
-            this.fakeIslandBoundaryProjectionReady =
-                projectionRequired &&
-                    SystemUiPanelTransitionSource
-                        .isFakeIslandBoundaryProjectionAvailable()
-            if (!projectionRequired) {
-                SystemUiPanelTransitionSource
-                    .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                fakeIslandBoundaryDeltaPx = null
-            }
             this.nativePaddingExpansionAllowed =
                 Policy.allowsNativeTransitionPaddingExpansion(
                     sourceScene = sourceScene,
                     genericIslandShowing = genericIslandShowing,
-                    fakeIslandReservationBridgeReady =
-                        fakeIslandBoundaryProjectionReady,
                 )
             if (appearanceChanged) {
                 refreshNativePeerTint()
@@ -1036,11 +1208,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
             SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
                 "transition-" + source,
             )
-            SystemUiPanelTransitionSource
-                .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-            fakeIslandBoundaryProjectionReady = false
-            fakeIslandBoundaryDeltaPx = null
             genericIslandShowing = null
+            nativeBatteryIslandActive = false
             if (!started) return
             started = false
             val rootView = rootRef.get()
@@ -1169,33 +1338,96 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     Policy.horizontalExitDirection(source, target)
                 } ?: CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
 
+            val batteryTinted =
+                CombinedStatusBatteryColorPolicy.isTinted(
+                    state = model.batterySemanticState,
+                    settings = currentSnapshot.visualSettings,
+                )
             val transitionColors =
                 cachedNativePeerTint
                     ?.let { tint ->
+                        fun resolveTint(
+                            source: Int,
+                            tinted: Boolean,
+                        ): Int =
+                            Policy.resolveTransitionTint(
+                                source = source,
+                                target = tint,
+                                progress = motionProgress,
+                                tinted = tinted,
+                                transitionEnabled =
+                                    currentSnapshot.visualSettings
+                                        .controlCenterTintTransitionEnabled,
+                            )
+
                         currentSnapshot.colors.copy(
-                            centerTint = tint,
-                            mobileTint = tint,
+                            centerTint =
+                                resolveTint(
+                                    source = currentSnapshot.colors.centerTint,
+                                    tinted =
+                                        batteryTinted &&
+                                            currentSnapshot.visualSettings
+                                                .centerFollowsBatteryColor,
+                                ),
+                            mobileTint =
+                                resolveTint(
+                                    source = currentSnapshot.colors.mobileTint,
+                                    tinted =
+                                        batteryTinted &&
+                                            currentSnapshot.visualSettings
+                                                .mobileFollowsBatteryColor,
+                                ),
+                            batteryTint =
+                                resolveTint(
+                                    source = currentSnapshot.colors.batteryTint,
+                                    tinted = batteryTinted,
+                                ),
                             batteryTextTint =
-                                if (
-                                    currentSnapshot.visualSettings
-                                        .batteryTopTextFollowsBatteryColor
-                                ) {
-                                    currentSnapshot.colors.batteryTextTint
-                                } else {
-                                    tint
-                                },
+                                resolveTint(
+                                    source = currentSnapshot.colors.batteryTextTint,
+                                    tinted =
+                                        batteryTinted &&
+                                            currentSnapshot.visualSettings
+                                                .batteryTopTextFollowsBatteryColor,
+                                ),
                             chargingIconTint =
-                                if (
-                                    currentSnapshot.visualSettings
-                                        .batteryTopChargingIconFollowsBatteryColor
-                                ) {
-                                    currentSnapshot.colors.chargingIconTint
-                                } else {
-                                    tint
-                                },
+                                resolveTint(
+                                    source = currentSnapshot.colors.chargingIconTint,
+                                    tinted =
+                                        batteryTinted &&
+                                            currentSnapshot.visualSettings
+                                                .batteryTopChargingIconFollowsBatteryColor,
+                                ),
                         )
                     }
                     ?: currentSnapshot.colors
+
+            fun tintHex(color: Int): String =
+                color.toUInt().toString(16).padStart(8, '0')
+            lastTintSummary =
+                "{batteryTinted=" + batteryTinted +
+                    ",enabled=" +
+                    currentSnapshot.visualSettings.controlCenterTintTransitionEnabled +
+                    ",motion=" + motionProgress +
+                    ",target=" +
+                    (cachedNativePeerTint?.let(::tintHex) ?: "none") +
+                    ",battery=" +
+                    tintHex(currentSnapshot.colors.batteryTint) + "->" +
+                    tintHex(transitionColors.batteryTint) +
+                    ",number=" +
+                    tintHex(currentSnapshot.colors.batteryTextTint) + "->" +
+                    tintHex(transitionColors.batteryTextTint) +
+                    ",charging=" +
+                    tintHex(currentSnapshot.colors.chargingIconTint) + "->" +
+                    tintHex(transitionColors.chargingIconTint) +
+                    ",center=" +
+                    tintHex(currentSnapshot.colors.centerTint) + "->" +
+                    tintHex(transitionColors.centerTint) +
+                    ",mobile=" +
+                    tintHex(currentSnapshot.colors.mobileTint) + "->" +
+                    tintHex(transitionColors.mobileTint) +
+                    ",tintPhase=" + Policy.transitionTintProgress(motionProgress) +
+                    "}"
 
             val refreshWitnessDiagnostic =
                 lastWitnessSummary == "pending" ||
@@ -1206,6 +1438,54 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     ArrayList<String>(specs.size)
                 } else {
                     null
+                }
+
+            val batterySourceCenterX =
+                specs.firstOrNull {
+                    it.component == CombinedStatusPainter.TransitionComponent.BATTERY
+                }?.sourceBounds?.centerX
+
+            val batteryNumberFollowerFrames =
+                specs.firstOrNull {
+                    it.component ==
+                        CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER
+                }?.let { numberSpec ->
+                    val numberSource =
+                        Policy.componentGeometry(
+                            parentGeometry = sourceParentGeometry,
+                            parentWidth = sourceWidth,
+                            parentHeight = sourceHeight,
+                            bounds = numberSpec.sourceBounds,
+                        ) ?: return@let null
+                    val numberWitness =
+                        resolveTarget(
+                            target = numberSpec.target,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    val numberTarget =
+                        numberWitness?.let { target ->
+                            resolveTargetGeometry(
+                                witness = target,
+                                root = rootView,
+                                sourceGeometry = numberSource,
+                                targetOpticalBounds = numberSpec.targetOpticalBounds,
+                            )
+                        }
+                    val numberCurrent =
+                        if (numberTarget != null) {
+                            projectedExactGeometry(
+                                source = numberSource,
+                                target = numberTarget,
+                                progress = motionProgress,
+                                carrierFrames = carrierFrames,
+                            )
+                        } else {
+                            carriedSourceGeometry(
+                                source = numberSource,
+                                carrierFrames = carrierFrames,
+                            )
+                        }
+                    Pair(numberSource, numberCurrent)
                 }
 
             specs.forEach { spec ->
@@ -1248,37 +1528,88 @@ internal object CombinedStatusControlCenterTransitionOwner {
                                 CombinedStatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
+                val chargingSourceVisibleFraction =
+                    if (
+                        spec.component ==
+                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                    ) {
+                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                            .chargingSourceVisibleFraction(motionProgress)
+                    } else {
+                        0f
+                    }
+                val chargingSourceLocked =
+                    spec.component ==
+                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON &&
+                        chargingSourceVisibleFraction > 0f
+                val componentMotionProgress =
+                    if (
+                        spec.component ==
+                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                    ) {
+                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                            .chargingMotionProgress(motionProgress)
+                    } else {
+                        motionProgress
+                    }
                 val geometry =
-                    if (targetGeometry != null) {
-                        if (exactTextGeometry) {
-                            projectedExactGeometry(
-                                source = sourceGeometry,
-                                target = targetGeometry,
-                                progress = motionProgress,
-                                carrierFrames = carrierFrames,
-                            )
-                        } else {
-                            projectedGeometry(
-                                source = sourceGeometry,
-                                target = targetGeometry,
-                                progress = motionProgress,
-                                scalePolicy = spec.scalePolicy,
-                                carrierFrames = carrierFrames,
-                            )
+                    when {
+                        chargingSourceLocked -> {
+                            batteryNumberFollowerFrames
+                                ?.let { (numberSource, numberCurrent) ->
+                                    Policy.followAnchorGeometry(
+                                        follower = sourceGeometry,
+                                        sourceAnchor = numberSource,
+                                        currentAnchor = numberCurrent,
+                                    )
+                                }
+                                ?: carriedSourceGeometry(
+                                    source = sourceGeometry,
+                                    carrierFrames = carrierFrames,
+                                )
                         }
-                    } else {
-                        carriedSourceGeometry(
-                            source = sourceGeometry,
-                            carrierFrames = carrierFrames,
-                        )
+
+                        targetGeometry != null -> {
+                            if (exactTextGeometry) {
+                                projectedExactGeometry(
+                                    source = sourceGeometry,
+                                    target = targetGeometry,
+                                    progress = componentMotionProgress,
+                                    carrierFrames = carrierFrames,
+                                )
+                            } else {
+                                projectedGeometry(
+                                    source = sourceGeometry,
+                                    target = targetGeometry,
+                                    progress = componentMotionProgress,
+                                    scalePolicy = spec.scalePolicy,
+                                    carrierFrames = carrierFrames,
+                                )
+                            }
+                        }
+
+                        else ->
+                            carriedSourceGeometry(
+                                source = sourceGeometry,
+                                carrierFrames = carrierFrames,
+                            )
                     }
-                val componentOpacity =
-                    if (targetGeometry != null) {
-                        opacity
+                val componentVisibleFraction =
+                    if (
+                        spec.component ==
+                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                    ) {
+                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                            .chargingVisibleFraction(
+                                progress = motionProgress,
+                                targetAvailable = targetGeometry != null,
+                            )
+                    } else if (targetGeometry != null) {
+                        1f
                     } else {
-                        opacity * Policy.unmatchedExitOpacity(motionProgress)
+                        Policy.unmatchedExitVisibleFraction(motionProgress)
                     }
-                if (componentOpacity <= 0f) return@forEach
+                if (componentVisibleFraction <= 0f || opacity <= 0f) return@forEach
                 val matrixBounds =
                     when {
                         spec.component ==
@@ -1317,9 +1648,34 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 val save =
                     canvas.saveLayerAlpha(
                         null,
-                        (255f * componentOpacity.coerceIn(0f, 1f)).roundToInt(),
+                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
+                if (componentVisibleFraction < 1f) {
+                    val clipAnchorRight =
+                        if (
+                            spec.component ==
+                            CombinedStatusPainter.TransitionComponent.CHARGING_ICON &&
+                            batterySourceCenterX != null
+                        ) {
+                            batterySourceCenterX >= matrixBounds.centerX
+                        } else {
+                            sourceView.layoutDirection != View.LAYOUT_DIRECTION_RTL
+                        }
+                    val clip =
+                        Policy.horizontalClipBounds(
+                            left = matrixBounds.left,
+                            top = matrixBounds.top,
+                            right = matrixBounds.right,
+                            bottom = matrixBounds.bottom,
+                            visibleFraction = componentVisibleFraction,
+                            anchorRight = clipAnchorRight,
+                        ) ?: run {
+                            canvas.restoreToCount(save)
+                            return@forEach
+                        }
+                    canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
+                }
                 painter.drawTransitionComponent(
                     canvas = canvas,
                     width = sourceWidth,
@@ -1539,6 +1895,37 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         targetOpticalBounds = mobileSpec.targetOpticalBounds,
                     ) ?: return@forEach
                 val targetBars = mobileTargetBars(witness)
+                val targetWidthRatio =
+                    Policy.relativeGeometryWidth(
+                        target = targetGeometry,
+                        current = sourceGeometry,
+                    )
+                val targetHeightRatio =
+                    Policy.relativeGeometryHeight(
+                        target = targetGeometry,
+                        current = sourceGeometry,
+                    )
+                val outerSimilarityScale =
+                    CombinedStatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+                        targetWidthRatio = targetWidthRatio,
+                        targetHeightRatio = targetHeightRatio,
+                    )
+                val clipBounds =
+                    Policy.expandedClipBounds(
+                        bounds = mobileSpec.sourceBounds,
+                        widthScale =
+                            CombinedStatusPainter.MobileSignalMorphPolicy
+                                .exactTargetAxisCompensation(
+                                    targetAxisRatio = targetWidthRatio,
+                                    outerScale = outerSimilarityScale,
+                                ),
+                        heightScale =
+                            CombinedStatusPainter.MobileSignalMorphPolicy
+                                .exactTargetAxisCompensation(
+                                    targetAxisRatio = targetHeightRatio,
+                                    outerScale = outerSimilarityScale,
+                                ),
+                    )
                 val pathGeometry =
                     projectedGeometry(
                         source = sourceGeometry,
@@ -1553,20 +1940,35 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         geometry = geometry,
                         bounds = mobileSpec.sourceBounds,
                     ) ?: return@forEach
-                val revealProgress =
-                    latentRevealOpacity(
+                val revealVisibleFraction =
+                    latentRevealVisibleFraction(
                         currentGeometry = geometry,
                         targetGeometry = targetGeometry,
                         witness = witness,
                     )
-                val componentOpacity = opacity * revealProgress
-                if (componentOpacity <= 0f) return@forEach
+                if (revealVisibleFraction <= 0f || opacity <= 0f) return@forEach
                 val save =
                     canvas.saveLayerAlpha(
                         null,
-                        (255f * componentOpacity.coerceIn(0f, 1f)).roundToInt(),
+                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
+                val clip =
+                    Policy.horizontalClipBounds(
+                        left = clipBounds.left,
+                        top = clipBounds.top,
+                        right = clipBounds.right,
+                        bottom = clipBounds.bottom,
+                        visibleFraction = revealVisibleFraction,
+                        anchorRight =
+                            (sourceViewRef.get()?.layoutDirection
+                                ?: View.LAYOUT_DIRECTION_LTR) !=
+                                View.LAYOUT_DIRECTION_RTL,
+                    ) ?: run {
+                        canvas.restoreToCount(save)
+                        return@forEach
+                    }
+                canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
                 painter.drawTransitionComponent(
                     canvas = canvas,
                     width = sourceWidth,
@@ -1583,16 +1985,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     opacity = 1f,
                     motionProgress = motionProgress,
                     shapeProgress = shapeProgress,
-                    mobileTargetWidthRatio =
-                        Policy.relativeGeometryWidth(
-                            target = targetGeometry,
-                            current = sourceGeometry,
-                        ),
-                    mobileTargetHeightRatio =
-                        Policy.relativeGeometryHeight(
-                            target = targetGeometry,
-                            current = sourceGeometry,
-                        ),
+                    mobileTargetWidthRatio = targetWidthRatio,
+                    mobileTargetHeightRatio = targetHeightRatio,
                     mobileTargetBars = targetBars,
                 )
                 canvas.restoreToCount(save)
@@ -1646,30 +2040,44 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     source = sourceGeometry,
                     target = targetGeometry,
                     progress = motionProgress,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
             val geometry = pathGeometry
-            val revealProgress =
-                latentRevealOpacity(
+            val revealVisibleFraction =
+                latentRevealVisibleFraction(
                     currentGeometry = geometry,
                     targetGeometry = targetGeometry,
                     witness = witness,
                 )
-            if (revealProgress <= 0f) return null
+            if (revealVisibleFraction <= 0f || opacity <= 0f) return null
             val matrix =
                 matrixForBoundsGeometry(
                     geometry = geometry,
                     bounds = bounds,
                 ) ?: return null
-            val componentOpacity = opacity * revealProgress
-            if (componentOpacity <= 0f) return null
             val save =
                 canvas.saveLayerAlpha(
                     null,
-                    (255f * componentOpacity.coerceIn(0f, 1f)).roundToInt(),
+                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
                 )
             canvas.concat(matrix)
+            val clip =
+                Policy.horizontalClipBounds(
+                    left = bounds.left,
+                    top = bounds.top,
+                    right = bounds.right,
+                    bottom = bounds.bottom,
+                    visibleFraction = revealVisibleFraction,
+                    anchorRight =
+                        (sourceViewRef.get()?.layoutDirection
+                            ?: View.LAYOUT_DIRECTION_LTR) !=
+                            View.LAYOUT_DIRECTION_RTL,
+                ) ?: run {
+                    canvas.restoreToCount(save)
+                    return null
+                }
+            canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
             painter.drawTransitionAirplane(
                 canvas = canvas,
                 width = sourceWidth,
@@ -1732,30 +2140,44 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     source = sourceGeometry,
                     target = targetGeometry,
                     progress = motionProgress,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
             val geometry = pathGeometry
-            val revealProgress =
-                latentRevealOpacity(
+            val revealVisibleFraction =
+                latentRevealVisibleFraction(
                     currentGeometry = geometry,
                     targetGeometry = targetGeometry,
                     witness = witness,
                 )
-            if (revealProgress <= 0f) return null
+            if (revealVisibleFraction <= 0f || opacity <= 0f) return null
             val matrix =
                 matrixForBoundsGeometry(
                     geometry = geometry,
                     bounds = bounds,
                 ) ?: return null
-            val componentOpacity = opacity * revealProgress
-            if (componentOpacity <= 0f) return null
             val save =
                 canvas.saveLayerAlpha(
                     null,
-                    (255f * componentOpacity.coerceIn(0f, 1f)).roundToInt(),
+                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
                 )
             canvas.concat(matrix)
+            val clip =
+                Policy.horizontalClipBounds(
+                    left = bounds.left,
+                    top = bounds.top,
+                    right = bounds.right,
+                    bottom = bounds.bottom,
+                    visibleFraction = revealVisibleFraction,
+                    anchorRight =
+                        (sourceViewRef.get()?.layoutDirection
+                            ?: View.LAYOUT_DIRECTION_LTR) !=
+                            View.LAYOUT_DIRECTION_RTL,
+                ) ?: run {
+                    canvas.restoreToCount(save)
+                    return null
+                }
+            canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
             painter.drawTransitionNoSim(
                 canvas = canvas,
                 width = sourceWidth,
@@ -1824,7 +2246,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 )
             } ?: source.copyOf()
 
-        private fun latentRevealOpacity(
+        private fun latentRevealVisibleFraction(
             currentGeometry: FloatArray,
             targetGeometry: FloatArray,
             witness: TargetWitness,
@@ -1863,7 +2285,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     requiredReservationPx = requiredReservation,
                     visualWidthPx = targetWidth,
                 )
-            return Policy.latentRevealOpacity(
+            return Policy.latentRevealVisibleFraction(
                 current = currentGeometry,
                 target = targetGeometry,
                 visualExtent = visualExtent,
@@ -1945,9 +2367,23 @@ internal object CombinedStatusControlCenterTransitionOwner {
         }
 
         private fun refreshNativePeerTint() {
-            cachedNativePeerTint =
+            val peerTint =
                 SystemUiNativeNetworkSuppressionOwner
-                    .currentAppliedStatusIconTintForGroup(finalStatusIcons)
+                    .currentAppliedStatusIconTintForGroup(fakeStatusIcons)
+            val resolved =
+                Policy.selectNativeTransitionTint(
+                    statusIconPeerTint = peerTint,
+                    cachedTint = cachedNativePeerTint,
+                )
+            if (resolved != null) {
+                cachedNativePeerTint = resolved
+                cachedNativePeerTintAuthority =
+                    if (peerTint != null && resolved == peerTint) {
+                        "qs-fake-visible-peer-applied"
+                    } else {
+                        "cached-last-valid"
+                    }
+            }
         }
 
         private fun syncTransitionReservation() {
@@ -1957,11 +2393,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         "transition-source-native-peer-motion",
                     )
                 }
-                SystemUiPanelTransitionSource
-                    .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                fakeIslandBoundaryDeltaPx = null
                 lastReservationWidthPx = null
                 lastNativeReservationWidthPx = null
+                lastNativePeerTargetEndOffsetPx = null
                 return
             }
             val source = sourceViewRef.get() ?: return
@@ -1985,10 +2419,45 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     progress = progress,
                 )
 
-            // The logical reservation is Guiyuan-owned. HyperOS keeps sole
-            // ownership of islandWidth; the fake-only hook projects the
-            // collision read by the same delta as paddingEnd expands.
+            // The logical transition width is Guiyuan-owned. Native status-icon
+            // capacity and island collision remain HyperOS-owned.
             lastReservationWidthPx = requestedWidth
+
+            val nativeRequestedWidth =
+                if (nativeBatteryIslandActive) {
+                    // Reservation spans store target X in the final-Battery end frame.
+                    // HyperOS translates the visible QS_FAKE carrier independently for
+                    // Battery Island, so project that target end into the current fake
+                    // end frame before measuring the current projected occupancy.
+                    lastNativePeerTargetEndOffsetPx = null
+                    val targetEndOffsetPx =
+                        resolveBatteryIslandNativePeerTargetEndOffsetPx()
+                            ?: run {
+                                lastNativeReservationWidthPx = null
+                                val presentationFailed =
+                                    SystemUiHomePresentationOwner
+                                        .failControlCenterPresentation(
+                                            "battery-island-peer-end-frame-unavailable",
+                                        )
+                                if (!presentationFailed) {
+                                    CombinedStatusControlCenterTransitionOwner.detach(
+                                        "battery-island-peer-end-frame-unavailable",
+                                    )
+                                }
+                                return
+                            }
+                    lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
+                    Policy.resolveBatteryIslandNativePeerReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = spans,
+                        semanticWidthPx = requestedWidth,
+                        progress = progress,
+                        targetEndOffsetPx = targetEndOffsetPx,
+                    )
+                } else {
+                    lastNativePeerTargetEndOffsetPx = null
+                    requestedWidth
+                }
 
             if (!nativePaddingExpansionAllowed) {
                 if (lastNativeReservationWidthPx != null) {
@@ -1997,84 +2466,64 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     )
                     lastNativeReservationWidthPx = null
                 }
-                SystemUiPanelTransitionSource
-                    .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                fakeIslandBoundaryDeltaPx = null
                 return
             }
 
-            val projectionRequired =
-                genericIslandShowing == true &&
-                    fakeIslandBoundaryProjectionReady
-            val paddingDelta = (requestedWidth - compactWidth).coerceAtLeast(0)
-            val previousProjectionDelta = fakeIslandBoundaryDeltaPx
-
-            // Install the collision-boundary projection before paddingEnd can
-            // request native layout. This keeps the peer-X shift and island
-            // threshold shift atomic from MiuiStatusIconContainer's view.
-            if (projectionRequired) {
-                val projected =
-                    SystemUiPanelTransitionSource
-                        .updateFakeIslandBoundaryProjection(
-                            container = fakeStatusIcons,
-                            transitionPaddingDeltaPx = paddingDelta,
-                        )
-                if (!projected) {
-                    SystemUiHomePresentationOwner
-                        .clearControlCenterTransitionReservation(
-                            "transition-island-projection-unavailable",
-                        )
-                    SystemUiPanelTransitionSource
-                        .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                    fakeIslandBoundaryProjectionReady = false
-                    fakeIslandBoundaryDeltaPx = null
-                    nativePaddingExpansionAllowed = false
-                    lastNativeReservationWidthPx = null
-                    return
-                }
-                fakeIslandBoundaryDeltaPx = paddingDelta
-            } else {
-                SystemUiPanelTransitionSource
-                    .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                fakeIslandBoundaryDeltaPx = null
-            }
-
-            if (lastNativeReservationWidthPx != requestedWidth) {
+            if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
                     SystemUiHomePresentationOwner
                         .updateControlCenterTransitionReservation(
-                            requestedSlotWidthPx = requestedWidth,
+                            requestedSlotWidthPx = nativeRequestedWidth,
                         )
                 if (!applied) {
-                    // Reservation did not advance, so restore the projection
-                    // to the boundary paired with the previously applied
-                    // padding. Never leave a future delta active by itself.
-                    if (projectionRequired && previousProjectionDelta != null) {
-                        val restored =
-                            SystemUiPanelTransitionSource
-                                .updateFakeIslandBoundaryProjection(
-                                    container = fakeStatusIcons,
-                                    transitionPaddingDeltaPx =
-                                        previousProjectionDelta,
-                                )
-                        if (restored) {
-                            fakeIslandBoundaryDeltaPx = previousProjectionDelta
-                        } else {
-                            SystemUiPanelTransitionSource
-                                .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                            fakeIslandBoundaryProjectionReady = false
-                            fakeIslandBoundaryDeltaPx = null
-                            nativePaddingExpansionAllowed = false
-                        }
-                    } else {
-                        SystemUiPanelTransitionSource
-                            .clearFakeIslandBoundaryProjection(fakeStatusIcons)
-                        fakeIslandBoundaryDeltaPx = null
-                    }
                     return
                 }
-                lastNativeReservationWidthPx = requestedWidth
+                lastNativeReservationWidthPx = nativeRequestedWidth
             }
+        }
+
+        private fun resolveBatteryIslandNativePeerTargetEndOffsetPx(): Float? {
+            if (
+                fakeStatusIcons.width <= 0 ||
+                finalBattery.width <= 0 ||
+                !fakeStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow
+            ) {
+                return null
+            }
+            val fakeRtl =
+                fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val targetRtl =
+                finalBattery.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            if (fakeRtl != targetRtl) return null
+
+            val fakeLocation = IntArray(2)
+            val targetLocation = IntArray(2)
+            val located =
+                runCatching {
+                    fakeStatusIcons.getLocationInWindow(fakeLocation)
+                    finalBattery.getLocationInWindow(targetLocation)
+                    true
+                }.getOrDefault(false)
+            if (!located) return null
+
+            val fakeEndPhysical =
+                if (fakeRtl) {
+                    fakeLocation[0].toFloat()
+                } else {
+                    (fakeLocation[0] + fakeStatusIcons.width).toFloat()
+                }
+            val targetEndPhysical =
+                if (targetRtl) {
+                    targetLocation[0].toFloat()
+                } else {
+                    (targetLocation[0] + finalBattery.width).toFloat()
+                }
+            val fakeEndLogical =
+                if (fakeRtl) -fakeEndPhysical else fakeEndPhysical
+            val targetEndLogical =
+                if (targetRtl) -targetEndPhysical else targetEndPhysical
+            return targetEndLogical - fakeEndLogical
         }
 
         private fun resolveReservationSpans(): List<Policy.ReservationSpan>? {
@@ -2289,6 +2738,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
                     CombinedStatusPainter.TransitionTarget.BatteryNumber ->
                         resolveBatteryNumberTargetWitness()
+
+                    CombinedStatusPainter.TransitionTarget.BatteryChargingIcon ->
+                        resolveBatteryChargingIconTargetWitness()
 
                     is CombinedStatusPainter.TransitionTarget.Slots ->
                         target.preferredSlots.firstNotNullOfOrNull { slot ->
@@ -2708,6 +3160,31 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 parentWidth = slot.width,
                 parentHeight = slot.height,
                 bounds = localBounds,
+            )
+        }
+
+        private fun resolveBatteryChargingIconTargetWitness(): TargetWitness? {
+            val chargingView =
+                readViewField(finalBattery, "mBatteryChargingView") as? ImageView
+                    ?: return null
+            val drawable = chargingView.drawable ?: return null
+            if (
+                !chargingView.isAttachedToWindow ||
+                chargingView.width <= 0 ||
+                chargingView.height <= 0 ||
+                drawable.intrinsicWidth <= 0 ||
+                drawable.intrinsicHeight <= 0
+            ) {
+                return null
+            }
+            return TargetWitness(
+                slot = BATTERY_CHARGING_SLOT,
+                slotView = chargingView,
+                opticalView = chargingView,
+                subscriptionId = null,
+                requiresOpticalGeometry = true,
+                fallbackBounds = null,
+                opticalSource = "battery-charging-view",
             )
         }
 

@@ -8,11 +8,10 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.WeakHashMap
 import kotlin.math.floor
 
 internal object SystemUiPanelTransitionSource {
-    const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 5
+    const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
     const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
     const val HOOK_COUNT =
         CONTROL_CENTER_RUNTIME_HOOK_COUNT +
@@ -36,9 +35,6 @@ internal object SystemUiPanelTransitionSource {
     private const val DAGGER_LAZY_CLASS = "dagger.Lazy"
     private const val STATUS_BAR_ANCHOR_CLASS =
         "com.android.systemui.controlcenter.shade.StatusBarAnchorBounds"
-    private const val STATUS_ICON_CONTAINER_CLASS =
-        "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
-    private const val ISLAND_TRANSLATION_METHOD = "getIslandTranslationX"
 
     private const val CONTROL_CENTER_EXPANSION_HOOK_ID =
         "combinedstatus.panel.control-center.expansion"
@@ -48,8 +44,6 @@ internal object SystemUiPanelTransitionSource {
         "combinedstatus.panel.control-center.visible"
     private const val CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID =
         "combinedstatus.panel.control-center.fake-attached"
-    private const val CONTROL_CENTER_FAKE_ISLAND_BOUNDARY_HOOK_ID =
-        "combinedstatus.panel.control-center.fake-island-boundary"
 
     private var controlProbe = ProbeState()
     @Volatile
@@ -57,9 +51,6 @@ internal object SystemUiPanelTransitionSource {
     private var controlAnchorContract: ControlCenterAnchorContract? = null
     private var controlHeaderRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
-    private val fakeIslandBoundaryProjection = WeakHashMap<ViewGroup, Int>()
-    @Volatile
-    private var fakeIslandBoundaryProjectionInstalled = false
 
     fun install(
         module: XposedModule,
@@ -86,16 +77,6 @@ internal object SystemUiPanelTransitionSource {
                 false,
                 classLoader,
             )
-        val statusIconContainerClass =
-            Class.forName(
-                STATUS_ICON_CONTAINER_CLASS,
-                false,
-                classLoader,
-            )
-        val islandTranslationMethod =
-            statusIconContainerClass
-                .getDeclaredMethod(ISLAND_TRANSLATION_METHOD)
-                .apply { isAccessible = true }
         val fakeAttachedMethod =
             fakeStatusBarClass.declaredMethods
                 .firstOrNull { method ->
@@ -230,27 +211,6 @@ internal object SystemUiPanelTransitionSource {
                         },
                     )
 
-            handles +=
-                module
-                    .hook(islandTranslationMethod)
-                    .setId(CONTROL_CENTER_FAKE_ISLAND_BOUNDARY_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            val nativeIslandWidth =
-                                (result as? Number)?.toInt()
-                                    ?: return@Hooker result
-                            val container =
-                                chain.thisObject as? ViewGroup
-                                    ?: return@Hooker result
-                            projectFakeIslandBoundary(
-                                container = container,
-                                nativeIslandWidthPx = nativeIslandWidth,
-                            )
-                        },
-                    )
-            fakeIslandBoundaryProjectionInstalled = true
-
             // Control Center visibility is the only panel runtime authority.
             // Notification Shade inherits the native Home carrier lifecycle.
             if (controlCenterHomeEligible == null) {
@@ -381,10 +341,6 @@ internal object SystemUiPanelTransitionSource {
             handles.asReversed().forEach { handle ->
                 runCatching { handle.unhook() }
             }
-            synchronized(this) {
-                fakeIslandBoundaryProjection.clear()
-                fakeIslandBoundaryProjectionInstalled = false
-            }
             controlCenterHomeEligible = false
             throw error
         }
@@ -397,44 +353,7 @@ internal object SystemUiPanelTransitionSource {
             controlAnchorContract = null
             controlHeaderRef = WeakReference(null)
             fakeIslandContractRootRef = WeakReference(null)
-            fakeIslandBoundaryProjection.clear()
-            fakeIslandBoundaryProjectionInstalled = false
         }
-    }
-
-    @Synchronized
-    internal fun isFakeIslandBoundaryProjectionAvailable(): Boolean =
-        fakeIslandBoundaryProjectionInstalled
-
-    @Synchronized
-    internal fun updateFakeIslandBoundaryProjection(
-        container: ViewGroup,
-        transitionPaddingDeltaPx: Int,
-    ): Boolean {
-        if (!fakeIslandBoundaryProjectionInstalled) return false
-        fakeIslandBoundaryProjection[container] =
-            transitionPaddingDeltaPx.coerceAtLeast(0)
-        return true
-    }
-
-    @Synchronized
-    internal fun clearFakeIslandBoundaryProjection(container: ViewGroup) {
-        fakeIslandBoundaryProjection.remove(container)
-    }
-
-    @Synchronized
-    private fun projectFakeIslandBoundary(
-        container: ViewGroup,
-        nativeIslandWidthPx: Int,
-    ): Int {
-        val delta =
-            fakeIslandBoundaryProjection[container]
-                ?: return nativeIslandWidthPx
-        return CombinedStatusControlCenterTransitionOwner.Policy
-            .compensateFakeIslandWidth(
-                nativeIslandWidthPx = nativeIslandWidthPx,
-                transitionPaddingDeltaPx = delta,
-            )
     }
 
     @Synchronized

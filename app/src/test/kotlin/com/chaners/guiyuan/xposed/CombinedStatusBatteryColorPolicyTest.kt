@@ -4,8 +4,11 @@ import com.chaners.guiyuan.settings.CombinedStatusBatteryColorMode
 import com.chaners.guiyuan.settings.CombinedStatusBatteryColorModes
 import com.chaners.guiyuan.settings.CombinedStatusBatteryColorOverrides
 import com.chaners.guiyuan.settings.CombinedStatusBatteryColorPreset
+import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CombinedStatusBatteryColorPolicyTest {
@@ -266,4 +269,36 @@ class CombinedStatusBatteryColorPolicyTest {
             CombinedStatusBatterySemanticState.LOW ->
                 CombinedStatusBatteryColorPreferences(low = source)
         }
+
+    @Test
+    fun tintedStateTracksActualCustomOrPresetColorSource() {
+        val defaultSettings = CombinedStatusVisualSettings()
+        assertTrue(
+            CombinedStatusBatteryColorPolicy.isTinted(
+                state = CombinedStatusBatterySemanticState.CHARGING,
+                settings = defaultSettings,
+            ),
+        )
+        assertFalse(
+            CombinedStatusBatteryColorPolicy.isTinted(
+                state = CombinedStatusBatterySemanticState.NORMAL,
+                settings = defaultSettings,
+            ),
+        )
+
+        val followSystemCharging =
+            defaultSettings.copy(
+                batteryColorModes =
+                    defaultSettings.batteryColorModes.withMode(
+                        CombinedStatusBatteryColorSlot.CHARGING,
+                        CombinedStatusBatteryColorMode.FOLLOW_SYSTEM,
+                    ),
+            )
+        assertFalse(
+            CombinedStatusBatteryColorPolicy.isTinted(
+                state = CombinedStatusBatterySemanticState.CHARGING,
+                settings = followSystemCharging,
+            ),
+        )
+    }
 }

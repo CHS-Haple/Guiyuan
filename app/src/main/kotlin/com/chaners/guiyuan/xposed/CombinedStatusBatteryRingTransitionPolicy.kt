@@ -33,11 +33,44 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
         return 1f - eased
     }
 
+    fun isTerminalCapDominated(
+        remainingFraction: Float,
+        totalSweepDegrees: Float,
+        radiusPx: Float,
+        strokeWidthPx: Float,
+    ): Boolean {
+        val remaining =
+            remainingFraction
+                .takeIf(Float::isFinite)
+                ?.coerceIn(0f, 1f)
+                ?: return false
+        val sweep =
+            totalSweepDegrees
+                .takeIf(Float::isFinite)
+                ?.coerceAtLeast(0f)
+                ?: return false
+        val radius =
+            radiusPx
+                .takeIf(Float::isFinite)
+                ?.takeIf { it > 0f }
+                ?: return false
+        val stroke =
+            strokeWidthPx
+                .takeIf(Float::isFinite)
+                ?.takeIf { it > 0f }
+                ?: return false
+        if (remaining <= 0f || sweep <= 0f) return true
+        val remainingArcLengthPx =
+            Math.toRadians((sweep * remaining).toDouble()).toFloat() * radius
+        return remainingArcLengthPx <= stroke
+    }
+
     fun resolve(
         drawableArcs: List<CombinedStatusBatteryTopArcPolicy.Arc>,
         batteryPercent: Int,
         progress: Float,
         exitDirection: ExitDirection = ExitDirection.NONE,
+        followRetractEndpoint: Boolean = false,
     ): Segments {
         val remaining = remainingFraction(progress)
         val totalSweep = drawableArcs.sumOf { it.sweepDegrees.coerceAtLeast(0f).toDouble() }.toFloat()
@@ -55,17 +88,28 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
             ExitDirection.LEFT -> {
                 val retainedStart = totalSweep - retainedSweep
                 val retainedEnd = totalSweep
-                val originalActiveEnd =
+                val originalActiveSweep =
                     totalSweep *
                         batteryPercent.coerceIn(0, 100) /
                         100f
+                val activeStart: Float
+                val activeEnd: Float
+                if (followRetractEndpoint) {
+                    activeStart = retainedStart
+                    activeEnd =
+                        retainedStart +
+                            min(originalActiveSweep, retainedSweep)
+                } else {
+                    activeStart = max(retainedStart, 0f)
+                    activeEnd = min(retainedEnd, originalActiveSweep)
+                }
                 Segments(
                     background = slice(drawableArcs, retainedStart, retainedEnd),
                     active =
                         slice(
                             drawableArcs,
-                            max(retainedStart, 0f),
-                            min(retainedEnd, originalActiveEnd),
+                            activeStart,
+                            activeEnd,
                         ),
                     remainingFraction = remaining,
                 )

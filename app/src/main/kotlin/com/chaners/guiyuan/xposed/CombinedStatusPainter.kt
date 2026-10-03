@@ -293,16 +293,21 @@ internal class CombinedStatusPainter(
                     canvas = canvas,
                     model = model,
                     textTint = colors.batteryTextTint,
-                    chargingIconTint = colors.chargingIconTint,
                     opacity = opacity,
                     visualSettings = visualSettings,
-                    geometry =
-                        resolveOuterGeometry(
-                            visualSettings.outerWeightScale,
-                        ),
                     motionProgress = motion,
                     targetWeight = batteryNumberTargetWeight,
                     targetStyle = batteryNumberTargetStyle,
+                    nativeTransform = nativeTransform,
+                )
+
+            TransitionComponent.CHARGING_ICON ->
+                drawBatteryTopChargingIconTransition(
+                    canvas = canvas,
+                    model = model,
+                    chargingIconTint = colors.chargingIconTint,
+                    opacity = opacity,
+                    visualSettings = visualSettings,
                     nativeTransform = nativeTransform,
                 )
 
@@ -404,13 +409,86 @@ internal class CombinedStatusPainter(
     }
 
     internal object BatteryNumberFollowerPolicy {
-        fun chargingOpacity(progress: Float): Float {
-            val normalized =
-                ((progress.coerceIn(0f, 1f) - 0.58f) / 0.30f)
-                    .coerceIn(0f, 1f)
-            val fade = normalized * normalized * (3f - 2f * normalized)
-            return 1f - fade
+        private const val CHARGING_HIDE_COMPLETE_RING_LIFETIME = 0.40f
+        private const val CHARGING_TARGET_TRAVEL_COMPLETE = 0.80f
+        private const val CHARGING_TARGET_REVEAL_START = 0.85f
+        private const val CHARGING_TARGET_REVEAL_COMPLETE = 0.90f
+
+        private const val chargingHideStartProgress = 0f
+        private val chargingHideEndProgress =
+            firstProgressAtOrAboveRingLifetime(CHARGING_HIDE_COMPLETE_RING_LIFETIME)
+        private val chargingTargetRevealComplete =
+            CHARGING_TARGET_REVEAL_COMPLETE
+
+        fun chargingVisibleFraction(
+            progress: Float,
+            targetAvailable: Boolean,
+        ): Float {
+            val sourceVisible = chargingSourceVisibleFraction(progress)
+            if (sourceVisible > 0f) return sourceVisible
+            if (!targetAvailable) return 0f
+            val reveal =
+                (
+                    (progress.coerceIn(0f, 1f) - CHARGING_TARGET_REVEAL_START) /
+                        (chargingTargetRevealComplete - CHARGING_TARGET_REVEAL_START)
+                ).coerceIn(0f, 1f)
+            return smooth(reveal)
         }
+
+        internal fun chargingSourceVisibleFraction(progress: Float): Float {
+            val ringLifetime = chargingRingLifetimeProgress(progress)
+            return (
+                1f -
+                    ringLifetime /
+                        CHARGING_HIDE_COMPLETE_RING_LIFETIME
+            ).coerceIn(0f, 1f)
+        }
+
+        fun chargingMotionProgress(progress: Float): Float {
+            // Source and number remain one visual group while the charging glyph
+            // is clipped directly against the ring-retract lifetime. Clipping starts
+            // with retract and completes at the device-calibrated visual midpoint
+            // (40% lifetime; ~32% retained arc under the current front-loaded curve).
+            // Target travel begins only after that boundary.
+            if (chargingSourceVisibleFraction(progress) > 0f) return 0f
+            val hiddenTravel =
+                (
+                    (progress.coerceIn(0f, 1f) - chargingHideEndProgress) /
+                        (CHARGING_TARGET_TRAVEL_COMPLETE - chargingHideEndProgress)
+                ).coerceIn(0f, 1f)
+            return smooth(hiddenTravel)
+        }
+
+        internal fun chargingRingLifetimeProgress(progress: Float): Float =
+            CombinedStatusBatteryRingTransitionPolicy.transitionProgress(progress)
+
+        internal fun chargingRingRemaining(progress: Float): Float =
+            CombinedStatusBatteryRingTransitionPolicy.remainingFraction(
+                chargingRingLifetimeProgress(progress),
+            )
+
+        internal fun sourceHideWindow(): Pair<Float, Float> =
+            Pair(chargingHideStartProgress, chargingHideEndProgress)
+
+        internal fun targetRevealWindow(): Pair<Float, Float> =
+            Pair(CHARGING_TARGET_REVEAL_START, chargingTargetRevealComplete)
+
+        private fun firstProgressAtOrAboveRingLifetime(threshold: Float): Float {
+            var low = 0f
+            var high = 1f
+            repeat(12) {
+                val mid = (low + high) / 2f
+                if (chargingRingLifetimeProgress(mid) >= threshold) {
+                    high = mid
+                } else {
+                    low = mid
+                }
+            }
+            return high
+        }
+
+        private fun smooth(value: Float): Float =
+            value * value * (3f - 2f * value)
     }
 
     internal object MobileSignalMorphPolicy {
@@ -518,6 +596,7 @@ internal class CombinedStatusPainter(
     internal enum class TransitionComponent {
         BATTERY,
         BATTERY_NUMBER,
+        CHARGING_ICON,
         CENTER,
         MOBILE,
     }
@@ -536,6 +615,7 @@ internal class CombinedStatusPainter(
     internal sealed interface TransitionTarget {
         data object BatteryIcon : TransitionTarget
         data object BatteryNumber : TransitionTarget
+        data object BatteryChargingIcon : TransitionTarget
 
         data class Slots(
             val preferredSlots: List<String>,
@@ -619,7 +699,7 @@ internal class CombinedStatusPainter(
                 bottom = offsetY + bounds.bottom * scale,
             )
 
-        val specs = ArrayList<TransitionComponentSpec>(4)
+        val specs = ArrayList<TransitionComponentSpec>(5)
         val batteryHalfStroke = outerGeometry.ringStroke / 2f
         specs +=
             TransitionComponentSpec(
@@ -643,21 +723,30 @@ internal class CombinedStatusPainter(
             visualSettings = visualSettings,
             nativeTransform = nativeTransform,
         )?.let { readout ->
-            specs +=
-                TransitionComponentSpec(
-                    component = TransitionComponent.BATTERY_NUMBER,
-                    sourceBounds =
-                        toViewBounds(
-                            if (readout.textVisible) {
-                                readout.textOpticalBounds
-                            } else {
-                                readout.groupOpticalBounds
-                            },
-                        ),
-                    target = TransitionTarget.BatteryNumber,
-                    shapePolicy = TransitionShapePolicy.RIGID,
-                    scalePolicy = TransitionScalePolicy.TARGET,
-                )
+            if (readout.textVisible) {
+                specs +=
+                    TransitionComponentSpec(
+                        component = TransitionComponent.BATTERY_NUMBER,
+                        sourceBounds = toViewBounds(readout.textOpticalBounds),
+                        target = TransitionTarget.BatteryNumber,
+                        shapePolicy = TransitionShapePolicy.RIGID,
+                        scalePolicy = TransitionScalePolicy.TARGET,
+                    )
+            }
+            if (
+                readout.chargingIconResourceId != null &&
+                readout.chargingIconOpticalBounds.width > 0f &&
+                readout.chargingIconOpticalBounds.height > 0f
+            ) {
+                specs +=
+                    TransitionComponentSpec(
+                        component = TransitionComponent.CHARGING_ICON,
+                        sourceBounds = toViewBounds(readout.chargingIconOpticalBounds),
+                        target = TransitionTarget.BatteryChargingIcon,
+                        shapePolicy = TransitionShapePolicy.RIGID,
+                        scalePolicy = TransitionScalePolicy.TARGET,
+                    )
+            }
         }
 
         val centerSpec =
@@ -1522,30 +1611,45 @@ internal class CombinedStatusPainter(
                     batteryPercent = model.batteryPercent,
                     progress = ringRetractProgress,
                     exitDirection = ringRetractExitDirection,
+                    followRetractEndpoint =
+                        visualSettings.batteryFillFollowsRetractEndpoint,
+                )
+            val totalSweepDegrees =
+                drawableArcs
+                    .sumOf { arc -> arc.sweepDegrees.coerceAtLeast(0f).toDouble() }
+                    .toFloat()
+            val terminalCapDominated =
+                CombinedStatusBatteryRingTransitionPolicy.isTerminalCapDominated(
+                    remainingFraction = segments.remainingFraction,
+                    totalSweepDegrees = totalSweepDegrees,
+                    radiusPx = CombinedStatusOuterGeometry.RING_RADIUS,
+                    strokeWidthPx = geometry.ringStroke,
                 )
 
-            stroke(batteryTint, 48, geometry.ringStroke, opacity)
-            segments.background.forEach { arc ->
-                if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+            if (!terminalCapDominated) {
+                stroke(batteryTint, 48, geometry.ringStroke, opacity)
+                segments.background.forEach { arc ->
+                    if (arc.sweepDegrees > 0f) {
+                        canvas.drawArc(
+                            batteryRing,
+                            arc.startDegrees,
+                            arc.sweepDegrees,
+                            false,
+                            paint,
+                        )
+                    }
                 }
-            }
-            stroke(batteryTint, 255, geometry.ringStroke, opacity)
-            segments.active.forEach { arc ->
-                if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+                stroke(batteryTint, 255, geometry.ringStroke, opacity)
+                segments.active.forEach { arc ->
+                    if (arc.sweepDegrees > 0f) {
+                        canvas.drawArc(
+                            batteryRing,
+                            arc.startDegrees,
+                            arc.sweepDegrees,
+                            false,
+                            paint,
+                        )
+                    }
                 }
             }
         } else if (topContentAvoidance == null) {
@@ -1811,6 +1915,22 @@ internal class CombinedStatusPainter(
                 right = groupLeft + groupWidth,
                 bottom = groupCenterY + groupBottomExtent,
             )
+        val chargingIconOpticalBounds =
+            if (chargingInkVisible) {
+                TransitionBounds(
+                    left = groupLeft,
+                    top = groupCenterY - chargingTopExtent,
+                    right = groupLeft + chargingOpticalWidth,
+                    bottom = groupCenterY + chargingBottomExtent,
+                )
+            } else {
+                centeredBounds(
+                    centerX = BATTERY_COMPONENT_CENTER_X,
+                    centerY = groupCenterY,
+                    width = 0f,
+                    height = 0f,
+                )
+            }
 
         return BatteryTopReadoutLayout(
             textVisible = textVisible,
@@ -1825,6 +1945,7 @@ internal class CombinedStatusPainter(
             textBaselineY = textBaselineY,
             textOpticalBounds = textOpticalBounds,
             groupOpticalBounds = groupOpticalBounds,
+            chargingIconOpticalBounds = chargingIconOpticalBounds,
             chargingIconResourceId = chargingIconResourceId,
             chargingIconCenterX =
                 if (chargingInkVisible) {
@@ -1889,10 +2010,8 @@ internal class CombinedStatusPainter(
         canvas: Canvas,
         model: CombinedStatusRenderModel,
         textTint: Int,
-        chargingIconTint: Int,
         opacity: Float,
         visualSettings: CombinedStatusVisualSettings,
-        geometry: CombinedStatusOuterGeometry.Resolved,
         motionProgress: Float,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
@@ -1904,6 +2023,7 @@ internal class CombinedStatusPainter(
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
             ) ?: return
+        if (!layout.textVisible) return
         val sourceWeight = layout.textWeight
         val resolvedTargetWeight =
             targetWeight?.coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_WEIGHT_TRANSITION_MAX)
@@ -1912,37 +2032,48 @@ internal class CombinedStatusPainter(
         val weight =
             (sourceWeight + (resolvedTargetWeight - sourceWeight) * progress)
                 .roundToInt()
-        layout.chargingIconResourceId?.let { resourceId ->
-            drawNativeCenterResource(
-                canvas = canvas,
-                resource =
-                    CombinedStatusPresentationStateStore.NativeIconResource(
-                        packageName = SYSTEM_UI_PACKAGE,
-                        resourceId = resourceId,
-                    ),
-                tint = chargingIconTint,
-                opacity =
-                    opacity *
-                        BatteryNumberFollowerPolicy.chargingOpacity(progress),
-                centerX = layout.chargingIconCenterX,
-                centerY = layout.chargingIconCenterY,
-                maxWidth = layout.chargingIconSize,
-                maxHeight = layout.chargingIconSize,
+        drawBatteryTopText(
+            canvas = canvas,
+            layout = layout,
+            textTint = textTint,
+            opacity = opacity,
+            weight = weight,
+            targetStyle = targetStyle,
+            transitionProgress = progress,
+        )
+    }
+
+    private fun drawBatteryTopChargingIconTransition(
+        canvas: Canvas,
+        model: CombinedStatusRenderModel,
+        chargingIconTint: Int,
+        opacity: Float,
+        visualSettings: CombinedStatusVisualSettings,
+        nativeTransform: NativeRenderTransform,
+    ) {
+        val layout =
+            resolveBatteryTopReadoutLayout(
+                model = model,
+                visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
-                pixelAligned = false,
-            )
-        }
-        if (layout.textVisible) {
-            drawBatteryTopText(
-                canvas = canvas,
-                layout = layout,
-                textTint = textTint,
-                opacity = opacity,
-                weight = weight,
-                targetStyle = targetStyle,
-                transitionProgress = progress,
-            )
-        }
+            ) ?: return
+        val resourceId = layout.chargingIconResourceId ?: return
+        drawNativeCenterResource(
+            canvas = canvas,
+            resource =
+                CombinedStatusPresentationStateStore.NativeIconResource(
+                    packageName = SYSTEM_UI_PACKAGE,
+                    resourceId = resourceId,
+                ),
+            tint = chargingIconTint,
+            opacity = opacity,
+            centerX = layout.chargingIconCenterX,
+            centerY = layout.chargingIconCenterY,
+            maxWidth = layout.chargingIconSize,
+            maxHeight = layout.chargingIconSize,
+            nativeTransform = nativeTransform,
+            pixelAligned = false,
+        )
     }
 
     fun transitionMobileTypeCurrentBounds(
@@ -3521,6 +3652,7 @@ internal class CombinedStatusPainter(
         val textBaselineY: Float,
         val textOpticalBounds: TransitionBounds,
         val groupOpticalBounds: TransitionBounds,
+        val chargingIconOpticalBounds: TransitionBounds,
         val chargingIconResourceId: Int?,
         val chargingIconCenterX: Float,
         val chargingIconCenterY: Float,

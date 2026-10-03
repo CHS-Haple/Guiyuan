@@ -581,7 +581,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         )
     }
 
-    private fun readTransitionIconState(
+    internal fun readTransitionIconState(
         group: ViewGroup,
         view: View,
     ): TransitionIconState? {

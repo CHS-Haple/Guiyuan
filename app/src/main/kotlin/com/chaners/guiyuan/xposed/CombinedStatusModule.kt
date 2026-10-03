@@ -1160,7 +1160,18 @@ class CombinedStatusModule : XposedModule() {
         }
 
         controlCenterSceneVisible = true
-        CombinedStatusControlCenterRenderSession.beginVisibleCycle()
+        if (!CombinedStatusControlCenterRenderSession.beginVisibleCycle()) {
+            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            logDiagnostic(
+                level = Log.WARN,
+                event = "projection.visibleCycle",
+                component = "controlCenterProjection",
+                state = "native",
+                "reason" to "visible-cycle-rearm-failed",
+                "fallback" to "native-control-center-until-next-native-event",
+            )
+            return update.controlCenterSourceScene
+        }
         val panelSourceScene =
             update.controlCenterSourceScene
                 ?: CombinedStatusSourceScene.UNKNOWN

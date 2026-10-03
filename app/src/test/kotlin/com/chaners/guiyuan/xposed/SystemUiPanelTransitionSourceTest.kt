@@ -65,9 +65,9 @@ class SystemUiPanelTransitionSourceTest {
     }
 
     @Test
-    fun runtimeHookCountIncludesFakeLifecyclePrearmAndOptionalDiagnostics() {
-        assertEquals(5, SystemUiPanelTransitionSource.expectedHookCount(false))
-        assertEquals(5, SystemUiPanelTransitionSource.expectedHookCount(true))
+    fun runtimeHookCountIncludesOnlyNativeReadAndFakeLifecycleHooks() {
+        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(false))
+        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(true))
     }
 
     @Test

@@ -19,6 +19,7 @@ Stable contracts:
 - charging/Super-Island motion stays native-owned;
 - Notification Shade remains native-only on the pinned target;
 - QS_FAKE is the bounded Control Center bridge;
+- QS_FAKE carrier-capacity expansion is scoped to each native Control Center visible cycle and must release at the hidden boundary;
 - fully expanded Control Center remains native.
 
 Remaining:

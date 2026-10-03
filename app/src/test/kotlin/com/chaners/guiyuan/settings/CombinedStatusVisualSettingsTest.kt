@@ -14,6 +14,7 @@ class CombinedStatusVisualSettingsTest {
         assertEquals(1f, settings.noSimSizeScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeSizeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
+        assertEquals(true, settings.controlCenterTintTransitionEnabled)
 
         val normalized =
             settings.copy(
@@ -223,6 +224,7 @@ class CombinedStatusVisualSettingsTest {
                 BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
                 BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
+                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
             )
 
         keys.forEach { key ->
