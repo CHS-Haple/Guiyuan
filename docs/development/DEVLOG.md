@@ -4023,3 +4023,33 @@ No observed Xiaomi 15 Pro values are encoded. In particular, the device-observed
 - ordinary-island/no-island behavior is unchanged;
 - no native translation, alpha, visibility, timing or collision ownership is added;
 - Session stop, endpoint replacement, pre-draw detach, panel runtime failure, frame-loss fail-native and Hot Reload teardown paths remain unchanged.
+
+
+## 2026-10-04 — Build 686 QS_FAKE hot-path reduction
+
+**Type:** performance / post-integration audit
+**Display version:** 0.0.5
+**Build:** 686 / `20261004-686`
+**Branch:** `fix/qs-fake-hotpath-overhead`
+
+### Review finding
+
+Build 685 lifecycle/single-writer review did not expose a new mutable owner or stale lease in the inspected Home, Keyguard/AOD family and QS_FAKE cleanup paths. The performance pass did find redundant work in the active Control Center transition:
+- native peer tint resolution built a temporary filtered child collection on every pre-draw;
+- immutable transition-source snapshot/color resolution was repeated when source state had not changed;
+- tint diagnostic formatting ran inside every drawable frame;
+- short-lived coordinate arrays were allocated by fake-layout and charging-island endpoint sampling.
+
+### Change
+
+Reduce only those hot-path costs:
+- cache `TransitionSourceSnapshot` by the existing source `stateVersion`;
+- keep live native peer tint refresh on pre-draw, because native applied tint may change independently from Guiyuan source state, but preserve selection order while scanning children without `map/filter` collections;
+- format tint diagnostics only when the diagnostic snapshot is queried;
+- reuse session-local coordinate buffers.
+
+No geometry, transition timing, reservation curve, capacity lease, clip mask, source-scene policy, native appearance ownership, alpha/translation/visibility writer, or fail-native contract changes.
+
+### Validation
+
+Draft PR uses Light validation while the diff is reviewed. Mark ready only after static review; exact-head Runtime CI is required before merge. No Canary is justified by this checkpoint alone because default behavior and device-visible geometry are unchanged.

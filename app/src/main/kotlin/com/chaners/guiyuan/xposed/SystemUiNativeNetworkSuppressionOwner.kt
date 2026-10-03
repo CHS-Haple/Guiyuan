@@ -1055,22 +1055,14 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         resolveAppliedStatusIconTint(group)
 
     private fun resolveAppliedStatusIconTint(group: ViewGroup): Int? {
-        val visiblePeers =
-            (group.childCount - 1 downTo 0)
-                .map(group::getChildAt)
-                .filter { child ->
-                    isTintAuthorityCandidate(
-                        slot = NativeParticipantRuntimeAccess.slotOf(child),
-                        visible = child.visibility == View.VISIBLE,
-                        width = child.width,
-                        height = child.height,
-                    )
-                }
-
-        visiblePeers.forEach { child ->
+        for (index in group.childCount - 1 downTo 0) {
+            val child = group.getChildAt(index)
+            if (!isTintAuthorityCandidate(child)) continue
             findAppliedTint(child)?.let { return it }
         }
-        visiblePeers.forEach { child ->
+        for (index in group.childCount - 1 downTo 0) {
+            val child = group.getChildAt(index)
+            if (!isTintAuthorityCandidate(child)) continue
             resolveStaticDrawableColor(child)?.let { return it }
         }
         return null

@@ -4,8 +4,9 @@
 
 - Product: Guiyuan 0.0.5.
 - `main` remains on the promoted Build 618 stable checkpoint.
-- Integration candidate: Build 685 / versionCode `261004685` / Build ID `20261004-685`.
-- Candidate reconciles `dev` Build 672 AOD lifecycle (#196) with Build 684 QS_FAKE recovery/performance work.
+- `dev` baseline: Build 685 / `02b5398` with exact-head dev push Runtime CI #2577 passing.
+- Current work-branch candidate: Build 686 / versionCode `261004686` / Build ID `20261004-686` on `fix/qs-fake-hotpath-overhead`.
+- Build 686 is a behavior-preserving post-integration hot-path reduction; it does not change QS_FAKE geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -39,7 +40,7 @@ Pre-merge static reconciliation is complete for:
 - deferred native-layout ownership + QS_FAKE visible-cycle capacity ownership;
 - peer mirror / reservation / capacity single-writer structure.
 
-Build 685 must pass exact-head Runtime CI before it may update `dev`.
+Build 685 is now on `dev`; exact-head dev push Runtime CI #2577 passed.
 
 ## Post-integration audit still required
 
@@ -64,3 +65,21 @@ The combined dev + QS_FAKE tree exposed and fixed three reconciliation/lifecycle
 The audit also caught a three-way merge omission where Build 682's capacity-bounded charging-island reservation policy had not been wired into the merged runtime even though its diagnostics/tests were present. The accepted Build 682-684 runtime semantics are restored and covered by the existing capacity tests.
 
 Runtime CI #2575 is the first complete Build 685 tree to pass compilation and tests with both AOD-family and QS_FAKE recovery semantics present.
+
+
+## Build 686 post-integration hot-path audit
+
+The first post-integration performance pass found four avoidable costs in the active QS_FAKE transition path without finding a new lifecycle owner or stale lease:
+
+- the transition pre-draw listener rebuilt a temporary peer collection before resolving live native tint on every frame;
+- `TransitionSourceSnapshot` and resolved color state were rebuilt on every pre-draw even when `stateVersion` was unchanged;
+- `TransitionDrawable.draw()` formatted the full tint diagnostic string on every frame even when diagnostics were not read;
+- charging-island end-frame sampling and fake projection layout allocated short-lived coordinate arrays.
+
+Build 686 keeps the same native evidence and refresh seams while reducing those costs:
+- transition-source snapshots are cached by `stateVersion`;
+- live native peer tint sampling remains on pre-draw because applied native tint can change independently from Guiyuan `stateVersion`; its candidate traversal is now allocation-free and preserves reverse child order;
+- tint diagnostics are formatted lazily when a diagnostic snapshot is requested;
+- layout/island coordinate sampling reuses session-local scratch arrays.
+
+The remaining audit is intentionally open for higher-risk draw-layer/allocation work and the final device gate. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changes in this checkpoint.
