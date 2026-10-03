@@ -2832,6 +2832,9 @@ internal object SystemUiHomePresentationOwner {
                 steadyPeerMirrorChanged
             }
         }
+
+        fun shouldCaptureControlCenterGeometryBucket(bucket: Int): Boolean =
+            bucket == 4 || bucket == 7
     }
     internal object EndReservationPolicy {
         fun shouldDeferLiveBatteryWidthUnavailable(
