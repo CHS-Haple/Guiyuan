@@ -1,3 +1,28 @@
+## 2026-10-04 — Build 687: remove heavy diagnostics from Keyguard-island stress path
+
+**Type:** low-risk performance / observation-path cleanup  
+**Branch:** `fix/keyguard-island-diagnostic-hotpath`  
+**Build:** 687 / `20261004-687`
+
+### Evidence
+
+Build 686 is visually correct, but the maintainer reports progressive visible frame loss when Keyguard combined status is enabled, an island is active, and Control Center is repeatedly pulled fully down and swiped fully back up. The supplied Detailed diagnostic reproduces that stress loop and contains 22 island show/hide events plus 146 full `controlCenterTransitionGeometry` snapshots in roughly seven seconds. The geometry snapshots account for about 450 KB of synchronous log text; Home native-source snapshots add about 52 KB.
+
+### Root cause / change
+
+- Home presentation called `reportNativeSourceSyncDiagnosticAfterLayout()` after every intercepted native `onLayout`. For the Home surface, the function traversed native peers and formatted the full snapshot before the outer event sink could discard it when Detailed diagnostics were disabled.
+- Home native-source snapshots are now constructed only when Detailed diagnostics are enabled and the functional steady-peer-mirror state actually changed.
+- Detailed Control Center full geometry snapshots are reduced from every 1/8 bucket to two meaningful checkpoints: 4/8 (mid-transition) and 7/8 (handoff edge). The existing lightweight panel-transition trace remains unchanged.
+- Unit tests cover general-vs-Detailed gating, transition-reservation suppression, Home mirror-change gating, and selected heavy geometry buckets.
+
+### Safety boundary
+
+No change to island state ownership, steady-peer-mirror functional updates, source-scene selection, Keyguard Control Center lease, transition reservation/capacity, animation timing, drawing geometry, alpha/translation/visibility writers, native tint authority, or HyperOS lifecycle ownership.
+
+### Device gate
+
+Stress only the reported scenario first: Keyguard combined status + active island + repeated full pull/down-up cycles. If progressive jank persists, investigate the functional island-active Home peer scan next; do not mix that higher-risk path with this diagnostic A/B.
+
 ## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
 
 **Type:** integration / lifecycle + Control Center recovery reconciliation  
