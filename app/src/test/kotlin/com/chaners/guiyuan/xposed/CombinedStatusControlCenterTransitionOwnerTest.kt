@@ -457,64 +457,84 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     }
 
     @Test
-    fun batteryIslandNativeReservationTracksHyperOsFinalPeerCapacity() {
-        assertEquals(
-            105,
-            CombinedStatusControlCenterTransitionOwner.Policy
-                .resolveBatteryIslandNativeReservationWidth(
-                    compactWidthPx = 105,
-                    semanticWidthPx = 105,
-                    progress = 0f,
-                    fakeBaseContentWidthPx = 832,
-                    finalUsableWidthPx = 521,
+    fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
+        val spans =
+            listOf(
+                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                    sourceLeft = 0f,
+                    sourceRight = 0f,
+                    targetLeft = -180f,
+                    targetRight = -105f,
                 ),
-        )
-        assertEquals(
-            208,
+            )
+        val semantic =
             CombinedStatusControlCenterTransitionOwner.Policy
-                .resolveBatteryIslandNativeReservationWidth(
+                .resolveTransitionReservationWidth(
                     compactWidthPx = 105,
-                    semanticWidthPx = 245,
-                    progress = 0.5f,
-                    fakeBaseContentWidthPx = 832,
-                    finalUsableWidthPx = 521,
-                ),
-        )
-        assertEquals(
-            311,
+                    spans = spans,
+                    progress = 0.25f,
+                )
+        val native =
             CombinedStatusControlCenterTransitionOwner.Policy
-                .resolveBatteryIslandNativeReservationWidth(
+                .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
-                    semanticWidthPx = 384,
-                    progress = 1f,
-                    fakeBaseContentWidthPx = 832,
-                    finalUsableWidthPx = 521,
-                ),
-        )
+                    spans = spans,
+                    semanticWidthPx = semantic,
+                    progress = 0.25f,
+                )
+
+        assertTrue(semantic > 105)
+        assertEquals(105, native)
     }
 
     @Test
-    fun batteryIslandNativeReservationNeverExceedsSemanticOccupancy() {
+    fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
+        val spans =
+            listOf(
+                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                    sourceLeft = 0f,
+                    sourceRight = 0f,
+                    targetLeft = -180f,
+                    targetRight = -105f,
+                ),
+            )
+
         assertEquals(
-            180,
+            135,
             CombinedStatusControlCenterTransitionOwner.Policy
-                .resolveBatteryIslandNativeReservationWidth(
+                .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
-                    semanticWidthPx = 180,
+                    spans = spans,
+                    semanticWidthPx = 161,
                     progress = 0.75f,
-                    fakeBaseContentWidthPx = 832,
-                    finalUsableWidthPx = 400,
                 ),
         )
         assertEquals(
-            null,
+            180,
             CombinedStatusControlCenterTransitionOwner.Policy
-                .resolveBatteryIslandNativeReservationWidth(
+                .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
-                    semanticWidthPx = 245,
-                    progress = 0.5f,
-                    fakeBaseContentWidthPx = 0,
-                    finalUsableWidthPx = 521,
+                    spans = spans,
+                    semanticWidthPx = 180,
+                    progress = 1f,
+                ),
+        )
+        assertEquals(
+            150,
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .resolveBatteryIslandNativePeerReservationWidth(
+                    compactWidthPx = 105,
+                    spans =
+                        listOf(
+                            CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                                sourceLeft = -105f,
+                                sourceRight = 0f,
+                                targetLeft = -220f,
+                                targetRight = 0f,
+                            ),
+                        ),
+                    semanticWidthPx = 150,
+                    progress = 1f,
                 ),
         )
     }
