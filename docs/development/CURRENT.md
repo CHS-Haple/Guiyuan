@@ -110,3 +110,16 @@ Build 683 scopes that lease to the native Control Center visible cycle:
 - no timer, fixed geometry, translation/alpha/visibility writer, or second presentation owner is added.
 
 Device gate: repeated open/close and charging-island forward/reverse. Hidden diagnostics should show `transitionReservation=-1`, `fakeCarrierWidth=-1`, and `fakeCarrierLeaseSuppressed=true`. Full AOD/Keyguard cross-scene regression remains for the later explicit reconciliation with latest dev.
+
+
+## Build 684 low-risk performance checkpoint
+
+Build 683 remains the accepted geometry/lifecycle baseline. A full pull-down hot-path audit found avoidable diagnostics work in the synchronous Control Center expansion/layout path.
+
+Build 684 changes observation only:
+- active QS_FAKE transition frames no longer construct or emit per-frame `endReservation` success diagnostics;
+- active QS_FAKE layouts no longer scan every native peer or build `nativeSourceSyncDiag` strings;
+- Detailed diagnostics still retain the existing bounded Control Center transition-geometry buckets plus idle/lifecycle snapshots;
+- functional layout, reservation writes, transition geometry, drawing, tint authority, endpoint resolution, peer mirror, fail-native behavior and ownership are unchanged.
+
+Risk boundary: this checkpoint intentionally does not change padding-write cadence, alpha-layer composition, tint caching, endpoint caching, peer-mirror behavior or animation timing. Those are higher-risk performance layers and require a separate decision after this low-risk A/B.

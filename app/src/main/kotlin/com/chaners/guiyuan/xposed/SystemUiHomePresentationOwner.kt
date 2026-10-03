@@ -507,6 +507,7 @@ internal object SystemUiHomePresentationOwner {
         battery: View,
         batteryCarrier: View,
         onEvent: (String) -> Unit,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
         onFailNative: (String) -> Unit,
         onReady: (ControlCenterStateResult.Active) -> Unit,
     ): ControlCenterStateResult {
@@ -604,6 +605,7 @@ internal object SystemUiHomePresentationOwner {
                 retainReservationOnTransientLiveWidthLoss = true,
                 onEvent = { event -> controlCenterEventSink?.invoke(event) },
                 onFailNative = ::onControlCenterSessionFailure,
+                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             )
         controlCenterCurrent = session
         val masked =
@@ -1060,6 +1062,7 @@ internal object SystemUiHomePresentationOwner {
         private val retainReservationOnTransientLiveWidthLoss: Boolean,
         private val onEvent: (String) -> Unit,
         private val onFailNative: (String) -> Unit,
+        private val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val statusIcons = WeakReference(statusIcons)
@@ -1616,26 +1619,34 @@ internal object SystemUiHomePresentationOwner {
             appliedPadding = if (target == baseline) null else target
             if (lastReservationDelta != reservationDelta) {
                 lastReservationDelta = reservationDelta
-                onEvent(
-                    eventPrefix + " endReservation nativeHide=" + nativeHide +
-                        " stableCarrierWidth=" + stableCarrierWidthPx +
-                        " actualBatteryWidth=" + actualBatteryWidthPx +
-                        " compactSlotWidth=" + compactSlotWidthPx +
-                        " visualScale=" + RuntimeVisualPreferencesOwner.currentSettings().combinedScale +
-                        " requestedSlotWidth=" + requestedSlotWidthPx +
-                        " transitionRequestedSlotWidth=" +
-                        (transitionRequestedSlotWidthPx ?: -1) +
-                        " requestedPaddingEndDelta=" + requestedReservationDelta +
-                        " paddingEndDelta=" + reservationDelta +
-                        " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
-                        " basePaddingEnd=" + baseline.end +
-                        " appliedPaddingEnd=" + target.end +
-                        " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
-                        " fakeCarrierCapacityDelta=" + capacityDeltaPx +
-                        " fakeCarrierCapacityRequired=" + capacityReservationDeltaPx +
-                        " carrierAuthority=battery_icon_container " +
-                        "owner=qs-fake-capacity-lease+statusIcons-paddingEnd",
-                )
+                val shouldReport =
+                    surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                        HotPathDiagnosticPolicy.shouldReportControlCenterLayoutState(
+                            detailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled(),
+                            transitionReservationActive = transitionRequestedSlotWidthPx != null,
+                        )
+                if (shouldReport) {
+                    onEvent(
+                        eventPrefix + " endReservation nativeHide=" + nativeHide +
+                            " stableCarrierWidth=" + stableCarrierWidthPx +
+                            " actualBatteryWidth=" + actualBatteryWidthPx +
+                            " compactSlotWidth=" + compactSlotWidthPx +
+                            " visualScale=" + RuntimeVisualPreferencesOwner.currentSettings().combinedScale +
+                            " requestedSlotWidth=" + requestedSlotWidthPx +
+                            " transitionRequestedSlotWidth=" +
+                            (transitionRequestedSlotWidthPx ?: -1) +
+                            " requestedPaddingEndDelta=" + requestedReservationDelta +
+                            " paddingEndDelta=" + reservationDelta +
+                            " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
+                            " basePaddingEnd=" + baseline.end +
+                            " appliedPaddingEnd=" + target.end +
+                            " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
+                            " fakeCarrierCapacityDelta=" + capacityDeltaPx +
+                            " fakeCarrierCapacityRequired=" + capacityReservationDeltaPx +
+                            " carrierAuthority=battery_icon_container " +
+                            "owner=qs-fake-capacity-lease+statusIcons-paddingEnd",
+                    )
+                }
             }
             return true
         }
@@ -1994,7 +2005,21 @@ internal object SystemUiHomePresentationOwner {
         }
 
         fun reportNativeSourceSyncDiagnosticAfterLayout() {
-            if (!active || surfaceName !in setOf("home", CONTROL_CENTER_FAKE_SURFACE)) return
+            if (
+                !active ||
+                (surfaceName != HOME_SURFACE && surfaceName != CONTROL_CENTER_FAKE_SURFACE)
+            ) {
+                return
+            }
+            if (
+                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                !HotPathDiagnosticPolicy.shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled(),
+                    transitionReservationActive = transitionRequestedSlotWidthPx != null,
+                )
+            ) {
+                return
+            }
             val group = statusIcons.get() ?: return
             val container = batteryContainer.get() ?: return
             val hostView = host.get() ?: return
@@ -2345,6 +2370,14 @@ internal object SystemUiHomePresentationOwner {
                 !capacityLeaseAwaitingLayout &&
                 width > 0 &&
                 height > 0
+    }
+
+    internal object HotPathDiagnosticPolicy {
+        fun shouldReportControlCenterLayoutState(
+            detailedDiagnosticsEnabled: Boolean,
+            transitionReservationActive: Boolean,
+        ): Boolean =
+            detailedDiagnosticsEnabled && !transitionReservationActive
     }
 
     internal object EndReservationPolicy {

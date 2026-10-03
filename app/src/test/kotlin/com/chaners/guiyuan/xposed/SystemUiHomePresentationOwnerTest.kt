@@ -393,4 +393,29 @@ class SystemUiHomePresentationOwnerTest {
         assertEquals(listOf("alarm_clock"), slots)
         assertTrue("wifi" !in slots && "mobile" !in slots)
     }
+    @Test
+    fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
+        assertFalse(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = false,
+                    transitionReservationActive = false,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = true,
+                    transitionReservationActive = true,
+                ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = true,
+                    transitionReservationActive = false,
+                ),
+        )
+    }
+
 }

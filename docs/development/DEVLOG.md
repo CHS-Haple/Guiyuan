@@ -1,3 +1,27 @@
+## 2026-10-04 — Build 684: bound Control Center hot-path diagnostics
+
+**Type:** low-risk performance / observation-only hot-path cleanup  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200  
+**Build:** 684 / `20261003-684`
+
+### Problem
+
+Build 683 is visually accepted and its visible-cycle lease lifecycle is healthy, but the pull-down hot-path audit found diagnostics executing in the same synchronous SystemUI expansion/layout path: per-reservation success event construction and full QS_FAKE peer traversal/formatting after layout.
+
+### Change
+
+- pass the existing runtime Detailed-diagnostics gate into the Control Center native-presentation session;
+- suppress per-frame reservation success diagnostics while a transition reservation is active;
+- suppress full native-peer source snapshots while a transition reservation is active;
+- keep detailed idle/lifecycle snapshots after the transition closes;
+- replace a per-call `setOf(...)` diagnostic membership allocation with direct comparisons.
+
+### Safety boundary
+
+No change to `statusIcons.paddingEnd` values/write cadence, fake-carrier capacity, Build 682 Battery-island geometry, TransitionDrawable rendering, tint sampling/authority, endpoint/source-witness resolution, peer mirror/clip ownership, or lifecycle/fail-native cleanup.
+
+Higher-risk candidates—layout-write cadence, alpha-layer grouping, tint caching and endpoint caching—are deliberately deferred until after this low-risk A/B.
+
 ## 2026-10-04 — Build 683: scope QS_FAKE capacity lease to visible cycle
 
 **Type:** Control Center lifecycle hardening after Build 682 device acceptance  
