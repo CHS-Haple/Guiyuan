@@ -332,4 +332,163 @@ class SystemUiHomePresentationOwnerTest {
         assertEquals(listOf("alarm_clock"), slots)
         assertTrue("wifi" !in slots && "mobile" !in slots)
     }
+    @Test
+    fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
+        assertEquals(
+            0,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveFakeCarrierCapacityRequirement(
+                    nativeHide = true,
+                    compactSlotWidthPx = 105,
+                    reservationDeltaPx = 105,
+                ),
+        )
+        assertEquals(
+            144,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveFakeCarrierCapacityRequirement(
+                    nativeHide = true,
+                    compactSlotWidthPx = 105,
+                    reservationDeltaPx = 249,
+                ),
+        )
+        assertEquals(
+            249,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveFakeCarrierCapacityRequirement(
+                    nativeHide = true,
+                    compactSlotWidthPx = 105,
+                    reservationDeltaPx = 354,
+                ),
+        )
+        assertEquals(
+            249,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveFakeCarrierCapacityRequirement(
+                    nativeHide = false,
+                    compactSlotWidthPx = 105,
+                    reservationDeltaPx = 249,
+                ),
+        )
+    }
+
+    @Test
+    fun chargingIslandNativeReservationStopsAtPhysicalCarrierCapacity() {
+        assertEquals(
+            354,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveCapacityBoundedReservationDelta(
+                    nativeHide = true,
+                    compactSlotWidthPx = 105,
+                    requestedReservationDeltaPx = 354,
+                    capacityDeltaPx = 249,
+                ),
+        )
+        assertEquals(
+            354,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveCapacityBoundedReservationDelta(
+                    nativeHide = true,
+                    compactSlotWidthPx = 105,
+                    requestedReservationDeltaPx = 382,
+                    capacityDeltaPx = 249,
+                ),
+        )
+        assertEquals(
+            382,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveCapacityBoundedReservationDelta(
+                    nativeHide = false,
+                    compactSlotWidthPx = 105,
+                    requestedReservationDeltaPx = 382,
+                    capacityDeltaPx = 249,
+                ),
+        )
+    }
+
+    @Test
+    fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
+        assertTrue(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .isIslandHidden(
+                    visibleState = 2,
+                    inIslandState = 10,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .isIslandHidden(
+                    visibleState = 2,
+                    inIslandState = 20,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .isIslandHidden(
+                    visibleState = 0,
+                    inIslandState = 10,
+                ),
+        )
+    }
+
+    @Test
+    fun steadyPeerMirrorSuppressesOnlyFakeSecondIslandDecision() {
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .exposeFakeIslandShowing(
+                    nativeIslandShowing = true,
+                    steadyMirrorActive = true,
+                ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .exposeFakeIslandShowing(
+                    nativeIslandShowing = true,
+                    steadyMirrorActive = false,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .exposeFakeIslandShowing(
+                    nativeIslandShowing = false,
+                    steadyMirrorActive = true,
+                ),
+        )
+    }
+
+    @Test
+    fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
+        assertFalse(
+            SystemUiHomePresentationOwner.failControlCenterPresentation(
+                "unit-test-no-session",
+            ),
+        )
+    }
+
+    @Test
+    fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
+        assertFalse(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = false,
+                    transitionReservationActive = false,
+                ),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = true,
+                    transitionReservationActive = true,
+                ),
+        )
+        assertTrue(
+            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+                .shouldReportControlCenterLayoutState(
+                    detailedDiagnosticsEnabled = true,
+                    transitionReservationActive = false,
+                ),
+        )
+    }
+
+
 }
