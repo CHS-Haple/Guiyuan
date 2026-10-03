@@ -4,9 +4,9 @@
 
 - Product: Guiyuan 0.0.5.
 - `main` remains on the promoted Build 618 stable checkpoint.
-- `dev` baseline: Build 685 / `02b5398` with exact-head dev push Runtime CI #2577 passing.
-- Current work-branch candidate: Build 686 / versionCode `261004686` / Build ID `20261004-686` on `fix/qs-fake-hotpath-overhead`.
-- Build 686 is a behavior-preserving post-integration hot-path reduction; it does not change QS_FAKE geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
+- `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
+- PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
+- Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -82,4 +82,4 @@ Build 686 keeps the same native evidence and refresh seams while reducing those 
 - tint diagnostics are formatted lazily when a diagnostic snapshot is requested;
 - layout/island coordinate sampling reuses session-local scratch arrays.
 
-The remaining audit is intentionally open for higher-risk draw-layer/allocation work and the final device gate. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changes in this checkpoint.
+Remaining audit: review Home / Keyguard / AOD hot paths and the residual QS_FAKE draw-layer allocations. Do not pursue Painter-spec caching or `saveLayerAlpha` replacement without stronger evidence because those paths begin to affect drawing-state semantics. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changed in Build 686.
