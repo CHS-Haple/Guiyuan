@@ -83,3 +83,13 @@ Build 686 keeps the same native evidence and refresh seams while reducing those 
 - layout/island coordinate sampling reuses session-local scratch arrays.
 
 Remaining audit: review Home / Keyguard / AOD hot paths and the residual QS_FAKE draw-layer allocations. Do not pursue Painter-spec caching or `saveLayerAlpha` replacement without stronger evidence because those paths begin to affect drawing-state semantics. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changed in Build 686.
+
+## Build 688 charging-island ring-direction correction
+
+- Branch: `fix/charging-island-ring-direction`; based independently on Build 686 dev so it does not mix the Build 687 diagnostic-hot-path A/B.
+- Device evidence: only the charging Battery-Island pull shows the battery ring retracting briefly in the opposite direction before snapping to the accepted clockwise path.
+- The reported cycle already has native `batteryIsland=true` at the first meaningful transition sample; this is not an island-state timing delay.
+- Build 544 intentionally derived ring exit direction from the live CENTER source->native-target X every draw. Under Battery-Island expansion HyperOS reflows that final target row, so its early live X is transient and can flip RIGHT/NONE -> LEFT while the ring is already retracting.
+- Build 688 preserves Build 544 live geometry authority outside Battery-Island. While native Battery-Island is active, ring direction instead follows the final status row's stable logical-start structure (LTR -> LEFT, RTL -> RIGHT); no pixel constant, delay, animator, direction latch, or new writer is added.
+- Ring curve/timing, CENTER trajectory, Battery trajectory, gap geometry, tint, transition reservation, island collision projection and native peer ownership remain unchanged.
+- Device gate: charging Battery-Island pull/down-up first; confirm the ring starts directly on the same clockwise path and no direction snap appears. Then one ordinary/non-island pull to confirm Build 544 behavior is unchanged.
