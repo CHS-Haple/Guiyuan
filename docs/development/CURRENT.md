@@ -71,16 +71,15 @@ Runtime CI #2575 is the first complete Build 685 tree to pass compilation and te
 
 The first post-integration performance pass found four avoidable costs in the active QS_FAKE transition path without finding a new lifecycle owner or stale lease:
 
-- the transition pre-draw listener rescanned the fake native status-icon hierarchy for peer tint on every frame even though the same native tint authority is already sampled on start, appearance changes and source-state changes;
+- the transition pre-draw listener rebuilt a temporary peer collection before resolving live native tint on every frame;
 - `TransitionSourceSnapshot` and resolved color state were rebuilt on every pre-draw even when `stateVersion` was unchanged;
 - `TransitionDrawable.draw()` formatted the full tint diagnostic string on every frame even when diagnostics were not read;
 - charging-island end-frame sampling and fake projection layout allocated short-lived coordinate arrays.
 
 Build 686 keeps the same native evidence and refresh seams while reducing those costs:
 - transition-source snapshots are cached by `stateVersion`;
-- pre-draw refreshes native peer tint only when the source `stateVersion` changes, while start and native-appearance refreshes remain;
+- live native peer tint sampling remains on pre-draw because applied native tint can change independently from Guiyuan `stateVersion`; its candidate traversal is now allocation-free and preserves reverse child order;
 - tint diagnostics are formatted lazily when a diagnostic snapshot is requested;
-- status-icon tint candidate traversal is allocation-free and preserves reverse child order;
 - layout/island coordinate sampling reuses session-local scratch arrays.
 
 The remaining audit is intentionally open for higher-risk draw-layer/allocation work and the final device gate. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changes in this checkpoint.

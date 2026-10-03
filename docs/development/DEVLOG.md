@@ -4035,7 +4035,7 @@ No observed Xiaomi 15 Pro values are encoded. In particular, the device-observed
 ### Review finding
 
 Build 685 lifecycle/single-writer review did not expose a new mutable owner or stale lease in the inspected Home, Keyguard/AOD family and QS_FAKE cleanup paths. The performance pass did find redundant work in the active Control Center transition:
-- native peer tint hierarchy traversal was repeated from every pre-draw;
+- native peer tint resolution built a temporary filtered child collection on every pre-draw;
 - immutable transition-source snapshot/color resolution was repeated when source state had not changed;
 - tint diagnostic formatting ran inside every drawable frame;
 - short-lived coordinate arrays were allocated by fake-layout and charging-island endpoint sampling.
@@ -4044,9 +4044,8 @@ Build 685 lifecycle/single-writer review did not expose a new mutable owner or s
 
 Reduce only those hot-path costs:
 - cache `TransitionSourceSnapshot` by the existing source `stateVersion`;
-- retain native peer tint refresh on session start, native appearance changes and source-state-version changes, removing the unconditional pre-draw scan;
+- keep live native peer tint refresh on pre-draw, because native applied tint may change independently from Guiyuan source state, but preserve selection order while scanning children without `map/filter` collections;
 - format tint diagnostics only when the diagnostic snapshot is queried;
-- preserve peer tint selection order while scanning children without `map/filter` collections;
 - reuse session-local coordinate buffers.
 
 No geometry, transition timing, reservation curve, capacity lease, clip mask, source-scene policy, native appearance ownership, alpha/translation/visibility writer, or fail-native contract changes.
