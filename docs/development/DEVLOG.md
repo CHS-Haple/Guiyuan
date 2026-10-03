@@ -1,5 +1,3 @@
-## 2026-10-02 — Build 617 off-center Wi-Fi badge ring avoidance
-
 ## 2026-10-04 — Build 683: scope QS_FAKE capacity lease to visible cycle
 
 **Type:** Control Center lifecycle hardening after Build 682 device acceptance  
@@ -31,6 +29,7 @@ Reviewed before commit:
 - host detach, host replacement, fail-native, feature disable and Hot Reload retain their existing full restore paths;
 - no new translation/alpha/visibility writer, timer, Handler, animator or fixed geometry is introduced.
 
+## 2026-10-02 — Build 617 off-center Wi-Fi badge ring avoidance
 
 **Type:** Battery-ring optical geometry  
 **Display version:** 0.0.4  
