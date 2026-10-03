@@ -892,9 +892,9 @@ internal object SystemUiHomePresentationOwner {
         keyguardFamilyEventSink = null
         keyguardFamilyFailNativeSink = null
         keyguardFamilyReadySink = null
-        return homeRestored + keyguardFamilyRestored + controlCenterRestored
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
+        return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
     @Synchronized
