@@ -1,3 +1,82 @@
+## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
+
+**Type:** integration / lifecycle + Control Center recovery reconciliation  
+**Parents:** Build 672 dev AOD lifecycle + Build 684 QS_FAKE recovery/performance checkpoint  
+**Build:** 685 / `20261004-685`
+
+### Integration strategy
+
+- Preserve the full #196 Home/Keyguard/AOD state machine, same-host Keyguard-family renderer retargeting, AOD presentation claims, source reconciliation and feature-toggle lifecycle.
+- Preserve Build 676-684 QS_FAKE peer mirror, fake-carrier capacity lease, Battery-island peer-side reservation, fail-native frame-loss cleanup, visible-cycle lease release and hot-path diagnostic gating.
+- Where both branches touched the same Control Center lifetime, keep Build 684's stricter hidden ordering: clear transition reservation before suppressing/releasing the fake-carrier lease.
+- In shared presentation sessions, keep #196 deferred-native-layout ownership and Build 684 fake-carrier suppression as independent guards.
+- No alpha/translation/visibility writer, timer, custom gesture clock, hardcoded device geometry or second presentation owner is added.
+
+### Pre-merge audit
+
+- Keyguard and AOD share one renderer/session on the verified family host; retargeting does not restore/reacquire represented slots between same-host scenes.
+- Family fail-native restores the native presentation inside the owner before notifying the module.
+- Feature disable, child-toggle disable, resolver loss, stable Home return and Hot Reload all have explicit cleanup paths.
+- AOD remains ineligible as a Control Center source.
+- Keyguard Control Center lease is bounded by source/readiness/fraction and is released on authoritative Home.
+- Build 682 charging-island peer geometry and Build 683 visible-cycle capacity lifecycle remain unchanged.
+- Remaining performance risks (per-frame native padding/layout, repeated tint scan, per-component alpha layers) are tracked for the post-integration audit and are not changed in this merge.
+
+## 2026-10-04 — Build 684: bound Control Center hot-path diagnostics
+
+**Type:** low-risk performance / observation-only hot-path cleanup  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200  
+**Build:** 684 / `20261003-684`
+
+### Problem
+
+Build 683 is visually accepted and its visible-cycle lease lifecycle is healthy, but the pull-down hot-path audit found diagnostics executing in the same synchronous SystemUI expansion/layout path: per-reservation success event construction and full QS_FAKE peer traversal/formatting after layout.
+
+### Change
+
+- pass the existing runtime Detailed-diagnostics gate into the Control Center native-presentation session;
+- suppress per-frame reservation success diagnostics while a transition reservation is active;
+- suppress full native-peer source snapshots while a transition reservation is active;
+- keep detailed idle/lifecycle snapshots after the transition closes;
+- replace a per-call `setOf(...)` diagnostic membership allocation with direct comparisons.
+
+### Safety boundary
+
+No change to `statusIcons.paddingEnd` values/write cadence, fake-carrier capacity, Build 682 Battery-island geometry, TransitionDrawable rendering, tint sampling/authority, endpoint/source-witness resolution, peer mirror/clip ownership, or lifecycle/fail-native cleanup.
+
+Higher-risk candidates—layout-write cadence, alpha-layer grouping, tint caching and endpoint caching—are deliberately deferred until after this low-risk A/B.
+
+## 2026-10-04 — Build 683: scope QS_FAKE capacity lease to visible cycle
+
+**Type:** Control Center lifecycle hardening after Build 682 device acceptance  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200  
+**Build:** 683 / `20261003-683`
+
+### Evidence
+
+Build 682 device video is visually accepted. Its detailed diagnostic shows transition reservation clears at the hidden boundary, but the QS_FAKE fake-carrier width lease remains applied afterward. This is not a current visible defect, but it leaves a stale native-width baseline across hidden lifecycle changes.
+
+### Change
+
+- port only the established visible-cycle lease concept from latest dev; do not merge unrelated AOD runtime behavior;
+- strengthen the hidden boundary for this recovery branch: clear transition reservation before suppressing native layout writes, so an abrupt `visible=false` cannot retain expanded peer padding even if HyperOS skips a fraction-zero sample;
+- release the fake-carrier capacity lease while keeping compact QS_FAKE presentation prearmed;
+- if native hidden geometry already changed, adopt the live width rather than overwrite it;
+- cache only that live native baseline for the next visible cycle, then re-establish the lease from runtime geometry;
+- add diagnostics for lease suppression and pending native width;
+- keep Build 682 peer-side reservation semantics and capacity saturation untouched.
+
+### Lifecycle review
+
+Reviewed before commit:
+- hidden order is reservation clear -> lease suppression -> lease release;
+- repeated hidden callbacks are idempotent;
+- visible re-entry unsuppresses before re-establishing runtime reservation;
+- hidden native width replacement is adopted without writing over it;
+- pending baseline only bridges the release/re-layout window and is cleared after a normal full stop;
+- host detach, host replacement, fail-native, feature disable and Hot Reload retain their existing full restore paths;
+- no new translation/alpha/visibility writer, timer, Handler, animator or fixed geometry is introduced.
+
 ## 2026-10-02 — Build 617 off-center Wi-Fi badge ring avoidance
 
 **Type:** Battery-ring optical geometry  
@@ -3311,3 +3390,619 @@ No timer, delay, copied native duration/interpolator, geometry compensation, nat
 ### Validation
 
 Exact-head Runtime CI, then one signed Canary. Device focus remains Home/Desktop -> AOD with Keyguard ON / AOD OFF, plus Build-667 Keyguard/AOD regressions.
+
+
+
+## 2026-10-03 — Build 624 accepted ring baseline; Build 627 charging-glyph target handoff
+
+**Type:** device evidence / charging transition / target geometry  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 624 -> 627
+
+### Device baseline
+
+Maintainer device testing accepts Build 624 battery-ring/fill retract behavior. Further charging-glyph work must preserve that ring path rather than retune its geometry or easing.
+
+### Requested visual contract
+
+The charging glyph should look as if the retracting ring reaches and removes it:
+- stay fully visible while the retained ring is above 60%;
+- fade smoothly as retained ring falls from 60% to 50%;
+- be fully invisible at 50%;
+- do not move before it is fully invisible;
+- after that, travel invisibly toward the corresponding native charging target;
+- only near the target should it fade back in while converging to the target;
+- target size must follow native optical geometry, not a fixed Guiyuan size;
+- if no reliable target exists, stop after the source-side fade.
+
+The percentage number must not jump when the glyph disappears.
+
+### Implementation
+
+- Split `CHARGING_ICON` from `BATTERY_NUMBER` as an independent transition participant.
+- Preserve the readout layout/group geometry while only changing charging-glyph draw alpha, so percentage X placement is not recomputed at the 50% threshold.
+- Derive source fade from `CombinedStatusBatteryRingTransitionPolicy.transitionProgress()` plus the same `remainingFraction()` used by the ring.
+- Begin charging-glyph geometry progress only after retained ring reaches 50%; hidden travel maps the remaining 50% -> 0% ring interval to a smooth target-progress curve.
+- Reappearance starts only in the final 20% of charging-glyph target travel.
+- Resolve only exact-target `MiuiBatteryMeterView.mBatteryChargingView` when it is an attached, laid-out `ImageView` with a valid drawable.
+- Use existing drawable optical-geometry sampling and `TransitionScalePolicy.TARGET`, matching the Wi-Fi principle of translation plus target-derived uniform scaling.
+- If the charging target is missing or unreliable, target resolution returns null and the glyph remains hidden after the source fade; no synthetic/fallback coordinate is generated.
+
+No timer, delayed runnable, additional animation clock, native target mutation, or guessed geometry constant is added.
+
+### Review / tests
+
+- Unit coverage verifies the glyph is hidden before target motion becomes visible, cannot reappear without a target, and reaches full target opacity/motion at completion.
+- Ownership remains single-writer: Guiyuan only draws its transition participant; native charging target is read-only geometry evidence.
+- Build 624 ring/fill implementation is otherwise unchanged.
+
+
+## 2026-10-03 — Build 627 device findings; Build 629 terminal ring and late charging handoff
+
+**Type:** device evidence / transition optics / target handoff timing  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 627 -> 629
+
+### Device evidence
+
+Build 627 preserves the accepted Build-624 main retract behavior but exposes two visual problems:
+- near the end, a tiny remaining ring segment appears to retract disproportionately slowly;
+- the charging glyph starts fading/leaving too early and too softly relative to the ring.
+
+### Root cause
+
+The ring uses ROUND stroke caps. Once the remaining centerline arc becomes comparable to the stroke width, reducing sweep no longer produces a proportionally smaller visual mark: the two round caps dominate and the remainder looks like a nearly fixed dot until mathematical progress finally reaches zero.
+
+The charging-glyph source fade in Build 627 was tied to 60% -> 50% retained ring, so it began well before the ring visually approached the glyph. Its hidden target travel also consumed the entire remaining 50% -> 0% interval, making the exit feel prolonged.
+
+### Build 629 correction
+
+- Do not retune `transitionProgress()`, `FRONT_LOAD`, fill-follow semantics or the accepted Build-624 main retract curve.
+- Compute the retained transition arc length from current drawable sweep and `CombinedStatusOuterGeometry.RING_RADIUS`.
+- Stop drawing only when that retained arc length is less than or equal to the resolved ring stroke width. This removes the cap-dominated terminal artifact and naturally adapts to outer-weight scaling and top-gap sweep.
+- Move charging fade to retained ring 26% -> 20%.
+- Begin hidden target motion only after full source disappearance; map retained ring 20% -> 4% to the complete hidden travel.
+- Start target reveal only in the final portion of that target motion.
+- Keep exact native charging-target optical geometry, target scaling, no-target fail-native behavior and percentage-layout isolation unchanged.
+
+No timer, extra animator, guessed pixel offset, native target mutation or second progress clock is introduced.
+
+### Review / validation
+
+- Geometry test distinguishes a 5% retained default arc (still drawable) from a 3% retained arc (cap-dominated terminal state).
+- Charging handoff tests verify later source visibility, full disappearance before target travel, short hidden travel and no-target no-reveal behavior.
+- Runtime CI passes the source correction before final Build identity/docs closure.
+- Signed Canary/device evidence remains mandatory before integration.
+
+
+### Source-position lock clarification
+
+Maintainer clarification after the first Build-629 timing pass: the charging glyph must not move at all while any source-side alpha remains visible.
+
+Review found that `chargingMotionProgress()` was numerically zero during fade, but the shared geometry path still rebased the source component to the current carrier before interpolation. That could produce visible movement even with zero target progress.
+
+Build 629 therefore makes the phase boundary explicit:
+- `chargingSourceOpacity(progress) > 0` hard-forces `chargingMotionProgress(progress) == 0`;
+- while that source opacity remains non-zero, Control Center rendering uses the frozen `sourceGeometry` directly;
+- carrier rebase and target interpolation are both bypassed during source fade;
+- only after source opacity reaches exactly zero may hidden target travel begin;
+- target-side reappearance near the destination remains unchanged.
+
+A dense unit sample across the fade interval protects the no-motion invariant independently of the exact fade constants.
+
+
+## 2026-10-03 — Build 629 device rejection; Build 631 number-relative charging handoff
+
+**Type:** device evidence / relative geometry / charging alpha timing  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 629 -> 631
+
+### Device evidence
+
+Build 629 confirms the terminal ring cleanup direction but rejects the charging-glyph handoff:
+- the source glyph is held in root/screen coordinates while the percentage number continues its transition, so their relative spacing changes;
+- the glyph remains visible after retained ring progress has crossed 50%;
+- target-side glyph becomes visible too soon after ring completion.
+
+The intended source-side invariant is relative, not absolute: while visible, the glyph belongs visually to the percentage readout group and must follow the number's transform. Only a fully invisible glyph may separate and travel toward its independent native target.
+
+### Build 631 correction
+
+- Restore source fade to the ring-defined 60% -> 50% retained interval.
+- Numerically derive the corresponding handoff-progress start/end from the existing ring policy once, so 50% retained ring is the exact source-alpha-zero boundary.
+- Reuse that derived progress span as the late target fade-in duration.
+- Start target reveal at overall handoff progress 92%; use the same smoothstep and equal progress duration as source fade.
+- Keep target alpha at zero throughout hidden travel and after target arrival until the late reveal window.
+- Replace Build-629 root-coordinate freeze with a battery-number follower transform:
+  - compute the current battery-number geometry from its normal transition path;
+  - express charging-glyph center/basis in the source number's local basis;
+  - map that local geometry through the current number basis;
+  - preserve relative offset, scale and orientation while the source glyph is visible/fading.
+- Keep independent charging-target motion hard-gated until source alpha reaches zero.
+- Keep exact `mBatteryChargingView` target scaling/position and no-target fail-native behavior.
+
+No additional animator, wall-clock timer, guessed coordinate or native target writer is introduced.
+
+### Review / tests
+
+- Follower-geometry unit coverage verifies translation/scale propagation relative to the number.
+- Fade-window tests verify 60%/50% ring thresholds, late 92% reveal and equal source/target fade durations.
+- Dense source-opacity sampling still guarantees charging-target motion remains zero while any source alpha is present.
+- Build 624 ring progress/easing remains untouched.
+
+
+## 2026-10-03 — Build 631 device timing refinement; Build 632 slightly earlier target reveal
+
+**Type:** device visual timing / charging target reveal  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 631 -> 632
+
+### Device feedback
+
+Build 631's source-side behavior is retained. The only requested refinement is that the final native charging-glyph reveal may begin slightly earlier.
+
+### Build 632 correction
+
+- Move charging target reveal start from overall handoff progress 92% to 88%.
+- Preserve the source fade boundary at retained ring 60% -> 50%.
+- Preserve number-relative follower geometry while the source glyph remains visible/fading.
+- Preserve hidden target travel and exact native `mBatteryChargingView` target geometry.
+- Preserve equal fade-in/fade-out progress duration and the same smoothstep easing.
+- No ring-curve, percentage-layout, target geometry, native writer, timer or additional animation clock change.
+
+### Validation
+
+- Unit coverage locks the 88% reveal start and equal fade-window duration.
+- Exact Build-632 Runtime CI and signed Canary remain required before device validation.
+
+
+## 2026-10-03 — Build 633 selective pull-down tint transition
+
+**Type:** Control Center visual color handoff / settings  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Build:** 633
+
+### Requested behavior
+
+Maintainer clarified that the Control Center pull-down should not recolor every projected participant. Only participants currently receiving a semantic/preset/custom battery-linked color should transition back to the system reverse tint. Already-native/system-tinted participants should remain on the native tint path.
+
+The color change should also be concentrated in the middle of the handoff: unchanged at the beginning, fast smooth transition in the middle, unchanged at the end.
+
+A default-enabled switch is required. Disabling it means colorized participants remain in their original source color during pull-down rather than transitioning to reverse tint.
+
+### Implementation
+
+- Added global visual setting `controlCenterTintTransitionEnabled`, persisted under `control_center_tint_transition_enabled`, default `true`, synchronized through the existing visual-settings owner.
+- Added MIUIX `SwitchPreference` in the Global section:
+  - EN: **Pull-down tint transition**
+  - zh-CN: **下拉反色过渡**
+- Added `CombinedStatusBatteryColorPolicy.isTinted(...)` so transition participation is based on the active semantic color source being an actual `Custom` source after preset/custom resolution.
+- Battery ring participates whenever the active semantic battery source is tinted.
+- Center/mobile/top-number/charging-glyph participate only when their existing follow-battery-color setting is enabled in addition to the active battery source being tinted.
+- Non-tinted participants resolve directly to the live final native peer tint.
+- Colorized participants with the switch disabled keep their source color.
+- With the switch enabled, `transitionTintProgress()` is:
+  - 0 through handoff 35%;
+  - smoothstep 0 -> 1 over 35% -> 65%;
+  - 1 from 65% onward.
+- ARGB channels are interpolated independently.
+- Native target tint is read from the existing final `statusIcons` peer authority; reads refresh each pre-draw while retaining the last valid value.
+
+No new animator, timer, color guess, native tint writer, geometry writer, or second settings owner is introduced.
+
+### Charging timing retained
+
+Build 632's 88% final charging-glyph reveal start remains. The 60% -> 50% source fade, number-relative follower geometry, hidden target travel, equal fade durations, exact target geometry and fail-native behavior are unchanged.
+
+### Review / tests
+
+- Tests distinguish preset/custom tinted states from FOLLOW_SYSTEM.
+- Tests lock source/target/midpoint ARGB interpolation.
+- Tests lock the 35%/65% middle-only phase.
+- Tests lock switch OFF -> source color for tinted participants and non-tinted -> native target tint.
+- Visual-settings tests lock default ON and runtime-sync key coverage.
+
+
+## 2026-10-03 — Build 633 device rejection; Build 635 opaque clip transitions and tint fallback
+
+**Type:** device visual feedback / transition semantics / tint authority  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 633 -> 635
+
+### Device feedback
+
+Build 633 exposed two visual issues:
+- charging-glyph target reappearance still reads as a fade/flash even after moving reveal earlier;
+- selective pull-down reverse-tint transition is effectively absent: native status peers reach reverse tint while Guiyuan's colorized ring/readout remain at their semantic color.
+
+### Root cause and design correction
+
+Semantic visibility should not be represented by alpha when the rest of the transition keeps icons physically opaque. The existing unmatched-exit and latent-reveal policies already supply timing/progress; they can drive visible clip fraction instead of opacity without changing motion or space-reservation rules.
+
+For tint, final status-icons peer tint is not guaranteed to be available from the suppression-owner cache on every active transition path. The final native Battery participates in the same SystemUI tint authority and provides a live read-only fallback.
+
+### Build 635 implementation
+
+- Replace charging source/target opacity semantics with visible-fraction semantics.
+- Keep the charging source fully opaque and clip it over retained ring 60% -> 50%.
+- Keep hidden-only target travel.
+- Begin target clip reveal at 85% while preserving the old Build-633 reveal completion time.
+- Replace generic no-target cubic alpha exit with cubic clip-out.
+- Replace latent second-mobile / airplane / no-SIM alpha reveal with clip reveal while preserving existing spatial and target-distance gates.
+- Add reusable horizontal clip bounds with LTR/RTL-aware edge anchoring; charging chooses the edge facing the battery-ring side.
+- Resolve native reverse tint from live final status-icons peer first, live final Battery tint second, and last valid cached tint third.
+- Log native tint value and authority for detailed transition diagnostics.
+
+No new animator, timer, independent geometry path, scale animation, guessed tint, or native writer is introduced.
+
+### Review / tests
+
+Coverage locks clip fractions and edge anchoring, charging reveal timing, latent reveal policy, and final-Battery tint fallback. The pre-identity runtime source passed Runtime CI #2355; final exact-HEAD CI remains required after docs/build closure.
+
+
+## 2026-10-03 — Build 635 trace review; Build 637 tint-decision diagnostics
+
+**Type:** device evidence / diagnostic instrumentation  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 635 -> 637
+
+### Build-635 trace result
+
+The supplied detailed runtime log repeatedly reports `nativeTint=e6ffffff` with `nativeTintAuthority=final-battery-tint` across the pull-down. This confirms the final-Battery fallback introduced in Build 635 is active and eliminates the Build-633 failure mode where no reliable native target tint was available.
+
+No fatal/exception signature is present in the supplied log.
+
+### Remaining observability gap
+
+Build 635 did not log:
+- semantic colorized-state classification;
+- pull-down tint-transition switch value at draw time;
+- source versus resolved participant colors.
+
+Therefore the trace alone cannot distinguish a participation-classification issue from an actual rendering issue if the user still sees no visual color transition.
+
+### Build 637 diagnostics
+
+Add read-only `tintTransition` diagnostics containing:
+- `batteryTinted`;
+- switch enabled state;
+- motion progress;
+- target native tint;
+- source -> resolved battery, number, charging, center and mobile tint;
+- normalized tint-phase progress.
+
+No visual behavior or ownership semantics are changed.
+
+
+## 2026-10-03 — Build 644: QS_FAKE tint authority, exact supplemental icon size, half-ring charging Clip
+
+**Type:** device feedback / Control Center visual root cause  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 638 -> 644
+
+### Build-638 feedback
+
+- Airplane reveal remains visibly smaller than the fully-expanded native Airplane icon, causing a final size discontinuity.
+- Projected icons that are not battery-colorized still appear white instead of matching nearby native icons during pull-down.
+- Charging source glyph disappears too late.
+
+### Root causes
+
+- `FOLLOW_SYSTEM` classification was already correct: only resolved `Custom` semantic color sources are considered colorized.
+- Tint authority was wrong. Build 638 sampled `finalStatusIcons`, the fully-expanded QS destination, rather than `QS_FAKE / fakeStatusIcons`, the native transition carrier visible beside Guiyuan during the gesture. The final destination can legitimately already be white.
+- The temporary review attempt to use `SystemUiNativeNetworkSuppressionOwner.activeManager` for an arbitrary final group was rejected because that manager belongs to the Home status-bar host, not the independent QS/QS_FAKE icon group.
+- Supplemental Airplane / No-SIM already resolve a native single-icon optical target, but Build 638 projected them with `SHRINK_ONLY`; therefore a larger native target could never be reached.
+- Charging Clip at retained ring 26% -> 20% starts too late.
+
+### Build-644 correction
+
+- Transition tint samples already-applied tint from visible non-represented native peers in `QS_FAKE / fakeStatusIcons`.
+- No Home-manager tint reconstruction, no final-QS white target assumption, and no Battery tint fallback are used.
+- FOLLOW_SYSTEM participants directly use the live QS_FAKE native peer tint.
+- Only custom battery-colorized participants use the existing optional 35%-65% source -> native interpolation.
+- Supplemental Airplane / No-SIM use `TARGET` scale against their resolved native drawable optical geometry, matching the accepted Wi-Fi target-size principle.
+- Charging source Clip begins with ring retract and completes at retained ring 50%; source-visible charging remains number-relative, hidden travel and late native-target reveal are preserved.
+- Latent additional-mobile target Clip-envelope correction from Build 638 remains.
+
+No new animator, timer, guessed tint, per-icon size multiplier, or native writer is introduced.
+
+
+## 2026-10-03 — Build 646: accelerate charging target reveal and delay custom tint
+
+**Type:** device feedback / timing polish  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 644 -> 646
+
+### Build-644 feedback
+
+- Charging target glyph still takes too long from first reappearance to fully visible.
+- Custom-color pull-down tint begins too early and completes too quickly.
+
+### Root cause
+
+- Charging target reveal was a fixed global `0.85 -> 0.98` smooth window. This is not the same cadence as latent resources, whose local reveal completes after only the first 35% of their unlocked reveal progress.
+- Custom-color interpolation still used the earlier `0.35 -> 0.65` phase.
+
+### Build-646 correction
+
+- Charging target reveal still begins at global progress 0.85, but completes after 35% of the previous 0.85 -> 0.98 local reveal span, matching the accelerated latent-resource cadence.
+- Source charging Clip remains unchanged: ring retract start = Clip start; retained ring 50% = source fully hidden.
+- Hidden travel, target geometry, and fail-native behavior remain unchanged.
+- Custom-color interpolation moves to `0.45 -> 0.80`: later start and longer transition.
+- `FOLLOW_SYSTEM` participants remain outside this custom interpolation and continue to use live QS_FAKE applied tint directly.
+
+No new animator, timer, target geometry change, native writer, or additional transition clock is introduced.
+
+
+## 2026-10-03 — Build 647: custom tint follows battery-ring retract lifetime
+
+**Type:** device feedback / transition timing refinement  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 644 -> 647
+
+### Build-644 follow-up
+
+The maintainer requested that custom-color fade be visually tied to battery-ring retract rather than an independent fixed progress window.
+
+### Build-647 correction
+
+- Remove the independent custom tint window.
+- Custom-color fade starts when battery-ring retract starts and reaches native QS_FAKE tint exactly when ring retract completes.
+- The shared lifetime comes from `CombinedStatusBatteryRingTransitionPolicy.transitionProgress()`.
+- Color itself keeps a smoothstep over that shared lifetime, rather than copying the ring's front-loaded shrink curve, so the color transition remains visually gentler.
+- `FOLLOW_SYSTEM` remains outside this interpolation and continues to use live QS_FAKE applied tint directly.
+- Build-646 accelerated charging target reveal is retained: reveal still starts at 0.85 and completes in the first 35% of the former late reveal span.
+- Charging source Clip remains unchanged: ring retract start -> retained ring 50%.
+
+No new timer, animator, transition clock, tint writer, or geometry change.
+
+
+## 2026-10-03 — Build 648: explicit 0.85-0.90 charging target reveal
+
+**Type:** device feedback / transition timing finalization  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 647 -> 648
+
+### Decision
+
+The charging target glyph now uses an explicit late reveal window:
+- start visible reveal at global progress `0.85`;
+- complete visibility at `0.90`.
+
+This replaces the Build-647 provisional "35% of the previous late reveal span" derivation.
+
+### Rationale
+
+- The source charging glyph is already fully clipped earlier and completes its hidden travel before the target reveal.
+- A fixed 0.85 -> 0.90 reveal is fast enough to avoid the Build-644 slow appearance, but not so fast that the glyph pops in abruptly.
+- Keeping target reveal independent from source hide duration prevents future changes to the ring/charging Clip rule from accidentally changing the target appearance cadence.
+
+### Retained behavior
+
+- Source charging Clip still begins when ring retract starts and completes when retained ring reaches 50%.
+- Hidden travel remains invisible.
+- Target reveal has no independent translation or scale.
+- Custom-color tint fade remains bound to the battery-ring retract lifetime.
+- FOLLOW_SYSTEM still uses live QS_FAKE applied tint directly.
+
+
+## 2026-10-03 — Build 649: correct obsolete tint test after ring-sync change
+
+**Type:** CI review / test correction  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 648 -> 649
+
+Build 648 Runtime reached the unit-test phase and failed one stale assertion in `transitionTintHoldsEndsAndChangesOnlyInMiddlePhase`. The test still required source color at global progress 0.20, which contradicts the approved Build-647/648 rule that custom tint fade begins as soon as battery-ring retract begins.
+
+No runtime behavior was changed for this correction:
+- source tint is exact at progress 0;
+- fade starts immediately with ring retract;
+- midpoint remains tied to half of the ring-retract lifetime;
+- native tint is exact when ring retract completes;
+- charging target reveal remains fixed at 0.85 -> 0.90.
+
+
+## 2026-10-03 — Build 650: charging Clip follows half of ring-retract lifetime
+
+**Type:** device evidence / timing correction  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 649 -> 650
+
+Build 649 device video showed the charging source glyph fully disappearing before the battery-ring retract animation itself reached halfway. The previous rule used 50% **remaining visible arc**, but the ring's retained arc is front-loaded and therefore reaches 50% well before half of the retract lifetime.
+
+Build 650 changes the authority:
+- source Clip begins at ring-retract lifetime 0%;
+- source is exactly 50% visible at retract lifetime 25%;
+- source is fully clipped at retract lifetime 50%;
+- while any source remains, charging stays locked to the battery-number follower;
+- only after complete source Clip does hidden travel begin;
+- target reveal remains 0.85 -> 0.90;
+- source disappearance remains opaque horizontal Clip with `opacity=1`, not alpha fade or scale.
+
+No new animator, timer, geometry writer, or second transition clock is introduced.
+
+
+## 2026-10-03 — Build 652: calibrate charging Clip between two device-proven bad endpoints
+
+**Type:** device video / visual timing calibration  
+**Branch / PR:** `feat/battery-fill-retract-follow` / #197  
+**Builds:** 650 -> 652
+
+### Device evidence
+
+Build 649 and Build 650 bracket the desired charging-source disappearance point:
+- Build 649: source fully clipped when retained ring arc reached 50%; device video shows this is too early.
+- Build 650: source fully clipped at 50% of raw ring-retract lifetime; because the ring uses `FRONT_LOAD=0.92`, only ~18% of ring arc remains at that point, and device video shows the source disappears near the end.
+
+### Build-652 correction
+
+- Keep Clip start at ring-retract start.
+- Complete source Clip at 40% of ring-retract lifetime.
+- Under the current ring curve this corresponds to ~32% retained arc, visually between the two rejected endpoints.
+- Source Clip remains linear and opaque; source remains number-relative while visible.
+- Hidden target travel begins only after source is fully clipped.
+- Target reveal remains 0.85 -> 0.90.
+- Ring geometry/easing and tint timing are unchanged.
+
+No timer, animator, secondary transition clock, geometry writer, alpha fade, or scale animation is added.
+
+
+## 2026-10-04 — Build 679: charging-island native peers follow current projected occupancy
+
+**Type:** device-feedback geometry ownership correction  
+**Display version:** 0.0.5  
+**Build:** 679 / `20261003-679`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Problem
+
+Build 678 reduced the charging-island native peer reservation endpoint by deriving it from fake/final status-row capacity, but device video still shows a large empty gap between native peers and Guiyuan while the combined status unfolds.
+
+### Evidence
+
+The Build-678 device recording and Detailed Diagnostic align at the early charging-island pull:
+- compact Guiyuan slot width is 105px;
+- around 25% native expansion, the visible Guiyuan left edge is still effectively inside that compact envelope;
+- native QS_FAKE reservation has already grown to about 134px;
+- VPN/mute therefore move left before Guiyuan has occupied the released space.
+
+This rejects final-row capacity as the correct spacing authority. The defect is not the Build-677 capacity saturation: the visible gap appears well before saturation.
+
+### Conclusion
+
+Two reservations have different responsibilities:
+- **logical semantic reservation** must keep the accepted frozen-final-total-width interpolation so latent participants receive deterministic layout capacity and do not reintroduce the previously rejected global dead-zone behavior;
+- **charging-island native-peer proximity** must describe the width occupied by the current projected spans, because the native fake row remains visibly authoritative while Guiyuan pixels are still unfolding.
+
+The previously rejected per-span trajectory remains rejected as the global logical occupancy contract. New exact Battery-island evidence narrows current-span union to the native peer-spacing adapter only.
+
+### Change
+
+- Keep `resolveTransitionReservationWidth()` unchanged for Guiyuan logical occupancy and latent reveal.
+- Replace Build-678 fake/final capacity-difference proxy with `resolveBatteryIslandNativePeerReservationWidth()`.
+- The charging-island native peer width uses `resolveReservationWidth()` over the already-frozen source/target spans at the same raw HyperOS progress and is bounded by the semantic reservation.
+- Ordinary-island reservation, steady Home peer mirror, Build-677 capacity saturation, native root motion, and fake/final appearance ownership are unchanged.
+- Remove the Build-678 dependence on final status-row usable-width measurements for native peer spacing.
+
+### Ownership / lifecycle
+
+No new Hook, timer, poller, animator, island geometry authority, native child state writer, alpha/visibility/translation writer, or fixed pixel spacing is added. The existing Session owns the same single `statusIcons.paddingEnd` writer and clears it through the existing transition teardown/fail-native paths.
+
+### Validation
+
+Focused unit coverage verifies that a latent target can advance semantic reservation while charging-island native peer reservation remains at the compact width until the current projected span actually extends beyond it, then converges to the target occupancy. Exact-head Runtime CI and one signed Canary are required before the focused device gate in CURRENT.
+
+
+## 2026-10-04 — Build 680: project Battery-island peer reservation into the live QS_FAKE end frame
+
+**Type:** device feedback / coordinate-frame correction / lifecycle review  
+**Display version:** 0.0.5  
+**Build:** 680 / `20261003-680`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Build-679 device result
+
+The charging-island peer distance remains visibly too large. The Detailed Diagnostic still shows Battery-island native reservation growing while the visible fake row and Guiyuan projection are separating under native Control Center motion.
+
+### Root cause
+
+Build 679 corrected *which width* was measured but still mixed coordinate frames:
+- reservation target spans are frozen relative to the final QS Battery end;
+- native peers consume `QS_FAKE statusIcons.paddingEnd` relative to the live fake-row end;
+- the renderer rebases source geometry through the moving fake carrier before interpolating to the absolute final target.
+
+Therefore a target span cannot be used directly as a fake-row-local span while HyperOS applies charging-island fake-root translation.
+
+### Build-680 correction
+
+- Measure the current logical end offset between `finalBattery` and `fakeStatusIcons` on each reservation sync.
+- Project frozen target span X coordinates by that live offset before evaluating Battery-island current occupancy.
+- Keep semantic reservation, latent reveal, ordinary-island/no-island paths and physical capacity saturation unchanged.
+- Add `nativePeerTargetEndOffset` to detailed transition diagnostics.
+- Add a focused regression test proving that a final target to the right of the current fake end reduces fake-local reservation instead of opening a false gap.
+
+### Submission and lifecycle review
+
+Before commit:
+- one existing transition-reservation call site remains;
+- no native translation writer, timer, animator or Handler is added;
+- Session stop still clears transition reservation, removes overlay and restores source clip;
+- endpoint replacement and detached-view paths stop the old Session;
+- panel runtime failure still detaches to native;
+- Hot Reload detaches the transition owner before presentation/capacity-lease release;
+- island authority is refreshed per native expansion sample and reverse pull uses the same live sampling path.
+
+## 2026-10-04 — Build 681: fail native when Battery-island peer frame is unavailable
+
+**Type:** pre-device code review / lifecycle hardening  
+**Display version:** 0.0.5  
+**Build:** 681 / `20261003-681`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Review finding
+
+Build 680 correctly projects final-QS target spans into the live QS_FAKE end frame, but submission review found one lifecycle gap before device testing. When that live end-frame sample was unavailable, `syncTransitionReservation()` returned immediately and could leave the prior frame's `statusIcons.paddingEnd` reservation applied.
+
+### Correction
+
+- Route Battery-island end-frame loss through the existing Control Center presentation fail-native chain.
+- The existing presentation session restores native ignored slots, clip masks and reservation, then its readiness callback hides the projected renderer and stops the Transition Session.
+- If the presentation session is already absent, detach the Transition Session directly.
+- Do not add a Hook, Handler, timer, retry loop, translation writer or second lifecycle owner.
+
+### Lifecycle / ownership review
+
+- `Session.stop()` still clears transition reservation, removes the pre-draw listener/overlay and restores the source clip.
+- Host replacement, view detach, panel runtime failure and Hot Reload retain their existing cleanup paths.
+- The fail-native callback can synchronously stop the Transition Session; the failing reservation sync returns immediately and performs no further writes.
+- A failed presentation remains native for the current session; ordinary state/tint refresh does not silently reacquire native presentation ownership.
+- Reverse pull uses the same native progress/end-frame path.
+
+### Validation
+
+Focused unit coverage locks the idle failure entry as a no-op when no presentation session exists. Exact-head Runtime CI is required before the signed Canary/device gate.
+
+
+
+## 2026-10-04 — Build 682: reserve only peer-side Battery-island intrusion
+
+**Type:** device root-cause correction / cross-device geometry semantics  
+**Display version:** 0.0.5  
+**Build:** 682 / `20261003-682`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Build-681 device result
+
+The charging-island native-peer position remains wrong even though end-frame loss is now fail-native safe.
+
+Detailed Diagnostic proves the Build-680 live frame offset is not stale: its constancy in this gesture follows the native HyperOS relationship between the fake and final Control Center rows. The remaining spacing error tracks `statusIcons.paddingEnd` growth itself.
+
+### Root cause
+
+`resolveBatteryIslandNativePeerReservationWidth()` used the complete projected span union:
+
+`right - left`.
+
+After final-QS target spans are projected into the current QS_FAKE end frame, a valid portion of that union can live at logical `x > 0`, to the end side of the fake-row boundary. That portion belongs to Guiyuan drawable/target motion, but native status peers occupy only the opposite side of the boundary.
+
+Counting end-side extent as `paddingEnd` double-reserves empty horizontal space and pushes native peers too far left.
+
+### Correction
+
+- Keep the live final-QS -> QS_FAKE end-frame projection.
+- Define current QS_FAKE end as logical `x=0`.
+- Compute native peer reservation from `0` to the left-most projected Guiyuan span only.
+- Keep the runtime compact slot as the minimum and semantic reservation as the maximum.
+- Ignore projected extent at `x>0` for peer spacing.
+- Add a focused unit test where a target crosses the live fake end and verify only the peer-side 80px depth is reserved from arbitrary runtime geometry values.
+
+### Cross-device requirement
+
+No observed Xiaomi 15 Pro values are encoded. In particular, the device-observed 105/135/249px values remain diagnostic evidence only. Battery width, inter-frame offset, target span positions and compact width all come from live/frozen View geometry.
+
+### Submission / lifecycle review
+
+- one `updateControlCenterTransitionReservation()` call site remains;
+- ordinary-island/no-island behavior is unchanged;
+- no native translation, alpha, visibility, timing or collision ownership is added;
+- Session stop, endpoint replacement, pre-draw detach, panel runtime failure, frame-loss fail-native and Hot Reload teardown paths remain unchanged.

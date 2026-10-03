@@ -957,3 +957,16 @@ Composite, single-glyph and unknown topologies remain on the conservative simila
 
 Latent 0→1 / 1→N reveal remains spatial. The existing end reservation opens a real interval from the Battery end; the target visual envelope is revealed continuously as that reservation covers it, while root-space target proximity remains a second safety bound. Do not replace this with a duration, expansion-fraction threshold or delayed runnable.
 
+
+
+### QS_FAKE Battery-island peer-spacing refinements
+
+Build 679 adds one narrow Battery-island exception to the **native peer-spacing adapter**, not to logical occupancy. Device evidence shows that when HyperOS keeps the Battery-island QS_FAKE row visibly authoritative, committing future total semantic width to that row creates an empty gap before Guiyuan has visually occupied the space. While native Battery island is active, the native peer reservation may therefore use the current union of the same frozen spans at the same raw HyperOS progress, bounded by the logical semantic reservation. The logical reservation itself still follows the frozen-final-total-width contract above, and latent reveal still consumes that logical reservation.
+
+This does not restore per-span occupancy as the general transition policy. It is a scene-specific projection from existing semantic spans to the one native `statusIcons.paddingEnd` writer so native peers remain adjacent to currently occupied Guiyuan space while HyperOS retains island/root/appearance authority.
+
+
+Build 680 corrects the remaining coordinate-frame error in that adapter. The frozen target spans are expressed relative to the final QS Battery end, while `statusIcons.paddingEnd` is consumed relative to the currently translated QS_FAKE end. Under Battery-island motion those ends are not the same frame. The adapter must therefore project the final target end into the live fake-row end frame before interpolating the span union. This uses the observed native carrier positions; it does **not** read, duplicate or cancel HyperOS' `batteryWidthDiff` formula, and it does not create a new translation writer. Logical semantic reservation remains unchanged.
+
+
+Build 682 narrows the adapter one step further: a projected span union is not itself a valid `paddingEnd` value. Once target spans are expressed in the live QS_FAKE end frame, logical `x=0` is the peer/end boundary. Only occupancy at `x<=0` can displace native peers; any projected extent at `x>0` is on the end side and remains drawable occupancy only. Battery-island peer reservation therefore uses the depth from `x=0` to the left-most projected span, with the runtime compact width as floor and semantic reservation as cap. This is a coordinate-semantic rule, not a device compensation; no Battery width or island offset is hard-coded.

@@ -1,77 +1,53 @@
 # Current Development State
 
-This file is the concise recovery point for active Guiyuan development. Historical Build chronology, rejected hypotheses, detailed CI records, and device-by-device reasoning belong in `DEVLOG.md`.
+## Repository / build
 
-## Accepted baseline
+- Product: Guiyuan 0.0.5.
+- `main` remains on the promoted Build 618 stable checkpoint.
+- Integration candidate: Build 685 / versionCode `261004685` / Build ID `20261004-685`.
+- Candidate reconciles `dev` Build 672 AOD lifecycle (#196) with Build 684 QS_FAKE recovery/performance work.
+- Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
-- Product / display version: Guiyuan 0.0.5.
-- `main` remains on the promoted 0.0.5 / Build 618 stable checkpoint.
-- `dev` is accepted through Build 619: `0.0.5` / versionCode `261002419` / Build `20261002-619`.
-- Build 619 is the latest accepted runtime-affecting development baseline.
-- Verified target: Xiaomi HyperOS SystemUI 17.03.260226.r, Android 17 / SDK 37, Modern Xposed API 102.
-- GPL-3.0-only remains the project license.
+## Accepted runtime facts carried into Build 685
 
-## Active objective
+### Home / Keyguard / AOD
 
-Branch: `feat/aod-display-control` / PR #196.
+- Home remains its own presentation owner.
+- Keyguard and AOD use one host-scoped family renderer/presentation owner on the verified Keyguard host and retarget scene semantics without duplicate mutable owners.
+- Keyguard and AOD child preferences remain independent under the global Guiyuan master gate.
+- HyperOS remains owner of native AOD animation timing, alpha, visibility and translation.
+- AOD is never a Control Center transition source.
+- Home-origin native-AOD fallback blocks transient Keyguard visual rearm while the native AOD fallback is authoritative.
 
-Build 672 follows Build-669 device rejection. Build 667 remains accepted for the previously failing Keyguard/AOD paths:
-- AOD -> Keyguard no longer collapses adjacent peers inward;
-- AOD -> Keyguard fast/partial Control Center pull no longer falls back to native in the reproduced path;
-- Keyguard -> AOD keeps Guiyuan through the native Keyguard status-icon fade and yields only at the hidden endpoint.
+### Control Center / QS_FAKE
 
-Build-669 device result:
-- with Keyguard Guiyuan enabled and AOD Guiyuan disabled, Home/Desktop -> AOD still commonly shows “Guiyuan disappears -> Guiyuan returns -> native”;
-- unlike Build 668, Build 669 now proves the Home provenance path itself is correct: `homeCarrierVisibleAtStart=true`, `homeNativeAodFallbackCandidate=true`, then native `toAod=true / isAodAnimate=true` consumes it and logs `homeNativeAodFallbackActive=true` while releasing the transient Keyguard presentation;
-- the remaining flash occurs afterward when HyperOS emits a Keyguard-directed status-icon visual boundary. The incoming Keyguard visual-handoff helper can arm and attach its renderer even while the native-AOD fallback is already active.
+- QS_FAKE remains the bounded Control Center bridge; fully expanded Control Center stays native.
+- Build 682 Battery-island peer reservation counts only peer-side intrusion in the live QS_FAKE end frame; no device pixel constant is encoded.
+- Build 683 scopes fake-carrier capacity expansion to each visible Control Center cycle and releases it at the hidden boundary.
+- Hidden ordering is reservation clear -> lease suppression -> capacity release.
+- Build 684 removes high-frequency diagnostic construction from active QS_FAKE transition/layout frames without changing runtime geometry.
+- One transition-reservation writer remains; no project translation/alpha/visibility writer was added.
 
-Build-670 lifecycle correction:
-- keep the Build-669 Home provenance and consumption path unchanged;
-- make active Home-native-AOD fallback an explicit veto for incoming Keyguard visual-handoff eligibility;
-- apply the same veto to Keyguard boundary layout precommit so a hidden native status-icon layer cannot bypass the fallback through a layout-only path;
-- preserve normal AOD -> Keyguard handoff when no Home-native-AOD fallback is active;
-- preserve existing stable-family cleanup, Home abort, settings/host failure, Hot Reload and teardown behavior.
-AOD -> Keyguard Control Center risk review:
-- Build 667 fixed the observed fast-pull failure with incoming-boundary presentation readiness;
-- Build 669 also closes the remaining callback-order race: if expansion fraction arrives before visible/source reconciliation, an already-valid incoming Keyguard presentation promotes CC source to KEYGUARD before lease acquisition;
-- visible/source disagreement also prefers KEYGUARD only while the same incoming-ready fact is true and at least one native source witness explicitly reports KEYGUARD;
-- ordinary unlock cannot use this guard because incoming-boundary readiness is absent.
+## Integration audit status
 
-No timer, delay, copied duration/interpolator, native alpha/visibility/translation writer, peer-motion writer, geometry compensation, or second presentation owner is introduced.
+Pre-merge static reconciliation is complete for:
+- same-host Keyguard/AOD retarget lifecycle;
+- feature toggle and resolver-failure cleanup;
+- family fail-native restore ordering;
+- Control Center source reconciliation and Keyguard lease boundaries;
+- Hot Reload presentation release;
+- deferred native-layout ownership + QS_FAKE visible-cycle capacity ownership;
+- peer mirror / reservation / capacity single-writer structure.
 
-## Validation state
+Build 685 must pass exact-head Runtime CI before it may update `dev`.
 
-- Candidate identity: `0.0.5` / versionCode `261003672` / Build `20261003-672`.
-- PR #196 is 0 behind `dev` at freeze.
-- Build-669 device evidence confirms Home native-carrier provenance and fallback consumption are now correct; the remaining defect is a visual-handoff re-entry path that bypassed the active native fallback. Build 672 changes only that eligibility boundary and does not add a writer or a second lifecycle authority.
-- Unit coverage includes candidate arming, native-AOD animation consumption, direct target=AOD consumption, active-fallback projection override, active-fallback visual-handoff/precommit rejection, incoming Keyguard source conflict, and ordinary-unlock rejection.
-- Runtime code is frozen pending exact-head Runtime CI and one signed Canary.
+## Post-integration audit still required
 
-## Device gate
+After Build 685 is on `dev`, run the full repository-level audit requested by the maintainer:
+- Home / Keyguard / AOD / Control Center cross-scene lifecycle and callback-order review;
+- Hot Reload, host replacement, detach, feature/settings changes and fail-native cleanup;
+- single-writer and stale-lease review;
+- performance hot path review, especially per-frame `statusIcons.paddingEnd` layout, native tint scans, TransitionDrawable alpha layers, allocations and repeated pre-draw work;
+- device gate across Home, Keyguard, AOD, island/no-island, charging island, dual SIM and fast/partial pull-down.
 
-1. Keyguard ON / AOD OFF — Home/Desktop -> AOD:
-   - native/system flash may remain;
-   - transient Keyguard Guiyuan may not reappear after native AOD animation begins;
-   - expected sequence is one continuous handoff to native, with no “Guiyuan disappears -> Guiyuan returns -> native” cycle.
-
-2. Keyguard ON / AOD OFF — ordinary Keyguard -> AOD:
-   - preserve Build-667 behavior: Guiyuan stays until native Keyguard status-icons reach their hidden endpoint.
-
-3. AOD -> Keyguard, immediate/fast/partial pull:
-   - no transient native status row / native QS fake even if fraction arrives before visible/source callback;
-   - holding or aborting the partial pull remains combined.
-
-4. AOD -> Keyguard normal path:
-   - preserve no-peer-merge fix.
-
-## Immediate next step
-
-Run exact-head Runtime CI for Build 672. If clean, issue one signed Canary and freeze for the focused device gate above.
-
-## Reference priority
-
-1. `CONTRIBUTING.md`;
-2. this file;
-3. current source / exact device diagnostics;
-4. `SystemUI-Reference` exact-target findings and task-specific architecture/reference docs;
-5. relevant `DEVLOG.md` history.
+No higher-risk performance optimization should be mixed into Build 685 before that audit.
