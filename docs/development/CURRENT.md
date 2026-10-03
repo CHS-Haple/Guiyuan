@@ -43,10 +43,17 @@ The remaining defect is a coordinate-frame mismatch:
 
 This rejects both a fixed-width subtraction and direct `batteryWidthDiff` compensation.
 
-## Build 680 candidate
+## Build 680 pre-device review
 
-Build 680 keeps every accepted ownership boundary and corrects only the Battery-island peer-spacing frame:
+Build 680 keeps every accepted ownership boundary and corrects only the Battery-island peer-spacing frame. Submission review then found one fail-native gap before device testing: if the live QS_FAKE/final end-frame sample becomes temporarily unavailable, the transition owner returned while the previous frame's native reservation could remain applied.
 
+## Build 681 candidate
+
+Build 681 retains the Build 680 coordinate-frame correction and closes that lifecycle gap:
+
+- end-frame loss now enters the existing Control Center presentation fail-native path instead of retaining stale transition padding;
+- that path restores native ignored slots / clips / reservation, drops projection readiness, and stops the transition overlay through the existing readiness callback;
+- if no Control Center presentation session is active, the transition owner detaches itself as the final local fallback;
 - logical Guiyuan reservation remains the frozen-final-total-width interpolation and is unchanged;
 - ordinary-island and no-island paths remain unchanged;
 - while native Battery island is active, each frozen target span is projected into the **current live QS_FAKE end frame** using the measured end offset between `finalBattery` and `fakeStatusIcons`;
@@ -56,11 +63,11 @@ Build 680 keeps every accepted ownership boundary and corrects only the Battery-
 
 No new Hook, timer, animator, polling loop, fixed pixel compensation, alpha/visibility/translation writer, or second island authority is introduced.
 
-Submission review also verifies Session stop, endpoint replacement, view detach, runtime failure and Hot Reload cleanup. Reverse pull reuses the same live progress/end-frame sampling rather than a second reverse path.
+Submission review verifies Session stop, endpoint replacement, view detach, runtime failure and Hot Reload cleanup. Reentrancy is bounded: the existing presentation failure callback may synchronously drop projection readiness and stop the current Transition Session; the failing sync returns immediately afterward. Reverse pull reuses the same live progress/end-frame sampling rather than a second reverse path.
 
 ## Validation state
 
-Candidate identity: `0.0.5` / versionCode `261003680` / Build `20261003-680`.
+Candidate identity: `0.0.5` / versionCode `261003681` / Build `20261003-681`.
 
 Automated gate:
 - exact-head Runtime CI for PR #200.

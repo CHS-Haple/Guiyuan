@@ -2758,3 +2758,34 @@ Before commit:
 - panel runtime failure still detaches to native;
 - Hot Reload detaches the transition owner before presentation/capacity-lease release;
 - island authority is refreshed per native expansion sample and reverse pull uses the same live sampling path.
+
+## 2026-10-04 — Build 681: fail native when Battery-island peer frame is unavailable
+
+**Type:** pre-device code review / lifecycle hardening  
+**Display version:** 0.0.5  
+**Build:** 681 / `20261003-681`  
+**Branch / PR:** `fix/qs-fake-native-source-sync` / #200
+
+### Review finding
+
+Build 680 correctly projects final-QS target spans into the live QS_FAKE end frame, but submission review found one lifecycle gap before device testing. When that live end-frame sample was unavailable, `syncTransitionReservation()` returned immediately and could leave the prior frame's `statusIcons.paddingEnd` reservation applied.
+
+### Correction
+
+- Route Battery-island end-frame loss through the existing Control Center presentation fail-native chain.
+- The existing presentation session restores native ignored slots, clip masks and reservation, then its readiness callback hides the projected renderer and stops the Transition Session.
+- If the presentation session is already absent, detach the Transition Session directly.
+- Do not add a Hook, Handler, timer, retry loop, translation writer or second lifecycle owner.
+
+### Lifecycle / ownership review
+
+- `Session.stop()` still clears transition reservation, removes the pre-draw listener/overlay and restores the source clip.
+- Host replacement, view detach, panel runtime failure and Hot Reload retain their existing cleanup paths.
+- The fail-native callback can synchronously stop the Transition Session; the failing reservation sync returns immediately and performs no further writes.
+- A failed presentation remains native for the current session; ordinary state/tint refresh does not silently reacquire native presentation ownership.
+- Reverse pull uses the same native progress/end-frame path.
+
+### Validation
+
+Focused unit coverage locks the idle failure entry as a no-op when no presentation session exists. Exact-head Runtime CI is required before the signed Canary/device gate.
+

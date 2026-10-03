@@ -346,6 +346,15 @@ class SystemUiHomePresentationOwnerTest {
     }
 
     @Test
+    fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
+        assertFalse(
+            SystemUiHomePresentationOwner.failControlCenterPresentation(
+                "unit-test-no-session",
+            ),
+        )
+    }
+
+    @Test
     fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
         assertTrue(
             SystemUiHomePresentationOwner.EndReservationPolicy

@@ -2432,7 +2432,20 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     lastNativePeerTargetEndOffsetPx = null
                     val targetEndOffsetPx =
                         resolveBatteryIslandNativePeerTargetEndOffsetPx()
-                            ?: return
+                            ?: run {
+                                lastNativeReservationWidthPx = null
+                                val presentationFailed =
+                                    SystemUiHomePresentationOwner
+                                        .failControlCenterPresentation(
+                                            "battery-island-peer-end-frame-unavailable",
+                                        )
+                                if (!presentationFailed) {
+                                    CombinedStatusControlCenterTransitionOwner.detach(
+                                        "battery-island-peer-end-frame-unavailable",
+                                    )
+                                }
+                                return
+                            }
                     lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
                     Policy.resolveBatteryIslandNativePeerReservationWidth(
                         compactWidthPx = compactWidth,

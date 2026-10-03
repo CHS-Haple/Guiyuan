@@ -681,6 +681,13 @@ internal object SystemUiHomePresentationOwner {
             ?: true
 
     @Synchronized
+    fun failControlCenterPresentation(reason: String): Boolean {
+        if (controlCenterCurrent == null) return false
+        onControlCenterSessionFailure(reason)
+        return true
+    }
+
+    @Synchronized
     fun deactivate(source: String): StateResult {
         val session = current ?: return StateResult.Inactive(0)
         current = null
