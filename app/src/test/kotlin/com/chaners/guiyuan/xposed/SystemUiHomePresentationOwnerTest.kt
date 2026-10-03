@@ -488,51 +488,7 @@ class SystemUiHomePresentationOwnerTest {
                     transitionReservationActive = false,
                 ),
         )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldReportNativeSourceLayoutState(
-                    detailedDiagnosticsEnabled = false,
-                    controlCenterSurface = false,
-                    transitionReservationActive = false,
-                    steadyPeerMirrorChanged = true,
-                ),
-        )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldReportNativeSourceLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    controlCenterSurface = false,
-                    transitionReservationActive = false,
-                    steadyPeerMirrorChanged = false,
-                ),
-        )
-        assertTrue(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldReportNativeSourceLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    controlCenterSurface = false,
-                    transitionReservationActive = false,
-                    steadyPeerMirrorChanged = true,
-                ),
-        )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldReportNativeSourceLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    controlCenterSurface = true,
-                    transitionReservationActive = true,
-                    steadyPeerMirrorChanged = true,
-                ),
-        )
-        assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
-                .shouldReportNativeSourceLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    controlCenterSurface = true,
-                    transitionReservationActive = false,
-                    steadyPeerMirrorChanged = false,
-                ),
-        )
+
     }
 
 

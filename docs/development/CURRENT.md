@@ -7,8 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 690 (`20261004-690`) advances from observation cleanup to a behavior-preserving functional hot-path optimization after Build 689 still reproduced Keyguard + active-island pull jank.
-- Build 690 keeps mirror cadence and semantics unchanged while caching native slot/transition-state reflection metadata and reading only the two island fields required by the steady peer mirror; no animation curve, hidden-slot policy, scene ownership, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 691 (`20261004-691`) preserves Build 690's native reflection caching and removes the remaining Detailed-only full Home native-source peer snapshot from the native-layout hot path after device A/B showed general diagnostics materially smoother than detailed.
+- Build 691 keeps steady-peer mirror cadence/results and low-cost semantic diagnostics unchanged; no animation curve, hidden-slot policy, scene ownership, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -121,3 +121,14 @@ The Build 689 evidence narrows the next functional cost:
 Build 690 preserves the exact native-layout sampling cadence and hidden-slot policy, but caches the stable reflection contracts by concrete SystemUI class. The steady peer mirror now reads only `visibleState` and `inIslandState`, the only fields used by `SteadyPeerMirrorPolicy.isIslandHidden()`; full transition diagnostics retain the full cached state reader.
 
 This is intentionally narrower than changing mirror cadence or native layout ownership. If the focused device gate remains poor after Build 690, inspect hidden Home tint work and residual TransitionDrawable/compositing cost next.
+
+## Build 691 Detailed native-layout diagnostic follow-up
+
+Build 690 materially improved Keyguard + active-island repeated pull smoothness, but device A/B showed a remaining diagnostics-level effect: General felt smoother, while switching back to Detailed reintroduced a mid-gesture hitch.
+
+The same SystemUI session recorded the level transition to General at 07:24:01.550 and back to Detailed at 07:24:14.341. Once Detailed was active, each island show/hide mirror edge again produced a full `homePresentation nativeSourceSyncDiag` containing the entire non-represented peer row. Build 690 had already reduced the functional mirror reader to cached reflection + the two required island fields, so the full peer snapshot was now redundant hot-path observation work.
+
+Build 691 removes only that full Home native-layout source snapshot and its obsolete policy/test path. The existing lightweight `steadyPeerMirror active/hiddenSlots` event remains, as do lease, scene, readiness and lifecycle diagnostics. Functional mirror sampling, clip ownership and native-state reads are unchanged.
+
+Device gate: compare General versus Detailed using the same Keyguard + active-island repeated full pull/down-up sequence. Detailed should no longer introduce a distinct mid-gesture hitch. If a gap versus Home remains with both levels equivalent, proceed to residual draw/compositing review rather than further diagnostic trimming.
+

@@ -4133,3 +4133,31 @@ No reduction in native-layout sampling cadence, no hidden-slot decision change, 
 
 Repeat the exact Keyguard + active-island rapid full Control Center pull/down-up stress case. If jank remains substantial, move next to hidden Home tint work and then residual draw/compositing cost rather than changing mirror semantics.
 
+## 2026-10-04 — Build 691 remove Detailed native-layout peer snapshots
+
+**Type:** performance / diagnostic hot-path cleanup  
+**Display version:** 0.0.5  
+**Build:** 691 / `20261004-691`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 690 made the focused Keyguard + active-island pull path substantially smoother, confirming the native peer reflection work was valuable. A direct diagnostics-level A/B then showed General smoother than Detailed; switching back to Detailed reintroduced a mid-gesture hitch.
+
+In that same SystemUI session, Detailed re-enabled repeated `homePresentation nativeSourceSyncDiag` records on island mirror edges. Each record rebuilt and formatted the complete non-represented peer row, even though the functional mirror already emitted the low-cost `active/hiddenSlots` semantic result.
+
+### Change
+
+- remove the full Home native-source peer snapshot from native `onLayout` callbacks;
+- remove its obsolete HotPathDiagnosticPolicy branch and unit expectations;
+- retain Build 690 reflection caches and minimal live mirror state reads;
+- retain lightweight mirror, lease, scene, readiness and lifecycle diagnostics.
+
+### Safety boundary
+
+No functional mirror cadence/result change, no clip ownership change, no animation/timing/geometry/reservation change and no native writer change.
+
+### Device gate
+
+Repeat the same Keyguard + active-island pull stress in General and Detailed. Detailed should no longer have a distinct mid-gesture hitch. If both levels become equivalent but still trail Home, move to residual draw/compositing cost.
+
