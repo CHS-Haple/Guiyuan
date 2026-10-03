@@ -989,12 +989,6 @@ internal object CombinedStatusControlCenterRenderSession {
         return found
     }
 
-    internal fun shouldEndCapacityLeaseOnVisibilityChange(
-        previousRequestedVisible: Boolean,
-        nextRequestedVisible: Boolean,
-    ): Boolean =
-        previousRequestedVisible && !nextRequestedVisible
-
     internal data class TransitionSourceSnapshot(
         val view: View,
         val anchorView: View,
