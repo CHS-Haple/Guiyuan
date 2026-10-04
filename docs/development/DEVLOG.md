@@ -4234,3 +4234,35 @@ The first native visible callback may arrive before a QS_FAKE session has been a
 
 Unit coverage verifies false→true is the only attached-session begin edge and true→false remains the only end edge. Exact-head Runtime CI and final lifecycle review are required before dev merge.
 
+## 2026-10-04 — Build 696 bounded SystemUI restart transaction
+
+**Type:** maintenance UI / Root lifecycle  
+**Display version:** 0.0.5  
+**Build:** 696 / `20261004-696`  
+**Branch / PR:** `fix/systemui-restart-dismiss-boundary` / #205
+
+### Problem
+
+The explicit restart action used `killall com.android.systemui` immediately after hiding the MIUIX confirmation dialog. It neither waited for the dialog exit lifecycle nor verified which SystemUI process was terminated or whether a replacement process appeared.
+
+### Change
+
+- positive confirmation only arms a transient restart and dismisses the dialog;
+- cancel/back clears the pending action;
+- Root restart begins only from MIUIX `OverlayDialog.onDismissFinished`;
+- resolve the current SystemUI PID with `pidof`;
+- signal only the originally resolved PID with SIGTERM;
+- if that PID is already stale at signal time, do not signal a newly appeared PID;
+- verify within 60 × 100 ms that the original PID disappears and a replacement `com.android.systemui` PID appears;
+- retain a 10-second outer Root command timeout;
+- update failure copy so it covers Root, termination and replacement-start verification failures;
+- add policy tests that reject `force-stop`, `am crash`, SIGKILL, `killall`, `pkill`, and any retry-PID signal path.
+
+### Safety boundary
+
+No island state mutation, fixed UI delay, resident Root service, runtime polling, new SystemUI writer, or project-owned restart lifecycle state machine is introduced. Build 695 runtime behavior remains unchanged.
+
+### Device gate
+
+Verify no-island, normal-island, and charging-island restart. Confirm the dialog exits first, SystemUI automatically returns, cancel/back never triggers restart, and failure feedback appears only when restart cannot be confirmed.
+

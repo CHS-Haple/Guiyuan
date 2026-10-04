@@ -530,6 +530,7 @@ internal fun SettingsHubScreen(
     var showRestartDialog by rememberSaveable { mutableStateOf(false) }
     var showRestartFailure by rememberSaveable { mutableStateOf(false) }
     var restartInProgress by rememberSaveable { mutableStateOf(false) }
+    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
 
     HubPage(
         title = stringResource(R.string.settings_title),
@@ -581,7 +582,23 @@ internal fun SettingsHubScreen(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_dialog_summary),
                 show = showRestartDialog,
-                onDismissRequest = { showRestartDialog = false },
+                onDismissRequest = {
+                    restartAfterDialogDismiss = false
+                    showRestartDialog = false
+                },
+                onDismissFinished = {
+                    if (restartAfterDialogDismiss && !restartInProgress) {
+                        restartAfterDialogDismiss = false
+                        restartInProgress = true
+                        scope.launch {
+                            val success = SystemUiScopeController.restart()
+                            restartInProgress = false
+                            if (!success) {
+                                showRestartFailure = true
+                            }
+                        }
+                    }
+                },
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -590,7 +607,10 @@ internal fun SettingsHubScreen(
                     TextButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
-                        onClick = { showRestartDialog = false },
+                        onClick = {
+                            restartAfterDialogDismiss = false
+                            showRestartDialog = false
+                        },
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
@@ -598,15 +618,8 @@ internal fun SettingsHubScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
+                            restartAfterDialogDismiss = true
                             showRestartDialog = false
-                            restartInProgress = true
-                            scope.launch {
-                                val success = SystemUiScopeController.restart()
-                                restartInProgress = false
-                                if (!success) {
-                                    showRestartFailure = true
-                                }
-                            }
                         },
                     )
                 }
