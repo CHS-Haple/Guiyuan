@@ -154,14 +154,10 @@
     <string name="about_project_home_summary">查看源代码与项目说明</string>
     <string name="about_open_source_license_title">开源许可</string>
     <string name="about_open_source_license_summary">GNU GPL v3.0</string>
-    <string name="section_license_overview">许可</string>
-    <string name="about_license_identifier_title">许可标识</string>
-    <string name="about_license_full_text_title">完整许可</string>
-    <string name="about_license_full_text_summary">在项目仓库中查看 LICENSE</string>
     <string name="about_third_party_title">第三方依赖</string>
     <string name="about_third_party_summary">查看开源组件与许可</string>
     <string name="section_runtime_dependencies">运行与界面</string>
-    <string name="section_development_dependencies">测试与构建</string>
+    <string name="section_embedded_assets">嵌入资源</string>\n    <string name="section_development_dependencies">测试与构建</string>
     <string name="about_value_unavailable">不可用</string>
     <string name="product_name">归元</string>
     <string name="target_platform_value">HyperOS SystemUI 模块</string>
