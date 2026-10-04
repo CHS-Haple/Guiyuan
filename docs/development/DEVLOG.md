@@ -4286,3 +4286,28 @@ Replayed only the previously device-validated Battery-Island battery-ring direct
 ### Validation
 
 The same functional correction passed the Build 688 device gate. This replay requires exact-head Runtime CI and review only.
+
+## 2026-10-04 — Build 701 diagnostics report icon semantics
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 701 / `20261004-701`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 700 device feedback accepted the Material Symbols information-row treatment and requested the Diagnostics & reports section to use the same visual language. Follow-up clarified that symbol selection must follow each row's text meaning rather than mimic the previous MIUIX glyph.
+
+### Change
+
+- diagnostics level → `troubleshoot`;
+- export diagnostic report → `file_export`;
+- share diagnostic report → `share`;
+- all three render through the same local drawable leading-icon path as the accepted information rows;
+- no runtime icon library dependency is added.
+
+`diagnosis` was rejected because its actual vector reads as medical/health diagnosis; `rule_settings` was rejected as generic rules/settings. `tune` was not retained merely for visual continuity with the previous MIUIX glyph.
+
+### Validation
+
+Runtime behavior is unchanged. Exact-head CI plus one focused device optical/semantic review is sufficient.

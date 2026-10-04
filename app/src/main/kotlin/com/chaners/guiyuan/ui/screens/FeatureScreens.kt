@@ -101,11 +101,8 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Share
-import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -796,8 +793,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 title = stringResource(R.string.diagnostics_mode_title),
                 summary = stringResource(R.string.diagnostics_mode_summary),
                 startAction = {
-                    DiagnosticsLeadingIcon(
-                        icon = MiuixIcons.Normal.Tune,
+                    DiagnosticsDrawableLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_troubleshoot,
                         visualSize = 22.dp,
                     )
                 },
@@ -813,8 +810,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsActionRow(
                 title = stringResource(R.string.export_diagnostic_report),
                 summary = stringResource(R.string.export_diagnostic_report_summary),
-                icon = MiuixIcons.Normal.Download,
-                iconVisualSize = 21.dp,
+                iconRes = R.drawable.ic_material_symbol_file_export,
+                iconVisualSize = 22.dp,
                 enabled = !reportInProgress && !exportPickerOpen,
                 onClick = {
                     exportPickerOpen = true
@@ -824,8 +821,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsActionRow(
                 title = stringResource(R.string.share_diagnostic_report),
                 summary = stringResource(R.string.share_diagnostic_report_summary),
-                icon = MiuixIcons.Normal.Share,
-                iconVisualSize = 23.dp,
+                iconRes = R.drawable.ic_material_symbol_share,
+                iconVisualSize = 22.dp,
                 enabled = !reportInProgress && !exportPickerOpen,
                 onClick = {
                     buildReport { report ->
@@ -1043,7 +1040,7 @@ private fun DiagnosticsInfoValue(
 private fun DiagnosticsActionRow(
     title: String,
     summary: String,
-    icon: ImageVector,
+    @DrawableRes iconRes: Int,
     iconVisualSize: Dp,
     enabled: Boolean = true,
     onClick: () -> Unit,
@@ -1052,8 +1049,8 @@ private fun DiagnosticsActionRow(
         title = title,
         summary = summary,
         startAction = {
-            DiagnosticsLeadingIcon(
-                icon = icon,
+            DiagnosticsDrawableLeadingIcon(
+                iconRes = iconRes,
                 visualSize = iconVisualSize,
                 enabled = enabled,
             )
@@ -1062,6 +1059,30 @@ private fun DiagnosticsActionRow(
         onClickLabel = title,
         enabled = enabled,
     )
+}
+
+@Composable
+private fun DiagnosticsDrawableLeadingIcon(
+    @DrawableRes iconRes: Int,
+    visualSize: Dp,
+    enabled: Boolean = true,
+) {
+    Box(
+        modifier = Modifier.size(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(visualSize),
+            colorFilter =
+                ColorFilter.tint(
+                    MiuixTheme.colorScheme.onSurfaceContainer.copy(
+                        alpha = if (enabled) 1f else 0.38f,
+                    ),
+                ),
+        )
+    }
 }
 
 @Composable
