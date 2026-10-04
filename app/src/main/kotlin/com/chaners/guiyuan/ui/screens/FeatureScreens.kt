@@ -987,6 +987,101 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 private const val MaxDiagnosticsUsefulEvents = 40
 
 @Composable
+private fun DiagnosticsUsefulEventCard(
+    context: Context,
+    entry: DiagnosticLogEntry,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val title = diagnosticLogTitle(context, entry)
+    val summary = diagnosticLogSummary(context, entry)
+    val category = diagnosticLogCategoryLabel(context, entry.category)
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 8.dp)
+                .then(
+                    if (expanded) {
+                        Modifier
+                    } else {
+                        Modifier.height(96.dp)
+                    },
+                ),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+        showIndication = true,
+        onClick = onToggle,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DiagnosticsLogLevelBadge(entry.level)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = category,
+                modifier = Modifier.weight(1f),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            entry.timeText?.let { time ->
+                Text(
+                    text = time,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = summary,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = if (expanded) 2 else 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(10.dp))
+            DiagnosticLogDetailRow(
+                label = stringResource(R.string.diagnostics_log_detail_event),
+                value = entry.event ?: "—",
+            )
+            entry.component?.let { component ->
+                DiagnosticLogDetailRow(
+                    label = stringResource(R.string.diagnostics_log_detail_component),
+                    value = component,
+                )
+            }
+            entry.state?.let { state ->
+                DiagnosticLogDetailRow(
+                    label = stringResource(R.string.diagnostics_log_detail_state),
+                    value = state,
+                )
+            }
+
+            entry.fields
+                .filterKeys { key -> key !in DiagnosticLogMetadataFields }
+                .forEach { (key, value) ->
+                    DiagnosticLogDetailRow(label = key, value = value)
+                }
+        }
+    }
+}
+
+@Composable
 private fun DiagnosticsLogStateCard(text: String) {
     Card(
         modifier =

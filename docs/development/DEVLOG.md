@@ -4554,3 +4554,8 @@ No Xposed/SystemUI producer, RuntimeDiagnosticsProtocol, snapshot capture, repor
 **Validation**
 
 Exact-head Runtime CI plus focused Canary visual review are required.
+
+
+## 2026-10-04 — Build 722 restore compact event-card helper
+
+Static diff review of Build 721 caught that removing the rejected Runtime health block also mechanically removed `DiagnosticsUsefulEventCard`, while the new compact list still referenced it. Restore the same compact card implementation used by the prior workbench: level/category/time, title, one-line summary, and structured details on expansion. No diagnostics model, filtering, report, menu, runtime or SystemUI behavior changes.
