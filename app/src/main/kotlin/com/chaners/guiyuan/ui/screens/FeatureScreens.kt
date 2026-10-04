@@ -942,11 +942,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         },
         listState = listState,
         pullToRefresh =
-            SettingsPullToRefresh(
-                refreshing = pullRefreshing,
-                onRefresh = ::requestRefresh,
-                texts = pullRefreshTexts,
-            ),
+            snapshot?.let {
+                SettingsPullToRefresh(
+                    refreshing = pullRefreshing,
+                    onRefresh = ::requestRefresh,
+                    texts = pullRefreshTexts,
+                )
+            },
     ) {
         when {
             viewCleared -> {
