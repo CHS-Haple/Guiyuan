@@ -9,6 +9,7 @@
 - The log workbench and exported diagnostic report share one `DiagnosticsLogReader`: LSPosed module log first, filtered logcat fallback second, identical Guiyuan filtering and latest-session selection. Reading occurs once on page entry and only again on explicit refresh; no polling, resident collector, runtime hook, or SystemUI/Xposed ownership change is introduced.
 - Existing Project address and SystemUI restart rows remain in place for this checkpoint.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
+
 ## Accepted runtime facts carried into Build 685
 
 ### Home / Keyguard / AOD

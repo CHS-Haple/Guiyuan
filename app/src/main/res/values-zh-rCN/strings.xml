@@ -179,7 +179,7 @@
     <string name="section_diagnostic_logs">日志</string>
     <string name="diagnostics_log_search">搜索日志</string>
     <string name="diagnostics_log_scope_session">当前会话</string>
-    <string name="diagnostics_log_scope_all">全部日志</string>
+    <string name="diagnostics_log_scope_all">全部记录</string>
     <string name="diagnostics_log_refresh">刷新日志</string>
     <string name="diagnostics_log_refresh_summary">%1$s · %2$d 条</string>
     <string name="diagnostics_log_loading">正在读取归元运行日志…</string>

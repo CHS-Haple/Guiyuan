@@ -180,7 +180,7 @@
     <string name="section_diagnostic_logs">Logs</string>
     <string name="diagnostics_log_search">Search logs</string>
     <string name="diagnostics_log_scope_session">Current session</string>
-    <string name="diagnostics_log_scope_all">All captured</string>
+    <string name="diagnostics_log_scope_all">All entries</string>
     <string name="diagnostics_log_refresh">Refresh logs</string>
     <string name="diagnostics_log_refresh_summary">%1$s · %2$d entries</string>
     <string name="diagnostics_log_loading">Reading Guiyuan runtime logs…</string>
