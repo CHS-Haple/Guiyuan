@@ -221,7 +221,7 @@ internal fun AppearanceScreen(
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
                         SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_view_list,
+                            iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
                             visualSize = 22.dp,
                         )
                     },
@@ -795,7 +795,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_framework_summary),
                 label = stringResource(R.string.runtime_framework_title),
-                iconRes = R.drawable.ic_material_symbol_schema,
+                iconRes = R.drawable.ic_material_symbol_extension,
             )
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_scope_summary),

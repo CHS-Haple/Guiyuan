@@ -4334,3 +4334,35 @@ Diagnostics refines version → `tag`, package/application ID → `data_object`,
 ### Validation
 
 App UI/resources only. Exact-head CI plus focused light/dark optical/semantic device review is sufficient.
+
+## 2026-10-04 — Build 705 Filled-first semantic icon pass
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 705 / `20261004-705`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 704 device review showed that the semantic-icon direction is correct but the Outlined weight is too light for Guiyuan's MIUIX cards. The framework `schema` glyph also reads as a flow/structure diagram rather than an Xposed-style framework/module concept, and the compatibility-baseline `HyperOS 4` prefix adds visual noise.
+
+### Convention
+
+- semantic row-leading icons prefer Material Symbols Filled;
+- when Filled and Outline are nearly identical, use Filled for convention consistency;
+- retain Outline only when Filled materially harms legibility or weight balance;
+- MIUIX icons remain for MIUIX control/navigation affordances.
+
+### Change
+
+- framework: `schema` → Filled `extension`;
+- device model: Filled `smartphone`;
+- navigation content: `view_list` → Filled `format_list_bulleted`;
+- all other compatible semantic resources switch to their official Fill=1 paths;
+- compatibility baseline deliberately retains Outline `fact_check` because its Filled card is visually heavier than adjacent rows;
+- remove `HyperOS 4` from the compatibility-baseline secondary label;
+- remove obsolete local vectors `info/api/package_2/schema/view_list`.
+
+### Validation
+
+App UI/resources/text only. Exact-head CI plus one focused light/dark optical/semantic device review is sufficient.
