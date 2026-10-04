@@ -2,9 +2,12 @@
 
 ## Repository / build
 
-- Product: Guiyuan 0.0.5.
-- `main` remains on the promoted Build 618 stable checkpoint.
-- `dev` baseline: Build 706 / `3c996b40` / versionCode `261004706` / Build ID `20261004-706`; PR #206 is merged and the device-accepted Diagnostics semantic-icon system is integrated.\n- Active work: `feat/appearance-icon-optical-weight` / Build 707 (`20261004-707`) applies the same optical-weight convention to Appearance without changing icon semantics, layout, settings behavior, or runtime code.\n- Build 707 keeps `contrast`, `palette`, and `style` at Filled/W400; `bottom_navigation` and `format_list_bulleted` move to official Filled/W500 because their frame/list geometry reads lighter at the shared 22dp visual size. The reusable rule is now normative in `CONTRIBUTING.md`.
+- Product: Guiyuan 0.1.0.
+- `main` remains on the previous promoted Build 618 checkpoint until the current dev-to-main promotion completes.
+- `dev` baseline: Build 708 / versionCode `261004708` / Build ID `20261004-708`.
+- Build 707 / PR #208 is integrated and device-accepted: Appearance now follows the same Filled-first + optical-weight normalization rule as Diagnostics; `bottom_navigation` and `format_list_bulleted` use official Filled/W500 while already-solid Appearance glyphs remain Filled/W400.
+- Build 708 changes release identity/documentation only: display version 0.1.0, dated changelog checkpoint, README status, and current-state metadata. Runtime/UI behavior remains the accepted Build 707 state.
+- Active objective: promote the validated 0.1.0 / Build 708 dev state to `main` through the stable Full-validation boundary.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
