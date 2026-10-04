@@ -74,8 +74,8 @@ import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
 import com.chaners.guiyuan.system.DiagnosticLogCategory
 import com.chaners.guiyuan.system.DiagnosticLogEntry
 import com.chaners.guiyuan.system.DiagnosticLogLevel
-import com.chaners.guiyuan.system.DiagnosticsLogParser
-import com.chaners.guiyuan.system.DiagnosticsLogReader
+import com.chaners.guiyuan.system.DiagnosticsSnapshot
+import com.chaners.guiyuan.system.DiagnosticsSnapshotProvider
 import com.chaners.guiyuan.system.DiagnosticsReportBuilder
 import com.chaners.guiyuan.system.DiagnosticsReportFiles
 import com.chaners.guiyuan.system.RuntimeEnvironmentInfo
@@ -86,9 +86,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Badge
@@ -702,20 +700,12 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var rawExpandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
-    var currentLogEntries by remember { mutableStateOf<List<DiagnosticLogEntry>>(emptyList()) }
-    var currentRunEntries by remember { mutableStateOf<List<DiagnosticLogEntry>>(emptyList()) }
+    var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(refreshGeneration) {
         loading = true
-        val snapshot = DiagnosticsLogReader.read()
-        val parsed =
-            withContext(Dispatchers.Default) {
-                snapshot.lines.map(DiagnosticsLogParser::parse) to
-                    snapshot.latestSessionLines.map(DiagnosticsLogParser::parse)
-            }
-        currentLogEntries = parsed.first
-        currentRunEntries = parsed.second
+        snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
         expandedKey = null
         rawExpandedKey = null
         loading = false
@@ -777,6 +767,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 ),
         )
 
+    val currentLogEntries = snapshot?.allEntries.orEmpty()
+    val currentRunEntries = snapshot?.sessionEntries.orEmpty()
     val scopedEntries =
         if (selectedScope == 0) {
             currentRunEntries

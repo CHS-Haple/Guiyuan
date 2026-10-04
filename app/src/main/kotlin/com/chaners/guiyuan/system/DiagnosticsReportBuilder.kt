@@ -2,29 +2,21 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
 import java.time.OffsetDateTime
 
 internal object DiagnosticsReportBuilder {
-    private const val ShareLogTimeoutSeconds = 10L
     private const val DetailedLogLineLimit = 600
     private const val ReleaseLogLineLimit = 120
     private const val ShareLogLineLimit = 80
 
-    private const val ShareLogcatCommand =
-        "logcat -d -b all -v threadtime -t 3000 | grep -F 'CombinedStatusShare' || true"
+    suspend fun build(context: Context): String =
+        build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
 
-    suspend fun build(context: Context): String {
-        val environment = RuntimeEnvironmentInfo.resolve(context)
-        val diagnosticsLevel = DiagnosticsSettingsRepository(context).currentLevel()
-        val selected = DiagnosticsLogReader.read()
-
-        val shareLogResult = RootShell.execute(
-            command = ShareLogcatCommand,
-            timeoutSeconds = ShareLogTimeoutSeconds,
-        )
-        val shareLines = ShareDiagnosticsStore.read(context)
-            .takeLast(ShareLogLineLimit)
+    internal fun build(snapshot: DiagnosticsSnapshot): String {
+        val environment = snapshot.environment
+        val diagnosticsLevel = snapshot.diagnosticsLevel
+        val selected = snapshot.runtimeLog
+        val shareLines = snapshot.shareLines.takeLast(ShareLogLineLimit)
         val lineLimit =
             if (
                 diagnosticsLevel.name == "Detailed" &&
@@ -35,7 +27,7 @@ internal object DiagnosticsReportBuilder {
                 ReleaseLogLineLimit
             }
         val sessionLines = selected.latestSessionLines
-        val runtimeHealth = RuntimeHealthSnapshot.fromLines(sessionLines)
+        val runtimeHealth = snapshot.runtimeHealth
         val moduleLines = sessionLines.takeLast(lineLimit)
         val requestedDiagnosticsLevel = diagnosticsLevel.name.lowercase()
         val runtimeDiagnostics = runtimeHealth.component("diagnostics")
@@ -116,7 +108,7 @@ internal object DiagnosticsReportBuilder {
             appendLine()
             appendLine("[Share diagnostics]")
             appendLine("source=persistent-store")
-            appendLine("logcatCollection=" + collectionState(shareLogResult))
+            appendLine("logcatCollection=" + collectionState(snapshot.shareLogResult))
             appendLine("lines=" + shareLines.size)
             if (shareLines.isEmpty()) {
                 appendLine("No share diagnostic entries were available.")
@@ -125,7 +117,7 @@ internal object DiagnosticsReportBuilder {
             }
             appendLine()
             appendLine("[Report]")
-            appendLine("generatedAt=" + OffsetDateTime.now())
+            appendLine("generatedAt=" + snapshot.capturedAt)
         }
     }
 
@@ -136,5 +128,4 @@ internal object DiagnosticsReportBuilder {
             result.error != null -> "error:" + result.error
             else -> "exit:" + result.exitCode
         }
-
 }

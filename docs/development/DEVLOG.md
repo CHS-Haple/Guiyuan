@@ -4423,3 +4423,25 @@ Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.
 - Runtime view is now a positive allow-list of stable lifecycle/state events plus every warning/error; Detailed view remains the full Guiyuan-filtered source. This avoids treating high-frequency tint, presentation probes and latency telemetry as the primary user-facing log stream.
 - Range (This run / Current log) and severity are filter dimensions, not top-level log types, so they move into the MIUIX filter menu. Runtime / Detailed becomes the page-level view switch.
 - Expanded fields use vertical labels/values and raw transport text is second-level disclosure. Bulk parsing is moved to Dispatchers.Default so thousands of source lines are not regex-parsed during Compose recomposition.
+
+
+## 2026-10-04 — Build 713 unify diagnostics snapshot ownership
+
+**Problem**
+
+The Diagnostics page and diagnostic-report path both consumed Guiyuan runtime evidence, but each assembled its own view of that evidence. This made LSPosed/logcat transport appear like a separate product from the report and allowed page state and an exported report to be captured at different boundaries.
+
+**Conclusion**
+
+Guiyuan has one diagnostic data model. LSPosed/logcat remains a transport/storage source only. App-side presentation and report formatting must consume one canonical on-demand snapshot rather than becoming independent collectors.
+
+**Change**
+
+- add `DiagnosticsSnapshotProvider` as the single app-side capture boundary for environment, diagnostics preference, runtime log source, parsed entries, Runtime health, share diagnostics and capture time;
+- make `DiagnosticsScreen` consume that snapshot instead of directly reading/parsing the transport log;
+- make `DiagnosticsReportBuilder` format a `DiagnosticsSnapshot`, retaining its context overload only as a convenience that captures through the same provider;
+- keep runtime producers, hooks, event schema, LSPosed/logcat fallback and diagnostics-level semantics unchanged.
+
+**Validation**
+
+Exact-head Runtime CI and static review are required. No device gate is required for this data-ownership refactor because it intentionally preserves the Build 712 visible presentation and SystemUI runtime behavior.
