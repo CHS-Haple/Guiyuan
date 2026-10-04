@@ -4559,3 +4559,19 @@ Exact-head Runtime CI plus focused Canary visual review are required.
 ## 2026-10-04 — Build 722 restore compact event-card helper
 
 Static diff review of Build 721 caught that removing the rejected Runtime health block also mechanically removed `DiagnosticsUsefulEventCard`, while the new compact list still referenced it. Restore the same compact card implementation used by the prior workbench: level/category/time, title, one-line summary, and structured details on expansion. No diagnostics model, filtering, report, menu, runtime or SystemUI behavior changes.
+
+
+## 2026-10-04 — Build 723 toolbar actions, grouped More menu and dated event time
+
+- toolbar order is Share -> Export -> More, using MIUIX `Share`, `FileDownloads` and `More` icon actions;
+- Share, Export and More use MIUIX `TooltipBox`, so touch long-press shows their labels without custom gesture or bubble code;
+- Copy diagnostic report is removed from the product UI;
+- the More popup uses three `DropdownEntry` groups, allowing MIUIX `OverlayIconCascadingDropdownMenu` to insert native `HorizontalDivider` separators:
+  1. diagnostics level + refresh;
+  2. scroll to top + scroll to bottom;
+  3. Clear view;
+- Diagnostics owns its `LazyListState`; scroll actions animate the existing list and never refresh or recapture data;
+- the shared private `SettingsPage` accepts an optional list state while existing callers retain an internally remembered state;
+- event timestamps display `MM-dd HH:mm:ss` for both LSPosed and logcat envelopes, covered by parser tests.
+
+No snapshot/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition or native fallback behavior changes.

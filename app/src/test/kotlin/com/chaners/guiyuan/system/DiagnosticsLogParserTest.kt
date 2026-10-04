@@ -18,7 +18,7 @@ class DiagnosticsLogParserTest {
             )
 
         assertEquals(DiagnosticLogLevel.Info, entry.level)
-        assertEquals("12:38:51", entry.timeText)
+        assertEquals("10-04 12:38:51", entry.timeText)
         assertEquals("17495", entry.pid)
         assertEquals("com.android.systemui", entry.hostPackage)
         assertEquals("com.chaners.guiyuan", entry.modulePackage)
@@ -60,7 +60,7 @@ class DiagnosticsLogParserTest {
             )
 
         assertEquals(DiagnosticLogLevel.Error, entry.level)
-        assertEquals("12:38:57", entry.timeText)
+        assertEquals("10-04 12:38:57", entry.timeText)
         assertEquals("CombinedStatus", entry.tag)
         assertEquals("hotReload.complete", entry.event)
         assertEquals("error", entry.state)

@@ -226,13 +226,24 @@ internal object DiagnosticsLogParser {
 
     private fun displayTime(timestamp: String?): String? {
         if (timestamp.isNullOrBlank()) return null
-        val clock =
-            if ('T' in timestamp) {
-                timestamp.substringAfter('T')
+        val value = timestamp.trim()
+        val date =
+            if ('T' in value) {
+                value.substringBefore('T').takeLast(5)
             } else {
-                timestamp.substringAfter(' ', timestamp)
+                value.substringBefore(' ').takeLast(5)
             }
-        return clock.take(8).takeIf { it.length == 8 }
+        val clock =
+            if ('T' in value) {
+                value.substringAfter('T').take(8)
+            } else {
+                value.substringAfter(' ', "").take(8)
+            }
+        return if (date.length == 5 && clock.length == 8) {
+            "$date $clock"
+        } else {
+            null
+        }
     }
 
     private fun levelFromToken(token: String): DiagnosticLogLevel =

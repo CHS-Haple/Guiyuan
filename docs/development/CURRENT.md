@@ -4,8 +4,9 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 722 (`20261004-722`).
-- Build 722 is a static-review repair before device validation: Build 721's health-block deletion mechanically removed the shared compact event-card composable along with the rejected health UI. Restore that exact compact card implementation; no product behavior changes from the Build 721 design.
+- Active work: `feat/diagnostics-log-workbench` / Build 723 (`20261004-723`).
+- Build 722 Runtime CI #2650 passed. Build 723 completes the compact workbench interaction pass: toolbar actions are Share -> Export -> More, all three use MIUIX long-press tooltips, Copy report is removed, and More is split by MIUIX-native dividers into diagnostics controls, list navigation, and Clear view.
+- The navigation group adds smooth Scroll to top / Scroll to bottom against the current list only. Event timestamps now show compact date + time (`MM-dd HH:mm:ss`) for both LSPosed and logcat envelopes; parser tests cover both formats.
 - Build 720 Canary #766 passed all automated/signing gates but device review rejected the new health-matrix presentation: expected-but-unobserved components were rendered as repeated `unknown` rows after hot reload, the health card dominated the page, and structured event fallback could expose internal `key=value` payloads in the default summary.
 - Build 721 keeps the unified `DiagnosticsSnapshot` / same-snapshot report architecture but restores the accepted Build 712 compact event-list visual baseline. The health matrix is removed from the first-class UI (it remains in the diagnostic report), the page uses a lightweight “This run · N key events” summary, and structured events without a friendly summary show “Recorded / 已记录” rather than raw transport fields.
 - Build 716 Runtime CI #2645 passed. Build 717 removes the retired raw-log-viewer surface and its dead helpers/resources.
