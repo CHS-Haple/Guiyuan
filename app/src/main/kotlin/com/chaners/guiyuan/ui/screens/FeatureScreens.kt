@@ -832,7 +832,11 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 ) {
                     if (filterActive) {
                         BadgedBox(
-                            badge = { Badge() },
+                            badge = {
+                                Badge(
+                                    containerColor = MiuixTheme.colorScheme.primary,
+                                )
+                            },
                         ) {
                             Icon(
                                 MiuixIcons.Filter,
@@ -1794,7 +1798,7 @@ private fun diagnosticLogSummary(
     if (summary.isNotBlank()) {
         return summary
     }
-    return if (entry.structured) {
+    return if (entry.structured || entry.event != null) {
         context.getString(R.string.diagnostics_log_summary_recorded)
     } else {
         entry.message
