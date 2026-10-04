@@ -168,7 +168,7 @@
     <string name="runtime_scope_title">Scope</string>
     <string name="runtime_scope_summary">SystemUI (com.android.systemui)</string>
     <string name="runtime_target_title">Compatibility baseline</string>
-    <string name="runtime_target_summary">SystemUI 17.03.260226.r (HyperOS 4)</string>
+    <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
     <string name="runtime_inventory_title">Native status probe</string>
     <string name="runtime_inventory_summary">Enabled · one-shot status-bar structure and geometry snapshot</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>

@@ -4286,3 +4286,115 @@ Replayed only the previously device-validated Battery-Island battery-ring direct
 ### Validation
 
 The same functional correction passed the Build 688 device gate. This replay requires exact-head Runtime CI and review only.
+
+## 2026-10-04 — Build 701 diagnostics report icon semantics
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 701 / `20261004-701`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 700 device feedback accepted the Material Symbols information-row treatment and requested the Diagnostics & reports section to use the same visual language. Follow-up clarified that symbol selection must follow each row's text meaning rather than mimic the previous MIUIX glyph.
+
+### Change
+
+- diagnostics level → `troubleshoot`;
+- export diagnostic report → `file_export`;
+- share diagnostic report → `share`;
+- all three render through the same local drawable leading-icon path as the accepted information rows;
+- no runtime icon library dependency is added.
+
+`diagnosis` was rejected because its actual vector reads as medical/health diagnosis; `rule_settings` was rejected as generic rules/settings. `tune` was not retained merely for visual continuity with the previous MIUIX glyph.
+
+### Validation
+
+Runtime behavior is unchanged. Exact-head CI plus one focused device optical/semantic review is sufficient.
+
+## 2026-10-04 — Build 704 semantic leading-icon convention
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 704 / `20261004-704`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 700 device review showed that Material Symbols work well as semantic row-leading glyphs inside MIUIX pages. Follow-up review distinguished those explanatory glyphs from MIUIX-owned control/navigation affordances and found several Diagnostics mappings that followed value text or duplicated another row's visual semantics.
+
+### Conclusion
+
+Use Material Symbols for semantic leading icons that explain what a settings/information row represents. Keep MIUIX icons where the icon is part of a MIUIX control/navigation affordance. Select symbols from the row's text semantics, not from the previous icon shape or a word appearing in the value.
+
+### Change
+
+Diagnostics refines version → `tag`, package/application ID → `data_object`, and framework → `schema`. Appearance adds theme mode → `contrast`, dynamic color → `palette`, floating navigation → `bottom_navigation`, navigation style → `style`, and navigation content → `view_list`. One shared semantic renderer owns the 24dp optical box, theme tint and disabled alpha.
+
+### Validation
+
+App UI/resources only. Exact-head CI plus focused light/dark optical/semantic device review is sufficient.
+
+## 2026-10-04 — Build 705 Filled-first semantic icon pass
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 705 / `20261004-705`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 704 device review showed that the semantic-icon direction is correct but the Outlined weight is too light for Guiyuan's MIUIX cards. The framework `schema` glyph also reads as a flow/structure diagram rather than an Xposed-style framework/module concept, and the compatibility-baseline `HyperOS 4` prefix adds visual noise.
+
+### Convention
+
+- semantic row-leading icons prefer Material Symbols Filled;
+- when Filled and Outline are nearly identical, use Filled for convention consistency;
+- retain Outline only when Filled materially harms legibility or weight balance;
+- MIUIX icons remain for MIUIX control/navigation affordances.
+
+### Change
+
+- framework: `schema` → Filled `extension`;
+- device model: Filled `smartphone`;
+- navigation content: `view_list` → Filled `format_list_bulleted`;
+- all other compatible semantic resources switch to their official Fill=1 paths;
+- compatibility baseline deliberately retains Outline `fact_check` because its Filled card is visually heavier than adjacent rows;
+- remove `HyperOS 4` from the compatibility-baseline secondary label;
+- remove obsolete local vectors `info/api/package_2/schema/view_list`.
+
+### Validation
+
+App UI/resources/text only. Exact-head CI plus one focused light/dark optical/semantic device review is sufficient.
+
+## 2026-10-04 — Build 706 semantic icon optical-weight normalization
+
+**Type:** app UI / optical tuning  
+**Display version:** 0.0.5  
+**Build:** 706 / `20261004-706`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 705 device review accepted the Filled-first direction but showed that several line-constructed Material Symbols still read visually hollow/light beside solid silhouettes such as `smartphone`, `dashboard`, and `extension`.
+
+### Decision
+
+Use Material Symbols weight as the optical-balancing axis instead of changing icon semantics or scaling the whole drawable. Keep the existing 24dp optical box and 22dp rendered size.
+
+### Change
+
+- `tag`: Fill1 / W500;
+- `data_object`: Fill1 / W500;
+- `target`: Fill1 / W500;
+- `troubleshoot`: Fill1 / W500;
+- `fact_check`: Outline / W500;
+- all other Build 705 semantic glyphs remain unchanged.
+
+### Safety
+
+Drawable resources only; no Compose geometry, settings behavior, diagnostics/runtime logic, SystemUI hooks, or Xposed ownership changes.
+
+### Validation
+
+Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.

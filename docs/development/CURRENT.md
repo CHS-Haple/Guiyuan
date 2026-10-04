@@ -4,10 +4,10 @@
 
 - Product: Guiyuan 0.0.5.
 - `main` remains on the promoted Build 618 stable checkpoint.
-- `dev` baseline: Build 696 / `8fb0930c` / versionCode `261004696` / Build ID `20261004-696`.
-- PR #205 is merged; Build 696 standardized the explicit SystemUI restart maintenance transaction and is pending/under integrated dev Runtime validation.
-- Active work: `fix/charging-island-ring-direction-dev` / Build 697 (`20261004-697`) replays only the already device-validated Battery-Island ring-direction correction onto current dev.
-- Build 697 keeps non-island live CENTER geometry direction and uses final-row logical start only while native Battery-Island is active; no new writer, timer, reservation or transition-timing behavior is introduced.
+- `dev` baseline: Build 697 / `7b60c113` / versionCode `261004697` / Build ID `20261004-697`.
+- PR #207 is merged; Build 697 integrates the previously device-validated charging-island battery-ring direction correction on top of accepted Build 696.
+- Active work: `feat/diagnostics-info-icons` / Build 706 (`20261004-706`) is a focused optical-weight pass on the five semantic glyphs that remained visually light in Build 705.
+- Build 706 keeps Build 705 mappings/layouts unchanged and adjusts only optical weight: `tag`, `data_object`, `target`, `troubleshoot` use Fill1/W500; `fact_check` remains Outline but moves to W500. All other semantic glyphs remain unchanged. App drawable/docs metadata only.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
