@@ -4806,3 +4806,17 @@ Final device acceptance is deferred to an integrated dev Canary so this Diagnost
 **Runtime boundary**
 
 No Xposed/SystemUI hook, renderer, transition, network source, native participant, writer, fail-native policy or runtime lifecycle behavior changes in this build.
+
+
+## 2026-10-04 — Build 739 semantic-icon and refresh ownership normalization
+
+- Extend the Material Symbols left-side semantic icon policy to the whole companion app, not a single page.
+- Require actual glyph-shape inspection before selection; semantic correctness outranks visual neatness.
+- Align the default Material Symbols baseline with pinned MIUIX Regular: Outlined W400 first, W500 only for perceptually light glyphs, Filled only when state semantics or legibility justify an exception.
+- Enforce one renderer geometry contract through `SemanticLeadingIcon`: 24 dp optical box, 22 dp visual size, common alignment/tint; remove per-call visual-size overrides.
+- Re-audit current semantic icons and replace About package/project/dependency glyphs with `package_2`, `folder_code`, and `account_tree`; normalize the remaining semantic vectors to official Material Symbols Outlined W400 sources where applicable.
+- Remove superseded `data_object`, `code_blocks`, and `inventory_2` assets.
+- Diagnostics refresh now has one UI owner. Initial capture alone may show the loading state card; all later recaptures keep the current list visible and use pinned-MIUIX `PullToRefresh`.
+- Pull gesture, More > Refresh, and diagnostics-level recapture call the same guarded `requestRefresh()` path; duplicate refresh requests are ignored while capture is active.
+- Pull-to-refresh is not installed during the initial empty snapshot, avoiding gesture/header feedback before the first capture completes.
+- No Xposed/SystemUI runtime behavior changes.
