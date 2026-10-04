@@ -93,6 +93,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -1506,7 +1507,7 @@ private fun DiagnosticsLogStateCard(text: String) {
 @Composable
 private fun DiagnosticsLogLevelTag(level: DiagnosticLogLevel) {
     val colors = MiuixTheme.colorScheme
-    val warningColor = Color(0xFFFF9500)
+    val warningColor = RuntimeWarningAccent
     val containerColor =
         when (level) {
             DiagnosticLogLevel.Error,

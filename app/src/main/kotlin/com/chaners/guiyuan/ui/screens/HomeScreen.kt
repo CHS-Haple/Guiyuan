@@ -44,6 +44,8 @@ import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
+import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -529,5 +531,3 @@ private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
 private val HomePreviewIconSize = 112.dp
 private val HomePreviewSurfaceHeight = 176.dp
-private val RuntimeSuccessAccent = Color(0xFF36D167)
-private val RuntimeWarningAccent = Color(0xFFFFA500)
