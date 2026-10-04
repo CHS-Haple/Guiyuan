@@ -4757,3 +4757,18 @@ Correction:
 - keep the native 24dp vector canvas and IconButton hit target unchanged; do not scale, translate, stroke, or redraw icons.
 
 This is presentation-only. Cascading-menu behavior and all runtime/report paths remain unchanged.
+
+### Build 733 — restore pinned MIUIX toolbar defaults
+
+Maintainer review rejects project-local per-glyph weight compensation for small toolbar actions. The pinned MIUIX revision already defines the icon aliases, intrinsic 24dp vectors and 40dp IconButton geometry; project code should not mix Normal/Medium weights to force optical matching.
+
+Build 733 therefore restores the Diagnostics toolbar to the upstream defaults:
+- Back: `MiuixIcons.Back`;
+- Filter: `MiuixIcons.Filter`;
+- Share: `MiuixIcons.Share`;
+- Download: `MiuixIcons.Download`;
+- More: `MiuixIcons.More`.
+
+Direct actions remain MIUIX `IconButton`; Filter/More remain MIUIX `WindowIconCascadingDropdownMenu`, whose trigger is the same MIUIX IconButton primitive. No explicit icon size, scale, translation, stroke, or weight override remains.
+
+Final device acceptance is deferred to an integrated dev Canary so this Diagnostics conformance pass can be checked together with the battery-color menu/pager cleanup requested by the maintainer.

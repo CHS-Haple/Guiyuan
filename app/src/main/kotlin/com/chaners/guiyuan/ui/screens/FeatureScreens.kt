@@ -878,7 +878,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Medium.Share, contentDescription = reportShareTitle)
+                    Icon(MiuixIcons.Share, contentDescription = reportShareTitle)
                 }
             }
             TooltipBox(text = reportExportTitle) {
@@ -1185,7 +1185,7 @@ private fun DiagnosticsFilterMenu(
                 },
             ) {
                 Icon(
-                    MiuixIcons.Normal.Filter,
+                    MiuixIcons.Filter,
                     contentDescription = title,
                 )
             }
@@ -1276,7 +1276,7 @@ private fun DiagnosticsMoreMenu(
 
     TooltipBox(text = title) {
         WindowIconCascadingDropdownMenu(entries = entries) {
-            Icon(MiuixIcons.Normal.More, contentDescription = title)
+            Icon(MiuixIcons.More, contentDescription = title)
         }
     }
 }
