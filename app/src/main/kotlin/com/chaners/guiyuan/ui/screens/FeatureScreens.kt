@@ -1868,22 +1868,29 @@ internal fun AboutScreen(onBack: () -> Unit) {
         }
 
         Section(R.string.section_device_system) {
+            val unavailable = stringResource(R.string.about_value_unavailable)
+            val deviceSummary =
+                listOf(
+                    environment.deviceName.trim(),
+                    environment.model
+                        .trim()
+                        .takeIf { model ->
+                            model.isNotBlank() &&
+                                !model.equals(environment.deviceName.trim(), ignoreCase = true)
+                        },
+                )
+                    .filterNotNull()
+                    .filter(String::isNotBlank)
+                    .ifEmpty { listOf(unavailable) }
+                    .joinToString(separator = "\n")
             BasicComponent(
                 title = stringResource(R.string.device_name_label),
-                summary = environment.deviceName.ifBlank {
-                    stringResource(R.string.about_value_unavailable)
-                },
+                summary = deviceSummary,
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_smartphone,
                         visualSize = 22.dp,
                     )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.device_model_label),
-                summary = environment.model.ifBlank {
-                    stringResource(R.string.about_value_unavailable)
                 },
             )
             BasicComponent(
