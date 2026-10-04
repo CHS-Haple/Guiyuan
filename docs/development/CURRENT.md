@@ -3,11 +3,11 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- `main` remains on the previous promoted Build 618 checkpoint until the current dev-to-main promotion completes.
-- `dev` baseline: Build 708 / versionCode `261004708` / Build ID `20261004-708`.
+- `main` and `dev` are aligned on the promoted Guiyuan 0.1.0 / Build 708 checkpoint (`20261004-708`, versionCode `261004708`).
 - Build 707 / PR #208 is integrated and device-accepted: Appearance now follows the same Filled-first + optical-weight normalization rule as Diagnostics; `bottom_navigation` and `format_list_bulleted` use official Filled/W500 while already-solid Appearance glyphs remain Filled/W400.
 - Build 708 changes release identity/documentation only: display version 0.1.0, dated changelog checkpoint, README status, and current-state metadata. Runtime/UI behavior remains the accepted Build 707 state.
-- Active objective: promote the validated 0.1.0 / Build 708 dev state to `main` through the stable Full-validation boundary.
+- The 0.1.0 promotion passed the dev integration Runtime, dev-to-main stable-boundary validation, promotion readiness checks, and trusted main Full validation including signing and non-debuggable Canary verification.
+- No active work branch is carried across the promotion. The next app-UI objective may start from the aligned Build 708 baseline.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
