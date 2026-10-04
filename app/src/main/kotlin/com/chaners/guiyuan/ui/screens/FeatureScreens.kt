@@ -109,6 +109,7 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -1784,10 +1785,13 @@ internal fun AboutScreen(
         Section(R.string.section_app) {
             BasicComponent(
                 title = stringResource(R.string.product_name),
-                summary = stringResource(R.string.about_identity_summary),
+                summary = stringResource(R.string.app_description),
                 startAction = {
                     GuiyuanAnimatedIdentityMark()
                 },
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             BasicComponent(
                 title = stringResource(R.string.diagnostics_version_label),
@@ -1827,7 +1831,7 @@ internal fun AboutScreen(
                 summary = stringResource(R.string.about_project_home_summary),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_data_object,
+                        iconRes = R.drawable.ic_material_symbol_code,
                         visualSize = 22.dp,
                     )
                 },
@@ -1838,7 +1842,7 @@ internal fun AboutScreen(
                 summary = stringResource(R.string.about_open_source_license_summary),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_fact_check,
+                        iconRes = R.drawable.ic_material_symbol_license,
                         visualSize = 22.dp,
                     )
                 },
@@ -1872,13 +1876,13 @@ internal fun AboutScreen(
                     .filterNotNull()
                     .filter(String::isNotBlank)
                     .ifEmpty { listOf(unavailable) }
-                    .joinToString(separator = "\n")
+                    .joinToString(separator = " ")
             val androidSummary =
                 if (environment.androidVersion.isNotBlank()) {
                     buildString {
                         append("Android ")
                         append(environment.androidVersion)
-                        append('\n')
+                        append(' ')
                         append("API ")
                         append(environment.sdk)
                     }
@@ -1972,10 +1976,6 @@ internal fun AboutLicenseScreen(onBack: () -> Unit) {
         onBack = onBack,
     ) {
         Section(R.string.section_license_overview) {
-            BasicComponent(
-                title = stringResource(R.string.about_license_name),
-                summary = stringResource(R.string.about_license_description),
-            )
             BasicComponent(
                 title = stringResource(R.string.about_license_identifier_title),
                 summary = "GPL-3.0-only",
