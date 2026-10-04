@@ -4772,3 +4772,37 @@ Build 733 therefore restores the Diagnostics toolbar to the upstream defaults:
 Direct actions remain MIUIX `IconButton`; Filter/More remain MIUIX `WindowIconCascadingDropdownMenu`, whose trigger is the same MIUIX IconButton primitive. No explicit icon size, scale, translation, stroke, or weight override remains.
 
 Final device acceptance is deferred to an integrated dev Canary so this Diagnostics conformance pass can be checked together with the battery-color menu/pager cleanup requested by the maintainer.
+
+
+## 2026-10-04 — Build 738 About conformance and Diagnostics pull refresh
+
+**About**
+
+- Keep the existing Guiyuan animated identity-mark implementation unchanged.
+- Replace the short placeholder identity copy with the same application/LSPosed description resource used by the package manifest.
+- Separate brand identity from version metadata with pinned-MIUIX `HorizontalDivider` using upstream default thickness and divider color.
+- Keep read-only metadata on MIUIX `BasicComponent`; use MIUIX `ArrowPreference` only for real navigation/actions.
+- Project homepage and GNU GPL v3.0 license open directly; the redundant license detail route/page is removed.
+- Third-party dependencies remain a real secondary page in the MIUIX navigation stack.
+- Project homepage uses a Material Symbols `code` glyph and license uses `license`; third-party dependencies keeps `inventory_2`. Shared Material Symbols renderer and its geometry are unchanged.
+- Device name/codename and Android/API metadata use same-line spacing rather than line breaks.
+- Remove the duplicate project-address row from the outer Settings hub.
+
+**Dependency/version/license audit**
+
+- Direct dependency versions displayed in About now come from the same Gradle variables that declare the dependencies; UI constants no longer duplicate those versions.
+- MIUIX shows the exact published snapshot `0.9.4-5c91d5e5-SNAPSHOT` rather than truncating it to `0.9.4`.
+- Displayed license identifiers use SPDX forms: `Apache-2.0` and `EPL-1.0`.
+- Material Symbols is explicitly classified as a local embedded asset with no fabricated library version.
+- `THIRD_PARTY_NOTICES.md` is synchronized with the exact direct versions and SPDX license identifiers.
+
+**Diagnostics**
+
+- Add pinned-MIUIX `PullToRefresh` around the existing Diagnostics LazyColumn.
+- Pull refresh and the existing More > Refresh action share the same `DiagnosticsSnapshotProvider.capture` generation path.
+- Initial page load does not display the pull-refresh indicator; only a user pull raises the pull-refresh state.
+- Refresh gesture state/text is localized; the MIUIX component owns drag threshold, animation and nested-scroll interaction.
+
+**Runtime boundary**
+
+No Xposed/SystemUI hook, renderer, transition, network source, native participant, writer, fail-native policy or runtime lifecycle behavior changes in this build.
