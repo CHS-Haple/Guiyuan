@@ -693,247 +693,478 @@ private fun RowScope.MiniStandardNavigationItem(
 @Composable
 internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedView by rememberSaveable { mutableIntStateOf(0) }
-    var selectedScope by rememberSaveable { mutableIntStateOf(0) }
-    var selectedLevel by rememberSaveable { mutableIntStateOf(0) }
-    var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var rawExpandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val diagnosticsRepository =
+        remember(context.applicationContext) {
+            DiagnosticsSettingsRepository(context.applicationContext)
+        }
+    val diagnosticsSettings by
+        diagnosticsRepository.settings.collectAsState(
+            initial = DiagnosticsSettings(level = diagnosticsRepository.currentLevel()),
+        )
+
     var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var viewCleared by rememberSaveable { mutableStateOf(false) }
+    var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
+    var reportInProgress by rememberSaveable { mutableStateOf(false) }
+    var exportPickerOpen by rememberSaveable { mutableStateOf(false) }
+
+    val copiedMessage = stringResource(R.string.diagnostic_report_copied)
+    val copyFailedMessage = stringResource(R.string.diagnostic_report_copy_failed)
+    val exportSucceededMessage = stringResource(R.string.diagnostic_report_exported)
+    val exportFailedMessage = stringResource(R.string.diagnostic_report_export_failed)
+    val shareFailedMessage = stringResource(R.string.diagnostic_report_share_failed)
+    val reportShareTitle = stringResource(R.string.share_diagnostic_report)
+    val copyReportTitle = stringResource(R.string.copy_diagnostic_report)
+
+    fun withCurrentReport(onReady: suspend (String) -> Unit) {
+        val captured = snapshot ?: return
+        if (reportInProgress) return
+        reportInProgress = true
+        scope.launch {
+            try {
+                onReady(DiagnosticsReportBuilder.build(captured))
+            } finally {
+                reportInProgress = false
+            }
+        }
+    }
+
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("text/plain"),
+        ) { uri ->
+            exportPickerOpen = false
+            if (uri != null) {
+                withCurrentReport { report ->
+                    val success =
+                        DiagnosticsReportFiles.writeExport(
+                            context = context,
+                            uri = uri,
+                            report = report,
+                        )
+                    snackbarHostState.showSnackbar(
+                        if (success) exportSucceededMessage else exportFailedMessage,
+                    )
+                }
+            }
+        }
 
     LaunchedEffect(refreshGeneration) {
         loading = true
         snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
         expandedKey = null
-        rawExpandedKey = null
+        viewCleared = false
         loading = false
     }
 
-    val viewOptions =
-        listOf(
-            stringResource(R.string.diagnostics_log_view_runtime),
-            stringResource(R.string.diagnostics_log_view_detailed),
-        )
-    val scopeOptions =
-        listOf(
-            stringResource(R.string.diagnostics_log_scope_session),
-            stringResource(R.string.diagnostics_log_scope_current_log),
-        )
-    val levelOptions =
-        listOf(
-            stringResource(R.string.diagnostics_log_level_all),
-            stringResource(R.string.diagnostics_log_level_info),
-            stringResource(R.string.diagnostics_log_level_warning),
-            stringResource(R.string.diagnostics_log_level_error),
-        )
-    val filterMenu =
+    val reportActionsEnabled =
+        snapshot != null &&
+            !loading &&
+            !reportInProgress &&
+            !exportPickerOpen
+    val usefulEntries =
+        if (viewCleared) {
+            emptyList()
+        } else {
+            snapshot
+                ?.sessionEntries
+                .orEmpty()
+                .asSequence()
+                .filter(::diagnosticLogIsRuntimeEntry)
+                .toList()
+                .asReversed()
+                .take(MaxDiagnosticsUsefulEvents)
+        }
+    val actionsMenu =
         DropdownEntry(
             items =
                 listOf(
                     DropdownItem(
-                        text = stringResource(R.string.diagnostics_log_filter_level),
-                        summary = levelOptions[selectedLevel],
+                        text = stringResource(R.string.diagnostics_mode_title),
+                        summary =
+                            stringResource(
+                                if (diagnosticsSettings.level == DiagnosticsLevel.Detailed) {
+                                    R.string.diagnostics_mode_detailed
+                                } else {
+                                    R.string.diagnostics_mode_basic
+                                },
+                            ),
                         children =
-                            levelOptions.mapIndexed { index, label ->
+                            DiagnosticsLevel.entries.map { level ->
                                 DropdownItem(
-                                    text = label,
-                                    selected = selectedLevel == index,
+                                    text =
+                                        stringResource(
+                                            if (level == DiagnosticsLevel.Detailed) {
+                                                R.string.diagnostics_mode_detailed
+                                            } else {
+                                                R.string.diagnostics_mode_basic
+                                            },
+                                        ),
+                                    selected = diagnosticsSettings.level == level,
                                     onClick = {
-                                        selectedLevel = index
-                                        expandedKey = null
-                                        rawExpandedKey = null
+                                        if (level != diagnosticsSettings.level) {
+                                            diagnosticsRepository.setLevel(level)
+                                            refreshGeneration += 1
+                                        }
                                     },
                                 )
                             },
                     ),
                     DropdownItem(
-                        text = stringResource(R.string.diagnostics_log_filter_scope),
-                        summary = scopeOptions[selectedScope],
-                        children =
-                            scopeOptions.mapIndexed { index, label ->
-                                DropdownItem(
-                                    text = label,
-                                    selected = selectedScope == index,
-                                    onClick = {
-                                        selectedScope = index
-                                        expandedKey = null
-                                        rawExpandedKey = null
-                                    },
+                        text = stringResource(R.string.diagnostics_refresh),
+                        enabled = !loading && !exportPickerOpen,
+                        onClick = { refreshGeneration += 1 },
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_clear_view),
+                        enabled = snapshot != null && !viewCleared,
+                        onClick = {
+                            viewCleared = true
+                            expandedKey = null
+                        },
+                    ),
+                    DropdownItem(
+                        text = copyReportTitle,
+                        enabled = reportActionsEnabled,
+                        onClick = {
+                            withCurrentReport { report ->
+                                val clipboard =
+                                    context.getSystemService(
+                                        android.content.ClipboardManager::class.java,
+                                    )
+                                if (clipboard == null) {
+                                    snackbarHostState.showSnackbar(copyFailedMessage)
+                                } else {
+                                    clipboard.setPrimaryClip(
+                                        ClipData.newPlainText(copyReportTitle, report),
+                                    )
+                                    snackbarHostState.showSnackbar(copiedMessage)
+                                }
+                            }
+                        },
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.export_diagnostic_report),
+                        enabled = reportActionsEnabled,
+                        onClick = {
+                            exportPickerOpen = true
+                            exportLauncher.launch(DiagnosticsReportFiles.suggestedFileName())
+                        },
+                    ),
+                    DropdownItem(
+                        text = reportShareTitle,
+                        enabled = reportActionsEnabled,
+                        onClick = {
+                            withCurrentReport { report ->
+                                val prepared =
+                                    DiagnosticsReportFiles.prepareShare(
+                                        context = context,
+                                        report = report,
+                                    )
+                                if (prepared == null) {
+                                    snackbarHostState.showSnackbar(shareFailedMessage)
+                                    return@withCurrentReport
+                                }
+
+                                val sendIntent =
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = DiagnosticsReportFiles.ShareMimeType
+                                        putExtra(Intent.EXTRA_STREAM, prepared.uri)
+                                        clipData =
+                                            ClipData.newUri(
+                                                context.contentResolver,
+                                                reportShareTitle,
+                                                prepared.uri,
+                                            )
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                DiagnosticsReportFiles.logShareIntent(
+                                    context = context,
+                                    intent = sendIntent,
+                                    uri = prepared.uri,
                                 )
-                            },
+
+                                val chooserIntent =
+                                    Intent.createChooser(
+                                        sendIntent,
+                                        reportShareTitle,
+                                    ).apply {
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+
+                                runCatching {
+                                    context.startActivity(chooserIntent)
+                                }.onSuccess {
+                                    DiagnosticsReportFiles.logChooserLaunch(context)
+                                }.onFailure { error ->
+                                    DiagnosticsReportFiles.logChooserLaunch(context, error)
+                                    DiagnosticsReportFiles.discardShare(context, prepared)
+                                    snackbarHostState.showSnackbar(shareFailedMessage)
+                                }
+                            }
+                        },
                     ),
                 ),
-        )
-
-    val currentLogEntries = snapshot?.allEntries.orEmpty()
-    val currentRunEntries = snapshot?.sessionEntries.orEmpty()
-    val scopedEntries =
-        if (selectedScope == 0) {
-            currentRunEntries
-        } else {
-            currentLogEntries
-        }
-    val viewedEntries =
-        if (selectedView == 0) {
-            scopedEntries.filter(::diagnosticLogIsRuntimeEntry)
-        } else {
-            scopedEntries
-        }
-    val query = searchQuery.trim()
-    val visibleEntries =
-        remember(
-            viewedEntries,
-            selectedLevel,
-            query,
-            context.resources.configuration.locales,
-        ) {
-            viewedEntries
-                .asSequence()
-                .filter { entry -> diagnosticLogMatchesLevel(entry.level, selectedLevel) }
-                .filter { entry ->
-                    query.isEmpty() ||
-                        entry.searchableText().contains(query, ignoreCase = true) ||
-                        diagnosticLogTitle(context, entry).contains(query, ignoreCase = true)
-                }
-                .toList()
-                .asReversed()
-        }
-    val listSummary =
-        stringResource(
-            R.string.diagnostics_log_list_summary,
-            scopeOptions[selectedScope],
-            visibleEntries.size,
         )
 
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
+        snackbarHost = { SnackbarHost(state = snackbarHostState) },
         actions = {
             OverlayIconCascadingDropdownMenu(
-                entry = filterMenu,
+                entry = actionsMenu,
                 collapseOnSelection = true,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Filter,
-                    contentDescription = stringResource(R.string.diagnostics_log_filter),
-                )
-            }
-            IconButton(
-                onClick = { refreshGeneration += 1 },
-                enabled = !loading,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Refresh,
-                    contentDescription = stringResource(R.string.diagnostics_log_refresh),
+                    imageVector = MiuixIcons.Tune,
+                    contentDescription = stringResource(R.string.diagnostics_actions),
                 )
             }
         },
     ) {
-        item {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-            ) {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = {
-                        searchQuery = it
-                        expandedKey = null
-                        rawExpandedKey = null
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 8.dp),
-                    label = stringResource(R.string.diagnostics_log_search),
-                    singleLine = true,
-                )
-                TabRowWithContour(
-                    tabs = viewOptions,
-                    selectedTabIndex = selectedView,
-                    onTabSelected = { index ->
-                        selectedView = index
-                        expandedKey = null
-                        rawExpandedKey = null
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 10.dp),
-                )
-                Text(
-                    text =
-                        if (loading) {
-                            stringResource(R.string.diagnostics_log_loading)
-                        } else {
-                            listSummary
-                        },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 10.dp, bottom = 4.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
-
-        if (visibleEntries.isEmpty()) {
+        if (viewCleared) {
             item {
                 DiagnosticsLogStateCard(
-                    text =
-                        when {
-                            loading -> stringResource(R.string.diagnostics_log_loading)
-                            searchQuery.isNotBlank() ->
-                                stringResource(R.string.diagnostics_log_no_matches)
-                            else -> stringResource(R.string.diagnostics_log_empty)
-                        },
+                    text = stringResource(R.string.diagnostics_view_cleared),
                 )
             }
         } else {
-            itemsIndexed(
-                items = visibleEntries,
-                key = { index, entry -> entry.stableKey + ":" + index },
-            ) { _, entry ->
-                DiagnosticsLogEntryCard(
-                    context = context,
-                    entry = entry,
-                    expanded = expandedKey == entry.stableKey,
-                    rawExpanded = rawExpandedKey == entry.stableKey,
-                    onToggle = {
-                        val next =
-                            if (expandedKey == entry.stableKey) {
-                                null
-                            } else {
-                                entry.stableKey
-                            }
-                        expandedKey = next
-                        if (rawExpandedKey != next) {
-                            rawExpandedKey = null
-                        }
-                    },
-                    onToggleRaw = {
-                        rawExpandedKey =
-                            if (rawExpandedKey == entry.stableKey) {
-                                null
-                            } else {
-                                entry.stableKey
-                            }
-                    },
+            item {
+                SmallTitle(stringResource(R.string.section_diagnostics_health))
+                DiagnosticsHealthCard(
+                    snapshot = snapshot,
+                    loading = loading,
                 )
+            }
+
+            item {
+                SmallTitle(stringResource(R.string.section_diagnostics_events))
+            }
+
+            if (!loading) {
+                if (usefulEntries.isEmpty()) {
+                    item {
+                        DiagnosticsLogStateCard(
+                            text = stringResource(R.string.diagnostics_events_empty),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = usefulEntries,
+                        key = { index, entry -> entry.stableKey + ":" + index },
+                    ) { _, entry ->
+                        DiagnosticsUsefulEventCard(
+                            context = context,
+                            entry = entry,
+                            expanded = expandedKey == entry.stableKey,
+                            onToggle = {
+                                expandedKey =
+                                    if (expandedKey == entry.stableKey) {
+                                        null
+                                    } else {
+                                        entry.stableKey
+                                    }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val MaxDiagnosticsUsefulEvents = 40
+
+private val DiagnosticHealthComponents =
+    listOf(
+        "module",
+        "compatibility",
+        "statusHost",
+        "network",
+        "presentationRuntime",
+        "renderer",
+        "runtimeSession",
+    )
+
+@Composable
+private fun DiagnosticsHealthCard(
+    snapshot: DiagnosticsSnapshot?,
+    loading: Boolean,
+) {
+    val context = LocalContext.current
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 12.dp),
+    ) {
+        when {
+            loading -> {
+                BasicComponent(
+                    title = stringResource(R.string.diagnostics_log_loading),
+                )
+            }
+            snapshot == null -> {
+                BasicComponent(
+                    title = stringResource(R.string.diagnostics_health_unavailable),
+                )
+            }
+            else -> {
+                val health = snapshot.runtimeHealth
+                BasicComponent(
+                    title = diagnosticOverallHealthLabel(context, health.overall),
+                    summary =
+                        stringResource(
+                            R.string.diagnostics_health_summary,
+                            BuildConfig.BUILD_ID,
+                            snapshot.environment.systemUiDisplay,
+                        ),
+                )
+                DiagnosticHealthComponents.forEach { name ->
+                    health.component(name)?.let { component ->
+                        BasicComponent(
+                            title = diagnosticHealthComponentLabel(context, name),
+                            summary = diagnosticStateLabel(context, component.state),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+private fun DiagnosticsUsefulEventCard(
+    context: Context,
+    entry: DiagnosticLogEntry,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val title = diagnosticLogTitle(context, entry)
+    val summary = diagnosticLogSummary(context, entry)
+    val category = diagnosticLogCategoryLabel(context, entry.category)
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 8.dp)
+                .then(
+                    if (expanded) {
+                        Modifier
+                    } else {
+                        Modifier.height(96.dp)
+                    },
+                ),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+        showIndication = true,
+        onClick = onToggle,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DiagnosticsLogLevelBadge(entry.level)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = category,
+                modifier = Modifier.weight(1f),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            entry.timeText?.let { time ->
+                Text(
+                    text = time,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = summary,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = if (expanded) 2 else 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(10.dp))
+            DiagnosticLogDetailRow(
+                label = stringResource(R.string.diagnostics_log_detail_event),
+                value = entry.event ?: "—",
+            )
+            entry.component?.let { component ->
+                DiagnosticLogDetailRow(
+                    label = stringResource(R.string.diagnostics_log_detail_component),
+                    value = component,
+                )
+            }
+            entry.state?.let { state ->
+                DiagnosticLogDetailRow(
+                    label = stringResource(R.string.diagnostics_log_detail_state),
+                    value = state,
+                )
+            }
+
+            entry.fields
+                .filterKeys { key -> key !in DiagnosticLogMetadataFields }
+                .forEach { (key, value) ->
+                    DiagnosticLogDetailRow(label = key, value = value)
+                }
+        }
+    }
+}
+
+private fun diagnosticOverallHealthLabel(
+    context: Context,
+    overall: String,
+): String =
+    context.getString(
+        when (overall.lowercase()) {
+            "healthy" -> R.string.diagnostics_health_healthy
+            "degraded" -> R.string.diagnostics_health_degraded
+            else -> R.string.diagnostics_health_unavailable
+        },
+    )
+
+private fun diagnosticHealthComponentLabel(
+    context: Context,
+    component: String,
+): String =
+    context.getString(
+        when (component) {
+            "module" -> R.string.diagnostics_component_module
+            "compatibility" -> R.string.diagnostics_component_compatibility
+            "statusHost" -> R.string.diagnostics_component_status_host
+            "network" -> R.string.diagnostics_component_network
+            "presentationRuntime" -> R.string.diagnostics_component_presentation
+            "renderer" -> R.string.diagnostics_component_renderer
+            "runtimeSession" -> R.string.diagnostics_component_session
+            else -> R.string.diagnostics_component_other
+        },
+    )
+
+@Composable
+private fun DiagnosticsLogStateCard@Composable
 private fun DiagnosticsLogStateCard(text: String) {
     Card(
         modifier =
@@ -1417,8 +1648,6 @@ private val DiagnosticLogMetadataFields =
 @Composable
 internal fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     val environment by
         produceState(
             initialValue = RuntimeEnvironmentInfo.basic(),
@@ -1426,63 +1655,10 @@ internal fun AboutScreen(onBack: () -> Unit) {
         ) {
             value = RuntimeEnvironmentInfo.resolve(context.applicationContext)
         }
-    val diagnosticsRepository =
-        remember(context.applicationContext) {
-            DiagnosticsSettingsRepository(context.applicationContext)
-        }
-    val diagnosticsSettings by
-        diagnosticsRepository.settings.collectAsState(
-            initial = DiagnosticsSettings(level = diagnosticsRepository.currentLevel()),
-        )
-    val diagnosticsLevelOptions =
-        listOf(
-            stringResource(R.string.diagnostics_mode_basic),
-            stringResource(R.string.diagnostics_mode_detailed),
-        )
-    var reportInProgress by rememberSaveable { mutableStateOf(false) }
-    var exportPickerOpen by rememberSaveable { mutableStateOf(false) }
-
-    val reportShareTitle = stringResource(R.string.share_diagnostic_report)
-    val exportSucceededMessage = stringResource(R.string.diagnostic_report_exported)
-    val exportFailedMessage = stringResource(R.string.diagnostic_report_export_failed)
-    val shareFailedMessage = stringResource(R.string.diagnostic_report_share_failed)
-
-    fun buildReport(onReady: suspend (String) -> Unit) {
-        if (reportInProgress) return
-        reportInProgress = true
-        scope.launch {
-            try {
-                onReady(DiagnosticsReportBuilder.build(context.applicationContext))
-            } finally {
-                reportInProgress = false
-            }
-        }
-    }
-
-    val exportLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument("text/plain"),
-        ) { uri ->
-            exportPickerOpen = false
-            if (uri != null) {
-                buildReport { report ->
-                    val success =
-                        DiagnosticsReportFiles.writeExport(
-                            context = context,
-                            uri = uri,
-                            report = report,
-                        )
-                    snackbarHostState.showSnackbar(
-                        if (success) exportSucceededMessage else exportFailedMessage,
-                    )
-                }
-            }
-        }
 
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
-        snackbarHost = { SnackbarHost(state = snackbarHostState) },
     ) {
         Section(R.string.section_diagnostics_app) {
             DiagnosticsCardHeader(
@@ -1560,100 +1736,11 @@ internal fun AboutScreen(onBack: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
-
-        Section(R.string.section_diagnostic_report) {
-            OverlayDropdownPreference(
-                items = diagnosticsLevelOptions,
-                selectedIndex = diagnosticsSettings.level.ordinal,
-                title = stringResource(R.string.diagnostics_mode_title),
-                summary = stringResource(R.string.diagnostics_mode_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_troubleshoot,
-                        visualSize = 22.dp,
-                    )
-                },
-                showValue = true,
-                onSelectedIndexChange = { index ->
-                    DiagnosticsLevel.entries.getOrNull(index)?.let { level ->
-                        if (level != diagnosticsSettings.level) {
-                            diagnosticsRepository.setLevel(level)
-                        }
-                    }
-                },
-            )
-            DiagnosticsActionRow(
-                title = stringResource(R.string.export_diagnostic_report),
-                summary = stringResource(R.string.export_diagnostic_report_summary),
-                iconRes = R.drawable.ic_material_symbol_file_export,
-                iconVisualSize = 22.dp,
-                enabled = !reportInProgress && !exportPickerOpen,
-                onClick = {
-                    exportPickerOpen = true
-                    exportLauncher.launch(DiagnosticsReportFiles.suggestedFileName())
-                },
-            )
-            DiagnosticsActionRow(
-                title = stringResource(R.string.share_diagnostic_report),
-                summary = stringResource(R.string.share_diagnostic_report_summary),
-                iconRes = R.drawable.ic_material_symbol_share,
-                iconVisualSize = 22.dp,
-                enabled = !reportInProgress && !exportPickerOpen,
-                onClick = {
-                    buildReport { report ->
-                        val prepared =
-                            DiagnosticsReportFiles.prepareShare(
-                                context = context,
-                                report = report,
-                            )
-                        if (prepared == null) {
-                            snackbarHostState.showSnackbar(shareFailedMessage)
-                            return@buildReport
-                        }
-
-                        val sendIntent =
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = DiagnosticsReportFiles.ShareMimeType
-                                putExtra(Intent.EXTRA_STREAM, prepared.uri)
-                                clipData =
-                                    ClipData.newUri(
-                                        context.contentResolver,
-                                        reportShareTitle,
-                                        prepared.uri,
-                                    )
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                        DiagnosticsReportFiles.logShareIntent(
-                            context = context,
-                            intent = sendIntent,
-                            uri = prepared.uri,
-                        )
-
-                        val chooserIntent =
-                            Intent.createChooser(
-                                sendIntent,
-                                reportShareTitle,
-                            ).apply {
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-
-                        runCatching {
-                            context.startActivity(chooserIntent)
-                        }.onSuccess {
-                            DiagnosticsReportFiles.logChooserLaunch(context)
-                        }.onFailure { error ->
-                            DiagnosticsReportFiles.logChooserLaunch(context, error)
-                            DiagnosticsReportFiles.discardShare(context, prepared)
-                            snackbarHostState.showSnackbar(shareFailedMessage)
-                        }
-                    }
-                },
-            )
-        }
     }
 }
 
 @Composable
+private fun GuiyuanAnimatedIdentityMark@Composable
 private fun GuiyuanAnimatedIdentityMark() {
     val orbitRotation by
         rememberInfiniteTransition(label = "guiyuanIdentityOrbit").animateFloat(

@@ -4,12 +4,12 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 713 (`20261004-713`).
-- Build 710 established the About/Diagnostics split and proved on-device LSPosed/logcat reading, but its raw-line cards were accepted only as a reader prototype.
-- Builds 711-712 proved parsing and semantic presentation, then exposed a product-model problem: the app treated the transport log viewer and the generated diagnostic report as separate diagnostic products even though the report already consumed the same runtime evidence.
-- Build 713 introduces one app-side `DiagnosticsSnapshotProvider` as the canonical on-demand capture boundary. It owns environment metadata, diagnostics preference, the LSPosed-first/runtime-log snapshot, parsed entries, structured Runtime health, share-diagnostic evidence and capture time. `DiagnosticsScreen` and `DiagnosticsReportBuilder` now consume that same snapshot model instead of independently assembling diagnostic state.
-- Runtime log production, Xposed/SystemUI hooks, diagnostics event schema and diagnostic-level behavior remain unchanged. The provider is invoked only on page load/explicit refresh or report generation; there is no polling, resident collector or second runtime logger.
-- Next: move report actions and diagnostic-level control into the Diagnostics workbench, remove the report controls from About, then simplify the page around health + useful events instead of exposing LSPosed transport as a product surface.
+- Active work: `feat/diagnostics-log-workbench` / Build 714 (`20261004-714`).
+- Builds 710-712 proved LSPosed/logcat collection and semantic parsing but also exposed the wrong product boundary: Guiyuan was becoming a second raw-log viewer beside LSPosed while its generated diagnostic report looked like a separate system.
+- Build 713 established one on-demand `DiagnosticsSnapshotProvider` for environment metadata, diagnostics preference, runtime evidence, parsed events, Runtime health, share diagnostics and capture time; Runtime CI #2642 passed.
+- Build 714 makes that unified snapshot the product surface. Diagnostics now presents Runtime health plus a bounded useful-event stream; raw LSPosed/logcat transport lines, source/range tabs and severity browsing are no longer first-class UI.
+- Diagnostic level, refresh, Clear view, Copy diagnostic report, Export diagnostic report and Share diagnostic report move into the Diagnostics top-bar action menu. Clear view only hides the currently captured presentation; it never deletes or mutates LSPosed/logcat or Guiyuan diagnostic evidence. Copy/export/share format the exact in-memory snapshot currently owned by the page.
+- About returns to static product/device/runtime identity only. Runtime log production, Xposed/SystemUI hooks, event schema and diagnostics-level semantics remain unchanged; there is still no polling, resident collector or second runtime logger.
 - Existing Project address and SystemUI restart rows remain in place for this checkpoint.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 

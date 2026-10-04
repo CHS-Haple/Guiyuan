@@ -4445,3 +4445,27 @@ Guiyuan has one diagnostic data model. LSPosed/logcat remains a transport/storag
 **Validation**
 
 Exact-head Runtime CI and static review are required. No device gate is required for this data-ownership refactor because it intentionally preserves the Build 712 visible presentation and SystemUI runtime behavior.
+
+
+## 2026-10-04 — Build 714 diagnostics workbench product boundary
+
+**Problem**
+
+Even after Build 713 unified app-side capture, the visible UI still behaved like a second LSPosed log browser: range/severity controls and raw transport disclosure competed with Runtime health and the generated report. Report actions also remained in About, reinforcing the impression that logs and diagnostics were separate products.
+
+**Conclusion**
+
+LSPosed/logcat is an implementation transport, not Guiyuan's diagnostics UI. Guiyuan Diagnostics should present interpreted health and useful events from one captured snapshot; the diagnostic report is simply another representation of that same snapshot.
+
+**Change**
+
+- replace the log-viewer hierarchy with Runtime health and a bounded useful-event stream;
+- keep raw transport lines out of the first-class Guiyuan UI while retaining them as report evidence;
+- move diagnostics level, refresh, Clear view, copy, export and share into the Diagnostics top-bar action menu;
+- make copy/export/share format the exact in-memory snapshot currently displayed by Diagnostics;
+- define Clear view as presentation-only state: no LSPosed/logcat file or Guiyuan diagnostic evidence is deleted;
+- remove diagnostics/report controls from About so it returns to static identity/environment information.
+
+**Validation**
+
+Exact-head Runtime CI plus UI/code review are required. A focused Canary visual/interaction pass is warranted after automated validation because the page hierarchy and action placement change, while SystemUI runtime behavior does not.
