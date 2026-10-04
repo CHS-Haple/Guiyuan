@@ -107,15 +107,17 @@ For app UI, prefer current MIUIX components and conventions for spacing, typogra
 For Material Symbols used as semantic row-leading icons:
 - this policy is global across the companion app. It applies to Appearance, About, Diagnostics, settings/information rows, and any future explanatory leading icon that uses Material Symbols; do not create page-specific optical rules;
 - use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, menus, and action affordances;
+- align Material Symbols with the visual language of the pinned MIUIX icon set. MIUIX default aliases are Regular/line-oriented and its static preference-row examples normally use non-filled icons, so Outline/Regular is the default starting style for semantic row-leading Material Symbols;
 - choose the glyph from the row's semantic meaning, not from a previous icon shape, incidental text in the row value, or a desire to make neighboring silhouettes mechanically identical;
-- within one visual group or card, style coherence has priority over a single glyph's isolated local optimum. Start from Filled (`FILL=1`) at the standard optical weight for every candidate in that group;
-- W400 is the default starting weight. Use an official heavier weight such as W500 only when the actual glyph is perceptually too light because of thin, linear, ring-like, or hollow construction. Already-solid glyphs should stay at the lighter official weight when possible;
-- a glyph that contains negative space is not automatically an Outline icon. Judge the actual Material Symbols variant, not whether the silhouette visually contains holes;
-- if a Filled glyph is too dense or loses legibility, first try another semantically correct Filled Material Symbol and/or another official weight. Outline is an exception of last resort, not the normal optical-balancing mechanism;
-- if an Outline exception is required, document why the available Filled candidates fail and compare the result against adjacent icons in both light and dark themes before acceptance;
+- within one visual group or card, style coherence has priority over a single glyph's isolated local optimum. Start from the semantically correct Outline Material Symbol at the standard optical weight, then normalize perceived mass using official glyph/weight variants;
+- W400 is the default starting weight. Use an official heavier weight such as W500 when the actual Outline glyph is perceptually too light because of thin, linear, ring-like, or highly open construction;
+- negative space does not by itself mean a glyph is visually too light. Judge the actual occupied mass, optical center, and neighboring glyphs at the final 22 dp visual size;
+- if an Outline glyph cannot reach acceptable legibility or perceived mass with a semantically correct official glyph/weight, a Filled variant may be used as a documented exception. Filled is also appropriate when fill itself communicates a real selected/active/stateful meaning, matching MIUIX's use of explicit Fill variants;
+- before choosing Filled for a static semantic row, first try another semantically correct Outline glyph and/or an official heavier weight. Do not use Filled merely to make one icon look darker in isolation;
 - normalize perceived visual mass with official glyph/variant/weight selection, not geometry hacks. Do not compensate with per-icon scale, translation, custom stroke, alpha, viewport edits, or ad-hoc padding;
 - all such icons share the same renderer contract: a 24 dp optical box, 22 dp visual size, common alignment, and common tint. A page must not override those dimensions merely to make one glyph look larger or smaller;
-- identical `FILL` / `wght` values are not the goal; coherent perceived mass, optical center, and style across neighboring icons are the goal.
+- compare neighboring glyphs in both light and dark themes. Identical variant/weight values are not the goal; coherent perceived mass, optical center, and MIUIX-consistent style are the goal.
+
 
 `SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
 
