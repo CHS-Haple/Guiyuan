@@ -7,8 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 694 (`20261004-694`) retains the completed diagnostics-performance cleanup and closes the remaining QS_FAKE capacity-lease lifecycle gap found in the one-time native fallback evidence.
-- Build 694 distinguishes hidden/prearm lease ownership from visible ownership: hidden native width replacement may be adopted and reacquired only while the parent contract is unchanged; visible mismatches still fail native.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 695 (`20261004-695`) is the reviewed QS_FAKE lease-lifecycle closure on top of the completed diagnostics/performance work.
+- Build 695 keeps Build 694's hidden/prearm adoption policy and additionally confirms visible ownership from the attached QS_FAKE session's false→true requested-visibility edge, covering the first-visible attach ordering without weakening visible writer protection.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -157,4 +157,17 @@ Build 694 makes the ownership boundary explicit:
 - visible=false demotes ownership before clearing transition reservation and releasing the lease, reusing the existing hidden-boundary semantics.
 
 No timer, polling, second state machine, or relaxed visible writer ownership is introduced. Unit coverage locks the exact 587→836→587 hidden/prearm case, visible mismatch failure, unchanged reuse, and parent-contract mismatch failure.
+
+## Build 695 attached-session visible ownership confirmation
+
+Review of Build 694 found an ordering edge: the native Control Center visible callback calls `beginVisibleCycle()` before the fallback attach path. On the first ever visible cycle, no QS_FAKE owner may exist yet, so that early begin call can legitimately return success without marking the subsequently attached session as visible.
+
+Build 695 closes that gap without removing the early begin:
+- the early `beginVisibleCycle()` still reconciles an already-prearmed session before other visible-cycle work;
+- after a session is attached/prepared, its own `requestedVisible false→true` edge confirms `onControlCenterVisibilityChanged(true)` again;
+- an already-visible prearmed owner treats the second call as idempotent;
+- a newly attached owner performs the hidden/prearm reconcile and then promotes to visible ownership;
+- if the attached-session handoff fails, requested visibility is not promoted and native/Home fallback remains authoritative.
+
+Unit coverage locks false→true as the only attached-session begin edge, while existing tests keep true→false as the only end edge. No extra timer, polling, geometry writer, or duplicate lease acquisition is introduced.
 

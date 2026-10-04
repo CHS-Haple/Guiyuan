@@ -617,6 +617,16 @@ internal object CombinedStatusControlCenterRenderSession {
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (
+                shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = requestedVisible,
+                    nextRequestedVisible = visible,
+                ) &&
+                !SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+            ) {
+                syncPresentation("visibility-visible-cycle-failed")
+                return false
+            }
+            if (
                 shouldEndCapacityLeaseOnVisibilityChange(
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
@@ -991,6 +1001,12 @@ internal object CombinedStatusControlCenterRenderSession {
         }
         return found
     }
+
+    internal fun shouldBeginCapacityLeaseOnVisibilityChange(
+        previousRequestedVisible: Boolean,
+        nextRequestedVisible: Boolean,
+    ): Boolean =
+        !previousRequestedVisible && nextRequestedVisible
 
     internal fun shouldEndCapacityLeaseOnVisibilityChange(
         previousRequestedVisible: Boolean,

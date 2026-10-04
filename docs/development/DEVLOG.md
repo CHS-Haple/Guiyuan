@@ -4211,3 +4211,26 @@ The writer-conflict guard is not removed or weakened for visible ownership. No t
 
 Unit coverage reproduces the exact hidden 587→836→587 ownership sequence and verifies visible mismatch, unchanged hidden reuse, and parent-contract mismatch behavior. Exact-head Runtime CI plus code review are required before dev merge.
 
+## 2026-10-04 — Build 695 confirm attached QS_FAKE visible ownership
+
+**Type:** lifecycle correctness follow-up  
+**Display version:** 0.0.5  
+**Build:** 695 / `20261004-695`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Review finding
+
+The first native visible callback may arrive before a QS_FAKE session has been attached. The early owner-level `beginVisibleCycle()` therefore cannot by itself guarantee that the new session enters visible lease ownership.
+
+### Change
+
+- keep the early owner-level visible-cycle reconcile for existing prearmed sessions;
+- on an attached session's `requestedVisible false→true` edge, confirm owner visible-cycle handoff again;
+- repeated true→true does not re-enter the handoff;
+- false→true failure leaves requested visibility false and preserves fallback;
+- keep Build 694 hidden/prearm native-width adoption and visible writer-conflict semantics unchanged.
+
+### Validation
+
+Unit coverage verifies false→true is the only attached-session begin edge and true→false remains the only end edge. Exact-head Runtime CI and final lifecycle review are required before dev merge.
+
