@@ -1765,7 +1765,6 @@ private data class AboutDependency(
 @Composable
 internal fun AboutScreen(
     onBack: () -> Unit,
-    onOpenLicense: () -> Unit,
     onOpenThirdParty: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -1846,7 +1845,7 @@ internal fun AboutScreen(
                         visualSize = 22.dp,
                     )
                 },
-                onClick = onOpenLicense,
+                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
             )
             ArrowPreference(
                 title = stringResource(R.string.about_third_party_title),
@@ -1968,81 +1967,53 @@ internal fun AboutScreen(
 }
 
 @Composable
-internal fun AboutLicenseScreen(onBack: () -> Unit) {
-    val uriHandler = LocalUriHandler.current
-
-    SettingsPage(
-        title = stringResource(R.string.about_open_source_license_title),
-        onBack = onBack,
-    ) {
-        Section(R.string.section_license_overview) {
-            BasicComponent(
-                title = stringResource(R.string.about_license_identifier_title),
-                summary = "GPL-3.0-only",
-            )
-            ArrowPreference(
-                title = stringResource(R.string.about_license_full_text_title),
-                summary = stringResource(R.string.about_license_full_text_summary),
-                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
-            )
-        }
-    }
-}
-
-@Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
-    val miuixVersion = BuildConfig.MIUIX_VERSION.substringBefore("-")
+    val miuixVersion = BuildConfig.MIUIX_VERSION
     val runtimeDependencies =
         remember(miuixVersion) {
             listOf(
                 AboutDependency(
                     name = "MIUIX",
                     version = miuixVersion,
-                    license = "Apache License 2.0",
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
                     name = "libxposed API",
-                    version = "102.0.0",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/libxposed/api",
                 ),
                 AboutDependency(
                     name = "libxposed service",
-                    version = "102.0.0",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/libxposed/service",
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
-                    version = "1.13.0",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Navigation Event Compose",
-                    version = "1.1.2",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX DataStore Preferences",
-                    version = "1.2.1",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization core",
-                    version = "1.11.0",
-                    license = "Apache License 2.0",
+                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
-                ),
-                AboutDependency(
-                    name = "Material Symbols",
-                    version = null,
-                    license = "Apache License 2.0",
-                    upstreamUrl = "https://github.com/google/material-design-icons",
                 ),
             )
         }
@@ -2052,13 +2023,13 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 AboutDependency(
                     name = "JUnit 4",
                     version = "4.13.2",
-                    license = "Eclipse Public License 1.0",
+                    license = "EPL-1.0",
                     upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
                 AboutDependency(
                     name = "Gradle Wrapper",
                     version = "9.7.1",
-                    license = "Apache License 2.0",
+                    license = "Apache-2.0",
                     upstreamUrl = "https://github.com/gradle/gradle",
                 ),
             )
@@ -2075,6 +2046,15 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     onClick = { uriHandler.openUri(dependency.upstreamUrl) },
                 )
             }
+        }
+        Section(R.string.section_embedded_assets) {
+            ArrowPreference(
+                title = "Material Symbols",
+                summary = "Apache-2.0",
+                onClick = {
+                    uriHandler.openUri("https://github.com/google/material-design-icons")
+                },
+            )
         }
         Section(R.string.section_development_dependencies) {
             developmentDependencies.forEach { dependency ->
