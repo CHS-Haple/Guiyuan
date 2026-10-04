@@ -3,11 +3,12 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- `main` and `dev` are aligned on the promoted Guiyuan 0.1.0 / Build 708 checkpoint (`20261004-708`, versionCode `261004708`).
-- Build 707 / PR #208 is integrated and device-accepted: Appearance now follows the same Filled-first + optical-weight normalization rule as Diagnostics; `bottom_navigation` and `format_list_bulleted` use official Filled/W500 while already-solid Appearance glyphs remain Filled/W400.
-- Build 708 changes release identity/documentation only: display version 0.1.0, dated changelog checkpoint, README status, and current-state metadata. Runtime/UI behavior remains the accepted Build 707 state.
-- The 0.1.0 promotion passed the dev integration Runtime, dev-to-main stable-boundary validation, promotion readiness checks, and trusted main Full validation including signing and non-debuggable Canary verification.
-- No active work branch is carried across the promotion. The next app-UI objective may start from the aligned Build 708 baseline.
+- `main` remains on the promoted Build 708 stable checkpoint; `dev` is on Build 709 (`20261004-709`, versionCode `261004709`) after PR #210.
+- Build 709 upgrades Gradle Wrapper 9.7.1 -> 9.8.0 and refreshes pinned GitHub Actions: gradle/actions 4.4.3 -> 6.4.0, checkout 5 -> 7.0.1, setup-java 5 -> 6.0.1, and upload-artifact 4 -> 7.0.1.
+- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; CI confirmed the Basic open-source cache provider is active and the proprietary enhanced provider is not used.
+- PR Full CI #2629 and trusted `dev` integration Full CI #2630 passed. The integrated run completed wrapper validation, target-profile verification, tests/build, Modern Xposed metadata checks, Haple APK signature verification, non-debuggable Canary verification, and artifact upload.
+- Gradle 9.8 deprecation audit CI #2632 (`--warning-mode all`) found one unique concrete warning repeated 51 times: `Configuration.setVisible(boolean)` from Android Gradle Plugin 9.4.1 internals (`BasePlugin`, `SourceSetManager`, `VariantDependenciesBuilder`, `TaskManager`, and UTP setup). No Guiyuan Gradle/settings script frame or Kotlin-plugin frame appears in the warning stacks. The concrete API warning is scheduled for removal in Gradle 11, so no project-local workaround is warranted; recheck after a future stable AGP update.
+- No runtime/UI behavior changed and no device validation is required. No active maintenance branch remains after #210.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
