@@ -3,7 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -1763,10 +1762,13 @@ private data class AboutDependency(
 )
 
 @Composable
-internal fun AboutScreen(onBack: () -> Unit) {
+internal fun AboutScreen(
+    onBack: () -> Unit,
+    onOpenLicense: () -> Unit,
+    onOpenThirdParty: () -> Unit,
+) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    var showThirdParty by rememberSaveable { mutableStateOf(false) }
     val environment by
         produceState(
             initialValue = RuntimeEnvironmentInfo.basic(),
@@ -1774,17 +1776,6 @@ internal fun AboutScreen(onBack: () -> Unit) {
         ) {
             value = RuntimeEnvironmentInfo.resolve(context.applicationContext)
         }
-
-    BackHandler(enabled = showThirdParty) {
-        showThirdParty = false
-    }
-
-    if (showThirdParty) {
-        AboutThirdPartyScreen(
-            onBack = { showThirdParty = false },
-        )
-        return
-    }
 
     SettingsPage(
         title = stringResource(R.string.about_title),
@@ -1851,7 +1842,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
                         visualSize = 22.dp,
                     )
                 },
-                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
+                onClick = onOpenLicense,
             )
             ArrowPreference(
                 title = stringResource(R.string.about_third_party_title),
@@ -1862,8 +1853,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
                         visualSize = 22.dp,
                     )
                 },
-                onClick = { showThirdParty = true },
-                holdDownState = showThirdParty,
+                onClick = onOpenThirdParty,
             )
         }
 
@@ -1883,6 +1873,19 @@ internal fun AboutScreen(onBack: () -> Unit) {
                     .filter(String::isNotBlank)
                     .ifEmpty { listOf(unavailable) }
                     .joinToString(separator = "\n")
+            val androidSummary =
+                if (environment.androidVersion.isNotBlank()) {
+                    buildString {
+                        append("Android ")
+                        append(environment.androidVersion)
+                        append('\n')
+                        append("API ")
+                        append(environment.sdk)
+                    }
+                } else {
+                    unavailable
+                }
+
             BasicComponent(
                 title = stringResource(R.string.device_name_label),
                 summary = deviceSummary,
@@ -1895,11 +1898,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
             )
             BasicComponent(
                 title = stringResource(R.string.android_version_label),
-                summary =
-                    environment.androidVersion
-                        .takeIf(String::isNotBlank)
-                        ?.let { "Android $it" }
-                        ?: stringResource(R.string.about_value_unavailable),
+                summary = androidSummary,
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_android,
@@ -1909,9 +1908,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
             )
             BasicComponent(
                 title = stringResource(R.string.os_version_label),
-                summary = environment.osVersion.ifBlank {
-                    stringResource(R.string.about_value_unavailable)
-                },
+                summary = environment.osVersion.ifBlank { unavailable },
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_layers,
@@ -1921,9 +1918,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
             )
             BasicComponent(
                 title = stringResource(R.string.systemui_version_label),
-                summary = environment.systemUiVersionName.ifBlank {
-                    stringResource(R.string.about_value_unavailable)
-                },
+                summary = environment.systemUiVersionName.ifBlank { unavailable },
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_dashboard,
@@ -1969,7 +1964,33 @@ internal fun AboutScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun AboutThirdPartyScreen(onBack: () -> Unit) {
+internal fun AboutLicenseScreen(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+
+    SettingsPage(
+        title = stringResource(R.string.about_open_source_license_title),
+        onBack = onBack,
+    ) {
+        Section(R.string.section_license_overview) {
+            BasicComponent(
+                title = stringResource(R.string.about_license_name),
+                summary = stringResource(R.string.about_license_description),
+            )
+            BasicComponent(
+                title = stringResource(R.string.about_license_identifier_title),
+                summary = "GPL-3.0-only",
+            )
+            ArrowPreference(
+                title = stringResource(R.string.about_license_full_text_title),
+                summary = stringResource(R.string.about_license_full_text_summary),
+                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
+            )
+        }
+    }
+}
+
+@Composable
+internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val miuixVersion = BuildConfig.MIUIX_VERSION.substringBefore("-")
     val runtimeDependencies =
