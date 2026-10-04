@@ -14,7 +14,9 @@ import com.chaners.guiyuan.settings.AppearanceSettings
 import com.chaners.guiyuan.settings.FloatingNavigationContent
 import com.chaners.guiyuan.settings.FloatingNavigationStyle
 import com.chaners.guiyuan.ui.navigation.AppRoute
+import com.chaners.guiyuan.ui.screens.AboutLicenseScreen
 import com.chaners.guiyuan.ui.screens.AboutScreen
+import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
@@ -207,7 +209,17 @@ internal fun CombinedStatusApp(
                 )
             }
             entry<AppRoute.About>(swipeDismiss = swipeBackDirection) {
-                AboutScreen(onBack = ::navigateBack)
+                AboutScreen(
+                    onBack = ::navigateBack,
+                    onOpenLicense = { navigate(AppRoute.AboutLicense) },
+                    onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
+                )
+            }
+            entry<AppRoute.AboutLicense>(swipeDismiss = swipeBackDirection) {
+                AboutLicenseScreen(onBack = ::navigateBack)
+            }
+            entry<AppRoute.AboutThirdParty>(swipeDismiss = swipeBackDirection) {
+                AboutThirdPartyScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.Diagnostics>(swipeDismiss = swipeBackDirection) {
                 DiagnosticsScreen(onBack = ::navigateBack)
