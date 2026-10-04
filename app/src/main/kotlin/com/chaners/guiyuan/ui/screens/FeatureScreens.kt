@@ -64,10 +64,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.R
@@ -101,11 +97,9 @@ import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -122,7 +116,6 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -136,9 +129,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import top.yukonga.miuix.kmp.window.WindowListPopup
+import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -727,17 +718,10 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
     var reportInProgress by rememberSaveable { mutableStateOf(false) }
     var exportPickerOpen by rememberSaveable { mutableStateOf(false) }
-    var filterSheetVisible by rememberSaveable { mutableStateOf(false) }
-    var appliedLevelFilter by rememberSaveable {
+    var levelFilter by rememberSaveable {
         mutableIntStateOf(DiagnosticsFilterLevelAll)
     }
-    var appliedCategoryFilter by rememberSaveable {
-        mutableIntStateOf(DiagnosticsFilterCategoryAll)
-    }
-    var draftLevelFilter by rememberSaveable {
-        mutableIntStateOf(DiagnosticsFilterLevelAll)
-    }
-    var draftCategoryFilter by rememberSaveable {
+    var categoryFilter by rememberSaveable {
         mutableIntStateOf(DiagnosticsFilterCategoryAll)
     }
 
@@ -813,49 +797,38 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             .filter { entry ->
                 diagnosticsFilterMatches(
                     entry = entry,
-                    levelMask = appliedLevelFilter,
-                    categoryMask = appliedCategoryFilter,
+                    levelMask = levelFilter,
+                    categoryMask = categoryFilter,
                 )
             }
             .take(MaxDiagnosticsUsefulEvents)
             .toList()
     val filterActive =
-        appliedLevelFilter != DiagnosticsFilterLevelAll ||
-            appliedCategoryFilter != DiagnosticsFilterCategoryAll
+        levelFilter != DiagnosticsFilterLevelAll ||
+            categoryFilter != DiagnosticsFilterCategoryAll
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
-            TooltipBox(text = filterTitle) {
-                IconButton(
-                    onClick = {
-                        draftLevelFilter = appliedLevelFilter
-                        draftCategoryFilter = appliedCategoryFilter
-                        filterSheetVisible = true
-                    },
-                ) {
-                    if (filterActive) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = MiuixTheme.colorScheme.primary,
-                                )
-                            },
-                        ) {
-                            Icon(
-                                MiuixIcons.Light.Filter,
-                                contentDescription = filterTitle,
-                            )
-                        }
-                    } else {
-                        Icon(
-                            MiuixIcons.Light.Filter,
-                            contentDescription = filterTitle,
-                        )
-                    }
-                }
-            }
+            DiagnosticsFilterMenu(
+                title = filterTitle,
+                levelMask = levelFilter,
+                categoryMask = categoryFilter,
+                onLevelMaskChange = {
+                    levelFilter = it
+                    expandedKey = null
+                },
+                onCategoryMaskChange = {
+                    categoryFilter = it
+                    expandedKey = null
+                },
+                onReset = {
+                    levelFilter = DiagnosticsFilterLevelAll
+                    categoryFilter = DiagnosticsFilterCategoryAll
+                    expandedKey = null
+                },
+            )
         },
         actions = {
             TooltipBox(text = reportShareTitle) {
@@ -899,7 +872,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Light.Share, contentDescription = reportShareTitle)
+                    Icon(MiuixIcons.Share, contentDescription = reportShareTitle)
                 }
             }
             TooltipBox(text = reportExportTitle) {
@@ -910,7 +883,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Light.Download, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
                 }
             }
             DiagnosticsMoreMenu(
@@ -1013,27 +986,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         }
     }
 
-    DiagnosticsFilterSheet(
-        show = filterSheetVisible,
-        levelMask = draftLevelFilter,
-        categoryMask = draftCategoryFilter,
-        onLevelMaskChange = { draftLevelFilter = it },
-        onCategoryMaskChange = { draftCategoryFilter = it },
-        onReset = {
-            draftLevelFilter = DiagnosticsFilterLevelAll
-            draftCategoryFilter = DiagnosticsFilterCategoryAll
-        },
-        onApply = {
-            appliedLevelFilter = draftLevelFilter
-            appliedCategoryFilter = draftCategoryFilter
-            expandedKey = null
-            filterSheetVisible = false
-            scope.launch { listState.scrollToItem(0) }
-        },
-        onDismiss = {
-            filterSheetVisible = false
-        },
-    )
 }
 
 private const val MaxDiagnosticsUsefulEvents = 40
@@ -1057,39 +1009,6 @@ private const val DiagnosticsFilterCategoryAll =
         DiagnosticsFilterCategoryPerformance or
         DiagnosticsFilterCategorySettingsMaintenance or
         DiagnosticsFilterCategoryOther
-
-private val DiagnosticsSideSubmenuPositionProvider =
-    object : PopupPositionProvider {
-        override fun calculatePosition(
-            anchorBounds: IntRect,
-            windowBounds: IntRect,
-            layoutDirection: LayoutDirection,
-            popupContentSize: IntSize,
-            popupMargin: IntRect,
-            alignment: PopupPositionProvider.Align,
-        ): IntOffset {
-            val rightX = anchorBounds.right + popupMargin.right
-            val leftX = anchorBounds.left - popupContentSize.width - popupMargin.left
-            val fitsRight = rightX + popupContentSize.width <= windowBounds.right
-            val fitsLeft = leftX >= windowBounds.left
-            val preferRight = layoutDirection == LayoutDirection.Ltr
-            val x =
-                when {
-                    preferRight && fitsRight -> rightX
-                    !preferRight && fitsLeft -> leftX
-                    fitsLeft -> leftX
-                    else -> rightX.coerceAtMost(windowBounds.right - popupContentSize.width)
-                }
-            val maxY = (windowBounds.bottom - popupContentSize.height).coerceAtLeast(windowBounds.top)
-            return IntOffset(
-                x = x.coerceIn(windowBounds.left, (windowBounds.right - popupContentSize.width).coerceAtLeast(windowBounds.left)),
-                y = anchorBounds.top.coerceIn(windowBounds.top, maxY),
-            )
-        }
-
-        override fun getMargins(): PaddingValues =
-            PaddingValues(horizontal = 8.dp)
-    }
 
 private fun diagnosticsFilterMatches(
     entry: DiagnosticLogEntry,
@@ -1163,85 +1082,102 @@ private val DiagnosticsCategoryFilterOptions =
     )
 
 @Composable
-private fun DiagnosticsFilterSheet(
-    show: Boolean,
+private fun DiagnosticsFilterMenu(
+    title: String,
     levelMask: Int,
     categoryMask: Int,
     onLevelMaskChange: (Int) -> Unit,
     onCategoryMaskChange: (Int) -> Unit,
     onReset: () -> Unit,
-    onApply: () -> Unit,
-    onDismiss: () -> Unit,
 ) {
-    WindowBottomSheet(
-        show = show,
-        title = stringResource(R.string.diagnostics_filter),
-        onDismissRequest = onDismiss,
-    ) {
-        DiagnosticsFilterGroup(
-            title = stringResource(R.string.diagnostics_filter_levels),
-            options = DiagnosticsLevelFilterOptions,
-            mask = levelMask,
-            bottomPadding = 10.dp,
-            onMaskChange = onLevelMaskChange,
-        )
-        DiagnosticsFilterGroup(
-            title = stringResource(R.string.diagnostics_filter_categories),
-            options = DiagnosticsCategoryFilterOptions,
-            mask = categoryMask,
-            bottomPadding = 12.dp,
-            onMaskChange = onCategoryMaskChange,
-        )
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                text = stringResource(R.string.diagnostics_filter_reset),
-                onClick = onReset,
-            )
-            TextButton(
-                text = stringResource(R.string.diagnostics_filter_done),
-                onClick = onApply,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticsFilterGroup(
-    title: String,
-    options: List<DiagnosticsFilterOption>,
-    mask: Int,
-    bottomPadding: Dp,
-    onMaskChange: (Int) -> Unit,
-) {
-    SmallTitle(
-        text = title,
-        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-    )
-    Card(
-        modifier = Modifier.padding(bottom = bottomPadding),
-    ) {
-        options.forEach { option ->
-            CheckboxPreference(
-                title = stringResource(option.titleRes),
-                checked = mask and option.bit != 0,
-                onCheckedChange = { checked ->
-                    onMaskChange(
+    val filterActive =
+        levelMask != DiagnosticsFilterLevelAll ||
+            categoryMask != DiagnosticsFilterCategoryAll
+    val levelItems =
+        DiagnosticsLevelFilterOptions.map { option ->
+            val selected = levelMask and option.bit != 0
+            DropdownItem(
+                text = stringResource(option.titleRes),
+                selected = selected,
+                onClick = {
+                    onLevelMaskChange(
                         diagnosticsToggleMask(
-                            mask = mask,
+                            mask = levelMask,
                             bit = option.bit,
-                            checked = checked,
+                            checked = !selected,
                         ),
                     )
                 },
             )
+        }
+    val categoryItems =
+        DiagnosticsCategoryFilterOptions.map { option ->
+            val selected = categoryMask and option.bit != 0
+            DropdownItem(
+                text = stringResource(option.titleRes),
+                selected = selected,
+                onClick = {
+                    onCategoryMaskChange(
+                        diagnosticsToggleMask(
+                            mask = categoryMask,
+                            bit = option.bit,
+                            checked = !selected,
+                        ),
+                    )
+                },
+            )
+        }
+    val entries =
+        listOf(
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_filter_levels),
+                            children = levelItems,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_filter_categories),
+                            children = categoryItems,
+                        ),
+                    ),
+            ),
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_filter_reset),
+                            enabled = filterActive,
+                            onClick = onReset,
+                        ),
+                    ),
+            ),
+        )
+
+    TooltipBox(text = title) {
+        WindowIconCascadingDropdownMenu(
+            entries = entries,
+            collapseOnSelection = false,
+        ) {
+            if (filterActive) {
+                BadgedBox(
+                    badge = {
+                        Badge(
+                            containerColor = MiuixTheme.colorScheme.primary,
+                        )
+                    },
+                ) {
+                    Icon(
+                        MiuixIcons.Filter,
+                        contentDescription = title,
+                    )
+                }
+            } else {
+                Icon(
+                    MiuixIcons.Filter,
+                    contentDescription = title,
+                )
+            }
         }
     }
 }
@@ -1260,8 +1196,6 @@ private fun DiagnosticsMoreMenu(
     onScrollBottom: () -> Unit,
     onClear: () -> Unit,
 ) {
-    var showPrimary by remember { mutableStateOf(false) }
-    var showLevel by remember { mutableStateOf(false) }
     val currentLevelLabel =
         stringResource(
             if (diagnosticsLevel == DiagnosticsLevel.Detailed) {
@@ -1270,124 +1204,68 @@ private fun DiagnosticsMoreMenu(
                 R.string.diagnostics_mode_basic
             },
         )
-    val primaryItems = 5
+    val levelItems =
+        DiagnosticsLevel.entries.map { level ->
+            DropdownItem(
+                text =
+                    stringResource(
+                        if (level == DiagnosticsLevel.Detailed) {
+                            R.string.diagnostics_mode_detailed
+                        } else {
+                            R.string.diagnostics_mode_basic
+                        },
+                    ),
+                selected = diagnosticsLevel == level,
+                onClick = { onDiagnosticsLevelChange(level) },
+            )
+        }
+    val entries =
+        listOf(
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_mode_title),
+                            summary = currentLevelLabel,
+                            children = levelItems,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_refresh),
+                            enabled = refreshEnabled,
+                            onClick = onRefresh,
+                        ),
+                    ),
+            ),
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_scroll_top),
+                            enabled = canScrollTop,
+                            onClick = onScrollTop,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_scroll_bottom),
+                            enabled = canScrollBottom,
+                            onClick = onScrollBottom,
+                        ),
+                    ),
+            ),
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.diagnostics_clear_view),
+                            enabled = canClear,
+                            onClick = onClear,
+                        ),
+                    ),
+            ),
+        )
 
     TooltipBox(text = title) {
-        Box {
-            IconButton(
-                onClick = {
-                    showPrimary = !showPrimary
-                    if (!showPrimary) showLevel = false
-                },
-            ) {
-                Icon(MiuixIcons.Medium.More, contentDescription = title)
-            }
-            WindowListPopup(
-                show = showPrimary,
-                alignment = PopupPositionProvider.Align.TopEnd,
-                onDismissRequest = {
-                    showLevel = false
-                    showPrimary = false
-                },
-            ) {
-                ListPopupColumn {
-                    Box {
-                        DropdownImpl(
-                            item =
-                                DropdownItem(
-                                    text = stringResource(R.string.diagnostics_mode_title),
-                                    summary = currentLevelLabel,
-                                ),
-                            optionSize = primaryItems,
-                            isSelected = false,
-                            index = 0,
-                            hasSubmenu = true,
-                            isFirst = true,
-                            isLast = false,
-                            onSelectedIndexChange = {
-                                showLevel = true
-                            },
-                        )
-                        WindowListPopup(
-                            show = showLevel,
-                            popupPositionProvider = DiagnosticsSideSubmenuPositionProvider,
-                            alignment = PopupPositionProvider.Align.TopStart,
-                            enableWindowDim = false,
-                            minWidth = 160.dp,
-                            onDismissRequest = { showLevel = false },
-                        ) {
-                            ListPopupColumn {
-                                DiagnosticsLevel.entries.forEachIndexed { index, level ->
-                                    DropdownImpl(
-                                        text =
-                                            stringResource(
-                                                if (level == DiagnosticsLevel.Detailed) {
-                                                    R.string.diagnostics_mode_detailed
-                                                } else {
-                                                    R.string.diagnostics_mode_basic
-                                                },
-                                            ),
-                                        optionSize = DiagnosticsLevel.entries.size,
-                                        isSelected = diagnosticsLevel == level,
-                                        index = index,
-                                        onSelectedIndexChange = {
-                                            onDiagnosticsLevelChange(level)
-                                            showLevel = false
-                                            showPrimary = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    DropdownImpl(
-                        text = stringResource(R.string.diagnostics_refresh),
-                        optionSize = primaryItems,
-                        isSelected = false,
-                        index = 1,
-                        enabled = refreshEnabled,
-                        onSelectedIndexChange = {
-                            onRefresh()
-                            showPrimary = false
-                        },
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                    DropdownImpl(
-                        text = stringResource(R.string.diagnostics_scroll_top),
-                        optionSize = primaryItems,
-                        isSelected = false,
-                        index = 2,
-                        enabled = canScrollTop,
-                        onSelectedIndexChange = {
-                            onScrollTop()
-                            showPrimary = false
-                        },
-                    )
-                    DropdownImpl(
-                        text = stringResource(R.string.diagnostics_scroll_bottom),
-                        optionSize = primaryItems,
-                        isSelected = false,
-                        index = 3,
-                        enabled = canScrollBottom,
-                        onSelectedIndexChange = {
-                            onScrollBottom()
-                            showPrimary = false
-                        },
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                    DropdownImpl(
-                        text = stringResource(R.string.diagnostics_clear_view),
-                        optionSize = primaryItems,
-                        isSelected = false,
-                        index = 4,
-                        enabled = canClear,
-                        onSelectedIndexChange = {
-                            onClear()
-                            showPrimary = false
-                        },
-                    )
-                }
-            }
+        WindowIconCascadingDropdownMenu(entries = entries) {
+            Icon(MiuixIcons.More, contentDescription = title)
         }
     }
 }

@@ -4666,3 +4666,30 @@ No diagnostics capture/parser/report schema, runtime producer, Xposed/SystemUI h
 - Build 726 status-tag checkpoint: Runtime CI #2661 passed after replacing the failed pure-text experiment from #2660.
 - Build 727 exact-code Runtime CI #2662 passed.
 - Run final exact-head validation after this documentation commit, then a focused signed Canary device gate.
+
+## 2026-10-04 — Build 728 dedicated MIUIX diagnostics menus
+
+**Problem**
+
+Build 727 used MIUIX primitives but still manually composed Filter and More from lower-level window popups/sheets. Device evidence showed that the result did not read like native MIUIX: Filter was too heavy as a settings-style sheet, menu/submenu placement was fragile, group dividers were manually owned, and Light/Medium icon mixing produced inconsistent toolbar visual mass.
+
+**Pinned-revision audit**
+
+The exact pinned MIUIX revision `5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca` provides `WindowIconCascadingDropdownMenu`. It owns IconButton interaction, hold-down state, haptics, window popup, two-level cascade and grouped-entry separators. `DropdownEntry` boundaries render MIUIX dividers internally. The revision has no Tag/Chip component, so the read-only `Surface + Text` status tag remains the smallest correct representation for INFO/WARN/ERROR metadata.
+
+**Change**
+
+- Filter moves from `WindowBottomSheet + CheckboxPreference` to `WindowIconCascadingDropdownMenu`.
+- Log level and Event type are child menus; selected leaves use MIUIX dropdown selection semantics; Reset filters is a separate entry group.
+- Filter changes apply immediately to local presentation state; the draft/apply state machine is removed.
+- More moves from hand-built `WindowListPopup` instances and a custom position provider to `WindowIconCascadingDropdownMenu`.
+- Diagnostics level becomes a native child menu; Refresh, scroll actions and Clear view use `DropdownEntry` groups so MIUIX owns separators.
+- Filter/Share/Download/More use the MIUIX default alias (Regular weight in this revision), removing Light/Medium mixing.
+
+**Diagnostics page component audit**
+
+Keep MIUIX `SmallTopAppBar`, `IconButton`, `TooltipBox`, `WindowIconCascadingDropdownMenu`, `Card`, `SnackbarHost`, `Surface`, `Text`, and `Badge/BadgedBox` only for the active-filter indicator. Keep Compose layout primitives only where no MIUIX semantic component exists. No higher-level MIUIX Tag/Chip or event-detail component exists in this revision.
+
+**Runtime boundary**
+
+No snapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, renderer, transition, native fallback, or exported diagnostic content changes.
