@@ -922,51 +922,62 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             }
         },
     ) {
-        if (viewCleared) {
-            item {
-                DiagnosticsLogStateCard(
-                    text = stringResource(R.string.diagnostics_view_cleared),
-                )
+        when {
+            viewCleared -> {
+                item {
+                    DiagnosticsLogStateCard(
+                        text = stringResource(R.string.diagnostics_view_cleared),
+                    )
+                }
             }
-        } else {
-            item {
-                SmallTitle(stringResource(R.string.section_diagnostics_health))
-                DiagnosticsHealthCard(
-                    snapshot = snapshot,
-                    loading = loading,
-                )
+            loading -> {
+                item {
+                    DiagnosticsLogStateCard(
+                        text = stringResource(R.string.diagnostics_log_loading),
+                    )
+                }
             }
-
-            item {
-                SmallTitle(stringResource(R.string.section_diagnostics_events))
+            usefulEntries.isEmpty() -> {
+                item {
+                    DiagnosticsLogStateCard(
+                        text = stringResource(R.string.diagnostics_events_empty),
+                    )
+                }
             }
-
-            if (!loading) {
-                if (usefulEntries.isEmpty()) {
-                    item {
-                        DiagnosticsLogStateCard(
-                            text = stringResource(R.string.diagnostics_events_empty),
-                        )
-                    }
-                } else {
-                    itemsIndexed(
-                        items = usefulEntries,
-                        key = { index, entry -> entry.stableKey + ":" + index },
-                    ) { _, entry ->
-                        DiagnosticsUsefulEventCard(
-                            context = context,
-                            entry = entry,
-                            expanded = expandedKey == entry.stableKey,
-                            onToggle = {
-                                expandedKey =
-                                    if (expandedKey == entry.stableKey) {
-                                        null
-                                    } else {
-                                        entry.stableKey
-                                    }
-                            },
-                        )
-                    }
+            else -> {
+                item {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.diagnostics_events_summary,
+                                usefulEntries.size,
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 8.dp, bottom = 8.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+                itemsIndexed(
+                    items = usefulEntries,
+                    key = { index, entry -> entry.stableKey + ":" + index },
+                ) { _, entry ->
+                    DiagnosticsUsefulEventCard(
+                        context = context,
+                        entry = entry,
+                        expanded = expandedKey == entry.stableKey,
+                        onToggle = {
+                            expandedKey =
+                                if (expandedKey == entry.stableKey) {
+                                    null
+                                } else {
+                                    entry.stableKey
+                                }
+                        },
+                    )
                 }
             }
         }
@@ -974,189 +985,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 }
 
 private const val MaxDiagnosticsUsefulEvents = 40
-
-private val DiagnosticHealthComponents =
-    listOf(
-        "module",
-        "compatibility",
-        "statusHost",
-        "network",
-        "presentationRuntime",
-        "renderer",
-        "runtimeSession",
-    )
-
-@Composable
-private fun DiagnosticsHealthCard(
-    snapshot: DiagnosticsSnapshot?,
-    loading: Boolean,
-) {
-    val context = LocalContext.current
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
-    ) {
-        when {
-            loading -> {
-                BasicComponent(
-                    title = stringResource(R.string.diagnostics_log_loading),
-                )
-            }
-            snapshot == null -> {
-                BasicComponent(
-                    title = stringResource(R.string.diagnostics_health_unavailable),
-                )
-            }
-            else -> {
-                val health = snapshot.runtimeHealth
-                BasicComponent(
-                    title = diagnosticOverallHealthLabel(context, health.overall),
-                    summary =
-                        stringResource(
-                            R.string.diagnostics_health_summary,
-                            BuildConfig.BUILD_ID,
-                            snapshot.environment.systemUiDisplay,
-                        ),
-                )
-                DiagnosticHealthComponents.forEach { name ->
-                    health.component(name)?.let { component ->
-                        BasicComponent(
-                            title = diagnosticHealthComponentLabel(context, name),
-                            summary = diagnosticStateLabel(context, component.state),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticsUsefulEventCard(
-    context: Context,
-    entry: DiagnosticLogEntry,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-) {
-    val title = diagnosticLogTitle(context, entry)
-    val summary = diagnosticLogSummary(context, entry)
-    val category = diagnosticLogCategoryLabel(context, entry.category)
-
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 8.dp)
-                .then(
-                    if (expanded) {
-                        Modifier
-                    } else {
-                        Modifier.height(96.dp)
-                    },
-                ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-        showIndication = true,
-        onClick = onToggle,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DiagnosticsLogLevelBadge(entry.level)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = category,
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            entry.timeText?.let { time ->
-                Text(
-                    text = time,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = summary,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = if (expanded) 2 else 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        if (expanded) {
-            Spacer(modifier = Modifier.height(10.dp))
-            DiagnosticLogDetailRow(
-                label = stringResource(R.string.diagnostics_log_detail_event),
-                value = entry.event ?: "—",
-            )
-            entry.component?.let { component ->
-                DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_component),
-                    value = component,
-                )
-            }
-            entry.state?.let { state ->
-                DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_state),
-                    value = state,
-                )
-            }
-
-            entry.fields
-                .filterKeys { key -> key !in DiagnosticLogMetadataFields }
-                .forEach { (key, value) ->
-                    DiagnosticLogDetailRow(label = key, value = value)
-                }
-        }
-    }
-}
-
-private fun diagnosticOverallHealthLabel(
-    context: Context,
-    overall: String,
-): String =
-    context.getString(
-        when (overall.lowercase()) {
-            "healthy" -> R.string.diagnostics_health_healthy
-            "degraded" -> R.string.diagnostics_health_degraded
-            else -> R.string.diagnostics_health_unavailable
-        },
-    )
-
-private fun diagnosticHealthComponentLabel(
-    context: Context,
-    component: String,
-): String =
-    context.getString(
-        when (component) {
-            "module" -> R.string.diagnostics_component_module
-            "compatibility" -> R.string.diagnostics_component_compatibility
-            "statusHost" -> R.string.diagnostics_component_status_host
-            "network" -> R.string.diagnostics_component_network
-            "presentationRuntime" -> R.string.diagnostics_component_presentation
-            "renderer" -> R.string.diagnostics_component_renderer
-            "runtimeSession" -> R.string.diagnostics_component_session
-            else -> R.string.diagnostics_component_other
-        },
-    )
 
 @Composable
 private fun DiagnosticsLogStateCard(text: String) {
@@ -1394,20 +1222,29 @@ private fun diagnosticLogSummary(
         }.joinToString(" · ").ifBlank { entry.message }
     }
 
-    return buildList {
-        entry.state?.let { add(diagnosticStateLabel(context, it)) }
-        entry.fields["source"]?.let { source ->
-            add(
-                context.getString(
-                    R.string.diagnostics_log_summary_source,
-                    diagnosticTransportLabel(source),
-                ),
-            )
-        }
-        entry.fields["reason"]?.let { add(it) }
-    }.take(3)
-        .joinToString(" · ")
-        .ifBlank { entry.message }
+    val summary =
+        buildList {
+            entry.state?.let { add(diagnosticStateLabel(context, it)) }
+            entry.fields["source"]?.let { source ->
+                add(
+                    context.getString(
+                        R.string.diagnostics_log_summary_source,
+                        diagnosticTransportLabel(source),
+                    ),
+                )
+            }
+            entry.fields["reason"]?.let { add(it) }
+        }.take(3)
+            .joinToString(" · ")
+
+    if (summary.isNotBlank()) {
+        return summary
+    }
+    return if (entry.structured) {
+        context.getString(R.string.diagnostics_log_summary_recorded)
+    } else {
+        entry.message
+    }
 }
 
 private fun diagnosticStateLabel(

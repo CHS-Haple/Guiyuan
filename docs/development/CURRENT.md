@@ -4,8 +4,9 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 720 (`20261004-720`).
-- Build 719 changed only Diagnostics wording and the workbench menu affordance, but Runtime CI #2647 caught an import regression: removing the `Tune` extension import also broke two existing Preview Sandbox navigation icons. Build 720 restores that import while keeping Diagnostics on MIUIX `More`; no UI semantics or runtime behavior otherwise change.
+- Active work: `feat/diagnostics-log-workbench` / Build 721 (`20261004-721`).
+- Build 720 Canary #766 passed all automated/signing gates but device review rejected the new health-matrix presentation: expected-but-unobserved components were rendered as repeated `unknown` rows after hot reload, the health card dominated the page, and structured event fallback could expose internal `key=value` payloads in the default summary.
+- Build 721 keeps the unified `DiagnosticsSnapshot` / same-snapshot report architecture but restores the accepted Build 712 compact event-list visual baseline. The health matrix is removed from the first-class UI (it remains in the diagnostic report), the page uses a lightweight “This run · N key events” summary, and structured events without a friendly summary show “Recorded / 已记录” rather than raw transport fields.
 - Build 716 Runtime CI #2645 passed. Build 717 removes the retired raw-log-viewer surface and its dead helpers/resources.
 - Build 718 removes the now-unused `allEntries` parsed snapshot. Diagnostics parses only the selected latest runtime session because the workbench no longer exposes full-source browsing; the report continues to use the same session's raw evidence. This reduces regex work and retained objects without changing visible behavior.
 - Build 715 repaired the two duplicated Compose declaration markers from the Build 714 block replacement; Runtime CI #2644 passed.

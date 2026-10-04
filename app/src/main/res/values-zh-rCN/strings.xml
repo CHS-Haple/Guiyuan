@@ -228,6 +228,7 @@
     <string name="diagnostics_log_summary_mobile_data_off">移动数据关闭</string>
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
     <string name="diagnostics_log_summary_source">来源 %1$s</string>
+    <string name="diagnostics_log_summary_recorded">已记录</string>
     <string name="diagnostics_log_state_ready">就绪</string>
     <string name="diagnostics_log_state_observed">已记录</string>
     <string name="diagnostics_log_state_disabled">已禁用</string>
@@ -245,6 +246,7 @@
     <string name="diagnostics_view_cleared">视图已清空。刷新诊断即可重新读取当前状态。</string>
     <string name="section_diagnostics_health">运行状态</string>
     <string name="section_diagnostics_events">关键事件</string>
+    <string name="diagnostics_events_summary">本次运行 · %1$d 条关键事件</string>
     <string name="diagnostics_health_healthy">运行正常</string>
     <string name="diagnostics_health_degraded">存在需要关注的状态</string>
     <string name="diagnostics_health_unavailable">运行状态不可用</string>

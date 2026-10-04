@@ -4527,3 +4527,30 @@ Restore the MIUIX `Tune` extension import. Diagnostics remains on `More`; Previe
 **Validation**
 
 Exact-head Runtime CI must pass before Canary. No device-only behavior changed.
+
+
+## 2026-10-04 — Build 721 restore compact Diagnostics presentation
+
+**Device evidence**
+
+Build 720 Canary #766 passed automated, signing, Modern Xposed metadata and non-debuggable checks. Device review rejected the visible workbench hierarchy: the Runtime health card rendered expected-but-unobserved components as repeated `unknown` rows after hot reload, occupied most of the first screen, and a structured event with no friendly summary fell back to internal `key=value` payload text.
+
+**Decision**
+
+Keep the Build 713-720 unified Diagnostics data/report architecture. Reuse the Build 712 compact semantic event-card presentation as the visual baseline instead of exposing the report-oriented health matrix as a first-class UI.
+
+**Change**
+
+- remove the Runtime health matrix from the visible Diagnostics page; it remains intact in `DiagnosticsSnapshot` and exported/copied/shared reports;
+- restore the compact event-list hierarchy with one lightweight “This run · N key events” summary above the list;
+- retain the Build 712 card rhythm: level + category + time, title, one-line summary, structured details on expansion;
+- never use a structured transport message as the default summary fallback; use “Recorded / 已记录” when no user-facing state/source/reason summary exists;
+- keep the MIUIX More menu, diagnostics level, refresh, Clear view, and same-snapshot copy/export/share actions unchanged.
+
+**Safety**
+
+No Xposed/SystemUI producer, RuntimeDiagnosticsProtocol, snapshot capture, report content, hook, writer, lifecycle, transition or native fallback behavior changes.
+
+**Validation**
+
+Exact-head Runtime CI plus focused Canary visual review are required.
