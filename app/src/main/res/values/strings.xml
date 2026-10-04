@@ -155,14 +155,10 @@
     <string name="about_project_home_summary">View source code and project information</string>
     <string name="about_open_source_license_title">Open-source license</string>
     <string name="about_open_source_license_summary">GNU GPL v3.0</string>
-    <string name="section_license_overview">License</string>
-    <string name="about_license_identifier_title">License identifier</string>
-    <string name="about_license_full_text_title">Full license</string>
-    <string name="about_license_full_text_summary">View LICENSE in the project repository</string>
     <string name="about_third_party_title">Third-party dependencies</string>
     <string name="about_third_party_summary">View open-source components and licenses</string>
     <string name="section_runtime_dependencies">Runtime and interface</string>
-    <string name="section_development_dependencies">Test and build</string>
+    <string name="section_embedded_assets">Embedded assets</string>\n    <string name="section_development_dependencies">Test and build</string>
     <string name="about_value_unavailable">Unavailable</string>
     <string name="product_name">Guiyuan</string>
     <string name="target_platform_value">HyperOS SystemUI module</string>
