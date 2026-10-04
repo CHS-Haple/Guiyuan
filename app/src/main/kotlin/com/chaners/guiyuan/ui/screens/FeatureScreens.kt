@@ -1416,7 +1416,7 @@ private fun DiagnosticsUsefulEventCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DiagnosticsLogLevelBadge(entry.level)
+            DiagnosticsLogLevelLabel(entry.level)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = category,
@@ -1503,33 +1503,24 @@ private fun DiagnosticsLogStateCard(text: String) {
 }
 
 @Composable
-private fun DiagnosticsLogLevelBadge(level: DiagnosticLogLevel) {
+private fun DiagnosticsLogLevelLabel(level: DiagnosticLogLevel) {
     val colors = MiuixTheme.colorScheme
-    val containerColor =
-        when (level) {
-            DiagnosticLogLevel.Error,
-            DiagnosticLogLevel.Fatal,
-            -> colors.errorContainer
-            DiagnosticLogLevel.Warning -> colors.tertiaryContainer
-            DiagnosticLogLevel.Info -> colors.primaryContainer
-            else -> colors.secondaryContainerVariant
-        }
     val contentColor =
         when (level) {
             DiagnosticLogLevel.Error,
             DiagnosticLogLevel.Fatal,
-            -> colors.onErrorContainer
-            DiagnosticLogLevel.Warning -> colors.onTertiaryContainer
-            DiagnosticLogLevel.Info -> colors.onPrimaryContainer
-            else -> colors.onSecondaryContainerVariant
+            -> colors.error
+            DiagnosticLogLevel.Warning -> colors.tertiary
+            DiagnosticLogLevel.Info -> colors.primary
+            else -> colors.onSurfaceContainerVariant
         }
 
-    Badge(
-        containerColor = containerColor,
-        contentColor = contentColor,
-    ) {
-        Text(diagnosticLogLevelLabel(level))
-    }
+    Text(
+        text = diagnosticLogLevelLabel(level),
+        style = MiuixTheme.textStyles.footnote1,
+        color = contentColor,
+        maxLines = 1,
+    )
 }
 
 @Composable
