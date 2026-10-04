@@ -889,7 +889,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Medium.Download, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
                 }
             }
             DiagnosticsMoreMenu(

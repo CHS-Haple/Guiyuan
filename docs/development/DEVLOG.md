@@ -4745,3 +4745,15 @@ Post-commit diff review of Build 730 caught one mechanical scope leak and one mi
 - attach the passed LazyItemScope animation modifier to `DiagnosticsUsefulEventCard` itself, so stable-key filter/reorder animation actually reaches the card.
 
 No motion design, typography, icon-weight decision, technical-detail language, runtime path or report behavior otherwise changes from Build 730.
+
+### Build 732 toolbar optical correction
+
+Build 731 device evidence shows the Download glyph materially heavier than Share even when both use MIUIX Medium. The mismatch is intrinsic to the glyph silhouettes: Download concentrates the vertical arrow and tray into a denser dark area, so matching nominal weight does not produce matching optical weight.
+
+Correction:
+- Share stays `MiuixIcons.Medium.Share`;
+- Download returns to the default `MiuixIcons.Download` alias (Regular at the pinned revision);
+- Back remains Regular; Filter and More remain Normal;
+- keep the native 24dp vector canvas and IconButton hit target unchanged; do not scale, translate, stroke, or redraw icons.
+
+This is presentation-only. Cascading-menu behavior and all runtime/report paths remain unchanged.
