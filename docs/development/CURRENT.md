@@ -3,11 +3,12 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- `main` and `dev` are aligned on the promoted Guiyuan 0.1.0 / Build 708 checkpoint (`20261004-708`, versionCode `261004708`).
-- Active repository-maintenance work: `chore/build-toolchain-refresh` / Build 709 (`20261004-709`).
+- `main` remains on the promoted Build 708 stable checkpoint; `dev` is on Build 709 (`20261004-709`, versionCode `261004709`) after PR #210.
 - Build 709 upgrades Gradle Wrapper 9.7.1 -> 9.8.0 and refreshes pinned GitHub Actions: gradle/actions 4.4.3 -> 6.4.0, checkout 5 -> 7.0.1, setup-java 5 -> 6.0.1, and upload-artifact 4 -> 7.0.1.
-- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; the proprietary enhanced caching provider is not used.
-- This maintenance changes build/CI tooling only. Runtime/UI behavior remains the accepted Build 707 state; Full CI is required and no device validation is required.
+- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; CI confirmed the Basic open-source cache provider is active and the proprietary enhanced provider is not used.
+- PR Full CI #2629 and trusted `dev` integration Full CI #2630 passed. The integrated run completed wrapper validation, target-profile verification, tests/build, Modern Xposed metadata checks, Haple APK signature verification, non-debuggable Canary verification, and artifact upload.
+- Gradle 9.8.0 builds successfully but reports that deprecated Gradle features remain somewhere in the current build/plugin graph and would need isolation before a future Gradle 10 migration; this is not a Gradle 9.8 blocker.
+- No runtime/UI behavior changed and no device validation is required. No active maintenance branch remains after #210.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
