@@ -4,8 +4,8 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 719 (`20261004-719`).
-- Build 719 is the final product-language/affordance pass before Canary: the workbench loading state says Diagnostics rather than logs, and the mixed action menu uses MIUIX `More` instead of a filter/tuning glyph.
+- Active work: `feat/diagnostics-log-workbench` / Build 720 (`20261004-720`).
+- Build 719 changed only Diagnostics wording and the workbench menu affordance, but Runtime CI #2647 caught an import regression: removing the `Tune` extension import also broke two existing Preview Sandbox navigation icons. Build 720 restores that import while keeping Diagnostics on MIUIX `More`; no UI semantics or runtime behavior otherwise change.
 - Build 716 Runtime CI #2645 passed. Build 717 removes the retired raw-log-viewer surface and its dead helpers/resources.
 - Build 718 removes the now-unused `allEntries` parsed snapshot. Diagnostics parses only the selected latest runtime session because the workbench no longer exposes full-source browsing; the report continues to use the same session's raw evidence. This reduces regex work and retained objects without changing visible behavior.
 - Build 715 repaired the two duplicated Compose declaration markers from the Build 714 block replacement; Runtime CI #2644 passed.

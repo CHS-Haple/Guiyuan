@@ -4512,3 +4512,18 @@ Exact-head Runtime CI is required. No device gate is added for this capture-cost
 - The top-bar menu owns diagnostics level, refresh, Clear view, copy, export and share; use the MIUIX `More` affordance rather than `Tune`, which would incorrectly imply a filter/settings-only menu.
 - No snapshot content, report content, Root collection, runtime producer, SystemUI/Xposed behavior or interaction semantics change.
 - Exact-head Runtime CI is sufficient before the already-required focused Canary UI gate.
+
+
+## 2026-10-04 — Build 720 restore Preview Sandbox Tune import
+
+**CI evidence**
+
+Build 719 Runtime CI #2647 failed compilation at `FeatureScreens.kt:603` and `:623` with unresolved `Tune`. The Diagnostics action menu had correctly moved to MIUIX `More`, but the same file still uses `MiuixIcons.Normal.Tune` in two pre-existing Preview Sandbox navigation examples.
+
+**Change**
+
+Restore the MIUIX `Tune` extension import. Diagnostics remains on `More`; Preview Sandbox retains its existing `Tune` icons.
+
+**Validation**
+
+Exact-head Runtime CI must pass before Canary. No device-only behavior changed.
