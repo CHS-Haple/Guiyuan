@@ -4496,3 +4496,11 @@ Exact-head Runtime CI is required. No device gate is added for this capture-cost
 - Remove those retired composables/helpers, their now-unused MIUIX/icon imports, and strings that only served source/range/severity/raw-log browsing.
 - No runtime producer, snapshot semantics, report content, workbench behavior or SystemUI path changes.
 - Exact-head Runtime CI is the final automated gate before focused Canary validation.
+
+
+## 2026-10-04 — Build 718 parse only the diagnostic session
+
+- After the raw-log viewer was removed, `DiagnosticsSnapshot.allEntries` had no consumer.
+- Stop parsing every Guiyuan line in the selected source file; parse only `latestSessionLines` for the workbench.
+- Keep the underlying reader's full source lines only long enough to identify the latest session; the diagnostic report already embeds only that same session's bounded raw evidence.
+- This is an allocation/CPU cleanup only; no UI, report semantics, runtime producer or SystemUI behavior changes.

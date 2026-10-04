@@ -12,7 +12,6 @@ internal data class DiagnosticsSnapshot(
     val diagnosticsLevel: DiagnosticsLevel,
     val runtimeLog: DiagnosticsLogReader.Snapshot,
     val runtimeHealth: RuntimeHealthSnapshot,
-    val allEntries: List<DiagnosticLogEntry>,
     val sessionEntries: List<DiagnosticLogEntry>,
     val capturedAt: OffsetDateTime,
 )
@@ -23,10 +22,9 @@ internal object DiagnosticsSnapshotProvider {
         val environment = RuntimeEnvironmentInfo.resolve(appContext)
         val diagnosticsLevel = DiagnosticsSettingsRepository(appContext).currentLevel()
         val runtimeLog = DiagnosticsLogReader.read()
-        val parsedEntries =
+        val sessionEntries =
             withContext(Dispatchers.Default) {
-                runtimeLog.lines.map(DiagnosticsLogParser::parse) to
-                    runtimeLog.latestSessionLines.map(DiagnosticsLogParser::parse)
+                runtimeLog.latestSessionLines.map(DiagnosticsLogParser::parse)
             }
         val runtimeHealth = RuntimeHealthSnapshot.fromLines(runtimeLog.latestSessionLines)
 
@@ -35,8 +33,7 @@ internal object DiagnosticsSnapshotProvider {
             diagnosticsLevel = diagnosticsLevel,
             runtimeLog = runtimeLog,
             runtimeHealth = runtimeHealth,
-            allEntries = parsedEntries.first,
-            sessionEntries = parsedEntries.second,
+            sessionEntries = sessionEntries,
             capturedAt = OffsetDateTime.now(),
         )
     }
