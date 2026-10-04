@@ -2,12 +2,10 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import com.chaners.guiyuan.BuildConfig
-import java.time.OffsetDateTime
 
 internal object DiagnosticsReportBuilder {
     private const val DetailedLogLineLimit = 600
     private const val ReleaseLogLineLimit = 120
-    private const val ShareLogLineLimit = 80
 
     suspend fun build(context: Context): String =
         build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
@@ -16,7 +14,6 @@ internal object DiagnosticsReportBuilder {
         val environment = snapshot.environment
         val diagnosticsLevel = snapshot.diagnosticsLevel
         val selected = snapshot.runtimeLog
-        val shareLines = snapshot.shareLines.takeLast(ShareLogLineLimit)
         val lineLimit =
             if (
                 diagnosticsLevel.name == "Detailed" &&
@@ -104,16 +101,6 @@ internal object DiagnosticsReportBuilder {
                 appendLine("No Guiyuan runtime log entries were available.")
             } else {
                 moduleLines.forEach(::appendLine)
-            }
-            appendLine()
-            appendLine("[Share diagnostics]")
-            appendLine("source=persistent-store")
-            appendLine("logcatCollection=" + collectionState(snapshot.shareLogResult))
-            appendLine("lines=" + shareLines.size)
-            if (shareLines.isEmpty()) {
-                appendLine("No share diagnostic entries were available.")
-            } else {
-                shareLines.forEach(::appendLine)
             }
             appendLine()
             appendLine("[Report]")

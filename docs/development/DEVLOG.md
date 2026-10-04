@@ -4469,3 +4469,21 @@ LSPosed/logcat is an implementation transport, not Guiyuan's diagnostics UI. Gui
 **Validation**
 
 Exact-head Runtime CI plus UI/code review are required. A focused Canary visual/interaction pass is warranted after automated validation because the page hierarchy and action placement change, while SystemUI runtime behavior does not.
+
+
+## 2026-10-04 — Build 716 keep Diagnostics snapshot capture lightweight
+
+**Review finding**
+
+Build 713 unified app-side diagnostic ownership, but it also moved the existing share-feature logcat probe into every Diagnostics page capture. That made opening/refreshing the workbench pay for evidence unrelated to SystemUI runtime health, including on builds where share diagnostics are not populated.
+
+**Change**
+
+- remove the `CombinedStatusShare` logcat Root command and share-operation store from `DiagnosticsSnapshotProvider`;
+- remove the unrelated Share diagnostics section from the generated diagnostic report;
+- keep share-operation debug ownership in `DiagnosticsReportFiles` / `ShareDiagnosticsStore` where those records are produced;
+- preserve the LSPosed-first Guiyuan runtime evidence, parsed events, Runtime health, environment and diagnostics-level data used by both the workbench and report.
+
+**Validation**
+
+Exact-head Runtime CI is required. No device gate is added for this capture-cost reduction because it removes unrelated collection work without changing the workbench hierarchy or SystemUI runtime behavior.
