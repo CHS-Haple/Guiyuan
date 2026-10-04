@@ -2074,7 +2074,7 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         Section(R.string.section_embedded_assets) {
             ArrowPreference(
                 title = "Material Symbols",
-                summary = "Apache-2.0",
+                summary = stringResource(R.string.about_embedded_asset_summary),
                 onClick = {
                     uriHandler.openUri("https://github.com/google/material-design-icons")
                 },
