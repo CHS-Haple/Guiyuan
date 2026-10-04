@@ -4609,3 +4609,60 @@ No RuntimeDiagnosticsProtocol, DiagnosticsSnapshot capture, report serialization
 **Validation**
 
 Runtime CI #2657 passed on the behavior-complete code before the final deduplication/docs-only cleanup. Run exact-head validation after this commit, then a focused signed Canary visual/interaction gate.
+
+
+## 2026-10-04 — Builds 725-727 MIUIX window controls and semantic status tags
+
+**Device evidence**
+
+Build 724 Canary #768 passed automated/signing checks, but device review found three first-class UI problems:
+- the Filter icon rendered beside Back but tapping it did not open the filter sheet;
+- Share / Download / More did not have balanced optical weight;
+- the diagnostics-level submenu still appeared to replace/overlap the primary More menu instead of reading as a side hierarchy.
+
+The event-level INFO badge also read visually like a small button. Reference review established that the intended treatment is the small META-style rounded-rectangle status tag rather than a notification badge or plain text.
+
+**MIUIX component decision**
+
+Use MIUIX semantic components wherever the library provides them, and use MIUIX basic primitives to reproduce a missing higher-level component:
+- `WindowBottomSheet` replaces the Scaffold/overlay-dependent filter sheet;
+- `WindowListPopup` replaces overlay popups for the primary More menu and diagnostics-level selector;
+- `IconButton`, `TooltipBox`, `CheckboxPreference`, `HorizontalDivider`, `Card`, `SnackbarHost`, `SmallTopAppBar` and MIUIX `Text` remain the first-class controls;
+- Compose `Row`, `Box`, `Column`, `Spacer` and `LazyColumn` remain layout primitives only;
+- MIUIX has no dedicated Tag/Chip component in the pinned revision, so the event-level tag is composed from non-clickable MIUIX `Surface + Text`, not custom Canvas drawing and not a Button.
+
+**Toolbar**
+
+- leading: Back + Light Filter;
+- trailing: Light Share + Light Download + Medium More;
+- all auxiliary actions retain MIUIX long-press Tooltip behavior and the standard IconButton hit area;
+- visual weight is tuned through the MIUIX icon weight family rather than geometry scaling or positional compensation.
+
+**Event-level tag**
+
+- read-only rounded rectangle, not a circular badge or button;
+- minimum height: 20dp;
+- corner radius: 5dp;
+- padding: 6dp horizontal / 2dp vertical;
+- typography: MIUIX `footnote2` (11sp) + Bold to match the reference status-label hierarchy;
+- INFO: MIUIX `tertiaryContainer/onTertiaryContainer`;
+- ERROR/FATAL: MIUIX error family;
+- neutral/debug: MIUIX secondary/surface family;
+- WARN: Guiyuan's pre-existing runtime warning accent rather than a new diagnostics-only color.
+
+Build 727 moves the existing Home runtime success/warning accents into `ui/theme/RuntimeStatusColors.kt` so Home and Diagnostics share the same semantic warning token.
+
+**Badge semantics**
+
+MIUIX `Badge` is retained only for the active-filter dot, where its documented dynamic-indicator semantics are appropriate. It is no longer used for INFO/WARN/ERROR labels.
+
+**Runtime boundary**
+
+No diagnostics capture/parser/report schema, runtime producer, Xposed/SystemUI hook, writer, lifecycle, transition, renderer, or native fallback behavior changes.
+
+**Validation**
+
+- Build 725 intermediate window-component checkpoint: Runtime CI #2659 passed.
+- Build 726 status-tag checkpoint: Runtime CI #2661 passed after replacing the failed pure-text experiment from #2660.
+- Build 727 exact-code Runtime CI #2662 passed.
+- Run final exact-head validation after this documentation commit, then a focused signed Canary device gate.
