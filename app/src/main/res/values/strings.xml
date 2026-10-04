@@ -178,7 +178,7 @@
     <string name="diagnostics_mode_basic">General</string>
     <string name="diagnostics_mode_detailed">Detailed</string>
     <string name="section_diagnostic_logs">Logs</string>
-    <string name="diagnostics_log_loading">Reading logs…</string>
+    <string name="diagnostics_log_loading">Refreshing diagnostics…</string>
     <string name="diagnostics_log_category_module">Module</string>
     <string name="diagnostics_log_category_network">Network</string>
     <string name="diagnostics_log_category_display">Display</string>

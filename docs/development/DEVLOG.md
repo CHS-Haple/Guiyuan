@@ -4504,3 +4504,11 @@ Exact-head Runtime CI is required. No device gate is added for this capture-cost
 - Stop parsing every Guiyuan line in the selected source file; parse only `latestSessionLines` for the workbench.
 - Keep the underlying reader's full source lines only long enough to identify the latest session; the diagnostic report already embeds only that same session's bounded raw evidence.
 - This is an allocation/CPU cleanup only; no UI, report semantics, runtime producer or SystemUI behavior changes.
+
+
+## 2026-10-04 — Build 719 align Diagnostics product wording and action affordance
+
+- The workbench no longer presents raw LSPosed/logcat browsing, so its loading state now says “Refreshing diagnostics / 正在刷新诊断” instead of “Reading logs”.
+- The top-bar menu owns diagnostics level, refresh, Clear view, copy, export and share; use the MIUIX `More` affordance rather than `Tune`, which would incorrectly imply a filter/settings-only menu.
+- No snapshot content, report content, Root collection, runtime producer, SystemUI/Xposed behavior or interaction semantics change.
+- Exact-head Runtime CI is sufficient before the already-required focused Canary UI gate.

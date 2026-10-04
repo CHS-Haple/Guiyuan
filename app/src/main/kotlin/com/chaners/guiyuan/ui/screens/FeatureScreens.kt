@@ -115,8 +115,8 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Home
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -915,7 +915,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 collapseOnSelection = true,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Tune,
+                    imageVector = MiuixIcons.More,
                     contentDescription = stringResource(R.string.diagnostics_actions),
                 )
             }

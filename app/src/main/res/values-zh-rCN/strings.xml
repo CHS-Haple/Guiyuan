@@ -177,7 +177,7 @@
     <string name="diagnostics_mode_basic">一般</string>
     <string name="diagnostics_mode_detailed">详细</string>
     <string name="section_diagnostic_logs">日志</string>
-    <string name="diagnostics_log_loading">正在读取日志…</string>
+    <string name="diagnostics_log_loading">正在刷新诊断…</string>
     <string name="diagnostics_log_category_module">模块</string>
     <string name="diagnostics_log_category_network">网络</string>
     <string name="diagnostics_log_category_display">展示</string>
