@@ -1329,7 +1329,7 @@ private fun DiagnosticsMoreMenu(
                 R.string.diagnostics_mode_basic
             },
         )
-    val primaryItems = 6
+    val primaryItems = 5
 
     TooltipBox(text = title) {
         Box {
@@ -1405,8 +1405,6 @@ private fun DiagnosticsMoreMenu(
                         isSelected = false,
                         index = 1,
                         enabled = refreshEnabled,
-                        isFirst = false,
-                        isLast = false,
                         onSelectedIndexChange = {
                             onRefresh()
                             showPrimary = false
@@ -1419,8 +1417,6 @@ private fun DiagnosticsMoreMenu(
                         isSelected = false,
                         index = 2,
                         enabled = canScrollTop,
-                        isFirst = false,
-                        isLast = false,
                         onSelectedIndexChange = {
                             onScrollTop()
                             showPrimary = false
@@ -1432,8 +1428,6 @@ private fun DiagnosticsMoreMenu(
                         isSelected = false,
                         index = 3,
                         enabled = canScrollBottom,
-                        isFirst = false,
-                        isLast = false,
                         onSelectedIndexChange = {
                             onScrollBottom()
                             showPrimary = false
@@ -1446,8 +1440,6 @@ private fun DiagnosticsMoreMenu(
                         isSelected = false,
                         index = 4,
                         enabled = canClear,
-                        isFirst = false,
-                        isLast = true,
                         onSelectedIndexChange = {
                             onClear()
                             showPrimary = false
