@@ -158,7 +158,8 @@
     <string name="about_third_party_title">Third-party dependencies</string>
     <string name="about_third_party_summary">View open-source components and licenses</string>
     <string name="section_runtime_dependencies">Runtime and interface</string>
-    <string name="section_embedded_assets">Embedded assets</string>\n    <string name="section_development_dependencies">Test and build</string>
+    <string name="section_embedded_assets">Embedded assets</string>
+    <string name="section_development_dependencies">Test and build</string>
     <string name="about_value_unavailable">Unavailable</string>
     <string name="product_name">Guiyuan</string>
     <string name="target_platform_value">HyperOS SystemUI module</string>
