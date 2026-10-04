@@ -190,7 +190,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_contrast,
-                        visualSize = 22.dp,
                     )
                 },
                 showValue = true,
@@ -208,7 +207,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_palette,
-                        visualSize = 22.dp,
                     )
                 },
                 checked = settings.dynamicColorEnabled,
@@ -223,7 +221,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_bottom_navigation,
-                        visualSize = 22.dp,
                     )
                 },
                 checked = settings.floatingNavigationBarEnabled,
@@ -238,7 +235,6 @@ internal fun AppearanceScreen(
                     startAction = {
                         SemanticLeadingIcon(
                             iconRes = R.drawable.ic_material_symbol_style,
-                            visualSize = 22.dp,
                         )
                     },
                     showValue = true,
@@ -258,7 +254,6 @@ internal fun AppearanceScreen(
                     startAction = {
                         SemanticLeadingIcon(
                             iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
-                            visualSize = 22.dp,
                         )
                     },
                     showValue = true,
@@ -723,7 +718,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by rememberSaveable { mutableStateOf(false) }
+    var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
@@ -750,6 +745,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_refreshing),
             stringResource(R.string.diagnostics_refresh_complete),
         )
+
+    fun requestRefresh() {
+        if (loading) return
+        loading = true
+        pullRefreshing = true
+        refreshGeneration += 1
+    }
 
     fun withCurrentReport(onReady: suspend (String) -> Unit) {
         val captured = snapshot ?: return
@@ -918,10 +920,10 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 onDiagnosticsLevelChange = { level ->
                     if (level != diagnosticsSettings.level) {
                         diagnosticsRepository.setLevel(level)
-                        refreshGeneration += 1
+                        requestRefresh()
                     }
                 },
-                onRefresh = { refreshGeneration += 1 },
+                onRefresh = ::requestRefresh,
                 onScrollTop = {
                     scope.launch { listState.animateScrollToItem(0) }
                 },
@@ -942,12 +944,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         pullToRefresh =
             SettingsPullToRefresh(
                 refreshing = pullRefreshing,
-                onRefresh = {
-                    if (!loading) {
-                        pullRefreshing = true
-                        refreshGeneration += 1
-                    }
-                },
+                onRefresh = ::requestRefresh,
                 texts = pullRefreshTexts,
             ),
     ) {
@@ -960,7 +957,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            loading -> {
+            loading && snapshot == null -> {
                 item(key = "diagnostics-state-loading") {
                     DiagnosticsLogStateCard(
                         text = stringResource(R.string.diagnostics_log_loading),
@@ -1822,7 +1819,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_tag,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1832,7 +1828,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_deployed_code,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1841,8 +1836,7 @@ internal fun AboutScreen(
                 summary = BuildConfig.APPLICATION_ID,
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_data_object,
-                        visualSize = 22.dp,
+                        iconRes = R.drawable.ic_material_symbol_package_2,
                     )
                 },
             )
@@ -1854,8 +1848,7 @@ internal fun AboutScreen(
                 summary = stringResource(R.string.about_project_home_summary),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_code_blocks,
-                        visualSize = 22.dp,
+                        iconRes = R.drawable.ic_material_symbol_folder_code,
                     )
                 },
                 onClick = { uriHandler.openUri(ABOUT_PROJECT_URL) },
@@ -1866,7 +1859,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_license,
-                        visualSize = 22.dp,
                     )
                 },
                 onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
@@ -1876,8 +1868,7 @@ internal fun AboutScreen(
                 summary = stringResource(R.string.about_third_party_summary),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_inventory_2,
-                        visualSize = 22.dp,
+                        iconRes = R.drawable.ic_material_symbol_account_tree,
                     )
                 },
                 onClick = onOpenThirdParty,
@@ -1919,7 +1910,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_smartphone,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1929,7 +1919,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_android,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1939,7 +1928,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_layers,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1949,7 +1937,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_dashboard,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1962,7 +1949,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_extension,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1972,7 +1958,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_target,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -1982,7 +1967,6 @@ internal fun AboutScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_fact_check,
-                        visualSize = 22.dp,
                     )
                 },
             )
@@ -2165,7 +2149,6 @@ private fun GuiyuanAnimatedIdentityMark() {
 @Composable
 private fun SemanticLeadingIcon(
     @DrawableRes iconRes: Int,
-    visualSize: Dp,
     enabled: Boolean = true,
 ) {
     Box(
@@ -2175,7 +2158,7 @@ private fun SemanticLeadingIcon(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(visualSize),
+            modifier = Modifier.size(22.dp),
             colorFilter =
                 ColorFilter.tint(
                     MiuixTheme.colorScheme.onSurfaceContainer.copy(
