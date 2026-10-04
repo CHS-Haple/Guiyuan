@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,9 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MIN
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
+import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_DEFAULT
+import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MAX
+import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT
@@ -51,6 +55,9 @@ import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
+import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_DEFAULT
+import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX
+import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
@@ -85,6 +92,8 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+
+private const val PROJECT_REPOSITORY_URL = "https://github.com/CHS-Haple/Guiyuan"
 
 @Composable
 internal fun FeaturesScreen(
@@ -143,6 +152,38 @@ internal fun FeaturesScreen(
                 steps = 16,
                 showKeyPoints = true,
                 keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureSettings.enabled,
+            )
+            SliderPreference(
+                value = visualSettings.airplaneSizeScale,
+                onValueChange = visualRepository::setAirplaneSizeScale,
+                title = stringResource(R.string.airplane_size),
+                valueText =
+                    stringResource(
+                        R.string.percent_value,
+                        (visualSettings.airplaneSizeScale * 100f).roundToInt(),
+                    ),
+                valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
+                steps = 16,
+                showKeyPoints = true,
+                keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureSettings.enabled,
+            )
+            SliderPreference(
+                value = visualSettings.noSimSizeScale,
+                onValueChange = visualRepository::setNoSimSizeScale,
+                title = stringResource(R.string.no_sim_size),
+                valueText =
+                    stringResource(
+                        R.string.percent_value,
+                        (visualSettings.noSimSizeScale * 100f).roundToInt(),
+                    ),
+                valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
+                steps = 16,
+                showKeyPoints = true,
+                keyPoints = listOf(NO_SIM_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureSettings.enabled,
             )
@@ -211,6 +252,13 @@ internal fun FeaturesScreen(
                 onClick = {
                     showBatteryColorSheet = true
                 },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.battery_fill_follow_retract),
+                summary = stringResource(R.string.battery_fill_follow_retract_summary),
+                checked = visualSettings.batteryFillFollowsRetractEndpoint,
+                enabled = featureSettings.enabled,
+                onCheckedChange = visualRepository::setBatteryFillFollowsRetractEndpoint,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
@@ -376,6 +424,13 @@ internal fun FeaturesScreen(
             enabled = featureSettings.enabled,
             onCheckedChange = featureRepository::setKeyguardEnabled,
         )
+        SwitchPreference(
+            title = stringResource(R.string.aod_combined_status_title),
+            summary = stringResource(R.string.aod_combined_status_summary),
+            checked = featureSettings.aodEnabled,
+            enabled = featureSettings.enabled,
+            onCheckedChange = featureRepository::setAodEnabled,
+        )
         OverlayDropdownPreference(
             items = layoutOptions,
             selectedIndex = visualSettings.contentLayout.ordinal,
@@ -444,6 +499,13 @@ internal fun FeaturesScreen(
             magnetThreshold = 0.035f,
             enabled = featureSettings.enabled,
         )
+        SwitchPreference(
+            title = stringResource(R.string.control_center_tint_transition),
+            summary = stringResource(R.string.control_center_tint_transition_summary),
+            checked = visualSettings.controlCenterTintTransitionEnabled,
+            enabled = featureSettings.enabled,
+            onCheckedChange = visualRepository::setControlCenterTintTransitionEnabled,
+        )
     }
 }
 
@@ -458,6 +520,7 @@ internal fun SettingsHubScreen(
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
+    val uriHandler = LocalUriHandler.current
     val languageOptions = listOf(
         stringResource(R.string.language_system),
         stringResource(R.string.language_english),
@@ -467,6 +530,7 @@ internal fun SettingsHubScreen(
     var showRestartDialog by rememberSaveable { mutableStateOf(false) }
     var showRestartFailure by rememberSaveable { mutableStateOf(false) }
     var restartInProgress by rememberSaveable { mutableStateOf(false) }
+    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
 
     HubPage(
         title = stringResource(R.string.settings_title),
@@ -505,12 +569,36 @@ internal fun SettingsHubScreen(
                 onClick = { showRestartDialog = true },
             )
         },
+        quaternarySectionTitle = stringResource(R.string.section_other),
+        quaternaryContent = {
+            ArrowPreference(
+                title = stringResource(R.string.project_address_title),
+                summary = stringResource(R.string.project_address_summary),
+                onClick = { uriHandler.openUri(PROJECT_REPOSITORY_URL) },
+            )
+        },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_dialog_summary),
                 show = showRestartDialog,
-                onDismissRequest = { showRestartDialog = false },
+                onDismissRequest = {
+                    restartAfterDialogDismiss = false
+                    showRestartDialog = false
+                },
+                onDismissFinished = {
+                    if (restartAfterDialogDismiss && !restartInProgress) {
+                        restartAfterDialogDismiss = false
+                        restartInProgress = true
+                        scope.launch {
+                            val success = SystemUiScopeController.restart()
+                            restartInProgress = false
+                            if (!success) {
+                                showRestartFailure = true
+                            }
+                        }
+                    }
+                },
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -519,7 +607,10 @@ internal fun SettingsHubScreen(
                     TextButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
-                        onClick = { showRestartDialog = false },
+                        onClick = {
+                            restartAfterDialogDismiss = false
+                            showRestartDialog = false
+                        },
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
@@ -527,15 +618,8 @@ internal fun SettingsHubScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
+                            restartAfterDialogDismiss = true
                             showRestartDialog = false
-                            restartInProgress = true
-                            scope.launch {
-                                val success = SystemUiScopeController.restart()
-                                restartInProgress = false
-                                if (!success) {
-                                    showRestartFailure = true
-                                }
-                            }
                         },
                     )
                 }

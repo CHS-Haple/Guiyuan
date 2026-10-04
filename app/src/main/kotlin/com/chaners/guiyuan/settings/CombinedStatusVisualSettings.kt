@@ -184,6 +184,8 @@ internal data class CombinedStatusVisualSettings(
     val batteryTopTextFollowsBatteryColor: Boolean = true,
     val batteryTopChargingIconEnabled: Boolean = true,
     val batteryTopChargingIconFollowsBatteryColor: Boolean = true,
+    val batteryFillFollowsRetractEndpoint: Boolean = false,
+    val controlCenterTintTransitionEnabled: Boolean = true,
     val batteryTopTextScale: Float = batteryTopTextScaleDefault(contentLayout),
     val batteryTopTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
     val batteryTopVerticalOffset: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
@@ -192,6 +194,8 @@ internal data class CombinedStatusVisualSettings(
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
     val wifiSizeScale: Float = WIFI_SIZE_SCALE_DEFAULT,
+    val airplaneSizeScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
+    val noSimSizeScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
     val mobileTypeSizeScale: Float = mobileTypeSizeScaleDefault(contentLayout),
     val mobileTypeWeight: Int = MOBILE_TYPE_WEIGHT_DEFAULT,
     val batteryColorPreset: CombinedStatusBatteryColorPreset =
@@ -228,6 +232,10 @@ internal fun CombinedStatusVisualSettings.normalized(): CombinedStatusVisualSett
         outerWeightScale =
             outerWeightScale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
         wifiSizeScale = wifiSizeScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+        airplaneSizeScale =
+            airplaneSizeScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+        noSimSizeScale =
+            noSimSizeScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
         mobileTypeSizeScale =
             mobileTypeSizeScale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
         mobileTypeWeight =
@@ -344,6 +352,20 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
             .apply()
     }
 
+    fun setBatteryFillFollowsRetractEndpoint(enabled: Boolean) {
+        preferences
+            .edit()
+            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, enabled)
+            .apply()
+    }
+
+    fun setControlCenterTintTransitionEnabled(enabled: Boolean) {
+        preferences
+            .edit()
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, enabled)
+            .apply()
+    }
+
     fun setBatteryTopTextScale(scale: Float) {
         val uiScale =
             scale.coerceIn(
@@ -408,6 +430,24 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
                 scale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+            )
+            .apply()
+    }
+
+    fun setAirplaneSizeScale(scale: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
+                scale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+            )
+            .apply()
+    }
+
+    fun setNoSimSizeScale(scale: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
+                scale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
             )
             .apply()
     }
@@ -591,6 +631,16 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
                 baseKey = BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = true,
             ),
+        batteryFillFollowsRetractEndpoint =
+            getBoolean(
+                BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+                false,
+            ),
+        controlCenterTintTransitionEnabled =
+            getBoolean(
+                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+                true,
+            ),
         batteryTopTextScale =
             profileFloat(
                 layout = layout,
@@ -621,6 +671,10 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
             profileFloat(layout, OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
         wifiSizeScale =
             profileFloat(layout, WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
+        airplaneSizeScale =
+            profileFloat(layout, AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
+        noSimSizeScale =
+            profileFloat(layout, NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
         mobileTypeSizeScale =
             profileFloat(
                 layout,
@@ -710,6 +764,12 @@ internal fun SharedPreferences.Editor.putCombinedStatusVisualSettings(
     ).putBoolean(
         combinedStatusProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.batteryTopChargingIconFollowsBatteryColor,
+    ).putBoolean(
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+        normalized.batteryFillFollowsRetractEndpoint,
+    ).putBoolean(
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+        normalized.controlCenterTintTransitionEnabled,
     ).putFloat(
         combinedStatusProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
         normalized.batteryTopTextScale,
@@ -731,6 +791,12 @@ internal fun SharedPreferences.Editor.putCombinedStatusVisualSettings(
     ).putFloat(
         combinedStatusProfileKey(layout, WIFI_SIZE_SCALE_KEY),
         normalized.wifiSizeScale,
+    ).putFloat(
+        combinedStatusProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
+        normalized.airplaneSizeScale,
+    ).putFloat(
+        combinedStatusProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
+        normalized.noSimSizeScale,
     ).putFloat(
         combinedStatusProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
         normalized.mobileTypeSizeScale,
@@ -755,6 +821,10 @@ internal const val BATTERY_TOP_CHARGING_ICON_ENABLED_KEY =
     "battery_top_charging_icon_enabled"
 internal const val BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY =
     "battery_top_charging_icon_follows_battery_color"
+internal const val BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY =
+    "battery_fill_follows_retract_endpoint"
+internal const val CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY =
+    "control_center_tint_transition_enabled"
 internal const val BATTERY_TOP_TEXT_SCALE_KEY = "battery_top_text_scale"
 internal const val BATTERY_TOP_TEXT_WEIGHT_KEY = "battery_top_text_weight"
 internal const val BATTERY_TOP_VERTICAL_OFFSET_KEY = "battery_top_vertical_offset"
@@ -762,6 +832,8 @@ internal const val BATTERY_TOP_CHARGING_ICON_SCALE_KEY = "battery_top_charging_i
 internal const val COMBINED_SCALE_KEY = "combined_scale"
 internal const val OUTER_WEIGHT_SCALE_KEY = "outer_weight_scale"
 internal const val WIFI_SIZE_SCALE_KEY = "wifi_size_scale"
+internal const val AIRPLANE_SIZE_SCALE_KEY = "airplane_size_scale"
+internal const val NO_SIM_SIZE_SCALE_KEY = "no_sim_size_scale"
 internal const val MOBILE_TYPE_SIZE_SCALE_KEY = "mobile_type_size_scale"
 internal const val MOBILE_TYPE_WEIGHT_KEY = "mobile_type_weight"
 internal const val BATTERY_COLOR_PRESET_KEY = "battery_color_preset"
@@ -794,12 +866,16 @@ private val PROFILE_VISUAL_BASE_KEYS =
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
         WIFI_SIZE_SCALE_KEY,
+        AIRPLANE_SIZE_SCALE_KEY,
+        NO_SIM_SIZE_SCALE_KEY,
         MOBILE_TYPE_SIZE_SCALE_KEY,
         MOBILE_TYPE_WEIGHT_KEY,
     )
 
 private val GLOBAL_VISUAL_KEYS =
     setOf(
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         BATTERY_COLOR_PRESET_KEY,
         BATTERY_COLOR_MODE_NORMAL_KEY,
         BATTERY_COLOR_MODE_POWER_SAVE_KEY,
@@ -1020,6 +1096,12 @@ internal const val OUTER_WEIGHT_SCALE_MAX = 1.30f
 internal const val WIFI_SIZE_SCALE_DEFAULT = 1f
 internal const val WIFI_SIZE_SCALE_MIN = 0.40f
 internal const val WIFI_SIZE_SCALE_MAX = 1.25f
+internal const val AIRPLANE_SIZE_SCALE_DEFAULT = 1f
+internal const val AIRPLANE_SIZE_SCALE_MIN = WIFI_SIZE_SCALE_MIN
+internal const val AIRPLANE_SIZE_SCALE_MAX = WIFI_SIZE_SCALE_MAX
+internal const val NO_SIM_SIZE_SCALE_DEFAULT = 1f
+internal const val NO_SIM_SIZE_SCALE_MIN = WIFI_SIZE_SCALE_MIN
+internal const val NO_SIM_SIZE_SCALE_MAX = WIFI_SIZE_SCALE_MAX
 internal const val MOBILE_TYPE_SIZE_SCALE_DEFAULT = 1f
 internal const val MOBILE_TYPE_SIZE_SCALE_MIN = 0.40f
 internal const val MOBILE_TYPE_SIZE_SCALE_MAX = 1.25f

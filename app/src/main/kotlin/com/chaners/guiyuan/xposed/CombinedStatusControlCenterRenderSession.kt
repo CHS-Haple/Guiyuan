@@ -122,6 +122,10 @@ internal object CombinedStatusControlCenterRenderSession {
     }
 
     @Synchronized
+    fun beginVisibleCycle(): Boolean =
+        SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+
+    @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
         current?.setRequestedVisible(visible) ?: false
 
@@ -487,11 +491,15 @@ internal object CombinedStatusControlCenterRenderSession {
         private val renderView = CombinedStatusRenderView(host.context)
         private val renderController = CombinedStatusRenderController(renderView)
         private val anchorRect = Rect()
+        private val hostLocationScratch = IntArray(2)
+        private val statusAreaLocationScratch = IntArray(2)
 
         private var currentModel: CombinedStatusRenderModel? = null
         private var currentTint: CombinedStatusTintState? = null
         private var currentVisualSettings = RuntimeVisualPreferencesOwner.currentSettings()
         private var transitionStateVersion = 0L
+        private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
+        private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
         private var featureEnabled = RuntimeFeaturePreferencesOwner.currentSettings().enabled
@@ -536,6 +544,10 @@ internal object CombinedStatusControlCenterRenderSession {
 
         fun transitionSourceSnapshot(): TransitionSourceSnapshot? {
             if (!projectionReady()) return null
+            cachedTransitionSourceSnapshot
+                ?.takeIf { cachedTransitionSourceSnapshotVersion == transitionStateVersion }
+                ?.let { return it }
+
             val anchorView = carrier.get() ?: return null
             val model = currentModel ?: return null
             val tint = currentTint ?: return null
@@ -551,7 +563,10 @@ internal object CombinedStatusControlCenterRenderSession {
                     ),
                 visualSettings = currentVisualSettings,
                 stateVersion = transitionStateVersion,
-            )
+            ).also { snapshot ->
+                cachedTransitionSourceSnapshot = snapshot
+                cachedTransitionSourceSnapshotVersion = transitionStateVersion
+            }
         }
 
         fun geometryDiagnostic(): String =
@@ -601,6 +616,24 @@ internal object CombinedStatusControlCenterRenderSession {
         }
 
         fun setRequestedVisible(visible: Boolean): Boolean {
+            if (
+                shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = requestedVisible,
+                    nextRequestedVisible = visible,
+                ) &&
+                !SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+            ) {
+                syncPresentation("visibility-visible-cycle-failed")
+                return false
+            }
+            if (
+                shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = requestedVisible,
+                    nextRequestedVisible = visible,
+                )
+            ) {
+                SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(false)
+            }
             requestedVisible = visible
             syncPresentation("visibility")
             return projectionReady()
@@ -636,6 +669,7 @@ internal object CombinedStatusControlCenterRenderSession {
                         battery = batteryView,
                         batteryCarrier = carrierView,
                         onEvent = onEvent,
+                        isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                         onFailNative = { reason ->
                             setNativePresentationReady(
                                 ready = false,
@@ -798,12 +832,10 @@ internal object CombinedStatusControlCenterRenderSession {
                 ) ?: return markLayoutUnavailable()
             if (!resolved.renderCombined) return markLayoutUnavailable()
 
-            val hostLocation = IntArray(2)
-            val areaLocation = IntArray(2)
-            hostView.getLocationInWindow(hostLocation)
-            statusArea.getLocationInWindow(areaLocation)
-            val offsetX = areaLocation[0] - hostLocation[0]
-            val offsetY = areaLocation[1] - hostLocation[1]
+            hostView.getLocationInWindow(hostLocationScratch)
+            statusArea.getLocationInWindow(statusAreaLocationScratch)
+            val offsetX = statusAreaLocationScratch[0] - hostLocationScratch[0]
+            val offsetY = statusAreaLocationScratch[1] - hostLocationScratch[1]
             val left = offsetX + resolved.slotLeftPx.toInt()
             val right = offsetX + resolved.slotRightPx.toInt()
             val top = offsetY
@@ -969,6 +1001,18 @@ internal object CombinedStatusControlCenterRenderSession {
         }
         return found
     }
+
+    internal fun shouldBeginCapacityLeaseOnVisibilityChange(
+        previousRequestedVisible: Boolean,
+        nextRequestedVisible: Boolean,
+    ): Boolean =
+        !previousRequestedVisible && nextRequestedVisible
+
+    internal fun shouldEndCapacityLeaseOnVisibilityChange(
+        previousRequestedVisible: Boolean,
+        nextRequestedVisible: Boolean,
+    ): Boolean =
+        previousRequestedVisible && !nextRequestedVisible
 
     internal data class TransitionSourceSnapshot(
         val view: View,

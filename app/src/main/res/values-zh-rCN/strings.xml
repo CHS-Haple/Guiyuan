@@ -27,6 +27,9 @@
     <string name="section_appearance_interaction">外观与交互</string>
     <string name="section_app">应用</string>
     <string name="section_diagnostics_maintenance">诊断与维护</string>
+    <string name="section_other">其他</string>
+    <string name="project_address_title">项目地址</string>
+    <string name="project_address_summary">本项目基于 GPL-3.0-only 协议开源</string>
     <string name="language_title">语言</string>
     <string name="language_summary">跟随系统或选择应用语言</string>
     <string name="language_system">跟随系统</string>
@@ -41,6 +44,8 @@
     <string name="section_hyperos_display">系统界面</string>
     <string name="section_color_linkage">配色联动</string>
     <string name="section_battery_top_readout">顶部电量</string>
+    <string name="battery_fill_follow_retract">电量段跟随回收</string>
+    <string name="battery_fill_follow_retract_summary">实心电量段随回收端点移动，空心区域耗尽后再缩短</string>
     <string name="battery_top_readout">显示电量数字</string>
     <string name="battery_top_readout_summary">显示电量百分比，电量环自动避让</string>
     <string name="battery_top_text_size">数字大小</string>
@@ -53,7 +58,9 @@
     <string name="combined_status_feature_title">三合一状态图标</string>
     <string name="combined_status_feature_summary">控制所有已支持 SystemUI 场景中的三合一状态图标；关闭后恢复系统原生状态图标</string>
     <string name="keyguard_combined_status_title">锁屏显示三合一</string>
-    <string name="keyguard_combined_status_summary">在锁屏状态栏显示，AOD 暂不支持</string>
+    <string name="keyguard_combined_status_summary">在锁屏状态栏显示</string>
+    <string name="aod_combined_status_title">AOD 显示三合一</string>
+    <string name="aod_combined_status_summary">在稳定 AOD 状态显示；进入与退出动画保持系统原生</string>
     <string name="mobile_follow_battery_color">移动信号跟随电量环颜色</string>
     <string name="mobile_follow_battery_color_summary">四点与叉号跟随电量环颜色</string>
     <string name="center_follow_battery_color">网络状态跟随电量环颜色</string>
@@ -72,7 +79,7 @@
     <string name="restart_scope_summary">重新启动 SystemUI 以重新加载模块</string>
     <string name="restart_scope_dialog_summary">此操作需要 Root 权限。SystemUI 将重新启动以重新加载模块，不会重启设备。</string>
     <string name="restart_scope_failed">重启失败</string>
-    <string name="restart_scope_failed_summary">请确认已授予 Root 权限后重试</string>
+    <string name="restart_scope_failed_summary">请确认 Root 权限可用且 SystemUI 能正常重新启动后重试</string>
     <string name="restart">重启</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
@@ -80,7 +87,11 @@
     <string name="combined_size">整体大小</string>
     <string name="outer_weight">外环粗细</string>
     <string name="outer_weight_summary">同步调整外环、四点与叉号</string>
+    <string name="control_center_tint_transition">下拉反色过渡</string>
+    <string name="control_center_tint_transition_summary">下拉控制中心时，将已染色元素平滑过渡为系统反色</string>
     <string name="wifi_size">Wi-Fi 大小</string>
+    <string name="airplane_size">飞行模式大小</string>
+    <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
     <string name="mobile_type_weight">移动制式字重</string>
     <string name="percent_value">%1$d%%</string>
@@ -145,10 +156,10 @@
     <string name="diagnostics_package_label">包名</string>
 
     <string name="section_device_system">设备与系统</string>
-    <string name="device_model_label">型号（设备代号）</string>
-    <string name="android_version_label">Android（API）</string>
-    <string name="os_version_label">HyperOS</string>
-    <string name="systemui_version_label">SystemUI</string>
+    <string name="device_model_label">设备型号（设备代号）</string>
+    <string name="android_version_label">Android 版本（API 等级）</string>
+    <string name="os_version_label">HyperOS 版本</string>
+    <string name="systemui_version_label">SystemUI 版本</string>
 
     <string name="section_module_runtime">模块运行</string>
     <string name="runtime_framework_title">框架</string>

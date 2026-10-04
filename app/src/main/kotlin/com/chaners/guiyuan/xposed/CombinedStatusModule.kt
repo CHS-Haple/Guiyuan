@@ -24,11 +24,26 @@ class CombinedStatusModule : XposedModule() {
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
     private var controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
+    private var steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+    private var lastStableKeyguardAodScene =
+        CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+    private var keyguardAodFullTargetPending = false
+    private var keyguardAodPendingTargetToLockScreen: Boolean? = null
+    private var keyguardAodFullTransitionActive = false
+    private var keyguardBoundaryVisualHandoffActive = false
+    private var keyguardBoundaryLayoutPrecommitActive = false
+    private var keyguardBoundaryCompactLayoutReady = false
+    private var keyguardBoundaryVisualBoundaryReached = false
+    private var homePresentationOwnedAtFullAodStart = false
+    private var homeNativeAodFallbackCandidate = false
+    private var homeNativeAodFallbackActive = false
+    private var homeAodTransitionOriginPending = false
+    private var homeAodTargetPrearmPending = false
     private var controlCenterExpansionFraction = 0f
     private var keyguardRuntimeReady = false
+    private var aodRendererAttached = false
     private var keyguardPresentationReadyObserved = false
     private var keyguardControlCenterLeaseActive = false
-    private var controlCenterGeometryProbeBucket = -1
     private var lastBatteryNumberProbeDiagnosticSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
@@ -258,11 +273,23 @@ class CombinedStatusModule : XposedModule() {
             controlCenterSceneVisible = false
             controlCenterSceneEligible = false
             controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
+            steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+            lastStableKeyguardAodScene =
+                CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+            keyguardAodFullTargetPending = false
+            keyguardAodPendingTargetToLockScreen = null
+            keyguardAodFullTransitionActive = false
+            resetKeyguardBoundaryHandoffState()
+            homePresentationOwnedAtFullAodStart = false
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = false
+            homeAodTransitionOriginPending = false
+            homeAodTargetPrearmPending = false
             controlCenterExpansionFraction = 0f
             keyguardRuntimeReady = false
+            aodRendererAttached = false
             keyguardPresentationReadyObserved = false
             keyguardControlCenterLeaseActive = false
-            controlCenterGeometryProbeBucket = -1
             SystemUiPresentationRuntimeOwner.resetRuntimeState()
             SystemUiKeyguardHostResolver.resetRuntimeState()
             SystemUiHomePresentationOwner.resetRuntimeState("hotReload")
@@ -1031,7 +1058,6 @@ class CombinedStatusModule : XposedModule() {
             )
         }.onFailure { error ->
             panelTransitionSourceInstalled = false
-            controlCenterGeometryProbeBucket = -1
             CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.ERROR,
@@ -1048,16 +1074,23 @@ class CombinedStatusModule : XposedModule() {
     private fun onPanelTransitionUpdate(
         update: SystemUiPanelTransitionSource.Update,
     ) {
-        handleControlCenterPanelUpdate(update)
-        CombinedStatusControlCenterTransitionOwner.onPanelUpdate(update)
+        val effectiveSourceScene = handleControlCenterPanelUpdate(update)
+        val transitionUpdate =
+            if (effectiveSourceScene != null) {
+                update.copy(controlCenterSourceScene = effectiveSourceScene)
+            } else {
+                update
+            }
+        CombinedStatusControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
 
-        if (detailedDiagnosticsEnabled) {
+        if (
+            detailedDiagnosticsEnabled &&
+            update.fraction != null &&
+            lastBatteryNumberProbeDiagnosticSummary == null
+        ) {
             val batteryNumberProbe =
                 CombinedStatusControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
-            if (
-                batteryNumberProbe != null &&
-                batteryNumberProbe != lastBatteryNumberProbeDiagnosticSummary
-            ) {
+            if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeDiagnosticSummary = batteryNumberProbe
                 logDiagnostic(
                     level = Log.INFO,
@@ -1071,49 +1104,14 @@ class CombinedStatusModule : XposedModule() {
             }
         }
 
-        if (!detailedDiagnosticsEnabled) {
-            return
-        }
-
-        val bucket =
-            SystemUiPanelTransitionSource.diagnosticBucket(update.fraction)
-                ?: return
-        if (update.visible == false) {
-            controlCenterGeometryProbeBucket = -1
-            return
-        }
-        if (bucket == controlCenterGeometryProbeBucket) {
-            return
-        }
-        controlCenterGeometryProbeBucket = bucket
-        val geometry =
-            SystemUiNativeNetworkSuppressionOwner.currentTransitionTargetGeometry()
-        val state =
-            SystemUiNativeNetworkSuppressionOwner.currentTransitionStateSnapshot()
-        val projection =
-            CombinedStatusControlCenterRenderSession.currentProjectionGeometryDiagnostic()
-        val transitionOwner =
-            CombinedStatusControlCenterTransitionOwner.currentDiagnostic()
-        log(
-            Log.INFO,
-            TAG,
-            "controlCenterTransitionGeometry " +
-                "fraction=" + update.fraction +
-                " bucket=" + bucket + "/8 " +
-                (geometry?.summary ?: "geometry=unavailable") +
-                " " + (state?.summary ?: "state=unavailable") +
-                " " + projection +
-                " " + transitionOwner +
-                " readOnly=true nativeGeometryWrites=0",
-        )
     }
 
     private fun handleControlCenterPanelUpdate(
         update: SystemUiPanelTransitionSource.Update,
-    ) {
+    ): CombinedStatusSourceScene? {
         update.fraction?.let(::onControlCenterExpansionFraction)
 
-        val visible = update.visible ?: return
+        val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
             // Restore Home first. QS_FAKE compact presentation remains prearmed
@@ -1121,15 +1119,45 @@ class CombinedStatusModule : XposedModule() {
             // overlay visibility changes with Control Center visibility.
             CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
             CombinedStatusControlCenterRenderSession.setRequestedVisible(false)
-            return
+            return null
         }
 
         controlCenterSceneVisible = true
+        if (!CombinedStatusControlCenterRenderSession.beginVisibleCycle()) {
+            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            logDiagnostic(
+                level = Log.WARN,
+                event = "projection.visibleCycle",
+                component = "controlCenterProjection",
+                state = "native",
+                "reason" to "visible-cycle-rearm-failed",
+                "fallback" to "native-control-center-until-next-native-event",
+            )
+            return update.controlCenterSourceScene
+        }
+        val panelSourceScene =
+            update.controlCenterSourceScene
+                ?: CombinedStatusSourceScene.UNKNOWN
+        val incomingBoundaryReady =
+            incomingKeyguardPresentationReadyForControlCenter()
+        val effectiveSourceScene =
+            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+                panelSourceScene = panelSourceScene,
+                steadySourceScene = steadyStatusSourceScene,
+                lastStableFamilyScene = lastStableKeyguardAodScene,
+                incomingKeyguardPresentationReady = incomingBoundaryReady,
+            )
         updateControlCenterSourceSceneEligibility(
-            sourceScene =
-                update.controlCenterSourceScene
-                    ?: CombinedStatusSourceScene.UNKNOWN,
-            authority = "hyperos-realSystemIcons",
+            sourceScene = effectiveSourceScene,
+            authority =
+                when {
+                    effectiveSourceScene == panelSourceScene ->
+                        "hyperos-realSystemIcons"
+                    incomingBoundaryReady &&
+                        effectiveSourceScene == CombinedStatusSourceScene.KEYGUARD ->
+                        "incoming-keyguard-presentation"
+                    else -> "steady-source-view-override"
+                },
         )
         val carrier = update.controlCenterPresentationHost
         if (carrier == null) {
@@ -1142,7 +1170,7 @@ class CombinedStatusModule : XposedModule() {
                 "reason" to "fake-presentation-root-unresolved",
                 "fallback" to "native-control-center",
             )
-            return
+            return effectiveSourceScene
         }
 
         when (prepareControlCenterFakePresentation(carrier, "visible-fallback")) {
@@ -1166,6 +1194,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
         }
+        return effectiveSourceScene
     }
 
     private fun updateControlCenterSourceSceneEligibility(
@@ -1186,10 +1215,14 @@ class CombinedStatusModule : XposedModule() {
             source = "source-scene:" + authority,
         )
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val incomingBoundaryReady =
+            incomingKeyguardPresentationReadyForControlCenter()
+        val keyguardPresentationReady =
+            keyguardRuntimeReady || incomingBoundaryReady
         val keyguardEligible =
             settings.enabled &&
                 settings.keyguardEnabled &&
-                keyguardRuntimeReady
+                keyguardPresentationReady
         val nextEligible =
             CombinedStatusScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = settings.enabled,
@@ -1212,6 +1245,8 @@ class CombinedStatusModule : XposedModule() {
             "authority" to authority,
             "keyguardEnabled" to settings.keyguardEnabled,
             "keyguardRuntimeReady" to keyguardRuntimeReady,
+            "incomingBoundaryReady" to incomingBoundaryReady,
+            "keyguardPresentationReady" to keyguardPresentationReady,
             "controlCenterVisible" to controlCenterSceneVisible,
             "fallback" to if (nextEligible) "combined-qs-fake" else "native-qs-fake",
             "nativeGeometryWrites" to 0,
@@ -1224,6 +1259,15 @@ class CombinedStatusModule : XposedModule() {
         controlCenterExpansionFraction = fraction
 
         if (fraction > 0f) {
+            if (
+                controlCenterSourceScene != CombinedStatusSourceScene.KEYGUARD &&
+                incomingKeyguardPresentationReadyForControlCenter()
+            ) {
+                updateControlCenterSourceSceneEligibility(
+                    sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                    authority = "incoming-keyguard-fraction",
+                )
+            }
             acquireKeyguardControlCenterLeaseIfEligible(
                 source = "native-fraction",
             )
@@ -1242,11 +1286,14 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun acquireKeyguardControlCenterLeaseIfEligible(source: String) {
+        val keyguardPresentationReady =
+            keyguardRuntimeReady ||
+                incomingKeyguardPresentationReadyForControlCenter()
         if (
             keyguardControlCenterLeaseActive ||
             !CombinedStatusScenePolicy.shouldAcquireKeyguardControlCenterLease(
                 sourceScene = controlCenterSourceScene,
-                keyguardRuntimeReady = keyguardRuntimeReady,
+                keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = controlCenterExpansionFraction,
             )
         ) {
@@ -1279,6 +1326,8 @@ class CombinedStatusModule : XposedModule() {
                 .currentState(resolved.host.battery)
                 ?.blocksProjection
                 ?: true
+        val incomingBoundaryReady =
+            incomingKeyguardPresentationReadyForControlCenter()
         return CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
             leaseActive = keyguardControlCenterLeaseActive,
             sourceScene = controlCenterSourceScene,
@@ -1286,6 +1335,7 @@ class CombinedStatusModule : XposedModule() {
             keyguardEnabled = settings.keyguardEnabled,
             hostAttached = resolved.host.systemIcons.isAttachedToWindow,
             aodBlocked = aodBlocked,
+            incomingBoundaryPresentationReady = incomingBoundaryReady,
             nativeFraction = controlCenterExpansionFraction,
         )
     }
@@ -1309,11 +1359,37 @@ class CombinedStatusModule : XposedModule() {
             "timingDelay" to false,
             "nativeGeometryWrites" to 0,
         )
-        if (reconcileReadiness && !keyguardPresentationReadyObserved) {
+        if (
+            reconcileReadiness &&
+            !keyguardPresentationReadyObserved &&
+            !incomingKeyguardPresentationReadyForControlCenter()
+        ) {
             applyKeyguardPresentationReadinessLost(
                 source = "lease-release:" + source,
             )
         }
+    }
+
+    private fun incomingKeyguardPresentationReadyForControlCenter(): Boolean {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        if (
+            !settings.enabled ||
+            !settings.keyguardEnabled ||
+            settings.aodEnabled
+        ) {
+            return false
+        }
+        val resolved =
+            SystemUiKeyguardHostResolver.current()
+                as? SystemUiKeyguardHostResolver.ResolveResult.Ready
+                ?: return false
+        return CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            visualHandoffActive = keyguardBoundaryVisualHandoffActive,
+            layoutPrecommitActive = keyguardBoundaryLayoutPrecommitActive,
+            compactLayoutReady = keyguardBoundaryCompactLayoutReady,
+            visualBoundaryReached = keyguardBoundaryVisualBoundaryReached,
+            hostAttached = resolved.host.systemIcons.isAttachedToWindow,
+        )
     }
 
     private fun refreshControlCenterSourceSceneEligibility(authority: String) {
@@ -1321,6 +1397,19 @@ class CombinedStatusModule : XposedModule() {
             sourceScene = controlCenterSourceScene,
             authority = authority,
         )
+    }
+
+    private fun reconcileControlCenterForKeyguardLifecycle(authority: String) {
+        if (
+            !CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+                controlCenterVisible = controlCenterSceneVisible,
+                nativeFraction = controlCenterExpansionFraction,
+                leaseActive = keyguardControlCenterLeaseActive,
+            )
+        ) {
+            return
+        }
+        refreshControlCenterSourceSceneEligibility(authority)
     }
 
     private fun restoreControlCenterFakePresentationAfterHotReload(
@@ -1586,6 +1675,9 @@ class CombinedStatusModule : XposedModule() {
                 onTintState = ::onTintStateUpdate,
                 onSceneState = ::onSceneStateUpdate,
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
+                onKeyguardFullAodTransitionStarted = ::onKeyguardFullAodTransitionStarted,
+                onKeyguardFullAodTransitionCommitted = ::onKeyguardFullAodTransitionCommitted,
+                onKeyguardStatusIconTransition = ::onKeyguardStatusIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(
                         trace = beginRenderTrace("mobileType"),
@@ -1626,6 +1718,10 @@ class CombinedStatusModule : XposedModule() {
                 "mobileTypeHooks" to result.mobileTypeHooks,
                 "keyguardAodHooks" to result.keyguardAodHooks,
                 "keyguardAodReady" to result.keyguardAodReady,
+                "keyguardFullAodHooks" to result.keyguardFullAodHooks,
+                "keyguardFullAodReady" to result.keyguardFullAodReady,
+                "keyguardStatusIconHooks" to result.keyguardStatusIconHooks,
+                "keyguardStatusIconReady" to result.keyguardStatusIconReady,
                 "source" to source,
                 "nativeGeometryWrites" to 0,
             )
@@ -1829,14 +1925,683 @@ class CombinedStatusModule : XposedModule() {
         }
     }
 
+    private fun onKeyguardFullAodTransitionStarted() {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val homeOwnedAtStart =
+            SystemUiHomePresentationOwner
+                .currentHomeRepresentedSlotOwnership()
+                .isNotEmpty()
+        val homeCarrierVisibleAtStart =
+            SystemUiHomePresentationOwner
+                .currentHomeCarrierPresentationVisible()
+
+        keyguardAodFullTransitionActive = true
+        keyguardAodPendingTargetToLockScreen = null
+        homePresentationOwnedAtFullAodStart = homeOwnedAtStart
+        if (
+            CombinedStatusScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                homePresentationOwned = homeOwnedAtStart,
+                homeCarrierPresentationVisible = homeCarrierVisibleAtStart,
+            )
+        ) {
+            homeNativeAodFallbackCandidate = true
+        }
+        homeAodTransitionOriginPending =
+            settings.enabled &&
+                steadyStatusSourceScene == CombinedStatusSourceScene.HOME &&
+                lastStableKeyguardAodScene ==
+                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+                homeOwnedAtStart &&
+                (settings.keyguardEnabled || settings.aodEnabled)
+        keyguardAodFullTargetPending =
+            SystemUiPresentationRuntimeOwner.keyguardStatusIconReady &&
+                lastStableKeyguardAodScene !=
+                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+                settings.keyguardEnabled != settings.aodEnabled
+
+        logDiagnostic(
+            level = Log.INFO,
+            event = "aod.targetWindow",
+            component = "keyguardAod",
+            state = if (keyguardAodFullTargetPending) "pending" else "observation-only",
+            "source" to "animateFullAod:before",
+            "visualBoundaryAuthority" to
+                if (SystemUiPresentationRuntimeOwner.keyguardStatusIconReady) {
+                    "native-animateIconContainer"
+                } else {
+                    "status-icons-alpha-fallback"
+                },
+            "homeOriginLatched" to homeAodTransitionOriginPending,
+            "homeNativeAodFallbackCandidate" to homeNativeAodFallbackCandidate,
+            "homeNativeAodFallbackActive" to homeNativeAodFallbackActive,
+            "homePresentationOwnedAtStart" to homeOwnedAtStart,
+            "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
+            "eventDriven" to true,
+            "readOnly" to true,
+            "nativeGeometryWrites" to 0,
+        )
+    }
+
+    private fun onKeyguardFullAodTransitionCommitted() {
+        keyguardAodFullTransitionActive = false
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val resolution = SystemUiKeyguardHostResolver.current()
+        val target =
+            (resolution as? SystemUiKeyguardHostResolver.ResolveResult.Ready)
+                ?.host
+                ?.let { resolved ->
+                    SystemUiKeyguardHostResolver.nativeToLockScreenTarget(resolved)
+                }
+
+        if (keyguardAodFullTargetPending) {
+            keyguardAodPendingTargetToLockScreen = target
+            if (target == null) {
+                keyguardAodFullTargetPending = false
+            }
+        }
+        if (target == true || target == null) {
+            homeAodTransitionOriginPending = false
+            homeAodTargetPrearmPending = false
+        }
+        if (target == true) {
+            homeNativeAodFallbackActive = false
+        } else if (target == null) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = false
+        }
+
+        logDiagnostic(
+            level = if (target != null) Log.INFO else Log.WARN,
+            event = "aod.target",
+            component = "keyguardAod",
+            state =
+                when (target) {
+                    true -> "keyguard"
+                    false -> "aod"
+                    null -> "unavailable"
+                },
+            "source" to "animateFullAod:after",
+            "authority" to "native-mToLockScreen",
+            "visualBoundaryPending" to keyguardAodFullTargetPending,
+            "homeOriginLatched" to homeAodTransitionOriginPending,
+            "homeNativeAodFallbackCandidate" to homeNativeAodFallbackCandidate,
+            "homeNativeAodFallbackActive" to homeNativeAodFallbackActive,
+            "eventDriven" to true,
+            "readOnly" to true,
+            "nativeGeometryWrites" to 0,
+        )
+
+        val releaseTransientHomeKeyguard =
+            CombinedStatusScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                homeNativeAodFallbackCandidate =
+                    homeNativeAodFallbackCandidate,
+                homePresentationOwnedAtFullAodStart =
+                    homePresentationOwnedAtFullAodStart,
+                nativeToLockScreenTarget = target,
+            )
+        if (releaseTransientHomeKeyguard) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = true
+            homeAodTransitionOriginPending = false
+            homeAodTargetPrearmPending = false
+            resetKeyguardBoundaryHandoffState()
+            deactivateKeyguardRuntime("home-aod-disabled-target")
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.homeTransientKeyguard",
+                component = "keyguardPresentation",
+                state = "released",
+                "source" to "animateFullAod:after",
+                "target" to "native-aod",
+                "authority" to
+                    "home-full-aod-candidate+home-owner+native-mToLockScreen",
+                "nativeGeometryWrites" to 0,
+            )
+        }
+
+        (resolution as? SystemUiKeyguardHostResolver.ResolveResult.Ready)?.let { ready ->
+            if (!releaseTransientHomeKeyguard) {
+                armKeyguardBoundaryVisualHandoffIfEligible(
+                    resolution = ready,
+                    nativeToLockScreenTarget = target,
+                    source = "animateFullAod:after",
+                    visualBoundaryReached = false,
+                )
+            }
+            val prearmed =
+                armHomeAodTargetPrearmIfEligible(
+                    resolution = ready,
+                    nativeToLockScreenTarget = target,
+                    source = "animateFullAod:after",
+                )
+            if (
+                homeAodTransitionOriginPending &&
+                target == false &&
+                !prearmed
+            ) {
+                onKeyguardHostResolution(
+                    resolution = ready,
+                    source = "home-aod-origin:animateFullAod:after",
+                )
+            }
+        }
+        homePresentationOwnedAtFullAodStart = false
+    }
+
+    private fun onKeyguardStatusIconTransition() {
+        val resolution =
+            SystemUiKeyguardHostResolver.current()
+                as? SystemUiKeyguardHostResolver.ResolveResult.Ready
+                ?: run {
+                    keyguardAodFullTargetPending = false
+                    keyguardAodPendingTargetToLockScreen = null
+                    homePresentationOwnedAtFullAodStart = false
+                    homeNativeAodFallbackCandidate = false
+                    homeNativeAodFallbackActive = false
+                    homeAodTransitionOriginPending = false
+                    homeAodTargetPrearmPending = false
+                    return
+                }
+        val aodState =
+            SystemUiKeyguardAodStateSource.currentState(resolution.host.battery)
+        val target =
+            SystemUiKeyguardHostResolver.nativeToLockScreenTarget(resolution.host)
+
+        if (keyguardAodFullTargetPending && target != null) {
+            keyguardAodPendingTargetToLockScreen = target
+        }
+
+        val prearmed =
+            armHomeAodTargetPrearmIfEligible(
+                resolution = resolution,
+                nativeToLockScreenTarget = target,
+                source = "animateIconContainer",
+            )
+        if (
+            homeAodTransitionOriginPending &&
+            target == false &&
+            !prearmed
+        ) {
+            onKeyguardHostResolution(
+                resolution = resolution,
+                source = "home-aod-origin:animateIconContainer",
+            )
+        }
+
+        if (!keyguardAodFullTargetPending) {
+            return
+        }
+
+        val eligible = target != null
+        logDiagnostic(
+            level = if (eligible) Log.INFO else Log.WARN,
+            event = "aod.visualBoundary",
+            component = "keyguardAod",
+            state = if (eligible) "ready" else "ignored",
+            "source" to "animateIconContainer",
+            "target" to
+                when (target) {
+                    true -> "keyguard"
+                    false -> "aod"
+                    null -> "unavailable"
+                },
+            "isAodAnimate" to aodState?.isAodAnimate,
+            "statusIconsAlpha" to
+                SystemUiKeyguardHostResolver.statusIconsPresentationAlpha(
+                    resolution.host,
+                ),
+            "authority" to "native-status-icon-animation",
+            "eventDriven" to true,
+            "readOnly" to true,
+            "nativeGeometryWrites" to 0,
+        )
+        if (!eligible) return
+
+        val visualOnlyIncomingKeyguard =
+            armKeyguardBoundaryVisualHandoffIfEligible(
+                resolution = resolution,
+                nativeToLockScreenTarget = target,
+                source = "status-icon-animation",
+                visualBoundaryReached = true,
+            )
+        if (!visualOnlyIncomingKeyguard) {
+            onKeyguardHostResolution(
+                resolution = resolution,
+                source = "status-icon-animation",
+                fullAodVisualBoundary = true,
+            )
+        }
+        keyguardAodFullTargetPending = false
+        keyguardAodPendingTargetToLockScreen = null
+    }
+
+    private fun armKeyguardBoundaryVisualHandoffIfEligible(
+        resolution: SystemUiKeyguardHostResolver.ResolveResult.Ready,
+        nativeToLockScreenTarget: Boolean?,
+        source: String,
+        visualBoundaryReached: Boolean,
+    ): Boolean {
+        if (keyguardBoundaryVisualHandoffActive) {
+            if (visualBoundaryReached) {
+                onKeyguardBoundaryVisualBoundaryReached(source)
+            }
+            return true
+        }
+
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val eligible =
+            CombinedStatusScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                lastStableFamilyScene = lastStableKeyguardAodScene,
+                nativeToLockScreenTarget = nativeToLockScreenTarget,
+                homeNativeAodFallbackActive = homeNativeAodFallbackActive,
+            )
+        if (!eligible) return false
+
+        beginKeyguardBoundaryVisualHandoff(
+            resolution = resolution,
+            source = source,
+            visualBoundaryReached = visualBoundaryReached,
+        )
+        return keyguardBoundaryVisualHandoffActive
+    }
+
+    private fun beginKeyguardBoundaryVisualHandoff(
+        resolution: SystemUiKeyguardHostResolver.ResolveResult.Ready,
+        source: String,
+        visualBoundaryReached: Boolean,
+    ) {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        keyguardBoundaryVisualHandoffActive = true
+        val statusIconsAlphaAtArm =
+            SystemUiKeyguardHostResolver.statusIconsPresentationAlpha(
+                resolution.host,
+            )
+        keyguardBoundaryLayoutPrecommitActive =
+            CombinedStatusScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                lastStableFamilyScene = lastStableKeyguardAodScene,
+                nativeToLockScreenTarget =
+                    SystemUiKeyguardHostResolver.nativeToLockScreenTarget(
+                        resolution.host,
+                    ),
+                statusIconsPresentationAlpha = statusIconsAlphaAtArm,
+                homeNativeAodFallbackActive = homeNativeAodFallbackActive,
+            )
+        keyguardBoundaryCompactLayoutReady = false
+        keyguardBoundaryVisualBoundaryReached = visualBoundaryReached
+
+        val attached =
+            attachKeyguardRenderer(
+                resolved = resolution.host,
+                source = source + ":visual-only",
+            )
+        if (!attached) {
+            resetKeyguardBoundaryHandoffState()
+            return
+        }
+        logDiagnostic(
+            level = Log.INFO,
+            event = "aod.visualHandoff",
+            component = "keyguardPresentation",
+            state = "armed",
+            "source" to source,
+            "nativeLayoutOwnership" to
+                if (keyguardBoundaryLayoutPrecommitActive) {
+                    "precommit-before-reveal"
+                } else {
+                    "deferred-until-stable"
+                },
+            "nativeVisualMask" to "clipBounds",
+            "renderer" to "keyguard-combined",
+            "statusIconsAlphaAtArm" to statusIconsAlphaAtArm,
+            "nativeLifecycleAuthority" to "status-icons-presentation-alpha",
+            "nativeGeometryWrites" to 0,
+        )
+    }
+
+    private fun precommitKeyguardBoundaryLayout(source: String) {
+        if (
+            !keyguardBoundaryVisualHandoffActive ||
+            !keyguardBoundaryLayoutPrecommitActive
+        ) {
+            return
+        }
+        when (
+            val result =
+                SystemUiHomePresentationOwner.commitKeyguardDeferredLayoutOwnership()
+        ) {
+            is SystemUiHomePresentationOwner.StateResult.Active -> {
+                onKeyguardBoundaryPrelayoutReady(
+                    result = result,
+                    source = source + ":precommit-ready",
+                )
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Prepared -> {
+                keyguardRuntimeReady = false
+                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.cutover",
+                    component = "keyguardPresentation",
+                    state = "prelayout-pending",
+                    "source" to source,
+                    "representedSlots" to result.representedSlots,
+                    "reused" to result.reused,
+                    "next" to "native-status-icons-layout-before-reveal",
+                    "nativeGeometryWrites" to 0,
+                )
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Failure -> {
+                onKeyguardPresentationRuntimeFailure(result.reason)
+                deactivateKeyguardRuntime("boundary-prelayout-commit-failed")
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Inactive -> {
+                deactivateKeyguardRuntime("boundary-prelayout-session-missing")
+            }
+        }
+    }
+
+    private fun onKeyguardBoundaryPrelayoutReady(
+        result: SystemUiHomePresentationOwner.StateResult.Active,
+        source: String,
+    ) {
+        if (
+            !keyguardBoundaryVisualHandoffActive ||
+            !keyguardBoundaryLayoutPrecommitActive
+        ) {
+            completeKeyguardPresentationCutover(
+                result = result,
+                source = source,
+            )
+            return
+        }
+        keyguardBoundaryCompactLayoutReady = true
+        keyguardRuntimeReady = false
+        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(
+            !keyguardBoundaryVisualBoundaryReached,
+        )
+        logDiagnostic(
+            level = Log.INFO,
+            event = "presentation.cutover",
+            component = "keyguardPresentation",
+            state =
+                if (keyguardBoundaryVisualBoundaryReached) {
+                    "visual-handoff-prelayout-ready"
+                } else {
+                    "prelayout-ready-hidden"
+                },
+            "source" to source,
+            "representedSlots" to result.representedSlots,
+            "maskedViews" to result.maskedViews,
+            "nativeVisualBoundaryReached" to keyguardBoundaryVisualBoundaryReached,
+            "nativeGeometryWrites" to 0,
+        )
+        if (keyguardBoundaryVisualBoundaryReached) {
+            reconcileControlCenterForKeyguardLifecycle(
+                "keyguard-boundary-layout-ready",
+            )
+        }
+    }
+
+    private fun onKeyguardBoundaryVisualBoundaryReached(source: String) {
+        keyguardBoundaryVisualBoundaryReached = true
+        if (!keyguardBoundaryLayoutPrecommitActive) return
+        if (keyguardBoundaryCompactLayoutReady) {
+            CombinedStatusKeyguardRenderSession.setNativeHandoffActive(false)
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.visualHandoff",
+                component = "keyguardPresentation",
+                state = "revealed",
+                "source" to source,
+                "layoutAuthority" to "precommitted-before-native-animation",
+                "nativeGeometryWrites" to 0,
+            )
+            reconcileControlCenterForKeyguardLifecycle(
+                "keyguard-boundary-visual-ready",
+            )
+        } else {
+            CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+            logDiagnostic(
+                level = Log.WARN,
+                event = "aod.visualHandoff",
+                component = "keyguardPresentation",
+                state = "waiting-prelayout",
+                "source" to source,
+                "fallback" to "native-until-compact-layout-ready",
+                "nativeGeometryWrites" to 0,
+            )
+        }
+    }
+
+    private fun resetKeyguardBoundaryHandoffState() {
+        keyguardBoundaryVisualHandoffActive = false
+        keyguardBoundaryLayoutPrecommitActive = false
+        keyguardBoundaryCompactLayoutReady = false
+        keyguardBoundaryVisualBoundaryReached = false
+    }
+
+    private fun completeKeyguardBoundaryVisualHandoff(source: String): Boolean {
+        if (!keyguardBoundaryVisualHandoffActive) return false
+        if (keyguardBoundaryLayoutPrecommitActive) {
+            resetKeyguardBoundaryHandoffState()
+            onKeyguardPresentationReadinessChanged(
+                ready = true,
+                source = source + ":precommitted-layout",
+            )
+            return true
+        }
+        keyguardBoundaryVisualHandoffActive = false
+        return when (
+            val result =
+                SystemUiHomePresentationOwner.commitKeyguardDeferredLayoutOwnership()
+        ) {
+            is SystemUiHomePresentationOwner.StateResult.Active -> {
+                completeKeyguardPresentationCutover(
+                    result = result,
+                    source = source + ":compact-ready",
+                )
+                true
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Prepared -> {
+                keyguardRuntimeReady = false
+                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(false)
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.cutover",
+                    component = "keyguardPresentation",
+                    state = "visual-handoff-layout-pending",
+                    "source" to source,
+                    "representedSlots" to result.representedSlots,
+                    "reused" to result.reused,
+                    "nativeVisuals" to "masked",
+                    "next" to "native-status-icons-layout",
+                    "nativeGeometryWrites" to 0,
+                )
+                true
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Failure -> {
+                onKeyguardPresentationRuntimeFailure(result.reason)
+                deactivateKeyguardRuntime("boundary-layout-commit-failed")
+                true
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Inactive -> {
+                deactivateKeyguardRuntime("boundary-layout-session-missing")
+                true
+            }
+        }
+    }
+
+    private fun armHomeAodTargetPrearmIfEligible(
+        resolution: SystemUiKeyguardHostResolver.ResolveResult.Ready,
+        nativeToLockScreenTarget: Boolean?,
+        source: String,
+    ): Boolean {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val homeOwned =
+            SystemUiHomePresentationOwner
+                .currentHomeRepresentedSlotOwnership()
+                .isNotEmpty()
+
+        if (nativeToLockScreenTarget == true) {
+            homeAodTransitionOriginPending = false
+            homeAodTargetPrearmPending = false
+            return false
+        }
+
+        if (homeAodTargetPrearmPending) {
+            if (!settings.enabled || !settings.aodEnabled) {
+                homeAodTargetPrearmPending = false
+                return false
+            }
+            return true
+        }
+
+        val currentOriginEligible =
+            CombinedStatusScenePolicy.shouldArmHomeAodTargetPrearm(
+                featureEnabled = settings.enabled,
+                aodEnabled = settings.aodEnabled,
+                steadySourceScene = steadyStatusSourceScene,
+                lastStableFamilyScene = lastStableKeyguardAodScene,
+                homePresentationOwned = homeOwned,
+                nativeToLockScreenTarget = nativeToLockScreenTarget,
+            )
+        val eligible =
+            settings.enabled &&
+                settings.aodEnabled &&
+                nativeToLockScreenTarget == false &&
+                (homeAodTransitionOriginPending || currentOriginEligible)
+        if (!eligible) return false
+
+        homeAodTargetPrearmPending = true
+        logDiagnostic(
+            level = Log.INFO,
+            event = "aod.homePrearm",
+            component = "keyguardAod",
+            state = "armed",
+            "source" to source,
+            "target" to "aod",
+            "origin" to
+                if (homeAodTransitionOriginPending) {
+                    "latched-home"
+                } else {
+                    "home"
+                },
+            "homePresentationOwnedAtArm" to homeOwned,
+            "nativeGeometryWrites" to 0,
+        )
+        onKeyguardHostResolution(
+            resolution = resolution,
+            source = "home-aod-target-prearm:" + source,
+        )
+        return true
+    }
+
     private fun onKeyguardAodStateUpdate(
         update: SystemUiKeyguardAodStateSource.AodUpdate,
     ) {
+        if (
+            !update.isAodAnimate &&
+            !keyguardAodFullTransitionActive &&
+            CombinedStatusScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = keyguardAodPendingTargetToLockScreen,
+                toAod = update.toAod,
+                isAodAnimate = update.isAodAnimate,
+            )
+        ) {
+            keyguardAodFullTargetPending = false
+            keyguardAodPendingTargetToLockScreen = null
+        }
+
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val activateHomeNativeAodFallback =
+            CombinedStatusScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+                candidateActive = homeNativeAodFallbackCandidate,
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                toAod = update.toAod,
+                isAodAnimate = update.isAodAnimate,
+            )
+        if (activateHomeNativeAodFallback) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = true
+            resetKeyguardBoundaryHandoffState()
+            deactivateKeyguardRuntime("home-aod-disabled-native-transition")
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.homeTransientKeyguard",
+                component = "keyguardPresentation",
+                state = "released",
+                "source" to "aod:" + update.source,
+                "target" to "native-aod",
+                "authority" to
+                    "home-full-aod-candidate+native-toAod-animation",
+                "nativeGeometryWrites" to 0,
+            )
+        }
+
+        val stableAod =
+            SystemUiKeyguardAodStateSource.isStableAod(
+                toAod = update.toAod,
+                isAodAnimate = update.isAodAnimate,
+            )
+        if (!keyguardAodFullTransitionActive && stableAod) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = false
+            homeAodTransitionOriginPending = false
+            homeAodTargetPrearmPending = false
+            if (keyguardBoundaryVisualHandoffActive) {
+                resetKeyguardBoundaryHandoffState()
+                deactivateKeyguardRuntime("boundary-handoff-returned-to-aod")
+            }
+        }
+
+        refreshStableKeyguardAodSceneFromAodState(update)
+        if (
+            !update.isAodAnimate &&
+            !update.toAod &&
+            steadyStatusSourceScene == CombinedStatusSourceScene.KEYGUARD
+        ) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = false
+        }
         if (update.blocksProjection) {
             releaseKeyguardControlCenterLease(
                 source = "aod:" + update.source,
                 reconcileReadiness = false,
             )
+        }
+        val boundaryHandoffHandled =
+            !update.isAodAnimate &&
+                !update.toAod &&
+                completeKeyguardBoundaryVisualHandoff(
+                    source = "aod:" + update.source,
+                )
+        if (!boundaryHandoffHandled && !keyguardBoundaryVisualHandoffActive) {
+            SystemUiKeyguardHostResolver.current()?.let { resolution ->
+                onKeyguardHostResolution(
+                    resolution = resolution,
+                    source = "aod:" + update.source,
+                )
+            }
         }
         CombinedStatusKeyguardRenderSession.onAodState(update)
         if (detailedDiagnosticsEnabled) {
@@ -1844,21 +2609,38 @@ class CombinedStatusModule : XposedModule() {
                 level = Log.INFO,
                 event = "aod.state",
                 component = "keyguardAod",
-                state = if (update.blocksProjection) "native" else "keyguard-eligible",
+                state =
+                    when {
+                        stableAod -> "aod-stable"
+                        update.blocksProjection -> "native-transition"
+                        else -> "keyguard-eligible"
+                    },
                 "source" to update.source,
                 "toAod" to update.toAod,
                 "isAodAnimate" to update.isAodAnimate,
                 "animToAod" to update.animToAod,
                 "blocksProjection" to update.blocksProjection,
+                "pendingTarget" to
+                    when (keyguardAodPendingTargetToLockScreen) {
+                        true -> "keyguard"
+                        false -> "aod"
+                        null -> "none"
+                    },
+                "homeOriginLatched" to homeAodTransitionOriginPending,
+                "homeNativeAodFallbackCandidate" to homeNativeAodFallbackCandidate,
+                "homeNativeAodFallbackActive" to homeNativeAodFallbackActive,
                 "nativeGeometryWrites" to 0,
             )
         }
     }
 
     private fun onSceneStateUpdate(update: SystemUiSceneStateSource.SceneUpdate) {
-        val structuralSourceScene =
-            SystemUiSceneStateSource.steadySourceScene(update.sourceView)
-        if (structuralSourceScene == CombinedStatusSourceScene.KEYGUARD) {
+        val sourceScene = SystemUiSceneStateSource.steadySourceScene(update)
+        if (sourceScene != CombinedStatusSourceScene.UNKNOWN) {
+            steadyStatusSourceScene = sourceScene
+        }
+        refreshStableKeyguardAodSceneFromSceneState(update, sourceScene)
+        if (sourceScene == CombinedStatusSourceScene.KEYGUARD) {
             SystemUiKeyguardHostResolver.observe(update)?.let { resolution ->
                 onKeyguardHostResolution(
                     resolution = resolution,
@@ -1866,33 +2648,49 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
         }
-
-        val sourceScene = SystemUiSceneStateSource.steadySourceScene(update)
-        val retainKeyguardLease =
-            sourceScene == CombinedStatusSourceScene.HOME &&
-                shouldRetainKeyguardControlCenterLease()
         if (sourceScene == CombinedStatusSourceScene.HOME) {
-            if (retainKeyguardLease) {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "scene.defer",
-                    component = "keyguardControlCenter",
-                    state = "retained",
-                    "source" to "steady-source-view",
-                    "observedScene" to sourceScene.name,
-                    "leasedScene" to controlCenterSourceScene.name,
-                    "nativeFraction" to controlCenterExpansionFraction,
-                    "reason" to "control-center-keyguard-lease",
-                    "nativeGeometryWrites" to 0,
-                )
-            } else {
-                deactivateKeyguardRuntime("home-source-active")
+            if (!keyguardAodFullTransitionActive) {
+                homeNativeAodFallbackActive = false
             }
-        }
-        if (
-            sourceScene != CombinedStatusSourceScene.UNKNOWN &&
-            !retainKeyguardLease
-        ) {
+            // UNLOCKED_STATUS_BAR + Home ancestry is the authoritative unlock
+            // boundary. A Keyguard Control Center lease must never outlive it:
+            // otherwise a fast first pull-down can consume stale KEYGUARD
+            // source state and temporarily fall back to native QS icons.
+            if (keyguardControlCenterLeaseActive) {
+                releaseKeyguardControlCenterLease(
+                    source = "authoritative-home",
+                    reconcileReadiness = false,
+                )
+            }
+            updateControlCenterSourceSceneEligibility(
+                sourceScene = CombinedStatusSourceScene.HOME,
+                authority = "steady-source-view",
+            )
+
+            if (aodRendererAttached) {
+                val retainAodHandoff =
+                    SystemUiHomePresentationOwner.currentAodPresentationClaimed()
+                if (!retainAodHandoff) {
+                    deactivateAodRuntime("home-source-active")
+                } else {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "scene.defer",
+                        component = "aodPresentation",
+                        state = "retained",
+                        "source" to "steady-source-view",
+                        "observedScene" to sourceScene.name,
+                        "reason" to "aod-to-home-continuous-handoff",
+                        "nativeGeometryWrites" to 0,
+                    )
+                }
+            }
+            // Clear the old Keyguard renderer only after Control Center source
+            // ownership has already moved to Home. Any readiness callback caused
+            // by teardown therefore refreshes HOME eligibility, never stale
+            // KEYGUARD eligibility.
+            deactivateKeyguardRuntime("home-source-active")
+        } else if (sourceScene != CombinedStatusSourceScene.UNKNOWN) {
             updateControlCenterSourceSceneEligibility(
                 sourceScene = sourceScene,
                 authority = "steady-source-view",
@@ -1919,95 +2717,334 @@ class CombinedStatusModule : XposedModule() {
         }
     }
 
+    private fun refreshStableKeyguardAodSceneFromAodState(
+        update: SystemUiKeyguardAodStateSource.AodUpdate,
+    ) {
+        if (update.isAodAnimate) return
+        val next =
+            when {
+                SystemUiKeyguardAodStateSource.isStableAod(
+                    toAod = update.toAod,
+                    isAodAnimate = update.isAodAnimate,
+                ) ->
+                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD
+
+                !update.toAod &&
+                    steadyStatusSourceScene == CombinedStatusSourceScene.KEYGUARD ->
+                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD
+
+                steadyStatusSourceScene == CombinedStatusSourceScene.HOME ->
+                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+
+                else -> null
+            }
+        if (next != null) {
+            updateStableKeyguardAodScene(next, "aod:" + update.source)
+        }
+    }
+
+    private fun refreshStableKeyguardAodSceneFromSceneState(
+        update: SystemUiSceneStateSource.SceneUpdate,
+        sourceScene: CombinedStatusSourceScene,
+    ) {
+        when (sourceScene) {
+            CombinedStatusSourceScene.HOME -> {
+                val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
+                if (
+                    aodState != null &&
+                    !aodState.isAodAnimate &&
+                    !aodState.toAod
+                ) {
+                    updateStableKeyguardAodScene(
+                        CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        "scene-home-stable",
+                    )
+                }
+            }
+
+            CombinedStatusSourceScene.KEYGUARD -> {
+                val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
+                if (
+                    aodState != null &&
+                    !aodState.isAodAnimate &&
+                    !SystemUiKeyguardAodStateSource.isStableAod(
+                        toAod = aodState.toAod,
+                        isAodAnimate = aodState.isAodAnimate,
+                    )
+                ) {
+                    updateStableKeyguardAodScene(
+                        CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                        "scene-keyguard",
+                    )
+                }
+            }
+
+            CombinedStatusSourceScene.UNKNOWN -> Unit
+        }
+    }
+
+    private fun updateStableKeyguardAodScene(
+        next: CombinedStatusScenePolicy.StableKeyguardAodScene,
+        source: String,
+    ) {
+        if (next == lastStableKeyguardAodScene) return
+        val previous = lastStableKeyguardAodScene
+        lastStableKeyguardAodScene = next
+        logDiagnostic(
+            level = Log.INFO,
+            event = "scene.stableFamily",
+            component = "keyguardAod",
+            state = next.name.lowercase(),
+            "source" to source,
+            "previous" to previous.name,
+            "nativeGeometryWrites" to 0,
+        )
+    }
+
+    private fun resolveCurrentKeyguardAodProjection(
+        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        fullAodVisualBoundary: Boolean = false,
+    ): CombinedStatusScenePolicy.KeyguardAodProjection? {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val aodState =
+            SystemUiKeyguardAodStateSource.currentState(resolved.battery)
+                ?: return null
+        return CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            featureEnabled = settings.enabled,
+            keyguardEnabled = settings.keyguardEnabled,
+            aodEnabled = settings.aodEnabled,
+            toAod = aodState.toAod,
+            isAodAnimate = aodState.isAodAnimate,
+            steadySourceScene = steadyStatusSourceScene,
+            lastStableFamilyScene = lastStableKeyguardAodScene,
+            homePresentationOwned =
+                SystemUiHomePresentationOwner
+                    .currentHomeRepresentedSlotOwnership()
+                    .isNotEmpty(),
+            keyguardStatusIconsAlpha =
+                SystemUiKeyguardHostResolver
+                    .statusIconsPresentationAlpha(resolved),
+            nativeToLockScreenTarget =
+                SystemUiKeyguardHostResolver
+                    .nativeToLockScreenTarget(resolved),
+            fullAodTargetSourceReady =
+                SystemUiPresentationRuntimeOwner.keyguardFullAodReady,
+            fullAodTargetPending = keyguardAodFullTargetPending,
+            fullAodVisualBoundary = fullAodVisualBoundary,
+            homeAodTransitionOrigin = homeAodTransitionOriginPending,
+            homeAodTargetPrearm = homeAodTargetPrearmPending,
+            homeNativeAodFallbackActive = homeNativeAodFallbackActive,
+        )
+    }
+
     private fun onKeyguardHostResolution(
         resolution: SystemUiKeyguardHostResolver.ResolveResult,
         source: String,
+        fullAodVisualBoundary: Boolean = false,
     ) {
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
         when (resolution) {
             is SystemUiKeyguardHostResolver.ResolveResult.Ready -> {
-                if (!settings.enabled || !settings.keyguardEnabled) {
+                if (!settings.enabled) {
+                    deactivateAodRuntime("feature-ineligible")
                     deactivateKeyguardRuntime("feature-ineligible")
                     return
                 }
                 if (!SystemUiPresentationRuntimeOwner.keyguardAodReady) {
+                    deactivateAodRuntime("aod-authority-unavailable")
                     deactivateKeyguardRuntime("aod-authority-unavailable")
-                    logDiagnostic(
-                        level = Log.WARN,
-                        event = "aod.authority",
-                        component = "keyguardAod",
-                        state = "unavailable",
-                        "source" to source,
-                        "fallback" to "native-keyguard",
-                    )
+                    if (settings.keyguardEnabled || settings.aodEnabled) {
+                        logDiagnostic(
+                            level = Log.WARN,
+                            event = "aod.authority",
+                            component = "keyguardAod",
+                            state = "unavailable",
+                            "source" to source,
+                            "fallback" to "native-keyguard-aod",
+                        )
+                    }
                     return
                 }
 
-                when (
-                    val result =
-                        CombinedStatusKeyguardRenderSession.attach(
-                            resolved = resolution.host,
-                            onEvent = { event ->
-                                if (detailedDiagnosticsEnabled) {
-                                    log(Log.INFO, TAG, event)
-                                }
-                            },
-                            isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                            onPresentationReadinessChanged = { ready ->
-                                onKeyguardPresentationReadinessChanged(
-                                    ready = ready,
-                                    source = source,
-                                )
-                            },
-                        )
-                ) {
-                    CombinedStatusKeyguardRenderSession.AttachResult.Ready -> {
-                        logDiagnostic(
-                            level = Log.INFO,
-                            event = "renderer.attach",
-                            component = "keyguardRenderer",
-                            state = "ready",
-                            "source" to source,
-                            "rawState" to resolution.host.rawState,
-                            "aodOwned" to false,
-                            "nativeGeometryWrites" to 0,
-                        )
+                val projection =
+                    resolveCurrentKeyguardAodProjection(
+                        resolved = resolution.host,
+                        fullAodVisualBoundary = fullAodVisualBoundary,
+                    )
+                        ?: run {
+                            deactivateAodRuntime("aod-state-unavailable")
+                            deactivateKeyguardRuntime("aod-state-unavailable")
+                            logDiagnostic(
+                                level = Log.WARN,
+                                event = "aod.state",
+                                component = "keyguardAod",
+                                state = "unavailable",
+                                "source" to source,
+                                "fallback" to "native-keyguard-aod",
+                            )
+                            return
+                        }
+                when (projection) {
+                    CombinedStatusScenePolicy.KeyguardAodProjection.AOD -> {
+                        if (
+                            attachAodRenderer(
+                                resolved = resolution.host,
+                                source = source,
+                            )
+                        ) {
+                            deactivateKeyguardRuntime("aod-family-handoff")
+                        }
                     }
 
-                    is CombinedStatusKeyguardRenderSession.AttachResult.Failure -> {
-                        deactivateKeyguardRuntime("renderer-attach-failed")
-                        logDiagnostic(
-                            level = Log.WARN,
-                            event = "renderer.attach",
-                            component = "keyguardRenderer",
-                            state = "unavailable",
-                            "source" to source,
-                            "reason" to result.reason,
-                            "fallback" to "native-keyguard",
-                        )
+                    CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD -> {
+                        if (
+                            attachKeyguardRenderer(
+                                resolved = resolution.host,
+                                source = source,
+                            )
+                        ) {
+                            deactivateAodRuntime("keyguard-family-handoff")
+                        }
+                    }
+
+                    CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE -> {
+                        deactivateAodRuntime("keyguard-aod-native")
+                        deactivateKeyguardRuntime("keyguard-aod-native")
                     }
                 }
             }
 
             is SystemUiKeyguardHostResolver.ResolveResult.Inactive -> {
+                deactivateAodRuntime(
+                    "scene-inactive:" + resolution.surface.name,
+                )
                 deactivateKeyguardRuntime(
                     "scene-inactive:" + resolution.surface.name,
                 )
             }
 
             is SystemUiKeyguardHostResolver.ResolveResult.Failure -> {
-                if (settings.enabled && settings.keyguardEnabled) {
+                if (settings.enabled && (settings.keyguardEnabled || settings.aodEnabled)) {
+                    deactivateAodRuntime("resolver-failed")
                     deactivateKeyguardRuntime("resolver-failed")
                     logDiagnostic(
                         level = Log.WARN,
                         event = "host.resolve",
-                        component = "keyguardRenderer",
+                        component = "keyguardAodRenderer",
                         state = "unavailable",
                         "source" to source,
                         "reason" to resolution.reason,
-                        "fallback" to "native-keyguard",
+                        "fallback" to "native-keyguard-aod",
                     )
                 }
+            }
+        }
+    }
+
+    private fun attachKeyguardRenderer(
+        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        source: String,
+    ): Boolean {
+        return when (
+            val result =
+                CombinedStatusKeyguardRenderSession.attach(
+                    resolved = resolved,
+                    sceneEligible = true,
+                    onEvent = { event ->
+                        if (detailedDiagnosticsEnabled) {
+                            log(Log.INFO, TAG, event)
+                        }
+                    },
+                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                    onPresentationReadinessChanged = { ready ->
+                        onKeyguardPresentationReadinessChanged(
+                            ready = ready,
+                            source = source,
+                        )
+                    },
+                )
+        ) {
+            CombinedStatusKeyguardRenderSession.AttachResult.Ready -> {
+                aodRendererAttached = false
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "renderer.attach",
+                    component = "keyguardRenderer",
+                    state = "ready",
+                    "source" to source,
+                    "rawState" to resolved.rawState,
+                    "aodOwned" to false,
+                    "nativeGeometryWrites" to 0,
+                )
+                true
+            }
+
+            is CombinedStatusKeyguardRenderSession.AttachResult.Failure -> {
+                deactivateKeyguardRuntime("renderer-attach-failed")
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "renderer.attach",
+                    component = "keyguardRenderer",
+                    state = "unavailable",
+                    "source" to source,
+                    "reason" to result.reason,
+                    "fallback" to "native-keyguard",
+                )
+                false
+            }
+        }
+    }
+
+    private fun attachAodRenderer(
+        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        source: String,
+    ): Boolean {
+        return when (
+            val result =
+                CombinedStatusKeyguardRenderSession.attachAod(
+                    resolved = resolved,
+                    sceneEligible = true,
+                    onEvent = { event ->
+                        if (detailedDiagnosticsEnabled) {
+                            log(Log.INFO, TAG, event)
+                        }
+                    },
+                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                    onPresentationReadinessChanged = { ready ->
+                        onAodPresentationReadinessChanged(
+                            ready = ready,
+                            source = source,
+                        )
+                    },
+                )
+        ) {
+            CombinedStatusKeyguardRenderSession.AttachResult.Ready -> {
+                aodRendererAttached = true
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "renderer.attach",
+                    component = "aodRenderer",
+                    state = "ready",
+                    "source" to source,
+                    "rawState" to resolved.rawState,
+                    "aodOwned" to true,
+                    "nativeGeometryWrites" to 0,
+                )
+                true
+            }
+
+            is CombinedStatusKeyguardRenderSession.AttachResult.Failure -> {
+                deactivateAodRuntime("renderer-attach-failed")
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "renderer.attach",
+                    component = "aodRenderer",
+                    state = "unavailable",
+                    "source" to source,
+                    "reason" to result.reason,
+                    "fallback" to "native-aod",
+                )
+                false
             }
         }
     }
@@ -2018,6 +3055,21 @@ class CombinedStatusModule : XposedModule() {
     ) {
         keyguardPresentationReadyObserved = ready
         if (!ready) {
+            if (incomingKeyguardPresentationReadyForControlCenter()) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.readiness",
+                    component = "keyguardPresentation",
+                    state = "retained",
+                    "source" to source,
+                    "reason" to "incoming-boundary-presentation-ready",
+                    "nativeFraction" to controlCenterExpansionFraction,
+                    "leaseActive" to keyguardControlCenterLeaseActive,
+                    "timingDelay" to false,
+                    "nativeGeometryWrites" to 0,
+                )
+                return
+            }
             if (shouldRetainKeyguardControlCenterLease()) {
                 logDiagnostic(
                     level = Log.INFO,
@@ -2048,11 +3100,22 @@ class CombinedStatusModule : XposedModule() {
             deactivateKeyguardRuntime("resolver-not-ready")
             return
         }
+        if (
+            resolveCurrentKeyguardAodProjection(
+                resolved = resolved.host,
+                fullAodVisualBoundary = keyguardBoundaryVisualHandoffActive,
+            ) != CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD
+        ) {
+            deactivateKeyguardRuntime("projection-ineligible")
+            return
+        }
 
+        val visualOnlyBoundary = keyguardBoundaryVisualHandoffActive
         when (
             val result =
                 SystemUiHomePresentationOwner.activateKeyguard(
                     resolved = resolved.host,
+                    deferNativeLayoutOwnershipUntilCommit = visualOnlyBoundary,
                     onEvent = { event ->
                         if (detailedDiagnosticsEnabled) {
                             log(Log.INFO, TAG, event)
@@ -2060,35 +3123,80 @@ class CombinedStatusModule : XposedModule() {
                     },
                     onFailNative = ::onKeyguardPresentationRuntimeFailure,
                     onReady = { active ->
-                        completeKeyguardPresentationCutover(
-                            result = active,
-                            source = "native-layout",
-                        )
+                        if (
+                            keyguardBoundaryVisualHandoffActive &&
+                            keyguardBoundaryLayoutPrecommitActive
+                        ) {
+                            onKeyguardBoundaryPrelayoutReady(
+                                result = active,
+                                source = "native-layout",
+                            )
+                        } else {
+                            completeKeyguardPresentationCutover(
+                                result = active,
+                                source = "native-layout",
+                            )
+                        }
                     },
                 )
         ) {
             is SystemUiHomePresentationOwner.StateResult.Active -> {
-                completeKeyguardPresentationCutover(
-                    result = result,
-                    source = source,
-                )
+                if (visualOnlyBoundary && keyguardBoundaryLayoutPrecommitActive) {
+                    onKeyguardBoundaryPrelayoutReady(
+                        result = result,
+                        source = source,
+                    )
+                } else {
+                    completeKeyguardPresentationCutover(
+                        result = result,
+                        source = source,
+                    )
+                }
             }
 
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
+                if (visualOnlyBoundary && keyguardBoundaryLayoutPrecommitActive) {
+                    keyguardRuntimeReady = false
+                    CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                    precommitKeyguardBoundaryLayout(source)
+                    return
+                }
                 keyguardRuntimeReady = false
-                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(
+                    !visualOnlyBoundary,
+                )
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",
                     component = "keyguardPresentation",
-                    state = "prepared",
+                    state =
+                        if (visualOnlyBoundary) {
+                            "visual-handoff"
+                        } else {
+                            "prepared"
+                        },
                     "source" to source,
                     "representedSlots" to result.representedSlots,
                     "reused" to result.reused,
-                    "next" to "native-status-icons-layout",
-                    "fallback" to "native-keyguard-until-compact-layout",
+                    "next" to
+                        if (visualOnlyBoundary) {
+                            "stable-keyguard-layout-commit"
+                        } else {
+                            "native-status-icons-layout"
+                        },
+                    "fallback" to
+                        if (visualOnlyBoundary) {
+                            "combined-visual-native-layout-deferred"
+                        } else {
+                            "native-keyguard-until-compact-layout"
+                        },
+                    "nativeGeometryWrites" to 0,
                 )
-                refreshControlCenterSourceSceneEligibility("keyguard-compact-layout-pending")
+                if (!visualOnlyBoundary) {
+                    refreshControlCenterSourceSceneEligibility(
+                        "keyguard-compact-layout-pending",
+                    )
+                }
             }
 
             is SystemUiHomePresentationOwner.StateResult.Failure -> {
@@ -2112,10 +3220,11 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun applyKeyguardPresentationReadinessLost(source: String) {
+        resetKeyguardBoundaryHandoffState()
         keyguardRuntimeReady = false
         CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
         SystemUiHomePresentationOwner.deactivateKeyguard("readiness-lost:" + source)
-        refreshControlCenterSourceSceneEligibility("keyguard-readiness-lost")
+        reconcileControlCenterForKeyguardLifecycle("keyguard-readiness-lost")
     }
 
     private fun completeKeyguardPresentationCutover(
@@ -2123,8 +3232,15 @@ class CombinedStatusModule : XposedModule() {
         source: String,
     ) {
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
-        if (!settings.enabled || !settings.keyguardEnabled) {
-            deactivateKeyguardRuntime("cutover-feature-ineligible")
+        val resolved = SystemUiKeyguardHostResolver.current()
+        if (
+            !settings.enabled ||
+            !settings.keyguardEnabled ||
+            resolved !is SystemUiKeyguardHostResolver.ResolveResult.Ready ||
+            resolveCurrentKeyguardAodProjection(resolved.host) !=
+                CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD
+        ) {
+            deactivateKeyguardRuntime("cutover-projection-ineligible")
             return
         }
         keyguardRuntimeReady = true
@@ -2145,6 +3261,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onKeyguardPresentationRuntimeFailure(reason: String) {
+        resetKeyguardBoundaryHandoffState()
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
@@ -2157,11 +3274,12 @@ class CombinedStatusModule : XposedModule() {
             "reason" to reason,
             "fallback" to "native-keyguard",
         )
-        refreshControlCenterSourceSceneEligibility("keyguard-fail-native")
+        reconcileControlCenterForKeyguardLifecycle("keyguard-fail-native")
     }
 
     private fun deactivateKeyguardRuntime(source: String) {
         val wasReady = keyguardRuntimeReady
+        resetKeyguardBoundaryHandoffState()
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
@@ -2169,8 +3287,172 @@ class CombinedStatusModule : XposedModule() {
         SystemUiHomePresentationOwner.deactivateKeyguard(source)
         CombinedStatusKeyguardRenderSession.detach()
         if (wasReady) {
-            refreshControlCenterSourceSceneEligibility("keyguard-deactivate:" + source)
+            reconcileControlCenterForKeyguardLifecycle("keyguard-deactivate:" + source)
         }
+    }
+
+    private fun onAodPresentationReadinessChanged(
+        ready: Boolean,
+        source: String,
+    ) {
+        if (!ready) {
+            applyAodPresentationReadinessLost(source)
+            return
+        }
+
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        if (!settings.enabled || !settings.aodEnabled) {
+            deactivateAodRuntime("feature-ineligible")
+            return
+        }
+
+        val resolved = SystemUiKeyguardHostResolver.current()
+        if (resolved !is SystemUiKeyguardHostResolver.ResolveResult.Ready) {
+            deactivateAodRuntime("resolver-not-ready")
+            return
+        }
+        val aodState =
+            SystemUiKeyguardAodStateSource.currentState(resolved.host.battery)
+                ?: run {
+                    deactivateAodRuntime("aod-state-unavailable")
+                    return
+                }
+        if (
+            resolveCurrentKeyguardAodProjection(resolved.host) !=
+            CombinedStatusScenePolicy.KeyguardAodProjection.AOD
+        ) {
+            deactivateAodRuntime("projection-ineligible")
+            return
+        }
+        val homeTransitionPrearm =
+            homeAodTargetPrearmPending ||
+                (
+                    aodState.isAodAnimate &&
+                        steadyStatusSourceScene == CombinedStatusSourceScene.HOME &&
+                        SystemUiHomePresentationOwner
+                            .currentHomeRepresentedSlotOwnership()
+                            .isNotEmpty()
+                )
+
+        when (
+            val result =
+                SystemUiHomePresentationOwner.activateAod(
+                    resolved = resolved.host,
+                    preMaskBeforeLayout = homeTransitionPrearm,
+                    onEvent = { event ->
+                        if (detailedDiagnosticsEnabled) {
+                            log(Log.INFO, TAG, event)
+                        }
+                    },
+                    onFailNative = ::onAodPresentationRuntimeFailure,
+                    onReady = { active ->
+                        completeAodPresentationCutover(
+                            result = active,
+                            source = "native-layout",
+                        )
+                    },
+                )
+        ) {
+            is SystemUiHomePresentationOwner.StateResult.Active -> {
+                completeAodPresentationCutover(
+                    result = result,
+                    source = source,
+                )
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Prepared -> {
+                CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.cutover",
+                    component = "aodPresentation",
+                    state = "prepared",
+                    "source" to source,
+                    "representedSlots" to result.representedSlots,
+                    "reused" to result.reused,
+                    "next" to "native-status-icons-layout",
+                    "preMasked" to homeTransitionPrearm,
+                    "fallback" to
+                        if (homeTransitionPrearm) {
+                            "outgoing-guiyuan-or-masked-native-until-compact-layout"
+                        } else {
+                            "native-aod-until-compact-layout"
+                        },
+                )
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Failure -> {
+                CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+                SystemUiHomePresentationOwner.deactivateAod("activation-failed")
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "presentation.cutover",
+                    component = "aodPresentation",
+                    state = "native",
+                    "source" to source,
+                    "reason" to result.reason,
+                    "fallback" to "native-aod",
+                )
+            }
+
+            is SystemUiHomePresentationOwner.StateResult.Inactive -> Unit
+        }
+    }
+
+    private fun applyAodPresentationReadinessLost(source: String) {
+        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        SystemUiHomePresentationOwner.deactivateAod("readiness-lost:" + source)
+    }
+
+    private fun completeAodPresentationCutover(
+        result: SystemUiHomePresentationOwner.StateResult.Active,
+        source: String,
+    ) {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val resolved = SystemUiKeyguardHostResolver.current()
+        if (
+            !settings.enabled ||
+            !settings.aodEnabled ||
+            resolved !is SystemUiKeyguardHostResolver.ResolveResult.Ready ||
+            resolveCurrentKeyguardAodProjection(resolved.host) !=
+                CombinedStatusScenePolicy.KeyguardAodProjection.AOD
+        ) {
+            deactivateAodRuntime("cutover-projection-ineligible")
+            return
+        }
+
+        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(false)
+        logDiagnostic(
+            level = Log.INFO,
+            event = "presentation.cutover",
+            component = "aodPresentation",
+            state = "combined",
+            "source" to source,
+            "representedSlots" to result.representedSlots,
+            "maskedViews" to result.maskedViews,
+            "motion" to "native-aod-host-inherited",
+            "aodOwned" to true,
+        )
+    }
+
+    private fun onAodPresentationRuntimeFailure(reason: String) {
+        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        logDiagnostic(
+            level = Log.WARN,
+            event = "presentation.failNative",
+            component = "aodPresentation",
+            state = "native",
+            "reason" to reason,
+            "fallback" to "native-aod",
+        )
+    }
+
+    private fun deactivateAodRuntime(source: String) {
+        homeAodTargetPrearmPending = false
+        aodRendererAttached = false
+        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        SystemUiHomePresentationOwner.deactivateAod(source)
+        CombinedStatusKeyguardRenderSession.detachAod()
     }
 
     private fun onKeyguardHostProbe(snapshot: SystemUiKeyguardHostProbe.Snapshot) {
@@ -2212,8 +3494,15 @@ class CombinedStatusModule : XposedModule() {
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
         controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
+        steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+        lastStableKeyguardAodScene =
+            CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+        keyguardAodFullTargetPending = false
+        keyguardAodFullTransitionActive = false
+        homeAodTargetPrearmPending = false
         controlCenterExpansionFraction = 0f
         keyguardRuntimeReady = false
+        aodRendererAttached = false
         keyguardPresentationReadyObserved = false
         keyguardControlCenterLeaseActive = false
         CombinedStatusControlCenterTransitionOwner.detach("hotReload-oldGeneration")
@@ -2223,6 +3512,7 @@ class CombinedStatusModule : XposedModule() {
         )
         CombinedStatusHomeRenderSession.detach()
         CombinedStatusKeyguardRenderSession.detach()
+        CombinedStatusKeyguardRenderSession.detachAod()
         val restoredPresentationViews =
             SystemUiHomePresentationOwner.releaseGenerationForHotReload(
                 requestLayout =
@@ -3087,6 +4377,7 @@ class CombinedStatusModule : XposedModule() {
                 state = "ready",
                 "combinedStatusEnabled" to settings.enabled,
                 "keyguardEnabled" to settings.keyguardEnabled,
+                "aodEnabled" to settings.aodEnabled,
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
@@ -3102,6 +4393,7 @@ class CombinedStatusModule : XposedModule() {
                 state = "unavailable",
                 "combinedStatusEnabled" to false,
                 "keyguardEnabled" to false,
+                "aodEnabled" to false,
                 "reason" to (error.message ?: error.javaClass.simpleName),
                 "fallback" to "native-systemui",
             )
@@ -3135,26 +4427,40 @@ class CombinedStatusModule : XposedModule() {
                 "reason" to "main-thread-dispatch-failed",
                 "combinedStatusEnabled" to settings.enabled,
                 "keyguardEnabled" to settings.keyguardEnabled,
+                "aodEnabled" to settings.aodEnabled,
                 "fallback" to "leave-current-native-ownership-unchanged",
             )
             return
         }
 
         SystemUiNativeCombinedParticipantOwner.onFeatureSettingsChanged(settings)
+        if (
+            !settings.enabled ||
+            !settings.keyguardEnabled ||
+            settings.aodEnabled
+        ) {
+            homeNativeAodFallbackCandidate = false
+            homeNativeAodFallbackActive = false
+        }
         CombinedStatusHomeRenderSession.onFeatureSettingsChanged(settings)
         CombinedStatusKeyguardRenderSession.onFeatureSettingsChanged(settings)
         CombinedStatusControlCenterRenderSession.onFeatureSettingsChanged(settings)
 
         if (!settings.enabled) {
             releaseFeaturePresentationOwnership("feature-disabled")
+            deactivateAodRuntime("feature-disabled")
             deactivateKeyguardRuntime("feature-disabled")
-        } else if (!settings.keyguardEnabled) {
-            deactivateKeyguardRuntime("keyguard-feature-disabled")
         } else {
+            if (!settings.keyguardEnabled) {
+                deactivateKeyguardRuntime("keyguard-feature-disabled")
+            }
+            if (!settings.aodEnabled) {
+                deactivateAodRuntime("aod-feature-disabled")
+            }
             SystemUiKeyguardHostResolver.current()?.let { resolution ->
                 onKeyguardHostResolution(
                     resolution = resolution,
-                    source = "feature-enabled",
+                    source = "feature-settings",
                 )
             }
         }
@@ -3167,6 +4473,7 @@ class CombinedStatusModule : XposedModule() {
             state = if (settings.enabled) "enabled" else "disabled",
             "combinedStatusEnabled" to settings.enabled,
             "keyguardEnabled" to settings.keyguardEnabled,
+            "aodEnabled" to settings.aodEnabled,
             "preferenceTransportMs" to
                 (
                     preferenceTransportLatencyNanos
@@ -3180,11 +4487,21 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun releaseFeaturePresentationOwnership(source: String) {
+        keyguardAodFullTargetPending = false
+        keyguardAodPendingTargetToLockScreen = null
+        keyguardAodFullTransitionActive = false
+        resetKeyguardBoundaryHandoffState()
+        homePresentationOwnedAtFullAodStart = false
+        homeNativeAodFallbackCandidate = false
+        homeNativeAodFallbackActive = false
+        homeAodTransitionOriginPending = false
+        homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardControlCenterLeaseActive = false
         CombinedStatusControlCenterRenderSession.setSceneEligible(false)
         CombinedStatusControlCenterTransitionOwner.setSceneEligible(false)
         SystemUiHomePresentationOwner.deactivateControlCenter(source)
+        SystemUiHomePresentationOwner.deactivateAod(source)
         SystemUiHomePresentationOwner.deactivateKeyguard(source)
         SystemUiHomePresentationOwner.deactivate(source)
         SystemUiNativeBatterySuppressionOwner.deactivate(source)

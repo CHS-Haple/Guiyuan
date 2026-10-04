@@ -10,14 +10,19 @@ class CombinedStatusVisualSettingsTest {
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiSizeScale, 0.0001f)
+        assertEquals(1f, settings.airplaneSizeScale, 0.0001f)
+        assertEquals(1f, settings.noSimSizeScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeSizeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
+        assertEquals(true, settings.controlCenterTintTransitionEnabled)
 
         val normalized =
             settings.copy(
                 combinedScale = 9f,
                 outerWeightScale = 9f,
                 wifiSizeScale = 9f,
+                airplaneSizeScale = 9f,
+                noSimSizeScale = 9f,
                 mobileTypeSizeScale = 9f,
                 mobileTypeWeight = 5000,
             ).normalized()
@@ -30,6 +35,8 @@ class CombinedStatusVisualSettingsTest {
         )
         assertEquals(OUTER_WEIGHT_SCALE_MAX, normalized.outerWeightScale, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiSizeScale, 0.0001f)
+        assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneSizeScale, 0.0001f)
+        assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimSizeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeSizeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
         assertEquals(400, MOBILE_TYPE_WEIGHT_MIN)
@@ -37,6 +44,10 @@ class CombinedStatusVisualSettingsTest {
         assertEquals(1400, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
         assertEquals(0.40f, WIFI_SIZE_SCALE_MIN, 0.0001f)
+        assertEquals(WIFI_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MIN, 0.0001f)
+        assertEquals(WIFI_SIZE_SCALE_MAX, AIRPLANE_SIZE_SCALE_MAX, 0.0001f)
+        assertEquals(WIFI_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MIN, 0.0001f)
+        assertEquals(WIFI_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_MAX, 0.0001f)
         assertEquals(0.40f, MOBILE_TYPE_SIZE_SCALE_MIN, 0.0001f)
     }
 
@@ -213,6 +224,7 @@ class CombinedStatusVisualSettingsTest {
                 BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
                 BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
+                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
             )
 
         keys.forEach { key ->
@@ -240,6 +252,38 @@ class CombinedStatusVisualSettingsTest {
     }
 
     @Test
+    fun networkStateSizeControlsUseIndependentLayoutProfileKeys() {
+        assertEquals(
+            "network_center.airplane_size_scale",
+            combinedStatusProfileKey(
+                CombinedStatusContentLayout.NETWORK_CENTER,
+                AIRPLANE_SIZE_SCALE_KEY,
+            ),
+        )
+        assertEquals(
+            "battery_center.airplane_size_scale",
+            combinedStatusProfileKey(
+                CombinedStatusContentLayout.BATTERY_CENTER,
+                AIRPLANE_SIZE_SCALE_KEY,
+            ),
+        )
+        assertEquals(
+            "network_center.no_sim_size_scale",
+            combinedStatusProfileKey(
+                CombinedStatusContentLayout.NETWORK_CENTER,
+                NO_SIM_SIZE_SCALE_KEY,
+            ),
+        )
+        assertEquals(
+            "battery_center.no_sim_size_scale",
+            combinedStatusProfileKey(
+                CombinedStatusContentLayout.BATTERY_CENTER,
+                NO_SIM_SIZE_SCALE_KEY,
+            ),
+        )
+    }
+
+    @Test
     fun profileKeysParticipateInRuntimeSync() {
         CombinedStatusContentLayout.entries.forEach { layout ->
             listOf(
@@ -256,6 +300,8 @@ class CombinedStatusVisualSettingsTest {
                 COMBINED_SCALE_KEY,
                 OUTER_WEIGHT_SCALE_KEY,
                 WIFI_SIZE_SCALE_KEY,
+                AIRPLANE_SIZE_SCALE_KEY,
+                NO_SIM_SIZE_SCALE_KEY,
                 MOBILE_TYPE_SIZE_SCALE_KEY,
                 MOBILE_TYPE_WEIGHT_KEY,
             ).forEach { baseKey ->

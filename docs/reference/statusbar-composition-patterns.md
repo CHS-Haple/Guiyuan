@@ -152,6 +152,20 @@ Multi-host awareness alone does **not** prove keyguard/AOD compatibility. Each t
 
 ---
 
+### Same-host scene retargeting and cross-host pre-mask
+
+**Candidate for Guiyuan; Build 625 device validation pending.**
+
+When two scene semantics resolve to the same verified native host and consume the same represented-slot suppression/layout contract, switching between two project Session objects can create an artificial native interval even though SystemUI never changed the underlying host. In that case, one host-scoped presentation owner may retarget scene semantics while retaining its exact owned ignored-slot delta, visual mask and reservation. The render layer should likewise retain one module child View and retarget scene-specific visibility/tint semantics rather than creating simultaneous writers.
+
+This does not generalize across distinct native hosts. For a cross-host handoff such as Home -> AOD, target visual suppression may be prepared before compact layout only when it is reversible and explicitly scoped to the handoff; layout readiness and renderer ownership must remain false until the native target layout is actually valid. Visual masking is not layout ownership.
+
+Reusable boundary:
+- same verified host + same owned presentation contract -> retarget one owner;
+- distinct host -> acquire a bounded target claim without borrowing source layout readiness;
+- restore native only when the owning host family is exited, invalidated or fails;
+- never keep two project overlays or two mutable presentation writers alive merely to hide a handoff gap.
+
 ## 5. Slot size, glyph size, per-glyph scale, and optical adjustment are independent
 
 **Observed.**
@@ -327,9 +341,9 @@ Keyguard also has independent lifecycle and tint authority:
 - `updateIconsAndTextColors()` derives Keyguard light/dark colors and applies them to Keyguard icon/battery presentation while forwarding the same source tint to QS_FAKE;
 - child `animateIconContainer()` targets `mStatusIconContainer`, not the whole system-icons carrier.
 
-AOD is separate. `KeyguardStatusBarViewControllerInject.animateFullAod()` independently changes Battery alpha/AOD mode and status-icon alpha/visibility/animation flags. A future Keyguard Combined adapter must therefore remain inactive for AOD until a distinct AOD contract is verified.
+AOD is separate. `KeyguardStatusBarViewControllerInject.animateFullAod()` independently changes Battery alpha/AOD mode and status-icon alpha/visibility/animation flags. Therefore Keyguard ownership must remain inactive whenever the native AOD authority reports an AOD transition or stable AOD.
 
-**Project implication:** the strongest steady Keyguard carrier candidate is the native `mSystemIconsContainer` host with a Keyguard-specific session, sharing only renderer/domain semantics with Home. Build 442 verifies only that steady carrier/source identity using the existing scene callback; lifecycle/tint/AOD runtime observation remains deferred until this first gate is positive.
+**Build 620 candidate implication:** reuse the verified Keyguard-family host structure, but not the mutable Keyguard session. Stable AOD (`mToAod=true && mIsAodAnimate=false`) gets a separate bounded render/presentation session; AOD enter/exit remains native HyperOS, and AOD never becomes a Control Center source. This candidate still requires focused device verification before becoming accepted runtime evidence.
 
 ---
 
@@ -943,3 +957,16 @@ Composite, single-glyph and unknown topologies remain on the conservative simila
 
 Latent 0→1 / 1→N reveal remains spatial. The existing end reservation opens a real interval from the Battery end; the target visual envelope is revealed continuously as that reservation covers it, while root-space target proximity remains a second safety bound. Do not replace this with a duration, expansion-fraction threshold or delayed runnable.
 
+
+
+### QS_FAKE Battery-island peer-spacing refinements
+
+Build 679 adds one narrow Battery-island exception to the **native peer-spacing adapter**, not to logical occupancy. Device evidence shows that when HyperOS keeps the Battery-island QS_FAKE row visibly authoritative, committing future total semantic width to that row creates an empty gap before Guiyuan has visually occupied the space. While native Battery island is active, the native peer reservation may therefore use the current union of the same frozen spans at the same raw HyperOS progress, bounded by the logical semantic reservation. The logical reservation itself still follows the frozen-final-total-width contract above, and latent reveal still consumes that logical reservation.
+
+This does not restore per-span occupancy as the general transition policy. It is a scene-specific projection from existing semantic spans to the one native `statusIcons.paddingEnd` writer so native peers remain adjacent to currently occupied Guiyuan space while HyperOS retains island/root/appearance authority.
+
+
+Build 680 corrects the remaining coordinate-frame error in that adapter. The frozen target spans are expressed relative to the final QS Battery end, while `statusIcons.paddingEnd` is consumed relative to the currently translated QS_FAKE end. Under Battery-island motion those ends are not the same frame. The adapter must therefore project the final target end into the live fake-row end frame before interpolating the span union. This uses the observed native carrier positions; it does **not** read, duplicate or cancel HyperOS' `batteryWidthDiff` formula, and it does not create a new translation writer. Logical semantic reservation remains unchanged.
+
+
+Build 682 narrows the adapter one step further: a projected span union is not itself a valid `paddingEnd` value. Once target spans are expressed in the live QS_FAKE end frame, logical `x=0` is the peer/end boundary. Only occupancy at `x<=0` can displace native peers; any projected extent at `x>0` is on the end side and remains drawable occupancy only. Battery-island peer reservation therefore uses the depth from `x=0` to the left-most projected span, with the runtime compact width as floor and semantic reservation as cap. This is a coordinate-semantic rule, not a device compensation; no Battery width or island offset is hard-coded.

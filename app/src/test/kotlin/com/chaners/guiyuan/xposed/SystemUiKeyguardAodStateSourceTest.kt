@@ -28,6 +28,14 @@ class SystemUiKeyguardAodStateSourceTest {
     }
 
     @Test
+    fun stableAodRequiresTargetAodWithNativeAnimationFinished() {
+        assertTrue(SystemUiKeyguardAodStateSource.isStableAod(true, false))
+        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(true, true))
+        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(false, false))
+        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(false, true))
+    }
+
+    @Test
     fun anyNativeAodSignalBlocksKeyguardProjection() {
         assertFalse(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(false, false, false))
         assertTrue(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(true, false, false))

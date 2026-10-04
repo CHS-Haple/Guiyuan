@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 internal data class CombinedStatusFeatureSettings(
     val enabled: Boolean = true,
     val keyguardEnabled: Boolean = false,
+    val aodEnabled: Boolean = false,
 )
 
 internal class CombinedStatusFeatureSettingsRepository(context: Context) {
@@ -52,6 +53,11 @@ internal class CombinedStatusFeatureSettingsRepository(context: Context) {
                     COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
                     false,
                 ),
+            aodEnabled =
+                preferences.getBoolean(
+                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    false,
+                ),
         )
 
     fun setEnabled(enabled: Boolean) {
@@ -60,6 +66,10 @@ internal class CombinedStatusFeatureSettingsRepository(context: Context) {
 
     fun setKeyguardEnabled(enabled: Boolean) {
         writeFeatureBoolean(COMBINED_STATUS_KEYGUARD_ENABLED_KEY, enabled)
+    }
+
+    fun setAodEnabled(enabled: Boolean) {
+        writeFeatureBoolean(COMBINED_STATUS_AOD_ENABLED_KEY, enabled)
     }
 
     fun resetToDefaults() {
@@ -93,6 +103,7 @@ internal class CombinedStatusFeatureSettingsRepository(context: Context) {
 internal const val COMBINED_STATUS_FEATURE_PREFS_NAME = "combined_status_feature"
 internal const val COMBINED_STATUS_ENABLED_KEY = "combined_status_enabled"
 internal const val COMBINED_STATUS_KEYGUARD_ENABLED_KEY = "combined_status_keyguard_enabled"
+internal const val COMBINED_STATUS_AOD_ENABLED_KEY = "combined_status_aod_enabled"
 internal const val COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY =
     "combined_status_feature_change_elapsed_realtime_nanos"
 
@@ -100,4 +111,5 @@ internal const val COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY =
 internal fun isCombinedStatusFeaturePreferenceKey(key: String?): Boolean =
     key == null ||
         key == COMBINED_STATUS_ENABLED_KEY ||
-        key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY
+        key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
+        key == COMBINED_STATUS_AOD_ENABLED_KEY

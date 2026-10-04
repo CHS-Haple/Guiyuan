@@ -77,6 +77,12 @@ internal object CombinedStatusBatteryColorPolicy {
         )
     }
 
+    fun isTinted(
+        state: CombinedStatusBatterySemanticState,
+        settings: CombinedStatusVisualSettings,
+    ): Boolean =
+        preferencesFor(settings).sourceFor(state) is CombinedStatusBatteryColorSource.Custom
+
     fun resolve(
         state: CombinedStatusBatterySemanticState,
         systemSemanticColor: Int?,

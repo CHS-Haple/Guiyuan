@@ -14,28 +14,80 @@ internal object CombinedStatusKeyguardRenderSession {
     @Synchronized
     fun attach(
         resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+    ): AttachResult =
+        attachFamily(
+            resolved = resolved,
+            scene = Scene.KEYGUARD,
+            sceneEligible = sceneEligible,
+            onEvent = onEvent,
+            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+            onPresentationReadinessChanged = onPresentationReadinessChanged,
+        )
+
+    @Synchronized
+    fun attachAod(
+        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        sceneEligible: Boolean,
+        onEvent: (String) -> Unit,
+        isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+    ): AttachResult =
+        attachFamily(
+            resolved = resolved,
+            scene = Scene.AOD,
+            sceneEligible = sceneEligible,
+            onEvent = onEvent,
+            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+            onPresentationReadinessChanged = onPresentationReadinessChanged,
+        )
+
+    private fun attachFamily(
+        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        scene: Scene,
+        sceneEligible: Boolean,
+        onEvent: (String) -> Unit,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
+        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        if (!sceneEligible) {
+            return AttachResult.Failure(
+                if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
+            )
+        }
+        val featureEnabled =
+            resolveFamilyFeatureEnabled(
+                featureEnabled = settings.enabled,
+                keyguardEnabled = settings.keyguardEnabled,
+                aodEnabled = settings.aodEnabled,
+                sceneIsAod = scene == Scene.AOD,
+            )
+
         val existing = current
         if (existing?.matches(resolved) == true) {
+            existing.retarget(
+                scene = scene,
+                featureEnabled = featureEnabled,
+                sceneEligible = sceneEligible,
+                onPresentationReadinessChanged = onPresentationReadinessChanged,
+            )
             existing.update(CombinedStatusStateStore.snapshot())
             return AttachResult.Ready
         }
 
         existing?.stop()
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
-        val initialAod =
-            SystemUiKeyguardAodStateSource.currentState(resolved.battery)
-                ?: return AttachResult.Failure("aod-state-unavailable")
         val session =
             Session(
                 resolved = resolved,
                 onEvent = onEvent,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                initialFeatureEnabled = settings.enabled && settings.keyguardEnabled,
-                initialAodBlocked = initialAod.blocksProjection,
+                scene = scene,
+                initialFeatureEnabled = featureEnabled,
+                initialSceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
         current = session
@@ -61,7 +113,7 @@ internal object CombinedStatusKeyguardRenderSession {
 
     @Synchronized
     fun onFeatureSettingsChanged(settings: CombinedStatusFeatureSettings) {
-        current?.setFeatureEnabled(settings.enabled && settings.keyguardEnabled)
+        current?.setFeatureSettings(settings)
     }
 
     @Synchronized
@@ -76,7 +128,16 @@ internal object CombinedStatusKeyguardRenderSession {
 
     @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
-        current?.setNativeHandoffActive(active)
+        current
+            ?.takeIf { session -> session.isScene(Scene.KEYGUARD) }
+            ?.setNativeHandoffActive(active)
+    }
+
+    @Synchronized
+    fun setAodNativeHandoffActive(active: Boolean) {
+        current
+            ?.takeIf { session -> session.isScene(Scene.AOD) }
+            ?.setNativeHandoffActive(active)
     }
 
     @Synchronized
@@ -85,16 +146,108 @@ internal object CombinedStatusKeyguardRenderSession {
 
     @Synchronized
     fun detach() {
-        current?.stop()
+        val session = current ?: return
+        if (!session.isScene(Scene.KEYGUARD)) return
         current = null
+        session.stop()
     }
+
+    @Synchronized
+    fun detachAod() {
+        val session = current ?: return
+        if (!session.isScene(Scene.AOD)) return
+        current = null
+        session.stop()
+    }
+
+    internal fun resolveFamilyFeatureEnabled(
+        featureEnabled: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        sceneIsAod: Boolean,
+    ): Boolean =
+        featureEnabled && if (sceneIsAod) aodEnabled else keyguardEnabled
+
+    internal fun resolveFamilyChildAlpha(): Float = 1f
+
+    internal fun shouldForceReadinessDispatch(sceneChanged: Boolean): Boolean =
+        sceneChanged
+
+    private fun readViewField(
+        owner: Any,
+        name: String,
+    ): View? {
+        var type: Class<*>? = owner.javaClass
+        while (type != null) {
+            val current = type
+            val field =
+                runCatching {
+                    current.getDeclaredField(name).apply { isAccessible = true }
+                }.getOrNull()
+            if (field != null) {
+                return runCatching { field.get(owner) as? View }.getOrNull()
+            }
+            type = current.superclass
+        }
+        return null
+    }
+
+    private fun visualChainSummary(view: View?): String {
+        if (view == null) return "none"
+        var current: View? = view
+        var effectiveAlpha = 1f
+        var allVisible = true
+        val chain = ArrayList<String>(6)
+        var depth = 0
+        while (current != null && depth < 8) {
+            effectiveAlpha *= current.alpha
+            allVisible = allVisible && current.visibility == View.VISIBLE
+            chain +=
+                current.javaClass.simpleName +
+                    "(v=" + current.visibility +
+                    ",a=" + current.alpha +
+                    ",shown=" + current.isShown + ")"
+            current = current.parent as? View
+            depth += 1
+        }
+        return "effectiveAlpha=" + effectiveAlpha +
+            ",allVisible=" + allVisible +
+            ",leafShown=" + view.isShown +
+            ",chain=" + chain.joinToString(">")
+    }
+
+    private fun resolveSceneOverlayVisible(
+        featureEnabled: Boolean,
+        nativeHandoffActive: Boolean,
+        sceneEligible: Boolean,
+    ): Boolean =
+        featureEnabled && !nativeHandoffActive && sceneEligible
 
     internal fun resolveOverlayVisible(
         featureEnabled: Boolean,
         nativeHandoffActive: Boolean,
         aodBlocked: Boolean,
     ): Boolean =
-        featureEnabled && !nativeHandoffActive && !aodBlocked
+        resolveSceneOverlayVisible(
+            featureEnabled = featureEnabled,
+            nativeHandoffActive = nativeHandoffActive,
+            sceneEligible = !aodBlocked,
+        )
+
+    private fun resolveSceneOwnerReady(
+        featureEnabled: Boolean,
+        modelReady: Boolean,
+        tintReady: Boolean,
+        layoutReady: Boolean,
+        hostAttached: Boolean,
+        sceneEligible: Boolean,
+    ): Boolean =
+        featureEnabled &&
+            modelReady &&
+            tintReady &&
+            layoutReady &&
+            hostAttached &&
+            sceneEligible
 
     internal fun resolveOwnerReady(
         featureEnabled: Boolean,
@@ -104,20 +257,31 @@ internal object CombinedStatusKeyguardRenderSession {
         hostAttached: Boolean,
         aodBlocked: Boolean,
     ): Boolean =
-        featureEnabled &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached &&
-            !aodBlocked
+        resolveSceneOwnerReady(
+            featureEnabled = featureEnabled,
+            modelReady = modelReady,
+            tintReady = tintReady,
+            layoutReady = layoutReady,
+            hostAttached = hostAttached,
+            sceneEligible = !aodBlocked,
+        )
+
+    private enum class Scene(
+        val logPrefix: String,
+        val aodOwned: Boolean,
+    ) {
+        KEYGUARD("keyguardRender", false),
+        AOD("aodRender", true),
+    }
 
     private class Session(
         resolved: SystemUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
+        private var scene: Scene,
         initialFeatureEnabled: Boolean,
-        initialAodBlocked: Boolean,
-        private val onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        initialSceneEligible: Boolean,
+        private var onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(resolved.host)
         private val systemIcons = WeakReference(resolved.systemIcons)
@@ -130,7 +294,7 @@ internal object CombinedStatusKeyguardRenderSession {
 
         private var featureEnabled = initialFeatureEnabled
         private var nativeHandoffActive = true
-        private var aodBlocked = initialAodBlocked
+        private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -155,7 +319,32 @@ internal object CombinedStatusKeyguardRenderSession {
                 batteryView.get() === resolved.battery &&
                 batteryCarrier.get() === resolved.batteryCarrier
 
+        fun isScene(candidate: Scene): Boolean = scene == candidate
+
+        fun retarget(
+            scene: Scene,
+            featureEnabled: Boolean,
+            sceneEligible: Boolean,
+            onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        ) {
+            val changedScene = this.scene != scene
+            this.scene = scene
+            this.featureEnabled = featureEnabled
+            this.sceneEligible = sceneEligible
+            this.onPresentationReadinessChanged = onPresentationReadinessChanged
+            if (changedScene) {
+                readyLogged = false
+                rejectedTintLogged = false
+            }
+            applyResolvedVisibility()
+            dispatchPresentationReadiness(
+                source = "scene-transfer",
+                force = shouldForceReadinessDispatch(changedScene),
+            )
+        }
+
         fun transitionSourceWitness(): CombinedStatusTransitionSourceWitness? {
+            if (scene != Scene.KEYGUARD) return null
             val motion = statusIcons.get() ?: return null
             val render = renderView
             if (
@@ -226,16 +415,27 @@ internal object CombinedStatusKeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureEnabled(enabled: Boolean) {
+        fun setFeatureSettings(settings: CombinedStatusFeatureSettings) {
+            val enabled =
+                resolveFamilyFeatureEnabled(
+                    featureEnabled = settings.enabled,
+                    keyguardEnabled = settings.keyguardEnabled,
+                    aodEnabled = settings.aodEnabled,
+                    sceneIsAod = scene == Scene.AOD,
+                )
+            setFeatureState(enabled)
+        }
+
+        private fun setFeatureState(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
-                host.get()?.post { setFeatureEnabled(enabled) }
+                host.get()?.post { setFeatureState(enabled) }
                 return
             }
             if (featureEnabled == enabled) return
             featureEnabled = enabled
             val visible = applyResolvedVisibility()
             emitEvent {
-                "keyguardRenderFeature enabled=" + featureEnabled +
+                scene.logPrefix + "Feature enabled=" + featureEnabled +
                     " overlayVisible=" + visible +
                     " nativeHandoffActive=" + nativeHandoffActive +
                     " nativeGeometryWrites=0"
@@ -248,7 +448,7 @@ internal object CombinedStatusKeyguardRenderSession {
             nativeHandoffActive = active
             val visible = applyResolvedVisibility()
             emitEvent {
-                "keyguardRenderHandoff nativeActive=" + nativeHandoffActive +
+                scene.logPrefix + "Handoff nativeActive=" + nativeHandoffActive +
                     " overlayVisible=" + visible +
                     " nativeGeometryWrites=0"
             }
@@ -262,20 +462,29 @@ internal object CombinedStatusKeyguardRenderSession {
         fun updateAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
-            if (aodBlocked == update.blocksProjection) return
-
-            aodBlocked = update.blocksProjection
             val visible = applyResolvedVisibility()
             emitEvent {
-                "keyguardRenderAod blocked=" + aodBlocked +
-                    " source=" + update.source +
+                scene.logPrefix + "Aod source=" + update.source +
                     " toAod=" + update.toAod +
                     " isAodAnimate=" + update.isAodAnimate +
                     " animToAod=" + (update.animToAod ?: "unavailable") +
+                    " sceneEligible=" + sceneEligible +
+                    " eligibilityAuthority=scene-policy" +
                     " overlayVisible=" + visible +
+                    " childAlpha=" + renderView.alpha +
+                    " batteryAlphaReadOnly=" + battery.alpha +
+                    " statusIconsAlphaReadOnly=" + (statusIcons.get()?.alpha ?: -1f) +
+                    " systemIconsAlphaReadOnly=" + (systemIcons.get()?.alpha ?: -1f) +
+                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
+                    " contentVisual={" +
+                    visualChainSummary(
+                        host.get()?.let { owner ->
+                            readViewField(owner, "mKeyguardStatusBarContent")
+                        },
+                    ) + "}" +
+                    " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}" +
                     " nativeGeometryWrites=0"
             }
-            dispatchPresentationReadiness("aod:" + update.source)
         }
 
         fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
@@ -286,7 +495,7 @@ internal object CombinedStatusKeyguardRenderSession {
                     batteryState = update.state,
                     liveStatusIconTint = null,
                 ),
-                "keyguard-battery",
+                if (scene == Scene.AOD) "aod-battery" else "keyguard-battery",
             )
         }
 
@@ -301,7 +510,7 @@ internal object CombinedStatusKeyguardRenderSession {
             if (update.rejectedInvalidCandidate && !rejectedTintLogged) {
                 rejectedTintLogged = true
                 emitEvent {
-                    "keyguardRenderTint deferred source=" + source +
+                    scene.logPrefix + "Tint deferred source=" + source +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -309,7 +518,7 @@ internal object CombinedStatusKeyguardRenderSession {
                 val resolved = update.resolved
                 if (resolved != null) {
                     emitEvent {
-                        "keyguardRenderTint source=" + source +
+                        scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
                             resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
                             " authority=keyguard-battery eventDriven=true stable=true"
@@ -331,7 +540,7 @@ internal object CombinedStatusKeyguardRenderSession {
                 if (!readyLogged) {
                     readyLogged = true
                     emitEvent {
-                        "keyguardRender ready battery=" + model.batteryPercent +
+                        scene.logPrefix + " ready battery=" + model.batteryPercent +
                             " charging=" + model.charging +
                             " center=" + model.centerIndicator.javaClass.simpleName +
                             " nativeGeometryWrites=0"
@@ -373,7 +582,7 @@ internal object CombinedStatusKeyguardRenderSession {
             if (!layoutLogged) {
                 layoutLogged = true
                 emitEvent {
-                    "keyguardRender attached carrier=MiuiStatusBatteryContainer.child " +
+                    scene.logPrefix + " attached carrier=MiuiStatusBatteryContainer.child " +
                         "carrierAuthority=battery_icon_container " +
                         "motion=keyguard-system-icons-inherited " +
                         "bounds=" + anchorRect.left + "," + anchorRect.top + "-" +
@@ -465,11 +674,19 @@ internal object CombinedStatusKeyguardRenderSession {
 
         private fun applyResolvedVisibility(): Boolean {
             val visible =
-                resolveOverlayVisible(
+                resolveSceneOverlayVisible(
                     featureEnabled = featureEnabled,
                     nativeHandoffActive = nativeHandoffActive,
-                    aodBlocked = aodBlocked,
+                    sceneEligible = sceneEligible,
                 )
+            if (visible) {
+                // The module child lives directly under the verified system-icons
+                // family carrier. Do not copy Battery's independent AOD alpha
+                // animation onto the whole combined visual: HyperOS animates
+                // Battery and status icons as separate children, and Battery may
+                // legitimately reach alpha=0 during a family scene transfer.
+                renderView.alpha = resolveFamilyChildAlpha()
+            }
             renderView.visibility = if (visible) View.VISIBLE else View.GONE
             if (visible) {
                 renderView.invalidate()
@@ -479,27 +696,31 @@ internal object CombinedStatusKeyguardRenderSession {
             return visible
         }
 
-        private fun dispatchPresentationReadiness(source: String) {
+        private fun dispatchPresentationReadiness(
+            source: String,
+            force: Boolean = false,
+        ) {
             val ready =
-                resolveOwnerReady(
+                resolveSceneOwnerReady(
                     featureEnabled = featureEnabled,
                     modelReady = modelReady,
                     tintReady = tintReady,
                     layoutReady = layoutReady,
                     hostAttached = systemIcons.get()?.isAttachedToWindow == true,
-                    aodBlocked = aodBlocked,
+                    sceneEligible = sceneEligible,
                 )
-            if (ready == lastPresentationReady) return
+            if (!force && ready == lastPresentationReady) return
             lastPresentationReady = ready
             emitEvent {
-                "keyguardRenderReadiness source=" + source +
+                scene.logPrefix + "Readiness source=" + source +
                     " ownerReady=" + ready +
                     " modelReady=" + modelReady +
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
                     " featureEnabled=" + featureEnabled +
-                    " aodBlocked=" + aodBlocked +
-                    " aodOwned=false nativeGeometryWrites=0"
+                    " sceneEligible=" + sceneEligible +
+                    " aodOwned=" + scene.aodOwned +
+                    " nativeGeometryWrites=0"
             }
             onPresentationReadinessChanged?.invoke(ready)
         }

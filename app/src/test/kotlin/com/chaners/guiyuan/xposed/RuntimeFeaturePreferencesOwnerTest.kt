@@ -10,6 +10,8 @@ class RuntimeFeaturePreferencesOwnerTest {
     fun clearNotificationParticipatesInFeatureRuntimeSync() {
         assertEquals(true, isCombinedStatusFeaturePreferenceKey(null))
         assertEquals(true, isCombinedStatusFeaturePreferenceKey("combined_status_enabled"))
+        assertEquals(true, isCombinedStatusFeaturePreferenceKey("combined_status_keyguard_enabled"))
+        assertEquals(true, isCombinedStatusFeaturePreferenceKey("combined_status_aod_enabled"))
         assertEquals(false, isCombinedStatusFeaturePreferenceKey("unrelated"))
     }
 
@@ -18,6 +20,37 @@ class RuntimeFeaturePreferencesOwnerTest {
         val settings = com.chaners.guiyuan.settings.CombinedStatusFeatureSettings()
         assertEquals(true, settings.enabled)
         assertEquals(false, settings.keyguardEnabled)
+        assertEquals(false, settings.aodEnabled)
+    }
+
+    @Test
+    fun keyguardAndAodPreferencesRemainIndependentOfEachOtherAndMasterGate() {
+        val keyguardOnly =
+            com.chaners.guiyuan.settings.CombinedStatusFeatureSettings(
+                enabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+            )
+        val aodOnly =
+            com.chaners.guiyuan.settings.CombinedStatusFeatureSettings(
+                enabled = true,
+                keyguardEnabled = false,
+                aodEnabled = true,
+            )
+        val masterDisabledWithChildrenPreserved =
+            com.chaners.guiyuan.settings.CombinedStatusFeatureSettings(
+                enabled = false,
+                keyguardEnabled = true,
+                aodEnabled = true,
+            )
+
+        assertEquals(true, keyguardOnly.keyguardEnabled)
+        assertEquals(false, keyguardOnly.aodEnabled)
+        assertEquals(false, aodOnly.keyguardEnabled)
+        assertEquals(true, aodOnly.aodEnabled)
+        assertEquals(false, masterDisabledWithChildrenPreserved.enabled)
+        assertEquals(true, masterDisabledWithChildrenPreserved.keyguardEnabled)
+        assertEquals(true, masterDisabledWithChildrenPreserved.aodEnabled)
     }
 
     @Test

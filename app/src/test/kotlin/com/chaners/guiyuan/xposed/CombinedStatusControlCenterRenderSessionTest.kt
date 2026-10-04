@@ -158,4 +158,68 @@ class CombinedStatusControlCenterRenderSessionTest {
         )
     }
 
+    @Test
+    fun carrierCapacityLeaseBeginsOnlyWhenAttachedSessionActuallyBecomesVisible() {
+        assertTrue(
+            CombinedStatusControlCenterRenderSession
+                .shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = true,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = true,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = false,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldBeginCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = false,
+                ),
+        )
+    }
+
+    @Test
+    fun carrierCapacityLeaseEndsOnlyWhenVisibleCycleActuallyCloses() {
+        assertTrue(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = false,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = false,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = false,
+                    nextRequestedVisible = true,
+                ),
+        )
+        assertFalse(
+            CombinedStatusControlCenterRenderSession
+                .shouldEndCapacityLeaseOnVisibilityChange(
+                    previousRequestedVisible = true,
+                    nextRequestedVisible = true,
+                ),
+        )
+    }
+
 }

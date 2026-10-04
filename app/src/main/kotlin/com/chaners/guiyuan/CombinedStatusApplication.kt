@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
@@ -72,7 +73,8 @@ class CombinedStatusApplication :
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (
                 key == COMBINED_STATUS_ENABLED_KEY ||
-                key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY
+                key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
+                key == COMBINED_STATUS_AOD_ENABLED_KEY
             ) {
                 xposedService?.let(::syncRuntimeConfig)
             }
@@ -196,6 +198,11 @@ class CombinedStatusApplication :
                 COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
                 false,
             )
+        val aodEnabled =
+            featurePreferences.getBoolean(
+                COMBINED_STATUS_AOD_ENABLED_KEY,
+                false,
+            )
         val featureChangeElapsedRealtimeNanos =
             featurePreferences.getLong(
                 COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
@@ -216,6 +223,10 @@ class CombinedStatusApplication :
                 .putBoolean(
                     COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
                     keyguardEnabled,
+                )
+                .putBoolean(
+                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    aodEnabled,
                 )
                 .putLong(
                     COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,

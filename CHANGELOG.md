@@ -2,14 +2,17 @@
 
 All notable changes to Guiyuan are documented in this file.
 
-The project follows a Keep a Changelog-style structure. During pre-release development, `[Unreleased]` describes the **current net state intended to progress toward the first formal 1.0.0 release**. Current `0.0.x` display versions are development lines, not formal-release milestones. The final release-preparation commit freezes applicable changes into a dated version section immediately before publication. Intermediate experiments, superseded implementations, CI-by-CI adjustments, and diagnostic investigation history belong in Git history or dedicated development documentation.
+The project follows a Keep a Changelog-style structure. `[Unreleased]` describes net changes after the latest promoted checkpoint. Pre-1.0 versions may be promoted as validated development checkpoints while **1.0.0 remains the first planned formal release**. A releasable version must have a dated version section. Intermediate experiments, superseded implementations, CI-by-CI adjustments, and diagnostic investigation history belong in Git history or dedicated development documentation.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-04
+
 ### Added
+- Settings now includes an “Other” card with a Project address row linking to the Guiyuan repository and showing the project’s GPL-3.0-only license identity.
 - Optional battery-top percentage readout can reserve a measured opening in the ring, reuse the HyperOS-selected native charging glyph, and expose MIUIX controls for number size/weight/vertical position and charging-glyph size; the feature defaults off and remains inside the existing Battery transition ownership.
 - Optional opt-in lock-screen Guiyuan uses a separate Keyguard host/render/presentation adapter, while Home and Keyguard retain independent mutable View ownership. Keyguard-originated QS_FAKE is enabled only after the steady Keyguard presentation is ready.
-- Keyguard projection is guarded by native HyperOS AOD lifecycle authority from `MiuiBatteryMeterView`; AOD transition or steady AOD restores native status presentation, and unresolved AOD contracts fail native without affecting the accepted Home/QS_FAKE path.
+- Keyguard projection is guarded by native HyperOS AOD lifecycle authority from `MiuiBatteryMeterView`. An independent default-off AOD preference projects Guiyuan in AOD. Keyguard and AOD now share one host-scoped presentation owner and one render View on the verified Keyguard-family host, retargeting scene semantics without a restore/reacquire native interval; Home-to-AOD may use bounded reversible target pre-mask while compact readiness still waits for native layout. HyperOS continues to own AOD animation timing, native alpha/visibility/translation, and unresolved host/topology contracts fail native without affecting the accepted Home/QS_FAKE path.
 
 - Battery-ring color now follows HyperOS battery semantic states: charging, power-save, performance, and low-battery use the colors already loaded by SystemUI, while normal state keeps the native status-icon tint. The color policy is structured so every state can later choose System default, status-icon tint, or a custom color without changing the native state-source path.
 
@@ -32,6 +35,8 @@ The project follows a Keep a Changelog-style structure. During pre-release devel
 
 ### Changed
 
+- Companion-app semantic row-leading icons now use a documented Material Symbols Filled-first convention with per-glyph optical-weight normalization: already-solid glyphs remain at the standard weight, visually light line/frame/list glyphs may use heavier official weights, and deliberate Outline exceptions remain allowed when Filled harms legibility; Diagnostics and Appearance now share the same 24 dp optical box / 22 dp visual-size contract.
+
 - Battery-ring avoidance now handles optical components that sit entirely to one side of the ring center, so HyperOS hotspot-link and no-internet badge components reserve only their actual right/left shoulder arc instead of being skipped by the legacy center-crossing assumption.
 
 - Profile defaults now use 120% battery-number size for Network centered and 140% battery-number / 80% mobile-type size for Battery centered; the former battery-content vertical-offset control is now a global-section “Top information vertical offset” whose target follows the active layout (number + charging glyph for Network centered, network content for Battery centered).
@@ -40,7 +45,7 @@ The project follows a Keep a Changelog-style structure. During pre-release devel
 
 - Battery-center Wi-Fi ring avoidance now follows the actual disconnected optical components of the rendered Wi-Fi drawable instead of reserving the empty corners of one union rectangle; the existing visual clearance and numeric readout avoidance remain unchanged.
 
-- Development display version advanced to **0.0.5** after integrating the accepted Build 617 product/runtime line into `dev`; this remains a pre-release development checkpoint and does not change the planned first formal release target of 1.0.0.
+- Display version advances to **0.1.0** for the promoted Build 708 checkpoint after the accepted runtime and companion-app polish line; **1.0.0** remains the first planned formal release target.
 
 - Project licensing changed from Apache License 2.0 to GNU General Public License v3.0 only (`GPL-3.0-only`); third-party components retain their existing upstream licenses and notice requirements. This repository-only change does not alter APK/runtime behavior.
 
@@ -166,7 +171,7 @@ The project follows a Keep a Changelog-style structure. During pre-release devel
 - Dependabot version updates now target `dev`; minor/patch updates are grouped per ecosystem to reduce PR noise, major updates remain individually reviewable, and generated dependency PRs are not auto-merged by default.
 - Contribution governance uses risk-based routing: repository text/governance and repository automation may move independently of runtime promotion when their own validation passes, shared `main` changes are history-preserving back-synced into `dev`, normal work reuses bounded active `feat/*`/`fix/*` branches instead of creating one branch per sub-task, device validation is checkpoint-based, hotfixes return to `dev`, and merged short-lived branches are cleaned up automatically.
 - Upstream dependency adoption uses relevance classes, explicit maturity levels, exact-revision CI/artifact gates, isolated Canary validation, and a bounded work branch only when the branch-admission rules require one.
-- Project source and contributions are licensed under Apache License 2.0, with third-party components retaining their upstream license obligations.
+- Project source and contributions are licensed under GNU General Public License v3.0 only (`GPL-3.0-only`); third-party components retain their upstream license obligations.
 - Public/reproducible development now uses the checked-in official Gradle 9.7.1 Wrapper with distribution/integrity validation, commit-pinned GitHub Actions, secret-free pull-request validation, hardened ignore rules for local signing/environment artifacts, least-privilege workflow credentials, dependency-update automation, and explicit third-party dependency notices.
 - Stable release automation is fail-closed: formal releases must come from a prepared `main` commit with a matching dated changelog section, pass target-profile/tests/Xposed-metadata/non-debuggable/signature checks, and use application release/build identity rather than CI run numbers for distributable APKs.
 - Runtime architecture is moving toward explicit `Host -> HostSession -> owned resources` boundaries with required cleanup across host replacement, SystemUI recreation, and hot reload.

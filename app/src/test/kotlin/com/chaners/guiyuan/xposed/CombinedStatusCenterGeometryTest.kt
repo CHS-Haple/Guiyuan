@@ -33,6 +33,29 @@ class CombinedStatusCenterGeometryTest {
     }
 
     @Test
+    fun airplaneAndNoSimSizesChangeIndependently() {
+        val base =
+            CombinedStatusCenterGeometry.resolve(
+                wifiSizeScale = 1f,
+                mobileTypeSizeScale = 1f,
+                mobileTypeWeight = 800,
+            )
+        val adjusted =
+            CombinedStatusCenterGeometry.resolve(
+                wifiSizeScale = 1f,
+                mobileTypeSizeScale = 1f,
+                mobileTypeWeight = 800,
+                airplaneSizeScale = 1.2f,
+                noSimSizeScale = 0.8f,
+            )
+
+        assertEquals(base.airplaneMaxSize * 1.2f, adjusted.airplaneMaxSize, 0.0001f)
+        assertEquals(base.noSimMaxSize * 0.8f, adjusted.noSimMaxSize, 0.0001f)
+        assertEquals(base.wifiMaxWidth, adjusted.wifiMaxWidth, 0f)
+        assertEquals(base.mobileTypeTextSize, adjusted.mobileTypeTextSize, 0f)
+    }
+
+    @Test
     fun mobileTypeSizeChangesWithoutResizingWifiOrNativePeers() {
         val base =
             CombinedStatusCenterGeometry.resolve(
@@ -124,6 +147,10 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun rendererRangeClampsMatchPersistedVisualRanges() {
         assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
+        assertEquals(1.25f, CombinedStatusCenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_NO_SIM_SIZE_SCALE, 0f)
+        assertEquals(1.25f, CombinedStatusCenterGeometry.MAX_NO_SIM_SIZE_SCALE, 0f)
         assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_MOBILE_TYPE_SIZE_SCALE, 0f)
 
         val clamped =
@@ -131,10 +158,14 @@ class CombinedStatusCenterGeometryTest {
                 wifiSizeScale = -1f,
                 mobileTypeSizeScale = -1f,
                 mobileTypeWeight = 800,
+                airplaneSizeScale = -1f,
+                noSimSizeScale = -1f,
                 combinedScale = -1f,
             )
 
         assertEquals(0.40f, clamped.wifiSizeScale, 0f)
+        assertEquals(0.40f, clamped.airplaneSizeScale, 0f)
+        assertEquals(0.40f, clamped.noSimSizeScale, 0f)
         assertEquals(0.40f, clamped.mobileTypeSizeScale, 0f)
         assertEquals(COMBINED_SCALE_MIN, clamped.combinedScale, 0f)
     }

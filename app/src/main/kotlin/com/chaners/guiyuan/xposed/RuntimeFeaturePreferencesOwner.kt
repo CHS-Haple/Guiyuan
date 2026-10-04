@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
 import android.os.SystemClock
+import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
@@ -14,6 +15,7 @@ internal object RuntimeFeaturePreferencesOwner {
         CombinedStatusFeatureSettings(
             enabled = false,
             keyguardEnabled = false,
+            aodEnabled = false,
         )
 
     private var preferences: SharedPreferences? = null
@@ -119,6 +121,11 @@ internal object RuntimeFeaturePreferencesOwner {
             keyguardEnabled =
                 preferences.getBoolean(
                     COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    false,
+                ),
+            aodEnabled =
+                preferences.getBoolean(
+                    COMBINED_STATUS_AOD_ENABLED_KEY,
                     false,
                 ),
         )
