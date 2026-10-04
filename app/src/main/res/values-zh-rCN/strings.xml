@@ -74,7 +74,7 @@
     <string name="charging_title">充电显示</string>
     <string name="charging_summary">充电与超级快充样式</string>
     <string name="about_title">关于</string>
-    <string name="about_summary">版本、设备与运行信息</string>
+    <string name="about_summary">版本 项目与运行环境</string>
     <string name="diagnostics_title">诊断</string>
     <string name="diagnostics_summary">查看归元运行日志</string>
     <string name="restart_scope">重启系统界面</string>
@@ -157,7 +157,7 @@
     <string name="about_open_source_license_summary">GNU GPL v3.0</string>
     <string name="section_license_overview">许可</string>
     <string name="about_license_name">GNU GPL v3.0</string>
-    <string name="about_license_description">归元以 GNU GPL v3.0 only 开源</string>
+    <string name="about_license_description">归元依据 GNU GPL v3.0 开源</string>
     <string name="about_license_identifier_title">许可标识</string>
     <string name="about_license_full_text_title">完整许可</string>
     <string name="about_license_full_text_summary">在项目仓库中查看 LICENSE</string>
