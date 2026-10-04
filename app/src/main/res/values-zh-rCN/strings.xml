@@ -149,15 +149,12 @@
 
     <string name="section_current_build">版本信息</string>
     <string name="section_diagnostics_app">应用</string>
-    <string name="about_identity_summary">让状态信息归于一处</string>
     <string name="section_about_project">项目</string>
     <string name="about_project_home_title">项目主页</string>
     <string name="about_project_home_summary">查看源代码与项目说明</string>
     <string name="about_open_source_license_title">开源许可</string>
     <string name="about_open_source_license_summary">GNU GPL v3.0</string>
     <string name="section_license_overview">许可</string>
-    <string name="about_license_name">GNU GPL v3.0</string>
-    <string name="about_license_description">归元依据 GNU GPL v3.0 开源</string>
     <string name="about_license_identifier_title">许可标识</string>
     <string name="about_license_full_text_title">完整许可</string>
     <string name="about_license_full_text_summary">在项目仓库中查看 LICENSE</string>
@@ -274,6 +271,10 @@
     <string name="diagnostics_filter_done">完成</string>
     <string name="diagnostics_filter_empty">暂无符合筛选条件的事件</string>
     <string name="diagnostics_refresh">刷新诊断</string>
+    <string name="diagnostics_pull_to_refresh">下拉刷新</string>
+    <string name="diagnostics_release_to_refresh">松开刷新</string>
+    <string name="diagnostics_refreshing">正在刷新</string>
+    <string name="diagnostics_refresh_complete">刷新完成</string>
     <string name="diagnostics_scroll_top">滚动到顶部</string>
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_view">清空视图</string>
