@@ -71,54 +71,6 @@ class SystemUiPanelTransitionSourceTest {
     }
 
     @Test
-    fun appearanceDiagnosticPreservesNativeBooleanPayloadWithoutInterpretation() {
-        assertEquals(
-            "controlCenterAppearance first=true second=false expanding=unknown " +
-                "addBatteryIsland=unknown batteryWidthDiff=unknown " +
-                "fakePresentation=unknown readOnly=true nativeGeometryWrites=0",
-            SystemUiPanelTransitionSource.appearanceDiagnostic(
-                first = true,
-                second = false,
-                snapshot = null,
-            ),
-        )
-    }
-
-    @Test
-    fun appearanceDiagnosticIncludesTopLevelFakePresentationSnapshot() {
-        val fake =
-            SystemUiPanelTransitionSource.ControlCenterFakePresentationSnapshot(
-                rootClassName =
-                    "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons",
-                rootVisibility = 0,
-                rootAlpha = 1f,
-                rootWidth = 1440,
-                rootHeight = 108,
-                statusBarAreaClassName =
-                    "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer",
-                statusBarAreaVisibility = 0,
-                statusBarAreaAlpha = 1f,
-                statusBarAreaWidth = 587,
-                statusBarAreaHeight = 108,
-            )
-        assertEquals(
-            "controlCenterAppearance first=true second=true expanding=unknown " +
-                "addBatteryIsland=unknown batteryWidthDiff=unknown " +
-                "fakePresentation={root=" +
-                "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons" +
-                "(v=0,a=1.0,w=1440,h=108),statusBarArea=" +
-                "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" +
-                "(v=0,a=1.0,w=587,h=108)} readOnly=true nativeGeometryWrites=0",
-            SystemUiPanelTransitionSource.appearanceDiagnostic(
-                first = true,
-                second = true,
-                snapshot = null,
-                fakePresentation = fake,
-            ),
-        )
-    }
-
-    @Test
     fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
         assertTrue(
             SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
@@ -136,12 +88,6 @@ class SystemUiPanelTransitionSourceTest {
                 visibleChanged = false,
                 sourceSceneChanged = false,
                 batteryIslandChanged = true,
-            ),
-        )
-        assertTrue(
-            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportAppearanceEvent(
-                appearanceChanged = false,
-                animatedChanged = true,
             ),
         )
     }

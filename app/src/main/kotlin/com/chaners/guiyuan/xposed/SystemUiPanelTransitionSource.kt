@@ -285,24 +285,6 @@ internal object SystemUiPanelTransitionSource {
                                 callback = onUpdate?.let { callback -> { callback(update) } },
                                 onFailure = onRuntimeFailure,
                             )
-                            if (
-                                onEvent != null &&
-                                isProbeEnabled() &&
-                                shouldEmitAppearanceDiagnostic(first, second)
-                            ) {
-                                dispatchRuntimeCallback(
-                                    callback = {
-                                        onEvent(
-                                            appearanceDiagnostic(
-                                                first = first,
-                                                second = second,
-                                                snapshot = null,
-                                                fakePresentation = null,
-                                            ),
-                                        )
-                                    },
-                                )
-                            }
                             result
                         },
                     )
@@ -464,20 +446,6 @@ internal object SystemUiPanelTransitionSource {
         CONTROL_CENTER_RUNTIME_HOOK_COUNT +
             if (includeControlCenterDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
 
-    internal fun appearanceDiagnostic(
-        first: Boolean?,
-        second: Boolean?,
-        snapshot: ControlCenterAnchorSnapshot?,
-        fakePresentation: ControlCenterFakePresentationSnapshot? = null,
-    ): String =
-        "controlCenterAppearance first=" + (first ?: "unknown") +
-            " second=" + (second ?: "unknown") +
-            " expanding=" + (snapshot?.controlCenterExpanding ?: "unknown") +
-            " addBatteryIsland=" + (snapshot?.addBatteryIsland ?: "unknown") +
-            " batteryWidthDiff=" + (snapshot?.batteryWidthDiff ?: "unknown") +
-            " fakePresentation=" + (fakePresentation?.summary ?: "unknown") +
-            " readOnly=true nativeGeometryWrites=0"
-
     fun currentControlCenterHomeEligibility(): Boolean? =
         controlCenterHomeEligible
 
@@ -559,27 +527,6 @@ internal object SystemUiPanelTransitionSource {
         } else {
             structuralScene
         }
-
-    @Synchronized
-    private fun shouldEmitAppearanceDiagnostic(
-        first: Boolean?,
-        second: Boolean?,
-    ): Boolean {
-        val probe = controlProbe
-        val firstChanged = first != null && first != probe.appearance
-        val animatedChanged =
-            second != null && second != probe.appearanceAnimated
-        if (first != null) {
-            probe.appearance = first
-        }
-        if (second != null) {
-            probe.appearanceAnimated = second
-        }
-        return DiagnosticPolicy.shouldReportAppearanceEvent(
-            appearanceChanged = firstChanged,
-            animatedChanged = animatedChanged,
-        )
-    }
 
     @Synchronized
     private fun emitDiagnostic(
@@ -1024,10 +971,6 @@ internal object SystemUiPanelTransitionSource {
                 sourceSceneChanged ||
                 batteryIslandChanged
 
-        fun shouldReportAppearanceEvent(
-            appearanceChanged: Boolean,
-            animatedChanged: Boolean,
-        ): Boolean = appearanceChanged || animatedChanged
     }
 
     private data class ProbeState(
@@ -1036,7 +979,5 @@ internal object SystemUiPanelTransitionSource {
         var visible: Boolean? = null,
         var sourceScene: CombinedStatusSourceScene? = null,
         var batteryIsland: Boolean? = null,
-        var appearance: Boolean? = null,
-        var appearanceAnimated: Boolean? = null,
     )
 }

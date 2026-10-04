@@ -7,8 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 691 (`20261004-691`) preserves Build 690's native reflection caching and removes the remaining Detailed-only full Home native-source peer snapshot from the native-layout hot path after device A/B showed general diagnostics materially smoother than detailed.
-- Build 691 keeps steady-peer mirror cadence/results and low-cost semantic diagnostics unchanged; no animation curve, hidden-slot policy, scene ownership, island reservation, transition geometry, native writer, draw-layer compositing, or presentation lifecycle semantics change.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 693 (`20261004-693`) closes the diagnostics-performance line after Build 691 device A/B confirmed the full peer snapshot removal; Build 693 removes only duplicate semantic logging.
+- Build 693 keeps Home authoritative steady-peer-mirror logging and island-owner edges, while removing the immediate QS_FAKE mirror echo and control-center appearance text echo; functional callbacks/state/clip decisions are unchanged.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -131,4 +131,16 @@ The same SystemUI session recorded the level transition to General at 07:24:01.5
 Build 691 removes only that full Home native-layout source snapshot and its obsolete policy/test path. The existing lightweight `steadyPeerMirror active/hiddenSlots` event remains, as do lease, scene, readiness and lifecycle diagnostics. Functional mirror sampling, clip ownership and native-state reads are unchanged.
 
 Device gate: compare General versus Detailed using the same Keyguard + active-island repeated full pull/down-up sequence. Detailed should no longer introduce a distinct mid-gesture hitch. If a gap versus Home remains with both levels equivalent, proceed to residual draw/compositing review rather than further diagnostic trimming.
+
+## Build 693 duplicate semantic diagnostic cleanup
+
+Build 691 confirmed that the full `nativeSourceSyncDiag peers=[...]` snapshot is gone. The supplied Detailed/General A/B still shows Detailed producing repeated pairs for the same semantic edges: Home steady-peer mirror state is immediately echoed by the QS_FAKE target session, and native island owner show/hide is immediately echoed by `controlCenterAppearance`.
+
+Build 693 keeps one authoritative record for each:
+- keep Home `steadyPeerMirror source=home active/hiddenSlots`;
+- remove the immediate QS_FAKE `controlCenterPresentation steadyPeerMirror` echo;
+- keep `islandOwner event showing`;
+- remove text-only `controlCenterAppearance` diagnostics while preserving its native hook and functional `onUpdate` payload.
+
+Panel visibility, lease, readiness, scene, fail-native and suppression diagnostics remain. No functional runtime behavior changes, so device validation is not required beyond exact-head CI and review.
 

@@ -4161,3 +4161,25 @@ No functional mirror cadence/result change, no clip ownership change, no animati
 
 Repeat the same Keyguard + active-island pull stress in General and Detailed. Detailed should no longer have a distinct mid-gesture hitch. If both levels become equivalent but still trail Home, move to residual draw/compositing cost.
 
+## 2026-10-04 — Build 693 deduplicate semantic diagnostics
+
+**Type:** diagnostics-only performance cleanup  
+**Display version:** 0.0.5  
+**Build:** 693 / `20261004-693`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 691 removed the full Home native-source peer snapshot. In the supplied A/B session, Detailed still emitted paired records for the same semantic edges: Home mirror state followed by a QS_FAKE mirror echo, and island-owner show/hide followed by an appearance echo.
+
+### Change
+
+- retain Home authoritative `steadyPeerMirror source=home` state;
+- remove the immediate target-session mirror echo;
+- retain direct `islandOwner` state-edge diagnostics;
+- remove text-only `controlCenterAppearance` logging while preserving the native appearance hook and functional update callback.
+
+### Safety
+
+No native state read/write, mirror cadence, hidden-slot result, appearance update, geometry, transition, reservation, tint or lifecycle behavior changes. Exact-head CI is sufficient; no new device gate is required.
+

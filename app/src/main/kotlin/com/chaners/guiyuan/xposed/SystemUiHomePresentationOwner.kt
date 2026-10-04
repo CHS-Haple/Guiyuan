@@ -1302,7 +1302,6 @@ internal object SystemUiHomePresentationOwner {
         private var compactLayoutReady = false
         private var layoutReadyCallback: ((Int) -> Unit)? = null
         private var lastReservationDelta: Int? = null
-        private var lastSteadyPeerMirrorDiagnostic: String? = null
         private var steadyPeerMirrorActive = false
         private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
         private var steadyPeerMirrorIslandSuppressionReported = false
@@ -2446,20 +2445,6 @@ internal object SystemUiHomePresentationOwner {
             }
             if (compactLayoutReady) {
                 refreshMirroredPeerClipMasks()
-            }
-            if (changed) {
-                val diagnostic =
-                    "active=" + active +
-                        " hiddenSlots=[" + normalized.sorted().joinToString(",") + "]"
-                if (diagnostic != lastSteadyPeerMirrorDiagnostic) {
-                    lastSteadyPeerMirrorDiagnostic = diagnostic
-                    onEvent(
-                        eventPrefix +
-                            " steadyPeerMirror " + diagnostic +
-                            " authority=home-native-island-state" +
-                            " nativeStateWrites=0",
-                    )
-                }
             }
         }
 
