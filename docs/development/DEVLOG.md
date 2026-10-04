@@ -4737,3 +4737,11 @@ The collapsed event surface remains localized and friendly. Once an event is exp
 **Runtime boundary**
 
 No DiagnosticsSnapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition, native fallback or report export content changes.
+
+### Build 731 review correction
+
+Post-commit diff review of Build 730 caught one mechanical scope leak and one missing animation attachment before device testing:
+- restore `AppearanceMiniPreview` to its pre-Build-730 root `Modifier`; the Diagnostics presentation pass must not alter Appearance;
+- attach the passed LazyItemScope animation modifier to `DiagnosticsUsefulEventCard` itself, so stable-key filter/reorder animation actually reaches the card.
+
+No motion design, typography, icon-weight decision, technical-detail language, runtime path or report behavior otherwise changes from Build 730.

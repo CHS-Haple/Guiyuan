@@ -312,7 +312,7 @@ private fun AppearanceMiniPreview(
 ) {
     Surface(
         modifier =
-            modifier
+            Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp),
         shape = RoundedCornerShape(18.dp),
@@ -1295,7 +1295,7 @@ private fun DiagnosticsUsefulEventCard(
 
     Card(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 6.dp)

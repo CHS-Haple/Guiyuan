@@ -4,7 +4,7 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 730 (`20261004-730`).
+- Active work: `feat/diagnostics-log-workbench` / Build 731 (`20261004-731`).
 - Build 724 Canary #768 passed automated/signing gates, but device review rejected the Filter interaction, toolbar optical weight, hand-built More submenu hierarchy, and button-like INFO metadata treatment.
 - Build 728 aligns toolbar/menu interaction with pinned MIUIX revision `5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`: Filter and More now use `WindowIconCascadingDropdownMenu`, not hand-built `IconButton + WindowListPopup/WindowBottomSheet`.
 - Filter is a compact cascading multi-select menu: Log level and Event type are child menus; Reset filters is a separate `DropdownEntry` group so MIUIX owns the divider. Selection applies immediately to presentation state and never mutates `DiagnosticsSnapshot` or report content.
@@ -16,7 +16,7 @@
 - Build 730 is a presentation-only continuity/hierarchy pass driven by Build 729 device video: event rows use stable-key LazyColumn item animation for filter/state changes; expanded technical detail uses fade + vertical reveal; the loading state uses MIUIX `InfiniteProgressIndicator`; the active-filter badge fades without replacing its icon anchor.
 - Build 730 typography hierarchy: run summary uses MIUIX `subtitle`; event title uses `headline1` + Medium; category/time use `footnote2`; summary stays `body2`; expanded technical labels/values use `footnote2` Medium / `footnote1`. Expanded technical labels are intentionally fixed English (`Event`, `Component`, `State`) while collapsed user-facing summaries remain localized.
 - Build 730 toolbar optical balance uses only MIUIX weight families, with no geometry scaling: Back remains default Regular, Filter/More use Normal, Share/Download use Medium. This compensates the visibly different glyph fill area seen on device while preserving the native 24dp canvas and 40dp IconButton hit target.
-- Build 730 requires exact-head CI then one focused device gate; runtime behavior remains frozen.
+- Build 731 is the post-review correction of the Build 730 presentation pass: the event-card modifier now owns the lazy-item animation as intended, and an accidental `AppearanceMiniPreview` modifier substitution was reverted. No Appearance behavior change remains. Exact-head CI then one focused device gate are required; runtime behavior remains frozen.
 - Build 720 Canary #766 passed all automated/signing gates but device review rejected the new health-matrix presentation: expected-but-unobserved components were rendered as repeated `unknown` rows after hot reload, the health card dominated the page, and structured event fallback could expose internal `key=value` payloads in the default summary.
 - Build 721 keeps the unified `DiagnosticsSnapshot` / same-snapshot report architecture but restores the accepted Build 712 compact event-list visual baseline. The health matrix is removed from the first-class UI (it remains in the diagnostic report), the page uses a lightweight “This run · N key events” summary, and structured events without a friendly summary show “Recorded / 已记录” rather than raw transport fields.
 - Build 716 Runtime CI #2645 passed. Build 717 removes the retired raw-log-viewer surface and its dead helpers/resources.
