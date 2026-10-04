@@ -134,9 +134,9 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
+import top.yukonga.miuix.kmp.window.WindowListPopup
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -842,13 +842,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                             },
                         ) {
                             Icon(
-                                MiuixIcons.Filter,
+                                MiuixIcons.Light.Filter,
                                 contentDescription = filterTitle,
                             )
                         }
                     } else {
                         Icon(
-                            MiuixIcons.Filter,
+                            MiuixIcons.Light.Filter,
                             contentDescription = filterTitle,
                         )
                     }
@@ -897,7 +897,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Share, contentDescription = reportShareTitle)
+                    Icon(MiuixIcons.Light.Share, contentDescription = reportShareTitle)
                 }
             }
             TooltipBox(text = reportExportTitle) {
@@ -908,7 +908,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Light.Download, contentDescription = reportExportTitle)
                 }
             }
             DiagnosticsMoreMenu(
@@ -1171,7 +1171,7 @@ private fun DiagnosticsFilterSheet(
     onApply: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    OverlayBottomSheet(
+    WindowBottomSheet(
         show = show,
         title = stringResource(R.string.diagnostics_filter),
         onDismissRequest = onDismiss,
@@ -1278,9 +1278,9 @@ private fun DiagnosticsMoreMenu(
                     if (!showPrimary) showLevel = false
                 },
             ) {
-                Icon(MiuixIcons.More, contentDescription = title)
+                Icon(MiuixIcons.Medium.More, contentDescription = title)
             }
-            OverlayListPopup(
+            WindowListPopup(
                 show = showPrimary,
                 alignment = PopupPositionProvider.Align.TopEnd,
                 onDismissRequest = {
@@ -1306,7 +1306,7 @@ private fun DiagnosticsMoreMenu(
                                 showLevel = true
                             },
                         )
-                        OverlayListPopup(
+                        WindowListPopup(
                             show = showLevel,
                             popupPositionProvider = DiagnosticsSideSubmenuPositionProvider,
                             alignment = PopupPositionProvider.Align.TopStart,
