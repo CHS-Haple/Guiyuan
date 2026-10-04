@@ -20,7 +20,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
-| Google Material Symbols | 24 px, selected local Filled-first vectors with deliberate Outline exceptions | Semantic leading glyphs for Diagnostics and Appearance | Apache License 2.0 |
+| Google Material Symbols | 24 px, selected local Filled-first vectors with deliberate Outline and optical-weight exceptions | Semantic leading glyphs for Diagnostics and Appearance | Apache License 2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
 

@@ -6,8 +6,8 @@
 - `main` remains on the promoted Build 618 stable checkpoint.
 - `dev` baseline: Build 697 / `7b60c113` / versionCode `261004697` / Build ID `20261004-697`.
 - PR #207 is merged; Build 697 integrates the previously device-validated charging-island battery-ring direction correction on top of accepted Build 696.
-- Active work: `feat/diagnostics-info-icons` / Build 705 (`20261004-705`) applies the Filled-first semantic icon convention after focused Build 704 device review.
-- Build 705 prefers Material Symbols Filled for semantic row-leading icons, keeps Outline `fact_check` as the one deliberate weight exception, changes framework → Filled `extension`, navigation content → Filled `format_list_bulleted`, and removes `HyperOS 4` from the compatibility-baseline subtitle. MIUIX icons remain for MIUIX control/navigation affordances. App UI/resources/text only.
+- Active work: `feat/diagnostics-info-icons` / Build 706 (`20261004-706`) is a focused optical-weight pass on the five semantic glyphs that remained visually light in Build 705.
+- Build 706 keeps Build 705 mappings/layouts unchanged and adjusts only optical weight: `tag`, `data_object`, `target`, `troubleshoot` use Fill1/W500; `fact_check` remains Outline but moves to W500. All other semantic glyphs remain unchanged. App drawable/docs metadata only.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685

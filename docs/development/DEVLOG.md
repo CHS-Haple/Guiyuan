@@ -4366,3 +4366,35 @@ Build 704 device review showed that the semantic-icon direction is correct but t
 ### Validation
 
 App UI/resources/text only. Exact-head CI plus one focused light/dark optical/semantic device review is sufficient.
+
+## 2026-10-04 — Build 706 semantic icon optical-weight normalization
+
+**Type:** app UI / optical tuning  
+**Display version:** 0.0.5  
+**Build:** 706 / `20261004-706`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 705 device review accepted the Filled-first direction but showed that several line-constructed Material Symbols still read visually hollow/light beside solid silhouettes such as `smartphone`, `dashboard`, and `extension`.
+
+### Decision
+
+Use Material Symbols weight as the optical-balancing axis instead of changing icon semantics or scaling the whole drawable. Keep the existing 24dp optical box and 22dp rendered size.
+
+### Change
+
+- `tag`: Fill1 / W500;
+- `data_object`: Fill1 / W500;
+- `target`: Fill1 / W500;
+- `troubleshoot`: Fill1 / W500;
+- `fact_check`: Outline / W500;
+- all other Build 705 semantic glyphs remain unchanged.
+
+### Safety
+
+Drawable resources only; no Compose geometry, settings behavior, diagnostics/runtime logic, SystemUI hooks, or Xposed ownership changes.
+
+### Validation
+
+Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.
