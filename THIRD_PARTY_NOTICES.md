@@ -16,6 +16,14 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-5c91d5e5-SNAPSHOT (`5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`) | Xiaomi HyperOS-style companion-app UI; published main-canary snapshot | Apache License 2.0 |
 | kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache License 2.0 |
 
+## Embedded icon assets
+
+| Component | Variant | Purpose | Upstream license |
+| --- | --- | --- | --- |
+| Google Material Symbols | Outlined, 24 px, selected local vectors | Static Diagnostics information glyphs | Apache License 2.0 |
+
+The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
+
 ## Test dependencies
 
 | Component | Version | Purpose | Upstream license |
@@ -34,6 +42,7 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 - libxposed service: https://github.com/libxposed/service
 - AndroidX: https://github.com/androidx/androidx
 - MIUIX: https://github.com/compose-miuix-ui/miuix
+- Material Symbols: https://github.com/google/material-design-icons
 - kotlinx.serialization: https://github.com/Kotlin/kotlinx.serialization
 - JUnit 4: https://github.com/junit-team/junit4
 - Gradle: https://github.com/gradle/gradle

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -752,12 +753,12 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = environment.osVersion,
                 label = stringResource(R.string.os_version_label),
-                iconRes = R.drawable.ic_material_symbol_system_update_alt,
+                iconRes = R.drawable.ic_material_symbol_layers,
             )
             DiagnosticsInfoValue(
                 value = environment.systemUiDisplay,
                 label = stringResource(R.string.systemui_version_label),
-                iconRes = R.drawable.ic_material_symbol_dashboard_customize,
+                iconRes = R.drawable.ic_material_symbol_dashboard,
             )
         }
 
@@ -766,7 +767,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_framework_summary),
                 label = stringResource(R.string.runtime_framework_title),
-                iconRes = R.drawable.ic_material_symbol_hub,
+                iconRes = R.drawable.ic_material_symbol_api,
             )
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_scope_summary),
@@ -782,7 +783,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 DiagnosticsInfoValue(
                     value = stringResource(R.string.runtime_inventory_summary),
                     label = stringResource(R.string.runtime_inventory_title),
-                    iconRes = R.drawable.ic_material_symbol_dataset,
+                    iconRes = R.drawable.ic_material_symbol_inventory_2,
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -993,7 +994,7 @@ private fun DiagnosticsInfoDivider() {
 private fun DiagnosticsInfoValue(
     value: String,
     label: String,
-    iconRes: Int? = null,
+    @DrawableRes iconRes: Int? = null,
     iconVisualSize: Dp = 22.dp,
 ) {
     Row(
