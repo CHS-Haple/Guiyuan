@@ -3,7 +3,7 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- Active companion-app work: About MIUIX information architecture on `refactor/about-miuix-info`, Build 737 (`20261004-737`). The About surface now uses MIUIX `BasicComponent` for read-only rows and `ArrowPreference` for actionable rows; project homepage opens externally, while open-source license and third-party dependencies use app navigation detail pages. The Guiyuan animated identity mark implementation and Material Symbols leading-icon renderer remain unchanged.
+- Active companion-app work: About + Diagnostics companion-app validation on `feat/about-miuix-info`, Build 738 (`20261004-738`). About now uses MIUIX `BasicComponent`/`ArrowPreference`, the pinned MIUIX `HorizontalDivider`, direct project/license links, app-navigation third-party details, single-line device/API metadata, and the LSPosed/application description. Third-party versions are sourced from the build, MIUIX keeps the exact `0.9.4-5c91d5e5-SNAPSHOT` identity, displayed licenses use audited SPDX identifiers, and Material Symbols are identified as unversioned embedded assets. Diagnostics adds pinned-MIUIX `PullToRefresh` on the existing snapshot refresh path. Guiyuan identity-mark drawing and SystemUI runtime behavior remain unchanged.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
 - Active work: `feat/diagnostics-log-workbench` / Build 733 (`20261004-733`).
 - Build 724 Canary #768 passed automated/signing gates, but device review rejected the Filter interaction, toolbar optical weight, hand-built More submenu hierarchy, and button-like INFO metadata treatment.
