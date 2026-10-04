@@ -80,7 +80,7 @@
     <string name="restart_scope_summary">Restart SystemUI to reload the module</string>
     <string name="restart_scope_dialog_summary">Root access is required. SystemUI will restart to reload the module. The device will not reboot.</string>
     <string name="restart_scope_failed">Restart failed</string>
-    <string name="restart_scope_failed_summary">Grant Root access and try again</string>
+    <string name="restart_scope_failed_summary">Check Root access and confirm SystemUI can restart normally, then try again</string>
     <string name="restart">Restart</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">OK</string>

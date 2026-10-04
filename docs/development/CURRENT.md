@@ -4,11 +4,11 @@
 
 - Product: Guiyuan 0.0.5.
 - `main` remains on the promoted Build 618 stable checkpoint.
-- `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
-- PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
-- Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
-- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 695 (`20261004-695`) is the reviewed QS_FAKE lease-lifecycle closure on top of the completed diagnostics/performance work.
-- Build 695 keeps Build 694's hidden/prearm adoption policy and additionally confirms visible ownership from the attached QS_FAKE session's false→true requested-visibility edge, covering the first-visible attach ordering without weakening visible writer protection.
+- `dev` baseline: Build 695 / `fcc66dba` / versionCode `261004695` / Build ID `20261004-695`.
+- PR #203 is merged; Build 687–695 diagnostics/performance and QS_FAKE lease-lifecycle work is now part of dev.
+- Build 695 preserves visible writer protection and confirms attached QS_FAKE visible-cycle ownership on the session false→true requested-visibility edge.
+- Active work: `fix/systemui-restart-dismiss-boundary` / Build 696 (`20261004-696`) standardizes the explicit SystemUI restart maintenance transaction without changing runtime presentation behavior.
+- Build 696 waits for MIUIX dialog dismissal, signals only the originally resolved SystemUI PID with SIGTERM, and uses one bounded maintenance-only probe to verify replacement startup.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -170,4 +170,26 @@ Build 695 closes that gap without removing the early begin:
 - if the attached-session handoff fails, requested visibility is not promoted and native/Home fallback remains authoritative.
 
 Unit coverage locks false→true as the only attached-session begin edge, while existing tests keep true→false as the only end edge. No extra timer, polling, geometry writer, or duplicate lease acquisition is introduced.
+
+## Build 696 bounded SystemUI restart transaction
+
+Build 696 rebases the restart-maintenance work onto the merged Build 695 dev baseline so the branch contains only the restart transaction change.
+
+The previous action was functional but under-specified:
+- the positive restart button hid the MIUIX confirmation dialog and immediately executed the Root command before the dialog/blur exit completed;
+- the Root command blindly used `killall com.android.systemui`;
+- command success was treated as restart success without checking that a replacement SystemUI process appeared.
+
+Build 696 uses explicit semantic boundaries:
+- the positive action arms a transient pending restart and dismisses the dialog;
+- cancel/back clears that pending action;
+- MIUIX 0.9.4 `OverlayDialog.onDismissFinished` is the only boundary that starts the Root transaction;
+- `pidof` resolves the current `com.android.systemui` PID;
+- exactly that originally resolved PID is sent SIGTERM once;
+- a bounded 60 × 100 ms in-shell probe requires the old PID to be absent and at least one replacement SystemUI PID to be present;
+- the Root command has a 10-second outer timeout and never escalates to `force-stop`, `am crash`, SIGKILL, `pkill`, or `killall`.
+
+The probe exists only inside the single user-triggered maintenance command; it is not a runtime poller, service, or lifecycle owner. If the original PID disappears before signal delivery, no newly appeared PID is signalled.
+
+Device gate: verify restart with no island, normal island, and charging island if available. Confirm the dialog fully exits before SystemUI disappears, SystemUI relaunches automatically, cancel/back never restarts it, and treat any remaining transient island mosaic as a separate presentation issue rather than restart correctness.
 
