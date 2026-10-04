@@ -53,7 +53,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -109,17 +108,12 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
@@ -1187,150 +1181,6 @@ private fun DiagnosticsLogStateCard(text: String) {
 }
 
 @Composable
-private fun DiagnosticsLogEntryCard(
-    context: Context,
-    entry: DiagnosticLogEntry,
-    expanded: Boolean,
-    rawExpanded: Boolean,
-    onToggle: () -> Unit,
-    onToggleRaw: () -> Unit,
-) {
-    val title = diagnosticLogTitle(context, entry)
-    val summary = diagnosticLogSummary(context, entry)
-    val category = diagnosticLogCategoryLabel(context, entry.category)
-
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 8.dp)
-                .then(
-                    if (expanded) {
-                        Modifier
-                    } else {
-                        Modifier.height(96.dp)
-                    },
-                ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-        showIndication = true,
-        onClick = onToggle,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DiagnosticsLogLevelBadge(entry.level)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = category,
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            entry.timeText?.let { time ->
-                Text(
-                    text = time,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = summary,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = if (expanded) 2 else 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        if (expanded) {
-            Spacer(modifier = Modifier.height(10.dp))
-            DiagnosticLogDetailRow(
-                label = stringResource(R.string.diagnostics_log_detail_event),
-                value = entry.event ?: "—",
-            )
-            entry.component?.let { component ->
-                DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_component),
-                    value = component,
-                )
-            }
-            entry.state?.let { state ->
-                DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_state),
-                    value = state,
-                )
-            }
-
-            val regularFields =
-                entry.fields.filterKeys { key -> key !in DiagnosticLogMetadataFields }
-            regularFields.forEach { (key, value) ->
-                DiagnosticLogDetailRow(label = key, value = value)
-            }
-
-            val contextFields =
-                buildList {
-                    entry.fields["sequence"]?.let { add("sequence" to it) }
-                    entry.fields["sessionId"]?.let { add("sessionId" to it) }
-                    entry.fields["uptimeMs"]?.let { add("uptimeMs" to it) }
-                    entry.fields["traceId"]?.let { add("traceId" to it) }
-                    entry.framework?.let { add("framework" to it) }
-                    entry.uid?.let { add("uid" to it) }
-                    entry.pid?.let { add("pid" to it) }
-                    entry.tid?.let { add("tid" to it) }
-                    entry.hostPackage?.let { add("hostPackage" to it) }
-                    entry.modulePackage?.let { add("modulePackage" to it) }
-                    entry.tag?.let { add("tag" to it) }
-                }
-            if (contextFields.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.diagnostics_log_detail_context),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-                contextFields.forEach { (key, value) ->
-                    DiagnosticLogDetailRow(label = key, value = value)
-                }
-            }
-
-            TextButton(
-                text =
-                    stringResource(
-                        if (rawExpanded) {
-                            R.string.diagnostics_log_hide_raw
-                        } else {
-                            R.string.diagnostics_log_show_raw
-                        },
-                    ),
-                onClick = onToggleRaw,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            if (rawExpanded) {
-                Text(
-                    text = entry.rawLine,
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun DiagnosticsLogLevelBadge(level: DiagnosticLogLevel) {
     val colors = MiuixTheme.colorScheme
     val containerColor =
@@ -1398,17 +1248,6 @@ private fun diagnosticLogIsRuntimeEntry(entry: DiagnosticLogEntry): Boolean {
     }
     return entry.event in DiagnosticRuntimeEvents
 }
-
-private fun diagnosticLogMatchesLevel(
-    level: DiagnosticLogLevel,
-    selectedLevel: Int,
-): Boolean =
-    when (selectedLevel) {
-        1 -> level == DiagnosticLogLevel.Info
-        2 -> level == DiagnosticLogLevel.Warning
-        3 -> level == DiagnosticLogLevel.Error || level == DiagnosticLogLevel.Fatal
-        else -> true
-    }
 
 private fun diagnosticLogLevelLabel(level: DiagnosticLogLevel): String =
     when (level) {
@@ -1887,31 +1726,6 @@ private fun DiagnosticsInfoValue(
 }
 
 @Composable
-private fun DiagnosticsActionRow(
-    title: String,
-    summary: String,
-    @DrawableRes iconRes: Int,
-    iconVisualSize: Dp,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    BasicComponent(
-        title = title,
-        summary = summary,
-        startAction = {
-            SemanticLeadingIcon(
-                iconRes = iconRes,
-                visualSize = iconVisualSize,
-                enabled = enabled,
-            )
-        },
-        onClick = onClick,
-        onClickLabel = title,
-        enabled = enabled,
-    )
-}
-
-@Composable
 private fun SemanticLeadingIcon(
     @DrawableRes iconRes: Int,
     visualSize: Dp,
@@ -1931,32 +1745,6 @@ private fun SemanticLeadingIcon(
                         alpha = if (enabled) 1f else 0.38f,
                     ),
                 ),
-        )
-    }
-}
-
-@Composable
-private fun DiagnosticsLeadingIcon(
-    icon: ImageVector,
-    visualSize: Dp,
-    enabled: Boolean = true,
-) {
-    Box(
-        modifier =
-            Modifier
-                .size(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(visualSize),
-            tint =
-                if (enabled) {
-                    MiuixTheme.colorScheme.onSurfaceContainer
-                } else {
-                    MiuixTheme.colorScheme.onSurfaceContainerVariant.copy(alpha = 0.38f)
-                },
         )
     }
 }

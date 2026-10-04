@@ -4,7 +4,8 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 716 (`20261004-716`).
+- Active work: `feat/diagnostics-log-workbench` / Build 717 (`20261004-717`).
+- Build 716 Runtime CI #2645 passed. Build 717 is the final mechanical cleanup before Canary: retired raw-log-viewer composables, severity/range filtering helpers, their imports and obsolete strings are removed so the codebase matches the accepted Diagnostics product boundary.
 - Build 715 repaired the two duplicated Compose declaration markers from the Build 714 block replacement; Runtime CI #2644 passed.
 - Build 716 removes share-transport diagnostics from the main `DiagnosticsSnapshot` capture. Opening/refreshing Diagnostics now performs only the runtime diagnostic collection needed for the workbench and report; it no longer runs an unrelated `CombinedStatusShare` logcat Root command. Share-operation debug records remain owned by `DiagnosticsReportFiles` / `ShareDiagnosticsStore` for that feature's own troubleshooting.
 - Builds 710-712 proved LSPosed/logcat collection and semantic parsing but also exposed the wrong product boundary: Guiyuan was becoming a second raw-log viewer beside LSPosed while its generated diagnostic report looked like a separate system.

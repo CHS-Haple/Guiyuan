@@ -4487,3 +4487,12 @@ Build 713 unified app-side diagnostic ownership, but it also moved the existing 
 **Validation**
 
 Exact-head Runtime CI is required. No device gate is added for this capture-cost reduction because it removes unrelated collection work without changing the workbench hierarchy or SystemUI runtime behavior.
+
+
+## 2026-10-04 — Build 717 remove retired diagnostics viewer surface
+
+- Build 716 Runtime CI #2645 passed.
+- Static review found the pre-workbench raw-log card, raw-line disclosure, severity filter helper and About diagnostic action helpers remained in `FeatureScreens.kt` with zero call sites after the workbench cutover.
+- Remove those retired composables/helpers, their now-unused MIUIX/icon imports, and strings that only served source/range/severity/raw-log browsing.
+- No runtime producer, snapshot semantics, report content, workbench behavior or SystemUI path changes.
+- Exact-head Runtime CI is the final automated gate before focused Canary validation.
