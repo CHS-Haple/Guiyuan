@@ -804,16 +804,19 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 .filter(::diagnosticLogIsRuntimeEntry)
                 .toList()
                 .asReversed()
-                .take(MaxDiagnosticsUsefulEvents)
         }
     val usefulEntries =
-        runtimeEntries.filter { entry ->
-            diagnosticsFilterMatches(
-                entry = entry,
-                levelMask = appliedLevelFilter,
-                categoryMask = appliedCategoryFilter,
-            )
-        }
+        runtimeEntries
+            .asSequence()
+            .filter { entry ->
+                diagnosticsFilterMatches(
+                    entry = entry,
+                    levelMask = appliedLevelFilter,
+                    categoryMask = appliedCategoryFilter,
+                )
+            }
+            .take(MaxDiagnosticsUsefulEvents)
+            .toList()
     val filterActive =
         appliedLevelFilter != DiagnosticsFilterLevelAll ||
             appliedCategoryFilter != DiagnosticsFilterCategoryAll
@@ -1023,6 +1026,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             appliedCategoryFilter = draftCategoryFilter
             expandedKey = null
             filterSheetVisible = false
+            scope.launch { listState.scrollToItem(0) }
         },
         onDismiss = {
             filterSheetVisible = false
