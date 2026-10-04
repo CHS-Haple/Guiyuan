@@ -14,6 +14,8 @@ val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.1.2"
 val dataStorePreferencesVersion = "1.2.1"
 val kotlinxSerializationCoreVersion = "1.11.0"
+val junitVersion = "4.13.2"
+val gradleVersion = gradle.gradleVersion
 
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
@@ -50,6 +52,8 @@ android {
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
         buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
         buildConfigField("String", "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
+        buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
+        buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
     }
 
     signingConfigs {
@@ -125,7 +129,7 @@ dependencies {
     compileOnly("io.github.libxposed:api:$libxposedVersion")
     implementation("io.github.libxposed:service:$libxposedVersion")
 
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("junit:junit:$junitVersion")
 
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
