@@ -155,6 +155,12 @@
     <string name="about_project_home_summary">查看源代码与项目说明</string>
     <string name="about_open_source_license_title">开源许可</string>
     <string name="about_open_source_license_summary">GNU GPL v3.0</string>
+    <string name="section_license_overview">许可</string>
+    <string name="about_license_name">GNU GPL v3.0</string>
+    <string name="about_license_description">归元以 GNU GPL v3.0 only 开源</string>
+    <string name="about_license_identifier_title">许可标识</string>
+    <string name="about_license_full_text_title">完整许可</string>
+    <string name="about_license_full_text_summary">在项目仓库中查看 LICENSE</string>
     <string name="about_third_party_title">第三方依赖</string>
     <string name="about_third_party_summary">查看开源组件与许可</string>
     <string name="section_runtime_dependencies">运行与界面</string>
@@ -166,7 +172,7 @@
     <string name="build_value">构建：%1$s</string>
     <string name="diagnostics_version_label">版本</string>
     <string name="diagnostics_build_label">构建</string>
-    <string name="diagnostics_package_label">包名</string>
+    <string name="diagnostics_package_label">应用包名</string>
 
     <string name="section_device_system">设备与系统</string>
     <string name="device_name_label">设备</string>
