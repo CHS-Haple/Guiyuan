@@ -103,6 +103,18 @@ Build-channel diagnostic flags such as `RUNTIME_DIAGNOSTICS` and `DEVELOPMENT_PR
 
 For app UI, prefer current MIUIX components and conventions for spacing, typography, shape, state feedback, dialogs, navigation, back behavior, themes, and localization. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
 
+
+For semantic row-leading icons:
+- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, and action affordances;
+- choose the glyph from the row's semantic meaning, not from a previous icon shape or incidental text in the row value;
+- prefer Filled variants and begin from the standard optical weight;
+- normalize perceived visual mass rather than numeric weight: line-constructed or hollow-looking glyphs may use a heavier official weight, while already-solid glyphs should remain lighter;
+- when Filled becomes too dense or harms legibility, an Outline variant with suitable weight compensation is allowed;
+- do not enlarge the whole glyph merely to compensate for low visual mass; preserve the shared optical box, alignment, and tint contract;
+- compare neighboring glyphs in both light and dark themes; identical `FILL` / `wght` values are not a goal by themselves.
+
+Current semantic leading icons use a 24 dp optical box with a 22 dp visual size. W400 is the normal starting point; W500 is a common compensation for visually light linear glyphs, not a universal target.
+
 Public identity is Guiyuan / 归元, package com.chaners.guiyuan. Existing CombinedStatus* internal implementation names may remain.
 
 ## 6. Git workflow
