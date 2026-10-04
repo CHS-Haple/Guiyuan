@@ -4,10 +4,10 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Guiyuan 0.1.0 / Build 708 checkpoint (`20261004-708`, versionCode `261004708`).
-- Build 707 / PR #208 is integrated and device-accepted: Appearance now follows the same Filled-first + optical-weight normalization rule as Diagnostics; `bottom_navigation` and `format_list_bulleted` use official Filled/W500 while already-solid Appearance glyphs remain Filled/W400.
-- Build 708 changes release identity/documentation only: display version 0.1.0, dated changelog checkpoint, README status, and current-state metadata. Runtime/UI behavior remains the accepted Build 707 state.
-- The 0.1.0 promotion passed the dev integration Runtime, dev-to-main stable-boundary validation, promotion readiness checks, and trusted main Full validation including signing and non-debuggable Canary verification.
-- No active work branch is carried across the promotion. The next app-UI objective may start from the aligned Build 708 baseline.
+- Active repository-maintenance work: `chore/build-toolchain-refresh` / Build 709 (`20261004-709`).
+- Build 709 upgrades Gradle Wrapper 9.7.1 -> 9.8.0 and refreshes pinned GitHub Actions: gradle/actions 4.4.3 -> 6.4.0, checkout 5 -> 7.0.1, setup-java 5 -> 6.0.1, and upload-artifact 4 -> 7.0.1.
+- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; the proprietary enhanced caching provider is not used.
+- This maintenance changes build/CI tooling only. Runtime/UI behavior remains the accepted Build 707 state; Full CI is required and no device validation is required.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
