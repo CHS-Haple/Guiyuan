@@ -4,15 +4,15 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 728 (`20261004-728`).
+- Active work: `feat/diagnostics-log-workbench` / Build 729 (`20261004-729`).
 - Build 724 Canary #768 passed automated/signing gates, but device review rejected the Filter interaction, toolbar optical weight, hand-built More submenu hierarchy, and button-like INFO metadata treatment.
 - Build 728 aligns toolbar/menu interaction with pinned MIUIX revision `5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`: Filter and More now use `WindowIconCascadingDropdownMenu`, not hand-built `IconButton + WindowListPopup/WindowBottomSheet`.
 - Filter is a compact cascading multi-select menu: Log level and Event type are child menus; Reset filters is a separate `DropdownEntry` group so MIUIX owns the divider. Selection applies immediately to presentation state and never mutates `DiagnosticsSnapshot` or report content.
 - More uses the same dedicated cascading menu. Diagnostics level is a native child submenu; Refresh, list navigation and Clear view are grouped with `DropdownEntry` so MIUIX owns press state, haptics, popup placement, submenu geometry and separators.
 - Back, Filter, Share, Download and More use the pinned MIUIX default/Regular glyph family for consistent toolbar visual mass. Direct Share/Download remain `IconButton + TooltipBox`; Filter/More use the menu component's own IconButton wrapper.
 - Event-level metadata remains a non-clickable MIUIX `Surface + Text` tag. The pinned revision has no Tag/Chip component; `Badge` is retained only for the active-filter indicator.
-- Build 728 Diagnostics component audit: `SmallTopAppBar`, `IconButton`, `TooltipBox`, `WindowIconCascadingDropdownMenu`, `Card`, `SnackbarHost`, `Surface`, `Text`, and `Badge/BadgedBox` are the appropriate available MIUIX components. Compose Row/Box/Column/Spacer/LazyColumn remain layout primitives where MIUIX has no higher-level semantic owner.
-- Exact-head Runtime CI and focused signed Canary are pending for Build 728.
+- Build 729 Diagnostics component audit: `SmallTopAppBar`, `IconButton`, `TooltipBox`, `WindowIconCascadingDropdownMenu`, `Card`, `SnackbarHost`, `Surface`, `Text`, and `Badge/BadgedBox` are the appropriate available MIUIX components. Compose Row/Box/Column/Spacer/LazyColumn remain layout primitives where MIUIX has no higher-level semantic owner.
+- Build 729 is the post-review checkpoint; the duplicate `DropdownItem` import found after Build 728 was removed with no behavior change. Exact-head Runtime CI and focused signed Canary are pending.
 - Build 720 Canary #766 passed all automated/signing gates but device review rejected the new health-matrix presentation: expected-but-unobserved components were rendered as repeated `unknown` rows after hot reload, the health card dominated the page, and structured event fallback could expose internal `key=value` payloads in the default summary.
 - Build 721 keeps the unified `DiagnosticsSnapshot` / same-snapshot report architecture but restores the accepted Build 712 compact event-list visual baseline. The health matrix is removed from the first-class UI (it remains in the diagnostic report), the page uses a lightweight “This run · N key events” summary, and structured events without a friendly summary show “Recorded / 已记录” rather than raw transport fields.
 - Build 716 Runtime CI #2645 passed. Build 717 removes the retired raw-log-viewer surface and its dead helpers/resources.
