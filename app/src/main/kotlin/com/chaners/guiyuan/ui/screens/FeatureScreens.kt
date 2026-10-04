@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
@@ -1416,7 +1417,7 @@ private fun DiagnosticsUsefulEventCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DiagnosticsLogLevelLabel(entry.level)
+            DiagnosticsLogLevelTag(entry.level)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = category,
@@ -1503,24 +1504,49 @@ private fun DiagnosticsLogStateCard(text: String) {
 }
 
 @Composable
-private fun DiagnosticsLogLevelLabel(level: DiagnosticLogLevel) {
+private fun DiagnosticsLogLevelTag(level: DiagnosticLogLevel) {
     val colors = MiuixTheme.colorScheme
+    val warningColor = Color(0xFFFF9500)
+    val containerColor =
+        when (level) {
+            DiagnosticLogLevel.Error,
+            DiagnosticLogLevel.Fatal,
+            -> colors.errorContainer
+            DiagnosticLogLevel.Warning -> warningColor.copy(alpha = 0.14f)
+            DiagnosticLogLevel.Info -> colors.tertiaryContainer
+            else -> colors.secondaryContainerVariant
+        }
     val contentColor =
         when (level) {
             DiagnosticLogLevel.Error,
             DiagnosticLogLevel.Fatal,
             -> colors.error
-            DiagnosticLogLevel.Warning -> colors.tertiary
-            DiagnosticLogLevel.Info -> colors.primary
+            DiagnosticLogLevel.Warning -> warningColor
+            DiagnosticLogLevel.Info -> colors.onTertiaryContainer
             else -> colors.onSurfaceContainerVariant
         }
 
-    Text(
-        text = diagnosticLogLevelLabel(level),
-        style = MiuixTheme.textStyles.footnote1,
-        color = contentColor,
-        maxLines = 1,
-    )
+    Surface(
+        modifier = Modifier.heightIn(min = 20.dp),
+        shape = RoundedCornerShape(5.dp),
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = diagnosticLogLevelLabel(level),
+                style =
+                    MiuixTheme.textStyles.footnote2.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = contentColor,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 @Composable
