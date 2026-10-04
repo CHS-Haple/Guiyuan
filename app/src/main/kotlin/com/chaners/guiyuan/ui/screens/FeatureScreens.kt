@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -136,6 +138,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -1749,9 +1752,21 @@ private val DiagnosticLogMetadataFields =
         "sampling",
     )
 
+private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
+private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
+
+private data class AboutDependency(
+    val name: String,
+    val version: String?,
+    val license: String,
+    val upstreamUrl: String,
+)
+
 @Composable
 internal fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    var showThirdParty by rememberSaveable { mutableStateOf(false) }
     val environment by
         produceState(
             initialValue = RuntimeEnvironmentInfo.basic(),
@@ -1760,87 +1775,308 @@ internal fun AboutScreen(onBack: () -> Unit) {
             value = RuntimeEnvironmentInfo.resolve(context.applicationContext)
         }
 
+    BackHandler(enabled = showThirdParty) {
+        showThirdParty = false
+    }
+
+    if (showThirdParty) {
+        AboutThirdPartyScreen(
+            onBack = { showThirdParty = false },
+        )
+        return
+    }
+
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
     ) {
-        Section(R.string.section_diagnostics_app) {
-            DiagnosticsCardHeader(
+        Section(R.string.section_app) {
+            BasicComponent(
                 title = stringResource(R.string.product_name),
-                subtitle = stringResource(R.string.app_description),
-                leadingContent = {
+                summary = stringResource(R.string.about_identity_summary),
+                startAction = {
                     GuiyuanAnimatedIdentityMark()
                 },
             )
-            DiagnosticsInfoDivider()
-            DiagnosticsInfoValue(
-                value = BuildConfig.VERSION_NAME,
-                label = stringResource(R.string.diagnostics_version_label),
-                iconRes = R.drawable.ic_material_symbol_tag,
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_version_label),
+                summary = BuildConfig.VERSION_NAME,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_tag,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = BuildConfig.BUILD_ID,
-                label = stringResource(R.string.diagnostics_build_label),
-                iconRes = R.drawable.ic_material_symbol_deployed_code,
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_build_label),
+                summary = BuildConfig.BUILD_ID,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_deployed_code,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = BuildConfig.APPLICATION_ID,
-                label = stringResource(R.string.diagnostics_package_label),
-                iconRes = R.drawable.ic_material_symbol_data_object,
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_package_label),
+                summary = BuildConfig.APPLICATION_ID,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_data_object,
+                        visualSize = 22.dp,
+                    )
+                },
+            )
+        }
+
+        Section(R.string.section_about_project) {
+            ArrowPreference(
+                title = stringResource(R.string.about_project_home_title),
+                summary = stringResource(R.string.about_project_home_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_data_object,
+                        visualSize = 22.dp,
+                    )
+                },
+                onClick = { uriHandler.openUri(ABOUT_PROJECT_URL) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.about_open_source_license_title),
+                summary = stringResource(R.string.about_open_source_license_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_fact_check,
+                        visualSize = 22.dp,
+                    )
+                },
+                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.about_third_party_title),
+                summary = stringResource(R.string.about_third_party_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_inventory_2,
+                        visualSize = 22.dp,
+                    )
+                },
+                onClick = { showThirdParty = true },
+                holdDownState = showThirdParty,
             )
         }
 
         Section(R.string.section_device_system) {
-            DiagnosticsCardHeader(title = environment.deviceName)
-            DiagnosticsInfoValue(
-                value = environment.modelAndCodename,
-                label = stringResource(R.string.device_model_label),
-                iconRes = R.drawable.ic_material_symbol_smartphone,
+            BasicComponent(
+                title = stringResource(R.string.device_name_label),
+                summary = environment.deviceName.ifBlank {
+                    stringResource(R.string.about_value_unavailable)
+                },
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_smartphone,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.androidDisplay,
-                label = stringResource(R.string.android_version_label),
-                iconRes = R.drawable.ic_material_symbol_android,
+            BasicComponent(
+                title = stringResource(R.string.device_model_label),
+                summary = environment.model.ifBlank {
+                    stringResource(R.string.about_value_unavailable)
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.osVersion,
-                label = stringResource(R.string.os_version_label),
-                iconRes = R.drawable.ic_material_symbol_layers,
+            BasicComponent(
+                title = stringResource(R.string.android_version_label),
+                summary =
+                    environment.androidVersion
+                        .takeIf(String::isNotBlank)
+                        ?.let { "Android $it" }
+                        ?: stringResource(R.string.about_value_unavailable),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_android,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.systemUiDisplay,
-                label = stringResource(R.string.systemui_version_label),
-                iconRes = R.drawable.ic_material_symbol_dashboard,
+            BasicComponent(
+                title = stringResource(R.string.os_version_label),
+                summary = environment.osVersion.ifBlank {
+                    stringResource(R.string.about_value_unavailable)
+                },
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_layers,
+                        visualSize = 22.dp,
+                    )
+                },
+            )
+            BasicComponent(
+                title = stringResource(R.string.systemui_version_label),
+                summary = environment.systemUiVersionName.ifBlank {
+                    stringResource(R.string.about_value_unavailable)
+                },
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_dashboard,
+                        visualSize = 22.dp,
+                    )
+                },
             )
         }
 
         Section(R.string.section_module_runtime) {
-            Spacer(modifier = Modifier.height(8.dp))
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_framework_summary),
-                label = stringResource(R.string.runtime_framework_title),
-                iconRes = R.drawable.ic_material_symbol_extension,
+            BasicComponent(
+                title = stringResource(R.string.runtime_framework_title),
+                summary = stringResource(R.string.runtime_framework_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_extension,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_scope_summary),
-                label = stringResource(R.string.runtime_scope_title),
-                iconRes = R.drawable.ic_material_symbol_target,
+            BasicComponent(
+                title = stringResource(R.string.runtime_scope_title),
+                summary = stringResource(R.string.runtime_scope_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_target,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_target_summary),
-                label = stringResource(R.string.runtime_target_title),
-                iconRes = R.drawable.ic_material_symbol_fact_check,
+            BasicComponent(
+                title = stringResource(R.string.runtime_target_title),
+                summary = stringResource(R.string.runtime_target_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_fact_check,
+                        visualSize = 22.dp,
+                    )
+                },
             )
-            if (BuildConfig.DEVELOPMENT_PROBES) {
-                DiagnosticsInfoValue(
-                    value = stringResource(R.string.runtime_inventory_summary),
-                    label = stringResource(R.string.runtime_inventory_title),
-                    iconRes = R.drawable.ic_material_symbol_inventory_2,
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
+}
+
+@Composable
+private fun AboutThirdPartyScreen(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val miuixVersion = BuildConfig.MIUIX_VERSION.substringBefore("-")
+    val runtimeDependencies =
+        remember(miuixVersion) {
+            listOf(
+                AboutDependency(
+                    name = "MIUIX",
+                    version = miuixVersion,
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
+                ),
+                AboutDependency(
+                    name = "libxposed API",
+                    version = "102.0.0",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/libxposed/api",
+                ),
+                AboutDependency(
+                    name = "libxposed service",
+                    version = "102.0.0",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/libxposed/service",
+                ),
+                AboutDependency(
+                    name = "AndroidX Activity Compose",
+                    version = "1.13.0",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX Navigation Event Compose",
+                    version = "1.1.2",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX DataStore Preferences",
+                    version = "1.2.1",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "kotlinx.serialization core",
+                    version = "1.11.0",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
+                ),
+                AboutDependency(
+                    name = "Material Symbols",
+                    version = null,
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/google/material-design-icons",
+                ),
+            )
+        }
+    val developmentDependencies =
+        remember {
+            listOf(
+                AboutDependency(
+                    name = "JUnit 4",
+                    version = "4.13.2",
+                    license = "Eclipse Public License 1.0",
+                    upstreamUrl = "https://github.com/junit-team/junit4",
+                ),
+                AboutDependency(
+                    name = "Gradle Wrapper",
+                    version = "9.7.1",
+                    license = "Apache License 2.0",
+                    upstreamUrl = "https://github.com/gradle/gradle",
+                ),
+            )
+        }
+
+    SettingsPage(
+        title = stringResource(R.string.about_third_party_title),
+        onBack = onBack,
+    ) {
+        Section(R.string.section_runtime_dependencies) {
+            runtimeDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+        Section(R.string.section_development_dependencies) {
+            developmentDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutDependencyPreference(
+    dependency: AboutDependency,
+    onClick: () -> Unit,
+) {
+    val summary =
+        buildString {
+            dependency.version?.let {
+                append(it)
+                append('\n')
+            }
+            append(dependency.license)
+        }
+    ArrowPreference(
+        title = dependency.name,
+        summary = summary,
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -1890,103 +2126,6 @@ private fun GuiyuanAnimatedIdentityMark() {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticsCardHeader(
-    title: String,
-    subtitle: String? = null,
-    leadingContent: (@Composable () -> Unit)? = null,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp)
-                .padding(
-                    top = 13.dp,
-                    bottom = if (leadingContent != null) 11.dp else 7.dp,
-                ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (leadingContent != null) {
-            leadingContent()
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = title,
-                style =
-                    if (leadingContent != null) {
-                        MiuixTheme.textStyles.title3
-                    } else {
-                        MiuixTheme.textStyles.title2
-                    },
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    modifier = Modifier.padding(top = 2.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticsInfoDivider() {
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp)
-                .height(1.dp),
-        color = MiuixTheme.colorScheme.onSurfaceContainerVariant.copy(alpha = 0.16f),
-    ) {}
-}
-
-@Composable
-private fun DiagnosticsInfoValue(
-    value: String,
-    label: String,
-    @DrawableRes iconRes: Int? = null,
-    iconVisualSize: Dp = 22.dp,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (iconRes != null) {
-            SemanticLeadingIcon(
-                iconRes = iconRes,
-                visualSize = iconVisualSize,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = value.ifBlank { "—" },
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            Text(
-                text = label,
-                modifier = Modifier.padding(top = 1.dp),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
         }
     }
 }
