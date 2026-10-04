@@ -239,9 +239,6 @@
     <string name="diagnostics_log_state_error">Error</string>
     <string name="diagnostics_log_state_scheduled">Scheduled</string>
     <string name="diagnostics_log_state_restart_required">Restart required</string>
-    <string name="diagnostics_log_detail_event">Event</string>
-    <string name="diagnostics_log_detail_component">Component</string>
-    <string name="diagnostics_log_detail_state">State</string>
     <string name="diagnostics_actions">Diagnostics actions</string>
     <string name="diagnostics_more_actions">More actions</string>
     <string name="diagnostics_filter">Filter</string>

@@ -238,9 +238,6 @@
     <string name="diagnostics_log_state_error">错误</string>
     <string name="diagnostics_log_state_scheduled">已计划</string>
     <string name="diagnostics_log_state_restart_required">需要重启</string>
-    <string name="diagnostics_log_detail_event">事件</string>
-    <string name="diagnostics_log_detail_component">组件</string>
-    <string name="diagnostics_log_detail_state">状态</string>
     <string name="diagnostics_actions">诊断操作</string>
     <string name="diagnostics_more_actions">更多操作</string>
     <string name="diagnostics_filter">筛选</string>

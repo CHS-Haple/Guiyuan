@@ -7,6 +7,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -102,6 +108,7 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
@@ -305,7 +312,7 @@ private fun AppearanceMiniPreview(
 ) {
     Surface(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp),
         shape = RoundedCornerShape(18.dp),
@@ -871,7 +878,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Share, contentDescription = reportShareTitle)
+                    Icon(MiuixIcons.Medium.Share, contentDescription = reportShareTitle)
                 }
             }
             TooltipBox(text = reportExportTitle) {
@@ -882,7 +889,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Medium.Download, contentDescription = reportExportTitle)
                 }
             }
             DiagnosticsMoreMenu(
@@ -919,21 +926,24 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     ) {
         when {
             viewCleared -> {
-                item {
+                item(key = "diagnostics-state-cleared") {
                     DiagnosticsLogStateCard(
                         text = stringResource(R.string.diagnostics_view_cleared),
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
             loading -> {
-                item {
+                item(key = "diagnostics-state-loading") {
                     DiagnosticsLogStateCard(
                         text = stringResource(R.string.diagnostics_log_loading),
+                        loading = true,
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
             usefulEntries.isEmpty() -> {
-                item {
+                item(key = "diagnostics-state-empty") {
                     DiagnosticsLogStateCard(
                         text =
                             stringResource(
@@ -943,11 +953,12 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                                     R.string.diagnostics_events_empty
                                 },
                             ),
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
             else -> {
-                item {
+                item(key = "diagnostics-summary") {
                     Text(
                         text =
                             stringResource(
@@ -956,16 +967,17 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                             ),
                         modifier =
                             Modifier
+                                .animateItem()
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp),
-                        style = MiuixTheme.textStyles.footnote1,
+                        style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
                 }
                 itemsIndexed(
                     items = usefulEntries,
-                    key = { index, entry -> entry.stableKey + ":" + index },
+                    key = { _, entry -> entry.stableKey },
                 ) { _, entry ->
                     DiagnosticsUsefulEventCard(
                         context = context,
@@ -979,6 +991,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                                     entry.stableKey
                                 }
                         },
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
@@ -1158,22 +1171,21 @@ private fun DiagnosticsFilterMenu(
             entries = entries,
             collapseOnSelection = false,
         ) {
-            if (filterActive) {
-                BadgedBox(
-                    badge = {
+            BadgedBox(
+                badge = {
+                    AnimatedVisibility(
+                        visible = filterActive,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
                         Badge(
                             containerColor = MiuixTheme.colorScheme.primary,
                         )
-                    },
-                ) {
-                    Icon(
-                        MiuixIcons.Filter,
-                        contentDescription = title,
-                    )
-                }
-            } else {
+                    }
+                },
+            ) {
                 Icon(
-                    MiuixIcons.Filter,
+                    MiuixIcons.Normal.Filter,
                     contentDescription = title,
                 )
             }
@@ -1264,7 +1276,7 @@ private fun DiagnosticsMoreMenu(
 
     TooltipBox(text = title) {
         WindowIconCascadingDropdownMenu(entries = entries) {
-            Icon(MiuixIcons.More, contentDescription = title)
+            Icon(MiuixIcons.Normal.More, contentDescription = title)
         }
     }
 }
@@ -1275,6 +1287,7 @@ private fun DiagnosticsUsefulEventCard(
     entry: DiagnosticLogEntry,
     expanded: Boolean,
     onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val title = diagnosticLogTitle(context, entry)
     val summary = diagnosticLogSummary(context, entry)
@@ -1300,7 +1313,7 @@ private fun DiagnosticsUsefulEventCard(
             Text(
                 text = category,
                 modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.footnote2,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1308,7 +1321,7 @@ private fun DiagnosticsUsefulEventCard(
             entry.timeText?.let { time ->
                 Text(
                     text = time,
-                    style = MiuixTheme.textStyles.footnote1,
+                    style = MiuixTheme.textStyles.footnote2,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 )
             }
@@ -1316,7 +1329,10 @@ private fun DiagnosticsUsefulEventCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
+            style =
+                MiuixTheme.textStyles.headline1.copy(
+                    fontWeight = FontWeight.Medium,
+                ),
             color = MiuixTheme.colorScheme.onSurfaceContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -1324,54 +1340,72 @@ private fun DiagnosticsUsefulEventCard(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = summary,
+            modifier = Modifier.animateContentSize(),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
             maxLines = if (expanded) 2 else 1,
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (expanded) {
-            Spacer(modifier = Modifier.height(10.dp))
-            DiagnosticLogDetailRow(
-                label = stringResource(R.string.diagnostics_log_detail_event),
-                value = entry.event ?: "—",
-            )
-            entry.component?.let { component ->
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(10.dp))
                 DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_component),
-                    value = component,
+                    label = "Event",
+                    value = entry.event ?: "—",
                 )
-            }
-            entry.state?.let { state ->
-                DiagnosticLogDetailRow(
-                    label = stringResource(R.string.diagnostics_log_detail_state),
-                    value = state,
-                )
-            }
-
-            entry.fields
-                .filterKeys { key -> key !in DiagnosticLogMetadataFields }
-                .forEach { (key, value) ->
-                    DiagnosticLogDetailRow(label = key, value = value)
+                entry.component?.let { component ->
+                    DiagnosticLogDetailRow(
+                        label = "Component",
+                        value = component,
+                    )
                 }
+                entry.state?.let { state ->
+                    DiagnosticLogDetailRow(
+                        label = "State",
+                        value = state,
+                    )
+                }
+
+                entry.fields
+                    .filterKeys { key -> key !in DiagnosticLogMetadataFields }
+                    .forEach { (key, value) ->
+                        DiagnosticLogDetailRow(label = key, value = value)
+                    }
+            }
         }
     }
 }
 
 @Composable
-private fun DiagnosticsLogStateCard(text: String) {
+private fun DiagnosticsLogStateCard(
+    text: String,
+    loading: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     Card(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
         insideMargin = PaddingValues(18.dp),
     ) {
-        Box(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (loading) {
+                InfiniteProgressIndicator(
+                    color = MiuixTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+            }
             Text(
                 text = text,
                 style = MiuixTheme.textStyles.body2,
@@ -1440,13 +1474,16 @@ private fun DiagnosticLogDetailRow(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
+            style =
+                MiuixTheme.textStyles.footnote2.copy(
+                    fontWeight = FontWeight.Medium,
+                ),
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
         Spacer(modifier = Modifier.height(1.dp))
         Text(
             text = value,
-            style = MiuixTheme.textStyles.body2,
+            style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )
     }

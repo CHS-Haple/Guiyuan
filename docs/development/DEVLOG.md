@@ -4693,3 +4693,47 @@ Keep MIUIX `SmallTopAppBar`, `IconButton`, `TooltipBox`, `WindowIconCascadingDro
 **Runtime boundary**
 
 No snapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, renderer, transition, native fallback, or exported diagnostic content changes.
+
+## 2026-10-04 — Build 730 diagnostics continuity, hierarchy and technical detail language
+
+**Device evidence**
+
+Build 729 confirmed that MIUIX cascading menus themselves animate correctly, but the surrounding Diagnostics page still felt discontinuous because presentation-owned state changed abruptly: card expansion inserted detail rows immediately, filtering replaced/reordered LazyColumn items without item transitions, refresh swapped list/state content without a live indicator, and the active-filter badge changed wrapper structure. Device review also found the toolbar glyphs optically unbalanced despite using one nominal weight family, and the event-card typography hierarchy remained too flat.
+
+**Motion**
+
+- Keep MIUIX menu/submenu motion untouched.
+- Give every diagnostic event a stable LazyColumn key and use the Compose lazy-item animation path for filtered insertion/removal/placement.
+- Animate expanded detail with fade + top-anchored vertical expand/shrink.
+- Animate the summary's one/two-line size change.
+- Keep the Filter anchor stable and fade only the MIUIX Badge dot.
+- Use MIUIX `InfiniteProgressIndicator` for the refresh/loading state instead of static text-only feedback.
+
+**Optical icon balance**
+
+No scaling, translation or custom drawing is introduced. Weight selection stays inside the pinned MIUIX icon family:
+- Back: default Regular;
+- Filter: Normal;
+- Share: Medium;
+- Download: Medium;
+- More: Normal.
+
+This is deliberately optical rather than mechanically identical: Filter/More occupy more dark area at the same 24dp canvas, while Share/Download are more open outlines.
+
+**Typography hierarchy**
+
+- run summary: `subtitle` (14sp Bold);
+- event title: `headline1` (17sp) + Medium;
+- category/time: `footnote2` (11sp);
+- event summary: `body2` (14sp);
+- expanded technical labels: `footnote2` + Medium;
+- expanded technical values: `footnote1` (13sp);
+- INFO/WARN/ERROR/FATAL tag remains `footnote2 + Bold`.
+
+**Expanded technical language**
+
+The collapsed event surface remains localized and friendly. Once an event is expanded, the technical field layer is intentionally language-stable: `Event`, `Component`, `State` and raw protocol field names remain English regardless of app locale. The three now-unused localized resource strings are removed.
+
+**Runtime boundary**
+
+No DiagnosticsSnapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition, native fallback or report export content changes.
