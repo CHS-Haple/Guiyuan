@@ -18,9 +18,6 @@ internal sealed interface AppRoute : NavKey {
     data object About : AppRoute
 
     @Serializable
-    data object AboutLicense : AppRoute
-
-    @Serializable
     data object AboutThirdParty : AppRoute
 
     @Serializable
