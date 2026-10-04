@@ -3,14 +3,12 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- `main` and `dev` are aligned on the promoted Build 709 stable checkpoint (`20261004-709`, versionCode `261004709`) after dev-to-main PR #212.
-- Build 709 upgrades Gradle Wrapper 9.7.1 -> 9.8.0 and refreshes pinned GitHub Actions: gradle/actions 4.4.3 -> 6.4.0, checkout 5 -> 7.0.1, setup-java 5 -> 6.0.1, and upload-artifact 4 -> 7.0.1.
-- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; the Basic open-source cache provider is active and the proprietary enhanced provider is not used.
-- Stable-boundary Full CI #2634 and trusted main Full CI #2635 passed; the main run completed wrapper validation, target-profile verification, tests/build, Modern Xposed metadata checks, Haple APK signature verification, non-debuggable Canary verification, and artifact upload.
-- Gradle 9.8 deprecation audit CI #2632 (`--warning-mode all`) attributes the only concrete warning to Android Gradle Plugin 9.4.1 internals: `Configuration.setVisible(boolean)`, scheduled for removal in Gradle 11. No Guiyuan Gradle/settings script or Kotlin-plugin frame is implicated, so no project-local workaround is warranted.
-- No runtime/UI behavior changed and no device validation is required. No active dependency/toolchain maintenance branch remains.
+- `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
+- Active work: `feat/diagnostics-log-workbench` / Build 710 (`20261004-710`).
+- Build 710 renames the existing Diagnostics information page to **About** without moving any of its cards, adds a separate **Diagnostics** destination, and introduces an on-demand log workbench with search, current-session/all-log scope, and manual refresh.
+- The log workbench and exported diagnostic report share one `DiagnosticsLogReader`: LSPosed module log first, filtered logcat fallback second, identical Guiyuan filtering and latest-session selection. Reading occurs once on page entry and only again on explicit refresh; no polling, resident collector, runtime hook, or SystemUI/Xposed ownership change is introduced.
+- Existing Project address and SystemUI restart rows remain in place for this checkpoint.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
-
 ## Accepted runtime facts carried into Build 685
 
 ### Home / Keyguard / AOD

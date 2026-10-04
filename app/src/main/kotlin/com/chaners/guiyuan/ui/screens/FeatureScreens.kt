@@ -31,9 +31,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -66,6 +69,7 @@ import com.chaners.guiyuan.settings.FloatingNavigationContent
 import com.chaners.guiyuan.settings.FloatingNavigationStyle
 import com.chaners.guiyuan.settings.DiagnosticsSettings
 import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
+import com.chaners.guiyuan.system.DiagnosticsLogReader
 import com.chaners.guiyuan.system.DiagnosticsReportBuilder
 import com.chaners.guiyuan.system.DiagnosticsReportFiles
 import com.chaners.guiyuan.system.RuntimeEnvironmentInfo
@@ -95,7 +99,9 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -672,6 +678,170 @@ private fun RowScope.MiniStandardNavigationItem(
 
 @Composable
 internal fun DiagnosticsScreen(onBack: () -> Unit) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedScope by rememberSaveable { mutableIntStateOf(0) }
+    var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
+    var snapshot by remember { mutableStateOf<DiagnosticsLogReader.Snapshot?>(null) }
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(refreshGeneration) {
+        loading = true
+        snapshot = DiagnosticsLogReader.read()
+        loading = false
+    }
+
+    val scopeOptions =
+        listOf(
+            stringResource(R.string.diagnostics_log_scope_session),
+            stringResource(R.string.diagnostics_log_scope_all),
+        )
+    val visibleLines =
+        snapshot
+            ?.let { current ->
+                if (selectedScope == 0) {
+                    current.latestSessionLines
+                } else {
+                    current.lines
+                }
+            }
+            .orEmpty()
+            .let { lines ->
+                val query = searchQuery.trim()
+                if (query.isEmpty()) {
+                    lines
+                } else {
+                    lines.filter { line -> line.contains(query, ignoreCase = true) }
+                }
+            }
+            .asReversed()
+    val sourceLabel =
+        when (snapshot?.source) {
+            DiagnosticsLogReader.Source.LsposedModules ->
+                stringResource(R.string.diagnostics_log_source_lsposed)
+            DiagnosticsLogReader.Source.LogcatFallback ->
+                stringResource(R.string.diagnostics_log_source_logcat)
+            null -> stringResource(R.string.diagnostics_log_source_unknown)
+        }
+    val sourceLineCount = snapshot?.lines?.size ?: 0
+    val refreshSummary =
+        if (loading) {
+            stringResource(R.string.diagnostics_log_loading)
+        } else {
+            stringResource(
+                R.string.diagnostics_log_refresh_summary,
+                sourceLabel,
+                sourceLineCount,
+            )
+        }
+
+    SettingsPage(
+        title = stringResource(R.string.diagnostics_title),
+        onBack = onBack,
+    ) {
+        Section(R.string.section_diagnostic_logs) {
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 12.dp),
+                label = stringResource(R.string.diagnostics_log_search),
+                singleLine = true,
+            )
+            TabRowWithContour(
+                tabs = scopeOptions,
+                selectedTabIndex = selectedScope,
+                onTabSelected = { index -> selectedScope = index },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 10.dp),
+            )
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_log_refresh),
+                summary = refreshSummary,
+                enabled = !loading,
+                onClick = { refreshGeneration += 1 },
+            )
+        }
+
+        if (visibleLines.isEmpty()) {
+            item {
+                DiagnosticsLogStateCard(
+                    text =
+                        when {
+                            loading -> stringResource(R.string.diagnostics_log_loading)
+                            searchQuery.isNotBlank() ->
+                                stringResource(R.string.diagnostics_log_no_matches)
+                            else -> stringResource(R.string.diagnostics_log_empty)
+                        },
+                )
+            }
+        } else {
+            itemsIndexed(
+                items = visibleLines,
+                key = { index, line -> index.toString() + ":" + line.hashCode() },
+            ) { _, line ->
+                DiagnosticsLogEntryCard(line)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsLogStateCard(text: String) {
+    Card(
+        modifier =
+            Modifier
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 12.dp),
+        insideMargin = PaddingValues(16.dp),
+    ) {
+        Text(
+            text = text,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+        )
+    }
+}
+
+@Composable
+private fun DiagnosticsLogEntryCard(line: String) {
+    val parsed = DiagnosticLogTimestampRegex.matchEntire(line)
+    val timestamp = parsed?.groupValues?.getOrNull(1)
+    val message = parsed?.groupValues?.getOrNull(2) ?: line
+
+    Card(
+        modifier =
+            Modifier
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 8.dp),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        if (!timestamp.isNullOrBlank()) {
+            Text(
+                text = timestamp,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+        }
+        Text(
+            text = message,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainer,
+        )
+    }
+}
+
+private val DiagnosticLogTimestampRegex =
+    Regex("""^(\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+(.*)$""")
+
+@Composable
+internal fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -736,7 +906,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         }
 
     SettingsPage(
-        title = stringResource(R.string.diagnostics_title),
+        title = stringResource(R.string.about_title),
         onBack = onBack,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
     ) {
