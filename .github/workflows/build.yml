@@ -284,7 +284,7 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
           fi
-          ./gradlew "${TASKS[@]}" --stacktrace
+          ./gradlew "${TASKS[@]}" --stacktrace --warning-mode all
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
