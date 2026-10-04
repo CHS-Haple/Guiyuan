@@ -258,6 +258,24 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
         }
 
+        fun batteryRingExitDirection(
+            liveCenterDirection: CombinedStatusBatteryRingTransitionPolicy.ExitDirection,
+            nativeBatteryIslandActive: Boolean,
+            targetRowRtl: Boolean,
+        ): CombinedStatusBatteryRingTransitionPolicy.ExitDirection {
+            if (!nativeBatteryIslandActive) return liveCenterDirection
+
+            // During HyperOS Battery-Island expansion the final status row is
+            // itself being reflowed. Its live pixel X is therefore not a stable
+            // direction authority for the ring's first frames. The structural
+            // destination is still toward the status-row logical start.
+            return if (targetRowRtl) {
+                CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT
+            } else {
+                CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT
+            }
+        }
+
         fun unmatchedExitVisibleFraction(rawProgress: Float): Float {
             val remaining = 1f - geometryProgress(rawProgress)
             return remaining * remaining * remaining
@@ -1321,7 +1339,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
-            val centerExitDirection =
+            val liveCenterExitDirection =
                 specs.firstOrNull {
                     it.component == CombinedStatusPainter.TransitionComponent.CENTER
                 }?.let { centerSpec ->
@@ -1346,6 +1364,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         ) ?: return@let null
                     Policy.horizontalExitDirection(source, target)
                 } ?: CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+            val batteryRingExitDirection =
+                Policy.batteryRingExitDirection(
+                    liveCenterDirection = liveCenterExitDirection,
+                    nativeBatteryIslandActive = nativeBatteryIslandActive,
+                    targetRowRtl =
+                        finalStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL,
+                )
 
             val batteryTinted =
                 CombinedStatusBatteryColorPolicy.isTinted(
@@ -1754,7 +1779,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         },
                     batteryRingExitDirection =
                         if (spec.component == CombinedStatusPainter.TransitionComponent.BATTERY) {
-                            centerExitDirection
+                            batteryRingExitDirection
                         } else {
                             CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
                         },
