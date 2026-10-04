@@ -12,6 +12,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -722,14 +723,17 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = BuildConfig.VERSION_NAME,
                 label = stringResource(R.string.diagnostics_version_label),
+                iconRes = R.drawable.ic_material_symbol_info,
             )
             DiagnosticsInfoValue(
                 value = BuildConfig.BUILD_ID,
                 label = stringResource(R.string.diagnostics_build_label),
+                iconRes = R.drawable.ic_material_symbol_deployed_code,
             )
             DiagnosticsInfoValue(
                 value = BuildConfig.APPLICATION_ID,
                 label = stringResource(R.string.diagnostics_package_label),
+                iconRes = R.drawable.ic_material_symbol_package_2,
             )
         }
 
@@ -738,18 +742,22 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = environment.modelAndCodename,
                 label = stringResource(R.string.device_model_label),
+                iconRes = R.drawable.ic_material_symbol_smartphone,
             )
             DiagnosticsInfoValue(
                 value = environment.androidDisplay,
                 label = stringResource(R.string.android_version_label),
+                iconRes = R.drawable.ic_material_symbol_android,
             )
             DiagnosticsInfoValue(
                 value = environment.osVersion,
                 label = stringResource(R.string.os_version_label),
+                iconRes = R.drawable.ic_material_symbol_system_update_alt,
             )
             DiagnosticsInfoValue(
                 value = environment.systemUiDisplay,
                 label = stringResource(R.string.systemui_version_label),
+                iconRes = R.drawable.ic_material_symbol_dashboard_customize,
             )
         }
 
@@ -758,19 +766,23 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_framework_summary),
                 label = stringResource(R.string.runtime_framework_title),
+                iconRes = R.drawable.ic_material_symbol_hub,
             )
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_scope_summary),
                 label = stringResource(R.string.runtime_scope_title),
+                iconRes = R.drawable.ic_material_symbol_target,
             )
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_target_summary),
                 label = stringResource(R.string.runtime_target_title),
+                iconRes = R.drawable.ic_material_symbol_fact_check,
             )
             if (BuildConfig.DEVELOPMENT_PROBES) {
                 DiagnosticsInfoValue(
                     value = stringResource(R.string.runtime_inventory_summary),
                     label = stringResource(R.string.runtime_inventory_title),
+                    iconRes = R.drawable.ic_material_symbol_dataset,
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -981,24 +993,48 @@ private fun DiagnosticsInfoDivider() {
 private fun DiagnosticsInfoValue(
     value: String,
     label: String,
+    iconRes: Int? = null,
+    iconVisualSize: Dp = 22.dp,
 ) {
-    Column(
+    Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = value.ifBlank { "—" },
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-        )
-        Text(
-            text = label,
-            modifier = Modifier.padding(top = 1.dp),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        )
+        if (iconRes != null) {
+            Box(
+                modifier = Modifier.size(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(iconVisualSize),
+                    colorFilter =
+                        ColorFilter.tint(
+                            MiuixTheme.colorScheme.onSurfaceContainer,
+                        ),
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            Text(
+                text = value.ifBlank { "—" },
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+            )
+            Text(
+                text = label,
+                modifier = Modifier.padding(top = 1.dp),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
+        }
     }
 }
 
