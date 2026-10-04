@@ -4398,3 +4398,19 @@ Drawable resources only; no Compose geometry, settings behavior, diagnostics/run
 ### Validation
 
 Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.
+
+
+## 2026-10-04 — Build 711 diagnostics event-viewer pass
+
+### Device evidence
+- Build 710 proved the new Diagnostics destination can read the real LSPosed module log, but full raw envelope lines made cards visually noisy and inconsistent in height.
+- Device review selected LSPosed's information hierarchy as a reference: explicit level, time, event summary, compact collapsed rows, and expanded detail on demand.
+- The product requirement is not to clone LSPosed styling. Guiyuan should use MIUIX-native components, preserve technical identifiers in English, and localize only the human-facing display layer.
+
+### Decision
+- Keep the existing runtime log producers unchanged for this checkpoint.
+- Add a read-side envelope/event parser that understands current LSPosed envelopes, logcat fallback, RuntimeDiagnosticsProtocol Schema 1, and legacy key/value messages.
+- Display log level through MIUIX Badge rather than a custom-drawn tag.
+- Expose only All / Info / Warning / Error filters because current Guiyuan runtime producers use INFO, WARN, and ERROR; do not invent unused Verbose/Debug/Fatal controls.
+- Rename the scope to This run / Current log: the first is the latest runtime session selected by sessionId/PID, while the second is every Guiyuan line in the currently selected source file.
+- Use the middle dot only for short peer-level summary metadata; structural hierarchy uses layout rather than separator characters.
