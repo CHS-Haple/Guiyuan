@@ -1164,7 +1164,6 @@ private fun diagnosticHealthComponentLabel(
     )
 
 @Composable
-private fun DiagnosticsLogStateCard@Composable
 private fun DiagnosticsLogStateCard(text: String) {
     Card(
         modifier =
@@ -1740,7 +1739,6 @@ internal fun AboutScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun GuiyuanAnimatedIdentityMark@Composable
 private fun GuiyuanAnimatedIdentityMark() {
     val orbitRotation by
         rememberInfiniteTransition(label = "guiyuanIdentityOrbit").animateFloat(

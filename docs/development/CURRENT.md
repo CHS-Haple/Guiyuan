@@ -4,7 +4,8 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 714 (`20261004-714`).
+- Active work: `feat/diagnostics-log-workbench` / Build 715 (`20261004-715`).
+- Build 715 is a mechanical exact-head repair for two duplicated Compose declaration markers introduced while replacing the Build 714 screen blocks; it does not change the accepted Build 714 product behavior.
 - Builds 710-712 proved LSPosed/logcat collection and semantic parsing but also exposed the wrong product boundary: Guiyuan was becoming a second raw-log viewer beside LSPosed while its generated diagnostic report looked like a separate system.
 - Build 713 established one on-demand `DiagnosticsSnapshotProvider` for environment metadata, diagnostics preference, runtime evidence, parsed events, Runtime health, share diagnostics and capture time; Runtime CI #2642 passed.
 - Build 714 makes that unified snapshot the product surface. Diagnostics now presents Runtime health plus a bounded useful-event stream; raw LSPosed/logcat transport lines, source/range tabs and severity browsing are no longer first-class UI.
