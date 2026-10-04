@@ -4311,3 +4311,26 @@ Build 700 device feedback accepted the Material Symbols information-row treatmen
 ### Validation
 
 Runtime behavior is unchanged. Exact-head CI plus one focused device optical/semantic review is sufficient.
+
+## 2026-10-04 — Build 704 semantic leading-icon convention
+
+**Type:** app UI / visual semantics  
+**Display version:** 0.0.5  
+**Build:** 704 / `20261004-704`  
+**Branch / PR:** `feat/diagnostics-info-icons` / #206
+
+### Evidence
+
+Build 700 device review showed that Material Symbols work well as semantic row-leading glyphs inside MIUIX pages. Follow-up review distinguished those explanatory glyphs from MIUIX-owned control/navigation affordances and found several Diagnostics mappings that followed value text or duplicated another row's visual semantics.
+
+### Conclusion
+
+Use Material Symbols for semantic leading icons that explain what a settings/information row represents. Keep MIUIX icons where the icon is part of a MIUIX control/navigation affordance. Select symbols from the row's text semantics, not from the previous icon shape or a word appearing in the value.
+
+### Change
+
+Diagnostics refines version → `tag`, package/application ID → `data_object`, and framework → `schema`. Appearance adds theme mode → `contrast`, dynamic color → `palette`, floating navigation → `bottom_navigation`, navigation style → `style`, and navigation content → `view_list`. One shared semantic renderer owns the 24dp optical box, theme tint and disabled alpha.
+
+### Validation
+
+App UI/resources only. Exact-head CI plus focused light/dark optical/semantic device review is sufficient.

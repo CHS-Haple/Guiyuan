@@ -151,6 +151,12 @@ internal fun AppearanceScreen(
                 selectedIndex = settings.themeMode.ordinal,
                 title = stringResource(R.string.theme_mode),
                 summary = stringResource(R.string.theme_mode_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_contrast,
+                        visualSize = 22.dp,
+                    )
+                },
                 showValue = true,
                 onSelectedIndexChange = { index ->
                     AppThemeMode.entries.getOrNull(index)?.let { mode ->
@@ -163,6 +169,12 @@ internal fun AppearanceScreen(
             SwitchPreference(
                 title = stringResource(R.string.dynamic_color),
                 summary = stringResource(R.string.dynamic_color_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_palette,
+                        visualSize = 22.dp,
+                    )
+                },
                 checked = settings.dynamicColorEnabled,
                 onCheckedChange = onDynamicColorEnabledChange,
             )
@@ -172,6 +184,12 @@ internal fun AppearanceScreen(
             SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_bottom_navigation,
+                        visualSize = 22.dp,
+                    )
+                },
                 checked = settings.floatingNavigationBarEnabled,
                 onCheckedChange = onFloatingNavigationBarEnabledChange,
             )
@@ -181,6 +199,12 @@ internal fun AppearanceScreen(
                     selectedIndex = settings.floatingNavigationStyle.ordinal,
                     title = stringResource(R.string.floating_navigation_style),
                     summary = stringResource(R.string.floating_navigation_style_summary),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_style,
+                            visualSize = 22.dp,
+                        )
+                    },
                     showValue = true,
                     onSelectedIndexChange = { index ->
                         FloatingNavigationStyle.entries.getOrNull(index)?.let { style ->
@@ -195,6 +219,12 @@ internal fun AppearanceScreen(
                     selectedIndex = settings.floatingNavigationContent.ordinal,
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_view_list,
+                            visualSize = 22.dp,
+                        )
+                    },
                     showValue = true,
                     onSelectedIndexChange = { index ->
                         FloatingNavigationContent.entries.getOrNull(index)?.let { content ->
@@ -722,7 +752,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = BuildConfig.VERSION_NAME,
                 label = stringResource(R.string.diagnostics_version_label),
-                iconRes = R.drawable.ic_material_symbol_info,
+                iconRes = R.drawable.ic_material_symbol_tag,
             )
             DiagnosticsInfoValue(
                 value = BuildConfig.BUILD_ID,
@@ -732,7 +762,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = BuildConfig.APPLICATION_ID,
                 label = stringResource(R.string.diagnostics_package_label),
-                iconRes = R.drawable.ic_material_symbol_package_2,
+                iconRes = R.drawable.ic_material_symbol_data_object,
             )
         }
 
@@ -765,7 +795,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_framework_summary),
                 label = stringResource(R.string.runtime_framework_title),
-                iconRes = R.drawable.ic_material_symbol_api,
+                iconRes = R.drawable.ic_material_symbol_schema,
             )
             DiagnosticsInfoValue(
                 value = stringResource(R.string.runtime_scope_summary),
@@ -794,7 +824,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 title = stringResource(R.string.diagnostics_mode_title),
                 summary = stringResource(R.string.diagnostics_mode_summary),
                 startAction = {
-                    DiagnosticsDrawableLeadingIcon(
+                    SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_troubleshoot,
                         visualSize = 22.dp,
                     )
@@ -1003,20 +1033,10 @@ private fun DiagnosticsInfoValue(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (iconRes != null) {
-            Box(
-                modifier = Modifier.size(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(iconVisualSize),
-                    colorFilter =
-                        ColorFilter.tint(
-                            MiuixTheme.colorScheme.onSurfaceContainer,
-                        ),
-                )
-            }
+            SemanticLeadingIcon(
+                iconRes = iconRes,
+                visualSize = iconVisualSize,
+            )
             Spacer(modifier = Modifier.width(12.dp))
         }
         Column(
@@ -1050,7 +1070,7 @@ private fun DiagnosticsActionRow(
         title = title,
         summary = summary,
         startAction = {
-            DiagnosticsDrawableLeadingIcon(
+            SemanticLeadingIcon(
                 iconRes = iconRes,
                 visualSize = iconVisualSize,
                 enabled = enabled,
@@ -1063,7 +1083,7 @@ private fun DiagnosticsActionRow(
 }
 
 @Composable
-private fun DiagnosticsDrawableLeadingIcon(
+private fun SemanticLeadingIcon(
     @DrawableRes iconRes: Int,
     visualSize: Dp,
     enabled: Boolean = true,

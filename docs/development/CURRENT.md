@@ -6,8 +6,8 @@
 - `main` remains on the promoted Build 618 stable checkpoint.
 - `dev` baseline: Build 697 / `7b60c113` / versionCode `261004697` / Build ID `20261004-697`.
 - PR #207 is merged; Build 697 integrates the previously device-validated charging-island battery-ring direction correction on top of accepted Build 696.
-- Active work: `feat/diagnostics-info-icons` / Build 703 (`20261004-703`) completes the Diagnostics page visual-language pass.
-- Build 700 information-row visuals passed focused device review. Build 701 unified the three Diagnostics & reports leading glyphs; Build 702 separates the compatibility baseline into primary `SystemUI 17.03.260226.r` and secondary `HyperOS 4 · 适配基线` metadata to avoid semantic and visual wrapping. Build 703 restores the shared MIUIX `Tune` import still used by the appearance preview after Build 701 removed it too broadly; behavior is otherwise identical. App UI/text/resources only.
+- Active work: `feat/diagnostics-info-icons` / Build 704 (`20261004-704`) extends the accepted semantic-leading-icon language from Diagnostics into Appearance settings.
+- Build 700 information-row visuals passed focused device review. Build 704 follows row-text semantics: Diagnostics refines version → `tag`, package → `data_object`, framework → `schema`; Appearance adds `contrast`, `palette`, `bottom_navigation`, `style`, and `view_list`. All semantic leading icons share one renderer; MIUIX icons remain for MIUIX control/navigation affordances. App UI/resources only.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
