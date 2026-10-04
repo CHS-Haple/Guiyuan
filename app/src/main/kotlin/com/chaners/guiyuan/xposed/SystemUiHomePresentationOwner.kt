@@ -1313,6 +1313,7 @@ internal object SystemUiHomePresentationOwner {
         private var fakeCarrierCapacityDeltaPx: Int? = null
         private var fakeCarrierCapacityLeaseAwaitingLayout = false
         private var fakeCarrierCapacityLeaseSuppressed = false
+        private var fakeCarrierVisibleCycleActive = false
         private var pendingFakeCarrierNativeBaselineWidthPx: Int? = null
         private var transientLiveBatteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
@@ -1622,6 +1623,7 @@ internal object SystemUiHomePresentationOwner {
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
             fakeCarrierCapacityLeaseSuppressed = false
+            fakeCarrierVisibleCycleActive = false
             pendingFakeCarrierNativeBaselineWidthPx = null
             deferVisualMaskUntilLayout = false
             host.get()?.removeOnAttachStateChangeListener(this)
@@ -1831,10 +1833,23 @@ internal object SystemUiHomePresentationOwner {
         fun onControlCenterVisibilityChanged(visible: Boolean): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (visible) {
-                if (!fakeCarrierCapacityLeaseSuppressed) return true
+                if (fakeCarrierVisibleCycleActive && !fakeCarrierCapacityLeaseSuppressed) {
+                    return true
+                }
                 fakeCarrierCapacityLeaseSuppressed = false
-                return syncEndReservation()
+
+                // The first visible edge is the ownership handoff from hidden/prearm
+                // to the visible QS_FAKE cycle. Reconcile while hidden ownership is
+                // still in force so a native hidden relayout can be adopted instead
+                // of being misclassified as a visible writer conflict.
+                if (!syncEndReservation()) {
+                    return false
+                }
+                fakeCarrierVisibleCycleActive = true
+                return true
             }
+
+            fakeCarrierVisibleCycleActive = false
             if (fakeCarrierCapacityLeaseSuppressed) return true
 
             // Close the transition reservation while native layout writes are
@@ -2123,14 +2138,38 @@ internal object SystemUiHomePresentationOwner {
 
             val existingAppliedWidthPx = appliedFakeCarrierWidthPx
             if (existingAppliedWidthPx != null) {
-                if (
-                    nativeFakeCarrierParentContentWidthPx != parentContentWidthPx ||
-                    params.width != existingAppliedWidthPx
+                when (
+                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                        visibleCycleActive = fakeCarrierVisibleCycleActive,
+                        liveWidthPx = params.width,
+                        appliedWidthPx = existingAppliedWidthPx,
+                        currentParentContentWidthPx = parentContentWidthPx,
+                        leasedParentContentWidthPx = nativeFakeCarrierParentContentWidthPx,
+                    )
                 ) {
-                    onFailNative("fake-carrier-width-writer-conflict")
-                    return null
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.REUSE ->
+                        return fakeCarrierCapacityDeltaPx
+
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE -> {
+                        val adoptedNativeWidthPx = params.width
+                        val previousNativeWidthPx = nativeFakeCarrierLayoutWidthPx
+                        clearFakeCarrierCapacityLeaseSnapshot()
+                        pendingFakeCarrierNativeBaselineWidthPx = adoptedNativeWidthPx
+                        onEvent(
+                            eventPrefix +
+                                " fakeCarrierCapacity lease=adopt-native-hidden-prearm" +
+                                " liveWidth=" + adoptedNativeWidthPx +
+                                " appliedWidth=" + existingAppliedWidthPx +
+                                " previousNativeWidth=" + (previousNativeWidthPx ?: -1) +
+                                " owner=control-center-fake-session",
+                        )
+                    }
+
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT -> {
+                        onFailNative("fake-carrier-width-writer-conflict")
+                        return null
+                    }
                 }
-                return fakeCarrierCapacityDeltaPx
             }
 
             val pendingNativeBaselineWidthPx =
@@ -2728,6 +2767,40 @@ internal object SystemUiHomePresentationOwner {
             detailedDiagnosticsEnabled && !transitionReservationActive
 
     }
+    internal object FakeCarrierCapacityLeasePolicy {
+        enum class ExistingLeaseAction {
+            REUSE,
+            ADOPT_HIDDEN_NATIVE,
+            FAIL_WRITER_CONFLICT,
+        }
+
+        fun resolveExistingLeaseAction(
+            visibleCycleActive: Boolean,
+            liveWidthPx: Int,
+            appliedWidthPx: Int,
+            currentParentContentWidthPx: Int,
+            leasedParentContentWidthPx: Int?,
+        ): ExistingLeaseAction {
+            if (
+                leasedParentContentWidthPx == null ||
+                leasedParentContentWidthPx != currentParentContentWidthPx
+            ) {
+                return ExistingLeaseAction.FAIL_WRITER_CONFLICT
+            }
+            if (liveWidthPx == appliedWidthPx) {
+                return ExistingLeaseAction.REUSE
+            }
+            if (
+                !visibleCycleActive &&
+                liveWidthPx > 0 &&
+                liveWidthPx <= currentParentContentWidthPx
+            ) {
+                return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+            }
+            return ExistingLeaseAction.FAIL_WRITER_CONFLICT
+        }
+    }
+
     internal object EndReservationPolicy {
         fun shouldDeferLiveBatteryWidthUnavailable(
             retainOnTransientLoss: Boolean,

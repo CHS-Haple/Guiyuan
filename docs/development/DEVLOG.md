@@ -4183,3 +4183,31 @@ Build 691 removed the full Home native-source peer snapshot. In the supplied A/B
 
 No native state read/write, mirror cadence, hidden-slot result, appearance update, geometry, transition, reservation, tint or lifecycle behavior changes. Exact-head CI is sufficient; no new device gate is required.
 
+## 2026-10-04 — Build 694 fix QS_FAKE hidden/prearm lease lifecycle
+
+**Type:** lifecycle correctness / fail-native ownership  
+**Display version:** 0.0.5  
+**Build:** 694 / `20261004-694`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+The previously captured one-time native fallback was caused by a hidden/prearm capacity lease being overwritten by a legitimate HyperOS hidden relayout. The lease snapshot retained the expanded applied width and the next visible preparation misclassified the live native width as a foreign writer conflict.
+
+### Change
+
+- track QS_FAKE visible-cycle ownership separately from hidden/prearm ownership;
+- reconcile the first visible edge while hidden/prearm ownership is still active;
+- adopt a changed live native width only when hidden/prearm, positive, within the unchanged parent-content contract;
+- clear the stale snapshot, record the adopted live width as the pending native baseline, and reacquire through the existing lease path;
+- preserve fail-native for every visible-cycle width mismatch;
+- preserve fail-native when the parent-content contract itself changed.
+
+### Safety
+
+The writer-conflict guard is not removed or weakened for visible ownership. No timers, polling, persistent ownership state, or alternate layout writer are introduced. Existing hidden-boundary release remains authoritative.
+
+### Validation
+
+Unit coverage reproduces the exact hidden 587→836→587 ownership sequence and verifies visible mismatch, unchanged hidden reuse, and parent-contract mismatch behavior. Exact-head Runtime CI plus code review are required before dev merge.
+
