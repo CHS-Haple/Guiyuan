@@ -2,60 +2,18 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
-import java.time.OffsetDateTime
 
 internal object DiagnosticsReportBuilder {
-    private const val LogTimeoutSeconds = 10L
     private const val DetailedLogLineLimit = 600
     private const val ReleaseLogLineLimit = 120
-    private const val ShareLogLineLimit = 80
 
-    private const val LsposedModuleLogCommand =
-        "for f in \$(ls -1t /data/adb/lspd/log/modules_*.log " +
-            "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); do " +
-            "if grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
-            "grep -F 'com.chaners.guiyuan' \"\$f\" || true; break; fi; done"
+    suspend fun build(context: Context): String =
+        build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
 
-    private const val LogcatCommand =
-        "logcat -d -b all -v threadtime -t 3000"
-
-    private const val ShareLogcatCommand =
-        "logcat -d -b all -v threadtime -t 3000 | grep -F 'CombinedStatusShare' || true"
-
-    suspend fun build(context: Context): String {
-        val environment = RuntimeEnvironmentInfo.resolve(context)
-        val diagnosticsLevel = DiagnosticsSettingsRepository(context).currentLevel()
-        val lsposedResult = RootShell.execute(
-            command = LsposedModuleLogCommand,
-            timeoutSeconds = LogTimeoutSeconds,
-        )
-        val lsposedLines = filterModuleLines(lsposedResult.output)
-
-        val selected = if (lsposedLines.isNotEmpty()) {
-            CollectedLog(
-                source = "lsposed-modules",
-                result = lsposedResult,
-                lines = lsposedLines,
-            )
-        } else {
-            val logcatResult = RootShell.execute(
-                command = LogcatCommand,
-                timeoutSeconds = LogTimeoutSeconds,
-            )
-            CollectedLog(
-                source = "logcat-fallback",
-                result = logcatResult,
-                lines = filterModuleLines(logcatResult.output),
-            )
-        }
-
-        val shareLogResult = RootShell.execute(
-            command = ShareLogcatCommand,
-            timeoutSeconds = LogTimeoutSeconds,
-        )
-        val shareLines = ShareDiagnosticsStore.read(context)
-            .takeLast(ShareLogLineLimit)
+    internal fun build(snapshot: DiagnosticsSnapshot): String {
+        val environment = snapshot.environment
+        val diagnosticsLevel = snapshot.diagnosticsLevel
+        val selected = snapshot.runtimeLog
         val lineLimit =
             if (
                 diagnosticsLevel.name == "Detailed" &&
@@ -65,8 +23,8 @@ internal object DiagnosticsReportBuilder {
             } else {
                 ReleaseLogLineLimit
             }
-        val sessionLines = selectLatestSession(selected.lines)
-        val runtimeHealth = RuntimeHealthSnapshot.fromLines(sessionLines)
+        val sessionLines = selected.latestSessionLines
+        val runtimeHealth = snapshot.runtimeHealth
         val moduleLines = sessionLines.takeLast(lineLimit)
         val requestedDiagnosticsLevel = diagnosticsLevel.name.lowercase()
         val runtimeDiagnostics = runtimeHealth.component("diagnostics")
@@ -136,7 +94,7 @@ internal object DiagnosticsReportBuilder {
             runtimeHealth.reportLines().forEach(::appendLine)
             appendLine()
             appendLine("[Runtime log]")
-            appendLine("source=" + selected.source)
+            appendLine("source=" + selected.source.reportName)
             appendLine("collection=" + collectionState(selected.result))
             appendLine("lines=" + moduleLines.size)
             if (moduleLines.isEmpty()) {
@@ -145,96 +103,10 @@ internal object DiagnosticsReportBuilder {
                 moduleLines.forEach(::appendLine)
             }
             appendLine()
-            appendLine("[Share diagnostics]")
-            appendLine("source=persistent-store")
-            appendLine("logcatCollection=" + collectionState(shareLogResult))
-            appendLine("lines=" + shareLines.size)
-            if (shareLines.isEmpty()) {
-                appendLine("No share diagnostic entries were available.")
-            } else {
-                shareLines.forEach(::appendLine)
-            }
-            appendLine()
             appendLine("[Report]")
-            appendLine("generatedAt=" + OffsetDateTime.now())
+            appendLine("generatedAt=" + snapshot.capturedAt)
         }
     }
-
-    private fun filterModuleLines(output: String): List<String> =
-        output
-            .lineSequence()
-            .filter { line ->
-                line.contains("com.chaners.guiyuan") &&
-                    line.contains("CombinedStatus")
-            }
-            .toList()
-
-    private fun selectLatestSession(lines: List<String>): List<String> {
-        if (lines.isEmpty()) {
-            return lines
-        }
-
-        val structuredEvents =
-            lines.mapIndexedNotNull { index, line ->
-                RuntimeDiagnosticsProtocol.parse(line)
-                    ?.fields
-                    ?.get("sessionId")
-                    ?.let { sessionId -> index to sessionId }
-            }
-        val latestSessionId = structuredEvents.lastOrNull()?.second
-        if (latestSessionId != null) {
-            val start =
-                structuredEvents.firstOrNull { (_, sessionId) ->
-                    sessionId == latestSessionId
-                }?.first
-                    ?: return lines
-            val processId = processId(lines[start])
-            if (processId == null) {
-                return lines.drop(start)
-            }
-            return lines
-                .subList(start, lines.size)
-                .filter { line -> processId(line) == processId }
-        }
-
-        val currentBuild = "build=" + BuildConfig.BUILD_ID
-        val currentAnchor = lines.indexOfLast { line ->
-            line.contains(currentBuild) &&
-                (
-                    line.contains("Module loaded in com.android.systemui") ||
-                        line.contains("Hot reload completed")
-                )
-        }
-        val anchor =
-            if (currentAnchor >= 0) {
-                currentAnchor
-            } else {
-                lines.indexOfLast { line ->
-                    line.contains("Module loaded in com.android.systemui")
-                }
-            }
-
-        if (anchor < 0) {
-            return lines
-        }
-
-        val processId = processId(lines[anchor]) ?: return lines.drop(anchor)
-        val start =
-            (anchor downTo 0).firstOrNull { index ->
-                processId(lines[index]) == processId &&
-                    lines[index].contains("Module loaded in com.android.systemui")
-            } ?: anchor
-
-        return lines
-            .subList(start, lines.size)
-            .filter { line -> processId(line) == processId }
-    }
-
-    private fun processId(line: String): String? =
-        ProcessIdRegex.find(line)?.groupValues?.getOrNull(1)
-
-    private val ProcessIdRegex =
-        Regex(""":\s*(\d+):\s*\d+\s+[A-Z]/LSPosedFramework""")
 
     private fun collectionState(result: RootShell.Result): String =
         when {
@@ -243,10 +115,4 @@ internal object DiagnosticsReportBuilder {
             result.error != null -> "error:" + result.error
             else -> "exit:" + result.exitCode
         }
-
-    private data class CollectedLog(
-        val source: String,
-        val result: RootShell.Result,
-        val lines: List<String>,
-    )
 }

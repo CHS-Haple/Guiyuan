@@ -558,6 +558,11 @@ internal fun SettingsHubScreen(
         tertiarySectionTitle = stringResource(R.string.section_diagnostics_maintenance),
         tertiaryContent = {
             ArrowPreference(
+                title = stringResource(R.string.about_title),
+                summary = stringResource(R.string.about_summary),
+                onClick = { onNavigate(AppRoute.About) },
+            )
+            ArrowPreference(
                 title = stringResource(R.string.diagnostics_title),
                 summary = stringResource(R.string.diagnostics_summary),
                 onClick = { onNavigate(AppRoute.Diagnostics) },
