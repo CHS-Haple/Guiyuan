@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -117,7 +118,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.FileDownloads
+import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
@@ -916,7 +917,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     },
                     enabled = reportActionsEnabled,
                 ) {
-                    Icon(MiuixIcons.FileDownloads, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
                 }
             }
             TooltipBox(text = moreActionsTitle) {
@@ -964,8 +965,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
-                                .padding(top = 8.dp, bottom = 8.dp),
-                        style = MiuixTheme.textStyles.body2,
+                                .padding(top = 6.dp, bottom = 8.dp),
+                        style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
                 }
@@ -1010,15 +1011,9 @@ private fun DiagnosticsUsefulEventCard(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .padding(bottom = 8.dp)
-                .then(
-                    if (expanded) {
-                        Modifier
-                    } else {
-                        Modifier.height(96.dp)
-                    },
-                ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                .padding(bottom = 6.dp)
+                .heightIn(min = 86.dp),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         showIndication = true,
         onClick = onToggle,
     ) {
@@ -1031,7 +1026,7 @@ private fun DiagnosticsUsefulEventCard(
             Text(
                 text = category,
                 modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body2,
+                style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1039,7 +1034,7 @@ private fun DiagnosticsUsefulEventCard(
             entry.timeText?.let { time ->
                 Text(
                     text = time,
-                    style = MiuixTheme.textStyles.body2,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 )
             }
@@ -1105,7 +1100,7 @@ private fun DiagnosticsLogStateCard(text: String) {
         ) {
             Text(
                 text = text,
-                style = MiuixTheme.textStyles.body1,
+                style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
             )
         }
@@ -1155,7 +1150,7 @@ private fun DiagnosticLogDetailRow(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.body2,
+            style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
         Spacer(modifier = Modifier.height(1.dp))
@@ -1287,7 +1282,7 @@ private fun diagnosticLogSummary(
                     ),
                 )
             }
-        }.joinToString(" · ").ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
     }
 
     if (entry.event == "pipeline.latency") {
@@ -1308,7 +1303,7 @@ private fun diagnosticLogSummary(
                     ),
                 )
             }
-        }.joinToString(" · ").ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
     }
 
     if (entry.event in setOf("tintCommit", "homeRenderTint")) {
@@ -1322,7 +1317,7 @@ private fun diagnosticLogSummary(
                     ),
                 )
             }
-        }.joinToString(" · ").ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
     }
 
     val summary =
@@ -1338,7 +1333,7 @@ private fun diagnosticLogSummary(
             }
             entry.fields["reason"]?.let { add(it) }
         }.take(3)
-            .joinToString(" · ")
+            .joinToString(context.getString(R.string.diagnostics_log_summary_separator))
 
     if (summary.isNotBlank()) {
         return summary
@@ -1370,6 +1365,9 @@ private fun diagnosticTransportLabel(value: String): String =
     when (value.lowercase()) {
         "wifi" -> "Wi-Fi"
         "mobile" -> "Mobile"
+        "hotreload",
+        "hotreloadrestore",
+        -> "Hot Reload"
         else -> value
     }
 
@@ -1695,6 +1693,7 @@ private fun SettingsPage(
     title: String,
     onBack: () -> Unit,
     snackbarHost: @Composable () -> Unit = {},
+    navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     listState: LazyListState? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
@@ -1715,11 +1714,16 @@ private fun SettingsPage(
                     color = barColor,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.back),
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    MiuixIcons.Back,
+                                    contentDescription = stringResource(R.string.back),
+                                )
+                            }
+                            navigationActions()
                         }
                     },
                     actions = actions,

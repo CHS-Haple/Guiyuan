@@ -228,7 +228,8 @@
     <string name="diagnostics_log_summary_mobile_data_on">Mobile data on</string>
     <string name="diagnostics_log_summary_mobile_data_off">Mobile data off</string>
     <string name="diagnostics_log_summary_total_time">Total %1$s</string>
-    <string name="diagnostics_log_summary_source">Source %1$s</string>
+    <string name="diagnostics_log_summary_source">Source: %1$s</string>
+    <string name="diagnostics_log_summary_separator">, </string>
     <string name="diagnostics_log_summary_recorded">Recorded</string>
     <string name="diagnostics_log_state_ready">Ready</string>
     <string name="diagnostics_log_state_observed">Observed</string>
@@ -250,7 +251,7 @@
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
     <string name="section_diagnostics_health">Runtime health</string>
     <string name="section_diagnostics_events">Key events</string>
-    <string name="diagnostics_events_summary">This run · %1$d key events</string>
+    <string name="diagnostics_events_summary">This run, %1$d key events</string>
     <string name="diagnostics_health_healthy">Runtime healthy</string>
     <string name="diagnostics_health_degraded">Runtime needs attention</string>
     <string name="diagnostics_health_unavailable">Runtime health unavailable</string>
