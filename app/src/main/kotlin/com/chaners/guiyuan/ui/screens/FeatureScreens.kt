@@ -114,6 +114,7 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
+import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -722,6 +723,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var pullRefreshing by rememberSaveable { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
@@ -741,6 +743,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val reportExportTitle = stringResource(R.string.export_diagnostic_report)
     val moreActionsTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
+    val pullRefreshTexts =
+        listOf(
+            stringResource(R.string.diagnostics_pull_to_refresh),
+            stringResource(R.string.diagnostics_release_to_refresh),
+            stringResource(R.string.diagnostics_refreshing),
+            stringResource(R.string.diagnostics_refresh_complete),
+        )
 
     fun withCurrentReport(onReady: suspend (String) -> Unit) {
         val captured = snapshot ?: return
@@ -777,10 +786,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(refreshGeneration) {
         loading = true
-        snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
-        expandedKey = null
-        viewCleared = false
-        loading = false
+        try {
+            snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
+            expandedKey = null
+            viewCleared = false
+        } finally {
+            loading = false
+            pullRefreshing = false
+        }
     }
 
     val reportActionsEnabled =
@@ -926,6 +939,17 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
+        pullToRefresh =
+            SettingsPullToRefresh(
+                refreshing = pullRefreshing,
+                onRefresh = {
+                    if (!loading) {
+                        pullRefreshing = true
+                        refreshGeneration += 1
+                    }
+                },
+                texts = pullRefreshTexts,
+            ),
     ) {
         when {
             viewCleared -> {
@@ -2162,6 +2186,12 @@ private fun SemanticLeadingIcon(
     }
 }
 
+private data class SettingsPullToRefresh(
+    val refreshing: Boolean,
+    val onRefresh: () -> Unit,
+    val texts: List<String>,
+)
+
 @Composable
 private fun SettingsPage(
     title: String,
@@ -2170,6 +2200,7 @@ private fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     listState: LazyListState? = null,
+    pullToRefresh: SettingsPullToRefresh? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -2211,18 +2242,39 @@ private fun SettingsPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
-            LazyColumn(
-                state = resolvedListState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = pageContentPadding(
+            val contentPadding =
+                pageContentPadding(
                     innerPadding = paddingValues,
                     extraBottom = 12.dp,
-                ),
-                content = content,
-            )
+                )
+
+            @Composable
+            fun SettingsList() {
+                LazyColumn(
+                    state = resolvedListState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = contentPadding,
+                    content = content,
+                )
+            }
+
+            if (pullToRefresh != null) {
+                PullToRefresh(
+                    isRefreshing = pullToRefresh.refreshing,
+                    onRefresh = pullToRefresh.onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                    topAppBarScrollBehavior = scrollBehavior,
+                    refreshTexts = pullToRefresh.texts,
+                ) {
+                    SettingsList()
+                }
+            } else {
+                SettingsList()
+            }
         }
     }
 }
