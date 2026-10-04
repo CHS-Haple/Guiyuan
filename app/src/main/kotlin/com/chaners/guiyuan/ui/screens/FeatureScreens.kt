@@ -1129,6 +1129,37 @@ private fun diagnosticsToggleMask(
         mask and bit.inv()
     }
 
+private data class DiagnosticsFilterOption(
+    @StringRes val titleRes: Int,
+    val bit: Int,
+)
+
+private val DiagnosticsLevelFilterOptions =
+    listOf(
+        DiagnosticsFilterOption(R.string.diagnostics_filter_info, DiagnosticsFilterLevelInfo),
+        DiagnosticsFilterOption(R.string.diagnostics_filter_warning, DiagnosticsFilterLevelWarning),
+        DiagnosticsFilterOption(R.string.diagnostics_filter_error, DiagnosticsFilterLevelError),
+    )
+
+private val DiagnosticsCategoryFilterOptions =
+    listOf(
+        DiagnosticsFilterOption(
+            R.string.diagnostics_filter_module_compatibility,
+            DiagnosticsFilterCategoryModuleCompatibility,
+        ),
+        DiagnosticsFilterOption(R.string.diagnostics_filter_network, DiagnosticsFilterCategoryNetwork),
+        DiagnosticsFilterOption(
+            R.string.diagnostics_filter_display_transition,
+            DiagnosticsFilterCategoryDisplayTransition,
+        ),
+        DiagnosticsFilterOption(R.string.diagnostics_filter_performance, DiagnosticsFilterCategoryPerformance),
+        DiagnosticsFilterOption(
+            R.string.diagnostics_filter_settings_maintenance,
+            DiagnosticsFilterCategorySettingsMaintenance,
+        ),
+        DiagnosticsFilterOption(R.string.diagnostics_filter_other, DiagnosticsFilterCategoryOther),
+    )
+
 @Composable
 private fun DiagnosticsFilterSheet(
     show: Boolean,
@@ -1145,140 +1176,20 @@ private fun DiagnosticsFilterSheet(
         title = stringResource(R.string.diagnostics_filter),
         onDismissRequest = onDismiss,
     ) {
-        SmallTitle(
-            text = stringResource(R.string.diagnostics_filter_levels),
-            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        DiagnosticsFilterGroup(
+            title = stringResource(R.string.diagnostics_filter_levels),
+            options = DiagnosticsLevelFilterOptions,
+            mask = levelMask,
+            bottomPadding = 10.dp,
+            onMaskChange = onLevelMaskChange,
         )
-        Card(
-            modifier = Modifier.padding(bottom = 10.dp),
-        ) {
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_info),
-                checked = levelMask and DiagnosticsFilterLevelInfo != 0,
-                onCheckedChange = { checked ->
-                    onLevelMaskChange(
-                        diagnosticsToggleMask(
-                            levelMask,
-                            DiagnosticsFilterLevelInfo,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_warning),
-                checked = levelMask and DiagnosticsFilterLevelWarning != 0,
-                onCheckedChange = { checked ->
-                    onLevelMaskChange(
-                        diagnosticsToggleMask(
-                            levelMask,
-                            DiagnosticsFilterLevelWarning,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_error),
-                checked = levelMask and DiagnosticsFilterLevelError != 0,
-                onCheckedChange = { checked ->
-                    onLevelMaskChange(
-                        diagnosticsToggleMask(
-                            levelMask,
-                            DiagnosticsFilterLevelError,
-                            checked,
-                        ),
-                    )
-                },
-            )
-        }
-
-        SmallTitle(
-            text = stringResource(R.string.diagnostics_filter_categories),
-            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        DiagnosticsFilterGroup(
+            title = stringResource(R.string.diagnostics_filter_categories),
+            options = DiagnosticsCategoryFilterOptions,
+            mask = categoryMask,
+            bottomPadding = 12.dp,
+            onMaskChange = onCategoryMaskChange,
         )
-        Card(
-            modifier = Modifier.padding(bottom = 12.dp),
-        ) {
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_module_compatibility),
-                checked = categoryMask and DiagnosticsFilterCategoryModuleCompatibility != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategoryModuleCompatibility,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_network),
-                checked = categoryMask and DiagnosticsFilterCategoryNetwork != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategoryNetwork,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_display_transition),
-                checked = categoryMask and DiagnosticsFilterCategoryDisplayTransition != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategoryDisplayTransition,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_performance),
-                checked = categoryMask and DiagnosticsFilterCategoryPerformance != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategoryPerformance,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_settings_maintenance),
-                checked = categoryMask and DiagnosticsFilterCategorySettingsMaintenance != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategorySettingsMaintenance,
-                            checked,
-                        ),
-                    )
-                },
-            )
-            DiagnosticsFilterCheckbox(
-                title = stringResource(R.string.diagnostics_filter_other),
-                checked = categoryMask and DiagnosticsFilterCategoryOther != 0,
-                onCheckedChange = { checked ->
-                    onCategoryMaskChange(
-                        diagnosticsToggleMask(
-                            categoryMask,
-                            DiagnosticsFilterCategoryOther,
-                            checked,
-                        ),
-                    )
-                },
-            )
-        }
 
         Row(
             modifier =
@@ -1301,16 +1212,36 @@ private fun DiagnosticsFilterSheet(
 }
 
 @Composable
-private fun DiagnosticsFilterCheckbox(
+private fun DiagnosticsFilterGroup(
     title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    options: List<DiagnosticsFilterOption>,
+    mask: Int,
+    bottomPadding: Dp,
+    onMaskChange: (Int) -> Unit,
 ) {
-    CheckboxPreference(
-        title = title,
-        checked = checked,
-        onCheckedChange = onCheckedChange,
+    SmallTitle(
+        text = title,
+        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
     )
+    Card(
+        modifier = Modifier.padding(bottom = bottomPadding),
+    ) {
+        options.forEach { option ->
+            CheckboxPreference(
+                title = stringResource(option.titleRes),
+                checked = mask and option.bit != 0,
+                onCheckedChange = { checked ->
+                    onMaskChange(
+                        diagnosticsToggleMask(
+                            mask = mask,
+                            bit = option.bit,
+                            checked = checked,
+                        ),
+                    )
+                },
+            )
+        }
+    }
 }
 
 @Composable

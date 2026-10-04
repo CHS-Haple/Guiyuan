@@ -4575,3 +4575,37 @@ Static diff review of Build 721 caught that removing the rejected Runtime health
 - event timestamps display `MM-dd HH:mm:ss` for both LSPosed and logcat envelopes, covered by parser tests.
 
 No snapshot/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition or native fallback behavior changes.
+
+
+## 2026-10-04 — Build 724 diagnostics interaction and typography redesign
+
+**Device evidence**
+
+Build 723 Canary #767 confirmed the compact event-list direction but exposed several presentation issues: the export glyph was visually inconsistent with Share/More, the cascading diagnostics-level selector replaced/morphed over the primary menu instead of reading as a side submenu, the page still relied on middle-dot separators, and the overall text hierarchy needed a full MIUIX typography pass. The user also requested a multi-select Filter control beside Back.
+
+**Interaction changes**
+
+- top bar leading side: Back + MIUIX Normal Filter; Filter long-press uses MIUIX Tooltip and a theme-primary dot indicates any non-default filter;
+- top bar trailing side: MIUIX Normal Share + Download + More, each with long-press Tooltip;
+- Filter opens MIUIX OverlayBottomSheet with multi-select log-level and event-type groups, Reset filters and Done actions;
+- view filters are local presentation state only. They do not modify DiagnosticsSnapshot or report content;
+- filter order is semantic-event selection -> user filter -> 40-event display cap, so matching older events are not hidden by unrelated newer entries;
+- More is rebuilt from MIUIX OverlayListPopup. Diagnostics level opens a second MIUIX OverlayListPopup anchored to its own row using a dedicated PopupPositionProvider, preserving the primary menu as the spatial parent;
+- native HorizontalDivider rows separate diagnostics controls, list navigation and Clear view.
+
+**Visual/typography changes**
+
+- replace FileDownloads with the lighter MIUIX Normal Download glyph;
+- remove middle-dot separators from Diagnostics UI copy; localized natural separators are used instead;
+- map the page to the pinned MIUIX text scale with no hand-added font weights: metadata/run summary -> footnote1, event title -> body1, summaries/values -> body2, detail labels -> footnote1;
+- collapsed event cards use `heightIn(min = 86.dp)` rather than a fixed 96dp height, preserving font-scale growth;
+- any recognized semantic/legacy event without a friendly summary shows “Recorded / 已记录” instead of exposing raw `key=value` payload text;
+- filter rows are data-driven to avoid nine duplicated CheckboxPreference blocks.
+
+**Runtime boundary**
+
+No RuntimeDiagnosticsProtocol, DiagnosticsSnapshot capture, report serialization, SystemUI/Xposed hook, writer, lifecycle, transition, renderer or native-fallback behavior changes.
+
+**Validation**
+
+Runtime CI #2657 passed on the behavior-complete code before the final deduplication/docs-only cleanup. Run exact-head validation after this commit, then a focused signed Canary visual/interaction gate.
