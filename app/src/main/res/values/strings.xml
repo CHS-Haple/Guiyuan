@@ -242,7 +242,10 @@
     <string name="diagnostics_log_detail_component">Component</string>
     <string name="diagnostics_log_detail_state">State</string>
     <string name="diagnostics_actions">Diagnostics actions</string>
+    <string name="diagnostics_more_actions">More actions</string>
     <string name="diagnostics_refresh">Refresh diagnostics</string>
+    <string name="diagnostics_scroll_top">Scroll to top</string>
+    <string name="diagnostics_scroll_bottom">Scroll to bottom</string>
     <string name="diagnostics_clear_view">Clear view</string>
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
     <string name="section_diagnostics_health">Runtime health</string>
@@ -261,9 +264,6 @@
     <string name="diagnostics_component_session">Runtime session</string>
     <string name="diagnostics_component_other">Component</string>
     <string name="diagnostics_events_empty">No key diagnostic events in the current runtime session</string>
-    <string name="copy_diagnostic_report">Copy diagnostic report</string>
-    <string name="diagnostic_report_copied">Diagnostic report copied</string>
-    <string name="diagnostic_report_copy_failed">Could not copy the diagnostic report</string>
     <string name="section_diagnostic_report">Diagnostics &amp; reports</string>
     <string name="export_diagnostic_report">Export diagnostic report</string>
     <string name="export_diagnostic_report_summary">Save as a text file for records or issue feedback</string>

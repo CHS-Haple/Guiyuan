@@ -241,7 +241,10 @@
     <string name="diagnostics_log_detail_component">组件</string>
     <string name="diagnostics_log_detail_state">状态</string>
     <string name="diagnostics_actions">诊断操作</string>
+    <string name="diagnostics_more_actions">更多操作</string>
     <string name="diagnostics_refresh">刷新诊断</string>
+    <string name="diagnostics_scroll_top">滚动到顶部</string>
+    <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_view">清空视图</string>
     <string name="diagnostics_view_cleared">视图已清空。刷新诊断即可重新读取当前状态。</string>
     <string name="section_diagnostics_health">运行状态</string>
@@ -260,9 +263,6 @@
     <string name="diagnostics_component_session">运行会话</string>
     <string name="diagnostics_component_other">组件</string>
     <string name="diagnostics_events_empty">本次运行暂无关键诊断事件</string>
-    <string name="copy_diagnostic_report">复制诊断报告</string>
-    <string name="diagnostic_report_copied">诊断报告已复制</string>
-    <string name="diagnostic_report_copy_failed">诊断报告复制失败</string>
     <string name="section_diagnostic_report">诊断与报告</string>
     <string name="export_diagnostic_report">导出诊断报告</string>
     <string name="export_diagnostic_report_summary">保存为文本文件，便于记录或反馈问题</string>
