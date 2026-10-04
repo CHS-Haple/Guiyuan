@@ -4266,3 +4266,23 @@ No island state mutation, fixed UI delay, resident Root service, runtime polling
 
 Verify no-island, normal-island, and charging-island restart. Confirm the dialog exits first, SystemUI automatically returns, cancel/back never triggers restart, and failure feedback appears only when restart cannot be confirmed.
 
+## 2026-10-04 — Build 697 replay validated charging-island ring direction
+
+**Type:** integration of device-validated transition correction  
+**Display version:** 0.0.5  
+**Build:** 697 / `20261004-697`  
+**Branch / PR:** `fix/charging-island-ring-direction-dev` / #207  
+**Base:** Build 696 dev
+
+### Change
+
+Replayed only the previously device-validated Battery-Island battery-ring direction policy and its unit coverage onto current dev.
+
+- native Battery-Island active: derive ring exit from final-row logical start (LTR -> LEFT, RTL -> RIGHT);
+- non-island: preserve live Build 544 CENTER source-to-target geometry direction;
+- retain Build 696 restart-maintenance and Build 695 runtime/performance changes unchanged;
+- no pixel constant, delay, latch, new animator, geometry writer, reservation, tint, peer-ownership, or transition-timing change.
+
+### Validation
+
+The same functional correction passed the Build 688 device gate. This replay requires exact-head Runtime CI and review only.

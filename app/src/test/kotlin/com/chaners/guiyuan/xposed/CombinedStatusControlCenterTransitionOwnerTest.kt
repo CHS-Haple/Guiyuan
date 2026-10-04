@@ -1283,6 +1283,50 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     }
 
     @Test
+    fun batteryIslandRingExitUsesLogicalStartWhileNativeTargetRowReflows() {
+        val direction =
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .batteryRingExitDirection(
+                    liveCenterDirection =
+                        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT,
+                    nativeBatteryIslandActive = true,
+                    targetRowRtl = false,
+                )
+        assertEquals(
+            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT,
+            direction,
+        )
+
+        val rtlDirection =
+            CombinedStatusControlCenterTransitionOwner.Policy
+                .batteryRingExitDirection(
+                    liveCenterDirection =
+                        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT,
+                    nativeBatteryIslandActive = true,
+                    targetRowRtl = true,
+                )
+        assertEquals(
+            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT,
+            rtlDirection,
+        )
+    }
+
+    @Test
+    fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
+        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
+            assertEquals(
+                live,
+                CombinedStatusControlCenterTransitionOwner.Policy
+                    .batteryRingExitDirection(
+                        liveCenterDirection = live,
+                        nativeBatteryIslandActive = false,
+                        targetRowRtl = false,
+                    ),
+            )
+        }
+    }
+
+    @Test
     fun islandScenesKeepSemanticReservationForGuiyuanExpansion() {
         assertTrue(
             CombinedStatusControlCenterTransitionOwner.Policy
