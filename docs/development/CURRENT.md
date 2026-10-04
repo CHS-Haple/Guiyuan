@@ -4,10 +4,7 @@
 
 - Product: Guiyuan 0.0.5.
 - `main` remains on the promoted Build 618 stable checkpoint.
-- `dev` baseline: Build 697 / `7b60c113` / versionCode `261004697` / Build ID `20261004-697`.
-- PR #207 is merged; Build 697 integrates the previously device-validated charging-island battery-ring direction correction on top of accepted Build 696.
-- Active work: `feat/diagnostics-info-icons` / Build 706 (`20261004-706`) is a focused optical-weight pass on the five semantic glyphs that remained visually light in Build 705.
-- Build 706 keeps Build 705 mappings/layouts unchanged and adjusts only optical weight: `tag`, `data_object`, `target`, `troubleshoot` use Fill1/W500; `fact_check` remains Outline but moves to W500. All other semantic glyphs remain unchanged. App drawable/docs metadata only.
+- `dev` baseline: Build 706 / `3c996b40` / versionCode `261004706` / Build ID `20261004-706`; PR #206 is merged and the device-accepted Diagnostics semantic-icon system is integrated.\n- Active work: `feat/appearance-icon-optical-weight` / Build 707 (`20261004-707`) applies the same optical-weight convention to Appearance without changing icon semantics, layout, settings behavior, or runtime code.\n- Build 707 keeps `contrast`, `palette`, and `style` at Filled/W400; `bottom_navigation` and `format_list_bulleted` move to official Filled/W500 because their frame/list geometry reads lighter at the shared 22dp visual size. The reusable rule is now normative in `CONTRIBUTING.md`.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
