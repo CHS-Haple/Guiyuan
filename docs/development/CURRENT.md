@@ -6,8 +6,8 @@
 - `main` remains on the promoted Build 618 stable checkpoint.
 - `dev` baseline: Build 697 / `7b60c113` / versionCode `261004697` / Build ID `20261004-697`.
 - PR #207 is merged; Build 697 integrates the previously device-validated charging-island battery-ring direction correction on top of accepted Build 696.
-- Active work: `feat/diagnostics-info-icons` / Build 701 (`20261004-701`) extends the device-accepted Material Symbols treatment to the three Diagnostics & reports leading actions.
-- Build 700 information-row visuals passed focused device review; Build 701 maps diagnostics level → `troubleshoot`, export report → `file_export`, and share report → `share`, using the same local drawable pipeline. App UI/resources only.
+- Active work: `feat/diagnostics-info-icons` / Build 702 (`20261004-702`) completes the Diagnostics page visual-language pass.
+- Build 700 information-row visuals passed focused device review. Build 701 unified the three Diagnostics & reports leading glyphs; Build 702 also separates the compatibility baseline into primary `SystemUI 17.03.260226.r` and secondary `HyperOS 4 · 适配基线` metadata to avoid semantic and visual wrapping. App UI/text/resources only.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
