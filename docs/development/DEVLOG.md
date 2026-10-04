@@ -4414,3 +4414,12 @@ Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.
 - Expose only All / Info / Warning / Error filters because current Guiyuan runtime producers use INFO, WARN, and ERROR; do not invent unused Verbose/Debug/Fatal controls.
 - Rename the scope to This run / Current log: the first is the latest runtime session selected by sessionId/PID, while the second is every Guiyuan line in the currently selected source file.
 - Use the middle dot only for short peer-level summary metadata; structural hierarchy uses layout rather than separator characters.
+
+
+## 2026-10-04 — Build 712 useful-log hierarchy pass
+
+- Build 711 device review confirmed INFO/WARN/ERROR parsing works, but healthy sessions naturally contain mostly INFO. The issue is relevance, not missing severity support: real WARN/ERROR producers remain compatibility-unavailable, hot-reload-declined/incomplete, hook-install failures and similar abnormal paths.
+- The visible source label was removed. LSPosed/logcat are transport/storage sources, not the product identity of the logs.
+- Runtime view is now a positive allow-list of stable lifecycle/state events plus every warning/error; Detailed view remains the full Guiyuan-filtered source. This avoids treating high-frequency tint, presentation probes and latency telemetry as the primary user-facing log stream.
+- Range (This run / Current log) and severity are filter dimensions, not top-level log types, so they move into the MIUIX filter menu. Runtime / Detailed becomes the page-level view switch.
+- Expanded fields use vertical labels/values and raw transport text is second-level disclosure. Bulk parsing is moved to Dispatchers.Default so thousands of source lines are not regex-parsed during Compose recomposition.

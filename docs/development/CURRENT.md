@@ -4,9 +4,10 @@
 
 - Product: Guiyuan 0.1.0.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
-- Active work: `feat/diagnostics-log-workbench` / Build 711 (`20261004-711`).
+- Active work: `feat/diagnostics-log-workbench` / Build 712 (`20261004-712`).
 - Build 710 established the About/Diagnostics split and proved on-device LSPosed/logcat reading, but its raw-line cards were accepted only as a reader prototype.
-- Build 711 keeps the same on-demand `DiagnosticsLogReader` and does not alter runtime logging. A new parser separates LSPosed/logcat transport metadata from Guiyuan events, preserves structured Schema 1 and legacy key/value logs, and feeds a semantic event viewer with MIUIX Badge log levels, level filtering, localized event/category summaries, fixed collapsed cards, expandable technical fields/raw lines, and the clarified `This run / Current log` scope.
+- Build 711 proved the event parser and semantic-card direction on device, but device review rejected the source-centric header, raw-heavy expanded layout, and the fact that high-frequency telemetry still dominated the default list.
+- Build 712 keeps runtime log production unchanged and refines only the diagnostics read/presentation layer: the page no longer labels content as an LSPosed/Guiyuan log source, the primary tabs are Runtime / Detailed, level and range move into the MIUIX filter menu, Runtime is a curated structured-event stream plus all warnings/errors, empty state is full-width, details use vertical key/value layout, raw transport lines require a second explicit reveal, and bulk parsing moves off the main thread.
 - The log workbench and exported diagnostic report continue to share the same LSPosed-first, filtered-logcat-fallback source and latest-session selection. Reading occurs once on page entry and only again on explicit refresh; no polling, resident collector, runtime hook, or SystemUI/Xposed ownership change is introduced.
 - Existing Project address and SystemUI restart rows remain in place for this checkpoint.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.

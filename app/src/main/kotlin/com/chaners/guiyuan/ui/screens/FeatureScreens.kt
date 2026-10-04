@@ -86,7 +86,9 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Badge
@@ -111,6 +113,7 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -122,7 +125,7 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -693,20 +696,36 @@ private fun RowScope.MiniStandardNavigationItem(
 internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedView by rememberSaveable { mutableIntStateOf(0) }
     var selectedScope by rememberSaveable { mutableIntStateOf(0) }
     var selectedLevel by rememberSaveable { mutableIntStateOf(0) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var rawExpandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
-    var snapshot by remember { mutableStateOf<DiagnosticsLogReader.Snapshot?>(null) }
+    var currentLogEntries by remember { mutableStateOf<List<DiagnosticLogEntry>>(emptyList()) }
+    var currentRunEntries by remember { mutableStateOf<List<DiagnosticLogEntry>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(refreshGeneration) {
         loading = true
-        snapshot = DiagnosticsLogReader.read()
+        val snapshot = DiagnosticsLogReader.read()
+        val parsed =
+            withContext(Dispatchers.Default) {
+                snapshot.lines.map(DiagnosticsLogParser::parse) to
+                    snapshot.latestSessionLines.map(DiagnosticsLogParser::parse)
+            }
+        currentLogEntries = parsed.first
+        currentRunEntries = parsed.second
         expandedKey = null
+        rawExpandedKey = null
         loading = false
     }
 
+    val viewOptions =
+        listOf(
+            stringResource(R.string.diagnostics_log_view_runtime),
+            stringResource(R.string.diagnostics_log_view_detailed),
+        )
     val scopeOptions =
         listOf(
             stringResource(R.string.diagnostics_log_scope_session),
@@ -719,79 +738,90 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_log_level_warning),
             stringResource(R.string.diagnostics_log_level_error),
         )
-    val levelMenu =
+    val filterMenu =
         DropdownEntry(
             items =
-                levelOptions.mapIndexed { index, label ->
+                listOf(
                     DropdownItem(
-                        text = label,
-                        selected = selectedLevel == index,
-                        onClick = {
-                            selectedLevel = index
-                            expandedKey = null
-                        },
-                    )
-                },
+                        text = stringResource(R.string.diagnostics_log_filter_level),
+                        summary = levelOptions[selectedLevel],
+                        children =
+                            levelOptions.mapIndexed { index, label ->
+                                DropdownItem(
+                                    text = label,
+                                    selected = selectedLevel == index,
+                                    onClick = {
+                                        selectedLevel = index
+                                        expandedKey = null
+                                        rawExpandedKey = null
+                                    },
+                                )
+                            },
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_log_filter_scope),
+                        summary = scopeOptions[selectedScope],
+                        children =
+                            scopeOptions.mapIndexed { index, label ->
+                                DropdownItem(
+                                    text = label,
+                                    selected = selectedScope == index,
+                                    onClick = {
+                                        selectedScope = index
+                                        expandedKey = null
+                                        rawExpandedKey = null
+                                    },
+                                )
+                            },
+                    ),
+                ),
         )
 
-    val currentLogEntries =
-        remember(snapshot) {
-            snapshot
-                ?.lines
-                .orEmpty()
-                .map(DiagnosticsLogParser::parse)
-        }
-    val currentRunEntries =
-        remember(snapshot) {
-            snapshot
-                ?.latestSessionLines
-                .orEmpty()
-                .map(DiagnosticsLogParser::parse)
-        }
     val scopedEntries =
         if (selectedScope == 0) {
             currentRunEntries
         } else {
             currentLogEntries
         }
+    val viewedEntries =
+        if (selectedView == 0) {
+            scopedEntries.filter(::diagnosticLogIsRuntimeEntry)
+        } else {
+            scopedEntries
+        }
     val query = searchQuery.trim()
     val visibleEntries =
-        scopedEntries
-            .asSequence()
-            .filter { entry -> diagnosticLogMatchesLevel(entry.level, selectedLevel) }
-            .filter { entry ->
-                query.isEmpty() ||
-                    entry.searchableText().contains(query, ignoreCase = true) ||
-                    diagnosticLogTitle(context, entry).contains(query, ignoreCase = true)
-            }
-            .toList()
-            .asReversed()
-
-    val sourceLabel =
-        when (snapshot?.source) {
-            DiagnosticsLogReader.Source.LsposedModules ->
-                stringResource(R.string.diagnostics_log_source_lsposed)
-            DiagnosticsLogReader.Source.LogcatFallback ->
-                stringResource(R.string.diagnostics_log_source_logcat)
-            null -> stringResource(R.string.diagnostics_log_source_unknown)
+        remember(
+            viewedEntries,
+            selectedLevel,
+            query,
+            context.resources.configuration.locales,
+        ) {
+            viewedEntries
+                .asSequence()
+                .filter { entry -> diagnosticLogMatchesLevel(entry.level, selectedLevel) }
+                .filter { entry ->
+                    query.isEmpty() ||
+                        entry.searchableText().contains(query, ignoreCase = true) ||
+                        diagnosticLogTitle(context, entry).contains(query, ignoreCase = true)
+                }
+                .toList()
+                .asReversed()
         }
-    val sourceSummary =
-        if (loading) {
-            stringResource(R.string.diagnostics_log_loading)
-        } else {
-            stringResource(
-                R.string.diagnostics_log_source_summary,
-                currentRunEntries.size,
-                currentLogEntries.size,
-            )
-        }
+    val listSummary =
+        stringResource(
+            R.string.diagnostics_log_list_summary,
+            scopeOptions[selectedScope],
+            visibleEntries.size,
+        )
 
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         actions = {
-            OverlayIconDropdownMenu(
-                entry = levelMenu,
+            OverlayIconCascadingDropdownMenu(
+                entry = filterMenu,
+                collapseOnSelection = true,
             ) {
                 Icon(
                     imageVector = MiuixIcons.Filter,
@@ -809,38 +839,58 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             }
         },
     ) {
-        Section(R.string.section_diagnostic_logs) {
-            TextField(
-                value = searchQuery,
-                onValueChange = {
-                    searchQuery = it
-                    expandedKey = null
-                },
+        item {
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 12.dp),
-                label = stringResource(R.string.diagnostics_log_search),
-                singleLine = true,
-            )
-            TabRowWithContour(
-                tabs = scopeOptions,
-                selectedTabIndex = selectedScope,
-                onTabSelected = { index ->
-                    selectedScope = index
-                    expandedKey = null
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 10.dp),
-            )
-            BasicComponent(
-                title = sourceLabel,
-                summary = sourceSummary,
-            )
+                        .padding(bottom = 8.dp),
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                        expandedKey = null
+                        rawExpandedKey = null
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 8.dp),
+                    label = stringResource(R.string.diagnostics_log_search),
+                    singleLine = true,
+                )
+                TabRowWithContour(
+                    tabs = viewOptions,
+                    selectedTabIndex = selectedView,
+                    onTabSelected = { index ->
+                        selectedView = index
+                        expandedKey = null
+                        rawExpandedKey = null
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 10.dp),
+                )
+                Text(
+                    text =
+                        if (loading) {
+                            stringResource(R.string.diagnostics_log_loading)
+                        } else {
+                            listSummary
+                        },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 10.dp, bottom = 4.dp),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
         }
 
         if (visibleEntries.isEmpty()) {
@@ -864,9 +914,22 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     context = context,
                     entry = entry,
                     expanded = expandedKey == entry.stableKey,
+                    rawExpanded = rawExpandedKey == entry.stableKey,
                     onToggle = {
-                        expandedKey =
+                        val next =
                             if (expandedKey == entry.stableKey) {
+                                null
+                            } else {
+                                entry.stableKey
+                            }
+                        expandedKey = next
+                        if (rawExpandedKey != next) {
+                            rawExpandedKey = null
+                        }
+                    },
+                    onToggleRaw = {
+                        rawExpandedKey =
+                            if (rawExpandedKey == entry.stableKey) {
                                 null
                             } else {
                                 entry.stableKey
@@ -883,15 +946,21 @@ private fun DiagnosticsLogStateCard(text: String) {
     Card(
         modifier =
             Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-        insideMargin = PaddingValues(16.dp),
+        insideMargin = PaddingValues(18.dp),
     ) {
-        Text(
-            text = text,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
+        }
     }
 }
 
@@ -900,7 +969,9 @@ private fun DiagnosticsLogEntryCard(
     context: Context,
     entry: DiagnosticLogEntry,
     expanded: Boolean,
+    rawExpanded: Boolean,
     onToggle: () -> Unit,
+    onToggleRaw: () -> Unit,
 ) {
     val title = diagnosticLogTitle(context, entry)
     val summary = diagnosticLogSummary(context, entry)
@@ -909,16 +980,17 @@ private fun DiagnosticsLogEntryCard(
     Card(
         modifier =
             Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 8.dp)
                 .then(
                     if (expanded) {
                         Modifier
                     } else {
-                        Modifier.height(108.dp)
+                        Modifier.height(96.dp)
                     },
                 ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
         showIndication = true,
         onClick = onToggle,
     ) {
@@ -944,7 +1016,7 @@ private fun DiagnosticsLogEntryCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(7.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = title,
             style = MiuixTheme.textStyles.body1,
@@ -952,17 +1024,17 @@ private fun DiagnosticsLogEntryCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = summary,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = if (expanded) 3 else 1,
+            maxLines = if (expanded) 2 else 1,
             overflow = TextOverflow.Ellipsis,
         )
 
         if (expanded) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             DiagnosticLogDetailRow(
                 label = stringResource(R.string.diagnostics_log_detail_event),
                 value = entry.event ?: "—",
@@ -992,6 +1064,8 @@ private fun DiagnosticsLogEntryCard(
                     entry.fields["sessionId"]?.let { add("sessionId" to it) }
                     entry.fields["uptimeMs"]?.let { add("uptimeMs" to it) }
                     entry.fields["traceId"]?.let { add("traceId" to it) }
+                    entry.framework?.let { add("framework" to it) }
+                    entry.uid?.let { add("uid" to it) }
                     entry.pid?.let { add("pid" to it) }
                     entry.tid?.let { add("tid" to it) }
                     entry.hostPackage?.let { add("hostPackage" to it) }
@@ -1010,18 +1084,26 @@ private fun DiagnosticsLogEntryCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.diagnostics_log_detail_raw),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            TextButton(
+                text =
+                    stringResource(
+                        if (rawExpanded) {
+                            R.string.diagnostics_log_hide_raw
+                        } else {
+                            R.string.diagnostics_log_show_raw
+                        },
+                    ),
+                onClick = onToggleRaw,
+                modifier = Modifier.padding(top = 8.dp),
             )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = entry.rawLine,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
+            if (rawExpanded) {
+                Text(
+                    text = entry.rawLine,
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+            }
         }
     }
 }
@@ -1035,7 +1117,7 @@ private fun DiagnosticsLogLevelBadge(level: DiagnosticLogLevel) {
             DiagnosticLogLevel.Fatal,
             -> colors.errorContainer
             DiagnosticLogLevel.Warning -> colors.tertiaryContainer
-            DiagnosticLogLevel.Info -> colors.secondaryContainer
+            DiagnosticLogLevel.Info -> colors.primaryContainer
             else -> colors.secondaryContainerVariant
         }
     val contentColor =
@@ -1044,7 +1126,7 @@ private fun DiagnosticsLogLevelBadge(level: DiagnosticLogLevel) {
             DiagnosticLogLevel.Fatal,
             -> colors.onErrorContainer
             DiagnosticLogLevel.Warning -> colors.onTertiaryContainer
-            DiagnosticLogLevel.Info -> colors.onSecondaryContainer
+            DiagnosticLogLevel.Info -> colors.onPrimaryContainer
             else -> colors.onSecondaryContainerVariant
         }
 
@@ -1061,26 +1143,38 @@ private fun DiagnosticLogDetailRow(
     label: String,
     value: String,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = 5.dp),
-        verticalAlignment = Alignment.Top,
+                .padding(top = 8.dp),
     ) {
         Text(
             text = label,
-            modifier = Modifier.width(104.dp),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
+        Spacer(modifier = Modifier.height(1.dp))
         Text(
             text = value,
-            modifier = Modifier.weight(1f),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )
     }
+}
+
+private fun diagnosticLogIsRuntimeEntry(entry: DiagnosticLogEntry): Boolean {
+    if (
+        entry.level == DiagnosticLogLevel.Warning ||
+        entry.level == DiagnosticLogLevel.Error ||
+        entry.level == DiagnosticLogLevel.Fatal
+    ) {
+        return true
+    }
+    if (!entry.structured) {
+        return false
+    }
+    return entry.event in DiagnosticRuntimeEvents
 }
 
 private fun diagnosticLogMatchesLevel(
@@ -1141,17 +1235,32 @@ private fun diagnosticLogTitle(
             -> R.string.diagnostics_log_event_source
             "runtime.attach" -> R.string.diagnostics_log_event_runtime_attach
             "runtime.teardown" -> R.string.diagnostics_log_event_runtime_teardown
+            "runtimePreferences.bind" -> R.string.diagnostics_log_event_runtime_preferences
+            "diagnostics.bind" -> R.string.diagnostics_log_event_diagnostics_bind
+            "host.capture" -> R.string.diagnostics_log_event_host_capture
+            "host.restore" -> R.string.diagnostics_log_event_host_restore
+            "session.attach" -> R.string.diagnostics_log_event_session_attach
             "presentation.cutover" -> R.string.diagnostics_log_event_presentation_cutover
             "presentation.failNative" -> R.string.diagnostics_log_event_fail_native
+            "presentation.resolve" -> R.string.diagnostics_log_event_presentation_resolve
             "renderer.attach" -> R.string.diagnostics_log_event_renderer_attach
             "diagnostics.snapshot" -> R.string.diagnostics_log_event_diagnostics_snapshot
             "diagnostics.level" -> R.string.diagnostics_log_event_diagnostics_level
             "pipeline.latency" -> R.string.diagnostics_log_event_pipeline_latency
             "visualSettings.changed" -> R.string.diagnostics_log_event_visual_settings
             "featureSettings.changed" -> R.string.diagnostics_log_event_feature_settings
+            "hotReload.prepare" -> R.string.diagnostics_log_event_hot_reload_prepare
+            "hotReload.generationHandoff" -> R.string.diagnostics_log_event_hot_reload_handoff
+            "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
+            "hotReload.restore" -> R.string.diagnostics_log_event_hot_reload_restore
             "hotReload.complete" -> R.string.diagnostics_log_event_hot_reload
+            "mobile.recovery" -> R.string.diagnostics_log_event_mobile_recovery
+            "scene.stableFamily" -> R.string.diagnostics_log_event_scene_stable
+            "aod.state" -> R.string.diagnostics_log_event_aod_state
+            "aod.target" -> R.string.diagnostics_log_event_aod_target
             "connectivity" -> R.string.diagnostics_log_event_connectivity
             "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
+            "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
             "tintCommit" -> R.string.diagnostics_log_event_tint_commit
             "homeRenderTint" -> R.string.diagnostics_log_event_home_tint
             else -> null
@@ -1268,6 +1377,40 @@ private fun formatDiagnosticMicros(micros: Long): String =
     } else {
         "$micros μs"
     }
+
+private val DiagnosticRuntimeEvents =
+    setOf(
+        "module.loaded",
+        "module.reloaded",
+        "compatibility.probe",
+        "compatibility.revalidated",
+        "hook.install",
+        "hook.replace",
+        "source.install",
+        "source.attach",
+        "runtime.attach",
+        "runtime.teardown",
+        "runtimePreferences.bind",
+        "diagnostics.bind",
+        "diagnostics.level",
+        "host.capture",
+        "host.restore",
+        "session.attach",
+        "presentation.cutover",
+        "presentation.failNative",
+        "renderer.attach",
+        "featureSettings.changed",
+        "visualSettings.changed",
+        "hotReload.prepare",
+        "hotReload.generationHandoff",
+        "hotReload.migration",
+        "hotReload.restore",
+        "hotReload.complete",
+        "mobile.recovery",
+        "scene.stableFamily",
+        "aod.state",
+        "aod.target",
+    )
 
 private val DiagnosticLogMetadataFields =
     setOf(
