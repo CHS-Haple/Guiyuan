@@ -4,6 +4,7 @@ import android.graphics.drawable.Icon
 import android.view.View
 import android.view.ViewGroup
 import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
 internal object NativeParticipantRuntimeAccess {
     const val PHONE_STATUS_BAR_VIEW =
@@ -21,6 +22,12 @@ internal object NativeParticipantRuntimeAccess {
             "com.android.systemui.statusbar.phone.ui.StatusBarIconController",
             "com.android.systemui.statusbar.phone.StatusBarIconController",
         )
+
+    // Status-icon children are queried from native onLayout hot paths. Resolve the
+    // reflective slot getter once per concrete SystemUI view class instead of
+    // walking the method hierarchy for every child on every layout.
+    private val slotAccessorCache = ConcurrentHashMap<Class<*>, Method>()
+    private val slotAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
 
     fun managerFor(host: Any): Any? {
         val hostView = host as? View ?: return null
@@ -329,18 +336,30 @@ internal object NativeParticipantRuntimeAccess {
     }
 
     fun slotOf(view: View): String? {
+        val viewClass = view.javaClass
         val getSlot =
-            view.javaClass
-                .allMethods()
-                .firstOrNull { method ->
-                    method.name == "getSlot" &&
-                        method.parameterCount == 0 &&
-                        method.returnType == String::class.java
+            slotAccessorCache[viewClass]
+                ?: run {
+                    if (viewClass in slotAccessorMissing) {
+                        return null
+                    }
+                    val resolved =
+                        viewClass
+                            .allMethods()
+                            .firstOrNull { method ->
+                                method.name == "getSlot" &&
+                                    method.parameterCount == 0 &&
+                                    method.returnType == String::class.java
+                            }
+                    if (resolved == null) {
+                        slotAccessorMissing += viewClass
+                        return null
+                    }
+                    resolved.isAccessible = true
+                    slotAccessorCache.putIfAbsent(viewClass, resolved) ?: resolved
                 }
-                ?: return null
 
         return runCatching {
-            getSlot.isAccessible = true
             getSlot.invoke(view) as? String
         }.getOrNull()
     }

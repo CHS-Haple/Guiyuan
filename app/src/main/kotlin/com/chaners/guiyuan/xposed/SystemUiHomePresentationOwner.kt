@@ -1034,7 +1034,6 @@ internal object SystemUiHomePresentationOwner {
             val result = session.withRepresentedSlotsIgnored { chain.proceed() }
             if (refreshMasksAfter) {
                 syncSteadyPeerMirrorAfterNativeLayout(session)
-                session.reportNativeSourceSyncDiagnosticAfterLayout()
             }
             if (
                 refreshMasksAfter &&
@@ -1071,7 +1070,7 @@ internal object SystemUiHomePresentationOwner {
             exposed
         }
 
-    private fun syncSteadyPeerMirrorAfterNativeLayout(session: Session) {
+    private fun syncSteadyPeerMirrorAfterNativeLayout(session: Session): Boolean {
         val role =
             synchronized(this) {
                 when {
@@ -1079,13 +1078,14 @@ internal object SystemUiHomePresentationOwner {
                     controlCenterCurrent === session -> CONTROL_CENTER_FAKE_SURFACE
                     else -> null
                 }
-            } ?: return
+            } ?: return false
 
         if (role == HOME_SURFACE) {
             val snapshot = session.captureSteadyPeerMirror()
+            var changed = false
             val fake =
                 synchronized(this) {
-                    val changed =
+                    changed =
                         steadyPeerMirrorActive != snapshot.active ||
                             steadyPeerMirrorHiddenSlots != snapshot.hiddenSlots
                     steadyPeerMirrorActive = snapshot.active
@@ -1104,7 +1104,7 @@ internal object SystemUiHomePresentationOwner {
                 active = snapshot.active,
                 hiddenSlots = snapshot.hiddenSlots,
             )
-            return
+            return changed
         }
 
         val snapshot =
@@ -1118,6 +1118,7 @@ internal object SystemUiHomePresentationOwner {
             active = snapshot.active,
             hiddenSlots = snapshot.hiddenSlots,
         )
+        return false
     }
     private fun batteryHideStateHooker(): Hooker =
         Hooker { chain ->
@@ -1301,8 +1302,6 @@ internal object SystemUiHomePresentationOwner {
         private var compactLayoutReady = false
         private var layoutReadyCallback: ((Int) -> Unit)? = null
         private var lastReservationDelta: Int? = null
-        private var lastNativeSourceSyncDiagnostic: String? = null
-        private var lastSteadyPeerMirrorDiagnostic: String? = null
         private var steadyPeerMirrorActive = false
         private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
         private var steadyPeerMirrorIslandSuppressionReported = false
@@ -1314,6 +1313,7 @@ internal object SystemUiHomePresentationOwner {
         private var fakeCarrierCapacityDeltaPx: Int? = null
         private var fakeCarrierCapacityLeaseAwaitingLayout = false
         private var fakeCarrierCapacityLeaseSuppressed = false
+        private var fakeCarrierVisibleCycleActive = false
         private var pendingFakeCarrierNativeBaselineWidthPx: Int? = null
         private var transientLiveBatteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
@@ -1623,6 +1623,7 @@ internal object SystemUiHomePresentationOwner {
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
             fakeCarrierCapacityLeaseSuppressed = false
+            fakeCarrierVisibleCycleActive = false
             pendingFakeCarrierNativeBaselineWidthPx = null
             deferVisualMaskUntilLayout = false
             host.get()?.removeOnAttachStateChangeListener(this)
@@ -1832,10 +1833,23 @@ internal object SystemUiHomePresentationOwner {
         fun onControlCenterVisibilityChanged(visible: Boolean): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (visible) {
-                if (!fakeCarrierCapacityLeaseSuppressed) return true
+                if (fakeCarrierVisibleCycleActive && !fakeCarrierCapacityLeaseSuppressed) {
+                    return true
+                }
                 fakeCarrierCapacityLeaseSuppressed = false
-                return syncEndReservation()
+
+                // The first visible edge is the ownership handoff from hidden/prearm
+                // to the visible QS_FAKE cycle. Reconcile while hidden ownership is
+                // still in force so a native hidden relayout can be adopted instead
+                // of being misclassified as a visible writer conflict.
+                if (!syncEndReservation()) {
+                    return false
+                }
+                fakeCarrierVisibleCycleActive = true
+                return true
             }
+
+            fakeCarrierVisibleCycleActive = false
             if (fakeCarrierCapacityLeaseSuppressed) return true
 
             // Close the transition reservation while native layout writes are
@@ -2124,14 +2138,38 @@ internal object SystemUiHomePresentationOwner {
 
             val existingAppliedWidthPx = appliedFakeCarrierWidthPx
             if (existingAppliedWidthPx != null) {
-                if (
-                    nativeFakeCarrierParentContentWidthPx != parentContentWidthPx ||
-                    params.width != existingAppliedWidthPx
+                when (
+                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                        visibleCycleActive = fakeCarrierVisibleCycleActive,
+                        liveWidthPx = params.width,
+                        appliedWidthPx = existingAppliedWidthPx,
+                        currentParentContentWidthPx = parentContentWidthPx,
+                        leasedParentContentWidthPx = nativeFakeCarrierParentContentWidthPx,
+                    )
                 ) {
-                    onFailNative("fake-carrier-width-writer-conflict")
-                    return null
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.REUSE ->
+                        return fakeCarrierCapacityDeltaPx
+
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE -> {
+                        val adoptedNativeWidthPx = params.width
+                        val previousNativeWidthPx = nativeFakeCarrierLayoutWidthPx
+                        clearFakeCarrierCapacityLeaseSnapshot()
+                        pendingFakeCarrierNativeBaselineWidthPx = adoptedNativeWidthPx
+                        onEvent(
+                            eventPrefix +
+                                " fakeCarrierCapacity lease=adopt-native-hidden-prearm" +
+                                " liveWidth=" + adoptedNativeWidthPx +
+                                " appliedWidth=" + existingAppliedWidthPx +
+                                " previousNativeWidth=" + (previousNativeWidthPx ?: -1) +
+                                " owner=control-center-fake-session",
+                        )
+                    }
+
+                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT -> {
+                        onFailNative("fake-carrier-width-writer-conflict")
+                        return null
+                    }
                 }
-                return fakeCarrierCapacityDeltaPx
             }
 
             val pendingNativeBaselineWidthPx =
@@ -2397,71 +2435,6 @@ internal object SystemUiHomePresentationOwner {
             callback?.invoke(maskedViews)
         }
 
-        fun reportNativeSourceSyncDiagnosticAfterLayout() {
-            if (
-                !active ||
-                (surfaceName != HOME_SURFACE && surfaceName != CONTROL_CENTER_FAKE_SURFACE)
-            ) {
-                return
-            }
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                !HotPathDiagnosticPolicy.shouldReportControlCenterLayoutState(
-                    detailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled(),
-                    transitionReservationActive = transitionRequestedSlotWidthPx != null,
-                )
-            ) {
-                return
-            }
-            val group = statusIcons.get() ?: return
-            val container = batteryContainer.get() ?: return
-            val hostView = host.get() ?: return
-            val nativeHide = runCatching { batteryHideField.getBoolean(container) }.getOrNull()
-            val peers =
-                buildList {
-                    for (index in 0 until group.childCount) {
-                        val child = group.getChildAt(index)
-                        val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
-                        if (slot in representedSlots) continue
-                        val state =
-                            SystemUiNativeNetworkSuppressionOwner
-                                .readTransitionIconState(group, child)
-                        add(
-                            slot +
-                                "{v=" + child.visibility +
-                                ",a=" + "%.2f".format(java.util.Locale.US, child.alpha) +
-                                ",w=" + child.width +
-                                ",state=" + (state?.visibleState ?: -1) +
-                                ",island=" + (state?.inIslandState ?: -1) +
-                                ",before=" + (state?.beforeInIslandState ?: -1) +
-                                "}",
-                        )
-                    }
-                }
-                .joinToString(",")
-            val snapshot =
-                "surface=" + surfaceName +
-                    " islandShowing=" + (SystemUiIslandMotionSource.currentIslandShowing() ?: "unknown") +
-                    " nativeHideBattery=" + (nativeHide ?: "unknown") +
-                    " hostWidth=" + hostView.width +
-                    " groupWidth=" + group.width +
-                    " measuredGroupWidth=" + group.measuredWidth +
-                    " paddingEnd=" + group.paddingEnd +
-                    " transitionReservation=" + (transitionRequestedSlotWidthPx ?: -1) +
-                    " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
-                    " fakeCarrierLeaseSuppressed=" + fakeCarrierCapacityLeaseSuppressed +
-                    " fakeCarrierPendingNativeWidth=" +
-                    (pendingFakeCarrierNativeBaselineWidthPx ?: -1) +
-                    " steadyMirrorActive=" + steadyPeerMirrorActive +
-                    " steadyMirrorHidden=[" +
-                    steadyPeerMirrorHiddenSlots.sorted().joinToString(",") +
-                    "] peers=[" + peers + "]"
-            if (snapshot != lastNativeSourceSyncDiagnostic) {
-                lastNativeSourceSyncDiagnostic = snapshot
-                onEvent(eventPrefix + " nativeSourceSyncDiag " + snapshot)
-            }
-        }
-
         fun captureSteadyPeerMirror(): SteadyPeerMirrorSnapshot {
             if (!active || surfaceName != HOME_SURFACE) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
@@ -2480,7 +2453,7 @@ internal object SystemUiHomePresentationOwner {
                         if (slot in representedSlots) continue
                         val state =
                             SystemUiNativeNetworkSuppressionOwner
-                                .readTransitionIconState(group, child)
+                                .readIslandVisibilityState(group, child)
                                 ?: continue
                         if (
                             SteadyPeerMirrorPolicy.isIslandHidden(
@@ -2511,20 +2484,6 @@ internal object SystemUiHomePresentationOwner {
             }
             if (compactLayoutReady) {
                 refreshMirroredPeerClipMasks()
-            }
-            if (changed) {
-                val diagnostic =
-                    "active=" + active +
-                        " hiddenSlots=[" + normalized.sorted().joinToString(",") + "]"
-                if (diagnostic != lastSteadyPeerMirrorDiagnostic) {
-                    lastSteadyPeerMirrorDiagnostic = diagnostic
-                    onEvent(
-                        eventPrefix +
-                            " steadyPeerMirror " + diagnostic +
-                            " authority=home-native-island-state" +
-                            " nativeStateWrites=0",
-                    )
-                }
             }
         }
 
@@ -2806,7 +2765,42 @@ internal object SystemUiHomePresentationOwner {
             transitionReservationActive: Boolean,
         ): Boolean =
             detailedDiagnosticsEnabled && !transitionReservationActive
+
     }
+    internal object FakeCarrierCapacityLeasePolicy {
+        enum class ExistingLeaseAction {
+            REUSE,
+            ADOPT_HIDDEN_NATIVE,
+            FAIL_WRITER_CONFLICT,
+        }
+
+        fun resolveExistingLeaseAction(
+            visibleCycleActive: Boolean,
+            liveWidthPx: Int,
+            appliedWidthPx: Int,
+            currentParentContentWidthPx: Int,
+            leasedParentContentWidthPx: Int?,
+        ): ExistingLeaseAction {
+            if (
+                leasedParentContentWidthPx == null ||
+                leasedParentContentWidthPx != currentParentContentWidthPx
+            ) {
+                return ExistingLeaseAction.FAIL_WRITER_CONFLICT
+            }
+            if (liveWidthPx == appliedWidthPx) {
+                return ExistingLeaseAction.REUSE
+            }
+            if (
+                !visibleCycleActive &&
+                liveWidthPx > 0 &&
+                liveWidthPx <= currentParentContentWidthPx
+            ) {
+                return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+            }
+            return ExistingLeaseAction.FAIL_WRITER_CONFLICT
+        }
+    }
+
     internal object EndReservationPolicy {
         fun shouldDeferLiveBatteryWidthUnavailable(
             retainOnTransientLoss: Boolean,

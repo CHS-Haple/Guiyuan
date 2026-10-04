@@ -8,7 +8,6 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import kotlin.math.floor
 
 internal object SystemUiPanelTransitionSource {
     const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
@@ -253,33 +252,7 @@ internal object SystemUiPanelTransitionSource {
                                     },
                                 onFailure = onRuntimeFailure,
                             )
-                            val result = chain.proceed()
-                            val anchorSnapshot =
-                                if (
-                                    onEvent != null &&
-                                    isProbeEnabled() &&
-                                    shouldCaptureControlAnchor(fraction)
-                                ) {
-                                    controlAnchorContract
-                                        ?.snapshotFromCallback(chain.thisObject)
-                                } else {
-                                    null
-                                }
-                            emitDiagnostic(
-                                update =
-                                    preNativeUpdate.copy(
-                                        controlCenterAnchor = anchorSnapshot,
-                                        homeMotion =
-                                            if (anchorSnapshot != null) {
-                                                SystemUiIslandMotionSource.currentOwnerSnapshot()
-                                            } else {
-                                                null
-                                            },
-                                    ),
-                                onEvent = onEvent,
-                                isProbeEnabled = isProbeEnabled,
-                            )
-                            result
+                            chain.proceed()
                         },
                     )
 
@@ -312,26 +285,6 @@ internal object SystemUiPanelTransitionSource {
                                 callback = onUpdate?.let { callback -> { callback(update) } },
                                 onFailure = onRuntimeFailure,
                             )
-                            if (onEvent != null && isProbeEnabled()) {
-                                dispatchRuntimeCallback(
-                                    callback = {
-                                        onEvent(
-                                            appearanceDiagnostic(
-                                                first = first,
-                                                second = second,
-                                                snapshot =
-                                                    controlAnchorContract
-                                                        ?.snapshotFromCallback(chain.thisObject),
-                                                fakePresentation =
-                                                    controlAnchorContract
-                                                        ?.fakePresentationFromCallback(
-                                                            chain.thisObject,
-                                                        ),
-                                            ),
-                                        )
-                                    },
-                                )
-                            }
                             result
                         },
                     )
@@ -493,20 +446,6 @@ internal object SystemUiPanelTransitionSource {
         CONTROL_CENTER_RUNTIME_HOOK_COUNT +
             if (includeControlCenterDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
 
-    internal fun appearanceDiagnostic(
-        first: Boolean?,
-        second: Boolean?,
-        snapshot: ControlCenterAnchorSnapshot?,
-        fakePresentation: ControlCenterFakePresentationSnapshot? = null,
-    ): String =
-        "controlCenterAppearance first=" + (first ?: "unknown") +
-            " second=" + (second ?: "unknown") +
-            " expanding=" + (snapshot?.controlCenterExpanding ?: "unknown") +
-            " addBatteryIsland=" + (snapshot?.addBatteryIsland ?: "unknown") +
-            " batteryWidthDiff=" + (snapshot?.batteryWidthDiff ?: "unknown") +
-            " fakePresentation=" + (fakePresentation?.summary ?: "unknown") +
-            " readOnly=true nativeGeometryWrites=0"
-
     fun currentControlCenterHomeEligibility(): Boolean? =
         controlCenterHomeEligible
 
@@ -519,24 +458,6 @@ internal object SystemUiPanelTransitionSource {
 
     internal fun controlCenterAllowsHome(visible: Boolean?): Boolean =
         visible == false
-
-    internal fun diagnosticBucket(fraction: Float?): Int? =
-        fraction?.let { rawValue ->
-            val value = rawValue.coerceIn(0f, 1f)
-            floor(value * DIAGNOSTIC_BUCKETS)
-                .toInt()
-                .coerceIn(0, DIAGNOSTIC_BUCKETS)
-        }
-
-    internal fun isBoundaryDiagnosticBucket(bucket: Int?): Boolean =
-        bucket == 0 || bucket == 1 || bucket == 7 || bucket == 8
-
-    @Synchronized
-    private fun shouldCaptureControlAnchor(fraction: Float?): Boolean {
-        val bucket = diagnosticBucket(fraction)
-        return isBoundaryDiagnosticBucket(bucket) &&
-            bucket != controlProbe.bucket
-    }
 
     private fun resolveControlCenterHeader(delegate: Any?): Any? {
         delegate ?: return null
@@ -617,54 +538,53 @@ internal object SystemUiPanelTransitionSource {
             return
         }
         val probe = controlProbe
-        val bucket = diagnosticBucket(update.fraction)
-        val changed =
-            (bucket != null && bucket != probe.bucket) ||
-                (update.expanded != null && update.expanded != probe.expanded) ||
-                (update.tracking != null && update.tracking != probe.tracking) ||
-                (update.visible != null && update.visible != probe.visible)
-        if (!changed) {
+        val expandedChanged =
+            update.expanded != null && update.expanded != probe.expanded
+        val trackingChanged =
+            update.tracking != null && update.tracking != probe.tracking
+        val visibleChanged =
+            update.visible != null && update.visible != probe.visible
+        val sourceSceneChanged =
+            update.controlCenterSourceScene != null &&
+                update.controlCenterSourceScene != probe.sourceScene
+        val batteryIslandChanged =
+            update.controlCenterBatteryIslandActive != null &&
+                update.controlCenterBatteryIslandActive != probe.batteryIsland
+
+        if (update.expanded != null) probe.expanded = update.expanded
+        if (update.tracking != null) probe.tracking = update.tracking
+        if (update.visible != null) probe.visible = update.visible
+        if (update.controlCenterSourceScene != null) {
+            probe.sourceScene = update.controlCenterSourceScene
+        }
+        if (update.controlCenterBatteryIslandActive != null) {
+            probe.batteryIsland = update.controlCenterBatteryIslandActive
+        }
+
+        if (
+            !DiagnosticPolicy.shouldReportPanelEvent(
+                expandedChanged = expandedChanged,
+                trackingChanged = trackingChanged,
+                visibleChanged = visibleChanged,
+                sourceSceneChanged = sourceSceneChanged,
+                batteryIslandChanged = batteryIslandChanged,
+            )
+        ) {
             return
         }
-        if (bucket != null) {
-            probe.bucket = bucket
-        }
-        if (update.expanded != null) {
-            probe.expanded = update.expanded
-        }
-        if (update.tracking != null) {
-            probe.tracking = update.tracking
-        }
-        if (update.visible != null) {
-            probe.visible = update.visible
-        }
-        val anchorSummary =
-            update.controlCenterAnchor?.let { snapshot ->
-                " controlAnchor=" + snapshot.summary
-            }.orEmpty()
-        val homeMotionSummary =
-            update.homeMotion?.let { snapshot ->
-                " homeMotion=" + snapshot.summary
-            }.orEmpty()
+
         val sourceSceneSummary =
-            update.controlCenterSourceScene?.let { sourceScene ->
-                " sourceScene=" + sourceScene.name
-            }.orEmpty()
+            update.controlCenterSourceScene?.let { " sourceScene=" + it.name }.orEmpty()
         val batteryIslandSummary =
-            update.controlCenterBatteryIslandActive?.let { active ->
-                " batteryIsland=" + active
-            }.orEmpty()
+            update.controlCenterBatteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
         dispatchRuntimeCallback(
             callback = {
                 onEvent(
                     "panelTransition source=" + update.source.logName +
                         " fraction=" + (update.fraction ?: "none") +
-                        " bucket=" + (bucket ?: probe.bucket) + "/" + DIAGNOSTIC_BUCKETS +
                         " expanded=" + (update.expanded ?: probe.expanded ?: "none") +
                         " tracking=" + (update.tracking ?: probe.tracking ?: "none") +
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
-                        anchorSummary +
-                        homeMotionSummary +
                         sourceSceneSummary +
                         batteryIslandSummary +
                         " authority=hyperos-native-callback" +
@@ -687,7 +607,6 @@ internal object SystemUiPanelTransitionSource {
         val controlCenterTransitionEndpoints: ControlCenterTransitionEndpoints? = null,
         val controlCenterBatteryIslandActive: Boolean? = null,
         val controlCenterAnchor: ControlCenterAnchorSnapshot? = null,
-        val homeMotion: SystemUiIslandMotionSource.OwnerSnapshot? = null,
     )
 
     internal enum class Source(
@@ -1038,12 +957,27 @@ internal object SystemUiPanelTransitionSource {
     private fun Field.accessible(): Field =
         apply { isAccessible = true }
 
+    internal object DiagnosticPolicy {
+        fun shouldReportPanelEvent(
+            expandedChanged: Boolean,
+            trackingChanged: Boolean,
+            visibleChanged: Boolean,
+            sourceSceneChanged: Boolean,
+            batteryIslandChanged: Boolean,
+        ): Boolean =
+            expandedChanged ||
+                trackingChanged ||
+                visibleChanged ||
+                sourceSceneChanged ||
+                batteryIslandChanged
+
+    }
+
     private data class ProbeState(
-        var bucket: Int = -1,
         var expanded: Boolean? = null,
         var tracking: Boolean? = null,
         var visible: Boolean? = null,
+        var sourceScene: CombinedStatusSourceScene? = null,
+        var batteryIsland: Boolean? = null,
     )
-
-    private const val DIAGNOSTIC_BUCKETS = 8
 }

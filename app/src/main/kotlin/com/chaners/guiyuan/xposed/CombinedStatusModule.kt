@@ -44,7 +44,6 @@ class CombinedStatusModule : XposedModule() {
     private var aodRendererAttached = false
     private var keyguardPresentationReadyObserved = false
     private var keyguardControlCenterLeaseActive = false
-    private var controlCenterGeometryProbeBucket = -1
     private var lastBatteryNumberProbeDiagnosticSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
@@ -291,7 +290,6 @@ class CombinedStatusModule : XposedModule() {
             aodRendererAttached = false
             keyguardPresentationReadyObserved = false
             keyguardControlCenterLeaseActive = false
-            controlCenterGeometryProbeBucket = -1
             SystemUiPresentationRuntimeOwner.resetRuntimeState()
             SystemUiKeyguardHostResolver.resetRuntimeState()
             SystemUiHomePresentationOwner.resetRuntimeState("hotReload")
@@ -1060,7 +1058,6 @@ class CombinedStatusModule : XposedModule() {
             )
         }.onFailure { error ->
             panelTransitionSourceInstalled = false
-            controlCenterGeometryProbeBucket = -1
             CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.ERROR,
@@ -1086,13 +1083,14 @@ class CombinedStatusModule : XposedModule() {
             }
         CombinedStatusControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
 
-        if (detailedDiagnosticsEnabled) {
+        if (
+            detailedDiagnosticsEnabled &&
+            update.fraction != null &&
+            lastBatteryNumberProbeDiagnosticSummary == null
+        ) {
             val batteryNumberProbe =
                 CombinedStatusControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
-            if (
-                batteryNumberProbe != null &&
-                batteryNumberProbe != lastBatteryNumberProbeDiagnosticSummary
-            ) {
+            if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeDiagnosticSummary = batteryNumberProbe
                 logDiagnostic(
                     level = Log.INFO,
@@ -1106,41 +1104,6 @@ class CombinedStatusModule : XposedModule() {
             }
         }
 
-        if (!detailedDiagnosticsEnabled) {
-            return
-        }
-
-        val bucket =
-            SystemUiPanelTransitionSource.diagnosticBucket(update.fraction)
-                ?: return
-        if (update.visible == false) {
-            controlCenterGeometryProbeBucket = -1
-            return
-        }
-        if (bucket == controlCenterGeometryProbeBucket) {
-            return
-        }
-        controlCenterGeometryProbeBucket = bucket
-        val geometry =
-            SystemUiNativeNetworkSuppressionOwner.currentTransitionTargetGeometry()
-        val state =
-            SystemUiNativeNetworkSuppressionOwner.currentTransitionStateSnapshot()
-        val projection =
-            CombinedStatusControlCenterRenderSession.currentProjectionGeometryDiagnostic()
-        val transitionOwner =
-            CombinedStatusControlCenterTransitionOwner.currentDiagnostic()
-        log(
-            Log.INFO,
-            TAG,
-            "controlCenterTransitionGeometry " +
-                "fraction=" + update.fraction +
-                " bucket=" + bucket + "/8 " +
-                (geometry?.summary ?: "geometry=unavailable") +
-                " " + (state?.summary ?: "state=unavailable") +
-                " " + projection +
-                " " + transitionOwner +
-                " readOnly=true nativeGeometryWrites=0",
-        )
     }
 
     private fun handleControlCenterPanelUpdate(

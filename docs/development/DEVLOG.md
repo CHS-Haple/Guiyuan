@@ -4053,3 +4053,184 @@ No geometry, transition timing, reservation curve, capacity lease, clip mask, so
 ### Validation
 
 Draft PR uses Light validation while the diff is reviewed. Mark ready only after static review; exact-head Runtime CI is required before merge. No Canary is justified by this checkpoint alone because default behavior and device-visible geometry are unchanged.
+
+## 2026-10-04 — Build 687: remove heavy diagnostics from Keyguard-island stress path
+**Type:** low-risk performance / observation-path cleanup
+**Branch:** `fix/keyguard-island-diagnostic-hotpath`
+**Build:** 687 / `20261004-687`
+### Evidence
+Build 686 is visually correct, but the maintainer reports progressive visible frame loss when Keyguard combined status is enabled, an island is active, and Control Center is repeatedly pulled fully down and swiped fully back up. The supplied Detailed diagnostic reproduces that stress loop and contains 22 island show/hide events plus 146 full `controlCenterTransitionGeometry` snapshots in roughly seven seconds. The geometry snapshots account for about 450 KB of synchronous log text; Home native-source snapshots add about 52 KB.
+### Root cause / change
+- Home presentation called `reportNativeSourceSyncDiagnosticAfterLayout()` after every intercepted native `onLayout`. For the Home surface, the function traversed native peers and formatted the full snapshot before the outer event sink could discard it when Detailed diagnostics were disabled.
+- Home native-source snapshots are now constructed only when Detailed diagnostics are enabled and the functional steady-peer-mirror state actually changed.
+- Detailed Control Center full geometry snapshots are reduced from every 1/8 bucket to two meaningful checkpoints: 4/8 (mid-transition) and 7/8 (handoff edge). The existing lightweight panel-transition trace remains unchanged.
+- Unit tests cover general-vs-Detailed gating, transition-reservation suppression, Home mirror-change gating, and selected heavy geometry buckets.
+### Safety boundary
+No change to island state ownership, steady-peer-mirror functional updates, source-scene selection, Keyguard Control Center lease, transition reservation/capacity, animation timing, drawing geometry, alpha/translation/visibility writers, native tint authority, or HyperOS lifecycle ownership.
+### Device gate
+Stress only the reported scenario first: Keyguard combined status + active island + repeated full pull/down-up cycles. If progressive jank persists, investigate the functional island-active Home peer scan next; do not mix that higher-risk path with this diagnostic A/B.
+
+## 2026-10-04 — Build 689 remove gesture-frame diagnostics
+
+**Type:** performance / diagnostic hot-path follow-up
+**Display version:** 0.0.5
+**Build:** 689 / `20261004-689`
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Problem
+
+Build 687 retained visible jank during repeated complete Control Center pull/down-up cycles from Keyguard with an active island.
+
+### Evidence
+
+The reproduced LSPosed window still showed hundreds of Guiyuan records emitted synchronously on the SystemUI main thread, including repeated multi-KB transition geometry snapshots, fraction-bucket panel traces, QS_FAKE native-source snapshots and repeated island-owner observations. A bucket gate reduced frequency but did not move those diagnostics out of the gesture path; reversals repeatedly crossed the selected buckets.
+
+### Conclusion
+
+Build 687's reductions remain valid but are insufficient. Finish eliminating avoidable observation work before changing functional island mirroring or drawable/compositing behavior.
+
+### Change
+
+- keep all Build 687 diagnostic gates;
+- stop full transition geometry/state/projection snapshot construction from expansion callbacks;
+- stop fraction-bucket-only panel diagnostics and diagnostic-only anchor/Home-motion capture;
+- stop QS_FAKE native-source layout snapshot generation;
+- retain Home native-source diagnostics only for actual steady-peer-mirror changes;
+- deduplicate appearance and island-owner diagnostics to semantic state changes.
+
+No transition geometry, reservation, functional steady-peer-mirror scan, scene ownership, native writer, animation timing or draw-layer compositing changes.
+
+### Validation
+
+Unit coverage asserts that fraction bucket changes alone are non-reporting while lifecycle/semantic edges remain observable. Exact-head Runtime CI and a focused Keyguard + active-island repeated-pull Canary device gate are required.
+
+## 2026-10-04 — Build 690 cache native peer reflection
+
+**Type:** performance / behavior-preserving functional hot-path optimization  
+**Display version:** 0.0.5  
+**Build:** 690 / `20261004-690`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 689 still reproduces substantial jank in the focused Keyguard + active-island repeated full pull/down-up stress case, so diagnostic construction is no longer treated as the primary suspect.
+
+The captured runtime shows the steady Home peer mirror repeatedly following island state during the stress case while `hiddenSlots=[]`. Static review found the mirror's per-native-layout peer sampling repeatedly discovers reflection metadata: `slotOf()` scans the child method hierarchy for `getSlot()`, while `readTransitionIconState()` resolves the Companion accessor and re-scans state fields for every peer.
+
+### Change
+
+- cache native `getSlot()` accessors by concrete status-icon view class;
+- cache native transition-state Companion accessors by concrete status-icon-group class;
+- cache transition-state Fields by concrete state class;
+- add a minimal island visibility reader that fetches only `visibleState` and `inIslandState` for steady-peer mirror decisions;
+- keep the full cached transition-state reader for diagnostic/other callers.
+
+### Safety boundary
+
+No reduction in native-layout sampling cadence, no hidden-slot decision change, no peer clip ownership change, no animation/timing/geometry/reservation change, and no new writer. If reflection resolution fails, the same existing null/fail-soft behavior is preserved.
+
+### Device gate
+
+Repeat the exact Keyguard + active-island rapid full Control Center pull/down-up stress case. If jank remains substantial, move next to hidden Home tint work and then residual draw/compositing cost rather than changing mirror semantics.
+
+## 2026-10-04 — Build 691 remove Detailed native-layout peer snapshots
+
+**Type:** performance / diagnostic hot-path cleanup  
+**Display version:** 0.0.5  
+**Build:** 691 / `20261004-691`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 690 made the focused Keyguard + active-island pull path substantially smoother, confirming the native peer reflection work was valuable. A direct diagnostics-level A/B then showed General smoother than Detailed; switching back to Detailed reintroduced a mid-gesture hitch.
+
+In that same SystemUI session, Detailed re-enabled repeated `homePresentation nativeSourceSyncDiag` records on island mirror edges. Each record rebuilt and formatted the complete non-represented peer row, even though the functional mirror already emitted the low-cost `active/hiddenSlots` semantic result.
+
+### Change
+
+- remove the full Home native-source peer snapshot from native `onLayout` callbacks;
+- remove its obsolete HotPathDiagnosticPolicy branch and unit expectations;
+- retain Build 690 reflection caches and minimal live mirror state reads;
+- retain lightweight mirror, lease, scene, readiness and lifecycle diagnostics.
+
+### Safety boundary
+
+No functional mirror cadence/result change, no clip ownership change, no animation/timing/geometry/reservation change and no native writer change.
+
+### Device gate
+
+Repeat the same Keyguard + active-island pull stress in General and Detailed. Detailed should no longer have a distinct mid-gesture hitch. If both levels become equivalent but still trail Home, move to residual draw/compositing cost.
+
+## 2026-10-04 — Build 693 deduplicate semantic diagnostics
+
+**Type:** diagnostics-only performance cleanup  
+**Display version:** 0.0.5  
+**Build:** 693 / `20261004-693`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+Build 691 removed the full Home native-source peer snapshot. In the supplied A/B session, Detailed still emitted paired records for the same semantic edges: Home mirror state followed by a QS_FAKE mirror echo, and island-owner show/hide followed by an appearance echo.
+
+### Change
+
+- retain Home authoritative `steadyPeerMirror source=home` state;
+- remove the immediate target-session mirror echo;
+- retain direct `islandOwner` state-edge diagnostics;
+- remove text-only `controlCenterAppearance` logging while preserving the native appearance hook and functional update callback.
+
+### Safety
+
+No native state read/write, mirror cadence, hidden-slot result, appearance update, geometry, transition, reservation, tint or lifecycle behavior changes. Exact-head CI is sufficient; no new device gate is required.
+
+## 2026-10-04 — Build 694 fix QS_FAKE hidden/prearm lease lifecycle
+
+**Type:** lifecycle correctness / fail-native ownership  
+**Display version:** 0.0.5  
+**Build:** 694 / `20261004-694`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Evidence
+
+The previously captured one-time native fallback was caused by a hidden/prearm capacity lease being overwritten by a legitimate HyperOS hidden relayout. The lease snapshot retained the expanded applied width and the next visible preparation misclassified the live native width as a foreign writer conflict.
+
+### Change
+
+- track QS_FAKE visible-cycle ownership separately from hidden/prearm ownership;
+- reconcile the first visible edge while hidden/prearm ownership is still active;
+- adopt a changed live native width only when hidden/prearm, positive, within the unchanged parent-content contract;
+- clear the stale snapshot, record the adopted live width as the pending native baseline, and reacquire through the existing lease path;
+- preserve fail-native for every visible-cycle width mismatch;
+- preserve fail-native when the parent-content contract itself changed.
+
+### Safety
+
+The writer-conflict guard is not removed or weakened for visible ownership. No timers, polling, persistent ownership state, or alternate layout writer are introduced. Existing hidden-boundary release remains authoritative.
+
+### Validation
+
+Unit coverage reproduces the exact hidden 587→836→587 ownership sequence and verifies visible mismatch, unchanged hidden reuse, and parent-contract mismatch behavior. Exact-head Runtime CI plus code review are required before dev merge.
+
+## 2026-10-04 — Build 695 confirm attached QS_FAKE visible ownership
+
+**Type:** lifecycle correctness follow-up  
+**Display version:** 0.0.5  
+**Build:** 695 / `20261004-695`  
+**Branch / PR:** `fix/keyguard-island-diagnostic-hotpath` / #203
+
+### Review finding
+
+The first native visible callback may arrive before a QS_FAKE session has been attached. The early owner-level `beginVisibleCycle()` therefore cannot by itself guarantee that the new session enters visible lease ownership.
+
+### Change
+
+- keep the early owner-level visible-cycle reconcile for existing prearmed sessions;
+- on an attached session's `requestedVisible false→true` edge, confirm owner visible-cycle handoff again;
+- repeated true→true does not re-enter the handoff;
+- false→true failure leaves requested visibility false and preserves fallback;
+- keep Build 694 hidden/prearm native-width adoption and visible writer-conflict semantics unchanged.
+
+### Validation
+
+Unit coverage verifies false→true is the only attached-session begin edge and true→false remains the only end edge. Exact-head Runtime CI and final lifecycle review are required before dev merge.
+

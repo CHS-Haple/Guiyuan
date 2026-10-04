@@ -7,6 +7,8 @@
 - `dev` baseline: Build 686 / `74603ff` / versionCode `261004686` / Build ID `20261004-686`.
 - PR #202 is merged; exact-head PR Runtime #2583 and integrated dev Runtime #2584 both passed.
 - Build 686 is a behavior-preserving QS_FAKE hot-path reduction; it does not change geometry, timing, reservation semantics, native appearance ownership or writer boundaries.
+- Active work: `fix/keyguard-island-diagnostic-hotpath` / Build 695 (`20261004-695`) is the reviewed QS_FAKE lease-lifecycle closure on top of the completed diagnostics/performance work.
+- Build 695 keeps Build 694's hidden/prearm adoption policy and additionally confirms visible ownership from the attached QS_FAKE session's false→true requested-visibility edge, covering the first-visible attach ordering without weakening visible writer protection.
 - Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
 
 ## Accepted runtime facts carried into Build 685
@@ -83,3 +85,89 @@ Build 686 keeps the same native evidence and refresh seams while reducing those 
 - layout/island coordinate sampling reuses session-local scratch arrays.
 
 Remaining audit: review Home / Keyguard / AOD hot paths and the residual QS_FAKE draw-layer allocations. Do not pursue Painter-spec caching or `saveLayerAlpha` replacement without stronger evidence because those paths begin to affect drawing-state semantics. No animation curve, transition endpoint, padding/reservation formula, clip ownership, alpha/translation/visibility writer, or HyperOS appearance authority changed in Build 686.
+
+## Build 689 Keyguard-island diagnostic hot-path follow-up
+
+Build 687 reduced two diagnostic sources but failed the focused device gate: Keyguard combined status + active island still becomes visibly janky under repeated complete Control Center pull/down-up cycles.
+
+The reproduced LSPosed window shows the remaining Detailed path still runs synchronously on the SystemUI main thread and emits hundreds of records during the stress gesture. The dominant avoidable work is:
+- repeated multi-KB `controlCenterTransitionGeometry` snapshots when the gesture re-crosses selected buckets;
+- bucket-only `panelTransition` logging and diagnostic anchor/Home-motion snapshots;
+- QS_FAKE `nativeSourceSyncDiag` construction from native layout callbacks;
+- repeated appearance and island-owner observation records.
+
+Build 689 preserves every Build 687 reduction and further limits observation to semantic/lifecycle edges:
+- no full transition geometry/state/projection snapshot is built from expansion callbacks;
+- fraction-bucket changes alone no longer emit `panelTransition` diagnostics;
+- diagnostic-only control-anchor/Home-motion snapshots are not captured during expansion;
+- QS_FAKE native-source layout snapshots are disabled; Home retains only steady-peer-mirror change diagnostics;
+- appearance and island-owner diagnostics are deduplicated to state changes.
+
+Functional callbacks, native source resolution, Keyguard lease, steady-peer-mirror scanning, transition reservation, geometry, tint, alpha/translation/visibility ownership and drawable compositing are unchanged.
+
+Device gate: repeat the exact Keyguard + active-island rapid full pull/down-up stress case. If visible jank remains, the observation path is no longer the primary suspect; only then review the functional steady-peer-mirror/layout work and residual draw/compositing cost.
+
+
+## Build 690 native peer reflection hot-path follow-up
+
+Build 689 passed exact-head Runtime and removed the remaining gesture-frame geometry/anchor diagnostics, but the focused device gate still reports substantial jank with Keyguard combined status + active island + repeated full Control Center pull/down-up.
+
+The Build 689 evidence narrows the next functional cost:
+- island-active Home native layouts continue to sample the full non-represented peer row for the QS_FAKE steady-peer mirror;
+- `NativeParticipantRuntimeAccess.slotOf()` re-walks each concrete child class method hierarchy for `getSlot()` on every lookup;
+- `readTransitionIconState()` re-runs `Class.forName`, scans companion declared methods, calls `setAccessible`, invokes the state accessor, then re-walks the state class fields for every property of every sampled peer;
+- the stress log repeatedly reports mirror transitions while `hiddenSlots=[]`, so this reflection cost is paid even when no peer ultimately needs clipping.
+
+Build 690 preserves the exact native-layout sampling cadence and hidden-slot policy, but caches the stable reflection contracts by concrete SystemUI class. The steady peer mirror now reads only `visibleState` and `inIslandState`, the only fields used by `SteadyPeerMirrorPolicy.isIslandHidden()`; full transition diagnostics retain the full cached state reader.
+
+This is intentionally narrower than changing mirror cadence or native layout ownership. If the focused device gate remains poor after Build 690, inspect hidden Home tint work and residual TransitionDrawable/compositing cost next.
+
+## Build 691 Detailed native-layout diagnostic follow-up
+
+Build 690 materially improved Keyguard + active-island repeated pull smoothness, but device A/B showed a remaining diagnostics-level effect: General felt smoother, while switching back to Detailed reintroduced a mid-gesture hitch.
+
+The same SystemUI session recorded the level transition to General at 07:24:01.550 and back to Detailed at 07:24:14.341. Once Detailed was active, each island show/hide mirror edge again produced a full `homePresentation nativeSourceSyncDiag` containing the entire non-represented peer row. Build 690 had already reduced the functional mirror reader to cached reflection + the two required island fields, so the full peer snapshot was now redundant hot-path observation work.
+
+Build 691 removes only that full Home native-layout source snapshot and its obsolete policy/test path. The existing lightweight `steadyPeerMirror active/hiddenSlots` event remains, as do lease, scene, readiness and lifecycle diagnostics. Functional mirror sampling, clip ownership and native-state reads are unchanged.
+
+Device gate: compare General versus Detailed using the same Keyguard + active-island repeated full pull/down-up sequence. Detailed should no longer introduce a distinct mid-gesture hitch. If a gap versus Home remains with both levels equivalent, proceed to residual draw/compositing review rather than further diagnostic trimming.
+
+## Build 693 duplicate semantic diagnostic cleanup
+
+Build 691 confirmed that the full `nativeSourceSyncDiag peers=[...]` snapshot is gone. The supplied Detailed/General A/B still shows Detailed producing repeated pairs for the same semantic edges: Home steady-peer mirror state is immediately echoed by the QS_FAKE target session, and native island owner show/hide is immediately echoed by `controlCenterAppearance`.
+
+Build 693 keeps one authoritative record for each:
+- keep Home `steadyPeerMirror source=home active/hiddenSlots`;
+- remove the immediate QS_FAKE `controlCenterPresentation steadyPeerMirror` echo;
+- keep `islandOwner event showing`;
+- remove text-only `controlCenterAppearance` diagnostics while preserving its native hook and functional `onUpdate` payload.
+
+Panel visibility, lease, readiness, scene, fail-native and suppression diagnostics remain. No functional runtime behavior changes, so device validation is not required beyond exact-head CI and review.
+
+## Build 694 QS_FAKE hidden/prearm lease lifecycle
+
+A prior one-time native fallback showed a real ownership gap: QS_FAKE prearm leased the fake carrier from native width 587 to parent width 836 while hidden, then a HyperOS native hidden relayout restored the live width to 587 without delivering the expected visible=false boundary. The stored lease still believed 836 was owned, so the first visible preparation treated the legitimate native reset as a foreign writer conflict and failed native for that pull.
+
+Build 694 makes the ownership boundary explicit:
+- a QS_FAKE session starts in hidden/prearm ownership;
+- the first visible=true edge performs one reservation reconciliation before promoting the lease to visible ownership;
+- while hidden/prearm, if the parent-content contract is unchanged and the live width is a valid positive native width within that parent, a width different from the leased width is adopted as the new native baseline and the lease is reacquired;
+- while visible, the same mismatch remains a hard writer conflict and preserves fail-native;
+- parent-content changes are never silently adopted by this path;
+- visible=false demotes ownership before clearing transition reservation and releasing the lease, reusing the existing hidden-boundary semantics.
+
+No timer, polling, second state machine, or relaxed visible writer ownership is introduced. Unit coverage locks the exact 587→836→587 hidden/prearm case, visible mismatch failure, unchanged reuse, and parent-contract mismatch failure.
+
+## Build 695 attached-session visible ownership confirmation
+
+Review of Build 694 found an ordering edge: the native Control Center visible callback calls `beginVisibleCycle()` before the fallback attach path. On the first ever visible cycle, no QS_FAKE owner may exist yet, so that early begin call can legitimately return success without marking the subsequently attached session as visible.
+
+Build 695 closes that gap without removing the early begin:
+- the early `beginVisibleCycle()` still reconciles an already-prearmed session before other visible-cycle work;
+- after a session is attached/prepared, its own `requestedVisible false→true` edge confirms `onControlCenterVisibilityChanged(true)` again;
+- an already-visible prearmed owner treats the second call as idempotent;
+- a newly attached owner performs the hidden/prearm reconcile and then promotes to visible ownership;
+- if the attached-session handoff fails, requested visibility is not promoted and native/Home fallback remains authoritative.
+
+Unit coverage locks false→true as the only attached-session begin edge, while existing tests keep true→false as the only end edge. No extra timer, polling, geometry writer, or duplicate lease acquisition is introduced.
+

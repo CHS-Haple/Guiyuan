@@ -112,6 +112,70 @@ class SystemUiHomePresentationOwnerTest {
     }
 
     @Test
+    fun hiddenPrearmNativeWidthResetIsAdoptedInsteadOfFailNative() {
+        assertEquals(
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .resolveExistingLeaseAction(
+                    visibleCycleActive = false,
+                    liveWidthPx = 587,
+                    appliedWidthPx = 836,
+                    currentParentContentWidthPx = 836,
+                    leasedParentContentWidthPx = 836,
+                ),
+        )
+    }
+
+    @Test
+    fun visibleLeaseWidthMismatchStillFailsNative() {
+        assertEquals(
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .resolveExistingLeaseAction(
+                    visibleCycleActive = true,
+                    liveWidthPx = 587,
+                    appliedWidthPx = 836,
+                    currentParentContentWidthPx = 836,
+                    leasedParentContentWidthPx = 836,
+                ),
+        )
+    }
+
+    @Test
+    fun unchangedHiddenLeaseIsReused() {
+        assertEquals(
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .ExistingLeaseAction.REUSE,
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .resolveExistingLeaseAction(
+                    visibleCycleActive = false,
+                    liveWidthPx = 836,
+                    appliedWidthPx = 836,
+                    currentParentContentWidthPx = 836,
+                    leasedParentContentWidthPx = 836,
+                ),
+        )
+    }
+
+    @Test
+    fun hiddenLeaseDoesNotAdoptAcrossParentContractChange() {
+        assertEquals(
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
+            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+                .resolveExistingLeaseAction(
+                    visibleCycleActive = false,
+                    liveWidthPx = 587,
+                    appliedWidthPx = 836,
+                    currentParentContentWidthPx = 900,
+                    leasedParentContentWidthPx = 836,
+                ),
+        )
+    }
+
+    @Test
     fun fakeCarrierCapacityLeaseUsesOnlyVerifiedParentContentWidth() {
         assertEquals(
             250,
@@ -488,6 +552,7 @@ class SystemUiHomePresentationOwnerTest {
                     transitionReservationActive = false,
                 ),
         )
+
     }
 
 

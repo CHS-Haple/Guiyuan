@@ -71,108 +71,25 @@ class SystemUiPanelTransitionSourceTest {
     }
 
     @Test
-    fun appearanceDiagnosticPreservesNativeBooleanPayloadWithoutInterpretation() {
-        assertEquals(
-            "controlCenterAppearance first=true second=false expanding=unknown " +
-                "addBatteryIsland=unknown batteryWidthDiff=unknown " +
-                "fakePresentation=unknown readOnly=true nativeGeometryWrites=0",
-            SystemUiPanelTransitionSource.appearanceDiagnostic(
-                first = true,
-                second = false,
-                snapshot = null,
+    fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
+        assertTrue(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+                expandedChanged = false,
+                trackingChanged = false,
+                visibleChanged = true,
+                sourceSceneChanged = false,
+                batteryIslandChanged = false,
             ),
         )
-    }
-
-    @Test
-    fun appearanceDiagnosticIncludesTopLevelFakePresentationSnapshot() {
-        val fake =
-            SystemUiPanelTransitionSource.ControlCenterFakePresentationSnapshot(
-                rootClassName =
-                    "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons",
-                rootVisibility = 0,
-                rootAlpha = 1f,
-                rootWidth = 1440,
-                rootHeight = 108,
-                statusBarAreaClassName =
-                    "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer",
-                statusBarAreaVisibility = 0,
-                statusBarAreaAlpha = 1f,
-                statusBarAreaWidth = 587,
-                statusBarAreaHeight = 108,
-            )
-        assertEquals(
-            "controlCenterAppearance first=true second=true expanding=unknown " +
-                "addBatteryIsland=unknown batteryWidthDiff=unknown " +
-                "fakePresentation={root=" +
-                "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons" +
-                "(v=0,a=1.0,w=1440,h=108),statusBarArea=" +
-                "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" +
-                "(v=0,a=1.0,w=587,h=108)} readOnly=true nativeGeometryWrites=0",
-            SystemUiPanelTransitionSource.appearanceDiagnostic(
-                first = true,
-                second = true,
-                snapshot = null,
-                fakePresentation = fake,
+        assertTrue(
+            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+                expandedChanged = false,
+                trackingChanged = false,
+                visibleChanged = false,
+                sourceSceneChanged = false,
+                batteryIslandChanged = true,
             ),
         )
-    }
-
-    @Test
-    fun controlAnchorProbeOnlyUsesTransitionBoundaryBuckets() {
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(0))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(1))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(2))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(6))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(7))
-        assertEquals(true, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(8))
-        assertEquals(false, SystemUiPanelTransitionSource.isBoundaryDiagnosticBucket(null))
-    }
-
-    @Test
-    fun homeMotionSnapshotKeepsBatteryWrapperAndBatteryDistinct() {
-        val snapshot =
-            SystemUiIslandMotionSource.OwnerSnapshot(
-                views =
-                    mapOf(
-                        "mBatteryContainer" to
-                            SystemUiIslandMotionSource.MotionViewSnapshot(
-                                className = "FrameLayout",
-                                screenX = 1242,
-                                width = 105,
-                                translationX = 0f,
-                                alpha = 1f,
-                                visibility = 0,
-                            ),
-                        "mBatteryView" to
-                            SystemUiIslandMotionSource.MotionViewSnapshot(
-                                className = "MiuiBatteryMeterView",
-                                screenX = 1242,
-                                width = 105,
-                                translationX = 0f,
-                                alpha = 1f,
-                                visibility = 0,
-                            ),
-                    ),
-            )
-
-        assertEquals(
-            "{mBatteryContainer=FrameLayout(x=1242,w=105,tx=0.0,a=1.0,v=0)," +
-                "mBatteryView=MiuiBatteryMeterView(x=1242,w=105,tx=0.0,a=1.0,v=0)}",
-            snapshot.summary,
-        )
-    }
-
-    @Test
-    fun diagnosticsUseBoundedExpansionBuckets() {
-        assertEquals(0, SystemUiPanelTransitionSource.diagnosticBucket(0f))
-        assertEquals(1, SystemUiPanelTransitionSource.diagnosticBucket(0.125f))
-        assertEquals(4, SystemUiPanelTransitionSource.diagnosticBucket(0.5f))
-        assertEquals(7, SystemUiPanelTransitionSource.diagnosticBucket(0.99f))
-        assertEquals(8, SystemUiPanelTransitionSource.diagnosticBucket(1f))
-        assertEquals(0, SystemUiPanelTransitionSource.diagnosticBucket(-0.2f))
-        assertEquals(8, SystemUiPanelTransitionSource.diagnosticBucket(1.4f))
-        assertNull(SystemUiPanelTransitionSource.diagnosticBucket(null))
     }
 
     @Test
