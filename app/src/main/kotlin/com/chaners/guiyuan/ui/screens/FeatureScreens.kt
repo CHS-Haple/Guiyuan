@@ -1854,7 +1854,7 @@ internal fun AboutScreen(
                 summary = stringResource(R.string.about_project_home_summary),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_code,
+                        iconRes = R.drawable.ic_material_symbol_code_blocks,
                         visualSize = 22.dp,
                     )
                 },
