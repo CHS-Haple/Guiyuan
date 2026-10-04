@@ -104,16 +104,20 @@ Build-channel diagnostic flags such as `RUNTIME_DIAGNOSTICS` and `DEVELOPMENT_PR
 For app UI, prefer current MIUIX components and conventions for spacing, typography, shape, state feedback, dialogs, navigation, back behavior, themes, and localization. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
 
 
-For semantic row-leading icons:
-- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, and action affordances;
-- choose the glyph from the row's semantic meaning, not from a previous icon shape or incidental text in the row value;
-- prefer Filled variants and begin from the standard optical weight;
-- normalize perceived visual mass rather than numeric weight: line-constructed or hollow-looking glyphs may use a heavier official weight, while already-solid glyphs should remain lighter;
-- when Filled becomes too dense or harms legibility, an Outline variant with suitable weight compensation is allowed;
-- do not enlarge the whole glyph merely to compensate for low visual mass; preserve the shared optical box, alignment, and tint contract;
-- compare neighboring glyphs in both light and dark themes; identical `FILL` / `wght` values are not a goal by themselves.
+For Material Symbols used as semantic row-leading icons:
+- this policy is global across the companion app. It applies to Appearance, About, Diagnostics, settings/information rows, and any future explanatory leading icon that uses Material Symbols; do not create page-specific optical rules;
+- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, menus, and action affordances;
+- choose the glyph from the row's semantic meaning, not from a previous icon shape, incidental text in the row value, or a desire to make neighboring silhouettes mechanically identical;
+- within one visual group or card, style coherence has priority over a single glyph's isolated local optimum. Start from Filled (`FILL=1`) at the standard optical weight for every candidate in that group;
+- W400 is the default starting weight. Use an official heavier weight such as W500 only when the actual glyph is perceptually too light because of thin, linear, ring-like, or hollow construction. Already-solid glyphs should stay at the lighter official weight when possible;
+- a glyph that contains negative space is not automatically an Outline icon. Judge the actual Material Symbols variant, not whether the silhouette visually contains holes;
+- if a Filled glyph is too dense or loses legibility, first try another semantically correct Filled Material Symbol and/or another official weight. Outline is an exception of last resort, not the normal optical-balancing mechanism;
+- if an Outline exception is required, document why the available Filled candidates fail and compare the result against adjacent icons in both light and dark themes before acceptance;
+- normalize perceived visual mass with official glyph/variant/weight selection, not geometry hacks. Do not compensate with per-icon scale, translation, custom stroke, alpha, viewport edits, or ad-hoc padding;
+- all such icons share the same renderer contract: a 24 dp optical box, 22 dp visual size, common alignment, and common tint. A page must not override those dimensions merely to make one glyph look larger or smaller;
+- identical `FILL` / `wght` values are not the goal; coherent perceived mass, optical center, and style across neighboring icons are the goal.
 
-Current semantic leading icons use a 24 dp optical box with a 22 dp visual size. W400 is the normal starting point; W500 is a common compensation for visually light linear glyphs, not a universal target.
+`SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
 
 Public identity is Guiyuan / 归元, package com.chaners.guiyuan. Existing CombinedStatus* internal implementation names may remain.
 
