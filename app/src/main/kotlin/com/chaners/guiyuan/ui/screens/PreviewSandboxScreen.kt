@@ -109,15 +109,15 @@ internal fun PreviewSandboxScreen(
     val batteryModeOptions =
         listOf(
             stringResource(R.string.home_preview_battery_mode_balanced),
-            stringResource(R.string.home_preview_battery_mode_power_save),
-            stringResource(R.string.home_preview_battery_mode_performance),
-            stringResource(R.string.home_preview_battery_mode_super_power_save),
+            stringResource(R.string.home_preview_battery_mode_power_save_compact),
+            stringResource(R.string.home_preview_battery_mode_performance_compact),
+            stringResource(R.string.home_preview_battery_mode_super_power_save_compact),
         )
     val chargingOptions =
         listOf(
             stringResource(R.string.home_preview_charging_none),
             stringResource(R.string.home_preview_charging_normal),
-            stringResource(R.string.home_preview_charging_super_fast),
+            stringResource(R.string.home_preview_charging_super_fast_compact),
         )
 
     val mobileDisabledSummary =
