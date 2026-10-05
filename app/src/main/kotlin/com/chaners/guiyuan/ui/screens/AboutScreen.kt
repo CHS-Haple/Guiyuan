@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
+private const val ABOUT_VALUE_SEPARATOR = "｜"
 
 private data class AboutDependency(
     val name: String,
@@ -151,13 +152,13 @@ internal fun AboutScreen(
                     .filterNotNull()
                     .filter(String::isNotBlank)
                     .ifEmpty { listOf(unavailable) }
-                    .joinToString(separator = " ")
+                    .joinToString(separator = ABOUT_VALUE_SEPARATOR)
             val androidSummary =
                 if (environment.androidVersion.isNotBlank()) {
                     buildString {
                         append("Android ")
                         append(environment.androidVersion)
-                        append(' ')
+                        append(ABOUT_VALUE_SEPARATOR)
                         append("API ")
                         append(environment.sdk)
                     }
