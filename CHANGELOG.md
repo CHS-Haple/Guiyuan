@@ -7,7 +7,8 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` describes
 ## [Unreleased]
 
 ### Changed
-- Companion-app navigation and localization polish keeps battery-color detail Back inside the existing MIUIX sheet hierarchy, preserves the full English Diagnostics title with its dense toolbar actions, lets Preview Sandbox status labels size to localized text, and normalizes About environment separators/copy.
+- Companion-app navigation and localization polish uses a real nested MIUIX sheet for battery-color detail navigation, preserves the full English Diagnostics title with its dense toolbar actions, lets Preview Sandbox status labels size to localized text, adds compact battery-state control labels, supports long-press copying of individual diagnostics events, and normalizes About environment separators/copy.
+- Home status-icon observation now waits on the exact native Home icon-manager registration boundary when host capture precedes `mDarkIconManager` readiness, avoiding a false startup warning without polling or changing presentation ownership.
 
 ## [0.1.0] - 2026-10-04
 
