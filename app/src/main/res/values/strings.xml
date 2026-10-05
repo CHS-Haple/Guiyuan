@@ -23,7 +23,7 @@
     <string name="battery_text_follow_battery_color_summary">When off, use the current status-bar foreground tint</string>
     <string name="charging_icon_follow_battery_color">Match charging icon color to ring</string>
     <string name="charging_icon_follow_battery_color_summary">When off, use the current status-bar foreground tint</string>
-    <string name="top_info_vertical_offset">Top information vertical offset (+ up / − down)</string>
+    <string name="top_info_vertical_offset">Top information vertical offset</string>
     <string name="settings_title">Settings</string>
     <string name="section_appearance_interaction">Appearance &amp; interaction</string>
     <string name="section_app">App</string>
@@ -75,7 +75,7 @@
     <string name="charging_title">Charging</string>
     <string name="charging_summary">Charging and super-charging styles</string>
     <string name="about_title">About</string>
-    <string name="about_summary">Version project and runtime information</string>
+    <string name="about_summary">Version, project, and runtime environment</string>
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_summary">View Guiyuan runtime logs</string>
     <string name="restart_scope">Restart SystemUI</string>
@@ -181,7 +181,7 @@
     <string name="runtime_framework_title">Framework</string>
     <string name="runtime_framework_summary">Modern Xposed API 102</string>
     <string name="runtime_scope_title">Scope</string>
-    <string name="runtime_scope_summary">SystemUI com.android.systemui</string>
+    <string name="runtime_scope_summary">SystemUI｜com.android.systemui</string>
     <string name="runtime_target_title">Compatibility baseline</string>
     <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
     <string name="runtime_inventory_title">Native status probe</string>
