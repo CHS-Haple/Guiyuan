@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 
 internal class RenderController(
-    private val view: CombinedStatusRenderView,
+    private val view: RenderView,
 ) {
     private var stableModel: RenderModel? = null
     private var stableTint: CombinedStatusTintState? = null

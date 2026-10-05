@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import com.chaners.guiyuan.xposed.RenderModel
-import com.chaners.guiyuan.xposed.CombinedStatusRenderView
+import com.chaners.guiyuan.xposed.RenderView
 import com.chaners.guiyuan.xposed.CombinedStatusTintState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -20,7 +20,7 @@ internal fun CombinedStatusPreview(
 
     AndroidView(
         factory = { context ->
-            CombinedStatusRenderView(context).apply {
+            RenderView(context).apply {
                 addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                     syncPreviewViewport()
                 }
@@ -52,7 +52,7 @@ internal fun CombinedStatusPreview(
 }
 
 
-private fun CombinedStatusRenderView.syncPreviewViewport() {
+private fun RenderView.syncPreviewViewport() {
     if (width <= 0 || height <= 0) return
     val logicalSize = minOf(width, height)
     val extraHeight = (height - logicalSize).coerceAtLeast(0)

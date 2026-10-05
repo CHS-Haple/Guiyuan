@@ -222,7 +222,7 @@ internal object HomeRenderSession {
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
         private val probeView =
-            CombinedStatusRenderView(host.context) { latencyMs, committedOnMainThread, sample ->
+            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {
                     onLatencySample.invoke(sample)
                 } else {

@@ -288,7 +288,7 @@ internal object KeyguardRenderSession {
         private val statusIcons = WeakReference(resolved.statusIcons)
         private val batteryView = WeakReference(resolved.battery)
         private val batteryCarrier = WeakReference(resolved.batteryCarrier)
-        private val renderView = CombinedStatusRenderView(resolved.host.context)
+        private val renderView = RenderView(resolved.host.context)
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
 

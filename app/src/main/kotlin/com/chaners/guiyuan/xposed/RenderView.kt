@@ -12,7 +12,7 @@ import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 
-internal class CombinedStatusRenderView(
+internal class RenderView(
     context: Context,
     private val onStateRendered: (
         latencyMs: Long,
@@ -183,9 +183,7 @@ internal class CombinedStatusRenderView(
             model = current,
             visualSettings = visualSettings,
             previousCenterIndicator = previousCenterIndicator,
-            // Physical overflow is layout-time capacity, not animation
-            // geometry. Reserve both transition endpoints at full size so
-            // neither can be clipped later in the 100 ms cross-fade.
+            // 这里预留的是布局空间，两端都按完整尺寸算，动画时才不会被裁掉。
             centerExitAmount = 1f,
             centerEnterAmount = 1f,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,

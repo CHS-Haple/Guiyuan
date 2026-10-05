@@ -66,7 +66,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     private var visualBoundsHook: HookHandle? = null
     private var slotTranslationHook: HookHandle? = null
     private var rootRef: WeakReference<FrameLayout>? = null
-    private var renderViewRef: WeakReference<CombinedStatusRenderView>? = null
+    private var renderViewRef: WeakReference<RenderView>? = null
     private var renderController: RenderController? = null
     private var hostRef: WeakReference<ViewGroup>? = null
     private var eventSink: ((String) -> Unit)? = null
@@ -952,10 +952,10 @@ internal object SystemUiNativeCombinedParticipantOwner {
                     (0 until root.childCount)
                         .asSequence()
                         .map { index -> root.getChildAt(index) }
-                        .filterIsInstance<CombinedStatusRenderView>()
+                        .filterIsInstance<RenderView>()
                         .firstOrNull()
                 attached
-                    ?: CombinedStatusRenderView(root.context).also { child ->
+                    ?: RenderView(root.context).also { child ->
                         root.addView(
                             child,
                             FrameLayout.LayoutParams(
@@ -1328,7 +1328,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                     ?: (0 until candidateRoot.childCount)
                         .asSequence()
                         .map(candidateRoot::getChildAt)
-                        .filterIsInstance<CombinedStatusRenderView>()
+                        .filterIsInstance<RenderView>()
                         .firstOrNull()
             }
         val dot =

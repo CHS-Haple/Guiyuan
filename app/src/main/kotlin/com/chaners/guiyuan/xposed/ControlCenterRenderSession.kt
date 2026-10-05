@@ -488,7 +488,7 @@ internal object ControlCenterRenderSession {
         private val statusIcons = WeakReference(statusIcons)
         private val battery = WeakReference(battery)
         private val carrier = WeakReference(carrier)
-        private val renderView = CombinedStatusRenderView(host.context)
+        private val renderView = RenderView(host.context)
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
         private val hostLocationScratch = IntArray(2)

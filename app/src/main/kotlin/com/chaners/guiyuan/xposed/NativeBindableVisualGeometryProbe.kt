@@ -144,7 +144,7 @@ internal object NativeBindableVisualGeometryProbe {
             )
 
             val renderView =
-                CombinedStatusRenderView(handles.group.context)
+                RenderView(handles.group.context)
             root.addView(
                 renderView,
                 FrameLayout.LayoutParams(
