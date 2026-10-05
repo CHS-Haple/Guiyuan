@@ -99,7 +99,7 @@ class CombinedStatusRenderModelTest {
                             ),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(
+                    PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
                                 transport = SystemUiConnectivityStateSource.Transport.WIFI,
@@ -385,7 +385,7 @@ class CombinedStatusRenderModelTest {
                             ),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(),
+                    PresentationStore.Snapshot(),
                 defaultDataSubscriptionId = 1,
             )
 
@@ -395,7 +395,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
         val noSimIcon =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )
@@ -412,7 +412,7 @@ class CombinedStatusRenderModelTest {
                             ),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(
+                    PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
                                 transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
@@ -430,7 +430,7 @@ class CombinedStatusRenderModelTest {
                                 networkType = mobileType("5G"),
                             ),
                         statusIcons =
-                            CombinedStatusPresentationStateStore.StatusIconPresentation(
+                            PresentationStore.StatusIconPresentation(
                                 noSimVisible = true,
                                 noSimIcon = noSimIcon,
                             ),
@@ -447,7 +447,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun nativeNoSimWithWifiSuppressesStaleMobileButKeepsWifiCenter() {
         val noSimIcon =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )
@@ -469,7 +469,7 @@ class CombinedStatusRenderModelTest {
                             ),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(
+                    PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
                                 transport = SystemUiConnectivityStateSource.Transport.WIFI,
@@ -487,7 +487,7 @@ class CombinedStatusRenderModelTest {
                                 networkType = mobileType("5G"),
                             ),
                         statusIcons =
-                            CombinedStatusPresentationStateStore.StatusIconPresentation(
+                            PresentationStore.StatusIconPresentation(
                                 noSimVisible = true,
                                 noSimIcon = noSimIcon,
                             ),
@@ -504,7 +504,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun noSimWithoutWifiKeepsUnavailableMarkAlongsideNativeNoSimCenter() {
         val noSimIcon =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )
@@ -516,7 +516,7 @@ class CombinedStatusRenderModelTest {
                         mobile = emptyMap(),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(
+                    PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
                                 transport = SystemUiConnectivityStateSource.Transport.NONE,
@@ -524,7 +524,7 @@ class CombinedStatusRenderModelTest {
                                 mobileDataEnabled = false,
                             ),
                         statusIcons =
-                            CombinedStatusPresentationStateStore.StatusIconPresentation(
+                            PresentationStore.StatusIconPresentation(
                                 noSimVisible = true,
                                 noSimIcon = noSimIcon,
                             ),
@@ -540,7 +540,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun noSimWithWifiKeepsUnavailableMarkWhileWifiOwnsCenter() {
         val noSimIcon =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )
@@ -557,7 +557,7 @@ class CombinedStatusRenderModelTest {
                         mobile = emptyMap(),
                     ),
                 presentation =
-                    CombinedStatusPresentationStateStore.Snapshot(
+                    PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
                                 transport = SystemUiConnectivityStateSource.Transport.WIFI,
@@ -565,7 +565,7 @@ class CombinedStatusRenderModelTest {
                                 mobileDataEnabled = false,
                             ),
                         statusIcons =
-                            CombinedStatusPresentationStateStore.StatusIconPresentation(
+                            PresentationStore.StatusIconPresentation(
                                 noSimVisible = true,
                                 noSimIcon = noSimIcon,
                             ),
@@ -678,7 +678,7 @@ class CombinedStatusRenderModelTest {
         connectivity: SystemUiConnectivityStateSource.State,
         networkType: NativePresentationResolver.NetworkType?,
     ) =
-        CombinedStatusPresentationStateStore.Snapshot(
+        PresentationStore.Snapshot(
             connectivity = connectivity,
             mobilePresentation =
                 NativePresentationResolver.Snapshot(

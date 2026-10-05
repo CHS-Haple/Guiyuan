@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.chaners.guiyuan.xposed.CenterIndicator
 import com.chaners.guiyuan.xposed.CombinedStatusBatterySemanticState
-import com.chaners.guiyuan.xposed.CombinedStatusPresentationStateStore
+import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.CombinedStatusRenderModel
 import com.chaners.guiyuan.xposed.InternetState
 
@@ -173,7 +173,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     .drawableId("stat_sys_no_sim")
                     ?.let { resourceId ->
                         CenterIndicator.NoSim(
-                            CombinedStatusPresentationStateStore.NativeIconResource(
+                            PresentationStore.NativeIconResource(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             ),

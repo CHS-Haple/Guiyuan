@@ -15,7 +15,7 @@ internal data class CombinedStatusRenderModel(
     companion object {
         fun from(
             snapshot: CombinedStatusStateStore.Snapshot,
-            presentation: CombinedStatusPresentationStateStore.Snapshot,
+            presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
         ): CombinedStatusRenderModel? {
             val battery = snapshot.battery ?: return null

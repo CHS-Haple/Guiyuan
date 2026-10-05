@@ -1757,13 +1757,13 @@ class CombinedStatusModule : XposedModule() {
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
         val changed =
-            CombinedStatusPresentationStateStore.updateMobilePresentation(presentation)
+            PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
             CombinedStatusStateStore.completeMobileRecoveryIfReady(
                 preferredSubscriptionId = presentation.effectiveDataSubscriptionId ?: -1,
                 mobileTypeReady = presentation.networkType != null,
                 mobileDataEnabled =
-                    CombinedStatusPresentationStateStore
+                    PresentationStore
                         .snapshot()
                         .connectivity
                         .mobileDataEnabled,
@@ -1845,11 +1845,11 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onStatusIconPresentationChanged(
-        state: CombinedStatusPresentationStateStore.StatusIconPresentation,
+        state: PresentationStore.StatusIconPresentation,
     ) {
         val trace = beginRenderTrace("statusIcons")
         val changed =
-            CombinedStatusPresentationStateStore.updateStatusIcons(state)
+            PresentationStore.updateStatusIcons(state)
 
         HomeRenderSession.onStatusIconTintUpdate(
             state.appliedTint,
@@ -3524,7 +3524,7 @@ class CombinedStatusModule : XposedModule() {
         SystemUiCoreRuntimeOwner.detach()
         SystemUiPresentationRuntimeOwner.resetRuntimeState()
         SystemUiKeyguardHostResolver.resetRuntimeState()
-        CombinedStatusPresentationStateStore.reset()
+        PresentationStore.reset()
         SystemUiIslandMotionSource.resetRuntimeState()
         SystemUiPanelTransitionSource.resetRuntimeState()
 
@@ -3580,7 +3580,7 @@ class CombinedStatusModule : XposedModule() {
                     onConnectivityState = { state ->
                         val trace = beginRenderTrace("connectivity")
                         val changed =
-                            CombinedStatusPresentationStateStore.updateConnectivity(state)
+                            PresentationStore.updateConnectivity(state)
                         val presentationTrace =
                             if (changed != null) {
                                 markPresentationCommitted(trace)
@@ -4029,7 +4029,7 @@ class CombinedStatusModule : XposedModule() {
                     host = host,
                     onHandoffStateChanged = { active ->
                         val presentation =
-                            CombinedStatusPresentationStateStore.snapshot()
+                            PresentationStore.snapshot()
                         val state = CombinedStatusStateStore.snapshot()
                         val wifi = state.wifi
 

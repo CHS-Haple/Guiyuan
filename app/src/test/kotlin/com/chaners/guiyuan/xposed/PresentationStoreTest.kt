@@ -4,10 +4,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
-class CombinedStatusPresentationStateStoreTest {
+class PresentationStoreTest {
     @Test
     fun repeatedConnectivityObservationIsDeduplicatedByValue() {
-        CombinedStatusPresentationStateStore.reset()
+        PresentationStore.reset()
         val state =
             SystemUiConnectivityStateSource.State(
                 known = true,
@@ -18,9 +18,9 @@ class CombinedStatusPresentationStateStoreTest {
             )
 
         val first =
-            CombinedStatusPresentationStateStore.updateConnectivity(state)
+            PresentationStore.updateConnectivity(state)
         val repeated =
-            CombinedStatusPresentationStateStore.updateConnectivity(state)
+            PresentationStore.updateConnectivity(state)
 
         assertSame(state, first?.connectivity)
         assertNull(repeated)

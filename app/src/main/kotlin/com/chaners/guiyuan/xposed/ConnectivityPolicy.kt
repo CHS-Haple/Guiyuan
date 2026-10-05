@@ -6,7 +6,7 @@ internal object ConnectivityPolicy {
         airplaneMode: Boolean,
         connectivity: SystemUiConnectivityStateSource.State,
         mobileType: NativePresentationResolver.NetworkType?,
-        noSimIcon: CombinedStatusPresentationStateStore.NativeIconResource? = null,
+        noSimIcon: PresentationStore.NativeIconResource? = null,
     ): CenterIndicator? {
         val wifiVisible =
             wifi as? CombinedStatusStateStore.WifiState.Visible
@@ -173,7 +173,7 @@ internal sealed interface CenterIndicator {
     data object Airplane : CenterIndicator
 
     data class NoSim(
-        val nativeResource: CombinedStatusPresentationStateStore.NativeIconResource,
+        val nativeResource: PresentationStore.NativeIconResource,
     ) : CenterIndicator
 
     data object Empty : CenterIndicator

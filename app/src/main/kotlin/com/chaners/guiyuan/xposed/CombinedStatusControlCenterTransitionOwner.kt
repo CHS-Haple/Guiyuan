@@ -1335,7 +1335,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             if (opacity <= 0f) return
 
             val preferredMobileSubId =
-                CombinedStatusPresentationStateStore
+                PresentationStore
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
@@ -2122,7 +2122,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             ) {
                 return null
             }
-            val presentation = CombinedStatusPresentationStateStore.snapshot()
+            val presentation = PresentationStore.snapshot()
             val resource =
                 presentation.statusIcons.noSimIcon
                     ?.takeIf { presentation.statusIcons.noSimVisible }
@@ -2610,7 +2610,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
 
             val preferredMobileSubId =
-                CombinedStatusPresentationStateStore
+                PresentationStore
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
@@ -2701,7 +2701,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 }
             }
 
-            val presentation = CombinedStatusPresentationStateStore.snapshot()
+            val presentation = PresentationStore.snapshot()
             if (
                 currentSnapshot.model.centerIndicator !is CenterIndicator.NoSim &&
                 presentation.statusIcons.noSimVisible &&

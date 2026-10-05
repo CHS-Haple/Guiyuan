@@ -17,7 +17,7 @@ internal class RenderController(
         val candidate =
             CombinedStatusRenderModel.from(
                 snapshot = snapshot,
-                presentation = CombinedStatusPresentationStateStore.snapshot(),
+                presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
             )
         val previous = stableModel

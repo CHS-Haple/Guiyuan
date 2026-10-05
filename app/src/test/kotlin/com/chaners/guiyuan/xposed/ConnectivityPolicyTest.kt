@@ -221,7 +221,7 @@ class ConnectivityPolicyTest {
     @Test
     fun noSimUsesNativeCenterWhenWifiIsAbsent() {
         val nativeNoSim =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )
@@ -248,7 +248,7 @@ class ConnectivityPolicyTest {
     @Test
     fun airplaneRemainsHigherPriorityThanNoSim() {
         val nativeNoSim =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
                 resourceId = 42,
             )

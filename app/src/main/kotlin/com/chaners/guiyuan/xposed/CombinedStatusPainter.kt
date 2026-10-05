@@ -811,7 +811,7 @@ internal class CombinedStatusPainter(
                             ?.let { resourceId ->
                                 transitionNativeCenterMetrics(
                                     resource =
-                                        CombinedStatusPresentationStateStore.NativeIconResource(
+                                        PresentationStore.NativeIconResource(
                                             packageName = SYSTEM_UI_PACKAGE,
                                             resourceId = resourceId,
                                         ),
@@ -938,7 +938,7 @@ internal class CombinedStatusPainter(
                 ?.let { resourceId ->
                     transitionNativeCenterMetrics(
                         resource =
-                            CombinedStatusPresentationStateStore.NativeIconResource(
+                            PresentationStore.NativeIconResource(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             ),
@@ -1007,7 +1007,7 @@ internal class CombinedStatusPainter(
     fun transitionNoSimSourceBounds(
         width: Int,
         height: Int,
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
+        resource: PresentationStore.NativeIconResource,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
@@ -1053,7 +1053,7 @@ internal class CombinedStatusPainter(
         canvas: Canvas,
         width: Int,
         height: Int,
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
+        resource: PresentationStore.NativeIconResource,
         tint: Int,
         opacity: Float,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
@@ -1097,7 +1097,7 @@ internal class CombinedStatusPainter(
     ): TransitionWifiMetrics? {
         val resourceId = indicator.nativeResourceId ?: return null
         val resource =
-            CombinedStatusPresentationStateStore.NativeIconResource(
+            PresentationStore.NativeIconResource(
                 packageName = SYSTEM_UI_PACKAGE,
                 resourceId = resourceId,
             )
@@ -1110,8 +1110,8 @@ internal class CombinedStatusPainter(
     }
 
     private fun transitionNativeCenterMetrics(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
-        opticalReferenceResource: CombinedStatusPresentationStateStore.NativeIconResource? = null,
+        resource: PresentationStore.NativeIconResource,
+        opticalReferenceResource: PresentationStore.NativeIconResource? = null,
         maxWidth: Float,
         maxHeight: Float,
     ): TransitionWifiMetrics? {
@@ -1398,7 +1398,7 @@ internal class CombinedStatusPainter(
                 val drawGeometry =
                     if (resourceId != null) {
                         val resource =
-                            CombinedStatusPresentationStateStore.NativeIconResource(
+                            PresentationStore.NativeIconResource(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             )
@@ -1438,7 +1438,7 @@ internal class CombinedStatusPainter(
                     ?.let { resourceId ->
                         resolveNativeCenterDrawGeometry(
                             resource =
-                                CombinedStatusPresentationStateStore.NativeIconResource(
+                                PresentationStore.NativeIconResource(
                                     packageName = SYSTEM_UI_PACKAGE,
                                     resourceId = resourceId,
                                 ),
@@ -1791,7 +1791,7 @@ internal class CombinedStatusPainter(
                 ?.let { resourceId ->
                     nativeResourceOpticalSize(
                         resource =
-                            CombinedStatusPresentationStateStore.NativeIconResource(
+                            PresentationStore.NativeIconResource(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             ),
@@ -1980,7 +1980,7 @@ internal class CombinedStatusPainter(
                 drawNativeCenterResource(
                     canvas = canvas,
                     resource =
-                        CombinedStatusPresentationStateStore.NativeIconResource(
+                        PresentationStore.NativeIconResource(
                             packageName = SYSTEM_UI_PACKAGE,
                             resourceId = resourceId,
                         ),
@@ -2061,7 +2061,7 @@ internal class CombinedStatusPainter(
         drawNativeCenterResource(
             canvas = canvas,
             resource =
-                CombinedStatusPresentationStateStore.NativeIconResource(
+                PresentationStore.NativeIconResource(
                     packageName = SYSTEM_UI_PACKAGE,
                     resourceId = resourceId,
                 ),
@@ -2532,7 +2532,7 @@ internal class CombinedStatusPainter(
         val nativeResourceId = indicator.nativeResourceId
         if (nativeResourceId != null) {
             val nativeResource =
-                CombinedStatusPresentationStateStore.NativeIconResource(
+                PresentationStore.NativeIconResource(
                     packageName = SYSTEM_UI_PACKAGE,
                     resourceId = nativeResourceId,
                 )
@@ -2573,8 +2573,8 @@ internal class CombinedStatusPainter(
     }
 
     private fun wifiOpticalReferenceResource(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
-    ): CombinedStatusPresentationStateStore.NativeIconResource? {
+        resource: PresentationStore.NativeIconResource,
+    ): PresentationStore.NativeIconResource? {
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2607,8 +2607,8 @@ internal class CombinedStatusPainter(
     }
 
     private fun resolveNativeTintVariant(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
-    ): CombinedStatusPresentationStateStore.NativeIconResource? {
+        resource: PresentationStore.NativeIconResource,
+    ): PresentationStore.NativeIconResource? {
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2636,7 +2636,7 @@ internal class CombinedStatusPainter(
     }
 
     private fun nativeCenterAsset(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
+        resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
         val key = resource.packageName + ":" + resource.resourceId
         nativeCenterAssets[key]?.let { return it }
@@ -2713,7 +2713,7 @@ internal class CombinedStatusPainter(
     }
 
     private fun nativeResourceOpticalSize(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
+        resource: PresentationStore.NativeIconResource,
         maxSize: Float,
     ): NativeOpticalSize? {
         if (maxSize <= 0f) return null
@@ -2752,8 +2752,8 @@ internal class CombinedStatusPainter(
     }
 
     private fun resolveNativeCenterDrawGeometry(
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
-        opticalReferenceResource: CombinedStatusPresentationStateStore.NativeIconResource? = null,
+        resource: PresentationStore.NativeIconResource,
+        opticalReferenceResource: PresentationStore.NativeIconResource? = null,
         centerX: Float,
         centerY: Float,
         maxWidth: Float,
@@ -2826,8 +2826,8 @@ internal class CombinedStatusPainter(
 
     private fun drawNativeCenterResource(
         canvas: Canvas,
-        resource: CombinedStatusPresentationStateStore.NativeIconResource,
-        opticalReferenceResource: CombinedStatusPresentationStateStore.NativeIconResource? = null,
+        resource: PresentationStore.NativeIconResource,
+        opticalReferenceResource: PresentationStore.NativeIconResource? = null,
         tint: Int,
         opacity: Float,
         centerX: Float,
@@ -2968,7 +2968,7 @@ internal class CombinedStatusPainter(
         drawNativeCenterResource(
             canvas = canvas,
             resource =
-                CombinedStatusPresentationStateStore.NativeIconResource(
+                PresentationStore.NativeIconResource(
                     packageName = SYSTEM_UI_PACKAGE,
                     resourceId = resourceId,
                 ),

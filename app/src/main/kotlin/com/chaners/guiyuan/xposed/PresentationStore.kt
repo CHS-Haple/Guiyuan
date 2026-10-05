@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CombinedStatusPresentationStateStore {
+internal object PresentationStore {
     @Volatile
     private var current = Snapshot()
 
