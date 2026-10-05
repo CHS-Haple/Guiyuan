@@ -667,7 +667,7 @@ internal object HomeRenderSession {
 
             val rtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val resolved =
-                CombinedStatusHomeLayoutResolver.resolve(
+                HomeLayoutResolver.resolve(
                     hostWidthPx = hostWidth,
                     hostHeightPx = hostHeight,
                     baseCarrierWidthPx = baseCarrierWidth,

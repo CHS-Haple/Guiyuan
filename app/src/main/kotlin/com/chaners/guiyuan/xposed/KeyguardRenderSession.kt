@@ -617,7 +617,7 @@ internal object KeyguardRenderSession {
             }
 
             val resolved =
-                CombinedStatusSteadyLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = hostWidth,
                     hostHeightPx = hostHeight,
                     baseCarrierWidthPx = baseCarrierWidth,

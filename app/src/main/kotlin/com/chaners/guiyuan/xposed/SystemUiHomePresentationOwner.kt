@@ -1956,14 +1956,14 @@ internal object SystemUiHomePresentationOwner {
                 return false
             }
             val resolved =
-                CombinedStatusHomeLayoutResolver.resolve(
+                HomeLayoutResolver.resolve(
                     hostWidthPx = hostView.width,
                     hostHeightPx = hostView.height,
                     baseCarrierWidthPx = stableCarrierWidthPx,
                     isRtl = hostView.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: run { onFailNative(surfaceName + "-layout-unavailable"); return false }
             val compactSlotWidthPx =
-                CombinedStatusCompactReservationPolicy.resolveCenteredVisualWidth(
+                CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = resolved.requestedSlotWidthPx.toInt(),
                     userScale = RuntimeVisualPreferencesOwner.currentSettings().combinedScale,
                 )

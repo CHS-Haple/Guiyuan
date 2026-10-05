@@ -824,7 +824,7 @@ internal object ControlCenterRenderSession {
                 SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
             val resolved =
-                CombinedStatusHomeLayoutResolver.resolve(
+                HomeLayoutResolver.resolve(
                     hostWidthPx = statusArea.width,
                     hostHeightPx = statusArea.height,
                     baseCarrierWidthPx = carrierWidth,

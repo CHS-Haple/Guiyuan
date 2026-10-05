@@ -13,7 +13,7 @@ internal enum class CombinedStatusMotionOwnership {
     SYSTEM_UI,
 }
 
-internal data class CombinedStatusLayoutSettings(
+internal data class LayoutConfig(
     val baseVisualSidePx: Float,
     val baseNeighborGapPx: Float,
     val userScale: Float,
@@ -25,7 +25,7 @@ internal data class CombinedStatusLayoutSettings(
     }
 }
 
-internal data class CombinedStatusHostLayout(
+internal data class HostLayout(
     val hostHeightPx: Float,
     val endAnchorPx: Float,
     val nativeSlotWidthPx: Float,
@@ -39,7 +39,7 @@ internal data class CombinedStatusHostLayout(
     }
 }
 
-internal data class CombinedStatusResolvedLayout(
+internal data class ResolvedLayout(
     val renderCombined: Boolean,
     val visualSidePx: Float,
     val neighborGapPx: Float,
@@ -54,11 +54,11 @@ internal data class CombinedStatusResolvedLayout(
     val motionOwnership: CombinedStatusMotionOwnership,
 )
 
-internal object CombinedStatusLayoutPolicy {
+internal object LayoutPolicy {
     fun resolve(
-        settings: CombinedStatusLayoutSettings,
-        host: CombinedStatusHostLayout,
-    ): CombinedStatusResolvedLayout {
+        settings: LayoutConfig,
+        host: HostLayout,
+    ): ResolvedLayout {
         val visualSide = settings.baseVisualSidePx * settings.userScale
         val neighborGap = settings.baseNeighborGapPx * settings.userScale
         val requestedSlotWidth = visualSide + neighborGap
@@ -72,7 +72,7 @@ internal object CombinedStatusLayoutPolicy {
         val slotRight = host.endAnchorPx
         val slotLeft = slotRight - appliedSlotWidth
 
-        return CombinedStatusResolvedLayout(
+        return ResolvedLayout(
             renderCombined = host.renderMode != CombinedStatusRenderMode.NATIVE_ONLY,
             visualSidePx = visualSide,
             neighborGapPx = neighborGap,
@@ -89,7 +89,7 @@ internal object CombinedStatusLayoutPolicy {
     }
 }
 
-internal object CombinedStatusCompactReservationPolicy {
+internal object CompactReservationPolicy {
     /**
      * Painter shrink is centered inside the stable Battery carrier. Native peers only
      * reserve through the scaled visual's leading edge; the end-side transparent inset
@@ -112,14 +112,14 @@ internal object CombinedStatusCompactReservationPolicy {
     }
 }
 
-internal object CombinedStatusHomeLayoutResolver {
+internal object HomeLayoutResolver {
     fun resolve(
         hostWidthPx: Int,
         hostHeightPx: Int,
         baseCarrierWidthPx: Int,
         isRtl: Boolean,
-    ): CombinedStatusResolvedLayout? =
-        CombinedStatusSteadyLayoutResolver.resolve(
+    ): ResolvedLayout? =
+        SteadyLayoutResolver.resolve(
             hostWidthPx = hostWidthPx,
             hostHeightPx = hostHeightPx,
             baseCarrierWidthPx = baseCarrierWidthPx,
@@ -127,26 +127,26 @@ internal object CombinedStatusHomeLayoutResolver {
         )
 }
 
-internal object CombinedStatusSteadyLayoutResolver {
+internal object SteadyLayoutResolver {
     fun resolve(
         hostWidthPx: Int,
         hostHeightPx: Int,
         baseCarrierWidthPx: Int,
         isRtl: Boolean,
-    ): CombinedStatusResolvedLayout? {
+    ): ResolvedLayout? {
         if (hostWidthPx <= 0 || hostHeightPx <= 0 || baseCarrierWidthPx <= 0) {
             return null
         }
         val carrierWidth = baseCarrierWidthPx.coerceAtMost(hostWidthPx)
-        return CombinedStatusLayoutPolicy.resolve(
+        return LayoutPolicy.resolve(
             settings =
-                CombinedStatusLayoutSettings(
+                LayoutConfig(
                     baseVisualSidePx = minOf(carrierWidth, hostHeightPx).toFloat(),
                     baseNeighborGapPx = 0f,
                     userScale = 1f,
                 ),
             host =
-                CombinedStatusHostLayout(
+                HostLayout(
                     hostHeightPx = hostHeightPx.toFloat(),
                     endAnchorPx = if (isRtl) carrierWidth.toFloat() else hostWidthPx.toFloat(),
                     nativeSlotWidthPx = carrierWidth.toFloat(),

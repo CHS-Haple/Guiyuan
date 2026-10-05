@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusLayoutPolicyTest {
+class LayoutPolicyTest {
     @Test
     fun scalingKeepsTheEndAnchorFixed() {
         val small = resolve(scale = 1f)
@@ -61,14 +61,14 @@ class CombinedStatusLayoutPolicyTest {
     fun centeredShrinkReservationTracksTheVisibleLeadingEdge() {
         assertEquals(
             105,
-            CombinedStatusCompactReservationPolicy.resolveCenteredVisualWidth(
+            CompactReservationPolicy.resolveCenteredVisualWidth(
                 baseSlotWidthPx = 105,
                 userScale = 1f,
             ),
         )
         assertEquals(
             92,
-            CombinedStatusCompactReservationPolicy.resolveCenteredVisualWidth(
+            CompactReservationPolicy.resolveCenteredVisualWidth(
                 baseSlotWidthPx = 105,
                 userScale = 0.75f,
             ),
@@ -79,7 +79,7 @@ class CombinedStatusLayoutPolicyTest {
     fun homeResolverKeepsCurrentCarrierWidthAndHostHeightSeparated() {
         val layout =
             requireNotNull(
-                CombinedStatusHomeLayoutResolver.resolve(
+                HomeLayoutResolver.resolve(
                     hostWidthPx = 587,
                     hostHeightPx = 108,
                     baseCarrierWidthPx = 105,
@@ -98,7 +98,7 @@ class CombinedStatusLayoutPolicyTest {
     fun homeResolverUsesStableBaseSlotInsteadOfChargingInflatedWidth() {
         val layout =
             requireNotNull(
-                CombinedStatusHomeLayoutResolver.resolve(
+                HomeLayoutResolver.resolve(
                     hostWidthPx = 587,
                     hostHeightPx = 108,
                     baseCarrierWidthPx = 105,
@@ -116,14 +116,14 @@ class CombinedStatusLayoutPolicyTest {
         renderMode: CombinedStatusRenderMode = CombinedStatusRenderMode.PROJECTED,
         motionOwnership: CombinedStatusMotionOwnership =
             CombinedStatusMotionOwnership.NONE,
-    ): CombinedStatusResolvedLayout =
-        CombinedStatusLayoutPolicy.resolve(
-            settings = CombinedStatusLayoutSettings(
+    ): ResolvedLayout =
+        LayoutPolicy.resolve(
+            settings = LayoutConfig(
                 baseVisualSidePx = 105f,
                 baseNeighborGapPx = 6f,
                 userScale = scale,
             ),
-            host = CombinedStatusHostLayout(
+            host = HostLayout(
                 hostHeightPx = 108f,
                 endAnchorPx = 587f,
                 nativeSlotWidthPx = 105f,

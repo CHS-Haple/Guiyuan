@@ -2267,7 +2267,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         ): Float {
             val source = sourceViewRef.get() ?: return 0f
             val compactWidth =
-                CombinedStatusCompactReservationPolicy.resolveCenteredVisualWidth(
+                CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = (frozenSource?.width ?: source.width).coerceAtLeast(0),
                     userScale = currentSnapshot.visualSettings.combinedScale,
                 )
@@ -2456,7 +2456,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         }
                     ?: return
             val compactWidth =
-                CombinedStatusCompactReservationPolicy.resolveCenteredVisualWidth(
+                CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
                     userScale = currentSnapshot.visualSettings.combinedScale,
                 )
