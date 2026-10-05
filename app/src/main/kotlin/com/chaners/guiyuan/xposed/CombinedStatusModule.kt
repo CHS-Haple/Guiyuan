@@ -1214,7 +1214,7 @@ class CombinedStatusModule : XposedModule() {
         acquireKeyguardControlCenterLeaseIfEligible(
             source = "source-scene:" + authority,
         )
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
         val keyguardPresentationReady =
@@ -1320,7 +1320,7 @@ class CombinedStatusModule : XposedModule() {
             SystemUiKeyguardHostResolver.current()
                 as? SystemUiKeyguardHostResolver.ResolveResult.Ready
                 ?: return false
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val aodBlocked =
             SystemUiKeyguardAodStateSource
                 .currentState(resolved.host.battery)
@@ -1371,7 +1371,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun incomingKeyguardPresentationReadyForControlCenter(): Boolean {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         if (
             !settings.enabled ||
             !settings.keyguardEnabled ||
@@ -1926,7 +1926,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onKeyguardFullAodTransitionStarted() {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val homeOwnedAtStart =
             SystemUiHomePresentationOwner
                 .currentHomeRepresentedSlotOwnership()
@@ -1987,7 +1987,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun onKeyguardFullAodTransitionCommitted() {
         keyguardAodFullTransitionActive = false
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val resolution = SystemUiKeyguardHostResolver.current()
         val target =
             (resolution as? SystemUiKeyguardHostResolver.ResolveResult.Ready)
@@ -2194,7 +2194,7 @@ class CombinedStatusModule : XposedModule() {
             return true
         }
 
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val eligible =
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
                 featureEnabled = settings.enabled,
@@ -2219,7 +2219,7 @@ class CombinedStatusModule : XposedModule() {
         source: String,
         visualBoundaryReached: Boolean,
     ) {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         keyguardBoundaryVisualHandoffActive = true
         val statusIconsAlphaAtArm =
             SystemUiKeyguardHostResolver.statusIconsPresentationAlpha(
@@ -2454,7 +2454,7 @@ class CombinedStatusModule : XposedModule() {
         nativeToLockScreenTarget: Boolean?,
         source: String,
     ): Boolean {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val homeOwned =
             SystemUiHomePresentationOwner
                 .currentHomeRepresentedSlotOwnership()
@@ -2530,7 +2530,7 @@ class CombinedStatusModule : XposedModule() {
             keyguardAodPendingTargetToLockScreen = null
         }
 
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val activateHomeNativeAodFallback =
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = homeNativeAodFallbackCandidate,
@@ -2805,7 +2805,7 @@ class CombinedStatusModule : XposedModule() {
         resolved: SystemUiKeyguardHostResolver.ResolvedHost,
         fullAodVisualBoundary: Boolean = false,
     ): ScenePolicy.KeyguardAodProjection? {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val aodState =
             SystemUiKeyguardAodStateSource.currentState(resolved.battery)
                 ?: return null
@@ -2842,7 +2842,7 @@ class CombinedStatusModule : XposedModule() {
         source: String,
         fullAodVisualBoundary: Boolean = false,
     ) {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         when (resolution) {
             is SystemUiKeyguardHostResolver.ResolveResult.Ready -> {
                 if (!settings.enabled) {
@@ -3089,7 +3089,7 @@ class CombinedStatusModule : XposedModule() {
             return
         }
 
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         if (!settings.enabled || !settings.keyguardEnabled) {
             deactivateKeyguardRuntime("feature-ineligible")
             return
@@ -3231,7 +3231,7 @@ class CombinedStatusModule : XposedModule() {
         result: SystemUiHomePresentationOwner.StateResult.Active,
         source: String,
     ) {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val resolved = SystemUiKeyguardHostResolver.current()
         if (
             !settings.enabled ||
@@ -3300,7 +3300,7 @@ class CombinedStatusModule : XposedModule() {
             return
         }
 
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         if (!settings.enabled || !settings.aodEnabled) {
             deactivateAodRuntime("feature-ineligible")
             return
@@ -3408,7 +3408,7 @@ class CombinedStatusModule : XposedModule() {
         result: SystemUiHomePresentationOwner.StateResult.Active,
         source: String,
     ) {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         val resolved = SystemUiKeyguardHostResolver.current()
         if (
             !settings.enabled ||
@@ -3476,7 +3476,7 @@ class CombinedStatusModule : XposedModule() {
             "retryPolicy" to "later-keyguard-scene-event-until-positive-ready",
             "hookDelta" to 0,
             "rendering" to
-                if (RuntimeFeaturePreferencesOwner.currentSettings().keyguardEnabled) {
+                if (FeaturePrefsOwner.currentSettings().keyguardEnabled) {
                     "candidate"
                 } else {
                     "disabled"
@@ -3546,8 +3546,8 @@ class CombinedStatusModule : XposedModule() {
             "mainThread" to true,
         )
         unbindRuntimeDiagnostics()
-        RuntimeFeaturePreferencesOwner.unbind()
-        RuntimeVisualPreferencesOwner.unbind()
+        FeaturePrefsOwner.unbind()
+        VisualPrefsOwner.unbind()
     }
 
     private fun attachHostRuntime(
@@ -3759,7 +3759,7 @@ class CombinedStatusModule : XposedModule() {
         ready: Boolean,
         source: String,
     ) {
-        if (!RuntimeFeaturePreferencesOwner.currentSettings().enabled) {
+        if (!FeaturePrefsOwner.currentSettings().enabled) {
             HomeRenderSession.setNativeHandoffActive(true)
             SystemUiHomePresentationOwner.deactivate("feature-disabled:" + source)
             return
@@ -4035,7 +4035,7 @@ class CombinedStatusModule : XposedModule() {
 
                         if (
                             active &&
-                            !RuntimeFeaturePreferencesOwner.currentSettings().enabled
+                            !FeaturePrefsOwner.currentSettings().enabled
                         ) {
                             val batterySuppression =
                                 SystemUiNativeBatterySuppressionOwner.deactivate(
@@ -4322,7 +4322,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun bindRuntimeDiagnostics() {
         if (!BuildConfig.RUNTIME_DIAGNOSTICS) {
-            RuntimeDiagnosticsPreferencesOwner.unbind()
+            DiagPrefsOwner.unbind()
             detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
             logDiagnostic(
                 level = Log.INFO,
@@ -4335,7 +4335,7 @@ class CombinedStatusModule : XposedModule() {
         }
 
         runCatching {
-            RuntimeDiagnosticsPreferencesOwner.bind(
+            DiagPrefsOwner.bind(
                 preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 forceDetailed = BuildConfig.DEVELOPMENT_PROBES,
                 onDetailedChanged = ::setDetailedDiagnosticsEnabled,
@@ -4350,7 +4350,7 @@ class CombinedStatusModule : XposedModule() {
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
-            RuntimeDiagnosticsPreferencesOwner.unbind()
+            DiagPrefsOwner.unbind()
             detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
             logDiagnostic(
                 level = Log.WARN,
@@ -4365,7 +4365,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun bindRuntimeFeatureSettings() {
         runCatching {
-            RuntimeFeaturePreferencesOwner.bind(
+            FeaturePrefsOwner.bind(
                 preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeFeatureSettingsChanged,
             )
@@ -4381,9 +4381,9 @@ class CombinedStatusModule : XposedModule() {
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
-            RuntimeFeaturePreferencesOwner.unbind()
+            FeaturePrefsOwner.unbind()
             onRuntimeFeatureSettingsChanged(
-                RuntimeFeaturePreferencesOwner.currentSettings(),
+                FeaturePrefsOwner.currentSettings(),
                 null,
             )
             logDiagnostic(
@@ -4511,7 +4511,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun bindRuntimeVisualSettings() {
         runCatching {
-            RuntimeVisualPreferencesOwner.bind(
+            VisualPrefsOwner.bind(
                 preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeVisualSettingsChanged,
             )
@@ -4532,7 +4532,7 @@ class CombinedStatusModule : XposedModule() {
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
-            RuntimeVisualPreferencesOwner.unbind()
+            VisualPrefsOwner.unbind()
             logDiagnostic(
                 level = Log.WARN,
                 event = "runtimePreferences.bind",
@@ -4569,7 +4569,7 @@ class CombinedStatusModule : XposedModule() {
             return
         }
 
-        if (settings != RuntimeVisualPreferencesOwner.currentSettings()) {
+        if (settings != VisualPrefsOwner.currentSettings()) {
             return
         }
 
@@ -4604,7 +4604,7 @@ class CombinedStatusModule : XposedModule() {
         val state =
             when {
                 !BuildConfig.RUNTIME_DIAGNOSTICS -> "disabled"
-                RuntimeDiagnosticsPreferencesOwner.isBound -> "ready"
+                DiagPrefsOwner.isBound -> "ready"
                 else -> "unavailable"
             }
         logDiagnostic(
@@ -4618,7 +4618,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun unbindRuntimeDiagnostics() {
-        RuntimeDiagnosticsPreferencesOwner.unbind()
+        DiagPrefsOwner.unbind()
     }
 
     private fun setDetailedDiagnosticsEnabled(enabled: Boolean) {

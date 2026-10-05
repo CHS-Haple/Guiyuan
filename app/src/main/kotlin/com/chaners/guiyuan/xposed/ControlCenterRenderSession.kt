@@ -496,13 +496,13 @@ internal object ControlCenterRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
-        private var currentVisualSettings = RuntimeVisualPreferencesOwner.currentSettings()
+        private var currentVisualSettings = VisualPrefsOwner.currentSettings()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
         private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
-        private var featureEnabled = RuntimeFeaturePreferencesOwner.currentSettings().enabled
+        private var featureEnabled = FeaturePrefsOwner.currentSettings().enabled
         private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false

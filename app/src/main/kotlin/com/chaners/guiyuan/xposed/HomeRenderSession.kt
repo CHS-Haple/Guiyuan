@@ -69,7 +69,7 @@ internal object HomeRenderSession {
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
-                RuntimeFeaturePreferencesOwner.currentSettings().enabled,
+                FeaturePrefsOwner.currentSettings().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
         )
         current = session
@@ -308,7 +308,7 @@ internal object HomeRenderSession {
                 ViewGroup.LayoutParams(0, 0),
             )
             renderController.updateVisualSettings(
-                RuntimeVisualPreferencesOwner.currentSettings(),
+                VisualPrefsOwner.currentSettings(),
             )
             resolveInitialTintSeed(
                 transferred = initialTintState,

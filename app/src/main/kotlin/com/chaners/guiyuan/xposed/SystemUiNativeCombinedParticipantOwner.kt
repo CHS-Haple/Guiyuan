@@ -980,10 +980,10 @@ internal object SystemUiNativeCombinedParticipantOwner {
         renderController =
             renderController ?: RenderController(render)
         renderController?.updateVisualSettings(
-            RuntimeVisualPreferencesOwner.currentSettings(),
+            VisualPrefsOwner.currentSettings(),
         )
         featureEnabled =
-            RuntimeFeaturePreferencesOwner.currentSettings().enabled
+            FeaturePrefsOwner.currentSettings().enabled
 
         render.measure(
             View.MeasureSpec.makeMeasureSpec(activeSlotWidth, View.MeasureSpec.EXACTLY),

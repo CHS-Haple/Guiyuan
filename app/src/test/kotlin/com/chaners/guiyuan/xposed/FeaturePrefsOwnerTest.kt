@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class RuntimeFeaturePreferencesOwnerTest {
+class FeaturePrefsOwnerTest {
     @Test
     fun clearNotificationParticipatesInFeatureRuntimeSync() {
         assertEquals(true, isCombinedStatusFeaturePreferenceKey(null))
@@ -57,7 +57,7 @@ class RuntimeFeaturePreferencesOwnerTest {
     fun validCrossProcessTimestampProducesTransportLatency() {
         assertEquals(
             6_000_000L,
-            RuntimeFeaturePreferencesOwner.resolveTransportLatencyNanos(
+            FeaturePrefsOwner.resolveTransportLatencyNanos(
                 changedAtElapsedRealtimeNanos = 1_000_000_000L,
                 receivedAtElapsedRealtimeNanos = 1_006_000_000L,
             ),
@@ -67,7 +67,7 @@ class RuntimeFeaturePreferencesOwnerTest {
     @Test
     fun missingTimestampDoesNotInventLatency() {
         assertNull(
-            RuntimeFeaturePreferencesOwner.resolveTransportLatencyNanos(
+            FeaturePrefsOwner.resolveTransportLatencyNanos(
                 changedAtElapsedRealtimeNanos = 0L,
                 receivedAtElapsedRealtimeNanos = 1_006_000_000L,
             ),
@@ -77,7 +77,7 @@ class RuntimeFeaturePreferencesOwnerTest {
     @Test
     fun invalidFutureTimestampDoesNotInventLatency() {
         assertNull(
-            RuntimeFeaturePreferencesOwner.resolveTransportLatencyNanos(
+            FeaturePrefsOwner.resolveTransportLatencyNanos(
                 changedAtElapsedRealtimeNanos = 2_000_000_000L,
                 receivedAtElapsedRealtimeNanos = 1_000_000_000L,
             ),

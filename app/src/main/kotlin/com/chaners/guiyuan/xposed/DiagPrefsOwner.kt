@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagnosticsLevel
 
-internal object RuntimeDiagnosticsPreferencesOwner {
+internal object DiagPrefsOwner {
     private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null

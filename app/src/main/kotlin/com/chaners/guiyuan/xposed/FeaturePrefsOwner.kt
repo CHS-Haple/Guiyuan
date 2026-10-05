@@ -9,7 +9,7 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
 import com.chaners.guiyuan.settings.isCombinedStatusFeaturePreferenceKey
 
-internal object RuntimeFeaturePreferencesOwner {
+internal object FeaturePrefsOwner {
     @Volatile
     private var current =
         CombinedStatusFeatureSettings(

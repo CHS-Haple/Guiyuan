@@ -53,7 +53,7 @@ internal object KeyguardRenderSession {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
-        val settings = RuntimeFeaturePreferencesOwner.currentSettings()
+        val settings = FeaturePrefsOwner.currentSettings()
         if (!sceneEligible) {
             return AttachResult.Failure(
                 if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
@@ -392,7 +392,7 @@ internal object KeyguardRenderSession {
                 ViewGroup.LayoutParams(0, 0),
             )
             renderController.updateVisualSettings(
-                RuntimeVisualPreferencesOwner.currentSettings(),
+                VisualPrefsOwner.currentSettings(),
             )
             SystemUiTintStateSource.currentState(battery)?.let { state ->
                 applyTintState(

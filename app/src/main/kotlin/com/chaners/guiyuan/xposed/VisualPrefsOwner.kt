@@ -5,7 +5,7 @@ import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import com.chaners.guiyuan.settings.isCombinedStatusVisualPreferenceKey
 import com.chaners.guiyuan.settings.readCombinedStatusVisualSettings
 
-internal object RuntimeVisualPreferencesOwner {
+internal object VisualPrefsOwner {
     @Volatile
     private var current = CombinedStatusVisualSettings()
 

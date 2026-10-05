@@ -9,10 +9,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RuntimeDiagnosticsPreferencesOwnerTest {
+class DiagPrefsOwnerTest {
     @After
     fun tearDown() {
-        RuntimeDiagnosticsPreferencesOwner.unbind()
+        DiagPrefsOwner.unbind()
     }
 
     @Test
@@ -21,14 +21,14 @@ class RuntimeDiagnosticsPreferencesOwnerTest {
         val observed = mutableListOf<Boolean>()
 
         val result =
-            RuntimeDiagnosticsPreferencesOwner.bind(
+            DiagPrefsOwner.bind(
                 preferences = preferences,
                 forceDetailed = false,
                 onDetailedChanged = observed::add,
             )
 
         assertFalse(result.detailedEnabled)
-        assertTrue(RuntimeDiagnosticsPreferencesOwner.isBound)
+        assertTrue(DiagPrefsOwner.isBound)
         assertEquals(1, preferences.listenerCount)
         assertEquals(listOf(false), observed)
 
@@ -42,16 +42,16 @@ class RuntimeDiagnosticsPreferencesOwnerTest {
         val preferences = FakePreferences()
         val observed = mutableListOf<Boolean>()
 
-        RuntimeDiagnosticsPreferencesOwner.bind(
+        DiagPrefsOwner.bind(
             preferences = preferences,
             forceDetailed = false,
             onDetailedChanged = observed::add,
         )
         val staleListener = preferences.lastRegisteredListener
 
-        RuntimeDiagnosticsPreferencesOwner.unbind()
+        DiagPrefsOwner.unbind()
 
-        assertFalse(RuntimeDiagnosticsPreferencesOwner.isBound)
+        assertFalse(DiagPrefsOwner.isBound)
         assertEquals(0, preferences.listenerCount)
 
         preferences.setRawDiagnosticsLevel(DiagnosticsLevel.Detailed.name)
@@ -69,7 +69,7 @@ class RuntimeDiagnosticsPreferencesOwnerTest {
         val observed = mutableListOf<Boolean>()
 
         val result =
-            RuntimeDiagnosticsPreferencesOwner.bind(
+            DiagPrefsOwner.bind(
                 preferences = preferences,
                 forceDetailed = true,
                 onDetailedChanged = observed::add,
