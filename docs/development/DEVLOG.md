@@ -4820,3 +4820,35 @@ No Xposed/SystemUI hook, renderer, transition, network source, native participan
 - Pull gesture, More > Refresh, and diagnostics-level recapture call the same guarded `requestRefresh()` path; duplicate refresh requests are ignored while capture is active.
 - Pull-to-refresh is not installed during the initial empty snapshot, avoiding gesture/header feedback before the first capture completes.
 - No Xposed/SystemUI runtime behavior changes.
+
+## 2026-10-06 — Build 740 companion UI hierarchy and localization polish
+
+**Type:** companion app / MIUIX navigation / localization
+**Build:** 740 / `20261006-740`
+**Branch:** `fix/companion-ui-polish`
+
+### Problem
+
+Device review exposed five companion-app issues: battery-color detail Back visually dismissed the whole sheet, the English Diagnostics title was ellipsized, the Preview Sandbox `Network` label wrapped in its fixed column, the top-information offset title carried redundant direction text, and About metadata/copy used ambiguous plain-space separation.
+
+### Evidence / root cause
+
+- Pinned MIUIX `OverlayBottomSheet` completes its Back dismissal motion before calling `onDismissRequest`. Changing the internal pager only from that callback is therefore too late: the sheet has already moved off-screen.
+- Pinned MIUIX `SmallTopAppBar` reserves its default 26 dp horizontal title padding inside the width left after navigation/actions. Diagnostics has two leading and three trailing actions, so the English title loses another 52 dp even though the action geometry itself is valid.
+- `PreviewStatusLine` assigned every localized label a fixed 48 dp width; `Network` is wider and wrapped.
+- About device/codename and Android/API values were joined with ordinary spaces, and the Chinese About summary itself contained a plain space after “版本”.
+
+### Conclusion / change
+
+- Give the battery-color detail page its own nested NavigationBackHandler and disable outer-sheet dismissal while that detail level is active; Back first returns to the overview, while overview retains normal MIUIX dismiss behavior.
+- Expose the upstream `SmallTopAppBar.titlePadding` seam through `SettingsPage` and set only Diagnostics to zero padding. Font size, button size, positions, and MIUIX action components remain unchanged.
+- Let Preview status labels use intrinsic text width with a normal 12 dp gap; the value owns the remaining Row width.
+- Remove the directional suffix from the top-information offset label in both locales.
+- Use `｜` for Device/Codename, Android/API, and Scope/Package pairs; refine About summary copy to “Version, project, and runtime environment” / “版本、项目与运行环境”.
+
+### Review / validation
+
+This checkpoint does not touch Material semantic-icon resources or the shared `SemanticLeadingIcon` contract. Pre-CI review also removed an explicit `androidx.compose.foundation.layout.weight` import because the project already records that import as invalid for the pinned Compose version; `Modifier.weight()` is supplied by RowScope.
+
+Run one exact-head Runtime PR validation. A Work-branch Canary is only needed if the interaction and optical fixes require focused device acceptance after automated validation.
+
