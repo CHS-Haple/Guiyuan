@@ -23,6 +23,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
@@ -139,6 +142,7 @@ internal fun BatteryColorBottomSheet(
             stringResource(R.string.battery_custom_scheme_default_name, it)
         }
     val inDetail = navPager.currentPage == 1
+    val detailBackState = rememberNavigationEventState(NavigationEventInfo.None)
     val sheetTitle =
         if (inDetail && selectedSlot != null) {
             stringResource(
@@ -148,6 +152,10 @@ internal fun BatteryColorBottomSheet(
         } else {
             stringResource(R.string.battery_colors)
         }
+
+    fun returnToOverview() {
+        scope.launch { navPager.springAnimateToPage(0) }
+    }
 
     OverlayBottomSheet(
         show = show,
@@ -170,9 +178,7 @@ internal fun BatteryColorBottomSheet(
                 {
                     TooltipBox(text = stringResource(R.string.back)) {
                         IconButton(
-                            onClick = {
-                                scope.launch { navPager.springAnimateToPage(0) }
-                            },
+                            onClick = ::returnToOverview,
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
@@ -192,14 +198,21 @@ internal fun BatteryColorBottomSheet(
                     )
                 }
             },
+        allowDismiss = !inDetail,
         onDismissRequest = {
             if (inDetail) {
-                scope.launch { navPager.springAnimateToPage(0) }
+                returnToOverview()
             } else {
                 onDismiss()
             }
         },
     ) {
+        NavigationBackHandler(
+            state = detailBackState,
+            isBackEnabled = show && inDetail,
+            onBackCompleted = ::returnToOverview,
+        )
+
         HorizontalPager(
             state = navPager,
             modifier =
