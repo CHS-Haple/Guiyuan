@@ -37,16 +37,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
@@ -69,8 +68,7 @@ import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
@@ -79,8 +77,6 @@ import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SnackbarDefaults
 import top.yukonga.miuix.kmp.basic.Surface
@@ -96,9 +92,10 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
+import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -220,18 +217,26 @@ internal fun BatteryColorBottomSheet(
             } else {
                 MiuixTheme.colorScheme.background
             },
+        insideMargin =
+            if (inDetail) {
+                BottomSheetDefaults.insideMargin
+            } else {
+                DpSize(0.dp, 0.dp)
+            },
         startAction =
             if (inDetail) {
                 {
-                    IconButton(
-                        onClick = {
-                            scope.launch { navPager.springAnimateToPage(0) }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = stringResource(R.string.back),
-                        )
+                    TooltipBox(text = stringResource(R.string.back)) {
+                        IconButton(
+                            onClick = {
+                                scope.launch { navPager.springAnimateToPage(0) }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.back),
+                            )
+                        }
                     }
                 }
             } else {
@@ -464,6 +469,10 @@ private fun BatterySchemeOverview(
             userScrollEnabled = false,
             flingBehavior = flingBehavior,
             pageNestedScrollConnection = PagerGestureNestedScrollConnection,
+            contentPadding =
+                PaddingValues(
+                    horizontal = BottomSheetDefaults.insideMargin.width,
+                ),
             pageSpacing = 12.dp,
             verticalAlignment = Alignment.Top,
         ) { index ->
@@ -888,77 +897,35 @@ private fun BatterySchemeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    var heldDown by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
-    val normalColors = DropdownDefaults.dropdownColors()
-    val errorColors =
-        DropdownDefaults.dropdownColors(
-            contentColor = MiuixTheme.colorScheme.error,
-            selectedContentColor = MiuixTheme.colorScheme.error,
-            selectedIndicatorColor = MiuixTheme.colorScheme.error,
-        )
-    val items =
-        listOf(
-            DropdownItem(
-                text = stringResource(R.string.battery_custom_scheme_rename),
-                onClick = onRename,
-            ),
-            DropdownItem(
-                text = stringResource(R.string.battery_custom_scheme_copy),
-                enabled = canCopy,
-                onClick = onCopy,
-            ),
-            DropdownItem(
-                text = stringResource(R.string.battery_custom_scheme_delete),
-                onClick = onDelete,
-            ),
+    val entry =
+        DropdownEntry(
+            items =
+                listOf(
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_rename),
+                        onClick = onRename,
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_copy),
+                        enabled = canCopy,
+                        onClick = onCopy,
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_delete),
+                        onClick = onDelete,
+                    ),
+                ),
         )
 
-    Box(modifier = modifier) {
-        IconButton(
-            onClick = {
-                expanded = !expanded
-                if (expanded) {
-                    heldDown = true
-                    haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
-                }
-            },
-            holdDownState = heldDown,
+    TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
+        OverlayIconDropdownMenu(
+            entry = entry,
+            modifier = modifier,
         ) {
             Icon(
                 imageVector = MiuixIcons.More,
                 contentDescription = stringResource(R.string.battery_custom_scheme_manage),
             )
-        }
-        OverlayListPopup(
-            show = expanded,
-            alignment = PopupPositionProvider.Align.End,
-            onDismissRequest = { expanded = false },
-            onDismissFinished = { heldDown = false },
-        ) {
-            ListPopupColumn {
-                items.forEachIndexed { index, item ->
-                    DropdownImpl(
-                        item = item,
-                        optionSize = items.size,
-                        isSelected = false,
-                        index = index,
-                        enabled = item.enabled,
-                        dropdownColors =
-                            if (index == items.lastIndex) {
-                                errorColors
-                            } else {
-                                normalColors
-                            },
-                        onSelectedIndexChange = {
-                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                            item.onClick?.invoke()
-                            expanded = false
-                        },
-                    )
-                }
-            }
         }
     }
 }
