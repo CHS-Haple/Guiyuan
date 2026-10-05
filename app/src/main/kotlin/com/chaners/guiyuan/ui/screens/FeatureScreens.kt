@@ -2207,11 +2207,13 @@ private fun SettingsPage(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    MiuixIcons.Back,
-                                    contentDescription = stringResource(R.string.back),
-                                )
+                            TooltipBox(text = stringResource(R.string.back)) {
+                                IconButton(onClick = onBack) {
+                                    Icon(
+                                        MiuixIcons.Back,
+                                        contentDescription = stringResource(R.string.back),
+                                    )
+                                }
                             }
                             navigationActions()
                         }
