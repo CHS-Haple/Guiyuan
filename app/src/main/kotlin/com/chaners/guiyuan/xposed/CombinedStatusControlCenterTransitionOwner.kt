@@ -136,7 +136,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         }
 
         val sourceSnapshot =
-            CombinedStatusControlCenterRenderSession.currentTransitionSourceSnapshot()
+            ControlCenterRenderSession.currentTransitionSourceSnapshot()
                 ?: run {
                     current?.stop("source-unavailable")
                     current = null
@@ -157,9 +157,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
         val steadySourceWitness =
             when (sourceScene) {
                 CombinedStatusSourceScene.HOME ->
-                    CombinedStatusHomeRenderSession.currentTransitionSourceWitness()
+                    HomeRenderSession.currentTransitionSourceWitness()
                 CombinedStatusSourceScene.KEYGUARD ->
-                    CombinedStatusKeyguardRenderSession.currentTransitionSourceWitness()
+                    KeyguardRenderSession.currentTransitionSourceWitness()
                 CombinedStatusSourceScene.UNKNOWN ->
                     null
             }
@@ -949,7 +949,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         finalRoot: ViewGroup,
         sourceView: View,
         sourceAnchor: View,
-        sourceSnapshot: CombinedStatusControlCenterRenderSession.TransitionSourceSnapshot,
+        sourceSnapshot: ControlCenterRenderSession.TransitionSourceSnapshot,
         private val frozenSource: FrozenSourceGeometry?,
         private val fakeStatusIcons: ViewGroup,
         private val finalStatusIcons: ViewGroup,
@@ -1025,7 +1025,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 }
 
                 val latest =
-                    CombinedStatusControlCenterRenderSession.currentTransitionSourceSnapshot()
+                    ControlCenterRenderSession.currentTransitionSourceSnapshot()
                 if (
                     latest != null &&
                     latest.view === source &&
@@ -1200,7 +1200,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         fun update(
             progress: Float,
-            sourceSnapshot: CombinedStatusControlCenterRenderSession.TransitionSourceSnapshot,
+            sourceSnapshot: ControlCenterRenderSession.TransitionSourceSnapshot,
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
@@ -2321,7 +2321,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             val visualView = witness.opticalView ?: witness.slotView
             if (!isReliableSemanticTarget(visualView)) return null
             val snapshot =
-                CombinedStatusParticipantVisualSnapshot.resolveView(visualView)
+                ParticipantVisualSnapshot.resolveView(visualView)
                     ?: return null
             val envelope = snapshot.envelope
             if (envelope.width <= 0f || envelope.height <= 0f) return null
@@ -2975,7 +2975,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             if (targetOpticalBounds == null && !witness.preferFallbackGeometry) {
                 val visualView = opticalView ?: witness.slotView
                 val snapshot =
-                    CombinedStatusParticipantVisualSnapshot.resolveView(visualView)
+                    ParticipantVisualSnapshot.resolveView(visualView)
                 val visualSample =
                     snapshot?.let { sample(visualView, root) }
                 if (snapshot != null && visualSample != null) {
@@ -3083,7 +3083,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         ): List<CombinedStatusPainter.TransitionNormalizedBounds>? {
             val visualView = witness.opticalView ?: witness.slotView
             val snapshot =
-                CombinedStatusParticipantVisualSnapshot.resolveView(visualView)
+                ParticipantVisualSnapshot.resolveView(visualView)
                     ?: return null
             return snapshot
                 .fourVerticalBarsWithinEnvelope()
@@ -3761,7 +3761,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             data class Candidate(
                 val view: View,
-                val snapshot: CombinedStatusParticipantVisualSnapshot.Snapshot,
+                val snapshot: ParticipantVisualSnapshot.Snapshot,
                 val score: Float,
             )
 
@@ -3770,7 +3770,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 val candidate = signalContainer.getChildAt(index)
                 if (!isReliableSemanticTarget(candidate)) continue
                 val snapshot =
-                    CombinedStatusParticipantVisualSnapshot.resolveView(candidate)
+                    ParticipantVisualSnapshot.resolveView(candidate)
                         ?: continue
                 if (snapshot.components.isEmpty()) continue
                 val area =
@@ -4038,7 +4038,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 root: ViewGroup,
                 fakeRoot: ViewGroup,
                 finalRoot: ViewGroup,
-                sourceSnapshot: CombinedStatusControlCenterRenderSession.TransitionSourceSnapshot,
+                sourceSnapshot: ControlCenterRenderSession.TransitionSourceSnapshot,
                 steadySourceWitness: CombinedStatusTransitionSourceWitness?,
                 steadySourceLabel: String,
             ): Session? {

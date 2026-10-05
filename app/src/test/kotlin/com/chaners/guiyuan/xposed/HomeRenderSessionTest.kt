@@ -5,11 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusHomeRenderSessionTest {
+class HomeRenderSessionTest {
     @Test
     fun ownerReadinessDependsOnlyOnStructuralHomeRequirements() {
         assertTrue(
-            CombinedStatusHomeRenderSession.resolveOwnerReady(
+            HomeRenderSession.resolveOwnerReady(
                 featureEnabled = true,
                 modelReady = true,
                 tintReady = true,
@@ -18,7 +18,7 @@ class CombinedStatusHomeRenderSessionTest {
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOwnerReady(
+            HomeRenderSession.resolveOwnerReady(
                 featureEnabled = false,
                 modelReady = true,
                 tintReady = true,
@@ -27,7 +27,7 @@ class CombinedStatusHomeRenderSessionTest {
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOwnerReady(
+            HomeRenderSession.resolveOwnerReady(
                 featureEnabled = true,
                 modelReady = true,
                 tintReady = true,
@@ -40,7 +40,7 @@ class CombinedStatusHomeRenderSessionTest {
     @Test
     fun overlayVisibilityRequiresControlCenterOwnership() {
         assertTrue(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = false,
@@ -48,7 +48,7 @@ class CombinedStatusHomeRenderSessionTest {
         )
 
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = false,
                 nativeHandoffActive = false,
@@ -59,21 +59,21 @@ class CombinedStatusHomeRenderSessionTest {
     @Test
     fun overlayVisibilityHonorsFeatureAndHandoffGates() {
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = false,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = false,
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = false,
                 nativeHandoffActive = false,
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = true,
@@ -91,7 +91,7 @@ class CombinedStatusHomeRenderSessionTest {
             )
 
         val seed =
-            CombinedStatusHomeRenderSession.resolveInitialTintSeed(
+            HomeRenderSession.resolveInitialTintSeed(
                 transferred = transferred,
                 allowLiveSeed = false,
                 liveState = {
@@ -116,7 +116,7 @@ class CombinedStatusHomeRenderSessionTest {
             )
 
         val seed =
-            CombinedStatusHomeRenderSession.resolveInitialTintSeed(
+            HomeRenderSession.resolveInitialTintSeed(
                 transferred =
                     CombinedStatusTintState(
                         appliedTint = 0x00112233,
@@ -138,7 +138,7 @@ class CombinedStatusHomeRenderSessionTest {
         var liveReads = 0
 
         val seed =
-            CombinedStatusHomeRenderSession.resolveInitialTintSeed(
+            HomeRenderSession.resolveInitialTintSeed(
                 transferred = null,
                 allowLiveSeed = false,
                 liveState = {
@@ -155,7 +155,7 @@ class CombinedStatusHomeRenderSessionTest {
     @Test
     fun topOverflowExpandsOnlyPhysicalSurfaceWithoutMovingLogicalViewport() {
         val resolved =
-            CombinedStatusVerticalOverflowPolicy.resolve(
+            VerticalOverflowPolicy.resolve(
                 logicalTopPx = 0,
                 logicalHeightPx = 108,
                 requestedTopOverflowPx = 18,
@@ -170,7 +170,7 @@ class CombinedStatusHomeRenderSessionTest {
     @Test
     fun noOverflowPreservesOriginalPhysicalBounds() {
         val resolved =
-            CombinedStatusVerticalOverflowPolicy.resolve(
+            VerticalOverflowPolicy.resolve(
                 logicalTopPx = 0,
                 logicalHeightPx = 108,
                 requestedTopOverflowPx = 0,

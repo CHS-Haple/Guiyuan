@@ -8,7 +8,7 @@ import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import java.lang.ref.WeakReference
 
-internal object CombinedStatusKeyguardRenderSession {
+internal object KeyguardRenderSession {
     private var current: Session? = null
 
     @Synchronized
@@ -639,7 +639,7 @@ internal object CombinedStatusKeyguardRenderSession {
             topOverflowPx: Int,
         ) {
             val physical =
-                CombinedStatusVerticalOverflowPolicy.resolve(
+                VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,

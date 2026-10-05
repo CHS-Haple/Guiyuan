@@ -39,7 +39,7 @@ internal object SystemUiHotReloadRuntimeOwner {
             SystemUiHostRegistry.currentStatusHost()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
         val snapshot = CombinedStatusStateStore.snapshot()
-        val stableTint = CombinedStatusHomeRenderSession.currentTintState()
+        val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SystemUiNetworkStateSource.hotReloadBindingCounts()
         val bindingStateReady =
             (snapshot.wifi is CombinedStatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
@@ -53,7 +53,7 @@ internal object SystemUiHotReloadRuntimeOwner {
         }
 
         val controlCenterCompactReady =
-            CombinedStatusControlCenterRenderSession
+            ControlCenterRenderSession
                 .currentNativePresentationReadyForHotReload()
 
         val transfer =
@@ -69,7 +69,7 @@ internal object SystemUiHotReloadRuntimeOwner {
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    CombinedStatusControlCenterRenderSession.currentAttachedHostForHotReload(),
+                    ControlCenterRenderSession.currentAttachedHostForHotReload(),
                 controlCenterCompactReady = controlCenterCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(

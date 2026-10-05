@@ -2685,7 +2685,7 @@ internal class CombinedStatusPainter(
         resources: android.content.res.Resources,
     ): NativeVisualProbe? {
         val visual =
-            CombinedStatusParticipantVisualSnapshot.resolveDrawable(
+            ParticipantVisualSnapshot.resolveDrawable(
                 drawable = drawable,
                 resources = resources,
             ) ?: return null

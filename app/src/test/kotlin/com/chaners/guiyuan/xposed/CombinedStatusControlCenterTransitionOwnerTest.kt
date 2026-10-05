@@ -343,9 +343,9 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     @Test
     fun fourBarSnapshotTargetsRemainOrderedAndBounded() {
         val snapshot =
-            CombinedStatusParticipantVisualSnapshot.Snapshot(
+            ParticipantVisualSnapshot.Snapshot(
                 envelope =
-                    CombinedStatusParticipantVisualSnapshot.NormalizedRect(
+                    ParticipantVisualSnapshot.NormalizedRect(
                         left = 0.1f,
                         top = 0.2f,
                         right = 0.9f,
@@ -353,13 +353,13 @@ class CombinedStatusControlCenterTransitionOwnerTest {
                     ),
                 components =
                     listOf(
-                        CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.1f, 0.55f, 0.2f, 0.9f),
-                        CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.3f, 0.45f, 0.4f, 0.9f),
-                        CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.5f, 0.35f, 0.6f, 0.9f),
-                        CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.7f, 0.2f, 0.8f, 0.9f),
+                        ParticipantVisualSnapshot.NormalizedRect(0.1f, 0.55f, 0.2f, 0.9f),
+                        ParticipantVisualSnapshot.NormalizedRect(0.3f, 0.45f, 0.4f, 0.9f),
+                        ParticipantVisualSnapshot.NormalizedRect(0.5f, 0.35f, 0.6f, 0.9f),
+                        ParticipantVisualSnapshot.NormalizedRect(0.7f, 0.2f, 0.8f, 0.9f),
                     ),
                 topology =
-                    CombinedStatusParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
+                    ParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
             )
 
         val bars = requireNotNull(snapshot.fourVerticalBarsWithinEnvelope())

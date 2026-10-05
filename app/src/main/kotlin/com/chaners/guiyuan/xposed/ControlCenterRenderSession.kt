@@ -9,7 +9,7 @@ import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
-internal object CombinedStatusControlCenterRenderSession {
+internal object ControlCenterRenderSession {
     private const val FAKE_ROOT_CLASS_NAME =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val BATTERY_CONTAINER_CLASS_NAME =
@@ -416,13 +416,13 @@ internal object CombinedStatusControlCenterRenderSession {
             oldRight: Int,
             oldBottom: Int,
         ) {
-            CombinedStatusControlCenterRenderSession.onPendingPrearmLayout(this)
+            ControlCenterRenderSession.onPendingPrearmLayout(this)
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
 
         override fun onViewDetachedFromWindow(view: View) {
-            CombinedStatusControlCenterRenderSession.onPendingPrearmDetached(this)
+            ControlCenterRenderSession.onPendingPrearmDetached(this)
         }
     }
 

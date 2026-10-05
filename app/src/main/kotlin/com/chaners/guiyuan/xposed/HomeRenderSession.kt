@@ -8,7 +8,7 @@ import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import java.lang.ref.WeakReference
 
-internal object CombinedStatusHomeRenderSession {
+internal object HomeRenderSession {
     private const val BATTERY_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
@@ -698,7 +698,7 @@ internal object CombinedStatusHomeRenderSession {
             topOverflowPx: Int,
         ) {
             val physical =
-                CombinedStatusVerticalOverflowPolicy.resolve(
+                VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,
@@ -743,7 +743,7 @@ internal object CombinedStatusHomeRenderSession {
 }
 
 
-internal object CombinedStatusVerticalOverflowPolicy {
+internal object VerticalOverflowPolicy {
     internal data class Resolved(
         val physicalTopPx: Int,
         val physicalHeightPx: Int,

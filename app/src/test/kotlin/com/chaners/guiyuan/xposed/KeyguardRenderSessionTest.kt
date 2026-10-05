@@ -5,19 +5,19 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusKeyguardRenderSessionTest {
+class KeyguardRenderSessionTest {
     @Test
     fun overlayRequiresFeatureAndCompletedNativeHandoff() {
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOverlayVisible(false, false, false))
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOverlayVisible(true, true, false))
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOverlayVisible(true, false, true))
-        assertTrue(CombinedStatusKeyguardRenderSession.resolveOverlayVisible(true, false, false))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(false, false, false))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, true, false))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, false, true))
+        assertTrue(KeyguardRenderSession.resolveOverlayVisible(true, false, false))
     }
 
     @Test
     fun keyguardAndAodFamilyKeepChildFeatureGatesIndependent() {
         assertTrue(
-            CombinedStatusKeyguardRenderSession.resolveFamilyFeatureEnabled(
+            KeyguardRenderSession.resolveFamilyFeatureEnabled(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -25,7 +25,7 @@ class CombinedStatusKeyguardRenderSessionTest {
             ),
         )
         assertFalse(
-            CombinedStatusKeyguardRenderSession.resolveFamilyFeatureEnabled(
+            KeyguardRenderSession.resolveFamilyFeatureEnabled(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -33,7 +33,7 @@ class CombinedStatusKeyguardRenderSessionTest {
             ),
         )
         assertTrue(
-            CombinedStatusKeyguardRenderSession.resolveFamilyFeatureEnabled(
+            KeyguardRenderSession.resolveFamilyFeatureEnabled(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -41,7 +41,7 @@ class CombinedStatusKeyguardRenderSessionTest {
             ),
         )
         assertFalse(
-            CombinedStatusKeyguardRenderSession.resolveFamilyFeatureEnabled(
+            KeyguardRenderSession.resolveFamilyFeatureEnabled(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -54,28 +54,28 @@ class CombinedStatusKeyguardRenderSessionTest {
     fun keyguardFamilyChildDoesNotCopyIndependentBatteryAodAlpha() {
         assertEquals(
             1f,
-            CombinedStatusKeyguardRenderSession.resolveFamilyChildAlpha(),
+            KeyguardRenderSession.resolveFamilyChildAlpha(),
             0.0001f,
         )
     }
 
     @Test
     fun readinessRequiresCompleteAttachedKeyguardSurface() {
-        assertTrue(CombinedStatusKeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, false))
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, false))
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, false))
-        assertFalse(CombinedStatusKeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, true))
+        assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, false))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, false))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, false))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, true))
     }
 
     @Test
     fun retargetOnlyForcesPresentationReadinessWhenFamilySceneChanges() {
         assertFalse(
-            CombinedStatusKeyguardRenderSession.shouldForceReadinessDispatch(
+            KeyguardRenderSession.shouldForceReadinessDispatch(
                 sceneChanged = false,
             ),
         )
         assertTrue(
-            CombinedStatusKeyguardRenderSession.shouldForceReadinessDispatch(
+            KeyguardRenderSession.shouldForceReadinessDispatch(
                 sceneChanged = true,
             ),
         )

@@ -1040,7 +1040,7 @@ class CombinedStatusModule : XposedModule() {
             panelTransitionSourceInstalled = handles.size == expectedHooks
             // Home yields Control Center only after the projected native
             // carrier is structurally ready.
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = if (panelTransitionSourceInstalled) Log.INFO else Log.WARN,
                 event = "source.install",
@@ -1058,7 +1058,7 @@ class CombinedStatusModule : XposedModule() {
             )
         }.onFailure { error ->
             panelTransitionSourceInstalled = false
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1117,14 +1117,14 @@ class CombinedStatusModule : XposedModule() {
             // Restore Home first. QS_FAKE compact presentation remains prearmed
             // for the lifetime of the native fake root; only the Combined
             // overlay visibility changes with Control Center visibility.
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
-            CombinedStatusControlCenterRenderSession.setRequestedVisible(false)
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            ControlCenterRenderSession.setRequestedVisible(false)
             return null
         }
 
         controlCenterSceneVisible = true
-        if (!CombinedStatusControlCenterRenderSession.beginVisibleCycle()) {
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+        if (!ControlCenterRenderSession.beginVisibleCycle()) {
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.visibleCycle",
@@ -1161,7 +1161,7 @@ class CombinedStatusModule : XposedModule() {
         )
         val carrier = update.controlCenterPresentationHost
         if (carrier == null) {
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.attach",
@@ -1174,16 +1174,16 @@ class CombinedStatusModule : XposedModule() {
         }
 
         when (prepareControlCenterFakePresentation(carrier, "visible-fallback")) {
-            CombinedStatusControlCenterRenderSession.AttachResult.Ready -> {
+            ControlCenterRenderSession.AttachResult.Ready -> {
                 val ready =
-                    CombinedStatusControlCenterRenderSession.setRequestedVisible(true)
+                    ControlCenterRenderSession.setRequestedVisible(true)
                 if (!ready) {
-                    CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+                    HomeRenderSession.onControlCenterAuthorityChanged(true)
                 }
             }
 
-            is CombinedStatusControlCenterRenderSession.AttachResult.Failure -> {
-                CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            is ControlCenterRenderSession.AttachResult.Failure -> {
+                HomeRenderSession.onControlCenterAuthorityChanged(true)
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.attach",
@@ -1234,7 +1234,7 @@ class CombinedStatusModule : XposedModule() {
         }
 
         controlCenterSceneEligible = nextEligible
-        CombinedStatusControlCenterRenderSession.setSceneEligible(nextEligible)
+        ControlCenterRenderSession.setSceneEligible(nextEligible)
         CombinedStatusControlCenterTransitionOwner.setSceneEligible(nextEligible)
         logDiagnostic(
             level = Log.INFO,
@@ -1418,7 +1418,7 @@ class CombinedStatusModule : XposedModule() {
     ): String {
         return when (
             val result =
-                CombinedStatusControlCenterRenderSession.restoreLaidOutHostAfterHotReload(
+                ControlCenterRenderSession.restoreLaidOutHostAfterHotReload(
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1426,9 +1426,9 @@ class CombinedStatusModule : XposedModule() {
                     transferredCompactReady = transferredCompactReady,
                 )
         ) {
-            CombinedStatusControlCenterRenderSession.AttachResult.Ready -> {
+            ControlCenterRenderSession.AttachResult.Ready -> {
                 val compactReady =
-                    CombinedStatusControlCenterRenderSession
+                    ControlCenterRenderSession
                         .currentNativePresentationReadyForHotReload()
                 logDiagnostic(
                     level = Log.INFO,
@@ -1453,7 +1453,7 @@ class CombinedStatusModule : XposedModule() {
                 }
             }
 
-            is CombinedStatusControlCenterRenderSession.AttachResult.Failure -> {
+            is ControlCenterRenderSession.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.restore",
@@ -1473,14 +1473,14 @@ class CombinedStatusModule : XposedModule() {
     private fun onControlCenterFakePresentationAttached(host: ViewGroup) {
         when (
             val result =
-                CombinedStatusControlCenterRenderSession.prearmAfterNextNativeLayout(
+                ControlCenterRenderSession.prearmAfterNextNativeLayout(
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
                 )
         ) {
-            is CombinedStatusControlCenterRenderSession.PrearmResult.Scheduled -> {
+            is ControlCenterRenderSession.PrearmResult.Scheduled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "projection.prearm",
@@ -1494,7 +1494,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
 
-            is CombinedStatusControlCenterRenderSession.PrearmResult.Failure -> {
+            is ControlCenterRenderSession.PrearmResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.prearm",
@@ -1511,15 +1511,15 @@ class CombinedStatusModule : XposedModule() {
     private fun prepareControlCenterFakePresentation(
         host: ViewGroup,
         source: String,
-    ): CombinedStatusControlCenterRenderSession.AttachResult {
+    ): ControlCenterRenderSession.AttachResult {
         val result =
-            CombinedStatusControlCenterRenderSession.attach(
+            ControlCenterRenderSession.attach(
                 host = host,
                 onEvent = ::onPanelTransitionEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
             )
-        if (result is CombinedStatusControlCenterRenderSession.AttachResult.Failure) {
+        if (result is ControlCenterRenderSession.AttachResult.Failure) {
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.prepare",
@@ -1540,7 +1540,7 @@ class CombinedStatusModule : XposedModule() {
         }
         // Projected owner is already visible when ready=true. On the reverse
         // edge Home is restored before the projected owner is removed.
-        CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(!ready)
+        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
     }
 
     private fun onPanelTransitionEvent(event: String) {
@@ -1580,10 +1580,10 @@ class CombinedStatusModule : XposedModule() {
             CombinedStatusControlCenterTransitionOwner.detach("panel-runtime-failure")
         }
         safely {
-            CombinedStatusControlCenterRenderSession.setSceneEligible(false)
+            ControlCenterRenderSession.setSceneEligible(false)
         }
         safely {
-            CombinedStatusHomeRenderSession.onControlCenterAuthorityChanged(true)
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
         }
         safely {
             logDiagnostic(
@@ -1828,15 +1828,15 @@ class CombinedStatusModule : XposedModule() {
         snapshot: CombinedStatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ) {
-        CombinedStatusHomeRenderSession.onState(snapshot, trace)
-        CombinedStatusKeyguardRenderSession.onState(snapshot)
-        CombinedStatusControlCenterRenderSession.onState(snapshot)
+        HomeRenderSession.onState(snapshot, trace)
+        KeyguardRenderSession.onState(snapshot)
+        ControlCenterRenderSession.onState(snapshot)
     }
 
     private fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
-        CombinedStatusHomeRenderSession.onPresentationStateChanged(trace)
-        CombinedStatusKeyguardRenderSession.onPresentationStateChanged()
-        CombinedStatusControlCenterRenderSession.onPresentationStateChanged()
+        HomeRenderSession.onPresentationStateChanged(trace)
+        KeyguardRenderSession.onPresentationStateChanged()
+        ControlCenterRenderSession.onPresentationStateChanged()
         refreshStatusIconObservation("presentation")
     }
 
@@ -1851,15 +1851,15 @@ class CombinedStatusModule : XposedModule() {
         val changed =
             CombinedStatusPresentationStateStore.updateStatusIcons(state)
 
-        CombinedStatusHomeRenderSession.onStatusIconTintUpdate(
+        HomeRenderSession.onStatusIconTintUpdate(
             state.appliedTint,
         )
-        CombinedStatusKeyguardRenderSession.onPresentationStateChanged()
-        CombinedStatusControlCenterRenderSession.onPresentationStateChanged()
+        KeyguardRenderSession.onPresentationStateChanged()
+        ControlCenterRenderSession.onPresentationStateChanged()
 
         if (changed != null) {
             val presentationTrace = markPresentationCommitted(trace)
-            CombinedStatusHomeRenderSession.onPresentationStateChanged(
+            HomeRenderSession.onPresentationStateChanged(
                 presentationTrace,
             )
             if (detailedDiagnosticsEnabled) {
@@ -1886,7 +1886,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onTintStateUpdate(update: SystemUiTintStateSource.TintUpdate) {
-        CombinedStatusKeyguardRenderSession.onTintUpdate(update)
+        KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
             SystemUiNativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
         val resolvedState =
@@ -1895,8 +1895,8 @@ class CombinedStatusModule : XposedModule() {
                 liveStatusIconTint = liveStatusIconTint,
             )
         val resolvedUpdate = update.copy(state = resolvedState)
-        CombinedStatusHomeRenderSession.onTintUpdate(resolvedUpdate)
-        CombinedStatusControlCenterRenderSession.onTintUpdate(resolvedUpdate)
+        HomeRenderSession.onTintUpdate(resolvedUpdate)
+        ControlCenterRenderSession.onTintUpdate(resolvedUpdate)
         if (detailedDiagnosticsEnabled) {
             log(
                 Log.INFO,
@@ -2290,7 +2290,7 @@ class CombinedStatusModule : XposedModule() {
 
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
                 keyguardRuntimeReady = false
-                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                KeyguardRenderSession.setNativeHandoffActive(true)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",
@@ -2331,7 +2331,7 @@ class CombinedStatusModule : XposedModule() {
         }
         keyguardBoundaryCompactLayoutReady = true
         keyguardRuntimeReady = false
-        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(
+        KeyguardRenderSession.setNativeHandoffActive(
             !keyguardBoundaryVisualBoundaryReached,
         )
         logDiagnostic(
@@ -2361,7 +2361,7 @@ class CombinedStatusModule : XposedModule() {
         keyguardBoundaryVisualBoundaryReached = true
         if (!keyguardBoundaryLayoutPrecommitActive) return
         if (keyguardBoundaryCompactLayoutReady) {
-            CombinedStatusKeyguardRenderSession.setNativeHandoffActive(false)
+            KeyguardRenderSession.setNativeHandoffActive(false)
             logDiagnostic(
                 level = Log.INFO,
                 event = "aod.visualHandoff",
@@ -2375,7 +2375,7 @@ class CombinedStatusModule : XposedModule() {
                 "keyguard-boundary-visual-ready",
             )
         } else {
-            CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+            KeyguardRenderSession.setNativeHandoffActive(true)
             logDiagnostic(
                 level = Log.WARN,
                 event = "aod.visualHandoff",
@@ -2420,7 +2420,7 @@ class CombinedStatusModule : XposedModule() {
 
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
                 keyguardRuntimeReady = false
-                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(false)
+                KeyguardRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",
@@ -2603,7 +2603,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
         }
-        CombinedStatusKeyguardRenderSession.onAodState(update)
+        KeyguardRenderSession.onAodState(update)
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,
@@ -2947,7 +2947,7 @@ class CombinedStatusModule : XposedModule() {
     ): Boolean {
         return when (
             val result =
-                CombinedStatusKeyguardRenderSession.attach(
+                KeyguardRenderSession.attach(
                     resolved = resolved,
                     sceneEligible = true,
                     onEvent = { event ->
@@ -2964,7 +2964,7 @@ class CombinedStatusModule : XposedModule() {
                     },
                 )
         ) {
-            CombinedStatusKeyguardRenderSession.AttachResult.Ready -> {
+            KeyguardRenderSession.AttachResult.Ready -> {
                 aodRendererAttached = false
                 logDiagnostic(
                     level = Log.INFO,
@@ -2979,7 +2979,7 @@ class CombinedStatusModule : XposedModule() {
                 true
             }
 
-            is CombinedStatusKeyguardRenderSession.AttachResult.Failure -> {
+            is KeyguardRenderSession.AttachResult.Failure -> {
                 deactivateKeyguardRuntime("renderer-attach-failed")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3001,7 +3001,7 @@ class CombinedStatusModule : XposedModule() {
     ): Boolean {
         return when (
             val result =
-                CombinedStatusKeyguardRenderSession.attachAod(
+                KeyguardRenderSession.attachAod(
                     resolved = resolved,
                     sceneEligible = true,
                     onEvent = { event ->
@@ -3018,7 +3018,7 @@ class CombinedStatusModule : XposedModule() {
                     },
                 )
         ) {
-            CombinedStatusKeyguardRenderSession.AttachResult.Ready -> {
+            KeyguardRenderSession.AttachResult.Ready -> {
                 aodRendererAttached = true
                 logDiagnostic(
                     level = Log.INFO,
@@ -3033,7 +3033,7 @@ class CombinedStatusModule : XposedModule() {
                 true
             }
 
-            is CombinedStatusKeyguardRenderSession.AttachResult.Failure -> {
+            is KeyguardRenderSession.AttachResult.Failure -> {
                 deactivateAodRuntime("renderer-attach-failed")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3157,12 +3157,12 @@ class CombinedStatusModule : XposedModule() {
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
                 if (visualOnlyBoundary && keyguardBoundaryLayoutPrecommitActive) {
                     keyguardRuntimeReady = false
-                    CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                    KeyguardRenderSession.setNativeHandoffActive(true)
                     precommitKeyguardBoundaryLayout(source)
                     return
                 }
                 keyguardRuntimeReady = false
-                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(
+                KeyguardRenderSession.setNativeHandoffActive(
                     !visualOnlyBoundary,
                 )
                 logDiagnostic(
@@ -3201,7 +3201,7 @@ class CombinedStatusModule : XposedModule() {
 
             is SystemUiHomePresentationOwner.StateResult.Failure -> {
                 keyguardRuntimeReady = false
-                CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+                KeyguardRenderSession.setNativeHandoffActive(true)
                 SystemUiHomePresentationOwner.deactivateKeyguard("activation-failed")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3222,7 +3222,7 @@ class CombinedStatusModule : XposedModule() {
     private fun applyKeyguardPresentationReadinessLost(source: String) {
         resetKeyguardBoundaryHandoffState()
         keyguardRuntimeReady = false
-        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+        KeyguardRenderSession.setNativeHandoffActive(true)
         SystemUiHomePresentationOwner.deactivateKeyguard("readiness-lost:" + source)
         reconcileControlCenterForKeyguardLifecycle("keyguard-readiness-lost")
     }
@@ -3245,7 +3245,7 @@ class CombinedStatusModule : XposedModule() {
         }
         keyguardRuntimeReady = true
         keyguardPresentationReadyObserved = true
-        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(false)
+        KeyguardRenderSession.setNativeHandoffActive(false)
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.cutover",
@@ -3265,7 +3265,7 @@ class CombinedStatusModule : XposedModule() {
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
-        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+        KeyguardRenderSession.setNativeHandoffActive(true)
         logDiagnostic(
             level = Log.WARN,
             event = "presentation.failNative",
@@ -3283,9 +3283,9 @@ class CombinedStatusModule : XposedModule() {
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
-        CombinedStatusKeyguardRenderSession.setNativeHandoffActive(true)
+        KeyguardRenderSession.setNativeHandoffActive(true)
         SystemUiHomePresentationOwner.deactivateKeyguard(source)
-        CombinedStatusKeyguardRenderSession.detach()
+        KeyguardRenderSession.detach()
         if (wasReady) {
             reconcileControlCenterForKeyguardLifecycle("keyguard-deactivate:" + source)
         }
@@ -3361,7 +3361,7 @@ class CombinedStatusModule : XposedModule() {
             }
 
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
-                CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+                KeyguardRenderSession.setAodNativeHandoffActive(true)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",
@@ -3382,7 +3382,7 @@ class CombinedStatusModule : XposedModule() {
             }
 
             is SystemUiHomePresentationOwner.StateResult.Failure -> {
-                CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+                KeyguardRenderSession.setAodNativeHandoffActive(true)
                 SystemUiHomePresentationOwner.deactivateAod("activation-failed")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3400,7 +3400,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun applyAodPresentationReadinessLost(source: String) {
-        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        KeyguardRenderSession.setAodNativeHandoffActive(true)
         SystemUiHomePresentationOwner.deactivateAod("readiness-lost:" + source)
     }
 
@@ -3421,7 +3421,7 @@ class CombinedStatusModule : XposedModule() {
             return
         }
 
-        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(false)
+        KeyguardRenderSession.setAodNativeHandoffActive(false)
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.cutover",
@@ -3436,7 +3436,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onAodPresentationRuntimeFailure(reason: String) {
-        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        KeyguardRenderSession.setAodNativeHandoffActive(true)
         logDiagnostic(
             level = Log.WARN,
             event = "presentation.failNative",
@@ -3450,9 +3450,9 @@ class CombinedStatusModule : XposedModule() {
     private fun deactivateAodRuntime(source: String) {
         homeAodTargetPrearmPending = false
         aodRendererAttached = false
-        CombinedStatusKeyguardRenderSession.setAodNativeHandoffActive(true)
+        KeyguardRenderSession.setAodNativeHandoffActive(true)
         SystemUiHomePresentationOwner.deactivateAod(source)
-        CombinedStatusKeyguardRenderSession.detachAod()
+        KeyguardRenderSession.detachAod()
     }
 
     private fun onKeyguardHostProbe(snapshot: SystemUiKeyguardHostProbe.Snapshot) {
@@ -3506,13 +3506,13 @@ class CombinedStatusModule : XposedModule() {
         keyguardPresentationReadyObserved = false
         keyguardControlCenterLeaseActive = false
         CombinedStatusControlCenterTransitionOwner.detach("hotReload-oldGeneration")
-        CombinedStatusControlCenterRenderSession.detach(
+        ControlCenterRenderSession.detach(
             source = "hotReload-oldGeneration",
             releaseNativePresentation = !continuousHandoff,
         )
-        CombinedStatusHomeRenderSession.detach()
-        CombinedStatusKeyguardRenderSession.detach()
-        CombinedStatusKeyguardRenderSession.detachAod()
+        HomeRenderSession.detach()
+        KeyguardRenderSession.detach()
+        KeyguardRenderSession.detachAod()
         val restoredPresentationViews =
             SystemUiHomePresentationOwner.releaseGenerationForHotReload(
                 requestLayout =
@@ -3704,7 +3704,7 @@ class CombinedStatusModule : XposedModule() {
             }
 
         when (
-            val renderSession = CombinedStatusHomeRenderSession.attach(
+            val renderSession = HomeRenderSession.attach(
                 host = host,
                 onEvent = { event ->
                     if (detailedDiagnosticsEnabled) {
@@ -3721,7 +3721,7 @@ class CombinedStatusModule : XposedModule() {
                 },
             )
         ) {
-            CombinedStatusHomeRenderSession.AttachResult.Ready -> {
+            HomeRenderSession.AttachResult.Ready -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "renderer.attach",
@@ -3731,7 +3731,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
 
-            is CombinedStatusHomeRenderSession.AttachResult.Failure -> {
+            is HomeRenderSession.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "renderer.attach",
@@ -3760,19 +3760,19 @@ class CombinedStatusModule : XposedModule() {
         source: String,
     ) {
         if (!RuntimeFeaturePreferencesOwner.currentSettings().enabled) {
-            CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+            HomeRenderSession.setNativeHandoffActive(true)
             SystemUiHomePresentationOwner.deactivate("feature-disabled:" + source)
             return
         }
         if (!ready) {
-            CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+            HomeRenderSession.setNativeHandoffActive(true)
             SystemUiHomePresentationOwner.deactivate("readiness-lost:" + source)
             return
         }
 
         when (val result = SystemUiHomePresentationOwner.activate(host)) {
             is SystemUiHomePresentationOwner.StateResult.Active -> {
-                CombinedStatusHomeRenderSession.setNativeHandoffActive(false)
+                HomeRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",
@@ -3785,7 +3785,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
             is SystemUiHomePresentationOwner.StateResult.Prepared -> {
-                CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+                HomeRenderSession.setNativeHandoffActive(true)
                 SystemUiHomePresentationOwner.deactivate("unexpected-prepared")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3798,7 +3798,7 @@ class CombinedStatusModule : XposedModule() {
                 )
             }
             is SystemUiHomePresentationOwner.StateResult.Failure -> {
-                CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+                HomeRenderSession.setNativeHandoffActive(true)
                 SystemUiHomePresentationOwner.deactivate("activation-failed")
                 logDiagnostic(
                     level = Log.WARN,
@@ -3815,7 +3815,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onHomePresentationRuntimeFailure(reason: String) {
-        CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+        HomeRenderSession.setNativeHandoffActive(true)
         logDiagnostic(
             level = Log.WARN,
             event = "presentation.failNative",
@@ -4045,7 +4045,7 @@ class CombinedStatusModule : XposedModule() {
                                 SystemUiNativeNetworkSuppressionOwner.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
-                            CombinedStatusHomeRenderSession.setNativeHandoffActive(false)
+                            HomeRenderSession.setNativeHandoffActive(false)
                             logDiagnostic(
                                 level = Log.INFO,
                                 event = "visibility.handoff",
@@ -4132,7 +4132,7 @@ class CombinedStatusModule : XposedModule() {
                                     )
                                     false
                                 } else {
-                                    CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+                                    HomeRenderSession.setNativeHandoffActive(true)
                                     logDiagnostic(
                                         level = Log.INFO,
                                         event = "visibility.handoff",
@@ -4184,7 +4184,7 @@ class CombinedStatusModule : XposedModule() {
                                     SystemUiNativeNetworkSuppressionOwner.deactivate(
                                         "native-handoff-fallback",
                                     )
-                                CombinedStatusHomeRenderSession.setNativeHandoffActive(false)
+                                HomeRenderSession.setNativeHandoffActive(false)
                                 logDiagnostic(
                                     level = Log.INFO,
                                     event = "visibility.handoff",
@@ -4442,9 +4442,9 @@ class CombinedStatusModule : XposedModule() {
             homeNativeAodFallbackCandidate = false
             homeNativeAodFallbackActive = false
         }
-        CombinedStatusHomeRenderSession.onFeatureSettingsChanged(settings)
-        CombinedStatusKeyguardRenderSession.onFeatureSettingsChanged(settings)
-        CombinedStatusControlCenterRenderSession.onFeatureSettingsChanged(settings)
+        HomeRenderSession.onFeatureSettingsChanged(settings)
+        KeyguardRenderSession.onFeatureSettingsChanged(settings)
+        ControlCenterRenderSession.onFeatureSettingsChanged(settings)
 
         if (!settings.enabled) {
             releaseFeaturePresentationOwnership("feature-disabled")
@@ -4498,7 +4498,7 @@ class CombinedStatusModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardControlCenterLeaseActive = false
-        CombinedStatusControlCenterRenderSession.setSceneEligible(false)
+        ControlCenterRenderSession.setSceneEligible(false)
         CombinedStatusControlCenterTransitionOwner.setSceneEligible(false)
         SystemUiHomePresentationOwner.deactivateControlCenter(source)
         SystemUiHomePresentationOwner.deactivateAod(source)
@@ -4506,7 +4506,7 @@ class CombinedStatusModule : XposedModule() {
         SystemUiHomePresentationOwner.deactivate(source)
         SystemUiNativeBatterySuppressionOwner.deactivate(source)
         SystemUiNativeNetworkSuppressionOwner.deactivate(source)
-        CombinedStatusHomeRenderSession.setNativeHandoffActive(true)
+        HomeRenderSession.setNativeHandoffActive(true)
     }
 
     private fun bindRuntimeVisualSettings() {
@@ -4573,9 +4573,9 @@ class CombinedStatusModule : XposedModule() {
             return
         }
 
-        CombinedStatusHomeRenderSession.onVisualSettingsChanged(settings)
-        CombinedStatusKeyguardRenderSession.onVisualSettingsChanged(settings)
-        CombinedStatusControlCenterRenderSession.onVisualSettingsChanged(settings)
+        HomeRenderSession.onVisualSettingsChanged(settings)
+        KeyguardRenderSession.onVisualSettingsChanged(settings)
+        ControlCenterRenderSession.onVisualSettingsChanged(settings)
         SystemUiHomePresentationOwner.onVisualSettingsChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
