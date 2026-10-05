@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CombinedStatusPresentationPolicy {
+internal object PresentationPolicy {
     fun resolveModel(
         previous: CombinedStatusRenderModel?,
         candidate: CombinedStatusRenderModel?,

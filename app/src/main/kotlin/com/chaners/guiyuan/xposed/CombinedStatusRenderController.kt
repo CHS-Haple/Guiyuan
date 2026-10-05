@@ -22,7 +22,7 @@ internal class CombinedStatusRenderController(
             )
         val previous = stableModel
         val model =
-            CombinedStatusPresentationPolicy.resolveModel(
+            PresentationPolicy.resolveModel(
                 previous = previous,
                 candidate = candidate,
             )
@@ -50,12 +50,12 @@ internal class CombinedStatusRenderController(
     fun updateTint(state: CombinedStatusTintState): TintUpdate {
         val previous = stableTint
         val resolved =
-            CombinedStatusPresentationPolicy.resolveTint(
+            PresentationPolicy.resolveTint(
                 previous = previous,
                 candidate = state,
             )
         val validCandidate =
-            CombinedStatusPresentationPolicy.isValidTint(state)
+            PresentationPolicy.isValidTint(state)
 
         if (resolved != null && resolved != previous) {
             stableTint = resolved

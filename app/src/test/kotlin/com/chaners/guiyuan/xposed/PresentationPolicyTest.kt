@@ -6,13 +6,13 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusPresentationPolicyTest {
+class PresentationPolicyTest {
     @Test
     fun incompleteCandidateKeepsLastStableModel() {
         val previous = model(centerIndicator = wifi(), mobileLevel = 4)
 
         val resolved =
-            CombinedStatusPresentationPolicy.resolveModel(
+            PresentationPolicy.resolveModel(
                 previous = previous,
                 candidate = null,
             )
@@ -26,7 +26,7 @@ class CombinedStatusPresentationPolicyTest {
         val candidate = model(centerIndicator = CenterIndicator.Empty, mobileLevel = null)
 
         val resolved =
-            CombinedStatusPresentationPolicy.resolveModel(
+            PresentationPolicy.resolveModel(
                 previous = previous,
                 candidate = candidate,
             )
@@ -37,7 +37,7 @@ class CombinedStatusPresentationPolicyTest {
     @Test
     fun initialIncompleteStateRemainsNotRenderable() {
         assertNull(
-            CombinedStatusPresentationPolicy.resolveModel(
+            PresentationPolicy.resolveModel(
                 previous = null,
                 candidate = null,
             ),
@@ -50,7 +50,7 @@ class CombinedStatusPresentationPolicyTest {
         val transparent = CombinedStatusTintState(0x00000000)
 
         val resolved =
-            CombinedStatusPresentationPolicy.resolveTint(
+            PresentationPolicy.resolveTint(
                 previous = previous,
                 candidate = transparent,
             )
@@ -61,7 +61,7 @@ class CombinedStatusPresentationPolicyTest {
     @Test
     fun initialTransparentTintIsRejected() {
         assertNull(
-            CombinedStatusPresentationPolicy.resolveTint(
+            PresentationPolicy.resolveTint(
                 previous = null,
                 candidate = CombinedStatusTintState(0x00000000),
             ),
@@ -73,13 +73,13 @@ class CombinedStatusPresentationPolicyTest {
         val candidate = CombinedStatusTintState(0xbf000000.toInt())
 
         val resolved =
-            CombinedStatusPresentationPolicy.resolveTint(
+            PresentationPolicy.resolveTint(
                 previous = CombinedStatusTintState(0xe6ffffff.toInt()),
                 candidate = candidate,
             )
 
         assertEquals(candidate, resolved)
-        assertTrue(CombinedStatusPresentationPolicy.isValidTint(candidate))
+        assertTrue(PresentationPolicy.isValidTint(candidate))
     }
 
     private fun model(

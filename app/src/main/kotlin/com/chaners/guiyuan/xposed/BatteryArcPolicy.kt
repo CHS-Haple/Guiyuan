@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CombinedStatusBatteryArcPolicy {
+internal object BatteryArcPolicy {
     internal data class Segments(
         val activeSweep: Float,
         val inactiveStart: Float,

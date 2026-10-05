@@ -3,11 +3,11 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusBatteryTopLayoutPolicyTest {
+class BatteryTopLayoutPolicyTest {
     @Test
     fun opticalDefaultKeepsDesignPlacementIndependentFromClipping() {
         val base =
-            CombinedStatusBatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
+            BatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
                 preferredCenterY = 16f,
                 defaultOpticalRise = 1.5f,
             )
@@ -18,7 +18,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun uiZeroKeepsAcceptedRawPlusThreePosition() {
         val center =
-            CombinedStatusBatteryTopLayoutPolicy.resolveCenterY(
+            BatteryTopLayoutPolicy.resolveCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = 3f,
             )
@@ -29,7 +29,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun positiveOffsetRemainsLiteralInsteadOfFlatteningAtOldSafeTop() {
         val center =
-            CombinedStatusBatteryTopLayoutPolicy.resolveCenterY(
+            BatteryTopLayoutPolicy.resolveCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = 13f,
             )
@@ -40,7 +40,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun negativeOffsetRemainsLiteralDownwardTravel() {
         val center =
-            CombinedStatusBatteryTopLayoutPolicy.resolveCenterY(
+            BatteryTopLayoutPolicy.resolveCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = -7f,
             )
@@ -51,7 +51,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun overflowIsZeroWhenVisibleInkStaysInsideLogicalViewport() {
         val overflow =
-            CombinedStatusBatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+            BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
                 transformScale = 0.875f,
                 transformOffsetY = 1.5f,
                 contentTopY = 2f,
@@ -63,7 +63,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun overflowExpandsPhysicalSurfaceInsteadOfClampingRequestedY() {
         val overflow =
-            CombinedStatusBatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+            BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
                 transformScale = 0.875f,
                 transformOffsetY = 1.5f,
                 contentTopY = -8f,
@@ -75,7 +75,7 @@ class CombinedStatusBatteryTopLayoutPolicyTest {
     @Test
     fun nonFiniteManualOffsetFallsBackToOpticalBase() {
         val center =
-            CombinedStatusBatteryTopLayoutPolicy.resolveCenterY(
+            BatteryTopLayoutPolicy.resolveCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = Float.NaN,
             )

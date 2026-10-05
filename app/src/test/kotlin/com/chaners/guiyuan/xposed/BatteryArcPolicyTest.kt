@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusBatteryArcPolicyTest {
+class BatteryArcPolicyTest {
     @Test
     fun emptyBatteryUsesOnlyInactiveArc() {
         val result = resolve(0)
@@ -39,7 +39,7 @@ class CombinedStatusBatteryArcPolicyTest {
     }
 
     private fun resolve(percent: Int) =
-        CombinedStatusBatteryArcPolicy.resolve(
+        BatteryArcPolicy.resolve(
             batteryPercent = percent,
             startDegrees = 150f,
             maxSweep = 240f,

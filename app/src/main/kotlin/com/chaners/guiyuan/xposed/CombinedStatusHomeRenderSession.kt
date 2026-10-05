@@ -170,7 +170,7 @@ internal object CombinedStatusHomeRenderSession {
         liveState: () -> CombinedStatusTintState?,
     ): InitialTintSeed? {
         val transferredValid =
-            transferred?.takeIf(CombinedStatusPresentationPolicy::isValidTint)
+            transferred?.takeIf(PresentationPolicy::isValidTint)
         if (transferredValid != null) {
             return InitialTintSeed(
                 state = transferredValid,
@@ -183,7 +183,7 @@ internal object CombinedStatusHomeRenderSession {
 
         val liveValid =
             liveState()
-                ?.takeIf(CombinedStatusPresentationPolicy::isValidTint)
+                ?.takeIf(PresentationPolicy::isValidTint)
                 ?: return null
         return InitialTintSeed(
             state = liveValid,
