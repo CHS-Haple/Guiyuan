@@ -85,7 +85,7 @@ internal object RuntimeFeaturePreferencesOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 先清掉当前绑定，避免旧监听在解绑边界抢回状态。
+        // 先让旧 token 失效，避免切换开关时收到上一轮回调。
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }

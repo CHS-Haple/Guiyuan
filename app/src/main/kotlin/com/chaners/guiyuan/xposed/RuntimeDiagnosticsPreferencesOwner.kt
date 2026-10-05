@@ -76,7 +76,7 @@ internal object RuntimeDiagnosticsPreferencesOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 先摘掉当前绑定，旧回调就算晚到一步也不会再被当成有效状态。
+        // 先断开这次绑定，晚到的旧回调会被 token 挡住。
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }

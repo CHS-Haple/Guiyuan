@@ -60,7 +60,7 @@ internal object RuntimeVisualPreferencesOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 先清掉当前绑定，避免旧监听在解绑边界抢回状态。
+        // 解绑时先让旧 token 失效，避免已经重置的样式又被写回来。
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }

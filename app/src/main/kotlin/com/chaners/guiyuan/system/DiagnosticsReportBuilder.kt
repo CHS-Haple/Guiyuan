@@ -95,7 +95,7 @@ internal object DiagnosticsReportBuilder {
             appendLine()
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)
-            appendLine("collection=" + collectionState(selected.result))
+            appendLine("collection=" + collectionState(log.result))
             appendLine("lines=" + moduleLines.size)
             if (moduleLines.isEmpty()) {
                 appendLine("No Guiyuan runtime log entries were available.")
