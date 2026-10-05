@@ -73,13 +73,17 @@
     <string name="home_preview_battery_percent">%1$d%%</string>
     <string name="home_preview_battery_mode_title">Battery mode</string>
     <string name="home_preview_battery_mode_balanced">Balanced</string>
-    <string name="home_preview_battery_mode_power_save">Saver</string>
-    <string name="home_preview_battery_mode_performance">Perf.</string>
-    <string name="home_preview_battery_mode_super_power_save">Ultra</string>
+    <string name="home_preview_battery_mode_power_save">Battery saver</string>
+    <string name="home_preview_battery_mode_performance">Performance</string>
+    <string name="home_preview_battery_mode_super_power_save">Ultra battery saver</string>
+    <string name="home_preview_battery_mode_power_save_compact">Saver</string>
+    <string name="home_preview_battery_mode_performance_compact">Perf.</string>
+    <string name="home_preview_battery_mode_super_power_save_compact">Ultra</string>
     <string name="home_preview_charging_state_title">Charging state</string>
     <string name="home_preview_charging_state_summary">Charging is independent from battery mode.</string>
     <string name="home_preview_charging_none">Not charging</string>
     <string name="home_preview_charging_normal">Charging</string>
-    <string name="home_preview_charging_super_fast">Super fast</string>
+    <string name="home_preview_charging_super_fast">Super fast charging</string>
+    <string name="home_preview_charging_super_fast_compact">Super fast</string>
     <string name="home_preview_battery_summary_format">%1$d%% · %2$s · %3$s</string>
 </resources>
