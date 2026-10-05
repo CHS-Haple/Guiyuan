@@ -10,42 +10,42 @@ class SceneControlCenterTest {
         assertTrue(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
-                sourceScene = CombinedStatusSourceScene.HOME,
+                sourceScene = SourceScene.HOME,
                 keyguardEnabled = false,
             ),
         )
         assertFalse(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = false,
             ),
         )
         assertTrue(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
-                sourceScene = CombinedStatusSourceScene.UNKNOWN,
+                sourceScene = SourceScene.UNKNOWN,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
-                sourceScene = CombinedStatusSourceScene.HOME,
+                sourceScene = SourceScene.HOME,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
@@ -56,7 +56,7 @@ class SceneControlCenterTest {
         val base =
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -68,7 +68,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = false,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -79,7 +79,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = false,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -90,7 +90,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = false,
                 hostAttached = true,
@@ -101,7 +101,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = false,
@@ -206,7 +206,7 @@ class SceneControlCenterTest {
         assertTrue(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -218,7 +218,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -233,14 +233,14 @@ class SceneControlCenterTest {
     fun keyguardControlCenterLeaseExistsOnlyInsideVerifiedNativeTransitionLifetime() {
         assertTrue(
             ScenePolicy.shouldAcquireKeyguardControlCenterLease(
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0.5f,
             ),
         )
         assertFalse(
             ScenePolicy.shouldAcquireKeyguardControlCenterLease(
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0f,
             ),
@@ -249,7 +249,7 @@ class SceneControlCenterTest {
         assertTrue(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -260,7 +260,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.HOME,
+                sourceScene = SourceScene.HOME,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -271,7 +271,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,
@@ -282,7 +282,7 @@ class SceneControlCenterTest {
         assertFalse(
             ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
-                sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
                 keyguardEnabled = true,
                 hostAttached = true,

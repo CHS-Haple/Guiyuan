@@ -29,7 +29,7 @@ import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
+import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -62,7 +62,7 @@ internal val COMMON_BATTERY_COLORS =
         0xFF8E8E93.toInt(),
     )
 
-internal val BATTERY_COLOR_PREVIEW_SLOTS = CombinedStatusBatteryColorSlot.entries
+internal val BATTERY_COLOR_PREVIEW_SLOTS = BatteryColorSlot.entries
 
 private const val BATTERY_COLOR_SHEET_HEIGHT_FRACTION = 0.84f
 internal val BATTERY_SCHEME_VERTICAL_GAP = 12.dp
@@ -122,14 +122,14 @@ internal fun BatteryColorBottomSheet(
     val scope = rememberCoroutineScope()
     val navPager = rememberPagerState(initialPage = 0, pageCount = { 2 })
     var selectedCustomId by remember { mutableStateOf<Int?>(null) }
-    var selectedSlot by remember { mutableStateOf<CombinedStatusBatteryColorSlot?>(null) }
+    var selectedSlot by remember { mutableStateOf<BatteryColorSlot?>(null) }
     var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var pendingCreateSourceKey by remember {
         mutableStateOf(BATTERY_COLOR_SCHEME_HYPEROS_KEY)
     }
     var pendingCreateSlot by remember {
-        mutableStateOf<CombinedStatusBatteryColorSlot?>(null)
+        mutableStateOf<BatteryColorSlot?>(null)
     }
     var renameCustomId by remember { mutableStateOf<Int?>(null) }
     var deleteCustomId by remember { mutableStateOf<Int?>(null) }

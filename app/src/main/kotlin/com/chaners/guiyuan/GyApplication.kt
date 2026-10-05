@@ -16,10 +16,10 @@ import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAGNOSTICS_PREFS_NAME
 import com.chaners.guiyuan.settings.DiagnosticsLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
-import com.chaners.guiyuan.settings.isCombinedStatusVisualPreferenceKey
+import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
-import com.chaners.guiyuan.settings.putCombinedStatusVisualSettings
-import com.chaners.guiyuan.settings.readCombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.putVisualSettings
+import com.chaners.guiyuan.settings.readVisualSettings
 import com.chaners.guiyuan.system.XposedRuntimeStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -82,7 +82,7 @@ class GyApplication :
 
     private val visualListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isCombinedStatusVisualPreferenceKey(key)) {
+            if (isVisualPreferenceKey(key)) {
                 xposedService?.let(::syncRuntimeConfig)
             }
         }
@@ -209,7 +209,7 @@ class GyApplication :
                 0L,
             )
         val visualSettings =
-            visualPreferences.readCombinedStatusVisualSettings()
+            visualPreferences.readVisualSettings()
 
         runCatching {
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
@@ -232,7 +232,7 @@ class GyApplication :
                     COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
                     featureChangeElapsedRealtimeNanos,
                 )
-                .putCombinedStatusVisualSettings(visualSettings)
+                .putVisualSettings(visualSettings)
             check(editor.commit()) { "remote preference commit failed" }
         }.onFailure { throwable ->
             Log.w(

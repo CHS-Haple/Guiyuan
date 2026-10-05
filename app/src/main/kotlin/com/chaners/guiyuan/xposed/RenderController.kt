@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.VisualSettings
 
 internal class RenderController(
     private val view: RenderView,
@@ -41,7 +41,7 @@ internal class RenderController(
         )
     }
 
-    fun updateVisualSettings(state: CombinedStatusVisualSettings) {
+    fun updateVisualSettings(state: VisualSettings) {
         view.setVisualSettings(state)
     }
 

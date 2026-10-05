@@ -1,12 +1,12 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorMode
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorPreset
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
-import com.chaners.guiyuan.settings.CombinedStatusHyperOsBatteryPalette
-import com.chaners.guiyuan.settings.CombinedStatusIosStyleBatteryPalette
-import com.chaners.guiyuan.settings.CombinedStatusRecommendedBatteryPalette
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.BatteryColorMode
+import com.chaners.guiyuan.settings.BatteryColorPreset
+import com.chaners.guiyuan.settings.BatteryColorSlot
+import com.chaners.guiyuan.settings.HyperOsBatteryPalette
+import com.chaners.guiyuan.settings.IosStyleBatteryPalette
+import com.chaners.guiyuan.settings.RecommendedBatteryPalette
+import com.chaners.guiyuan.settings.VisualSettings
 
 internal sealed interface BatteryColorSource {
     data object SystemDefault : BatteryColorSource
@@ -38,48 +38,48 @@ internal data class BatteryColorPrefs(
 
 internal object BatteryColorPolicy {
     fun preferencesFor(
-        settings: CombinedStatusVisualSettings,
+        settings: VisualSettings,
     ): BatteryColorPrefs {
-        fun presetSource(slot: CombinedStatusBatteryColorSlot): BatteryColorSource =
+        fun presetSource(slot: BatteryColorSlot): BatteryColorSource =
             when (settings.batteryColorPreset) {
-                CombinedStatusBatteryColorPreset.RECOMMENDED ->
-                    CombinedStatusRecommendedBatteryPalette.colorFor(slot)
+                BatteryColorPreset.RECOMMENDED ->
+                    RecommendedBatteryPalette.colorFor(slot)
                         ?.let(BatteryColorSource::Custom)
                         ?: BatteryColorSource.FollowStatusIcon
-                CombinedStatusBatteryColorPreset.HYPEROS ->
-                    CombinedStatusHyperOsBatteryPalette.colorFor(slot)
+                BatteryColorPreset.HYPEROS ->
+                    HyperOsBatteryPalette.colorFor(slot)
                         ?.let(BatteryColorSource::Custom)
                         ?: BatteryColorSource.FollowStatusIcon
-                CombinedStatusBatteryColorPreset.IOS_STYLE ->
-                    CombinedStatusIosStyleBatteryPalette.colorFor(slot)
+                BatteryColorPreset.IOS_STYLE ->
+                    IosStyleBatteryPalette.colorFor(slot)
                         ?.let(BatteryColorSource::Custom)
                         ?: BatteryColorSource.FollowStatusIcon
             }
 
-        fun source(slot: CombinedStatusBatteryColorSlot): BatteryColorSource =
+        fun source(slot: BatteryColorSlot): BatteryColorSource =
             when (settings.batteryColorModes.modeFor(slot)) {
-                CombinedStatusBatteryColorMode.PRESET -> presetSource(slot)
-                CombinedStatusBatteryColorMode.FOLLOW_SYSTEM ->
+                BatteryColorMode.PRESET -> presetSource(slot)
+                BatteryColorMode.FOLLOW_SYSTEM ->
                     BatteryColorSource.FollowStatusIcon
-                CombinedStatusBatteryColorMode.CUSTOM ->
+                BatteryColorMode.CUSTOM ->
                     settings.batteryColorOverrides.colorFor(slot)
                         ?.let(BatteryColorSource::Custom)
                         ?: presetSource(slot)
             }
 
         return BatteryColorPrefs(
-            normal = source(CombinedStatusBatteryColorSlot.NORMAL),
-            charging = source(CombinedStatusBatteryColorSlot.CHARGING),
-            powerSave = source(CombinedStatusBatteryColorSlot.POWER_SAVE),
-            superPowerSave = source(CombinedStatusBatteryColorSlot.SUPER_POWER_SAVE),
-            performance = source(CombinedStatusBatteryColorSlot.PERFORMANCE),
-            low = source(CombinedStatusBatteryColorSlot.LOW),
+            normal = source(BatteryColorSlot.NORMAL),
+            charging = source(BatteryColorSlot.CHARGING),
+            powerSave = source(BatteryColorSlot.POWER_SAVE),
+            superPowerSave = source(BatteryColorSlot.SUPER_POWER_SAVE),
+            performance = source(BatteryColorSlot.PERFORMANCE),
+            low = source(BatteryColorSlot.LOW),
         )
     }
 
     fun isTinted(
         state: BatterySemanticState,
-        settings: CombinedStatusVisualSettings,
+        settings: VisualSettings,
     ): Boolean =
         preferencesFor(settings).sourceFor(state) is BatteryColorSource.Custom
 

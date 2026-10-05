@@ -3,12 +3,12 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusVisualIntensityTest {
+class VisualIntensityTest {
     @Test
     fun fullStrengthCanvasUsesSystemTintAlpha() {
         assertEquals(
             191,
-            CombinedStatusVisualIntensity.resolveCanvasAlpha(
+            VisualIntensity.resolveCanvasAlpha(
                 color = 0xbf123456.toInt(),
                 semanticAlpha = 255,
                 opacity = 1f,
@@ -20,7 +20,7 @@ class CombinedStatusVisualIntensityTest {
     fun semanticDimmingMultipliesSystemTintInsteadOfReplacingIt() {
         assertEquals(
             35,
-            CombinedStatusVisualIntensity.resolveCanvasAlpha(
+            VisualIntensity.resolveCanvasAlpha(
                 color = 0xbf123456.toInt(),
                 semanticAlpha = 48,
                 opacity = 1f,
@@ -32,7 +32,7 @@ class CombinedStatusVisualIntensityTest {
     fun transitionOpacityIsIndependentFromSemanticIntensity() {
         assertEquals(
             95,
-            CombinedStatusVisualIntensity.resolveCanvasAlpha(
+            VisualIntensity.resolveCanvasAlpha(
                 color = 0xbf123456.toInt(),
                 semanticAlpha = 255,
                 opacity = 0.5f,
@@ -40,7 +40,7 @@ class CombinedStatusVisualIntensityTest {
         )
         assertEquals(
             128,
-            CombinedStatusVisualIntensity.resolveDrawableAlpha(0.5f),
+            VisualIntensity.resolveDrawableAlpha(0.5f),
         )
     }
 }

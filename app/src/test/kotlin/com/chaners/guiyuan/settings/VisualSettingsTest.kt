@@ -3,10 +3,10 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusVisualSettingsTest {
+class VisualSettingsTest {
     @Test
     fun newGeometryControlsUseBoundedDefaults() {
-        val settings = CombinedStatusVisualSettings()
+        val settings = VisualSettings()
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiSizeScale, 0.0001f)
@@ -54,23 +54,23 @@ class CombinedStatusVisualSettingsTest {
     @Test
     fun hyperosIsTheDefaultPreset() {
         assertEquals(
-            CombinedStatusBatteryColorPreset.HYPEROS,
-            CombinedStatusVisualSettings().batteryColorPreset,
+            BatteryColorPreset.HYPEROS,
+            VisualSettings().batteryColorPreset,
         )
         assertEquals(
-            CombinedStatusBatteryColorPreset.HYPEROS,
-            CombinedStatusBatteryColorPreset.fromPersisted(null),
+            BatteryColorPreset.HYPEROS,
+            BatteryColorPreset.fromPersisted(null),
         )
     }
 
     @Test
     fun missingPresetAlwaysDefaultsToHyperos() {
         assertEquals(
-            CombinedStatusBatteryColorPreset.HYPEROS,
+            BatteryColorPreset.HYPEROS,
             batteryColorPresetForMissingKey(hadPreviousVisualSchema = true),
         )
         assertEquals(
-            CombinedStatusBatteryColorPreset.HYPEROS,
+            BatteryColorPreset.HYPEROS,
             batteryColorPresetForMissingKey(hadPreviousVisualSchema = false),
         )
     }
@@ -78,21 +78,21 @@ class CombinedStatusVisualSettingsTest {
     @Test
     fun legacyStoredCustomColorInfersCustomMode() {
         assertEquals(
-            CombinedStatusBatteryColorMode.CUSTOM,
+            BatteryColorMode.CUSTOM,
             batteryColorModeFromPersisted(
                 persistedMode = null,
                 hasStoredColor = true,
             ),
         )
         assertEquals(
-            CombinedStatusBatteryColorMode.PRESET,
+            BatteryColorMode.PRESET,
             batteryColorModeFromPersisted(
                 persistedMode = null,
                 hasStoredColor = false,
             ),
         )
         assertEquals(
-            CombinedStatusBatteryColorMode.FOLLOW_SYSTEM,
+            BatteryColorMode.FOLLOW_SYSTEM,
             batteryColorModeFromPersisted(
                 persistedMode = "follow_system",
                 hasStoredColor = true,
@@ -102,50 +102,50 @@ class CombinedStatusVisualSettingsTest {
 
     @Test
     fun recommendedPaletteUsesMutedSemanticDefaults() {
-        assertEquals(0xFF3FA760.toInt(), CombinedStatusRecommendedBatteryPalette.CHARGING)
-        assertEquals(0xFFD5A623.toInt(), CombinedStatusRecommendedBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF4A7FC1.toInt(), CombinedStatusRecommendedBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFD8752C.toInt(), CombinedStatusRecommendedBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFD64A4A.toInt(), CombinedStatusRecommendedBatteryPalette.LOW)
+        assertEquals(0xFF3FA760.toInt(), RecommendedBatteryPalette.CHARGING)
+        assertEquals(0xFFD5A623.toInt(), RecommendedBatteryPalette.POWER_SAVE)
+        assertEquals(0xFF4A7FC1.toInt(), RecommendedBatteryPalette.PERFORMANCE)
+        assertEquals(0xFFD8752C.toInt(), RecommendedBatteryPalette.SUPER_POWER_SAVE)
+        assertEquals(0xFFD64A4A.toInt(), RecommendedBatteryPalette.LOW)
         assertEquals(
             null,
-            CombinedStatusRecommendedBatteryPalette.colorFor(
-                CombinedStatusBatteryColorSlot.NORMAL,
+            RecommendedBatteryPalette.colorFor(
+                BatteryColorSlot.NORMAL,
             ),
         )
     }
 
     @Test
     fun hyperosPaletteUsesPinnedSystemUiSemanticDefaults() {
-        assertEquals(0xFF1DCD3A.toInt(), CombinedStatusHyperOsBatteryPalette.CHARGING)
-        assertEquals(0xFFFF9F05.toInt(), CombinedStatusHyperOsBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF3482FF.toInt(), CombinedStatusHyperOsBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFFF9F05.toInt(), CombinedStatusHyperOsBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFFA382E.toInt(), CombinedStatusHyperOsBatteryPalette.LOW)
+        assertEquals(0xFF1DCD3A.toInt(), HyperOsBatteryPalette.CHARGING)
+        assertEquals(0xFFFF9F05.toInt(), HyperOsBatteryPalette.POWER_SAVE)
+        assertEquals(0xFF3482FF.toInt(), HyperOsBatteryPalette.PERFORMANCE)
+        assertEquals(0xFFFF9F05.toInt(), HyperOsBatteryPalette.SUPER_POWER_SAVE)
+        assertEquals(0xFFFA382E.toInt(), HyperOsBatteryPalette.LOW)
         assertEquals(
             null,
-            CombinedStatusHyperOsBatteryPalette.colorFor(CombinedStatusBatteryColorSlot.NORMAL),
+            HyperOsBatteryPalette.colorFor(BatteryColorSlot.NORMAL),
         )
     }
 
     @Test
     fun iosStylePaletteUsesExpectedSemanticDefaults() {
-        assertEquals(0xFF34C759.toInt(), CombinedStatusIosStyleBatteryPalette.CHARGING)
-        assertEquals(0xFFFFCC00.toInt(), CombinedStatusIosStyleBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF007AFF.toInt(), CombinedStatusIosStyleBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFFF9500.toInt(), CombinedStatusIosStyleBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFFF3B30.toInt(), CombinedStatusIosStyleBatteryPalette.LOW)
+        assertEquals(0xFF34C759.toInt(), IosStyleBatteryPalette.CHARGING)
+        assertEquals(0xFFFFCC00.toInt(), IosStyleBatteryPalette.POWER_SAVE)
+        assertEquals(0xFF007AFF.toInt(), IosStyleBatteryPalette.PERFORMANCE)
+        assertEquals(0xFFFF9500.toInt(), IosStyleBatteryPalette.SUPER_POWER_SAVE)
+        assertEquals(0xFFFF3B30.toInt(), IosStyleBatteryPalette.LOW)
         assertEquals(
             null,
-            CombinedStatusIosStyleBatteryPalette.colorFor(CombinedStatusBatteryColorSlot.NORMAL),
+            IosStyleBatteryPalette.colorFor(BatteryColorSlot.NORMAL),
         )
     }
 
     @Test
     fun customColorOverridesAreForcedOpaque() {
         val overrides =
-            CombinedStatusBatteryColorOverrides().withColor(
-                CombinedStatusBatteryColorSlot.CHARGING,
+            BatteryColorOverrides().withColor(
+                BatteryColorSlot.CHARGING,
                 0x0034C759,
             )
         assertEquals(0xFF34C759.toInt(), overrides.charging)
@@ -198,11 +198,11 @@ class CombinedStatusVisualSettingsTest {
     @Test
     fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
         val high =
-            CombinedStatusVisualSettings(
+            VisualSettings(
                 batteryTopVerticalOffset = 30f,
             ).normalized()
         val low =
-            CombinedStatusVisualSettings(
+            VisualSettings(
                 batteryTopVerticalOffset = -30f,
             ).normalized()
 
@@ -237,15 +237,15 @@ class CombinedStatusVisualSettingsTest {
     fun layoutProfilesUseIndependentPersistedKeys() {
         assertEquals(
             "network_center.battery_top_text_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.NETWORK_CENTER,
+            visualProfileKey(
+                ContentLayout.NETWORK_CENTER,
                 BATTERY_TOP_TEXT_SCALE_KEY,
             ),
         )
         assertEquals(
             "battery_center.battery_top_text_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.BATTERY_CENTER,
+            visualProfileKey(
+                ContentLayout.BATTERY_CENTER,
                 BATTERY_TOP_TEXT_SCALE_KEY,
             ),
         )
@@ -255,29 +255,29 @@ class CombinedStatusVisualSettingsTest {
     fun networkStateSizeControlsUseIndependentLayoutProfileKeys() {
         assertEquals(
             "network_center.airplane_size_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.NETWORK_CENTER,
+            visualProfileKey(
+                ContentLayout.NETWORK_CENTER,
                 AIRPLANE_SIZE_SCALE_KEY,
             ),
         )
         assertEquals(
             "battery_center.airplane_size_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.BATTERY_CENTER,
+            visualProfileKey(
+                ContentLayout.BATTERY_CENTER,
                 AIRPLANE_SIZE_SCALE_KEY,
             ),
         )
         assertEquals(
             "network_center.no_sim_size_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.NETWORK_CENTER,
+            visualProfileKey(
+                ContentLayout.NETWORK_CENTER,
                 NO_SIM_SIZE_SCALE_KEY,
             ),
         )
         assertEquals(
             "battery_center.no_sim_size_scale",
-            combinedStatusProfileKey(
-                CombinedStatusContentLayout.BATTERY_CENTER,
+            visualProfileKey(
+                ContentLayout.BATTERY_CENTER,
                 NO_SIM_SIZE_SCALE_KEY,
             ),
         )
@@ -285,7 +285,7 @@ class CombinedStatusVisualSettingsTest {
 
     @Test
     fun profileKeysParticipateInRuntimeSync() {
-        CombinedStatusContentLayout.entries.forEach { layout ->
+        ContentLayout.entries.forEach { layout ->
             listOf(
                 MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
                 CENTER_FOLLOWS_BATTERY_COLOR_KEY,
@@ -308,7 +308,7 @@ class CombinedStatusVisualSettingsTest {
                 assertEquals(
                     true,
                     isCombinedStatusVisualPreferenceKey(
-                        combinedStatusProfileKey(layout, baseKey),
+                        visualProfileKey(layout, baseKey),
                     ),
                 )
             }
@@ -338,9 +338,9 @@ class CombinedStatusVisualSettingsTest {
 
     @Test
     fun newBatteryVisualControlsKeepRequestedDefaults() {
-        val settings = CombinedStatusVisualSettings()
+        val settings = VisualSettings()
 
-        assertEquals(CombinedStatusContentLayout.NETWORK_CENTER, settings.contentLayout)
+        assertEquals(ContentLayout.NETWORK_CENTER, settings.contentLayout)
         assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
         assertEquals(true, settings.batteryTopChargingIconEnabled)
         assertEquals(true, settings.batteryTopChargingIconFollowsBatteryColor)
@@ -349,12 +349,12 @@ class CombinedStatusVisualSettingsTest {
     @Test
     fun persistedLayoutFallsBackToNetworkCenter() {
         assertEquals(
-            CombinedStatusContentLayout.NETWORK_CENTER,
-            CombinedStatusContentLayout.fromPersisted("unknown"),
+            ContentLayout.NETWORK_CENTER,
+            ContentLayout.fromPersisted("unknown"),
         )
         assertEquals(
-            CombinedStatusContentLayout.BATTERY_CENTER,
-            CombinedStatusContentLayout.fromPersisted("battery_center"),
+            ContentLayout.BATTERY_CENTER,
+            ContentLayout.fromPersisted("battery_center"),
         )
     }
 
@@ -363,31 +363,31 @@ class CombinedStatusVisualSettingsTest {
     fun batteryCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.4f,
-            batteryTopTextUiScaleDefault(CombinedStatusContentLayout.BATTERY_CENTER),
+            batteryTopTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScaleDefault(CombinedStatusContentLayout.BATTERY_CENTER),
+            batteryTopChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.4f,
             batteryTopTextUiScale(
-                batteryTopTextScaleDefault(CombinedStatusContentLayout.BATTERY_CENTER),
+                batteryTopTextScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
         assertEquals(
             1.2f,
             batteryTopChargingIconUiScale(
-                batteryTopChargingIconScaleDefault(CombinedStatusContentLayout.BATTERY_CENTER),
+                batteryTopChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
         assertEquals(
             0.8f,
-            mobileTypeSizeScaleDefault(CombinedStatusContentLayout.BATTERY_CENTER),
+            mobileTypeSizeScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
     }
@@ -396,8 +396,8 @@ class CombinedStatusVisualSettingsTest {
     @Test
     fun directBatteryCenteredSettingsConstructionUsesProfileDefaults() {
         val settings =
-            CombinedStatusVisualSettings(
-                contentLayout = CombinedStatusContentLayout.BATTERY_CENTER,
+            VisualSettings(
+                contentLayout = ContentLayout.BATTERY_CENTER,
             )
 
         assertEquals(
@@ -417,17 +417,17 @@ class CombinedStatusVisualSettingsTest {
     fun networkCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.2f,
-            batteryTopTextUiScaleDefault(CombinedStatusContentLayout.NETWORK_CENTER),
+            batteryTopTextUiScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
             1f,
-            batteryTopChargingIconUiScaleDefault(CombinedStatusContentLayout.NETWORK_CENTER),
+            batteryTopChargingIconUiScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
             1f,
-            mobileTypeSizeScaleDefault(CombinedStatusContentLayout.NETWORK_CENTER),
+            mobileTypeSizeScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
     }

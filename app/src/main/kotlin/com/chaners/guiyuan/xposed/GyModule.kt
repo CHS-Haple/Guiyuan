@@ -8,7 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
+import com.chaners.guiyuan.settings.FeatureSettings
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.system.RuntimeDiagnosticsProtocol
 import io.github.libxposed.api.XposedModule
@@ -23,8 +23,8 @@ class GyModule : XposedModule() {
     private var panelTransitionSourceInstalled = false
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
-    private var controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
-    private var steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+    private var controlCenterSourceScene = SourceScene.UNKNOWN
+    private var steadyStatusSourceScene = SourceScene.UNKNOWN
     private var lastStableKeyguardAodScene =
         ScenePolicy.StableKeyguardAodScene.UNKNOWN
     private var keyguardAodFullTargetPending = false
@@ -272,8 +272,8 @@ class GyModule : XposedModule() {
             panelTransitionSourceInstalled = false
             controlCenterSceneVisible = false
             controlCenterSceneEligible = false
-            controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
-            steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+            controlCenterSourceScene = SourceScene.UNKNOWN
+            steadyStatusSourceScene = SourceScene.UNKNOWN
             lastStableKeyguardAodScene =
                 ScenePolicy.StableKeyguardAodScene.UNKNOWN
             keyguardAodFullTargetPending = false
@@ -1108,7 +1108,7 @@ class GyModule : XposedModule() {
 
     private fun handleControlCenterPanelUpdate(
         update: SystemUiPanelTransitionSource.Update,
-    ): CombinedStatusSourceScene? {
+    ): SourceScene? {
         update.fraction?.let(::onControlCenterExpansionFraction)
 
         val visible = update.visible ?: return null
@@ -1137,7 +1137,7 @@ class GyModule : XposedModule() {
         }
         val panelSourceScene =
             update.controlCenterSourceScene
-                ?: CombinedStatusSourceScene.UNKNOWN
+                ?: SourceScene.UNKNOWN
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
         val effectiveSourceScene =
@@ -1154,7 +1154,7 @@ class GyModule : XposedModule() {
                     effectiveSourceScene == panelSourceScene ->
                         "hyperos-realSystemIcons"
                     incomingBoundaryReady &&
-                        effectiveSourceScene == CombinedStatusSourceScene.KEYGUARD ->
+                        effectiveSourceScene == SourceScene.KEYGUARD ->
                         "incoming-keyguard-presentation"
                     else -> "steady-source-view-override"
                 },
@@ -1198,12 +1198,12 @@ class GyModule : XposedModule() {
     }
 
     private fun updateControlCenterSourceSceneEligibility(
-        sourceScene: CombinedStatusSourceScene,
+        sourceScene: SourceScene,
         authority: String,
     ) {
         if (
             keyguardControlCenterLeaseActive &&
-            sourceScene != CombinedStatusSourceScene.KEYGUARD
+            sourceScene != SourceScene.KEYGUARD
         ) {
             releaseKeyguardControlCenterLease(
                 source = "source-scene:" + sourceScene.name + ":" + authority,
@@ -1260,11 +1260,11 @@ class GyModule : XposedModule() {
 
         if (fraction > 0f) {
             if (
-                controlCenterSourceScene != CombinedStatusSourceScene.KEYGUARD &&
+                controlCenterSourceScene != SourceScene.KEYGUARD &&
                 incomingKeyguardPresentationReadyForControlCenter()
             ) {
                 updateControlCenterSourceSceneEligibility(
-                    sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                    sourceScene = SourceScene.KEYGUARD,
                     authority = "incoming-keyguard-fraction",
                 )
             }
@@ -1572,7 +1572,7 @@ class GyModule : XposedModule() {
             }
         }
         controlCenterSceneEligible = false
-        controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
+        controlCenterSourceScene = SourceScene.UNKNOWN
         safely {
             ControlCenterTransitionOwner.setSceneEligible(false)
         }
@@ -1951,7 +1951,7 @@ class GyModule : XposedModule() {
         }
         homeAodTransitionOriginPending =
             settings.enabled &&
-                steadyStatusSourceScene == CombinedStatusSourceScene.HOME &&
+                steadyStatusSourceScene == SourceScene.HOME &&
                 lastStableKeyguardAodScene ==
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
                 homeOwnedAtStart &&
@@ -2578,7 +2578,7 @@ class GyModule : XposedModule() {
         if (
             !update.isAodAnimate &&
             !update.toAod &&
-            steadyStatusSourceScene == CombinedStatusSourceScene.KEYGUARD
+            steadyStatusSourceScene == SourceScene.KEYGUARD
         ) {
             homeNativeAodFallbackCandidate = false
             homeNativeAodFallbackActive = false
@@ -2636,11 +2636,11 @@ class GyModule : XposedModule() {
 
     private fun onSceneStateUpdate(update: SystemUiSceneStateSource.SceneUpdate) {
         val sourceScene = SystemUiSceneStateSource.steadySourceScene(update)
-        if (sourceScene != CombinedStatusSourceScene.UNKNOWN) {
+        if (sourceScene != SourceScene.UNKNOWN) {
             steadyStatusSourceScene = sourceScene
         }
         refreshStableKeyguardAodSceneFromSceneState(update, sourceScene)
-        if (sourceScene == CombinedStatusSourceScene.KEYGUARD) {
+        if (sourceScene == SourceScene.KEYGUARD) {
             SystemUiKeyguardHostResolver.observe(update)?.let { resolution ->
                 onKeyguardHostResolution(
                     resolution = resolution,
@@ -2648,7 +2648,7 @@ class GyModule : XposedModule() {
                 )
             }
         }
-        if (sourceScene == CombinedStatusSourceScene.HOME) {
+        if (sourceScene == SourceScene.HOME) {
             if (!keyguardAodFullTransitionActive) {
                 homeNativeAodFallbackActive = false
             }
@@ -2663,7 +2663,7 @@ class GyModule : XposedModule() {
                 )
             }
             updateControlCenterSourceSceneEligibility(
-                sourceScene = CombinedStatusSourceScene.HOME,
+                sourceScene = SourceScene.HOME,
                 authority = "steady-source-view",
             )
 
@@ -2690,7 +2690,7 @@ class GyModule : XposedModule() {
             // by teardown therefore refreshes HOME eligibility, never stale
             // KEYGUARD eligibility.
             deactivateKeyguardRuntime("home-source-active")
-        } else if (sourceScene != CombinedStatusSourceScene.UNKNOWN) {
+        } else if (sourceScene != SourceScene.UNKNOWN) {
             updateControlCenterSourceSceneEligibility(
                 sourceScene = sourceScene,
                 authority = "steady-source-view",
@@ -2730,10 +2730,10 @@ class GyModule : XposedModule() {
                     ScenePolicy.StableKeyguardAodScene.AOD
 
                 !update.toAod &&
-                    steadyStatusSourceScene == CombinedStatusSourceScene.KEYGUARD ->
+                    steadyStatusSourceScene == SourceScene.KEYGUARD ->
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD
 
-                steadyStatusSourceScene == CombinedStatusSourceScene.HOME ->
+                steadyStatusSourceScene == SourceScene.HOME ->
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN
 
                 else -> null
@@ -2745,10 +2745,10 @@ class GyModule : XposedModule() {
 
     private fun refreshStableKeyguardAodSceneFromSceneState(
         update: SystemUiSceneStateSource.SceneUpdate,
-        sourceScene: CombinedStatusSourceScene,
+        sourceScene: SourceScene,
     ) {
         when (sourceScene) {
-            CombinedStatusSourceScene.HOME -> {
+            SourceScene.HOME -> {
                 val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
                 if (
                     aodState != null &&
@@ -2762,7 +2762,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            CombinedStatusSourceScene.KEYGUARD -> {
+            SourceScene.KEYGUARD -> {
                 val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
                 if (
                     aodState != null &&
@@ -2779,7 +2779,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            CombinedStatusSourceScene.UNKNOWN -> Unit
+            SourceScene.UNKNOWN -> Unit
         }
     }
 
@@ -3328,7 +3328,7 @@ class GyModule : XposedModule() {
             homeAodTargetPrearmPending ||
                 (
                     aodState.isAodAnimate &&
-                        steadyStatusSourceScene == CombinedStatusSourceScene.HOME &&
+                        steadyStatusSourceScene == SourceScene.HOME &&
                         SystemUiHomePresentationOwner
                             .currentHomeRepresentedSlotOwnership()
                             .isNotEmpty()
@@ -3493,8 +3493,8 @@ class GyModule : XposedModule() {
     ) {
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
-        controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
-        steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
+        controlCenterSourceScene = SourceScene.UNKNOWN
+        steadyStatusSourceScene = SourceScene.UNKNOWN
         lastStableKeyguardAodScene =
             ScenePolicy.StableKeyguardAodScene.UNKNOWN
         keyguardAodFullTargetPending = false
@@ -4401,7 +4401,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onRuntimeFeatureSettingsChanged(
-        settings: CombinedStatusFeatureSettings,
+        settings: FeatureSettings,
         preferenceTransportLatencyNanos: Long?,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -4544,7 +4544,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onRuntimeVisualSettingsChanged(
-        settings: com.chaners.guiyuan.settings.CombinedStatusVisualSettings,
+        settings: com.chaners.guiyuan.settings.VisualSettings,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =

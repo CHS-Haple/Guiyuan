@@ -45,7 +45,7 @@ internal object ControlCenterTransitionOwner {
     private var nativeAppearance = false
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
-    private var sourceScene = CombinedStatusSourceScene.UNKNOWN
+    private var sourceScene = SourceScene.UNKNOWN
     private var endpoints: SystemUiPanelTransitionSource.ControlCenterTransitionEndpoints? = null
     private var current: Session? = null
     private var latestBatteryNumberProbeSummary: String? = null
@@ -59,7 +59,7 @@ internal object ControlCenterTransitionOwner {
                 nativeAppearance = false
                 nativeAppearanceAnimated = false
                 nativeBatteryIslandActive = null
-                sourceScene = CombinedStatusSourceScene.UNKNOWN
+                sourceScene = SourceScene.UNKNOWN
                 endpoints = null
             } else {
                 nativeBatteryIslandActive = update.controlCenterBatteryIslandActive
@@ -111,7 +111,7 @@ internal object ControlCenterTransitionOwner {
         nativeAppearance = false
         nativeAppearanceAnimated = false
         nativeBatteryIslandActive = null
-        sourceScene = CombinedStatusSourceScene.UNKNOWN
+        sourceScene = SourceScene.UNKNOWN
         endpoints = null
     }
 
@@ -156,11 +156,11 @@ internal object ControlCenterTransitionOwner {
 
         val steadySourceWitness =
             when (sourceScene) {
-                CombinedStatusSourceScene.HOME ->
+                SourceScene.HOME ->
                     HomeRenderSession.currentTransitionSourceWitness()
-                CombinedStatusSourceScene.KEYGUARD ->
+                SourceScene.KEYGUARD ->
                     KeyguardRenderSession.currentTransitionSourceWitness()
-                CombinedStatusSourceScene.UNKNOWN ->
+                SourceScene.UNKNOWN ->
                     null
             }
 
@@ -350,26 +350,26 @@ internal object ControlCenterTransitionOwner {
         }
 
         fun usesSemanticTransitionReservation(
-            sourceScene: CombinedStatusSourceScene,
+            sourceScene: SourceScene,
             charging: Boolean = false,
             nativeBatteryIslandActive: Boolean? = null,
         ): Boolean =
             when (sourceScene) {
-                CombinedStatusSourceScene.HOME,
-                CombinedStatusSourceScene.KEYGUARD,
+                SourceScene.HOME,
+                SourceScene.KEYGUARD,
                 -> true
-                CombinedStatusSourceScene.UNKNOWN -> false
+                SourceScene.UNKNOWN -> false
             }
 
         fun allowsNativeTransitionPaddingExpansion(
-            sourceScene: CombinedStatusSourceScene,
+            sourceScene: SourceScene,
             genericIslandShowing: Boolean?,
         ): Boolean =
             when (sourceScene) {
-                CombinedStatusSourceScene.HOME,
-                CombinedStatusSourceScene.KEYGUARD,
+                SourceScene.HOME,
+                SourceScene.KEYGUARD,
                 -> true
-                CombinedStatusSourceScene.UNKNOWN -> false
+                SourceScene.UNKNOWN -> false
             }
 
         data class ReservationSpan(
@@ -1204,7 +1204,7 @@ internal object ControlCenterTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            sourceScene: CombinedStatusSourceScene,
+            sourceScene: SourceScene,
             genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
@@ -4039,7 +4039,7 @@ internal object ControlCenterTransitionOwner {
                 fakeRoot: ViewGroup,
                 finalRoot: ViewGroup,
                 sourceSnapshot: ControlCenterRenderSession.TransitionSourceSnapshot,
-                steadySourceWitness: CombinedStatusTransitionSourceWitness?,
+                steadySourceWitness: TransitionSourceWitness?,
                 steadySourceLabel: String,
             ): Session? {
                 val fakeStatusIcons =

@@ -4,8 +4,8 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
@@ -248,7 +248,7 @@ internal object ControlCenterRenderSession {
         current?.transitionSourceSnapshot()
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: CombinedStatusFeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureSettings) {
         val session = current
         session?.setFeatureEnabled(settings.enabled)
         if (!settings.enabled || !sceneEligible) {
@@ -261,7 +261,7 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: CombinedStatusVisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualSettings) {
         current?.updateVisualSettings(settings)
     }
 
@@ -780,7 +780,7 @@ internal object ControlCenterRenderSession {
             syncPresentation("feature")
         }
 
-        fun updateVisualSettings(settings: CombinedStatusVisualSettings) {
+        fun updateVisualSettings(settings: VisualSettings) {
             if (currentVisualSettings != settings) {
                 currentVisualSettings = settings
                 transitionStateVersion += 1
@@ -1019,7 +1019,7 @@ internal object ControlCenterRenderSession {
         val anchorView: View,
         val model: RenderModel,
         val colors: RenderColors,
-        val visualSettings: CombinedStatusVisualSettings,
+        val visualSettings: VisualSettings,
         val stateVersion: Long,
     )
 

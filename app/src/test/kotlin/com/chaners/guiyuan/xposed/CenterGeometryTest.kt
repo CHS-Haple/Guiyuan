@@ -2,23 +2,23 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
-import com.chaners.guiyuan.settings.CombinedStatusContentLayout
+import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.batteryTopVerticalOffsetRaw
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusCenterGeometryTest {
+class CenterGeometryTest {
     @Test
     fun wifiSizeChangesWithoutResizingMobileTypeOrNativePeers() {
         val base =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlarged =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1.2f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
@@ -35,13 +35,13 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun airplaneAndNoSimSizesChangeIndependently() {
         val base =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val adjusted =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
@@ -58,13 +58,13 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun mobileTypeSizeChangesWithoutResizingWifiOrNativePeers() {
         val base =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlarged =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1.2f,
                 mobileTypeWeight = 800,
@@ -81,13 +81,13 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun mobileTypeWeightChangesIndependentlyFromAllDrawableSizes() {
         val light =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 600,
             )
         val heavy =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 900,
@@ -102,59 +102,59 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun invalidAndOutOfRangeValuesAreClampedSafely() {
         val fallback =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = Float.NaN,
                 mobileTypeSizeScale = Float.NaN,
                 mobileTypeWeight = Int.MIN_VALUE,
             )
         assertEquals(
-            CombinedStatusCenterGeometry.DEFAULT_WIFI_SIZE_SCALE,
+            CenterGeometry.DEFAULT_WIFI_SIZE_SCALE,
             fallback.wifiSizeScale,
             0f,
         )
         assertEquals(
-            CombinedStatusCenterGeometry.DEFAULT_MOBILE_TYPE_SIZE_SCALE,
+            CenterGeometry.DEFAULT_MOBILE_TYPE_SIZE_SCALE,
             fallback.mobileTypeSizeScale,
             0f,
         )
         assertEquals(
-            CombinedStatusCenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
+            CenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
             fallback.mobileTypeWeight,
         )
 
         val clamped =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 5f,
                 mobileTypeSizeScale = 5f,
                 mobileTypeWeight = 5000,
             )
         assertEquals(
-            CombinedStatusCenterGeometry.MAX_WIFI_SIZE_SCALE,
+            CenterGeometry.MAX_WIFI_SIZE_SCALE,
             clamped.wifiSizeScale,
             0f,
         )
         assertEquals(
-            CombinedStatusCenterGeometry.MAX_MOBILE_TYPE_SIZE_SCALE,
+            CenterGeometry.MAX_MOBILE_TYPE_SIZE_SCALE,
             clamped.mobileTypeSizeScale,
             0f,
         )
         assertEquals(
-            CombinedStatusCenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
+            CenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
             clamped.mobileTypeWeight,
         )
     }
 
     @Test
     fun rendererRangeClampsMatchPersistedVisualRanges() {
-        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
-        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
-        assertEquals(1.25f, CombinedStatusCenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
-        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_NO_SIM_SIZE_SCALE, 0f)
-        assertEquals(1.25f, CombinedStatusCenterGeometry.MAX_NO_SIM_SIZE_SCALE, 0f)
-        assertEquals(0.40f, CombinedStatusCenterGeometry.MIN_MOBILE_TYPE_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
+        assertEquals(1.25f, CenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CenterGeometry.MIN_NO_SIM_SIZE_SCALE, 0f)
+        assertEquals(1.25f, CenterGeometry.MAX_NO_SIM_SIZE_SCALE, 0f)
+        assertEquals(0.40f, CenterGeometry.MIN_MOBILE_TYPE_SIZE_SCALE, 0f)
 
         val clamped =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = -1f,
                 mobileTypeSizeScale = -1f,
                 mobileTypeWeight = 800,
@@ -213,7 +213,7 @@ class CombinedStatusCenterGeometryTest {
         assertEquals(
             raw,
             CombinedStatusTopInfoOffsetPolicy.readoutRequestedOffset(
-                layout = CombinedStatusContentLayout.NETWORK_CENTER,
+                layout = ContentLayout.NETWORK_CENTER,
                 rawOffset = raw,
             ),
             0f,
@@ -221,7 +221,7 @@ class CombinedStatusCenterGeometryTest {
         assertEquals(
             0f,
             CombinedStatusTopInfoOffsetPolicy.networkTranslationDelta(
-                layout = CombinedStatusContentLayout.NETWORK_CENTER,
+                layout = ContentLayout.NETWORK_CENTER,
                 rawOffset = raw,
             ),
             0f,
@@ -235,7 +235,7 @@ class CombinedStatusCenterGeometryTest {
         assertEquals(
             BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
             CombinedStatusTopInfoOffsetPolicy.readoutRequestedOffset(
-                layout = CombinedStatusContentLayout.BATTERY_CENTER,
+                layout = ContentLayout.BATTERY_CENTER,
                 rawOffset = raw,
             ),
             0f,
@@ -243,7 +243,7 @@ class CombinedStatusCenterGeometryTest {
         assertEquals(
             -5f,
             CombinedStatusTopInfoOffsetPolicy.networkTranslationDelta(
-                layout = CombinedStatusContentLayout.BATTERY_CENTER,
+                layout = ContentLayout.BATTERY_CENTER,
                 rawOffset = raw,
             ),
             0.0001f,
@@ -273,13 +273,13 @@ class CombinedStatusCenterGeometryTest {
     @Test
     fun nativePeerDefaultsRemainOpticallyMatchedButDoNotFollowWifiScaling() {
         val base =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlargedWifi =
-            CombinedStatusCenterGeometry.resolve(
+            CenterGeometry.resolve(
                 wifiSizeScale = 1.2f,
                 mobileTypeSizeScale = 1f,
                 mobileTypeWeight = 800,

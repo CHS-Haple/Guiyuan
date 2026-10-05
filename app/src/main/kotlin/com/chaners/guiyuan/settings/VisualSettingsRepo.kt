@@ -7,21 +7,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal fun isCombinedStatusVisualPreferenceKey(key: String?): Boolean {
+internal fun isVisualPreferenceKey(key: String?): Boolean {
     if (key == null) return true
     if (
         key == CONTENT_LAYOUT_KEY ||
         key in PROFILE_VISUAL_BASE_KEYS ||
         key in GLOBAL_VISUAL_KEYS
     ) return true
-    return CombinedStatusContentLayout.entries.any { layout ->
+    return ContentLayout.entries.any { layout ->
         PROFILE_VISUAL_BASE_KEYS.any { baseKey ->
-            key == combinedStatusProfileKey(layout, baseKey)
+            key == visualProfileKey(layout, baseKey)
         }
     }
 }
 
-internal class CombinedStatusVisualSettingsRepository(context: Context) {
+internal class VisualSettingsRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
@@ -33,7 +33,7 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
     }
 
-    val settings: Flow<CombinedStatusVisualSettings> =
+    val settings: Flow<VisualSettings> =
         callbackFlow {
             fun emitCurrent() {
                 trySend(current())
@@ -41,7 +41,7 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
 
             val listener =
                 SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isCombinedStatusVisualPreferenceKey(key)) {
+                    if (isVisualPreferenceKey(key)) {
                         emitCurrent()
                     }
                 }
@@ -53,16 +53,16 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
             }
         }.distinctUntilChanged()
 
-    fun current(): CombinedStatusVisualSettings =
-        preferences.readCombinedStatusVisualSettings()
+    fun current(): VisualSettings =
+        preferences.readVisualSettings()
 
     private fun activeProfileKey(baseKey: String): String =
-        combinedStatusProfileKey(
-            layout = preferences.readCombinedStatusContentLayout(),
+        visualProfileKey(
+            layout = preferences.readContentLayout(),
             baseKey = baseKey,
         )
 
-    fun setContentLayout(layout: CombinedStatusContentLayout) {
+    fun setContentLayout(layout: ContentLayout) {
         preferences
             .edit()
             .putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
@@ -229,15 +229,15 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
             .apply()
     }
 
-    fun setBatteryColorPreset(preset: CombinedStatusBatteryColorPreset) {
+    fun setBatteryColorPreset(preset: BatteryColorPreset) {
         preferences.edit()
             .putString(BATTERY_COLOR_PRESET_KEY, preset.persistedValue)
             .apply()
     }
 
     fun setBatteryColorMode(
-        slot: CombinedStatusBatteryColorSlot,
-        mode: CombinedStatusBatteryColorMode,
+        slot: BatteryColorSlot,
+        mode: BatteryColorMode,
     ) {
         preferences.edit()
             .putString(batteryColorModeKey(slot), mode.persistedValue)
@@ -245,7 +245,7 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
     }
 
     fun setBatteryColorOverride(
-        slot: CombinedStatusBatteryColorSlot,
+        slot: BatteryColorSlot,
         color: Int?,
     ) {
         val key = batteryColorOverrideKey(slot)
@@ -258,7 +258,7 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
         editor.apply()
     }
 
-    fun resetBatteryColorSlot(slot: CombinedStatusBatteryColorSlot) {
+    fun resetBatteryColorSlot(slot: BatteryColorSlot) {
         preferences.edit()
             .remove(batteryColorModeKey(slot))
             .remove(batteryColorOverrideKey(slot))
@@ -267,7 +267,7 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
 
     fun resetBatteryColorOverrides() {
         val editor = preferences.edit()
-        CombinedStatusBatteryColorSlot.entries.forEach { slot ->
+        BatteryColorSlot.entries.forEach { slot ->
             editor.remove(batteryColorModeKey(slot))
             editor.remove(batteryColorOverrideKey(slot))
         }
@@ -298,25 +298,25 @@ internal class CombinedStatusVisualSettingsRepository(context: Context) {
     }
 }
 
-internal fun SharedPreferences.readCombinedStatusContentLayout(): CombinedStatusContentLayout =
-    CombinedStatusContentLayout.fromPersisted(
+internal fun SharedPreferences.readContentLayout(): ContentLayout =
+    ContentLayout.fromPersisted(
         getString(
             CONTENT_LAYOUT_KEY,
-            CombinedStatusContentLayout.NETWORK_CENTER.persistedValue,
+            ContentLayout.NETWORK_CENTER.persistedValue,
         ),
     )
 
-internal fun combinedStatusProfileKey(
-    layout: CombinedStatusContentLayout,
+internal fun visualProfileKey(
+    layout: ContentLayout,
     baseKey: String,
 ): String = layout.persistedValue + "." + baseKey
 
 private fun SharedPreferences.profileBoolean(
-    layout: CombinedStatusContentLayout,
+    layout: ContentLayout,
     baseKey: String,
     defaultValue: Boolean,
 ): Boolean {
-    val profileKey = combinedStatusProfileKey(layout, baseKey)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getBoolean(profileKey, defaultValue)
     } else {
@@ -325,11 +325,11 @@ private fun SharedPreferences.profileBoolean(
 }
 
 private fun SharedPreferences.profileFloat(
-    layout: CombinedStatusContentLayout,
+    layout: ContentLayout,
     baseKey: String,
     defaultValue: Float,
 ): Float {
-    val profileKey = combinedStatusProfileKey(layout, baseKey)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getFloat(profileKey, defaultValue)
     } else {
@@ -338,11 +338,11 @@ private fun SharedPreferences.profileFloat(
 }
 
 private fun SharedPreferences.profileInt(
-    layout: CombinedStatusContentLayout,
+    layout: ContentLayout,
     baseKey: String,
     defaultValue: Int,
 ): Int {
-    val profileKey = combinedStatusProfileKey(layout, baseKey)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getInt(profileKey, defaultValue)
     } else {
@@ -350,9 +350,9 @@ private fun SharedPreferences.profileInt(
     }
 }
 
-internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatusVisualSettings {
-    val layout = readCombinedStatusContentLayout()
-    return CombinedStatusVisualSettings(
+internal fun SharedPreferences.readVisualSettings(): VisualSettings {
+    val layout = readContentLayout()
+    return VisualSettings(
         contentLayout = layout,
         mobileFollowsBatteryColor =
             profileBoolean(
@@ -443,7 +443,7 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
         mobileTypeWeight =
             profileInt(layout, MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
         batteryColorPreset =
-            CombinedStatusBatteryColorPreset.fromPersisted(
+            BatteryColorPreset.fromPersisted(
                 getString(
                     BATTERY_COLOR_PRESET_KEY,
                     batteryColorPresetForMissingKey(
@@ -453,7 +453,7 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
                 ),
             ),
         batteryColorModes =
-            CombinedStatusBatteryColorModes(
+            BatteryColorModes(
                 normal =
                     batteryColorMode(
                         modeKey = BATTERY_COLOR_MODE_NORMAL_KEY,
@@ -486,7 +486,7 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
                     ),
             ),
         batteryColorOverrides =
-            CombinedStatusBatteryColorOverrides(
+            BatteryColorOverrides(
                 normal = optionalColor(BATTERY_COLOR_NORMAL_KEY),
                 powerSave = optionalColor(BATTERY_COLOR_POWER_SAVE_KEY),
                 performance = optionalColor(BATTERY_COLOR_PERFORMANCE_KEY),
@@ -497,8 +497,8 @@ internal fun SharedPreferences.readCombinedStatusVisualSettings(): CombinedStatu
     ).normalized()
 }
 
-internal fun SharedPreferences.Editor.putCombinedStatusVisualSettings(
-    settings: CombinedStatusVisualSettings,
+internal fun SharedPreferences.Editor.putVisualSettings(
+    settings: VisualSettings,
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
     val layout = normalized.contentLayout
@@ -506,22 +506,22 @@ internal fun SharedPreferences.Editor.putCombinedStatusVisualSettings(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putBoolean(
-        combinedStatusProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.mobileFollowsBatteryColor,
     ).putBoolean(
-        combinedStatusProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.centerFollowsBatteryColor,
     ).putBoolean(
-        combinedStatusProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
+        visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
         normalized.batteryTopReadoutEnabled,
     ).putBoolean(
-        combinedStatusProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.batteryTopTextFollowsBatteryColor,
     ).putBoolean(
-        combinedStatusProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
         normalized.batteryTopChargingIconEnabled,
     ).putBoolean(
-        combinedStatusProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.batteryTopChargingIconFollowsBatteryColor,
     ).putBoolean(
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
@@ -530,37 +530,37 @@ internal fun SharedPreferences.Editor.putCombinedStatusVisualSettings(
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         normalized.controlCenterTintTransitionEnabled,
     ).putFloat(
-        combinedStatusProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
         normalized.batteryTopTextScale,
     ).putInt(
-        combinedStatusProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
         normalized.batteryTopTextWeight,
     ).putFloat(
-        combinedStatusProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
+        visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
         normalized.batteryTopVerticalOffset,
     ).putFloat(
-        combinedStatusProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
         normalized.batteryTopChargingIconScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, COMBINED_SCALE_KEY),
+        visualProfileKey(layout, COMBINED_SCALE_KEY),
         normalized.combinedScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, OUTER_WEIGHT_SCALE_KEY),
+        visualProfileKey(layout, OUTER_WEIGHT_SCALE_KEY),
         normalized.outerWeightScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, WIFI_SIZE_SCALE_KEY),
+        visualProfileKey(layout, WIFI_SIZE_SCALE_KEY),
         normalized.wifiSizeScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
+        visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
         normalized.airplaneSizeScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
+        visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
         normalized.noSimSizeScale,
     ).putFloat(
-        combinedStatusProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
+        visualProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
         normalized.mobileTypeSizeScale,
     ).putInt(
-        combinedStatusProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
+        visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
         normalized.mobileTypeWeight,
     ).putString(
         BATTERY_COLOR_PRESET_KEY,

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
+import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitBatteryCustomSchemeNameInput
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -50,7 +50,7 @@ import kotlin.math.roundToInt
 @Composable
 internal fun BatteryCustomModeEditor(
     custom: BatteryCustomColorScheme,
-    slot: CombinedStatusBatteryColorSlot,
+    slot: BatteryColorSlot,
     onSourceChange: (BatteryColorSchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {

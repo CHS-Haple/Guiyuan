@@ -4,8 +4,8 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
@@ -112,12 +112,12 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: CombinedStatusFeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureSettings) {
         current?.setFeatureSettings(settings)
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: CombinedStatusVisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualSettings) {
         current?.updateVisualSettings(settings)
     }
 
@@ -141,7 +141,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun currentTransitionSourceWitness(): CombinedStatusTransitionSourceWitness? =
+    fun currentTransitionSourceWitness(): TransitionSourceWitness? =
         current?.transitionSourceWitness()
 
     @Synchronized
@@ -343,7 +343,7 @@ internal object KeyguardRenderSession {
             )
         }
 
-        fun transitionSourceWitness(): CombinedStatusTransitionSourceWitness? {
+        fun transitionSourceWitness(): TransitionSourceWitness? {
             if (scene != Scene.KEYGUARD) return null
             val motion = statusIcons.get() ?: return null
             val render = renderView
@@ -364,7 +364,7 @@ internal object KeyguardRenderSession {
             ) {
                 return null
             }
-            return CombinedStatusTransitionSourceWitness(
+            return TransitionSourceWitness(
                 renderView = render,
                 logicalLeftPx = 0,
                 logicalTopPx = render.currentLogicalViewportTopInsetPx(),
@@ -415,7 +415,7 @@ internal object KeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureSettings(settings: CombinedStatusFeatureSettings) {
+        fun setFeatureSettings(settings: FeatureSettings) {
             val enabled =
                 resolveFamilyFeatureEnabled(
                     featureEnabled = settings.enabled,
@@ -454,7 +454,7 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: CombinedStatusVisualSettings) {
+        fun updateVisualSettings(settings: VisualSettings) {
             renderController.updateVisualSettings(settings)
             layoutProbe()
         }

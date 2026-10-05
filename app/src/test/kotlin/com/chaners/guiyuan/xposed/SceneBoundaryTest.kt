@@ -16,7 +16,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0f,
@@ -33,7 +33,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 1f,
@@ -50,7 +50,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0f,
@@ -67,7 +67,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 1f,
@@ -84,7 +84,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 0f,
@@ -105,7 +105,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0f,
@@ -122,7 +122,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0.5f,
@@ -140,7 +140,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0f,
@@ -158,7 +158,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -174,7 +174,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -195,7 +195,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
@@ -213,7 +213,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 nativeToLockScreenTarget = true,
@@ -233,7 +233,7 @@ class SceneBoundaryTest {
                 aodEnabled = true,
                 toAod = false,
                 isAodAnimate = false,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = false,
@@ -249,7 +249,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = false,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = false,
@@ -334,7 +334,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = false,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -350,7 +350,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = false,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -527,7 +527,7 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 toAod = true,
                 isAodAnimate = true,
-                steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
+                steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 1f,

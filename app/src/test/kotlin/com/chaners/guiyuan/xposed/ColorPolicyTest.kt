@@ -1,8 +1,8 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorPreset
-import com.chaners.guiyuan.settings.CombinedStatusHyperOsBatteryPalette
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.BatteryColorPreset
+import com.chaners.guiyuan.settings.HyperOsBatteryPalette
+import com.chaners.guiyuan.settings.VisualSettings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -41,15 +41,15 @@ class ColorPolicyTest {
                         statusIconTint = 0xff556677.toInt(),
                     ),
                 visualSettings =
-                    CombinedStatusVisualSettings(
-                        batteryColorPreset = CombinedStatusBatteryColorPreset.HYPEROS,
+                    VisualSettings(
+                        batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
         assertEquals(0xff556677.toInt(), colors.centerTint)
         assertEquals(0xff556677.toInt(), colors.mobileTint)
-        assertEquals(CombinedStatusHyperOsBatteryPalette.CHARGING, colors.batteryTint)
-        assertEquals(CombinedStatusHyperOsBatteryPalette.CHARGING, colors.batteryTextTint)
-        assertEquals(CombinedStatusHyperOsBatteryPalette.CHARGING, colors.chargingIconTint)
+        assertEquals(HyperOsBatteryPalette.CHARGING, colors.batteryTint)
+        assertEquals(HyperOsBatteryPalette.CHARGING, colors.batteryTextTint)
+        assertEquals(HyperOsBatteryPalette.CHARGING, colors.chargingIconTint)
     }
 
     @Test
@@ -71,15 +71,15 @@ class ColorPolicyTest {
         assertEquals(0xff445566.toInt(), colors.centerTint)
         assertEquals(0xff445566.toInt(), colors.mobileTint)
         assertEquals(
-            CombinedStatusHyperOsBatteryPalette.PERFORMANCE,
+            HyperOsBatteryPalette.PERFORMANCE,
             colors.batteryTint,
         )
         assertEquals(
-            CombinedStatusHyperOsBatteryPalette.PERFORMANCE,
+            HyperOsBatteryPalette.PERFORMANCE,
             colors.batteryTextTint,
         )
         assertEquals(
-            CombinedStatusHyperOsBatteryPalette.PERFORMANCE,
+            HyperOsBatteryPalette.PERFORMANCE,
             colors.chargingIconTint,
         )
     }
@@ -100,10 +100,10 @@ class ColorPolicyTest {
                         statusIconTint = 0xff445566.toInt(),
                     ),
                 visualSettings =
-                    CombinedStatusVisualSettings(
+                    VisualSettings(
                         mobileFollowsBatteryColor = true,
                         centerFollowsBatteryColor = true,
-                        batteryColorPreset = CombinedStatusBatteryColorPreset.HYPEROS,
+                        batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
         assertEquals(semanticColor, colors.centerTint)
@@ -129,10 +129,10 @@ class ColorPolicyTest {
                         statusIconTint = statusTint,
                     ),
                 visualSettings =
-                    CombinedStatusVisualSettings(
+                    VisualSettings(
                         batteryTopTextFollowsBatteryColor = false,
                         batteryTopChargingIconFollowsBatteryColor = false,
-                        batteryColorPreset = CombinedStatusBatteryColorPreset.HYPEROS,
+                        batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
 

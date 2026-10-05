@@ -7,12 +7,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusOuterGeometryTest {
+class OuterGeometryTest {
     @Test
     fun defaultOpticalBaselineRestoresPreferred825Ring() {
         val geometry =
-            CombinedStatusOuterGeometry.resolve(
-                CombinedStatusOuterGeometry.DEFAULT_WEIGHT_SCALE,
+            OuterGeometry.resolve(
+                OuterGeometry.DEFAULT_WEIGHT_SCALE,
             )
 
         assertEquals(
@@ -40,10 +40,10 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun outerWeightScalesRingDotsAndUnavailableMarkAsOneVisualFamily() {
         val base =
-            CombinedStatusOuterGeometry.resolve(
-                CombinedStatusOuterGeometry.DEFAULT_WEIGHT_SCALE,
+            OuterGeometry.resolve(
+                OuterGeometry.DEFAULT_WEIGHT_SCALE,
             )
-        val heavier = CombinedStatusOuterGeometry.resolve(1.20f)
+        val heavier = OuterGeometry.resolve(1.20f)
 
         assertEquals(base.ringStroke * 1.20f, heavier.ringStroke, 0.0001f)
         assertEquals(base.mobileDotRadius * 1.20f, heavier.mobileDotRadius, 0.0001f)
@@ -62,15 +62,15 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun ringAndDotsScaleProportionally() {
         for (scale in TEST_SCALES) {
-            val geometry = CombinedStatusOuterGeometry.resolve(scale)
+            val geometry = OuterGeometry.resolve(scale)
 
             assertEquals(
-                CombinedStatusOuterGeometry.BASE_RING_STROKE * scale,
+                OuterGeometry.BASE_RING_STROKE * scale,
                 geometry.ringStroke,
                 0.0001f,
             )
             assertEquals(
-                CombinedStatusOuterGeometry.BASE_MOBILE_DOT_RADIUS * scale,
+                OuterGeometry.BASE_MOBILE_DOT_RADIUS * scale,
                 geometry.mobileDotRadius,
                 0.0001f,
             )
@@ -80,15 +80,15 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun unavailableMarkScalesWithOuterWeightWithoutChangingItsIndependentProportions() {
         for (scale in TEST_SCALES) {
-            val geometry = CombinedStatusOuterGeometry.resolve(scale)
+            val geometry = OuterGeometry.resolve(scale)
 
             assertEquals(
-                CombinedStatusOuterGeometry.BASE_UNAVAILABLE_MARK_STROKE * scale,
+                OuterGeometry.BASE_UNAVAILABLE_MARK_STROKE * scale,
                 geometry.unavailableMarkStroke,
                 0.0001f,
             )
             assertEquals(
-                CombinedStatusOuterGeometry.BASE_UNAVAILABLE_MARK_HALF_EXTENT * scale,
+                OuterGeometry.BASE_UNAVAILABLE_MARK_HALF_EXTENT * scale,
                 geometry.unavailableMarkHalfExtent,
                 0.0001f,
             )
@@ -98,7 +98,7 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun fourDotsRemainMirrorSymmetricAcrossSupportedScales() {
         for (scale in TEST_SCALES) {
-            val geometry = CombinedStatusOuterGeometry.resolve(scale)
+            val geometry = OuterGeometry.resolve(scale)
             val angles =
                 (0 until 4)
                     .map(geometry::bottomDotAngle)
@@ -122,7 +122,7 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun fiveVisualEdgeGapsStayBalancedAcrossSupportedScales() {
         for (scale in TEST_SCALES) {
-            val geometry = CombinedStatusOuterGeometry.resolve(scale)
+            val geometry = OuterGeometry.resolve(scale)
             val ascendingAngles =
                 (3 downTo 0)
                     .map(geometry::bottomDotAngle)
@@ -167,18 +167,18 @@ class CombinedStatusOuterGeometryTest {
     @Test
     fun invalidOrOutOfRangeWeightScaleFallsBackOrClampsSafely() {
         assertEquals(
-            CombinedStatusOuterGeometry.DEFAULT_WEIGHT_SCALE,
-            CombinedStatusOuterGeometry.normalizeWeightScale(Float.NaN),
+            OuterGeometry.DEFAULT_WEIGHT_SCALE,
+            OuterGeometry.normalizeWeightScale(Float.NaN),
             0f,
         )
         assertEquals(
-            CombinedStatusOuterGeometry.MIN_WEIGHT_SCALE,
-            CombinedStatusOuterGeometry.normalizeWeightScale(0f),
+            OuterGeometry.MIN_WEIGHT_SCALE,
+            OuterGeometry.normalizeWeightScale(0f),
             0f,
         )
         assertEquals(
-            CombinedStatusOuterGeometry.MAX_WEIGHT_SCALE,
-            CombinedStatusOuterGeometry.normalizeWeightScale(5f),
+            OuterGeometry.MAX_WEIGHT_SCALE,
+            OuterGeometry.normalizeWeightScale(5f),
             0f,
         )
     }
@@ -186,16 +186,16 @@ class CombinedStatusOuterGeometryTest {
     private fun ringToDotGap(
         ringEndAngle: Double,
         dotAngle: Double,
-        geometry: CombinedStatusOuterGeometry.Resolved,
+        geometry: OuterGeometry.Resolved,
     ): Float {
         val ringX =
-            cos(ringEndAngle).toFloat() * CombinedStatusOuterGeometry.RING_RADIUS
+            cos(ringEndAngle).toFloat() * OuterGeometry.RING_RADIUS
         val ringY =
-            sin(ringEndAngle).toFloat() * CombinedStatusOuterGeometry.RING_RADIUS
+            sin(ringEndAngle).toFloat() * OuterGeometry.RING_RADIUS
         val dotX =
-            cos(dotAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            cos(dotAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val dotY =
-            sin(dotAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            sin(dotAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val centerDistance =
             sqrt(
                 (dotX - ringX) * (dotX - ringX) +
@@ -209,16 +209,16 @@ class CombinedStatusOuterGeometryTest {
     private fun dotToDotGap(
         firstAngle: Double,
         secondAngle: Double,
-        geometry: CombinedStatusOuterGeometry.Resolved,
+        geometry: OuterGeometry.Resolved,
     ): Float {
         val firstX =
-            cos(firstAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            cos(firstAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val firstY =
-            sin(firstAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            sin(firstAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val secondX =
-            cos(secondAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            cos(secondAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val secondY =
-            sin(secondAngle).toFloat() * CombinedStatusOuterGeometry.MOBILE_ORBIT_RADIUS
+            sin(secondAngle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
         val centerDistance =
             sqrt(
                 (secondX - firstX) * (secondX - firstX) +
@@ -232,7 +232,7 @@ class CombinedStatusOuterGeometryTest {
             listOf(
                 0.60f,
                 1.00f,
-                CombinedStatusOuterGeometry.DEFAULT_WEIGHT_SCALE,
+                OuterGeometry.DEFAULT_WEIGHT_SCALE,
                 1.50f,
                 2.00f,
             )

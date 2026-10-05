@@ -31,13 +31,13 @@ class LayoutPolicyTest {
     fun nativeOnlySceneDoesNotRenderCombinedVisuals() {
         val layout = resolve(
             scale = 1f,
-            renderMode = CombinedStatusRenderMode.NATIVE_ONLY,
-            motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
+            renderMode = RenderMode.NATIVE_ONLY,
+            motionOwnership = MotionOwnership.SYSTEM_UI,
         )
 
         assertFalse(layout.renderCombined)
         assertEquals(105f, layout.appliedSlotWidthPx, 0.001f)
-        assertEquals(CombinedStatusMotionOwnership.SYSTEM_UI, layout.motionOwnership)
+        assertEquals(MotionOwnership.SYSTEM_UI, layout.motionOwnership)
     }
 
     @Test
@@ -45,8 +45,8 @@ class LayoutPolicyTest {
         val projected = resolve(scale = 0.9f)
         val nativeOnly = resolve(
             scale = 0.9f,
-            renderMode = CombinedStatusRenderMode.NATIVE_ONLY,
-            motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
+            renderMode = RenderMode.NATIVE_ONLY,
+            motionOwnership = MotionOwnership.SYSTEM_UI,
         )
 
         assertEquals(projected.visualSidePx, nativeOnly.visualSidePx, 0.001f)
@@ -91,7 +91,7 @@ class LayoutPolicyTest {
         assertEquals(105f, layout.appliedSlotWidthPx, 0.001f)
         assertEquals(482f, layout.slotLeftPx, 0.001f)
         assertEquals(587f, layout.slotRightPx, 0.001f)
-        assertEquals(CombinedStatusMotionOwnership.SYSTEM_UI, layout.motionOwnership)
+        assertEquals(MotionOwnership.SYSTEM_UI, layout.motionOwnership)
     }
 
     @Test
@@ -113,9 +113,9 @@ class LayoutPolicyTest {
 
     private fun resolve(
         scale: Float,
-        renderMode: CombinedStatusRenderMode = CombinedStatusRenderMode.PROJECTED,
-        motionOwnership: CombinedStatusMotionOwnership =
-            CombinedStatusMotionOwnership.NONE,
+        renderMode: RenderMode = RenderMode.PROJECTED,
+        motionOwnership: MotionOwnership =
+            MotionOwnership.NONE,
     ): ResolvedLayout =
         LayoutPolicy.resolve(
             settings = LayoutConfig(

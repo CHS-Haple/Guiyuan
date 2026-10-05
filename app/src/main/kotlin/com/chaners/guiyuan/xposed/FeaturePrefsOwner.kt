@@ -6,13 +6,13 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
-import com.chaners.guiyuan.settings.isCombinedStatusFeaturePreferenceKey
+import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.isFeaturePreferenceKey
 
 internal object FeaturePrefsOwner {
     @Volatile
     private var current =
-        CombinedStatusFeatureSettings(
+        FeatureSettings(
             enabled = false,
             keyguardEnabled = false,
             aodEnabled = false,
@@ -22,13 +22,13 @@ internal object FeaturePrefsOwner {
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun currentSettings(): CombinedStatusFeatureSettings = current
+    fun currentSettings(): FeatureSettings = current
 
     @Synchronized
     fun bind(
         preferences: SharedPreferences,
-        onChanged: (CombinedStatusFeatureSettings, Long?) -> Unit,
-    ): CombinedStatusFeatureSettings {
+        onChanged: (FeatureSettings, Long?) -> Unit,
+    ): FeatureSettings {
         unbindLocked()
 
         val token = Any()
@@ -38,7 +38,7 @@ internal object FeaturePrefsOwner {
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
-                    isCombinedStatusFeaturePreferenceKey(key) &&
+                    isFeaturePreferenceKey(key) &&
                     isCurrentBinding(changed, token)
                 ) {
                     val next = resolve(changed)
@@ -73,7 +73,7 @@ internal object FeaturePrefsOwner {
     fun unbind() {
         unbindLocked()
         current =
-            CombinedStatusFeatureSettings(
+            FeatureSettings(
                 enabled = false,
                 keyguardEnabled = false,
             )
@@ -112,8 +112,8 @@ internal object FeaturePrefsOwner {
             null
         }
 
-    private fun resolve(preferences: SharedPreferences): CombinedStatusFeatureSettings =
-        CombinedStatusFeatureSettings(
+    private fun resolve(preferences: SharedPreferences): FeatureSettings =
+        FeatureSettings(
             enabled =
                 preferences.getBoolean(
                     COMBINED_STATUS_ENABLED_KEY,

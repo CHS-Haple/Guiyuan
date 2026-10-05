@@ -1,25 +1,25 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
-import com.chaners.guiyuan.settings.isCombinedStatusVisualPreferenceKey
-import com.chaners.guiyuan.settings.readCombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.isVisualPreferenceKey
+import com.chaners.guiyuan.settings.readVisualSettings
 
 internal object VisualPrefsOwner {
     @Volatile
-    private var current = CombinedStatusVisualSettings()
+    private var current = VisualSettings()
 
     private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun currentSettings(): CombinedStatusVisualSettings = current
+    fun currentSettings(): VisualSettings = current
 
     @Synchronized
     fun bind(
         preferences: SharedPreferences,
-        onChanged: (CombinedStatusVisualSettings) -> Unit,
-    ): CombinedStatusVisualSettings {
+        onChanged: (VisualSettings) -> Unit,
+    ): VisualSettings {
         unbindLocked()
 
         val token = Any()
@@ -29,7 +29,7 @@ internal object VisualPrefsOwner {
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
-                    isCombinedStatusVisualPreferenceKey(key) &&
+                    isVisualPreferenceKey(key) &&
                     isCurrentBinding(changed, token)
                 ) {
                     val next = resolve(changed)
@@ -51,7 +51,7 @@ internal object VisualPrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        current = CombinedStatusVisualSettings()
+        current = VisualSettings()
     }
 
     private fun unbindLocked() {
@@ -74,6 +74,6 @@ internal object VisualPrefsOwner {
         prefs === preferences &&
             bindToken === token
 
-    private fun resolve(preferences: SharedPreferences): CombinedStatusVisualSettings =
-        preferences.readCombinedStatusVisualSettings()
+    private fun resolve(preferences: SharedPreferences): VisualSettings =
+        preferences.readVisualSettings()
 }

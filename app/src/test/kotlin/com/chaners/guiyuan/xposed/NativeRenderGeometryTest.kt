@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.roundToInt
 
-class CombinedStatusNativeRenderGeometryTest {
+class NativeRenderGeometryTest {
     @Test
     fun steadyNativeBoundsResolveDirectlyInFinalPixelSpace() {
         val transform =
@@ -16,7 +16,7 @@ class CombinedStatusNativeRenderGeometryTest {
             )
 
         val bounds =
-            CombinedStatusNativeRenderGeometry.resolvePixelBounds(
+            NativeRenderGeometry.resolvePixelBounds(
                 centerX = 60f,
                 centerY = 58f,
                 drawWidth = 58f,
@@ -39,7 +39,7 @@ class CombinedStatusNativeRenderGeometryTest {
     @Test
     fun pixelBoundsNeverCollapseAtSmallSupportedScale() {
         val bounds =
-            CombinedStatusNativeRenderGeometry.resolvePixelBounds(
+            NativeRenderGeometry.resolvePixelBounds(
                 centerX = 60f,
                 centerY = 60f,
                 drawWidth = 1f,

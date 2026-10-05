@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.VisualSettings
 
 internal data class RenderColors(
     val centerTint: Int,
@@ -14,7 +14,7 @@ internal object ColorPolicy {
     fun resolve(
         model: RenderModel,
         tintState: TintState,
-        visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
+        visualSettings: VisualSettings = VisualSettings(),
         batteryColorPreferences: BatteryColorPrefs? = null,
     ): RenderColors {
         val nativeParticipantTint =

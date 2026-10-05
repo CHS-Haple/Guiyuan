@@ -26,7 +26,7 @@ internal object SystemUiKeyguardHostResolver {
     ): ResolveResult? {
         if (
             SystemUiSceneStateSource.steadySourceScene(update.sourceView) !=
-                CombinedStatusSourceScene.KEYGUARD
+                SourceScene.KEYGUARD
         ) {
             return null
         }

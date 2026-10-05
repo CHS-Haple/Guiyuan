@@ -2,12 +2,12 @@ package com.chaners.guiyuan.xposed
 
 import kotlin.math.ceil
 
-internal enum class CombinedStatusRenderMode {
+internal enum class RenderMode {
     PROJECTED,
     NATIVE_ONLY,
 }
 
-internal enum class CombinedStatusMotionOwnership {
+internal enum class MotionOwnership {
     NONE,
     COMBINED_STATUS,
     SYSTEM_UI,
@@ -29,8 +29,8 @@ internal data class HostLayout(
     val hostHeightPx: Float,
     val endAnchorPx: Float,
     val nativeSlotWidthPx: Float,
-    val renderMode: CombinedStatusRenderMode,
-    val motionOwnership: CombinedStatusMotionOwnership,
+    val renderMode: RenderMode,
+    val motionOwnership: MotionOwnership,
 ) {
     init {
         require(hostHeightPx > 0f && hostHeightPx.isFinite())
@@ -51,7 +51,7 @@ internal data class ResolvedLayout(
     val visualBottomPx: Float,
     val slotLeftPx: Float,
     val slotRightPx: Float,
-    val motionOwnership: CombinedStatusMotionOwnership,
+    val motionOwnership: MotionOwnership,
 )
 
 internal object LayoutPolicy {
@@ -73,7 +73,7 @@ internal object LayoutPolicy {
         val slotLeft = slotRight - appliedSlotWidth
 
         return ResolvedLayout(
-            renderCombined = host.renderMode != CombinedStatusRenderMode.NATIVE_ONLY,
+            renderCombined = host.renderMode != RenderMode.NATIVE_ONLY,
             visualSidePx = visualSide,
             neighborGapPx = neighborGap,
             requestedSlotWidthPx = requestedSlotWidth,
@@ -150,8 +150,8 @@ internal object SteadyLayoutResolver {
                     hostHeightPx = hostHeightPx.toFloat(),
                     endAnchorPx = if (isRtl) carrierWidth.toFloat() else hostWidthPx.toFloat(),
                     nativeSlotWidthPx = carrierWidth.toFloat(),
-                    renderMode = CombinedStatusRenderMode.PROJECTED,
-                    motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
+                    renderMode = RenderMode.PROJECTED,
+                    motionOwnership = MotionOwnership.SYSTEM_UI,
                 ),
         )
     }

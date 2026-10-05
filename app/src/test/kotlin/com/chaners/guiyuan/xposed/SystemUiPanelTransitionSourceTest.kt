@@ -360,24 +360,24 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
         assertEquals(
-            CombinedStatusSourceScene.HOME,
+            SourceScene.HOME,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = true,
-                structuralScene = CombinedStatusSourceScene.UNKNOWN,
+                structuralScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.KEYGUARD,
+            SourceScene.KEYGUARD,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
-                structuralScene = CombinedStatusSourceScene.KEYGUARD,
+                structuralScene = SourceScene.KEYGUARD,
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.UNKNOWN,
+            SourceScene.UNKNOWN,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
-                structuralScene = CombinedStatusSourceScene.UNKNOWN,
+                structuralScene = SourceScene.UNKNOWN,
             ),
         )
     }
@@ -426,8 +426,8 @@ class SystemUiPanelTransitionSourceTest {
                 expanded = null,
                 tracking = null,
                 visible = true,
-                controlCenterSourceScene = CombinedStatusSourceScene.KEYGUARD,
+                controlCenterSourceScene = SourceScene.KEYGUARD,
             )
-        assertEquals(CombinedStatusSourceScene.KEYGUARD, update.controlCenterSourceScene)
+        assertEquals(SourceScene.KEYGUARD, update.controlCenterSourceScene)
     }
 }

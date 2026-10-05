@@ -1,11 +1,11 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorMode
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorModes
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorOverrides
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorPreset
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.BatteryColorMode
+import com.chaners.guiyuan.settings.BatteryColorModes
+import com.chaners.guiyuan.settings.BatteryColorOverrides
+import com.chaners.guiyuan.settings.BatteryColorPreset
+import com.chaners.guiyuan.settings.BatteryColorSlot
+import com.chaners.guiyuan.settings.VisualSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -88,7 +88,7 @@ class BatteryColorPolicyTest {
 
     @Test
     fun hyperosPresetUsesPinnedChargingAndMonochromeNormal() {
-        val settings = CombinedStatusVisualSettings()
+        val settings = VisualSettings()
         val preferences = BatteryColorPolicy.preferencesFor(settings)
 
         assertEquals(
@@ -114,8 +114,8 @@ class BatteryColorPolicyTest {
     @Test
     fun lowSaturationPresetUsesMutedChargingAndMonochromeNormal() {
         val settings =
-            CombinedStatusVisualSettings(
-                batteryColorPreset = CombinedStatusBatteryColorPreset.RECOMMENDED,
+            VisualSettings(
+                batteryColorPreset = BatteryColorPreset.RECOMMENDED,
             )
         val preferences = BatteryColorPolicy.preferencesFor(settings)
 
@@ -133,8 +133,8 @@ class BatteryColorPolicyTest {
     @Test
     fun iosStylePresetUsesGreenChargingAndMonochromeNormal() {
         val settings =
-            CombinedStatusVisualSettings(
-                batteryColorPreset = CombinedStatusBatteryColorPreset.IOS_STYLE,
+            VisualSettings(
+                batteryColorPreset = BatteryColorPreset.IOS_STYLE,
             )
         val preferences = BatteryColorPolicy.preferencesFor(settings)
 
@@ -161,11 +161,11 @@ class BatteryColorPolicyTest {
     @Test
     fun followSystemModeOverridesSelectedPresetPerSlot() {
         val settings =
-            CombinedStatusVisualSettings(
-                batteryColorPreset = CombinedStatusBatteryColorPreset.IOS_STYLE,
+            VisualSettings(
+                batteryColorPreset = BatteryColorPreset.IOS_STYLE,
                 batteryColorModes =
-                    CombinedStatusBatteryColorModes(
-                        charging = CombinedStatusBatteryColorMode.FOLLOW_SYSTEM,
+                    BatteryColorModes(
+                        charging = BatteryColorMode.FOLLOW_SYSTEM,
                     ),
             )
         assertEquals(
@@ -183,10 +183,10 @@ class BatteryColorPolicyTest {
     fun storedCustomColorIsIgnoredWhileSlotUsesPresetMode() {
         val custom = 0xFF2468AC.toInt()
         val settings =
-            CombinedStatusVisualSettings(
-                batteryColorPreset = CombinedStatusBatteryColorPreset.IOS_STYLE,
+            VisualSettings(
+                batteryColorPreset = BatteryColorPreset.IOS_STYLE,
                 batteryColorOverrides =
-                    CombinedStatusBatteryColorOverrides(charging = custom),
+                    BatteryColorOverrides(charging = custom),
             )
         assertEquals(
             0xFF34C759.toInt(),
@@ -203,14 +203,14 @@ class BatteryColorPolicyTest {
     fun customOverrideWinsOverSelectedPresetWhenSlotUsesCustomMode() {
         val custom = 0xFF2468AC.toInt()
         val settings =
-            CombinedStatusVisualSettings(
-                batteryColorPreset = CombinedStatusBatteryColorPreset.IOS_STYLE,
+            VisualSettings(
+                batteryColorPreset = BatteryColorPreset.IOS_STYLE,
                 batteryColorModes =
-                    CombinedStatusBatteryColorModes(
-                        charging = CombinedStatusBatteryColorMode.CUSTOM,
+                    BatteryColorModes(
+                        charging = BatteryColorMode.CUSTOM,
                     ),
                 batteryColorOverrides =
-                    CombinedStatusBatteryColorOverrides(charging = custom),
+                    BatteryColorOverrides(charging = custom),
             )
         assertEquals(
             custom,
@@ -272,7 +272,7 @@ class BatteryColorPolicyTest {
 
     @Test
     fun tintedStateTracksActualCustomOrPresetColorSource() {
-        val defaultSettings = CombinedStatusVisualSettings()
+        val defaultSettings = VisualSettings()
         assertTrue(
             BatteryColorPolicy.isTinted(
                 state = BatterySemanticState.CHARGING,
@@ -290,8 +290,8 @@ class BatteryColorPolicyTest {
             defaultSettings.copy(
                 batteryColorModes =
                     defaultSettings.batteryColorModes.withMode(
-                        CombinedStatusBatteryColorSlot.CHARGING,
-                        CombinedStatusBatteryColorMode.FOLLOW_SYSTEM,
+                        BatteryColorSlot.CHARGING,
+                        BatteryColorMode.FOLLOW_SYSTEM,
                     ),
             )
         assertFalse(

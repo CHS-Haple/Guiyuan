@@ -10,38 +10,38 @@ class ScenePolicyTest {
     fun everySceneHasExactlyOneCapability() {
         val capabilities = ScenePolicy.all()
 
-        assertEquals(CombinedStatusScene.entries.size, capabilities.size)
+        assertEquals(StatusScene.entries.size, capabilities.size)
         assertEquals(
-            CombinedStatusScene.entries.toSet(),
+            StatusScene.entries.toSet(),
             capabilities.map { it.scene }.toSet(),
         )
     }
 
     @Test
     fun homeStableUsesProjectedOverlayWithoutNativeSlotMutation() {
-        val home = ScenePolicy.capability(CombinedStatusScene.HOME_STABLE)
+        val home = ScenePolicy.capability(StatusScene.HOME_STABLE)
 
-        assertEquals(CombinedStatusRenderMode.PROJECTED, home.renderMode)
-        assertEquals(CombinedStatusMotionOwnership.NONE, home.motionOwnership)
-        assertEquals(CombinedStatusSceneEvidence.RUNTIME_VERIFIED, home.evidence)
+        assertEquals(RenderMode.PROJECTED, home.renderMode)
+        assertEquals(MotionOwnership.NONE, home.motionOwnership)
+        assertEquals(SceneEvidence.RUNTIME_VERIFIED, home.evidence)
     }
 
     @Test
     fun systemUiOwnedTransitionsDoNotRequestCombinedSlotMutation() {
         val systemUiOwned =
             ScenePolicy.all()
-                .filter { it.motionOwnership == CombinedStatusMotionOwnership.SYSTEM_UI }
+                .filter { it.motionOwnership == MotionOwnership.SYSTEM_UI }
 
         assertTrue(systemUiOwned.isNotEmpty())
         systemUiOwned.forEach { capability ->
-            assertTrue(capability.renderMode in CombinedStatusRenderMode.entries)
+            assertTrue(capability.renderMode in RenderMode.entries)
         }
     }
 
     @Test
     fun chargingIsNotModeledAsAnIndependentScene() {
         assertTrue(
-            CombinedStatusScene.entries.none {
+            StatusScene.entries.none {
                 it.name.contains("CHARG", ignoreCase = true)
             },
         )

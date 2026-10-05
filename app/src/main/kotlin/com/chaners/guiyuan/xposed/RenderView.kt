@@ -10,7 +10,7 @@ import android.os.SystemClock
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.VisualSettings
 
 internal class RenderView(
     context: Context,
@@ -43,7 +43,7 @@ internal class RenderView(
     private var tintState: TintState? = null
 
     @Volatile
-    private var visualSettings = CombinedStatusVisualSettings()
+    private var visualSettings = VisualSettings()
 
     @Volatile
     private var logicalViewportWidthPx: Int = 0
@@ -126,7 +126,7 @@ internal class RenderView(
         requestRedraw()
     }
 
-    fun setVisualSettings(state: CombinedStatusVisualSettings) {
+    fun setVisualSettings(state: VisualSettings) {
         if (visualSettings == state) {
             return
         }

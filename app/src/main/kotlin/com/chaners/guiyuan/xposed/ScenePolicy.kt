@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 
-internal data class CombinedStatusTransitionSourceWitness(
+internal data class TransitionSourceWitness(
     val renderView: View,
     val logicalLeftPx: Int,
     val logicalTopPx: Int,
@@ -13,7 +13,7 @@ internal data class CombinedStatusTransitionSourceWitness(
     val representedSlots: Set<String>,
 )
 
-internal enum class CombinedStatusScene {
+internal enum class StatusScene {
     HOME_STABLE,
     NOTIFICATION_SHADE_TRANSITION,
     CONTROL_CENTER,
@@ -21,78 +21,78 @@ internal enum class CombinedStatusScene {
     AOD,
 }
 
-internal enum class CombinedStatusSceneEvidence {
+internal enum class SceneEvidence {
     RUNTIME_VERIFIED,
     STATIC_VERIFIED,
 }
 
-internal enum class CombinedStatusSourceScene {
+internal enum class SourceScene {
     HOME,
     KEYGUARD,
     UNKNOWN,
 }
 
-internal data class CombinedStatusSceneCapability(
-    val scene: CombinedStatusScene,
-    val renderMode: CombinedStatusRenderMode,
-    val motionOwnership: CombinedStatusMotionOwnership,
-    val evidence: CombinedStatusSceneEvidence,
+internal data class SceneCapability(
+    val scene: StatusScene,
+    val renderMode: RenderMode,
+    val motionOwnership: MotionOwnership,
+    val evidence: SceneEvidence,
 )
 
 internal object ScenePolicy {
     private val capabilities =
         mapOf(
-            CombinedStatusScene.HOME_STABLE to
-                CombinedStatusSceneCapability(
-                    scene = CombinedStatusScene.HOME_STABLE,
-                    renderMode = CombinedStatusRenderMode.PROJECTED,
-                    motionOwnership = CombinedStatusMotionOwnership.NONE,
-                    evidence = CombinedStatusSceneEvidence.RUNTIME_VERIFIED,
+            StatusScene.HOME_STABLE to
+                SceneCapability(
+                    scene = StatusScene.HOME_STABLE,
+                    renderMode = RenderMode.PROJECTED,
+                    motionOwnership = MotionOwnership.NONE,
+                    evidence = SceneEvidence.RUNTIME_VERIFIED,
                 ),
-            CombinedStatusScene.NOTIFICATION_SHADE_TRANSITION to
-                CombinedStatusSceneCapability(
-                    scene = CombinedStatusScene.NOTIFICATION_SHADE_TRANSITION,
-                    renderMode = CombinedStatusRenderMode.NATIVE_ONLY,
-                    motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
-                    evidence = CombinedStatusSceneEvidence.STATIC_VERIFIED,
+            StatusScene.NOTIFICATION_SHADE_TRANSITION to
+                SceneCapability(
+                    scene = StatusScene.NOTIFICATION_SHADE_TRANSITION,
+                    renderMode = RenderMode.NATIVE_ONLY,
+                    motionOwnership = MotionOwnership.SYSTEM_UI,
+                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
-            CombinedStatusScene.CONTROL_CENTER to
-                CombinedStatusSceneCapability(
-                    scene = CombinedStatusScene.CONTROL_CENTER,
-                    renderMode = CombinedStatusRenderMode.NATIVE_ONLY,
-                    motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
-                    evidence = CombinedStatusSceneEvidence.STATIC_VERIFIED,
+            StatusScene.CONTROL_CENTER to
+                SceneCapability(
+                    scene = StatusScene.CONTROL_CENTER,
+                    renderMode = RenderMode.NATIVE_ONLY,
+                    motionOwnership = MotionOwnership.SYSTEM_UI,
+                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
-            CombinedStatusScene.KEYGUARD to
-                CombinedStatusSceneCapability(
-                    scene = CombinedStatusScene.KEYGUARD,
-                    renderMode = CombinedStatusRenderMode.PROJECTED,
-                    motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
-                    evidence = CombinedStatusSceneEvidence.STATIC_VERIFIED,
+            StatusScene.KEYGUARD to
+                SceneCapability(
+                    scene = StatusScene.KEYGUARD,
+                    renderMode = RenderMode.PROJECTED,
+                    motionOwnership = MotionOwnership.SYSTEM_UI,
+                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
-            CombinedStatusScene.AOD to
-                CombinedStatusSceneCapability(
-                    scene = CombinedStatusScene.AOD,
-                    renderMode = CombinedStatusRenderMode.PROJECTED,
-                    motionOwnership = CombinedStatusMotionOwnership.SYSTEM_UI,
-                    evidence = CombinedStatusSceneEvidence.STATIC_VERIFIED,
+            StatusScene.AOD to
+                SceneCapability(
+                    scene = StatusScene.AOD,
+                    renderMode = RenderMode.PROJECTED,
+                    motionOwnership = MotionOwnership.SYSTEM_UI,
+                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
         )
 
-    fun capability(scene: CombinedStatusScene): CombinedStatusSceneCapability =
+    fun capability(scene: StatusScene): SceneCapability =
         requireNotNull(capabilities[scene]) {
             "Missing CombinedStatus scene capability: $scene"
         }
 
-    fun all(): List<CombinedStatusSceneCapability> =
-        CombinedStatusScene.entries.map(::capability)
+    fun all(): List<SceneCapability> =
+        StatusScene.entries.map(::capability)
 
     fun shouldAcquireKeyguardControlCenterLease(
-        sourceScene: CombinedStatusSourceScene,
+        sourceScene: SourceScene,
         keyguardPresentationReady: Boolean,
         nativeFraction: Float,
     ): Boolean =
-        sourceScene == CombinedStatusSourceScene.KEYGUARD &&
+        sourceScene == SourceScene.KEYGUARD &&
             keyguardPresentationReady &&
             nativeFraction > 0f
 
@@ -107,7 +107,7 @@ internal object ScenePolicy {
 
     fun shouldRetainKeyguardControlCenterLease(
         leaseActive: Boolean,
-        sourceScene: CombinedStatusSourceScene,
+        sourceScene: SourceScene,
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         hostAttached: Boolean,
@@ -116,7 +116,7 @@ internal object ScenePolicy {
         nativeFraction: Float,
     ): Boolean =
         leaseActive &&
-            sourceScene == CombinedStatusSourceScene.KEYGUARD &&
+            sourceScene == SourceScene.KEYGUARD &&
             featureEnabled &&
             keyguardEnabled &&
             hostAttached &&
@@ -154,8 +154,8 @@ internal object ScenePolicy {
         featureEnabled &&
             aodEnabled &&
             (stableAod || homeTransitionPrearm) &&
-            capability(CombinedStatusScene.AOD).renderMode ==
-                CombinedStatusRenderMode.PROJECTED
+            capability(StatusScene.AOD).renderMode ==
+                RenderMode.PROJECTED
 
     enum class KeyguardAodProjection {
         NATIVE,
@@ -175,7 +175,7 @@ internal object ScenePolicy {
         aodEnabled: Boolean,
         toAod: Boolean,
         isAodAnimate: Boolean,
-        steadySourceScene: CombinedStatusSourceScene = CombinedStatusSourceScene.UNKNOWN,
+        steadySourceScene: SourceScene = SourceScene.UNKNOWN,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
         homePresentationOwned: Boolean = false,
         keyguardStatusIconsAlpha: Float? = null,
@@ -220,7 +220,7 @@ internal object ScenePolicy {
             fullAodVisualBoundary &&
             fullAodTargetSourceReady &&
             nativeToLockScreenTarget == true &&
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD &&
+            steadySourceScene == SourceScene.KEYGUARD &&
             lastStableFamilyScene == StableKeyguardAodScene.AOD &&
             keyguardEnabled &&
             !aodEnabled
@@ -267,11 +267,11 @@ internal object ScenePolicy {
         ) {
             return KeyguardAodProjection.NATIVE
         }
-        if (steadySourceScene == CombinedStatusSourceScene.HOME) {
+        if (steadySourceScene == SourceScene.HOME) {
             return KeyguardAodProjection.NATIVE
         }
         return if (
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD &&
+            steadySourceScene == SourceScene.KEYGUARD &&
             keyguardEnabled
         ) {
             KeyguardAodProjection.KEYGUARD
@@ -283,14 +283,14 @@ internal object ScenePolicy {
     fun shouldArmHomeAodTargetPrearm(
         featureEnabled: Boolean,
         aodEnabled: Boolean,
-        steadySourceScene: CombinedStatusSourceScene,
+        steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene,
         homePresentationOwned: Boolean,
         nativeToLockScreenTarget: Boolean?,
     ): Boolean =
         featureEnabled &&
             aodEnabled &&
-            steadySourceScene == CombinedStatusSourceScene.HOME &&
+            steadySourceScene == SourceScene.HOME &&
             lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
             homePresentationOwned &&
             nativeToLockScreenTarget == false
@@ -392,7 +392,7 @@ internal object ScenePolicy {
     internal fun resolveAnimatingKeyguardAodProjection(
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
-        steadySourceScene: CombinedStatusSourceScene,
+        steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene,
         homePresentationOwned: Boolean,
         keyguardStatusIconsAlpha: Float? = null,
@@ -401,7 +401,7 @@ internal object ScenePolicy {
         fullAodTargetPending: Boolean = false,
         fullAodVisualBoundary: Boolean = false,
     ): KeyguardAodProjection {
-        if (steadySourceScene == CombinedStatusSourceScene.HOME) {
+        if (steadySourceScene == SourceScene.HOME) {
             return if (
                 lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
                 homePresentationOwned &&
@@ -418,7 +418,7 @@ internal object ScenePolicy {
         }
 
         if (
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD &&
+            steadySourceScene == SourceScene.KEYGUARD &&
             lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
             homePresentationOwned &&
             aodEnabled
@@ -438,7 +438,7 @@ internal object ScenePolicy {
         if (
             fullAodTargetSourceReady &&
             nativeToLockScreenTarget != null &&
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD &&
+            steadySourceScene == SourceScene.KEYGUARD &&
             lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN &&
             keyguardEnabled != aodEnabled
         ) {
@@ -493,7 +493,7 @@ internal object ScenePolicy {
         if (
             keyguardEnabled &&
             !aodEnabled &&
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD
         ) {
             val alpha = keyguardStatusIconsAlpha
             if (alpha != null) {
@@ -519,7 +519,7 @@ internal object ScenePolicy {
         if (
             !keyguardEnabled &&
             aodEnabled &&
-            steadySourceScene == CombinedStatusSourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD
         ) {
             val alpha = keyguardStatusIconsAlpha
             if (alpha != null) {
@@ -562,7 +562,7 @@ internal object ScenePolicy {
 
             StableKeyguardAodScene.UNKNOWN ->
                 if (
-                    steadySourceScene == CombinedStatusSourceScene.KEYGUARD &&
+                    steadySourceScene == SourceScene.KEYGUARD &&
                     keyguardEnabled
                 ) {
                     // Cold-start / late-install fallback: an authoritative
@@ -576,23 +576,23 @@ internal object ScenePolicy {
     }
 
     fun resolveControlCenterSourceScene(
-        panelSourceScene: CombinedStatusSourceScene,
-        steadySourceScene: CombinedStatusSourceScene,
+        panelSourceScene: SourceScene,
+        steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
         incomingKeyguardPresentationReady: Boolean = false,
-    ): CombinedStatusSourceScene {
+    ): SourceScene {
         if (
             incomingKeyguardPresentationReady &&
             (
-                panelSourceScene == CombinedStatusSourceScene.KEYGUARD ||
-                    steadySourceScene == CombinedStatusSourceScene.KEYGUARD
+                panelSourceScene == SourceScene.KEYGUARD ||
+                    steadySourceScene == SourceScene.KEYGUARD
             )
         ) {
-            return CombinedStatusSourceScene.KEYGUARD
+            return SourceScene.KEYGUARD
         }
         if (panelSourceScene == steadySourceScene) return panelSourceScene
-        if (panelSourceScene == CombinedStatusSourceScene.UNKNOWN) return steadySourceScene
-        if (steadySourceScene == CombinedStatusSourceScene.UNKNOWN) return panelSourceScene
+        if (panelSourceScene == SourceScene.UNKNOWN) return steadySourceScene
+        if (steadySourceScene == SourceScene.UNKNOWN) return panelSourceScene
 
         // A HOME/KEYGUARD disagreement is a lifecycle-boundary race between two
         // native witnesses. Family history provides direction without borrowing
@@ -602,28 +602,28 @@ internal object ScenePolicy {
         // - UNKNOWN means stable Home was the prior family state, so KEYGUARD
         //   is the lock/AOD target.
         return if (lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN) {
-            CombinedStatusSourceScene.KEYGUARD
+            SourceScene.KEYGUARD
         } else {
-            CombinedStatusSourceScene.HOME
+            SourceScene.HOME
         }
     }
 
     fun controlCenterProjectionEligible(
         featureEnabled: Boolean,
-        sourceScene: CombinedStatusSourceScene,
+        sourceScene: SourceScene,
         keyguardEnabled: Boolean,
     ): Boolean =
         featureEnabled &&
             when (sourceScene) {
-            CombinedStatusSourceScene.HOME ->
-                capability(CombinedStatusScene.HOME_STABLE).renderMode ==
-                    CombinedStatusRenderMode.PROJECTED
+            SourceScene.HOME ->
+                capability(StatusScene.HOME_STABLE).renderMode ==
+                    RenderMode.PROJECTED
 
-            CombinedStatusSourceScene.KEYGUARD ->
+            SourceScene.KEYGUARD ->
                 keyguardEnabled &&
-                    capability(CombinedStatusScene.KEYGUARD).renderMode ==
-                    CombinedStatusRenderMode.PROJECTED
+                    capability(StatusScene.KEYGUARD).renderMode ==
+                    RenderMode.PROJECTED
 
-            CombinedStatusSourceScene.UNKNOWN -> false
+            SourceScene.UNKNOWN -> false
         }
 }

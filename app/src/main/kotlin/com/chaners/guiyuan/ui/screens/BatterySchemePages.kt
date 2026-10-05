@@ -43,7 +43,7 @@ import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
+import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import kotlinx.coroutines.launch
@@ -81,8 +81,8 @@ internal fun BatterySchemeOverview(
     canCreateCustom: Boolean,
     nextCustomName: String?,
     onApplyScheme: (String) -> Unit,
-    onOpenBuiltInSlot: (BatteryBuiltInColorScheme, CombinedStatusBatteryColorSlot) -> Unit,
-    onOpenCustomSlot: (Int, CombinedStatusBatteryColorSlot) -> Unit,
+    onOpenBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
+    onOpenCustomSlot: (Int, BatteryColorSlot) -> Unit,
     onAdd: () -> Unit,
     onRenameCustom: (Int) -> Unit,
     onCopyCustom: (BatteryCustomColorScheme) -> Unit,
@@ -218,7 +218,7 @@ private fun BatterySchemePageContent(
     isActive: Boolean,
     canCreateCustom: Boolean,
     onApply: () -> Unit,
-    onSlotClick: (CombinedStatusBatteryColorSlot) -> Unit,
+    onSlotClick: (BatteryColorSlot) -> Unit,
     onSettingsCardMeasured: (Int) -> Unit,
     onRename: (() -> Unit)?,
     onCopy: (() -> Unit)?,
@@ -289,7 +289,7 @@ private fun BatterySchemePageContent(
                             onSettingsCardMeasured(size.height)
                         },
             ) {
-                CombinedStatusBatteryColorSlot.entries.forEach { slot ->
+                BatteryColorSlot.entries.forEach { slot ->
                     val color =
                         when {
                             builtIn != null -> batteryBuiltInColor(builtIn, slot)
@@ -380,7 +380,7 @@ private fun BatterySchemeActionArea(
 
 @Composable
 private fun BatteryModeSettingItem(
-    slot: CombinedStatusBatteryColorSlot,
+    slot: BatteryColorSlot,
     color: Int?,
     followsSystem: Boolean,
     enabled: Boolean,

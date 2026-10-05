@@ -5,11 +5,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusNativeOpticalGeometryTest {
+class NativeOpticalGeometryTest {
     @Test
     fun currentOpticalWidthStaysResourceSpecificUnderSharedReferenceFit() {
         val narrow =
-            CombinedStatusNativeOpticalGeometry.resolve(
+            NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 100,
                 currentIntrinsicHeight = 100,
                 currentOpticalLeft = 0.35f,
@@ -28,7 +28,7 @@ class CombinedStatusNativeOpticalGeometryTest {
                 maxHeight = 45f,
             )
         val wide =
-            CombinedStatusNativeOpticalGeometry.resolve(
+            NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 100,
                 currentIntrinsicHeight = 100,
                 currentOpticalLeft = 0.20f,
@@ -56,7 +56,7 @@ class CombinedStatusNativeOpticalGeometryTest {
     @Test
     fun opticalBoundsPreserveCurrentResourceAsymmetry() {
         val resolved =
-            CombinedStatusNativeOpticalGeometry.resolve(
+            NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 120,
                 currentIntrinsicHeight = 80,
                 currentOpticalLeft = 0.10f,
@@ -84,7 +84,7 @@ class CombinedStatusNativeOpticalGeometryTest {
     @Test
     fun invalidIntrinsicSizeDoesNotInventGeometry() {
         val resolved =
-            CombinedStatusNativeOpticalGeometry.resolve(
+            NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 0,
                 currentIntrinsicHeight = 100,
                 currentOpticalLeft = 0f,

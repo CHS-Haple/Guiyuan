@@ -9,8 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.VisualSettings
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -1150,7 +1150,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: CombinedStatusFeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureSettings) {
         val root = rootRef?.get()
         if (
             root != null &&
@@ -1277,7 +1277,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: CombinedStatusVisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualSettings) {
         renderController?.updateVisualSettings(settings)
     }
 

@@ -54,7 +54,7 @@ class ControlCenterTransitionIslandTest {
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .usesSemanticTransitionReservation(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = true,
                 ),
@@ -62,7 +62,7 @@ class ControlCenterTransitionIslandTest {
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .usesSemanticTransitionReservation(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = false,
                 ),
@@ -70,7 +70,7 @@ class ControlCenterTransitionIslandTest {
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .usesSemanticTransitionReservation(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = null,
                 ),
@@ -78,7 +78,7 @@ class ControlCenterTransitionIslandTest {
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .usesSemanticTransitionReservation(
-                    sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                    sourceScene = SourceScene.KEYGUARD,
                     charging = true,
                     nativeBatteryIslandActive = true,
                 ),
@@ -90,35 +90,35 @@ class ControlCenterTransitionIslandTest {
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = CombinedStatusSourceScene.KEYGUARD,
+                    sourceScene = SourceScene.KEYGUARD,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     genericIslandShowing = false,
                 ),
         )
         assertTrue(
             ControlCenterTransitionOwner.Policy
                 .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = CombinedStatusSourceScene.HOME,
+                    sourceScene = SourceScene.HOME,
                     genericIslandShowing = null,
                 ),
         )
         assertTrue(
             !ControlCenterTransitionOwner.Policy
                 .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = CombinedStatusSourceScene.UNKNOWN,
+                    sourceScene = SourceScene.UNKNOWN,
                     genericIslandShowing = true,
                 ),
         )
@@ -128,15 +128,15 @@ class ControlCenterTransitionIslandTest {
     fun verifiedSourceScenesKeepSemanticReservationThroughProjection() {
         assertTrue(
             ControlCenterTransitionOwner.Policy
-                .usesSemanticTransitionReservation(CombinedStatusSourceScene.HOME),
+                .usesSemanticTransitionReservation(SourceScene.HOME),
         )
         assertTrue(
             ControlCenterTransitionOwner.Policy
-                .usesSemanticTransitionReservation(CombinedStatusSourceScene.KEYGUARD),
+                .usesSemanticTransitionReservation(SourceScene.KEYGUARD),
         )
         assertTrue(
             !ControlCenterTransitionOwner.Policy
-                .usesSemanticTransitionReservation(CombinedStatusSourceScene.UNKNOWN),
+                .usesSemanticTransitionReservation(SourceScene.UNKNOWN),
         )
     }
 

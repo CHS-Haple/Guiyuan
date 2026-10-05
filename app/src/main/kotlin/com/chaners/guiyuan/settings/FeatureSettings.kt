@@ -8,20 +8,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal data class CombinedStatusFeatureSettings(
+internal data class FeatureSettings(
     val enabled: Boolean = true,
     val keyguardEnabled: Boolean = false,
     val aodEnabled: Boolean = false,
 )
 
-internal class CombinedStatusFeatureSettingsRepository(context: Context) {
+internal class FeatureSettingsRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_FEATURE_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
 
-    val settings: Flow<CombinedStatusFeatureSettings> =
+    val settings: Flow<FeatureSettings> =
         callbackFlow {
             fun emitCurrent() {
                 trySend(current())
@@ -29,7 +29,7 @@ internal class CombinedStatusFeatureSettingsRepository(context: Context) {
 
             val listener =
                 SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isCombinedStatusFeaturePreferenceKey(key)) {
+                    if (isFeaturePreferenceKey(key)) {
                         emitCurrent()
                     }
                 }
@@ -41,8 +41,8 @@ internal class CombinedStatusFeatureSettingsRepository(context: Context) {
             }
         }.distinctUntilChanged()
 
-    fun current(): CombinedStatusFeatureSettings =
-        CombinedStatusFeatureSettings(
+    fun current(): FeatureSettings =
+        FeatureSettings(
             enabled =
                 preferences.getBoolean(
                     COMBINED_STATUS_ENABLED_KEY,
@@ -108,7 +108,7 @@ internal const val COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY =
     "combined_status_feature_change_elapsed_realtime_nanos"
 
 
-internal fun isCombinedStatusFeaturePreferenceKey(key: String?): Boolean =
+internal fun isFeaturePreferenceKey(key: String?): Boolean =
     key == null ||
         key == COMBINED_STATUS_ENABLED_KEY ||
         key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||

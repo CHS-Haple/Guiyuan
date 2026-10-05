@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettingsRepository
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettingsRepository
+import com.chaners.guiyuan.settings.FeatureSettingsRepo
+import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualSettingsRepo
 import com.chaners.guiyuan.system.XposedRuntimeStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.HotReloadAction
@@ -95,7 +95,7 @@ internal fun HomeScreen(
         }
     val featureRepository =
         remember(context.applicationContext) {
-            CombinedStatusFeatureSettingsRepository(context.applicationContext)
+            FeatureSettingsRepo(context.applicationContext)
         }
     val featureSettings by
         featureRepository.settings.collectAsState(
@@ -103,7 +103,7 @@ internal fun HomeScreen(
         )
     val visualRepository =
         remember(context.applicationContext) {
-            CombinedStatusVisualSettingsRepository(context.applicationContext)
+            VisualSettingsRepo(context.applicationContext)
         }
     val visualSettings by
         visualRepository.settings.collectAsState(
@@ -306,7 +306,7 @@ private fun HomeRuntimeStatusCard(
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSystemUiResourceResolver,
-    visualSettings: CombinedStatusVisualSettings,
+    visualSettings: VisualSettings,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

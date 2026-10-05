@@ -7,11 +7,12 @@
 - Active work: `feat/code-lightweight`. PR #216 is closed and is not an active validation boundary; the branch continues from current `dev` and remains synchronized with it.
 - Objective: reduce mechanical product-name prefixes, oversized mixed-responsibility source files, stale aliases and redundant naming without changing runtime behavior, ownership, lifecycle, geometry, persisted preference keys or diagnostic protocol fields.
 - Naming direction: use `Gy` only where product identity is useful; omit redundant `CombinedStatus` prefixes in package-local domain/runtime types; keep `SystemUi` where it identifies the authoritative platform/integration boundary. Do not introduce a repository-wide `SysUi` rename.
-- Completed in the active branch: settings/UI source decomposition, policy/session/model renames, `FeaturePrefsOwner` / `VisualPrefsOwner` / `DiagPrefsOwner`, and broad test-name alignment without compatibility aliases.
-- Current checkpoint: core mechanical names are being closed out as `GyModule`, `StatusPainter`, `ControlCenterTransitionOwner`, and `StatusStateStore`; the Xposed entry and all direct runtime/test references are updated in the same atomic change. A duplicated `ScenePolicyTest` declaration left by an earlier mechanical rename is corrected in this checkpoint.
+- Completed in the active branch: settings/UI decomposition; app-shell, policy/session/model, runtime preference owner and core runtime naming cleanup; Xposed entry alignment; and broad test-name alignment without compatibility aliases.
+- Source-level mechanical `CombinedStatus*` naming is closed out where package/domain context already carries the meaning. Settings/domain types now use concise names such as `FeatureSettings`, `VisualSettings`, `ContentLayout` and `BatteryColor*`; scene/render types use names such as `StatusScene`, `SourceScene`, `RenderMode` and `MotionOwnership`.
+- Persisted preference keys, shared-preference file names, remote-preference protocol strings and historical DEVLOG/CHANGELOG records retain their established values. This refactor does not migrate or rewrite user data.
 - `SystemUi*` types are intentionally not shortened: their prefix carries platform-authority meaning and a global shorthand conversion would add churn without reducing runtime complexity.
 - No runtime behavior is intentionally changed by this checkpoint. No device gate is required unless automated/static review exposes behavior-affecting fallout.
-- Validation plan: finish static rename/reference review, create one consolidated checkpoint, then run the ordinary code checkpoint/PR CI once rather than generating CI noise for each mechanical sub-step.
+- Validation plan: complete the consolidated static review, then run one ordinary code checkpoint/PR CI instead of generating CI noise for each mechanical sub-step.
 
 ## Accepted runtime facts carried into Build 685
 

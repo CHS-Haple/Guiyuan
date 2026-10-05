@@ -22,7 +22,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeEntry
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
+import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -231,20 +231,20 @@ internal fun batterySourceLabel(source: BatteryColorSchemeSource): String =
 @Composable
 private fun batterySourceValue(
     entry: BatteryColorSchemeEntry,
-    slot: CombinedStatusBatteryColorSlot,
+    slot: BatteryColorSlot,
 ): String =
     batterySchemeEntryColor(entry, slot)?.let(::batteryColorHex)
         ?: stringResource(R.string.battery_color_follow_inversion)
 
 @StringRes
-internal fun batteryColorSlotLabel(slot: CombinedStatusBatteryColorSlot): Int =
+internal fun batteryColorSlotLabel(slot: BatteryColorSlot): Int =
     when (slot) {
-        CombinedStatusBatteryColorSlot.NORMAL -> R.string.battery_mode_normal
-        CombinedStatusBatteryColorSlot.POWER_SAVE -> R.string.battery_mode_power_save
-        CombinedStatusBatteryColorSlot.PERFORMANCE -> R.string.battery_mode_performance
-        CombinedStatusBatteryColorSlot.SUPER_POWER_SAVE -> R.string.battery_mode_super_power_save
-        CombinedStatusBatteryColorSlot.CHARGING -> R.string.battery_mode_charging
-        CombinedStatusBatteryColorSlot.LOW -> R.string.battery_mode_low
+        BatteryColorSlot.NORMAL -> R.string.battery_mode_normal
+        BatteryColorSlot.POWER_SAVE -> R.string.battery_mode_power_save
+        BatteryColorSlot.PERFORMANCE -> R.string.battery_mode_performance
+        BatteryColorSlot.SUPER_POWER_SAVE -> R.string.battery_mode_super_power_save
+        BatteryColorSlot.CHARGING -> R.string.battery_mode_charging
+        BatteryColorSlot.LOW -> R.string.battery_mode_low
     }
 
 internal fun schemePageForKey(
@@ -256,7 +256,7 @@ internal fun schemePageForKey(
 
 internal fun batteryColorEditorSeed(
     entry: BatteryColorSchemeEntry,
-    slot: CombinedStatusBatteryColorSlot,
+    slot: BatteryColorSlot,
 ): Int? =
     batterySchemeEntryColor(entry, slot)
         ?: entry.customColor
