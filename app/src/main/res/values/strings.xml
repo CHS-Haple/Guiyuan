@@ -75,7 +75,7 @@
     <string name="charging_title">Charging</string>
     <string name="charging_summary">Charging and super-charging styles</string>
     <string name="about_title">About</string>
-    <string name="about_summary">Version, device, and runtime information</string>
+    <string name="about_summary">Version project and runtime information</string>
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_summary">View Guiyuan runtime logs</string>
     <string name="restart_scope">Restart SystemUI</string>
@@ -150,25 +150,38 @@
 
     <string name="section_current_build">Version information</string>
     <string name="section_diagnostics_app">App</string>
+    <string name="section_about_project">Project</string>
+    <string name="about_project_home_title">Project homepage</string>
+    <string name="about_project_home_summary">View source code and project information</string>
+    <string name="about_open_source_license_title">Open-source license</string>
+    <string name="about_open_source_license_summary">GNU GPL v3.0</string>
+    <string name="about_third_party_title">Third-party dependencies</string>
+    <string name="about_third_party_summary">View open-source components and licenses</string>
+    <string name="section_runtime_dependencies">Runtime and interface</string>
+    <string name="section_embedded_assets">Embedded assets</string>
+    <string name="about_embedded_asset_summary">Local embedded assets\nApache-2.0</string>
+    <string name="section_development_dependencies">Test and build</string>
+    <string name="about_value_unavailable">Unavailable</string>
     <string name="product_name">Guiyuan</string>
     <string name="target_platform_value">HyperOS SystemUI module</string>
     <string name="version_value">Version: %1$s</string>
     <string name="build_value">Build: %1$s</string>
     <string name="diagnostics_version_label">Version</string>
     <string name="diagnostics_build_label">Build</string>
-    <string name="diagnostics_package_label">Package</string>
+    <string name="diagnostics_package_label">Application package</string>
 
     <string name="section_device_system">Device &amp; system</string>
-    <string name="device_model_label">Device model (device codename)</string>
-    <string name="android_version_label">Android version (API level)</string>
+    <string name="device_name_label">Device</string>
+    <string name="device_model_label">Device model</string>
+    <string name="android_version_label">Android version</string>
     <string name="os_version_label">HyperOS version</string>
     <string name="systemui_version_label">SystemUI version</string>
 
-    <string name="section_module_runtime">Module runtime</string>
+    <string name="section_module_runtime">Module environment</string>
     <string name="runtime_framework_title">Framework</string>
     <string name="runtime_framework_summary">Modern Xposed API 102</string>
     <string name="runtime_scope_title">Scope</string>
-    <string name="runtime_scope_summary">SystemUI (com.android.systemui)</string>
+    <string name="runtime_scope_summary">SystemUI com.android.systemui</string>
     <string name="runtime_target_title">Compatibility baseline</string>
     <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
     <string name="runtime_inventory_title">Native status probe</string>
@@ -257,6 +270,10 @@
     <string name="diagnostics_filter_done">Done</string>
     <string name="diagnostics_filter_empty">No events match the current filters</string>
     <string name="diagnostics_refresh">Refresh diagnostics</string>
+    <string name="diagnostics_pull_to_refresh">Pull down to refresh</string>
+    <string name="diagnostics_release_to_refresh">Release to refresh</string>
+    <string name="diagnostics_refreshing">Refreshing</string>
+    <string name="diagnostics_refresh_complete">Refresh complete</string>
     <string name="diagnostics_scroll_top">Scroll to top</string>
     <string name="diagnostics_scroll_bottom">Scroll to bottom</string>
     <string name="diagnostics_clear_view">Clear view</string>

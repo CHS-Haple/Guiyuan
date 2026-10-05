@@ -3,6 +3,7 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
+- Active companion-app work: About + Diagnostics companion-app validation on `feat/about-miuix-info`, Build 739 (`20261004-739`). All Material Symbols used as semantic row-leading icons now follow the global MIUIX-aligned policy: inspect the actual glyph first, semantic correctness before aesthetics, Outlined W400 baseline, W500 only for perceptually light glyphs, Filled only as a documented exception, and one shared 24 dp optical box / 22 dp visual size with no per-page geometry compensation. About reselects package/project/dependency glyphs to `package_2` / `folder_code` / `account_tree`. Diagnostics now has one refresh UI owner: initial loading alone uses the loading card; pull refresh, More > Refresh, and diagnostics-level recapture share MIUIX `PullToRefresh` while keeping the existing list visible.
 - `main` and `dev` are aligned on the promoted Build 709 stable checkpoint before this work branch.
 - Active work: `feat/diagnostics-log-workbench` / Build 733 (`20261004-733`).
 - Build 724 Canary #768 passed automated/signing gates, but device review rejected the Filter interaction, toolbar optical weight, hand-built More submenu hierarchy, and button-like INFO metadata treatment.

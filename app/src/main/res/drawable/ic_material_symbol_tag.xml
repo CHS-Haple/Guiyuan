@@ -1,10 +1,11 @@
-<!-- Google Material Symbols Filled W500 24px: tag; Apache-2.0; source: google/material-design-icons -->
+<!-- Google Material Symbols Outlined W400 24px: tag; Apache-2.0; source: google/material-design-icons -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="960"
-    android:viewportHeight="960">
+    android:viewportHeight="960"
+    >
   <path
       android:fillColor="#FF000000"
-      android:pathData="M232.35,808.37L273.07,645.5L111.87,645.5L134.5,554.5L295.7,554.5L333.07,405.5L171.87,405.5L194.5,314.5L355.7,314.5L396.41,151.87L487.65,151.87L446.93,314.5L595.7,314.5L636.41,151.87L727.65,151.87L686.93,314.5L848.13,314.5L825.5,405.5L664.3,405.5L626.93,554.5L788.13,554.5L765.5,645.5L604.3,645.5L563.59,808.37L472.35,808.37L513.07,645.5L364.3,645.5L323.59,808.37L232.35,808.37ZM386.93,554.5L535.7,554.5L573.07,405.5L424.3,405.5L386.93,554.5Z"/>
+      android:pathData="M240,800L280,640L120,640L140,560L300,560L340,400L180,400L200,320L360,320L400,160L480,160L440,320L600,320L640,160L720,160L680,320L840,320L820,400L660,400L620,560L780,560L760,640L600,640L560,800L480,800L520,640L360,640L320,800L240,800ZM380,560L540,560L580,400L420,400L380,560Z"/>
 </vector>

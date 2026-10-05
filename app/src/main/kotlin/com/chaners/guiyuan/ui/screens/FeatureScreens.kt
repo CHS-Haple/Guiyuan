@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -108,10 +109,12 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
+import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -136,6 +139,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -186,7 +190,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_contrast,
-                        visualSize = 22.dp,
                     )
                 },
                 showValue = true,
@@ -204,7 +207,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_palette,
-                        visualSize = 22.dp,
                     )
                 },
                 checked = settings.dynamicColorEnabled,
@@ -219,7 +221,6 @@ internal fun AppearanceScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_bottom_navigation,
-                        visualSize = 22.dp,
                     )
                 },
                 checked = settings.floatingNavigationBarEnabled,
@@ -234,7 +235,6 @@ internal fun AppearanceScreen(
                     startAction = {
                         SemanticLeadingIcon(
                             iconRes = R.drawable.ic_material_symbol_style,
-                            visualSize = 22.dp,
                         )
                     },
                     showValue = true,
@@ -254,7 +254,6 @@ internal fun AppearanceScreen(
                     startAction = {
                         SemanticLeadingIcon(
                             iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
-                            visualSize = 22.dp,
                         )
                     },
                     showValue = true,
@@ -719,6 +718,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
@@ -738,6 +738,20 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val reportExportTitle = stringResource(R.string.export_diagnostic_report)
     val moreActionsTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
+    val pullRefreshTexts =
+        listOf(
+            stringResource(R.string.diagnostics_pull_to_refresh),
+            stringResource(R.string.diagnostics_release_to_refresh),
+            stringResource(R.string.diagnostics_refreshing),
+            stringResource(R.string.diagnostics_refresh_complete),
+        )
+
+    fun requestRefresh() {
+        if (loading) return
+        loading = true
+        pullRefreshing = true
+        refreshGeneration += 1
+    }
 
     fun withCurrentReport(onReady: suspend (String) -> Unit) {
         val captured = snapshot ?: return
@@ -774,10 +788,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(refreshGeneration) {
         loading = true
-        snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
-        expandedKey = null
-        viewCleared = false
-        loading = false
+        try {
+            snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
+            expandedKey = null
+            viewCleared = false
+        } finally {
+            loading = false
+            pullRefreshing = false
+        }
     }
 
     val reportActionsEnabled =
@@ -902,10 +920,10 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 onDiagnosticsLevelChange = { level ->
                     if (level != diagnosticsSettings.level) {
                         diagnosticsRepository.setLevel(level)
-                        refreshGeneration += 1
+                        requestRefresh()
                     }
                 },
-                onRefresh = { refreshGeneration += 1 },
+                onRefresh = ::requestRefresh,
                 onScrollTop = {
                     scope.launch { listState.animateScrollToItem(0) }
                 },
@@ -923,6 +941,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
+        pullToRefresh =
+            snapshot?.let {
+                SettingsPullToRefresh(
+                    refreshing = pullRefreshing,
+                    onRefresh = ::requestRefresh,
+                    texts = pullRefreshTexts,
+                )
+            },
     ) {
         when {
             viewCleared -> {
@@ -933,7 +959,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            loading -> {
+            loading && snapshot == null -> {
                 item(key = "diagnostics-state-loading") {
                     DiagnosticsLogStateCard(
                         text = stringResource(R.string.diagnostics_log_loading),
@@ -1749,9 +1775,23 @@ private val DiagnosticLogMetadataFields =
         "sampling",
     )
 
+private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
+private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
+
+private data class AboutDependency(
+    val name: String,
+    val version: String?,
+    val license: String,
+    val upstreamUrl: String,
+)
+
 @Composable
-internal fun AboutScreen(onBack: () -> Unit) {
+internal fun AboutScreen(
+    onBack: () -> Unit,
+    onOpenThirdParty: () -> Unit,
+) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val environment by
         produceState(
             initialValue = RuntimeEnvironmentInfo.basic(),
@@ -1764,83 +1804,297 @@ internal fun AboutScreen(onBack: () -> Unit) {
         title = stringResource(R.string.about_title),
         onBack = onBack,
     ) {
-        Section(R.string.section_diagnostics_app) {
-            DiagnosticsCardHeader(
+        Section(R.string.section_app) {
+            BasicComponent(
                 title = stringResource(R.string.product_name),
-                subtitle = stringResource(R.string.app_description),
-                leadingContent = {
+                summary = stringResource(R.string.app_description),
+                startAction = {
                     GuiyuanAnimatedIdentityMark()
                 },
             )
-            DiagnosticsInfoDivider()
-            DiagnosticsInfoValue(
-                value = BuildConfig.VERSION_NAME,
-                label = stringResource(R.string.diagnostics_version_label),
-                iconRes = R.drawable.ic_material_symbol_tag,
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-            DiagnosticsInfoValue(
-                value = BuildConfig.BUILD_ID,
-                label = stringResource(R.string.diagnostics_build_label),
-                iconRes = R.drawable.ic_material_symbol_deployed_code,
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_version_label),
+                summary = BuildConfig.VERSION_NAME,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_tag,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = BuildConfig.APPLICATION_ID,
-                label = stringResource(R.string.diagnostics_package_label),
-                iconRes = R.drawable.ic_material_symbol_data_object,
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_build_label),
+                summary = BuildConfig.BUILD_ID,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_deployed_code,
+                    )
+                },
+            )
+            BasicComponent(
+                title = stringResource(R.string.diagnostics_package_label),
+                summary = BuildConfig.APPLICATION_ID,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_package_2,
+                    )
+                },
+            )
+        }
+
+        Section(R.string.section_about_project) {
+            ArrowPreference(
+                title = stringResource(R.string.about_project_home_title),
+                summary = stringResource(R.string.about_project_home_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_folder_code,
+                    )
+                },
+                onClick = { uriHandler.openUri(ABOUT_PROJECT_URL) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.about_open_source_license_title),
+                summary = stringResource(R.string.about_open_source_license_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_license,
+                    )
+                },
+                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.about_third_party_title),
+                summary = stringResource(R.string.about_third_party_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_account_tree,
+                    )
+                },
+                onClick = onOpenThirdParty,
             )
         }
 
         Section(R.string.section_device_system) {
-            DiagnosticsCardHeader(title = environment.deviceName)
-            DiagnosticsInfoValue(
-                value = environment.modelAndCodename,
-                label = stringResource(R.string.device_model_label),
-                iconRes = R.drawable.ic_material_symbol_smartphone,
+            val unavailable = stringResource(R.string.about_value_unavailable)
+            val deviceSummary =
+                listOf(
+                    environment.deviceName.trim(),
+                    environment.model
+                        .trim()
+                        .takeIf { model ->
+                            model.isNotBlank() &&
+                                !model.equals(environment.deviceName.trim(), ignoreCase = true)
+                        },
+                )
+                    .filterNotNull()
+                    .filter(String::isNotBlank)
+                    .ifEmpty { listOf(unavailable) }
+                    .joinToString(separator = " ")
+            val androidSummary =
+                if (environment.androidVersion.isNotBlank()) {
+                    buildString {
+                        append("Android ")
+                        append(environment.androidVersion)
+                        append(' ')
+                        append("API ")
+                        append(environment.sdk)
+                    }
+                } else {
+                    unavailable
+                }
+
+            BasicComponent(
+                title = stringResource(R.string.device_name_label),
+                summary = deviceSummary,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_smartphone,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.androidDisplay,
-                label = stringResource(R.string.android_version_label),
-                iconRes = R.drawable.ic_material_symbol_android,
+            BasicComponent(
+                title = stringResource(R.string.android_version_label),
+                summary = androidSummary,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_android,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.osVersion,
-                label = stringResource(R.string.os_version_label),
-                iconRes = R.drawable.ic_material_symbol_layers,
+            BasicComponent(
+                title = stringResource(R.string.os_version_label),
+                summary = environment.osVersion.ifBlank { unavailable },
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_layers,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = environment.systemUiDisplay,
-                label = stringResource(R.string.systemui_version_label),
-                iconRes = R.drawable.ic_material_symbol_dashboard,
+            BasicComponent(
+                title = stringResource(R.string.systemui_version_label),
+                summary = environment.systemUiVersionName.ifBlank { unavailable },
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_dashboard,
+                    )
+                },
             )
         }
 
         Section(R.string.section_module_runtime) {
-            Spacer(modifier = Modifier.height(8.dp))
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_framework_summary),
-                label = stringResource(R.string.runtime_framework_title),
-                iconRes = R.drawable.ic_material_symbol_extension,
+            BasicComponent(
+                title = stringResource(R.string.runtime_framework_title),
+                summary = stringResource(R.string.runtime_framework_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_extension,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_scope_summary),
-                label = stringResource(R.string.runtime_scope_title),
-                iconRes = R.drawable.ic_material_symbol_target,
+            BasicComponent(
+                title = stringResource(R.string.runtime_scope_title),
+                summary = stringResource(R.string.runtime_scope_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_target,
+                    )
+                },
             )
-            DiagnosticsInfoValue(
-                value = stringResource(R.string.runtime_target_summary),
-                label = stringResource(R.string.runtime_target_title),
-                iconRes = R.drawable.ic_material_symbol_fact_check,
+            BasicComponent(
+                title = stringResource(R.string.runtime_target_title),
+                summary = stringResource(R.string.runtime_target_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_fact_check,
+                    )
+                },
             )
-            if (BuildConfig.DEVELOPMENT_PROBES) {
-                DiagnosticsInfoValue(
-                    value = stringResource(R.string.runtime_inventory_summary),
-                    label = stringResource(R.string.runtime_inventory_title),
-                    iconRes = R.drawable.ic_material_symbol_inventory_2,
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
+}
+
+@Composable
+internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val miuixVersion = BuildConfig.MIUIX_VERSION
+    val runtimeDependencies =
+        remember(miuixVersion) {
+            listOf(
+                AboutDependency(
+                    name = "MIUIX",
+                    version = miuixVersion,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
+                ),
+                AboutDependency(
+                    name = "libxposed API",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/libxposed/api",
+                ),
+                AboutDependency(
+                    name = "libxposed service",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/libxposed/service",
+                ),
+                AboutDependency(
+                    name = "AndroidX Activity Compose",
+                    version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX Navigation Event Compose",
+                    version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX DataStore Preferences",
+                    version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "kotlinx.serialization core",
+                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
+                ),
+            )
+        }
+    val developmentDependencies =
+        remember {
+            listOf(
+                AboutDependency(
+                    name = "JUnit 4",
+                    version = BuildConfig.JUNIT_VERSION,
+                    license = "EPL-1.0",
+                    upstreamUrl = "https://github.com/junit-team/junit4",
+                ),
+                AboutDependency(
+                    name = "Gradle Wrapper",
+                    version = BuildConfig.GRADLE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/gradle/gradle",
+                ),
+            )
+        }
+
+    SettingsPage(
+        title = stringResource(R.string.about_third_party_title),
+        onBack = onBack,
+    ) {
+        Section(R.string.section_runtime_dependencies) {
+            runtimeDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+        Section(R.string.section_embedded_assets) {
+            ArrowPreference(
+                title = "Material Symbols",
+                summary = stringResource(R.string.about_embedded_asset_summary),
+                onClick = {
+                    uriHandler.openUri("https://github.com/google/material-design-icons")
+                },
+            )
+        }
+        Section(R.string.section_development_dependencies) {
+            developmentDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutDependencyPreference(
+    dependency: AboutDependency,
+    onClick: () -> Unit,
+) {
+    val summary =
+        buildString {
+            dependency.version?.let {
+                append(it)
+                append('\n')
+            }
+            append(dependency.license)
+        }
+    ArrowPreference(
+        title = dependency.name,
+        summary = summary,
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -1895,106 +2149,8 @@ private fun GuiyuanAnimatedIdentityMark() {
 }
 
 @Composable
-private fun DiagnosticsCardHeader(
-    title: String,
-    subtitle: String? = null,
-    leadingContent: (@Composable () -> Unit)? = null,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp)
-                .padding(
-                    top = 13.dp,
-                    bottom = if (leadingContent != null) 11.dp else 7.dp,
-                ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (leadingContent != null) {
-            leadingContent()
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = title,
-                style =
-                    if (leadingContent != null) {
-                        MiuixTheme.textStyles.title3
-                    } else {
-                        MiuixTheme.textStyles.title2
-                    },
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    modifier = Modifier.padding(top = 2.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticsInfoDivider() {
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp)
-                .height(1.dp),
-        color = MiuixTheme.colorScheme.onSurfaceContainerVariant.copy(alpha = 0.16f),
-    ) {}
-}
-
-@Composable
-private fun DiagnosticsInfoValue(
-    value: String,
-    label: String,
-    @DrawableRes iconRes: Int? = null,
-    iconVisualSize: Dp = 22.dp,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (iconRes != null) {
-            SemanticLeadingIcon(
-                iconRes = iconRes,
-                visualSize = iconVisualSize,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = value.ifBlank { "—" },
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            Text(
-                text = label,
-                modifier = Modifier.padding(top = 1.dp),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
-        }
-    }
-}
-
-@Composable
 private fun SemanticLeadingIcon(
     @DrawableRes iconRes: Int,
-    visualSize: Dp,
     enabled: Boolean = true,
 ) {
     Box(
@@ -2004,7 +2160,7 @@ private fun SemanticLeadingIcon(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(visualSize),
+            modifier = Modifier.size(22.dp),
             colorFilter =
                 ColorFilter.tint(
                     MiuixTheme.colorScheme.onSurfaceContainer.copy(
@@ -2015,6 +2171,12 @@ private fun SemanticLeadingIcon(
     }
 }
 
+private data class SettingsPullToRefresh(
+    val refreshing: Boolean,
+    val onRefresh: () -> Unit,
+    val texts: List<String>,
+)
+
 @Composable
 private fun SettingsPage(
     title: String,
@@ -2023,6 +2185,7 @@ private fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     listState: LazyListState? = null,
+    pullToRefresh: SettingsPullToRefresh? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -2064,18 +2227,39 @@ private fun SettingsPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
-            LazyColumn(
-                state = resolvedListState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = pageContentPadding(
+            val contentPadding =
+                pageContentPadding(
                     innerPadding = paddingValues,
                     extraBottom = 12.dp,
-                ),
-                content = content,
-            )
+                )
+
+            @Composable
+            fun SettingsList() {
+                LazyColumn(
+                    state = resolvedListState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = contentPadding,
+                    content = content,
+                )
+            }
+
+            if (pullToRefresh != null) {
+                PullToRefresh(
+                    isRefreshing = pullToRefresh.refreshing,
+                    onRefresh = pullToRefresh.onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                    topAppBarScrollBehavior = scrollBehavior,
+                    refreshTexts = pullToRefresh.texts,
+                ) {
+                    SettingsList()
+                }
+            } else {
+                SettingsList()
+            }
         }
     }
 }

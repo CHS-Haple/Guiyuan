@@ -8,19 +8,19 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 
 | Component | Version | Purpose | Upstream license |
 | --- | ---: | --- | --- |
-| libxposed API | 102.0.0 | Modern Xposed API surface | Apache License 2.0 |
-| libxposed service | 102.0.0 | Modern Xposed service integration | Apache License 2.0 |
-| AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache License 2.0 |
-| AndroidX Navigation Event Compose | 1.1.2 | Predictive/navigation event integration | Apache License 2.0 |
-| AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache License 2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-5c91d5e5-SNAPSHOT (`5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`) | Xiaomi HyperOS-style companion-app UI; published main-canary snapshot | Apache License 2.0 |
-| kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache License 2.0 |
+| libxposed API | 102.0.0 | Modern Xposed API surface | Apache-2.0 |
+| libxposed service | 102.0.0 | Modern Xposed service integration | Apache-2.0 |
+| AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
+| AndroidX Navigation Event Compose | 1.1.2 | Predictive/navigation event integration | Apache-2.0 |
+| AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-5c91d5e5-SNAPSHOT (`5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`) | Xiaomi HyperOS-style companion-app UI; published main-canary snapshot | Apache-2.0 |
+| kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache-2.0 |
 
 ## Embedded icon assets
 
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
-| Google Material Symbols | 24 px, selected local Filled-first vectors with deliberate Outline and optical-weight exceptions | Semantic leading glyphs for Diagnostics and Appearance | Apache License 2.0 |
+| Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
 
@@ -28,11 +28,11 @@ The selected Material Symbols are stored as local Android vector drawables sourc
 
 | Component | Version | Purpose | Upstream license |
 | --- | ---: | --- | --- |
-| JUnit 4 | 4.13.2 | Local unit tests | Eclipse Public License 1.0 |
+| JUnit 4 | 4.13.2 | Local unit tests | EPL-1.0 |
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper for Gradle 9.7.1. Gradle is distributed under the Apache License 2.0.
+The repository includes the official Gradle Wrapper for Gradle 9.7.1. Gradle 9.7.1 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
 
