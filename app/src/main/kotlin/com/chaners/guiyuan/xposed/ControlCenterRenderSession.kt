@@ -225,7 +225,7 @@ internal object ControlCenterRenderSession {
         attached && !inLayout && width > 0 && height > 0
 
     @Synchronized
-    fun onState(snapshot: CombinedStatusStateStore.Snapshot) {
+    fun onState(snapshot: StatusStateStore.Snapshot) {
         current?.update(snapshot)
     }
 
@@ -588,7 +588,7 @@ internal object ControlCenterRenderSession {
             renderView.visibility = View.GONE
             hostView.overlay.add(renderView)
             renderController.updateVisualSettings(currentVisualSettings)
-            update(CombinedStatusStateStore.snapshot())
+            update(StatusStateStore.snapshot())
             refreshTint()
             layoutProjection()
             dispatchReadiness("start")
@@ -744,7 +744,7 @@ internal object ControlCenterRenderSession {
             dispatchReadiness("compact:" + source)
         }
 
-        fun update(snapshot: CombinedStatusStateStore.Snapshot) {
+        fun update(snapshot: StatusStateStore.Snapshot) {
             val result = renderController.update(snapshot)
             if (currentModel != result.model) {
                 currentModel = result.model
@@ -756,7 +756,7 @@ internal object ControlCenterRenderSession {
         }
 
         fun refresh() =
-            update(CombinedStatusStateStore.snapshot())
+            update(StatusStateStore.snapshot())
 
         fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
             val batteryView = battery.get() ?: return

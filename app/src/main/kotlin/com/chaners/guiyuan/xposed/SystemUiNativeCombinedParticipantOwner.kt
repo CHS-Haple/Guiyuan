@@ -1002,7 +1002,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             renderTop + activeSlotHeight,
         )
         val modelUpdate =
-            renderController?.update(CombinedStatusStateStore.snapshot())
+            renderController?.update(StatusStateStore.snapshot())
         val batteryTintState =
             SystemUiTintStateSource.currentState(battery)
         val tintUpdate =
@@ -1065,7 +1065,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
     @Synchronized
     fun onState(
-        snapshot: CombinedStatusStateStore.Snapshot,
+        snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ) {
         val update = renderController?.update(snapshot, trace)
@@ -1140,7 +1140,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
         val update =
             renderController?.update(
-                CombinedStatusStateStore.snapshot(),
+                StatusStateStore.snapshot(),
                 trace,
             )
         if (update?.model != null && update.candidateComplete) {

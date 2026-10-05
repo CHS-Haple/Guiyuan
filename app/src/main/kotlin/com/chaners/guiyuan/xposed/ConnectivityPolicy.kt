@@ -2,14 +2,14 @@ package com.chaners.guiyuan.xposed
 
 internal object ConnectivityPolicy {
     fun resolve(
-        wifi: CombinedStatusStateStore.WifiState,
+        wifi: StatusStateStore.WifiState,
         airplaneMode: Boolean,
         connectivity: SystemUiConnectivityStateSource.State,
         mobileType: NativePresentationResolver.NetworkType?,
         noSimIcon: PresentationStore.NativeIconResource? = null,
     ): CenterIndicator? {
         val wifiVisible =
-            wifi as? CombinedStatusStateStore.WifiState.Visible
+            wifi as? StatusStateStore.WifiState.Visible
         val wifiSegments =
             when (val signal = wifiVisible?.signal) {
                 null -> null
@@ -72,7 +72,7 @@ internal object ConnectivityPolicy {
                 }
 
             SystemUiConnectivityStateSource.Transport.VPN ->
-                if (wifi == CombinedStatusStateStore.WifiState.Hidden) {
+                if (wifi == StatusStateStore.WifiState.Hidden) {
                     mobileType?.let {
                         CenterIndicator.MobileType(
                             label = it.label,
@@ -104,13 +104,13 @@ internal object ConnectivityPolicy {
     }
 
     fun wifiReplacementReady(
-        wifi: CombinedStatusStateStore.WifiState,
+        wifi: StatusStateStore.WifiState,
         connectivity: SystemUiConnectivityStateSource.State,
     ): Boolean =
         when (wifi) {
-            CombinedStatusStateStore.WifiState.Unknown -> false
-            CombinedStatusStateStore.WifiState.Hidden -> true
-            is CombinedStatusStateStore.WifiState.Visible ->
+            StatusStateStore.WifiState.Unknown -> false
+            StatusStateStore.WifiState.Hidden -> true
+            is StatusStateStore.WifiState.Visible ->
                 (
                     wifi.iconResId != null ||
                         wifi.signal is SignalStrength.Level
@@ -122,7 +122,7 @@ internal object ConnectivityPolicy {
         }
 
     private fun resolvedWifiInternet(
-        wifi: CombinedStatusStateStore.WifiState.Visible,
+        wifi: StatusStateStore.WifiState.Visible,
         connectivity: SystemUiConnectivityStateSource.State,
     ): InternetState? =
         when (wifi.internetValidated) {

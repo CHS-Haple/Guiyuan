@@ -10,7 +10,7 @@ class ConnectivityPolicyTest {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = 1,
                         signal = SignalStrength.Level(2),
                         internetValidated = false,
@@ -48,7 +48,7 @@ class ConnectivityPolicyTest {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = 1,
                         signal = SignalStrength.Level(0),
                         internetValidated = true,
@@ -80,7 +80,7 @@ class ConnectivityPolicyTest {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = 1,
                         signal = SignalStrength.Level(1),
                         internetValidated = null,
@@ -110,7 +110,7 @@ class ConnectivityPolicyTest {
     @Test
     fun otherTransportDoesNotRenderWifiWhenSystemUiInternetSemanticsAreUnknown() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = 1,
                 signal = SignalStrength.Level(2),
                 internetValidated = null,
@@ -157,7 +157,7 @@ class ConnectivityPolicyTest {
     fun airplaneModeUsesNativeAirplaneCenterWhenWifiIsAbsent() {
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -177,7 +177,7 @@ class ConnectivityPolicyTest {
     fun airplaneModeUsesAirplaneCenterBeforeConnectivityIsKnown() {
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity = SystemUiConnectivityStateSource.State.Unknown,
                 mobileType = null,
@@ -191,7 +191,7 @@ class ConnectivityPolicyTest {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = 1,
                         signal = SignalStrength.Level(2),
                         internetValidated = true,
@@ -228,7 +228,7 @@ class ConnectivityPolicyTest {
 
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -255,7 +255,7 @@ class ConnectivityPolicyTest {
 
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -276,7 +276,7 @@ class ConnectivityPolicyTest {
     fun vpnDefaultNetworkDoesNotSuppressAuthoritativeMobileTypeAtBootstrap() {
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -325,7 +325,7 @@ class ConnectivityPolicyTest {
 
         assertNull(
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Unknown,
+                wifi = StatusStateStore.WifiState.Unknown,
                 airplaneMode = false,
                 connectivity = connectivity,
                 mobileType = mobileType,
@@ -334,7 +334,7 @@ class ConnectivityPolicyTest {
         assertNull(
             ConnectivityPolicy.resolve(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = 1,
                         signal = SignalStrength.Unknown,
                         internetValidated = null,
@@ -350,7 +350,7 @@ class ConnectivityPolicyTest {
     fun genericOtherTransportKeepsExistingMobileDataGate() {
         val result =
             ConnectivityPolicy.resolve(
-                wifi = CombinedStatusStateStore.WifiState.Hidden,
+                wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -375,7 +375,7 @@ class ConnectivityPolicyTest {
     @Test
     fun unknownConnectivityDoesNotRenderWifiWhenSystemUiInternetSemanticsAreUnknown() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = 1,
                 signal = SignalStrength.Level(2),
                 internetValidated = null,
@@ -415,7 +415,7 @@ class ConnectivityPolicyTest {
                 val result =
                     ConnectivityPolicy.resolve(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = level + 1,
                                 signal = SignalStrength.Level(level),
                                 internetValidated = true,
@@ -433,7 +433,7 @@ class ConnectivityPolicyTest {
     @Test
     fun unavailableWifiSignalWithoutNativeResourceDoesNotMasqueradeAsLevelZero() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = null,
                 signal = SignalStrength.Unavailable,
                 internetValidated = true,
@@ -473,7 +473,7 @@ class ConnectivityPolicyTest {
     @Test
     fun nativeWifiReplacementIsReadyWhenSystemUiProvidesInternetSemantics() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = 1,
                 signal = SignalStrength.Level(2),
                 internetValidated = false,
@@ -498,7 +498,7 @@ class ConnectivityPolicyTest {
     @Test
     fun nativeWifiReplacementUsesConnectivityOnlyWhenWifiIsDefault() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = 1,
                 signal = SignalStrength.Level(1),
                 internetValidated = null,
@@ -537,7 +537,7 @@ class ConnectivityPolicyTest {
         val ready =
             ConnectivityPolicy.wifiReplacementReady(
                 wifi =
-                    CombinedStatusStateStore.WifiState.Visible(
+                    StatusStateStore.WifiState.Visible(
                         iconResId = null,
                         signal = SignalStrength.Unknown,
                         internetValidated = true,
@@ -557,7 +557,7 @@ class ConnectivityPolicyTest {
     @Test
     fun nativeWifiVariantCanRenderWithoutParsedSignalLevel() {
         val wifi =
-            CombinedStatusStateStore.WifiState.Visible(
+            StatusStateStore.WifiState.Visible(
                 iconResId = 99,
                 signal = SignalStrength.Unknown,
                 internetValidated = false,

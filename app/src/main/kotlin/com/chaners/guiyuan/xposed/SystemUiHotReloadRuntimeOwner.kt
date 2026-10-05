@@ -38,11 +38,11 @@ internal object SystemUiHotReloadRuntimeOwner {
         val host =
             SystemUiHostRegistry.currentStatusHost()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
-        val snapshot = CombinedStatusStateStore.snapshot()
+        val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SystemUiNetworkStateSource.hotReloadBindingCounts()
         val bindingStateReady =
-            (snapshot.wifi is CombinedStatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
+            (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
                 (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
         if (!bindingStateReady) {
             return PrepareResult.Unavailable(
@@ -59,7 +59,7 @@ internal object SystemUiHotReloadRuntimeOwner {
         val transfer =
             HotReloadTransfer.capture(
                 host = host,
-                state = CombinedStatusStateStore.exportHotReloadState(),
+                state = StatusStateStore.exportHotReloadState(),
                 bindings = SystemUiNetworkStateSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.

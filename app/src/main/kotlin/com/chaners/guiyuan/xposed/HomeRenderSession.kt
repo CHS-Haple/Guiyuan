@@ -51,7 +51,7 @@ internal object HomeRenderSession {
                 batteryCarrier,
             ) == true
         ) {
-            existing.update(CombinedStatusStateStore.snapshot())
+            existing.update(StatusStateStore.snapshot())
             return AttachResult.Ready
         }
 
@@ -74,13 +74,13 @@ internal object HomeRenderSession {
         )
         current = session
         session.start()
-        session.update(CombinedStatusStateStore.snapshot())
+        session.update(StatusStateStore.snapshot())
         return AttachResult.Ready
     }
 
     @Synchronized
     fun onState(
-        snapshot: CombinedStatusStateStore.Snapshot,
+        snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ) {
         current?.update(snapshot, trace)
@@ -88,7 +88,7 @@ internal object HomeRenderSession {
 
     @Synchronized
     fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
-        current?.update(CombinedStatusStateStore.snapshot(), trace)
+        current?.update(StatusStateStore.snapshot(), trace)
     }
 
     @Synchronized
@@ -498,7 +498,7 @@ internal object HomeRenderSession {
         }
 
         fun update(
-            snapshot: CombinedStatusStateStore.Snapshot,
+            snapshot: StatusStateStore.Snapshot,
             trace: RuntimeRenderTrace? = null,
         ) {
             val visibleTrace =

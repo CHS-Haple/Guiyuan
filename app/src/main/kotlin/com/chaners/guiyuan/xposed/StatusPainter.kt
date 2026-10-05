@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-internal class CombinedStatusPainter(
+internal class StatusPainter(
     private val context: Context,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)

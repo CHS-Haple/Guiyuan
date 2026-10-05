@@ -75,7 +75,7 @@ internal object KeyguardRenderSession {
                 sceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
-            existing.update(CombinedStatusStateStore.snapshot())
+            existing.update(StatusStateStore.snapshot())
             return AttachResult.Ready
         }
 
@@ -92,18 +92,18 @@ internal object KeyguardRenderSession {
             )
         current = session
         session.start()
-        session.update(CombinedStatusStateStore.snapshot())
+        session.update(StatusStateStore.snapshot())
         return AttachResult.Ready
     }
 
     @Synchronized
-    fun onState(snapshot: CombinedStatusStateStore.Snapshot) {
+    fun onState(snapshot: StatusStateStore.Snapshot) {
         current?.update(snapshot)
     }
 
     @Synchronized
     fun onPresentationStateChanged() {
-        current?.update(CombinedStatusStateStore.snapshot())
+        current?.update(StatusStateStore.snapshot())
     }
 
     @Synchronized
@@ -528,7 +528,7 @@ internal object KeyguardRenderSession {
             dispatchPresentationReadiness("tint:" + source)
         }
 
-        fun update(snapshot: CombinedStatusStateStore.Snapshot) {
+        fun update(snapshot: StatusStateStore.Snapshot) {
             val update = renderController.update(snapshot)
             if (!update.candidateComplete) return
             val model = update.model

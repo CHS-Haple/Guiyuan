@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.os.Bundle
 
-internal object CombinedStatusStateStore {
+internal object StatusStateStore {
     @Volatile
     private var current = Snapshot()
 

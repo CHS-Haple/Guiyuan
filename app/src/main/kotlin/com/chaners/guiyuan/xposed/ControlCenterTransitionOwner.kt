@@ -20,7 +20,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-internal object CombinedStatusControlCenterTransitionOwner {
+internal object ControlCenterTransitionOwner {
     private const val STATUS_ICON_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
@@ -315,10 +315,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
         }
 
         fun expandedClipBounds(
-            bounds: CombinedStatusPainter.TransitionBounds,
+            bounds: StatusPainter.TransitionBounds,
             widthScale: Float,
             heightScale: Float,
-        ): CombinedStatusPainter.TransitionBounds {
+        ): StatusPainter.TransitionBounds {
             val resolvedWidthScale =
                 widthScale
                     .takeIf { it.isFinite() && it > 0f }
@@ -331,7 +331,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     ?: 1f
             val halfWidth = bounds.width * resolvedWidthScale / 2f
             val halfHeight = bounds.height * resolvedHeightScale / 2f
-            return CombinedStatusPainter.TransitionBounds(
+            return StatusPainter.TransitionBounds(
                 left = bounds.centerX - halfWidth,
                 top = bounds.centerY - halfHeight,
                 right = bounds.centerX + halfWidth,
@@ -530,7 +530,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             source: FloatArray,
             target: FloatArray,
             progress: Float,
-            scalePolicy: CombinedStatusPainter.TransitionScalePolicy,
+            scalePolicy: StatusPainter.TransitionScalePolicy,
         ): FloatArray {
             require(source.size == 6 && target.size == 6)
             val p = progress.coerceIn(0f, 1f)
@@ -553,10 +553,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 )
             val targetScale =
                 when (scalePolicy) {
-                    CombinedStatusPainter.TransitionScalePolicy.TARGET ->
+                    StatusPainter.TransitionScalePolicy.TARGET ->
                         rawTargetScale
 
-                    CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY ->
+                    StatusPainter.TransitionScalePolicy.SHRINK_ONLY ->
                         min(rawTargetScale, 1f)
                 }
             val scale = 1f + (targetScale - 1f) * p
@@ -623,7 +623,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 parentWidth = hostWidth,
                 parentHeight = hostHeight,
                 bounds =
-                    CombinedStatusPainter.TransitionBounds(
+                    StatusPainter.TransitionBounds(
                         left = left,
                         top = 0f,
                         right = right,
@@ -638,7 +638,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             sourceCarrier: FloatArray,
             currentCarrier: FloatArray,
             progress: Float,
-            scalePolicy: CombinedStatusPainter.TransitionScalePolicy,
+            scalePolicy: StatusPainter.TransitionScalePolicy,
         ): FloatArray {
             require(
                 source.size == 6 &&
@@ -776,13 +776,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
         fun semanticFallbackBounds(
             preferredChildEntries: List<String>,
             isRtl: Boolean,
-        ): CombinedStatusPainter.TransitionNormalizedBounds? {
+        ): StatusPainter.TransitionNormalizedBounds? {
             val logical =
                 when {
                     preferredChildEntries.any { entry ->
                         entry == "mobile_type_single" || entry == "mobile_type"
                     } ->
-                        CombinedStatusPainter.TransitionNormalizedBounds(
+                        StatusPainter.TransitionNormalizedBounds(
                             left = 0f,
                             top = 0f,
                             right = 0.42f,
@@ -790,7 +790,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         )
 
                     preferredChildEntries.contains("mobile_signal") ->
-                        CombinedStatusPainter.TransitionNormalizedBounds(
+                        StatusPainter.TransitionNormalizedBounds(
                             left = 0.48f,
                             top = 0f,
                             right = 1f,
@@ -798,7 +798,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         )
 
                     preferredChildEntries.contains("wifi_signal") ->
-                        CombinedStatusPainter.TransitionNormalizedBounds(
+                        StatusPainter.TransitionNormalizedBounds(
                             left = 0f,
                             top = 0f,
                             right = 1f,
@@ -810,7 +810,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             if (!isRtl || (logical.left == 0f && logical.right == 1f)) {
                 return logical
             }
-            return CombinedStatusPainter.TransitionNormalizedBounds(
+            return StatusPainter.TransitionNormalizedBounds(
                 left = 1f - logical.right,
                 top = logical.top,
                 right = 1f - logical.left,
@@ -911,7 +911,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             parentGeometry: FloatArray,
             parentWidth: Int,
             parentHeight: Int,
-            bounds: CombinedStatusPainter.TransitionBounds,
+            bounds: StatusPainter.TransitionBounds,
         ): FloatArray? {
             if (
                 parentGeometry.size != 6 ||
@@ -960,7 +960,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private val finalRootRef = WeakReference(finalRoot)
         private val sourceViewRef = WeakReference(sourceView)
         private val sourceAnchorRef = WeakReference(sourceAnchor)
-        private val painter = CombinedStatusPainter(root.context)
+        private val painter = StatusPainter(root.context)
         private val drawable = TransitionDrawable(this)
         private val sourceMask = MaskState(
             view = WeakReference(sourceView),
@@ -1020,7 +1020,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     !source.isAttachedToWindow ||
                     !sourceAnchor.isAttachedToWindow
                 ) {
-                    CombinedStatusControlCenterTransitionOwner.detach("pre-draw-detached")
+                    ControlCenterTransitionOwner.detach("pre-draw-detached")
                     return@OnPreDrawListener true
                 }
 
@@ -1341,7 +1341,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     ?.presentationRootSubscriptionId
             val liveCenterExitDirection =
                 specs.firstOrNull {
-                    it.component == CombinedStatusPainter.TransitionComponent.CENTER
+                    it.component == StatusPainter.TransitionComponent.CENTER
                 }?.let { centerSpec ->
                     val source =
                         Policy.componentGeometry(
@@ -1456,13 +1456,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             val batterySourceCenterX =
                 specs.firstOrNull {
-                    it.component == CombinedStatusPainter.TransitionComponent.BATTERY
+                    it.component == StatusPainter.TransitionComponent.BATTERY
                 }?.sourceBounds?.centerX
 
             val batteryNumberFollowerFrames =
                 specs.firstOrNull {
                     it.component ==
-                        CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER
+                        StatusPainter.TransitionComponent.BATTERY_NUMBER
                 }?.let { numberSpec ->
                     val numberSource =
                         Policy.componentGeometry(
@@ -1527,7 +1527,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 val resolvedMobileTargetBars =
                     if (
                         spec.shapePolicy ==
-                        CombinedStatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
+                        StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
                         witness != null
                     ) {
                         mobileTargetBars(witness)
@@ -1536,32 +1536,32 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     }
                 val exactTextGeometry =
                     spec.component ==
-                        CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER ||
+                        StatusPainter.TransitionComponent.BATTERY_NUMBER ||
                         (
                             spec.component ==
-                                CombinedStatusPainter.TransitionComponent.CENTER &&
+                                StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
                 val chargingSourceVisibleFraction =
                     if (
                         spec.component ==
-                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                        StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                        StatusPainter.BatteryNumberFollowerPolicy
                             .chargingSourceVisibleFraction(motionProgress)
                     } else {
                         0f
                     }
                 val chargingSourceLocked =
                     spec.component ==
-                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON &&
+                        StatusPainter.TransitionComponent.CHARGING_ICON &&
                         chargingSourceVisibleFraction > 0f
                 val componentMotionProgress =
                     if (
                         spec.component ==
-                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                        StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                        StatusPainter.BatteryNumberFollowerPolicy
                             .chargingMotionProgress(motionProgress)
                     } else {
                         motionProgress
@@ -1611,9 +1611,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 val componentVisibleFraction =
                     if (
                         spec.component ==
-                        CombinedStatusPainter.TransitionComponent.CHARGING_ICON
+                        StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        CombinedStatusPainter.BatteryNumberFollowerPolicy
+                        StatusPainter.BatteryNumberFollowerPolicy
                             .chargingVisibleFraction(
                                 progress = motionProgress,
                                 targetAvailable = targetGeometry != null,
@@ -1627,7 +1627,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 val matrixBounds =
                     when {
                         spec.component ==
-                                CombinedStatusPainter.TransitionComponent.CENTER &&
+                                StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType ->
                             painter.transitionMobileTypeCurrentBounds(
                                 width = sourceWidth,
@@ -1640,7 +1640,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                             ) ?: spec.sourceBounds
 
                         spec.component ==
-                            CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER ->
+                            StatusPainter.TransitionComponent.BATTERY_NUMBER ->
                             painter.transitionBatteryNumberCurrentBounds(
                                 width = sourceWidth,
                                 height = sourceHeight,
@@ -1669,7 +1669,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     val clipAnchorRight =
                         if (
                             spec.component ==
-                            CombinedStatusPainter.TransitionComponent.CHARGING_ICON &&
+                            StatusPainter.TransitionComponent.CHARGING_ICON &&
                             batterySourceCenterX != null
                         ) {
                             batterySourceCenterX >= matrixBounds.centerX
@@ -1703,19 +1703,19 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     motionProgress = motionProgress,
                     shapeProgress =
                         when (spec.shapePolicy) {
-                            CombinedStatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
+                            StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
                                 motionProgress
 
-                            CombinedStatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
+                            StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
                                 mobileSignalShapeProgress
 
-                            CombinedStatusPainter.TransitionShapePolicy.RIGID ->
+                            StatusPainter.TransitionShapePolicy.RIGID ->
                                 0f
                         },
                     mobileTargetWidthRatio =
                         if (
                             spec.shapePolicy ==
-                            CombinedStatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
+                            StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
                             targetGeometry != null
                         ) {
                             Policy.relativeGeometryWidth(
@@ -1728,7 +1728,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     mobileTargetHeightRatio =
                         if (
                             spec.shapePolicy ==
-                            CombinedStatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
+                            StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
                             targetGeometry != null
                         ) {
                             Policy.relativeGeometryHeight(
@@ -1742,7 +1742,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     batteryNumberTargetWeight =
                         if (
                             spec.component ==
-                            CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER
+                            StatusPainter.TransitionComponent.BATTERY_NUMBER
                         ) {
                             witness?.textWeight
                         } else {
@@ -1751,7 +1751,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     batteryNumberTargetStyle =
                         if (
                             spec.component ==
-                            CombinedStatusPainter.TransitionComponent.BATTERY_NUMBER
+                            StatusPainter.TransitionComponent.BATTERY_NUMBER
                         ) {
                             witness?.textStyle
                         } else {
@@ -1760,7 +1760,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     centerTargetTextWeight =
                         if (
                             spec.component ==
-                                CombinedStatusPainter.TransitionComponent.CENTER &&
+                                StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType
                         ) {
                             witness?.textWeight
@@ -1770,7 +1770,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     centerTargetTextStyle =
                         if (
                             spec.component ==
-                                CombinedStatusPainter.TransitionComponent.CENTER &&
+                                StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType
                         ) {
                             witness?.textStyle
@@ -1778,7 +1778,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                             null
                         },
                     batteryRingExitDirection =
-                        if (spec.component == CombinedStatusPainter.TransitionComponent.BATTERY) {
+                        if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                             batteryRingExitDirection
                         } else {
                             BatteryRingTransitionPolicy.ExitDirection.NONE
@@ -1793,7 +1793,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             val mobileSpec =
                 specs.firstOrNull { spec ->
-                    spec.component == CombinedStatusPainter.TransitionComponent.MOBILE
+                    spec.component == StatusPainter.TransitionComponent.MOBILE
                 }
             if (
                 mobileSpec != null &&
@@ -1860,7 +1860,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             sourceHeight: Int,
             model: RenderModel,
             colors: RenderColors,
-            mobileSpec: CombinedStatusPainter.TransitionComponentSpec,
+            mobileSpec: StatusPainter.TransitionComponentSpec,
             preferredMobileSubId: Int?,
             motionProgress: Float,
             shapeProgress: Float,
@@ -1870,7 +1870,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         ): List<String> {
             if (
                 mobileSpec.shapePolicy !=
-                CombinedStatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ||
+                StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ||
                 !sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 return emptyList()
@@ -1887,7 +1887,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     target = mobileSpec.target,
                     preferredMobileSubId = preferredMobileSubId,
                 )
-            val state = CombinedStatusStateStore.snapshot()
+            val state = StatusStateStore.snapshot()
             val descriptions =
                 if (collectDescription) {
                     ArrayList<String>()
@@ -1920,7 +1920,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    CombinedStatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+                    StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )
@@ -1928,13 +1928,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     Policy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            CombinedStatusPainter.MobileSignalMorphPolicy
+                            StatusPainter.MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            CombinedStatusPainter.MobileSignalMorphPolicy
+                            StatusPainter.MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,
@@ -1994,7 +1994,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                             effectiveDataSubscriptionId = subId,
                         ),
                     colors = colors,
-                    component = CombinedStatusPainter.TransitionComponent.MOBILE,
+                    component = StatusPainter.TransitionComponent.MOBILE,
                     shapePolicy = mobileSpec.shapePolicy,
                     opacity = 1f,
                     motionProgress = motionProgress,
@@ -2022,7 +2022,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             carrierFrames: CarrierFrames?,
         ): String? {
             if (
-                CombinedStatusStateStore.snapshot().airplaneMode != true ||
+                StatusStateStore.snapshot().airplaneMode != true ||
                 model.centerIndicator is CenterIndicator.Airplane ||
                 !sourceRepresentsAny(AIRPLANE_SLOT)
             ) {
@@ -2054,7 +2054,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     source = sourceGeometry,
                     target = targetGeometry,
                     progress = motionProgress,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
             val geometry = pathGeometry
@@ -2154,7 +2154,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     source = sourceGeometry,
                     target = targetGeometry,
                     progress = motionProgress,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
             val geometry = pathGeometry
@@ -2229,7 +2229,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             source: FloatArray,
             target: FloatArray,
             progress: Float,
-            scalePolicy: CombinedStatusPainter.TransitionScalePolicy,
+            scalePolicy: StatusPainter.TransitionScalePolicy,
             carrierFrames: CarrierFrames?,
         ): FloatArray =
             carrierFrames?.let { frames ->
@@ -2488,7 +2488,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                                             "battery-island-peer-end-frame-unavailable",
                                         )
                                 if (!presentationFailed) {
-                                    CombinedStatusControlCenterTransitionOwner.detach(
+                                    ControlCenterTransitionOwner.detach(
                                         "battery-island-peer-end-frame-unavailable",
                                     )
                                 }
@@ -2644,7 +2644,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
             val mobileSpec =
                 specs.firstOrNull { spec ->
-                    spec.component == CombinedStatusPainter.TransitionComponent.MOBILE
+                    spec.component == StatusPainter.TransitionComponent.MOBILE
                 }
             if (
                 mobileSpec != null &&
@@ -2677,7 +2677,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
 
             if (
-                CombinedStatusStateStore.snapshot().airplaneMode == true &&
+                StatusStateStore.snapshot().airplaneMode == true &&
                 currentSnapshot.model.centerIndicator !is CenterIndicator.Airplane &&
                 sourceRepresentsAny(AIRPLANE_SLOT)
             ) {
@@ -2735,12 +2735,12 @@ internal object CombinedStatusControlCenterTransitionOwner {
         }
 
         private fun resolveTarget(
-            target: CombinedStatusPainter.TransitionTarget,
+            target: StatusPainter.TransitionTarget,
             preferredMobileSubId: Int?,
         ): TargetWitness? {
             val mobileSubId =
                 preferredMobileSubId.takeIf {
-                    target is CombinedStatusPainter.TransitionTarget.Slots &&
+                    target is StatusPainter.TransitionTarget.Slots &&
                         target.preferredSlots.any { slot ->
                             slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
                         }
@@ -2751,13 +2751,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
                     mobileSubId = mobileSubId,
                 )
             val opticalRequired =
-                target is CombinedStatusPainter.TransitionTarget.Slots &&
+                target is StatusPainter.TransitionTarget.Slots &&
                     target.preferredChildEntries.isNotEmpty()
 
             targetCache[key]
                 ?.takeIf { witness ->
                     val slotStillSemantic =
-                        target !is CombinedStatusPainter.TransitionTarget.Slots ||
+                        target !is StatusPainter.TransitionTarget.Slots ||
                             witness.slotView.visibility == View.VISIBLE
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
@@ -2771,7 +2771,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
             val resolved =
                 when (target) {
-                    CombinedStatusPainter.TransitionTarget.BatteryIcon ->
+                    StatusPainter.TransitionTarget.BatteryIcon ->
                         TargetWitness(
                             slot = BATTERY_SLOT,
                             slotView = finalBattery,
@@ -2782,13 +2782,13 @@ internal object CombinedStatusControlCenterTransitionOwner {
                             opticalSource = "battery",
                         ).takeIf { witness -> isUsableSlotView(witness.slotView) }
 
-                    CombinedStatusPainter.TransitionTarget.BatteryNumber ->
+                    StatusPainter.TransitionTarget.BatteryNumber ->
                         resolveBatteryNumberTargetWitness()
 
-                    CombinedStatusPainter.TransitionTarget.BatteryChargingIcon ->
+                    StatusPainter.TransitionTarget.BatteryChargingIcon ->
                         resolveBatteryChargingIconTargetWitness()
 
-                    is CombinedStatusPainter.TransitionTarget.Slots ->
+                    is StatusPainter.TransitionTarget.Slots ->
                         target.preferredSlots.firstNotNullOfOrNull { slot ->
                             val slotRoot =
                                 selectSlotView(
@@ -2818,7 +2818,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private fun buildSlotWitness(
             slot: String,
             slotRoot: View,
-            target: CombinedStatusPainter.TransitionTarget.Slots,
+            target: StatusPainter.TransitionTarget.Slots,
         ): TargetWitness? {
             if (slotRoot.visibility != View.VISIBLE || !isUsableSlotView(slotRoot)) {
                 return null
@@ -2906,7 +2906,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             primary: TargetWitness?,
         ): List<TargetWitness> {
             val target =
-                CombinedStatusPainter.TransitionTarget.Slots(
+                StatusPainter.TransitionTarget.Slots(
                     preferredSlots = listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT),
                     preferredChildEntries = listOf("mobile_signal"),
                 )
@@ -2943,7 +2943,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             frozenAirplaneTarget =
                 resolveTarget(
                     target =
-                        CombinedStatusPainter.TransitionTarget.Slots(
+                        StatusPainter.TransitionTarget.Slots(
                             preferredSlots = listOf(AIRPLANE_SLOT),
                         ),
                     preferredMobileSubId = null,
@@ -2957,7 +2957,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             frozenNoSimTarget =
                 resolveTarget(
                     target =
-                        CombinedStatusPainter.TransitionTarget.Slots(
+                        StatusPainter.TransitionTarget.Slots(
                             preferredSlots = listOf(NO_SIM_SLOT),
                         ),
                     preferredMobileSubId = null,
@@ -2969,7 +2969,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             witness: TargetWitness,
             root: View,
             sourceGeometry: FloatArray,
-            targetOpticalBounds: CombinedStatusPainter.TransitionNormalizedBounds?,
+            targetOpticalBounds: StatusPainter.TransitionNormalizedBounds?,
         ): FloatArray? {
             val opticalView = witness.opticalView
             if (targetOpticalBounds == null && !witness.preferFallbackGeometry) {
@@ -2985,7 +2985,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         parentWidth = visualView.width,
                         parentHeight = visualView.height,
                         bounds =
-                            CombinedStatusPainter.TransitionBounds(
+                            StatusPainter.TransitionBounds(
                                 left = envelope.left * visualView.width,
                                 top = envelope.top * visualView.height,
                                 right = envelope.right * visualView.width,
@@ -3012,7 +3012,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                                 parentWidth = opticalView.width,
                                 parentHeight = opticalView.height,
                                 bounds =
-                                    CombinedStatusPainter.TransitionBounds(
+                                    StatusPainter.TransitionBounds(
                                         left = bounds.left * opticalView.width,
                                         top = bounds.top * opticalView.height,
                                         right = bounds.right * opticalView.width,
@@ -3041,7 +3041,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             }
             val slotSample = sample(slot, root) ?: return sourceGeometry
             val contentBounds =
-                CombinedStatusPainter.TransitionBounds(
+                StatusPainter.TransitionBounds(
                     left = slot.paddingLeft.toFloat(),
                     top = slot.paddingTop.toFloat(),
                     right = (slot.width - slot.paddingRight).toFloat(),
@@ -3050,7 +3050,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             val targetBounds =
                 witness.fallbackBounds
                     ?.let { fallback ->
-                        CombinedStatusPainter.TransitionBounds(
+                        StatusPainter.TransitionBounds(
                             left =
                                 contentBounds.left +
                                     contentBounds.width * fallback.left,
@@ -3080,7 +3080,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         private fun mobileTargetBars(
             witness: TargetWitness,
-        ): List<CombinedStatusPainter.TransitionNormalizedBounds>? {
+        ): List<StatusPainter.TransitionNormalizedBounds>? {
             val visualView = witness.opticalView ?: witness.slotView
             val snapshot =
                 ParticipantVisualSnapshot.resolveView(visualView)
@@ -3088,7 +3088,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             return snapshot
                 .fourVerticalBarsWithinEnvelope()
                 ?.map { bar ->
-                    CombinedStatusPainter.TransitionNormalizedBounds(
+                    StatusPainter.TransitionNormalizedBounds(
                         left = bar.left,
                         top = bar.top,
                         right = bar.right,
@@ -3100,7 +3100,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private fun imageDrawableGeometry(
             image: ImageView,
             root: View,
-            targetOpticalBounds: CombinedStatusPainter.TransitionNormalizedBounds?,
+            targetOpticalBounds: StatusPainter.TransitionNormalizedBounds?,
         ): FloatArray? {
             val drawable = image.drawable ?: return null
             val imageSample = sample(image, root) ?: return null
@@ -3124,14 +3124,14 @@ internal object CombinedStatusControlCenterTransitionOwner {
             val optical = targetOpticalBounds
             val localBounds =
                 if (optical != null) {
-                    CombinedStatusPainter.TransitionBounds(
+                    StatusPainter.TransitionBounds(
                         left = frame.left + optical.left * frame.width(),
                         top = frame.top + optical.top * frame.height(),
                         right = frame.left + optical.right * frame.width(),
                         bottom = frame.top + optical.bottom * frame.height(),
                     )
                 } else {
-                    CombinedStatusPainter.TransitionBounds(
+                    StatusPainter.TransitionBounds(
                         left = frame.left,
                         top = frame.top,
                         right = frame.right,
@@ -3149,7 +3149,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private fun syntheticOpticalGeometry(
             witness: TargetWitness,
             root: View,
-            targetOpticalBounds: CombinedStatusPainter.TransitionNormalizedBounds?,
+            targetOpticalBounds: StatusPainter.TransitionNormalizedBounds?,
         ): FloatArray? {
             val image = witness.opticalView as? ImageView ?: return null
             val drawable = image.drawable ?: return null
@@ -3187,14 +3187,14 @@ internal object CombinedStatusControlCenterTransitionOwner {
             val frameTop = localCenterY - frameHeight / 2f
             val localBounds =
                 if (optical != null) {
-                    CombinedStatusPainter.TransitionBounds(
+                    StatusPainter.TransitionBounds(
                         left = frameLeft + optical.left * frameWidth,
                         top = frameTop + optical.top * frameHeight,
                         right = frameLeft + optical.right * frameWidth,
                         bottom = frameTop + optical.bottom * frameHeight,
                     )
                 } else {
-                    CombinedStatusPainter.TransitionBounds(
+                    StatusPainter.TransitionBounds(
                         left = frameLeft,
                         top = frameTop,
                         right = frameLeft + frameWidth,
@@ -3411,7 +3411,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         private fun textViewBatteryNumberBounds(
             view: TextView,
-        ): CombinedStatusPainter.TransitionNormalizedBounds? {
+        ): StatusPainter.TransitionNormalizedBounds? {
             val layout = view.layout ?: return null
             if (layout.lineCount <= 0 || view.width <= 0 || view.height <= 0) return null
             val text = view.text?.toString().orEmpty()
@@ -3451,8 +3451,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         private fun captureTextStyle(
             paint: Paint,
-        ): CombinedStatusPainter.TransitionTextStyle =
-            CombinedStatusPainter.TransitionTextStyle(
+        ): StatusPainter.TransitionTextStyle =
+            StatusPainter.TransitionTextStyle(
                 typeface = paint.typeface,
                 weight = batteryNumberTypefaceWeight(paint),
                 fakeBoldText = paint.isFakeBoldText,
@@ -3467,7 +3467,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         private fun resolveNativeTextStyle(
             view: View?,
-        ): CombinedStatusPainter.TransitionTextStyle? {
+        ): StatusPainter.TransitionTextStyle? {
             if (view == null) return null
             if (view is TextView) {
                 return captureTextStyle(view.paint)
@@ -3533,7 +3533,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             view: View,
             paint: Paint,
             text: String,
-        ): CombinedStatusPainter.TransitionNormalizedBounds? {
+        ): StatusPainter.TransitionNormalizedBounds? {
             if (view.width <= 0 || view.height <= 0 || text.isEmpty()) return null
             val rect = Rect()
             paint.getTextBounds(text, 0, text.length, rect)
@@ -3568,14 +3568,14 @@ internal object CombinedStatusControlCenterTransitionOwner {
             bottom: Float,
             width: Int,
             height: Int,
-        ): CombinedStatusPainter.TransitionNormalizedBounds? {
+        ): StatusPainter.TransitionNormalizedBounds? {
             if (width <= 0 || height <= 0) return null
             val l = (left / width).coerceIn(0f, 1f)
             val t = (top / height).coerceIn(0f, 1f)
             val r = (right / width).coerceIn(0f, 1f)
             val b = (bottom / height).coerceIn(0f, 1f)
             if (r <= l || b <= t) return null
-            return CombinedStatusPainter.TransitionNormalizedBounds(
+            return StatusPainter.TransitionNormalizedBounds(
                 left = l,
                 top = t,
                 right = r,
@@ -3906,7 +3906,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         private fun matrixForBoundsGeometry(
             geometry: FloatArray,
-            bounds: CombinedStatusPainter.TransitionBounds,
+            bounds: StatusPainter.TransitionBounds,
         ): Matrix? {
             if (
                 geometry.size != 6 ||
@@ -3956,7 +3956,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
         }
 
         private data class TargetCacheKey(
-            val target: CombinedStatusPainter.TransitionTarget,
+            val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
         )
 
@@ -3990,10 +3990,10 @@ internal object CombinedStatusControlCenterTransitionOwner {
             val opticalView: View?,
             val subscriptionId: Int?,
             val requiresOpticalGeometry: Boolean,
-            val fallbackBounds: CombinedStatusPainter.TransitionNormalizedBounds?,
+            val fallbackBounds: StatusPainter.TransitionNormalizedBounds?,
             val opticalSource: String,
             val textWeight: Int? = null,
-            val textStyle: CombinedStatusPainter.TransitionTextStyle? = null,
+            val textStyle: StatusPainter.TransitionTextStyle? = null,
             val preferFallbackGeometry: Boolean = false,
         ) {
             val summary: String

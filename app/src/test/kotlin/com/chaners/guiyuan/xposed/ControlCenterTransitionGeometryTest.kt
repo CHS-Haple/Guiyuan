@@ -18,7 +18,7 @@ class ControlCenterTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
@@ -34,7 +34,7 @@ class ControlCenterTransitionGeometryTest {
         val source = floatArrayOf(1240f, 55f, 105f, 0f, 0f, 108f)
         val sourceCarrier = floatArrayOf(997f, 54f, 478f, 0f, 0f, 108f)
         val carried =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .rebaseSourceToCurrentCarrier(
                     source = source,
                     sourceCarrier = sourceCarrier,
@@ -55,7 +55,7 @@ class ControlCenterTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
@@ -80,14 +80,14 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(130f, 120f, 140f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
                     progress = 0.5f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                 )
 
         assertEquals(195f, result[0], 0.0001f)
@@ -108,14 +108,14 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(60f, 65f, 140f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
                     progress = 0f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                 )
 
         assertEquals(85f, result[0], 0.0001f)
@@ -136,14 +136,14 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(60f, 58f, 140f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
                     progress = 0f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                 )
 
         assertEquals(85f, result[0], 0.0001f)
@@ -164,14 +164,14 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
                     progress = 1f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                 )
 
         assertEquals(target[0], result[0], 0.0001f)
@@ -192,14 +192,14 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
                     progress = 1f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
                 )
 
         assertEquals(target[0], result[0], 0.0001f)
@@ -214,12 +214,12 @@ class ControlCenterTransitionGeometryTest {
         val target = transitionGeometry(width = 75f, height = 75f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy
+            ControlCenterTransitionOwner.Policy
                 .interpolateSimilarityGeometry(
                     source = source,
                     target = target,
                     progress = 1f,
-                    scalePolicy = CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
                 )
 
         assertEquals(20f, result[2], 0.0001f)
@@ -229,7 +229,7 @@ class ControlCenterTransitionGeometryTest {
     @Test
     fun nativeTargetHeightCanBoundLocalShapeWithoutOwningItsExactScale() {
         val ratio =
-            CombinedStatusControlCenterTransitionOwner.Policy.relativeGeometryHeight(
+            ControlCenterTransitionOwner.Policy.relativeGeometryHeight(
                 target = transitionGeometry(width = 20f, height = 50f),
                 current = transitionGeometry(width = 10f, height = 20f),
             )
@@ -243,7 +243,7 @@ class ControlCenterTransitionGeometryTest {
         val host = floatArrayOf(300f, 54f, 600f, 0f, 0f, 108f)
 
         val ltr =
-            CombinedStatusControlCenterTransitionOwner.Policy.endAnchoredSlotGeometry(
+            ControlCenterTransitionOwner.Policy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -257,7 +257,7 @@ class ControlCenterTransitionGeometryTest {
         assertEquals(108f, ltr[5], 0.0001f)
 
         val rtl =
-            CombinedStatusControlCenterTransitionOwner.Policy.endAnchoredSlotGeometry(
+            ControlCenterTransitionOwner.Policy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -274,7 +274,7 @@ class ControlCenterTransitionGeometryTest {
         val stableRenderBasis = floatArrayOf(900f, 900f, 105f, 0f, 0f, 169f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy.composeSourceGeometry(
+            ControlCenterTransitionOwner.Policy.composeSourceGeometry(
                 positionAuthority = nativePosition,
                 basisAuthority = stableRenderBasis,
             )
@@ -288,12 +288,12 @@ class ControlCenterTransitionGeometryTest {
     @Test
     fun semanticFallbackSeparatesMobileTypeAndSignalInsteadOfSharingSlotCenter() {
         val type =
-            CombinedStatusControlCenterTransitionOwner.Policy.semanticFallbackBounds(
+            ControlCenterTransitionOwner.Policy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
             )
         val signal =
-            CombinedStatusControlCenterTransitionOwner.Policy.semanticFallbackBounds(
+            ControlCenterTransitionOwner.Policy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = false,
             )
@@ -303,12 +303,12 @@ class ControlCenterTransitionGeometryTest {
         assertTrue(type.right < signal.left)
 
         val rtlType =
-            CombinedStatusControlCenterTransitionOwner.Policy.semanticFallbackBounds(
+            ControlCenterTransitionOwner.Policy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
             )
         val rtlSignal =
-            CombinedStatusControlCenterTransitionOwner.Policy.semanticFallbackBounds(
+            ControlCenterTransitionOwner.Policy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = true,
             )

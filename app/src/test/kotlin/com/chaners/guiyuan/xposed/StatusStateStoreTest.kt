@@ -6,22 +6,22 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusStateStoreTest {
+class StatusStateStoreTest {
     @Test
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
-        CombinedStatusStateStore.restoreHotReloadState(null)
-        CombinedStatusStateStore.updateAirplaneMode(true)
-        CombinedStatusStateStore.updateMobile(
-            CombinedStatusStateStore.MobileIconUpdate(
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateMobile(
+            StatusStateStore.MobileIconUpdate(
                 subscriptionId = 4,
-                kind = CombinedStatusStateStore.MobileIconKind.SIGNAL,
+                kind = StatusStateStore.MobileIconKind.SIGNAL,
                 resourceId = 1,
                 signal = SignalStrength.Level(4),
             ),
         )
 
         val snapshot =
-            CombinedStatusStateStore.updateAirplaneMode(false)
+            StatusStateStore.updateAirplaneMode(false)
                 ?: error("expected airplane transition")
 
         assertTrue(snapshot.mobileRecoveryPending)
@@ -31,34 +31,34 @@ class CombinedStatusStateStoreTest {
 
     @Test
     fun unavailableSignalDoesNotFinishAirplaneRecovery() {
-        CombinedStatusStateStore.restoreHotReloadState(null)
-        CombinedStatusStateStore.updateAirplaneMode(true)
-        CombinedStatusStateStore.updateAirplaneMode(false)
-        CombinedStatusStateStore.updateMobile(
-            CombinedStatusStateStore.MobileIconUpdate(
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateAirplaneMode(false)
+        StatusStateStore.updateMobile(
+            StatusStateStore.MobileIconUpdate(
                 subscriptionId = 4,
-                kind = CombinedStatusStateStore.MobileIconKind.SIGNAL,
+                kind = StatusStateStore.MobileIconKind.SIGNAL,
                 resourceId = 2,
                 signal = SignalStrength.Unavailable,
             ),
         )
 
         val completed =
-            CombinedStatusStateStore.completeMobileRecoveryIfReady(
+            StatusStateStore.completeMobileRecoveryIfReady(
                 preferredSubscriptionId = 4,
                 mobileTypeReady = true,
                 mobileDataEnabled = true,
             )
 
         assertNull(completed)
-        assertTrue(CombinedStatusStateStore.snapshot().mobileRecoveryPending)
+        assertTrue(StatusStateStore.snapshot().mobileRecoveryPending)
     }
 
     @Test
     fun batterySnapshotRetainsNativeSemanticStateAndColor() {
-        CombinedStatusStateStore.restoreHotReloadState(null)
-        CombinedStatusStateStore.updateBattery(
-            CombinedStatusStateStore.BatteryState(
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(
                 percent = 61,
                 charging = false,
                 semanticState = BatterySemanticState.PERFORMANCE,
@@ -67,7 +67,7 @@ class CombinedStatusStateStoreTest {
         )
 
         val restored =
-            CombinedStatusStateStore.snapshot().battery
+            StatusStateStore.snapshot().battery
                 ?: error("expected battery state")
 
         assertEquals(61, restored.percent)
@@ -78,20 +78,20 @@ class CombinedStatusStateStoreTest {
 
     @Test
     fun freshSignalAndMobileTypeFinishAirplaneRecovery() {
-        CombinedStatusStateStore.restoreHotReloadState(null)
-        CombinedStatusStateStore.updateAirplaneMode(true)
-        CombinedStatusStateStore.updateAirplaneMode(false)
-        CombinedStatusStateStore.updateMobile(
-            CombinedStatusStateStore.MobileIconUpdate(
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateAirplaneMode(false)
+        StatusStateStore.updateMobile(
+            StatusStateStore.MobileIconUpdate(
                 subscriptionId = 4,
-                kind = CombinedStatusStateStore.MobileIconKind.SIGNAL,
+                kind = StatusStateStore.MobileIconKind.SIGNAL,
                 resourceId = 3,
                 signal = SignalStrength.Level(3),
             ),
         )
 
         val completed =
-            CombinedStatusStateStore.completeMobileRecoveryIfReady(
+            StatusStateStore.completeMobileRecoveryIfReady(
                 preferredSubscriptionId = 4,
                 mobileTypeReady = true,
                 mobileDataEnabled = true,

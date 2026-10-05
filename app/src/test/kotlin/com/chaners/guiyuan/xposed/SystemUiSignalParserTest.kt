@@ -153,7 +153,7 @@ class SystemUiSignalParserTest {
 
     @Test
     fun appliedHotspotFallbackRequiresANewHotspotTag() {
-        val hidden = CombinedStatusStateStore.WifiState.Hidden
+        val hidden = StatusStateStore.WifiState.Hidden
 
         assertEquals(
             true,

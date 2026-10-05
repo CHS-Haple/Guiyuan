@@ -15,8 +15,8 @@ internal object SystemUiNetworkRuntimeOwner {
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (CombinedStatusStateStore.WifiState) -> Unit,
-        onMobileIcon: (CombinedStatusStateStore.MobileIconUpdate) -> Unit,
+        onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
         onMobileSignalWillApply: ((android.widget.ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,

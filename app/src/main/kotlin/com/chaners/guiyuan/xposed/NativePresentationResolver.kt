@@ -8,7 +8,7 @@ import android.widget.TextView
 
 internal object NativePresentationResolver {
     fun resolve(
-        state: CombinedStatusStateStore.Snapshot,
+        state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
             SystemUiDefaultDataSubscriptionSource.currentSubscriptionId(),
         pendingMobileTypeDrawable: Drawable? = null,

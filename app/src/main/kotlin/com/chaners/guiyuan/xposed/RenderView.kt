@@ -20,7 +20,7 @@ internal class RenderView(
         sample: RuntimeRenderLatencySample?,
     ) -> Unit = { _, _, _ -> },
 ) : View(context) {
-    private val painter = CombinedStatusPainter(context)
+    private val painter = StatusPainter(context)
     private val centerEnterInterpolator: Interpolator =
         AnimationUtils.loadInterpolator(
             context,

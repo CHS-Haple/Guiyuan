@@ -18,7 +18,7 @@ import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.util.concurrent.atomic.AtomicLong
 
-class CombinedStatusModule : XposedModule() {
+class GyModule : XposedModule() {
     private var islandMotionSourceInstalled = false
     private var panelTransitionSourceInstalled = false
     private var controlCenterSceneVisible = false
@@ -354,7 +354,7 @@ class CombinedStatusModule : XposedModule() {
 
             val restored = SystemUiHotReloadRuntimeOwner.restoreTransfer(param)
             if (restored == null) {
-                CombinedStatusStateStore.restoreHotReloadState(null)
+                StatusStateStore.restoreHotReloadState(null)
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hotReload.restore",
@@ -438,7 +438,7 @@ class CombinedStatusModule : XposedModule() {
     ) {
         runCatching {
             var restoredSnapshot =
-                CombinedStatusStateStore.restoreHotReloadState(restored.state)
+                StatusStateStore.restoreHotReloadState(restored.state)
             val bindings =
                 SystemUiNetworkStateSource.restoreHotReloadBindings(restored.bindings)
             SystemUiNetworkStateSource.seedRestoredWifiState(
@@ -449,7 +449,7 @@ class CombinedStatusModule : XposedModule() {
                         null
                     },
             )?.let { wifi ->
-                CombinedStatusStateStore.updateWifi(wifi)?.let { snapshot ->
+                StatusStateStore.updateWifi(wifi)?.let { snapshot ->
                     restoredSnapshot = snapshot
                 }
             }
@@ -844,7 +844,7 @@ class CombinedStatusModule : XposedModule() {
                 classLoader = classLoader,
                 onWifiState = { state ->
                     val trace = beginRenderTrace("wifi")
-                    val changed = CombinedStatusStateStore.updateWifi(state)
+                    val changed = StatusStateStore.updateWifi(state)
                     if (changed != null) {
                         val stateTrace = markStateCommitted(trace)
                         refreshStatusIconObservation("wifi-semantic")
@@ -856,7 +856,7 @@ class CombinedStatusModule : XposedModule() {
                 },
                 onMobileIcon = { update ->
                     val trace = beginRenderTrace("mobile")
-                    val changed = CombinedStatusStateStore.updateMobile(update)
+                    val changed = StatusStateStore.updateMobile(update)
                     val stateTrace =
                         if (changed != null) {
                             markStateCommitted(trace)
@@ -866,7 +866,7 @@ class CombinedStatusModule : XposedModule() {
                     refreshMobilePresentation(stateTrace)
                     if (changed != null) {
                         onCombinedStateChanged(
-                            snapshot = CombinedStatusStateStore.snapshot(),
+                            snapshot = StatusStateStore.snapshot(),
                             trace = stateTrace,
                         )
                     }
@@ -1081,7 +1081,7 @@ class CombinedStatusModule : XposedModule() {
             } else {
                 update
             }
-        CombinedStatusControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
+        ControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1089,7 +1089,7 @@ class CombinedStatusModule : XposedModule() {
             lastBatteryNumberProbeDiagnosticSummary == null
         ) {
             val batteryNumberProbe =
-                CombinedStatusControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
+                ControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
             if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeDiagnosticSummary = batteryNumberProbe
                 logDiagnostic(
@@ -1235,7 +1235,7 @@ class CombinedStatusModule : XposedModule() {
 
         controlCenterSceneEligible = nextEligible
         ControlCenterRenderSession.setSceneEligible(nextEligible)
-        CombinedStatusControlCenterTransitionOwner.setSceneEligible(nextEligible)
+        ControlCenterTransitionOwner.setSceneEligible(nextEligible)
         logDiagnostic(
             level = Log.INFO,
             event = "scene.eligibility",
@@ -1534,7 +1534,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onControlCenterProjectionReadinessChanged(ready: Boolean) {
-        CombinedStatusControlCenterTransitionOwner.onProjectionReadinessChanged(ready)
+        ControlCenterTransitionOwner.onProjectionReadinessChanged(ready)
         if (!controlCenterSceneVisible) {
             return
         }
@@ -1574,10 +1574,10 @@ class CombinedStatusModule : XposedModule() {
         controlCenterSceneEligible = false
         controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
         safely {
-            CombinedStatusControlCenterTransitionOwner.setSceneEligible(false)
+            ControlCenterTransitionOwner.setSceneEligible(false)
         }
         safely {
-            CombinedStatusControlCenterTransitionOwner.detach("panel-runtime-failure")
+            ControlCenterTransitionOwner.detach("panel-runtime-failure")
         }
         safely {
             ControlCenterRenderSession.setSceneEligible(false)
@@ -1608,7 +1608,7 @@ class CombinedStatusModule : XposedModule() {
                 classLoader = classLoader,
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
-                    CombinedStatusStateStore.updateBattery(state)?.let { snapshot ->
+                    StatusStateStore.updateBattery(state)?.let { snapshot ->
                         onCombinedStateChanged(
                             snapshot = snapshot,
                             trace = markStateCommitted(trace),
@@ -1617,7 +1617,7 @@ class CombinedStatusModule : XposedModule() {
                 },
                 onChargingIconResource = { resourceId ->
                     val trace = beginRenderTrace("battery-charging-glyph")
-                    CombinedStatusStateStore.updateBatteryChargingIcon(resourceId)
+                    StatusStateStore.updateBatteryChargingIcon(resourceId)
                         ?.let { snapshot ->
                             onCombinedStateChanged(
                                 snapshot = snapshot,
@@ -1753,13 +1753,13 @@ class CombinedStatusModule : XposedModule() {
     ) {
         val presentation =
             NativePresentationResolver.resolve(
-                state = CombinedStatusStateStore.snapshot(),
+                state = StatusStateStore.snapshot(),
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
-            CombinedStatusStateStore.completeMobileRecoveryIfReady(
+            StatusStateStore.completeMobileRecoveryIfReady(
                 preferredSubscriptionId = presentation.effectiveDataSubscriptionId ?: -1,
                 mobileTypeReady = presentation.networkType != null,
                 mobileDataEnabled =
@@ -1825,7 +1825,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun onCombinedStateChanged(
-        snapshot: CombinedStatusStateStore.Snapshot,
+        snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ) {
         HomeRenderSession.onState(snapshot, trace)
@@ -3505,7 +3505,7 @@ class CombinedStatusModule : XposedModule() {
         aodRendererAttached = false
         keyguardPresentationReadyObserved = false
         keyguardControlCenterLeaseActive = false
-        CombinedStatusControlCenterTransitionOwner.detach("hotReload-oldGeneration")
+        ControlCenterTransitionOwner.detach("hotReload-oldGeneration")
         ControlCenterRenderSession.detach(
             source = "hotReload-oldGeneration",
             releaseNativePresentation = !continuousHandoff,
@@ -3564,7 +3564,7 @@ class CombinedStatusModule : XposedModule() {
                     context = context,
                     onAirplaneMode = { enabled ->
                         val trace = beginRenderTrace("airplaneObserver")
-                        CombinedStatusStateStore.updateAirplaneMode(enabled)?.let { snapshot ->
+                        StatusStateStore.updateAirplaneMode(enabled)?.let { snapshot ->
                             onCombinedStateChanged(
                                 snapshot = snapshot,
                                 trace = markStateCommitted(trace),
@@ -4030,7 +4030,7 @@ class CombinedStatusModule : XposedModule() {
                     onHandoffStateChanged = { active ->
                         val presentation =
                             PresentationStore.snapshot()
-                        val state = CombinedStatusStateStore.snapshot()
+                        val state = StatusStateStore.snapshot()
                         val wifi = state.wifi
 
                         if (
@@ -4499,7 +4499,7 @@ class CombinedStatusModule : XposedModule() {
         controlCenterSceneEligible = false
         keyguardControlCenterLeaseActive = false
         ControlCenterRenderSession.setSceneEligible(false)
-        CombinedStatusControlCenterTransitionOwner.setSceneEligible(false)
+        ControlCenterTransitionOwner.setSceneEligible(false)
         SystemUiHomePresentationOwner.deactivateControlCenter(source)
         SystemUiHomePresentationOwner.deactivateAod(source)
         SystemUiHomePresentationOwner.deactivateKeyguard(source)

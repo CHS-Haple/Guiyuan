@@ -13,13 +13,13 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 1,
                                 signal = SignalStrength.Level(3),
                             ),
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -48,14 +48,14 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 1,
                                 signal = SignalStrength.Level(3),
                                 internetValidated = null,
                             ),
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -84,16 +84,16 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 1,
                                 signal = SignalStrength.Level(3),
                             ),
                         mobile =
                             linkedMapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(1),
                                 ),
-                                4 to CombinedStatusStateStore.MobileState(
+                                4 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -119,10 +119,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                4 to CombinedStatusStateStore.MobileState(
+                                4 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -152,13 +152,13 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 1,
                                 signal = SignalStrength.Level(3),
                             ),
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -185,10 +185,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -216,13 +216,13 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 1,
                                 signal = SignalStrength.Level(3),
                             ),
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -251,10 +251,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -283,10 +283,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(3),
                                 ),
                             ),
@@ -313,10 +313,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(3),
                                 ),
                             ),
@@ -345,10 +345,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Unavailable,
                                 ),
                             ),
@@ -376,10 +376,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -403,10 +403,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                4 to CombinedStatusStateStore.MobileState(
+                                4 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -456,14 +456,14 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 10,
                                 signal = SignalStrength.Level(3),
                                 internetValidated = true,
                             ),
                         mobile =
                             mapOf(
-                                4 to CombinedStatusStateStore.MobileState(
+                                4 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -512,7 +512,7 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile = emptyMap(),
                     ),
                 presentation =
@@ -549,7 +549,7 @@ class RenderModelTest {
                 snapshot =
                     snapshot(
                         wifi =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = 10,
                                 signal = SignalStrength.Level(3),
                                 internetValidated = true,
@@ -584,10 +584,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                1 to CombinedStatusStateStore.MobileState(
+                                1 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -617,10 +617,10 @@ class RenderModelTest {
             RenderModel.from(
                 snapshot =
                     snapshot(
-                        wifi = CombinedStatusStateStore.WifiState.Hidden,
+                        wifi = StatusStateStore.WifiState.Hidden,
                         mobile =
                             mapOf(
-                                4 to CombinedStatusStateStore.MobileState(
+                                4 to StatusStateStore.MobileState(
                                     signal = SignalStrength.Level(4),
                                 ),
                             ),
@@ -646,13 +646,13 @@ class RenderModelTest {
     }
 
     private fun snapshot(
-        wifi: CombinedStatusStateStore.WifiState,
-        mobile: Map<Int, CombinedStatusStateStore.MobileState>,
+        wifi: StatusStateStore.WifiState,
+        mobile: Map<Int, StatusStateStore.MobileState>,
         airplaneMode: Boolean? = false,
     ) =
-        CombinedStatusStateStore.Snapshot(
+        StatusStateStore.Snapshot(
             battery =
-                CombinedStatusStateStore.BatteryState(
+                StatusStateStore.BatteryState(
                     percent = 80,
                     charging = false,
                 ),

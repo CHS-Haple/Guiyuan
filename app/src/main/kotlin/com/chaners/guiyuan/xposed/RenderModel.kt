@@ -14,7 +14,7 @@ internal data class RenderModel(
 ) {
     companion object {
         fun from(
-            snapshot: CombinedStatusStateStore.Snapshot,
+            snapshot: StatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
         ): RenderModel? {

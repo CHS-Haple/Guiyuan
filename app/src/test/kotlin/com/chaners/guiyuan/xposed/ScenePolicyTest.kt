@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScenePolicyTest {
-class ScenePolicyTest {
     @Test
     fun everySceneHasExactlyOneCapability() {
         val capabilities = ScenePolicy.all()

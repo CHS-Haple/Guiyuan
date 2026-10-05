@@ -125,7 +125,7 @@ internal object SystemUiNetworkStateSource {
     }
 
     private data class WifiSemanticValue(
-        val state: CombinedStatusStateStore.WifiState?,
+        val state: StatusStateStore.WifiState?,
         val resourceId: Int?,
         val resourceName: String?,
         val valueType: String,
@@ -139,8 +139,8 @@ internal object SystemUiNetworkStateSource {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (CombinedStatusStateStore.WifiState) -> Unit,
-        onMobileIcon: (CombinedStatusStateStore.MobileIconUpdate) -> Unit,
+        onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -173,7 +173,7 @@ internal object SystemUiNetworkStateSource {
     private fun installWifi(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (CombinedStatusStateStore.WifiState) -> Unit,
+        onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
@@ -300,7 +300,7 @@ internal object SystemUiNetworkStateSource {
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
-        onMobileIcon: (CombinedStatusStateStore.MobileIconUpdate) -> Unit,
+        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -568,7 +568,7 @@ internal object SystemUiNetworkStateSource {
 
     private fun wifiBindHooker(
         seedContract: WifiSeedContract,
-        onWifiState: (CombinedStatusStateStore.WifiState) -> Unit,
+        onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Hooker = Hooker { chain ->
         val root = chain.getArg(0) as? ViewGroup
@@ -610,7 +610,7 @@ internal object SystemUiNetworkStateSource {
     @Synchronized
     fun seedRestoredWifiState(
         onEvent: ((String) -> Unit)?,
-    ): CombinedStatusStateStore.WifiState? {
+    ): StatusStateStore.WifiState? {
         val contract = wifiSeedContract ?: return null
         val binding =
             wifiRoots.entries.firstOrNull { (root, viewModel) ->
@@ -640,7 +640,7 @@ internal object SystemUiNetworkStateSource {
         contract: WifiSeedContract,
         source: String,
         onEvent: ((String) -> Unit)?,
-    ): CombinedStatusStateStore.WifiState? {
+    ): StatusStateStore.WifiState? {
         val getter =
             contract.wifiIconGetter
                 ?: run {
@@ -782,7 +782,7 @@ internal object SystemUiNetworkStateSource {
         val valueType = value?.javaClass?.name
         if (valueType == WIFI_ICON_HIDDEN_CLASS_NAME) {
             return WifiSemanticValue(
-                state = CombinedStatusStateStore.WifiState.Hidden,
+                state = StatusStateStore.WifiState.Hidden,
                 resourceId = null,
                 resourceName = null,
                 valueType = value?.javaClass?.simpleName ?: "null",
@@ -812,7 +812,7 @@ internal object SystemUiNetworkStateSource {
 
         return WifiSemanticValue(
             state =
-                CombinedStatusStateStore.WifiState.Visible(
+                StatusStateStore.WifiState.Visible(
                     iconResId = modelResId,
                     signal = SystemUiSignalParser.wifi(modelResourceName),
                     internetValidated =
@@ -831,7 +831,7 @@ internal object SystemUiNetworkStateSource {
         wifiClassIdField: Field,
         wifiVisibleIconField: Field,
         iconResourceIdAccessor: IconResourceIdAccessor,
-        onWifiState: (CombinedStatusStateStore.WifiState) -> Unit,
+        onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Hooker = Hooker { chain ->
         val value = chain.getArg(0)
@@ -886,7 +886,7 @@ internal object SystemUiNetworkStateSource {
                 if (hotspotAppliedFallback) {
                     WifiSemanticValue(
                         state =
-                            CombinedStatusStateStore.WifiState.Visible(
+                            StatusStateStore.WifiState.Visible(
                                 iconResId = taggedResId,
                                 signal = SystemUiSignalParser.wifi(taggedResource),
                                 internetValidated =
@@ -938,12 +938,12 @@ internal object SystemUiNetworkStateSource {
     }
 
     internal fun shouldUseAppliedHotspotFallback(
-        semanticState: CombinedStatusStateStore.WifiState?,
+        semanticState: StatusStateStore.WifiState?,
         taggedResId: Int?,
         previousTaggedResId: Int?,
         taggedResource: String?,
     ): Boolean =
-        semanticState == CombinedStatusStateStore.WifiState.Hidden &&
+        semanticState == StatusStateStore.WifiState.Hidden &&
             taggedResId != null &&
             taggedResId != previousTaggedResId &&
             SystemUiSignalParser.isHotspotWifiResource(taggedResource)
@@ -996,7 +996,7 @@ internal object SystemUiNetworkStateSource {
     private fun mobileSignalHooker(
         mobileImageField: Field,
         mobileClassIdField: Field,
-        onMobileIcon: (CombinedStatusStateStore.MobileIconUpdate) -> Unit,
+        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onEvent: ((String) -> Unit)?,
     ): Hooker = Hooker { chain ->
@@ -1041,19 +1041,19 @@ internal object SystemUiNetworkStateSource {
                         ?.takeIf { it != 0 }
                     val resourceName = resourceId?.let { id -> resourceName(image, id) }
                     val kind = when (classId) {
-                        0 -> CombinedStatusStateStore.MobileIconKind.SIGNAL
-                        1 -> CombinedStatusStateStore.MobileIconKind.VOLTE
-                        2 -> CombinedStatusStateStore.MobileIconKind.VOWIFI
+                        0 -> StatusStateStore.MobileIconKind.SIGNAL
+                        1 -> StatusStateStore.MobileIconKind.VOLTE
+                        2 -> StatusStateStore.MobileIconKind.VOWIFI
                         else -> null
                     }
                     if (kind != null) {
                         onMobileIcon(
-                            CombinedStatusStateStore.MobileIconUpdate(
+                            StatusStateStore.MobileIconUpdate(
                                 subscriptionId = subscriptionId,
                                 kind = kind,
                                 resourceId = resourceId,
                                 signal = if (
-                                    kind == CombinedStatusStateStore.MobileIconKind.SIGNAL
+                                    kind == StatusStateStore.MobileIconKind.SIGNAL
                                 ) {
                                     SystemUiSignalParser.mobile(resourceName)
                                 } else {

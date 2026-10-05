@@ -4,25 +4,25 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusControlCenterTransitionOwnerTest {
+class ControlCenterTransitionOwnerTest {
     @Test
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(
             0f,
-            CombinedStatusPainter.TransitionTypographyPolicy.styleProgress(0.42f),
+            StatusPainter.TransitionTypographyPolicy.styleProgress(0.42f),
             0.0001f,
         )
         assertTrue(
-            CombinedStatusPainter.TransitionTypographyPolicy.styleProgress(0.70f) in 0f..1f,
+            StatusPainter.TransitionTypographyPolicy.styleProgress(0.70f) in 0f..1f,
         )
         assertEquals(
             1f,
-            CombinedStatusPainter.TransitionTypographyPolicy.styleProgress(0.88f),
+            StatusPainter.TransitionTypographyPolicy.styleProgress(0.88f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CombinedStatusPainter.TransitionTypographyPolicy.styleProgress(1f),
+            StatusPainter.TransitionTypographyPolicy.styleProgress(1f),
             0.0001f,
         )
     }
@@ -33,7 +33,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy.interpolateGeometry(
+            ControlCenterTransitionOwner.Policy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -46,7 +46,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
 
     @Test
     fun chargingGlyphUsesOpaqueClipHideAndAcceleratedLateReveal() {
-        val policy = CombinedStatusPainter.BatteryNumberFollowerPolicy
+        val policy = StatusPainter.BatteryNumberFollowerPolicy
         val (hideStart, hideEnd) = policy.sourceHideWindow()
         val (revealStart, revealEnd) = policy.targetRevealWindow()
 
@@ -116,7 +116,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
 
     @Test
     fun chargingGlyphNeverUsesItsOwnTargetMotionWhileSourceClipRemains() {
-        val policy = CombinedStatusPainter.BatteryNumberFollowerPolicy
+        val policy = StatusPainter.BatteryNumberFollowerPolicy
         val (_, hideEnd) = policy.sourceHideWindow()
         var observedPartialClip = false
 
@@ -165,7 +165,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
             )
 
         val follower =
-            CombinedStatusControlCenterTransitionOwner.Policy.followAnchorGeometry(
+            ControlCenterTransitionOwner.Policy.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -182,7 +182,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = CombinedStatusControlCenterTransitionOwner.Policy
+        val policy = ControlCenterTransitionOwner.Policy
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -220,7 +220,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = CombinedStatusControlCenterTransitionOwner.Policy
+        val policy = ControlCenterTransitionOwner.Policy
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
@@ -270,7 +270,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     fun mobileTypeWeightInterpolatesToNativeTarget() {
         assertEquals(
             800,
-            CombinedStatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 0f,
@@ -278,7 +278,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
         )
         assertEquals(
             650,
-            CombinedStatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 0.5f,
@@ -286,7 +286,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
         )
         assertEquals(
             500,
-            CombinedStatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 1f,
@@ -298,7 +298,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     fun mobileTypeWeightFailsNativeWhenTargetTypographyIsUnavailable() {
         assertEquals(
             800,
-            CombinedStatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = null,
                 progress = 1f,
@@ -312,11 +312,11 @@ class CombinedStatusControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
+            ControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
-                scalePolicy = CombinedStatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
             )
 
         assertEquals(10f, result[2], 0.0001f)
@@ -329,11 +329,11 @@ class CombinedStatusControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            CombinedStatusControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
+            ControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
-                scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
             )
 
         assertEquals(20f, result[2], 0.0001f)
@@ -373,7 +373,7 @@ class CombinedStatusControlCenterTransitionOwnerTest {
     fun roundedCapsAreIncludedInsideTheNativeOpticalHeightBudget() {
         assertEquals(
             45f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
+            StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
                 sourceBoundsHeight = 40f,
                 diameter = 10f,
                 targetHeightRatio = 1.25f,

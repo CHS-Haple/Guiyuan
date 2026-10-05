@@ -9,7 +9,7 @@ internal class RenderController(
     private var stableTint: TintState? = null
 
     fun update(
-        snapshot: CombinedStatusStateStore.Snapshot,
+        snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ): ModelUpdate {
         val defaultDataSubscriptionId =
