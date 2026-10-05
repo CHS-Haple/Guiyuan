@@ -4852,3 +4852,35 @@ This checkpoint does not touch Material semantic-icon resources or the shared `S
 
 Run one exact-head Runtime PR validation. A Work-branch Canary is only needed if the interaction and optical fixes require focused device acceptance after automated validation.
 
+## 2026-10-06 — Build 741 nested-sheet and Home observation readiness follow-up
+
+**Type:** companion UI / MIUIX navigation / runtime readiness
+**Build:** 741 / `20261006-741`
+**Branch / PR:** `fix/companion-ui-polish` / #218
+
+### Device evidence
+
+Build 740 confirmed the first companion-UI fixes but exposed four follow-ups:
+- Preview battery-mode and super-fast-charging labels still ellipsized in compact segmented controls;
+- predictive Back from the battery-color detail page briefly shifted the returning overview horizontally;
+- diagnostics event cards had no direct per-entry copy action;
+- startup could log `statusIconObservation unavailable ... dark-icon-manager-missing` from `hostCapture`.
+
+### Root cause
+
+The battery-color implementation placed a non-scrollable `HorizontalPager` inside one MIUIX `OverlayBottomSheet` and added a second `NavigationBackHandler` while the sheet retained its own predictive-Back handler. One gesture could therefore participate in both sheet resistance and pager return, producing the observed transient horizontal offset.
+
+The warning was a lifecycle-order mismatch rather than a missing target contract. Guiyuan captures `MiuiNotificationStatusContainer.onFinishInflate()`, while the required `mDarkIconManager` belongs to the parent `MiuiPhoneStatusBarView`. Exact-target SystemUI evidence already establishes `StatusBarIconControllerImpl.addIconGroup(...)` as the Home manager readiness boundary and explicitly rejects fixed delay/polling.
+
+### Change
+
+- Replace the pager/detail-back stack with a real second MIUIX `OverlayBottomSheet`; the overview remains the first-level owner and the detail sheet owns its own dismissal.
+- Keep full battery-state names for summaries and add compact-only segmented labels.
+- Add MIUIX Card `onLongPress` copy of `DiagnosticLogEntry.rawLine` plus localized Toast feedback.
+- Add one read-only `addIconGroup` observation hook to the existing native-network owner. A missing Home manager at host capture becomes INFO/pending; registration of the same manager completes observation and emits structured ready state. True structural failures remain WARN + fail native.
+- Hook count for that owner becomes five; suppression, native geometry and presentation writer ownership are unchanged.
+
+### Review / validation gate
+
+Pre-CI review removed the obsolete pager imports, kept pending readiness weak and single-host, closes pending state on success/failure/deactivation, and preserves full-summary localization. Run repository-selected exact-head CI; device validation is required afterward for nested-sheet Back continuity and cold-start absence of the former warning.
+
