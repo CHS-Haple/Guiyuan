@@ -19,6 +19,8 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$2"
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
+    private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
+        "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val STATUS_BAR_ICON_VIEW_CLASS =
         "com.android.systemui.statusbar.StatusBarIconView"
     private const val MODERN_BINDING_INTERFACE =
@@ -32,6 +34,8 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         "combinedstatus.nativeNetworkSuppression.mobileVisibility"
     private const val HOME_ICON_ADDED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
+    private const val HOME_MANAGER_REGISTERED_HOOK_ID =
+        "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
     private const val AIRPLANE_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
@@ -46,6 +50,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     private val installedHandles = mutableListOf<HookHandle>()
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
+    private var pendingObservationHost: WeakReference<View>? = null
     private var eventSink: ((String) -> Unit)? = null
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
@@ -170,6 +175,24 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     false,
                     classLoader,
                 )
+            val statusBarIconController =
+                Class.forName(
+                    STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
+                    false,
+                    classLoader,
+                )
+            val addIconGroup =
+                statusBarIconController.declaredMethods
+                    .filter { method ->
+                        method.name == "addIconGroup" &&
+                            method.parameterCount == 1 &&
+                            method.parameterTypes[0].name.contains("IconManager")
+                    }
+                    .sortedBy { method -> method.parameterTypes[0].name }
+                    .firstOrNull()
+                    ?: error("home-icon-manager-registration-method-missing")
+            addIconGroup.isAccessible = true
+
             val onIconAdded =
                 darkIconManager.declaredMethods
                     .firstOrNull { method ->
@@ -199,6 +222,11 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     .intercept(homeIconAddedHooker())
             created +=
                 module
+                    .hook(addIconGroup)
+                    .setId(HOME_MANAGER_REGISTERED_HOOK_ID)
+                    .intercept(homeManagerRegisteredHooker())
+            created +=
+                module
                     .hook(airplaneVisibility)
                     .setId(AIRPLANE_VISIBILITY_HOOK_ID)
                     .intercept(airplaneVisibilityHooker())
@@ -221,6 +249,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             mobileVisualMasks = emptyArray()
             activeManager = null
             activeGroup = null
+            pendingObservationHost = null
             eventSink = onEvent
             statusPresentationSink = onStatusPresentationChanged
             InstallResult.Failure(
@@ -231,11 +260,21 @@ internal object SystemUiNativeNetworkSuppressionOwner {
 
     @Synchronized
     fun attachObserver(host: Any): StateResult {
+        val hostView =
+            host as? View
+                ?: return StateResult.Failure("host-not-view")
         val manager =
-            NativeParticipantRuntimeAccess.managerFor(host)
-                ?: return StateResult.Failure("dark-icon-manager-missing")
+            NativeParticipantRuntimeAccess.managerFor(hostView)
+                ?: run {
+                    // MiuiNotificationStatusContainer finishes inflation before the parent
+                    // MiuiPhoneStatusBarView necessarily owns its Home DarkIconManager.
+                    // Keep a single weak pending host and complete observation from the
+                    // authoritative StatusBarIconControllerImpl.addIconGroup registration.
+                    pendingObservationHost = WeakReference(hostView)
+                    return StateResult.Pending("home-dark-icon-manager-registration")
+                }
         val group =
-            NativeParticipantRuntimeAccess.groupFor(host)
+            NativeParticipantRuntimeAccess.groupFor(hostView)
                 ?: return StateResult.Failure("status-icon-group-missing")
         if (manager.javaClass.name != HOME_MANAGER_CLASS) {
             return StateResult.Failure("home-manager-mismatch")
@@ -253,6 +292,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             )
         }
 
+        pendingObservationHost = null
         activeManager = manager
         activeGroup = WeakReference(group)
         observationOnly = true
@@ -371,6 +411,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
 
     @Synchronized
     fun deactivate(source: String): StateResult {
+        pendingObservationHost = null
         val group = activeGroup?.get()
         val previousCount = suppressedBindings.count { reference -> reference.get() != null }
         val restoredVisualMasks = restoreMobileVisualMasksLocked()
@@ -463,6 +504,40 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     chain.proceed()
                 }
             }
+        }
+
+    private fun homeManagerRegisteredHooker(): Hooker =
+        Hooker { chain ->
+            val manager = chain.getArg(0)
+            val result = chain.proceed()
+
+            if (manager?.javaClass?.name == HOME_MANAGER_CLASS) {
+                synchronized(this) {
+                    val pendingHost = pendingObservationHost?.get()
+                    if (
+                        pendingHost != null &&
+                        NativeParticipantRuntimeAccess.managerFor(pendingHost) === manager
+                    ) {
+                        when (val state = attachObserver(pendingHost)) {
+                            is StateResult.Active ->
+                                eventSink?.invoke(
+                                    "statusIconObservation ready source=homeManagerRegistered " +
+                                        "suppressionWriters=0 nativeGeometryWrites=0",
+                                )
+                            is StateResult.Failure ->
+                                eventSink?.invoke(
+                                    "statusIconObservation unavailable " +
+                                        "source=homeManagerRegistered reason=" + state.reason,
+                                )
+                            is StateResult.Pending,
+                            is StateResult.Inactive,
+                            -> Unit
+                        }
+                    }
+                }
+            }
+
+            result
         }
 
     private fun homeIconAddedHooker(): Hooker =
@@ -1594,6 +1669,13 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                         ",mobileVisualMasks=" + mobileVisualMasks
         }
 
+        data class Pending(
+            val reason: String,
+        ) : StateResult {
+            override val summary: String
+                get() = "pending:" + reason
+        }
+
         data class Inactive(
             val restoredBindings: Int,
         ) : StateResult {
@@ -1715,5 +1797,5 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     private const val MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY = "mobile_signal_container"
     private const val AIRPLANE_SLOT = "airplane"
     private const val NO_SIM_SLOT = "no_sim"
-    private const val EXPECTED_HOOK_COUNT = 4
+    private const val EXPECTED_HOOK_COUNT = 5
 }
