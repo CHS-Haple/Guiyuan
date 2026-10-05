@@ -7,7 +7,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.RenderView
-import com.chaners.guiyuan.xposed.CombinedStatusTintState
+import com.chaners.guiyuan.xposed.TintState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -26,7 +26,7 @@ internal fun CombinedStatusPreview(
                 }
                 setScaleMobileTypeWithCanvas(true)
                 setTintState(
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = tint,
                         statusIconTint = tint,
                     ),
@@ -40,7 +40,7 @@ internal fun CombinedStatusPreview(
             view.syncPreviewViewport()
             view.setScaleMobileTypeWithCanvas(true)
             view.setTintState(
-                CombinedStatusTintState(
+                TintState(
                     appliedTint = tint,
                     statusIconTint = tint,
                 ),

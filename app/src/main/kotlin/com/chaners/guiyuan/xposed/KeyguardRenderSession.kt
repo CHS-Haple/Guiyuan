@@ -500,7 +500,7 @@ internal object KeyguardRenderSession {
         }
 
         private fun applyTintState(
-            state: CombinedStatusTintState,
+            state: TintState,
             source: String,
         ) {
             val update = renderController.updateTint(state)

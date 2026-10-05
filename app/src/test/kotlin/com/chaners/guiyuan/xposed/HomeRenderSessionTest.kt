@@ -85,7 +85,7 @@ class HomeRenderSessionTest {
     fun transferredTintWinsWithoutReadingTransientLiveState() {
         var liveReads = 0
         val transferred =
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = 0xbf112233.toInt(),
                 statusIconTint = 0xe6ffffff.toInt(),
             )
@@ -96,7 +96,7 @@ class HomeRenderSessionTest {
                 allowLiveSeed = false,
                 liveState = {
                     liveReads += 1
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     )
                 },
@@ -111,14 +111,14 @@ class HomeRenderSessionTest {
     fun invalidTransferredTintFallsBackToLiveNativeSeed() {
         var liveReads = 0
         val live =
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = 0xe6ffffff.toInt(),
             )
 
         val seed =
             HomeRenderSession.resolveInitialTintSeed(
                 transferred =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0x00112233,
                     ),
                 allowLiveSeed = true,
@@ -143,7 +143,7 @@ class HomeRenderSessionTest {
                 allowLiveSeed = false,
                 liveState = {
                     liveReads += 1
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     )
                 },

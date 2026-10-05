@@ -374,7 +374,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                         statusIconTint = 0xff202020.toInt(),
                     ),
@@ -390,7 +390,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     ),
                 nativeTint = 0xff303030.toInt(),
@@ -405,7 +405,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf101010.toInt(),
                         statusIconTint = 0xff202020.toInt(),
                     ),
@@ -421,7 +421,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     ),
                 nativeTint = 0x00303030,

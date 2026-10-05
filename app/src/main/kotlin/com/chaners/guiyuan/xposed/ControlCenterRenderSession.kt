@@ -495,7 +495,7 @@ internal object ControlCenterRenderSession {
         private val statusAreaLocationScratch = IntArray(2)
 
         private var currentModel: RenderModel? = null
-        private var currentTint: CombinedStatusTintState? = null
+        private var currentTint: TintState? = null
         private var currentVisualSettings = RuntimeVisualPreferencesOwner.currentSettings()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -795,7 +795,7 @@ internal object ControlCenterRenderSession {
         }
 
         private fun applyTint(
-            batteryState: CombinedStatusTintState,
+            batteryState: TintState,
             source: String,
         ) {
             val peerTint =

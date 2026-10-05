@@ -1496,7 +1496,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
         val update =
             renderController?.updateTint(
-                CombinedStatusTintState(
+                TintState(
                     appliedTint = tint,
                     statusIconTint = tint,
                 ),
@@ -1645,7 +1645,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
     private fun detailedTintReady(
         nativeTint: Int?,
-        batteryTint: CombinedStatusTintState?,
+        batteryTint: TintState?,
     ): Boolean =
         nativeTint != null || batteryTint != null
 
@@ -1657,19 +1657,19 @@ internal object SystemUiNativeCombinedParticipantOwner {
             ?: "none"
 
     internal fun mergeNativeParticipantTint(
-        batteryTint: CombinedStatusTintState,
+        batteryTint: TintState,
         nativeTint: Int?,
-    ): CombinedStatusTintState {
+    ): TintState {
         val resolvedNativeTint =
             nativeTint
                 ?.takeIf { color -> (color ushr 24) != 0 }
         return if (resolvedNativeTint != null) {
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = resolvedNativeTint,
                 statusIconTint = resolvedNativeTint,
             )
         } else {
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = batteryTint.appliedTint,
             )
         }

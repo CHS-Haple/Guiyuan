@@ -13,7 +13,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model = model(),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xff112233.toInt(),
                         statusIconTint = 0xff445566.toInt(),
                     ),
@@ -36,7 +36,7 @@ class ColorPolicyTest {
                         systemColor = semanticColor,
                     ),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xffddeeff.toInt(),
                         statusIconTint = 0xff556677.toInt(),
                     ),
@@ -63,7 +63,7 @@ class ColorPolicyTest {
                         systemColor = semanticColor,
                     ),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xff112233.toInt(),
                         statusIconTint = 0xff445566.toInt(),
                     ),
@@ -95,7 +95,7 @@ class ColorPolicyTest {
                         systemColor = semanticColor,
                     ),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xff112233.toInt(),
                         statusIconTint = 0xff445566.toInt(),
                     ),
@@ -124,7 +124,7 @@ class ColorPolicyTest {
                         systemColor = semanticColor,
                     ),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xff112233.toInt(),
                         statusIconTint = statusTint,
                     ),
@@ -147,7 +147,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model = model(),
                 tintState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xff112233.toInt(),
                         statusIconTint = 0x00112233,
                     ),

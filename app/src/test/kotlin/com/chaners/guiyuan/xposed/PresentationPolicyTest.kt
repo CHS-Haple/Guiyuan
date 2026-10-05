@@ -46,8 +46,8 @@ class PresentationPolicyTest {
 
     @Test
     fun transparentTintDoesNotReplaceLastStableTint() {
-        val previous = CombinedStatusTintState(0xe6ffffff.toInt())
-        val transparent = CombinedStatusTintState(0x00000000)
+        val previous = TintState(0xe6ffffff.toInt())
+        val transparent = TintState(0x00000000)
 
         val resolved =
             PresentationPolicy.resolveTint(
@@ -63,18 +63,18 @@ class PresentationPolicyTest {
         assertNull(
             PresentationPolicy.resolveTint(
                 previous = null,
-                candidate = CombinedStatusTintState(0x00000000),
+                candidate = TintState(0x00000000),
             ),
         )
     }
 
     @Test
     fun nonTransparentTintCommitsImmediately() {
-        val candidate = CombinedStatusTintState(0xbf000000.toInt())
+        val candidate = TintState(0xbf000000.toInt())
 
         val resolved =
             PresentationPolicy.resolveTint(
-                previous = CombinedStatusTintState(0xe6ffffff.toInt()),
+                previous = TintState(0xe6ffffff.toInt()),
                 candidate = candidate,
             )
 

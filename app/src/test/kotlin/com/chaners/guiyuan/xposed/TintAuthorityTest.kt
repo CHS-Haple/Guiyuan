@@ -9,7 +9,7 @@ class TintAuthorityTest {
         val resolved =
             TintAuthority.resolveBatteryEvent(
                 batteryState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                         statusIconTint = 0xe6ffffff.toInt(),
                     ),
@@ -25,7 +25,7 @@ class TintAuthorityTest {
         val resolved =
             TintAuthority.resolveBatteryEvent(
                 batteryState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf223344.toInt(),
                         statusIconTint = null,
                     ),
@@ -41,7 +41,7 @@ class TintAuthorityTest {
         val resolved =
             TintAuthority.resolveBatteryEvent(
                 batteryState =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf112233.toInt(),
                         statusIconTint = 0xe6ffffff.toInt(),
                     ),
@@ -54,7 +54,7 @@ class TintAuthorityTest {
     @Test
     fun statusIconEventUpdatesOnlyStatusAuthority() {
         val previous =
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = 0xbf000000.toInt(),
                 statusIconTint = 0xe6ffffff.toInt(),
             )
@@ -84,7 +84,7 @@ class TintAuthorityTest {
     @Test
     fun hotReloadTransferIsRebasedToNewGenerationLiveStatusAuthority() {
         val transferred =
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = 0xbf000000.toInt(),
                 statusIconTint = 0xe6ffffff.toInt(),
             )
@@ -102,7 +102,7 @@ class TintAuthorityTest {
     @Test
     fun transferredStatusTintRemainsFallbackWhenLiveAuthorityIsUnavailable() {
         val transferred =
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = 0xbf000000.toInt(),
                 statusIconTint = 0xe6ffffff.toInt(),
             )
