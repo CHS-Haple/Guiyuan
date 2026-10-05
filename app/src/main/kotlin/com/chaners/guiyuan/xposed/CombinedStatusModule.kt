@@ -433,7 +433,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun restoreHotReloadRuntimeOnMain(
         capture: SystemUiHostRegistry.Capture,
-        restored: CombinedStatusHotReloadTransfer.Restored,
+        restored: HotReloadTransfer.Restored,
         removedHooks: Int,
     ) {
         runCatching {
@@ -4089,7 +4089,7 @@ class CombinedStatusModule : XposedModule() {
                                         host = host,
                                         suppressWifi =
                                             SystemUiNetworkRuntimeOwner.wifiReady &&
-                                                CombinedStatusConnectivityPolicy
+                                                ConnectivityPolicy
                                                     .wifiReplacementReady(
                                                         wifi = wifi,
                                                         connectivity = presentation.connectivity,

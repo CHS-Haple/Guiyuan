@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CombinedStatusConnectivityPolicy {
+internal object ConnectivityPolicy {
     fun resolve(
         wifi: CombinedStatusStateStore.WifiState,
         airplaneMode: Boolean,

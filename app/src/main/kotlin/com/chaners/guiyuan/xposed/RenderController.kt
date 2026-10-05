@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 
-internal class CombinedStatusRenderController(
+internal class RenderController(
     private val view: CombinedStatusRenderView,
 ) {
     private var stableModel: CombinedStatusRenderModel? = null

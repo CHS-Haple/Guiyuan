@@ -289,7 +289,7 @@ internal object CombinedStatusKeyguardRenderSession {
         private val batteryView = WeakReference(resolved.battery)
         private val batteryCarrier = WeakReference(resolved.batteryCarrier)
         private val renderView = CombinedStatusRenderView(resolved.host.context)
-        private val renderController = CombinedStatusRenderController(renderView)
+        private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
 
         private var featureEnabled = initialFeatureEnabled

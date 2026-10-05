@@ -233,7 +233,7 @@ internal object CombinedStatusHomeRenderSession {
                     }
                 }
             }
-        private val renderController = CombinedStatusRenderController(probeView)
+        private val renderController = RenderController(probeView)
         private var readyLogged = false
         private var layoutLogged = false
         private var deferredStateLogged = false

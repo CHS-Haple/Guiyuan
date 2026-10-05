@@ -489,7 +489,7 @@ internal object CombinedStatusControlCenterRenderSession {
         private val battery = WeakReference(battery)
         private val carrier = WeakReference(carrier)
         private val renderView = CombinedStatusRenderView(host.context)
-        private val renderController = CombinedStatusRenderController(renderView)
+        private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
         private val hostLocationScratch = IntArray(2)
         private val statusAreaLocationScratch = IntArray(2)

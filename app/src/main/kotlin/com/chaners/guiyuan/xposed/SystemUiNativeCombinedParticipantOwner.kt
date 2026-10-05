@@ -67,7 +67,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     private var slotTranslationHook: HookHandle? = null
     private var rootRef: WeakReference<FrameLayout>? = null
     private var renderViewRef: WeakReference<CombinedStatusRenderView>? = null
-    private var renderController: CombinedStatusRenderController? = null
+    private var renderController: RenderController? = null
     private var hostRef: WeakReference<ViewGroup>? = null
     private var eventSink: ((String) -> Unit)? = null
     private var nativeStateIcon: Int? = null
@@ -978,7 +978,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
         renderViewRef = WeakReference(render)
         renderController =
-            renderController ?: CombinedStatusRenderController(render)
+            renderController ?: RenderController(render)
         renderController?.updateVisualSettings(
             RuntimeVisualPreferencesOwner.currentSettings(),
         )

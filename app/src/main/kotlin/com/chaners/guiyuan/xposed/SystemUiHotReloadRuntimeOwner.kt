@@ -57,7 +57,7 @@ internal object SystemUiHotReloadRuntimeOwner {
                 .currentNativePresentationReadyForHotReload()
 
         val transfer =
-            CombinedStatusHotReloadTransfer.capture(
+            HotReloadTransfer.capture(
                 host = host,
                 state = CombinedStatusStateStore.exportHotReloadState(),
                 bindings = SystemUiNetworkStateSource.exportHotReloadBindings(),
@@ -129,6 +129,6 @@ internal object SystemUiHotReloadRuntimeOwner {
         )
     }
 
-    fun restoreTransfer(param: HotReloadedParam): CombinedStatusHotReloadTransfer.Restored? =
-        CombinedStatusHotReloadTransfer.restore(param.savedInstanceState)
+    fun restoreTransfer(param: HotReloadedParam): HotReloadTransfer.Restored? =
+        HotReloadTransfer.restore(param.savedInstanceState)
 }

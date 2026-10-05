@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 
-internal object CombinedStatusHotReloadTransfer {
+internal object HotReloadTransfer {
     private const val VERSION = 9
     private const val PRESENTATION_TRANSFER_VERSION = 8
     private const val TINT_TRANSFER_VERSION = 7

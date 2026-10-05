@@ -4,11 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class CombinedStatusConnectivityPolicyTest {
+class ConnectivityPolicyTest {
     @Test
     fun systemUiWifiNoInternetWinsEvenWhenCellularIsDefault() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = 1,
@@ -46,7 +46,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun systemUiWifiLevelRemainsAuthoritativeAcrossDefaultTransportChanges() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = 1,
@@ -78,7 +78,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun connectivityOnlyFillsUnknownWifiInternetSemantics() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = 1,
@@ -137,7 +137,7 @@ class CombinedStatusConnectivityPolicyTest {
                 enhanced = false,
                 internet = InternetState.VALIDATED,
             ),
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = wifi,
                 airplaneMode = false,
                 connectivity = connectivity,
@@ -146,7 +146,7 @@ class CombinedStatusConnectivityPolicyTest {
         )
         assertEquals(
             false,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity = connectivity,
             ),
@@ -156,7 +156,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun airplaneModeUsesNativeAirplaneCenterWhenWifiIsAbsent() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
@@ -176,7 +176,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun airplaneModeUsesAirplaneCenterBeforeConnectivityIsKnown() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity = SystemUiConnectivityStateSource.State.Unknown,
@@ -189,7 +189,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun visibleWifiRemainsCenterPriorityDuringAirplaneMode() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = 1,
@@ -227,7 +227,7 @@ class CombinedStatusConnectivityPolicyTest {
             )
 
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
@@ -254,7 +254,7 @@ class CombinedStatusConnectivityPolicyTest {
             )
 
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
@@ -275,7 +275,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun vpnDefaultNetworkDoesNotSuppressAuthoritativeMobileTypeAtBootstrap() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
@@ -324,7 +324,7 @@ class CombinedStatusConnectivityPolicyTest {
             )
 
         assertNull(
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Unknown,
                 airplaneMode = false,
                 connectivity = connectivity,
@@ -332,7 +332,7 @@ class CombinedStatusConnectivityPolicyTest {
             ),
         )
         assertNull(
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = 1,
@@ -349,7 +349,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun genericOtherTransportKeepsExistingMobileDataGate() {
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = CombinedStatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
@@ -383,7 +383,7 @@ class CombinedStatusConnectivityPolicyTest {
         val connectivity = SystemUiConnectivityStateSource.State.Unknown
 
         assertNull(
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = wifi,
                 airplaneMode = false,
                 connectivity = connectivity,
@@ -392,7 +392,7 @@ class CombinedStatusConnectivityPolicyTest {
         )
         assertEquals(
             false,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity = connectivity,
             ),
@@ -413,7 +413,7 @@ class CombinedStatusConnectivityPolicyTest {
         val segments =
             (0..3).map { level ->
                 val result =
-                    CombinedStatusConnectivityPolicy.resolve(
+                    ConnectivityPolicy.resolve(
                         wifi =
                             CombinedStatusStateStore.WifiState.Visible(
                                 iconResId = level + 1,
@@ -439,7 +439,7 @@ class CombinedStatusConnectivityPolicyTest {
                 internetValidated = true,
             )
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = wifi,
                 airplaneMode = false,
                 connectivity =
@@ -456,7 +456,7 @@ class CombinedStatusConnectivityPolicyTest {
         assertEquals(CenterIndicator.Empty, result)
         assertEquals(
             false,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -480,7 +480,7 @@ class CombinedStatusConnectivityPolicyTest {
             )
 
         val ready =
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity =
                     SystemUiConnectivityStateSource.State(
@@ -518,14 +518,14 @@ class CombinedStatusConnectivityPolicyTest {
 
         assertEquals(
             true,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity = wifiDefault,
             ),
         )
         assertEquals(
             false,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity = cellularDefault,
             ),
@@ -535,7 +535,7 @@ class CombinedStatusConnectivityPolicyTest {
     @Test
     fun unknownWifiSignalWithoutNativeResourceNeverClaimsReplacement() {
         val ready =
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi =
                     CombinedStatusStateStore.WifiState.Visible(
                         iconResId = null,
@@ -572,7 +572,7 @@ class CombinedStatusConnectivityPolicyTest {
             )
 
         val result =
-            CombinedStatusConnectivityPolicy.resolve(
+            ConnectivityPolicy.resolve(
                 wifi = wifi,
                 airplaneMode = false,
                 connectivity = connectivity,
@@ -589,7 +589,7 @@ class CombinedStatusConnectivityPolicyTest {
         )
         assertEquals(
             true,
-            CombinedStatusConnectivityPolicy.wifiReplacementReady(
+            ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity = connectivity,
             ),

@@ -70,7 +70,7 @@ internal data class CombinedStatusRenderModel(
                 }
 
             val centerIndicator =
-                CombinedStatusConnectivityPolicy.resolve(
+                ConnectivityPolicy.resolve(
                     wifi = snapshot.wifi,
                     airplaneMode = airplaneMode,
                     connectivity = presentation.connectivity,
