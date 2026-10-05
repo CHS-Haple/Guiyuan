@@ -2,17 +2,17 @@
 
 ## Repository / build
 
-- Product: Guiyuan 0.1.0.
-- Stable baseline: `main` remains Build 709; `dev` is the current integration base for this refactor.
-- Active work: `feat/code-lightweight` / PR #217 (`refactor: close lightweight code cleanup`), ready against current `dev`.
-- Objective: reduce mechanical product-name prefixes, oversized mixed-responsibility source files, stale aliases and redundant naming without changing runtime behavior, ownership, lifecycle, geometry, persisted preference keys or diagnostic protocol fields.
-- Naming direction: use `Gy` only where product identity is useful; omit redundant `CombinedStatus` prefixes in package-local domain/runtime types; keep `SystemUi` where it identifies the authoritative platform/integration boundary. Do not introduce a repository-wide `SysUi` rename.
-- Completed in the active branch: settings/UI decomposition; pure render-policy extraction from `StatusPainter`; pure Control Center transition policy extraction from `ControlCenterTransitionOwner`; app-shell, policy/session/model, runtime preference owner and core runtime naming cleanup; Xposed entry alignment; and broad test-name alignment without compatibility aliases.
-- Source-level mechanical `CombinedStatus*` naming is closed out where package/domain context already carries the meaning. Settings/domain types now use concise names such as `FeatureSettings`, `VisualSettings`, `ContentLayout` and `BatteryColor*`; scene/render types use names such as `StatusScene`, `SourceScene`, `RenderMode` and `MotionOwnership`.
-- Persisted preference keys, shared-preference file names, remote-preference protocol strings and historical DEVLOG/CHANGELOG records retain their established values. This refactor does not migrate or rewrite user data.
-- `SystemUi*` types are intentionally not shortened: their prefix carries platform-authority meaning and a global shorthand conversion would add churn without reducing runtime complexity.
-- No runtime behavior is intentionally changed by this checkpoint. No device gate is required unless automated/static review exposes behavior-affecting fallout.
-- Validation: PR #217 Runtime CI #2739 confirms main Kotlin now compiles after restoring visual-settings helper ownership. Unit-test compilation then exposed five residual pre-rename symbols across three test files; a full scan of all 64 test Kotlin files confirmed those were the only remaining `CombinedStatus*` / `isCombinedStatus*` source references, and they are aligned to the current names. Exact-head Runtime revalidation is pending. No Work-branch Canary/device gate is required unless automated validation exposes behavior-affecting fallout.
+- Product: Guiyuan 0.2.0.
+- Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`.
+- Active work: PR #218 / `fix/companion-ui-polish`, Build 742 / `20261006-742`, preparing the accepted companion-UI/runtime-readiness changes as the Guiyuan 0.2.0 stable checkpoint.
+- Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
+- Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
+- Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
+- Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
+- Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
+- Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
+- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; maintainer promotion to 0.2.0 accepts that runtime/device checkpoint. Build 742 changes only version/release metadata and documentation.
+- Next: validate the 0.2.0 exact head, squash PR #218 into `dev`, validate integrated `dev`, then promote `dev` to `main` through the stable-boundary PR.
 
 ## Accepted runtime facts carried into Build 685
 

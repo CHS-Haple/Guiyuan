@@ -3,23 +3,17 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -31,7 +25,6 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -40,13 +33,11 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 internal val COMMON_BATTERY_COLORS =
     listOf(
@@ -119,10 +110,9 @@ internal fun BatteryColorBottomSheet(
     repository: BatteryColorSchemeLibraryRepository,
     onDismiss: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
-    val navPager = rememberPagerState(initialPage = 0, pageCount = { 2 })
     var selectedCustomId by remember { mutableStateOf<Int?>(null) }
     var selectedSlot by remember { mutableStateOf<BatteryColorSlot?>(null) }
+    var showDetail by remember { mutableStateOf(false) }
     var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var pendingCreateSourceKey by remember {
@@ -133,132 +123,129 @@ internal fun BatteryColorBottomSheet(
     }
     var renameCustomId by remember { mutableStateOf<Int?>(null) }
     var deleteCustomId by remember { mutableStateOf<Int?>(null) }
+
     val nextCustomId = repository.nextAvailableCustomId()
     val nextCustomName =
         nextCustomId?.let {
             stringResource(R.string.battery_custom_scheme_default_name, it)
         }
-    val inDetail = navPager.currentPage == 1
-    val sheetTitle =
-        if (inDetail && selectedSlot != null) {
-            stringResource(
-                R.string.battery_mode_editor_title,
-                stringResource(batteryColorSlotLabel(requireNotNull(selectedSlot))),
-            )
-        } else {
-            stringResource(R.string.battery_colors)
+    val detailCustom = selectedCustomId?.let(library::customById)
+    val detailSlot = selectedSlot
+    val detailVisible =
+        show &&
+            showDetail &&
+            detailCustom != null &&
+            detailSlot != null
+
+    LaunchedEffect(show) {
+        if (!show) {
+            showDetail = false
+            selectedCustomId = null
+            selectedSlot = null
         }
+    }
 
     OverlayBottomSheet(
         show = show,
         modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
-        title = sheetTitle,
-        backgroundColor =
-            if (inDetail) {
-                MiuixTheme.colorScheme.surface
-            } else {
-                MiuixTheme.colorScheme.background
-            },
-        insideMargin =
-            if (inDetail) {
-                BottomSheetDefaults.insideMargin
-            } else {
-                DpSize(0.dp, 0.dp)
-            },
-        startAction =
-            if (inDetail) {
-                {
-                    TooltipBox(text = stringResource(R.string.back)) {
-                        IconButton(
-                            onClick = {
-                                scope.launch { navPager.springAnimateToPage(0) }
-                            },
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.back),
-                            )
-                        }
-                    }
-                }
-            } else {
-                {
-                    Spacer(
-                        modifier =
-                            Modifier.size(
-                                width = IconButtonDefaults.MinWidth,
-                                height = IconButtonDefaults.MinHeight,
-                            ),
-                    )
-                }
-            },
+        title = stringResource(R.string.battery_colors),
+        backgroundColor = MiuixTheme.colorScheme.background,
+        insideMargin = DpSize(0.dp, 0.dp),
+        startAction = {
+            Spacer(
+                modifier =
+                    Modifier.size(
+                        width = IconButtonDefaults.MinWidth,
+                        height = IconButtonDefaults.MinHeight,
+                    ),
+            )
+        },
+        allowDismiss = !detailVisible,
         onDismissRequest = {
-            if (inDetail) {
-                scope.launch { navPager.springAnimateToPage(0) }
-            } else {
+            if (!detailVisible) {
                 onDismiss()
             }
         },
     ) {
-        HorizontalPager(
-            state = navPager,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clipToBounds(),
-            userScrollEnabled = false,
-            verticalAlignment = Alignment.Top,
-        ) { page ->
-            if (page == 0) {
-                BatterySchemeOverview(
-                    library = library,
-                    requestedSchemeKey = requestedSchemeKey,
-                    onRequestedSchemeHandled = { requestedSchemeKey = null },
-                    canCreateCustom = nextCustomId != null,
-                    nextCustomName = nextCustomName,
-                    onApplyScheme = repository::activateScheme,
-                    onOpenBuiltInSlot = { scheme, slot ->
-                        pendingCreateSourceKey = scheme.key
-                        pendingCreateSlot = slot
-                        showCreateDialog = true
-                    },
-                    onOpenCustomSlot = { id, slot ->
-                        selectedCustomId = id
-                        selectedSlot = slot
-                        scope.launch { navPager.springAnimateToPage(1) }
-                    },
-                    onAdd = {
-                        pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
-                        pendingCreateSlot = null
-                        showCreateDialog = true
-                    },
-                    onRenameCustom = { renameCustomId = it },
-                    onCopyCustom = { custom ->
-                        val name = nextCustomName
-                        if (name != null) {
-                            repository.createCustom(name, custom.key)?.let { id ->
-                                requestedSchemeKey = customSchemeKey(id)
-                            }
-                        }
-                    },
-                    onDeleteCustom = { deleteCustomId = it },
+        BatterySchemeOverview(
+            library = library,
+            requestedSchemeKey = requestedSchemeKey,
+            onRequestedSchemeHandled = { requestedSchemeKey = null },
+            canCreateCustom = nextCustomId != null,
+            nextCustomName = nextCustomName,
+            onApplyScheme = repository::activateScheme,
+            onOpenBuiltInSlot = { scheme, slot ->
+                pendingCreateSourceKey = scheme.key
+                pendingCreateSlot = slot
+                showCreateDialog = true
+            },
+            onOpenCustomSlot = { id, slot ->
+                selectedCustomId = id
+                selectedSlot = slot
+                showDetail = true
+            },
+            onAdd = {
+                pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
+                pendingCreateSlot = null
+                showCreateDialog = true
+            },
+            onRenameCustom = { renameCustomId = it },
+            onCopyCustom = { custom ->
+                val name = nextCustomName
+                if (name != null) {
+                    repository.createCustom(name, custom.key)?.let { id ->
+                        requestedSchemeKey = customSchemeKey(id)
+                    }
+                }
+            },
+            onDeleteCustom = { deleteCustomId = it },
+        )
+    }
+
+    OverlayBottomSheet(
+        show = detailVisible,
+        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+        title =
+            detailSlot?.let { slot ->
+                stringResource(
+                    R.string.battery_mode_editor_title,
+                    stringResource(batteryColorSlotLabel(slot)),
                 )
-            } else {
-                val custom = selectedCustomId?.let(library::customById)
-                val slot = selectedSlot
-                if (custom != null && slot != null) {
-                    BatteryCustomModeEditor(
-                        custom = custom,
-                        slot = slot,
-                        onSourceChange = { source ->
-                            repository.setCustomSource(custom.id, slot, source)
-                        },
-                        onColorChange = { color ->
-                            repository.setCustomColor(custom.id, slot, color)
-                        },
+            },
+        backgroundColor = MiuixTheme.colorScheme.surface,
+        insideMargin = BottomSheetDefaults.insideMargin,
+        enableWindowDim = false,
+        startAction = {
+            TooltipBox(text = stringResource(R.string.back)) {
+                IconButton(
+                    onClick = { showDetail = false },
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.back),
                     )
                 }
             }
+        },
+        onDismissRequest = { showDetail = false },
+        onDismissFinished = {
+            if (!showDetail) {
+                selectedCustomId = null
+                selectedSlot = null
+            }
+        },
+    ) {
+        if (detailCustom != null && detailSlot != null) {
+            BatteryCustomModeEditor(
+                custom = detailCustom,
+                slot = detailSlot,
+                onSourceChange = { source ->
+                    repository.setCustomSource(detailCustom.id, detailSlot, source)
+                },
+                onColorChange = { color ->
+                    repository.setCustomColor(detailCustom.id, detailSlot, color)
+                },
+            )
         }
     }
 
@@ -284,7 +271,7 @@ internal fun BatteryColorBottomSheet(
                 if (targetSlot != null) {
                     selectedCustomId = id
                     selectedSlot = targetSlot
-                    scope.launch { navPager.springAnimateToPage(1) }
+                    showDetail = true
                 }
             }
         },

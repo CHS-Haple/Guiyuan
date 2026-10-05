@@ -1,8 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -212,6 +214,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
+        titlePadding = 0.dp,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
             DiagnosticsFilterMenu(
@@ -708,6 +711,12 @@ private fun DiagnosticsUsefulEventCard(
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         showIndication = true,
         onClick = onToggle,
+        onLongPress = {
+            copyDiagnosticLogEntry(
+                context = context,
+                entry = entry,
+            )
+        },
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -892,6 +901,26 @@ private fun DiagnosticLogDetailRow(
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )
     }
+}
+
+private fun copyDiagnosticLogEntry(
+    context: Context,
+    entry: DiagnosticLogEntry,
+) {
+    val clipboard =
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            ?: return
+    clipboard.setPrimaryClip(
+        ClipData.newPlainText(
+            context.getString(R.string.diagnostics_log_clipboard_label),
+            entry.rawLine,
+        ),
+    )
+    Toast.makeText(
+        context,
+        R.string.diagnostics_log_copied,
+        Toast.LENGTH_SHORT,
+    ).show()
 }
 
 private fun diagnosticLogIsRuntimeEntry(entry: DiagnosticLogEntry): Boolean {

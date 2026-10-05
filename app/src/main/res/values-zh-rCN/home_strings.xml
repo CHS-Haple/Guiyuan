@@ -76,10 +76,14 @@
     <string name="home_preview_battery_mode_power_save">省电模式</string>
     <string name="home_preview_battery_mode_performance">性能模式</string>
     <string name="home_preview_battery_mode_super_power_save">超级省电</string>
+    <string name="home_preview_battery_mode_power_save_compact">省电模式</string>
+    <string name="home_preview_battery_mode_performance_compact">性能模式</string>
+    <string name="home_preview_battery_mode_super_power_save_compact">超级省电</string>
     <string name="home_preview_charging_state_title">充电状态</string>
     <string name="home_preview_charging_state_summary">充电状态与电量模式互不排斥。</string>
     <string name="home_preview_charging_none">非充电</string>
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
+    <string name="home_preview_charging_super_fast_compact">超级快充</string>
     <string name="home_preview_battery_summary_format">%1$d%% · %2$s · %3$s</string>
 </resources>

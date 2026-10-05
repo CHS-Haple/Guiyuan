@@ -20,6 +20,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -35,6 +36,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TooltipBox
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -75,6 +77,7 @@ internal fun SettingsPage(
     snackbarHost: @Composable () -> Unit = {},
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
@@ -94,6 +97,7 @@ internal fun SettingsPage(
                     title = title,
                     color = barColor,
                     scrollBehavior = scrollBehavior,
+                    titlePadding = titlePadding,
                     navigationIcon = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

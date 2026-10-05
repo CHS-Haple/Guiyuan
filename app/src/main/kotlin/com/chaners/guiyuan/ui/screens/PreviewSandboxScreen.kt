@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -108,15 +109,15 @@ internal fun PreviewSandboxScreen(
     val batteryModeOptions =
         listOf(
             stringResource(R.string.home_preview_battery_mode_balanced),
-            stringResource(R.string.home_preview_battery_mode_power_save),
-            stringResource(R.string.home_preview_battery_mode_performance),
-            stringResource(R.string.home_preview_battery_mode_super_power_save),
+            stringResource(R.string.home_preview_battery_mode_power_save_compact),
+            stringResource(R.string.home_preview_battery_mode_performance_compact),
+            stringResource(R.string.home_preview_battery_mode_super_power_save_compact),
         )
     val chargingOptions =
         listOf(
             stringResource(R.string.home_preview_charging_none),
             stringResource(R.string.home_preview_charging_normal),
-            stringResource(R.string.home_preview_charging_super_fast),
+            stringResource(R.string.home_preview_charging_super_fast_compact),
         )
 
     val mobileDisabledSummary =
@@ -390,13 +391,14 @@ private fun PreviewStatusLine(
     ) {
         Text(
             text = label,
-            modifier = Modifier.width(48.dp),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = 1,
         )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = value,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             style = MiuixTheme.textStyles.body1,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )
