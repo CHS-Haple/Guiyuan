@@ -284,6 +284,8 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     pendingObservationSource = source
                     return StateResult.Pending("home-dark-icon-manager-registration")
                 }
+        pendingObservationHost = null
+        pendingObservationSource = null
         val group =
             NativeParticipantRuntimeAccess.groupFor(hostView)
                 ?: return StateResult.Failure("status-icon-group-missing")
@@ -303,8 +305,6 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             )
         }
 
-        pendingObservationHost = null
-        pendingObservationSource = null
         activeManager = manager
         activeGroup = WeakReference(group)
         observationOnly = true
