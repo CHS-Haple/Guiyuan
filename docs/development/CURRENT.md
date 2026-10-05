@@ -4,7 +4,7 @@
 
 - Product: Guiyuan 0.1.0.
 - Stable baseline: `main` remains Build 709; `dev` is the current integration base for this refactor.
-- Active work: `feat/code-lightweight`. PR #216 is closed and is not an active validation boundary; the branch continues from current `dev` and remains synchronized with it.
+- Active work: `feat/code-lightweight` / PR #217 (`refactor: close lightweight code cleanup`), ready against current `dev`.
 - Objective: reduce mechanical product-name prefixes, oversized mixed-responsibility source files, stale aliases and redundant naming without changing runtime behavior, ownership, lifecycle, geometry, persisted preference keys or diagnostic protocol fields.
 - Naming direction: use `Gy` only where product identity is useful; omit redundant `CombinedStatus` prefixes in package-local domain/runtime types; keep `SystemUi` where it identifies the authoritative platform/integration boundary. Do not introduce a repository-wide `SysUi` rename.
 - Completed in the active branch: settings/UI decomposition; pure render-policy extraction from `StatusPainter`; pure Control Center transition policy extraction from `ControlCenterTransitionOwner`; app-shell, policy/session/model, runtime preference owner and core runtime naming cleanup; Xposed entry alignment; and broad test-name alignment without compatibility aliases.
@@ -12,7 +12,7 @@
 - Persisted preference keys, shared-preference file names, remote-preference protocol strings and historical DEVLOG/CHANGELOG records retain their established values. This refactor does not migrate or rewrite user data.
 - `SystemUi*` types are intentionally not shortened: their prefix carries platform-authority meaning and a global shorthand conversion would add churn without reducing runtime complexity.
 - No runtime behavior is intentionally changed by this checkpoint. No device gate is required unless automated/static review exposes behavior-affecting fallout.
-- Validation plan: complete the consolidated static review, then run one ordinary code checkpoint/PR CI instead of generating CI noise for each mechanical sub-step.
+- Validation: consolidated static review is complete. PR #217 is the single final work-branch Runtime CI checkpoint; no Work-branch Canary/device gate is required unless automated validation exposes behavior-affecting fallout.
 
 ## Accepted runtime facts carried into Build 685
 
