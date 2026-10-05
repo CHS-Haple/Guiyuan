@@ -39,7 +39,7 @@ internal data class CombinedStatusSceneCapability(
     val evidence: CombinedStatusSceneEvidence,
 )
 
-internal object CombinedStatusScenePolicy {
+internal object ScenePolicy {
     private val capabilities =
         mapOf(
             CombinedStatusScene.HOME_STABLE to

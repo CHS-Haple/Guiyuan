@@ -26,7 +26,7 @@ class CombinedStatusModule : XposedModule() {
     private var controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
     private var steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
     private var lastStableKeyguardAodScene =
-        CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+        ScenePolicy.StableKeyguardAodScene.UNKNOWN
     private var keyguardAodFullTargetPending = false
     private var keyguardAodPendingTargetToLockScreen: Boolean? = null
     private var keyguardAodFullTransitionActive = false
@@ -275,7 +275,7 @@ class CombinedStatusModule : XposedModule() {
             controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
             steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
             lastStableKeyguardAodScene =
-                CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+                ScenePolicy.StableKeyguardAodScene.UNKNOWN
             keyguardAodFullTargetPending = false
             keyguardAodPendingTargetToLockScreen = null
             keyguardAodFullTransitionActive = false
@@ -1141,7 +1141,7 @@ class CombinedStatusModule : XposedModule() {
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
         val effectiveSourceScene =
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = panelSourceScene,
                 steadySourceScene = steadyStatusSourceScene,
                 lastStableFamilyScene = lastStableKeyguardAodScene,
@@ -1224,7 +1224,7 @@ class CombinedStatusModule : XposedModule() {
                 settings.keyguardEnabled &&
                 keyguardPresentationReady
         val nextEligible =
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = settings.enabled,
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,
@@ -1291,7 +1291,7 @@ class CombinedStatusModule : XposedModule() {
                 incomingKeyguardPresentationReadyForControlCenter()
         if (
             keyguardControlCenterLeaseActive ||
-            !CombinedStatusScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            !ScenePolicy.shouldAcquireKeyguardControlCenterLease(
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = controlCenterExpansionFraction,
@@ -1328,7 +1328,7 @@ class CombinedStatusModule : XposedModule() {
                 ?: true
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
-        return CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+        return ScenePolicy.shouldRetainKeyguardControlCenterLease(
             leaseActive = keyguardControlCenterLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -1383,7 +1383,7 @@ class CombinedStatusModule : XposedModule() {
             SystemUiKeyguardHostResolver.current()
                 as? SystemUiKeyguardHostResolver.ResolveResult.Ready
                 ?: return false
-        return CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+        return ScenePolicy.incomingKeyguardPresentationReady(
             visualHandoffActive = keyguardBoundaryVisualHandoffActive,
             layoutPrecommitActive = keyguardBoundaryLayoutPrecommitActive,
             compactLayoutReady = keyguardBoundaryCompactLayoutReady,
@@ -1401,7 +1401,7 @@ class CombinedStatusModule : XposedModule() {
 
     private fun reconcileControlCenterForKeyguardLifecycle(authority: String) {
         if (
-            !CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            !ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
                 controlCenterVisible = controlCenterSceneVisible,
                 nativeFraction = controlCenterExpansionFraction,
                 leaseActive = keyguardControlCenterLeaseActive,
@@ -1939,7 +1939,7 @@ class CombinedStatusModule : XposedModule() {
         keyguardAodPendingTargetToLockScreen = null
         homePresentationOwnedAtFullAodStart = homeOwnedAtStart
         if (
-            CombinedStatusScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -1953,13 +1953,13 @@ class CombinedStatusModule : XposedModule() {
             settings.enabled &&
                 steadyStatusSourceScene == CombinedStatusSourceScene.HOME &&
                 lastStableKeyguardAodScene ==
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
                 homeOwnedAtStart &&
                 (settings.keyguardEnabled || settings.aodEnabled)
         keyguardAodFullTargetPending =
             SystemUiPresentationRuntimeOwner.keyguardStatusIconReady &&
                 lastStableKeyguardAodScene !=
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
                 settings.keyguardEnabled != settings.aodEnabled
 
         logDiagnostic(
@@ -2035,7 +2035,7 @@ class CombinedStatusModule : XposedModule() {
         )
 
         val releaseTransientHomeKeyguard =
-            CombinedStatusScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2196,7 +2196,7 @@ class CombinedStatusModule : XposedModule() {
 
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
         val eligible =
-            CombinedStatusScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2226,7 +2226,7 @@ class CombinedStatusModule : XposedModule() {
                 resolution.host,
             )
         keyguardBoundaryLayoutPrecommitActive =
-            CombinedStatusScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2475,7 +2475,7 @@ class CombinedStatusModule : XposedModule() {
         }
 
         val currentOriginEligible =
-            CombinedStatusScenePolicy.shouldArmHomeAodTargetPrearm(
+            ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = settings.enabled,
                 aodEnabled = settings.aodEnabled,
                 steadySourceScene = steadyStatusSourceScene,
@@ -2520,7 +2520,7 @@ class CombinedStatusModule : XposedModule() {
         if (
             !update.isAodAnimate &&
             !keyguardAodFullTransitionActive &&
-            CombinedStatusScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = keyguardAodPendingTargetToLockScreen,
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
@@ -2532,7 +2532,7 @@ class CombinedStatusModule : XposedModule() {
 
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
         val activateHomeNativeAodFallback =
-            CombinedStatusScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = homeNativeAodFallbackCandidate,
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
@@ -2727,14 +2727,14 @@ class CombinedStatusModule : XposedModule() {
                     toAod = update.toAod,
                     isAodAnimate = update.isAodAnimate,
                 ) ->
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD
+                    ScenePolicy.StableKeyguardAodScene.AOD
 
                 !update.toAod &&
                     steadyStatusSourceScene == CombinedStatusSourceScene.KEYGUARD ->
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD
 
                 steadyStatusSourceScene == CombinedStatusSourceScene.HOME ->
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN
 
                 else -> null
             }
@@ -2756,7 +2756,7 @@ class CombinedStatusModule : XposedModule() {
                     !aodState.toAod
                 ) {
                     updateStableKeyguardAodScene(
-                        CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                         "scene-home-stable",
                     )
                 }
@@ -2773,7 +2773,7 @@ class CombinedStatusModule : XposedModule() {
                     )
                 ) {
                     updateStableKeyguardAodScene(
-                        CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                        ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                         "scene-keyguard",
                     )
                 }
@@ -2784,7 +2784,7 @@ class CombinedStatusModule : XposedModule() {
     }
 
     private fun updateStableKeyguardAodScene(
-        next: CombinedStatusScenePolicy.StableKeyguardAodScene,
+        next: ScenePolicy.StableKeyguardAodScene,
         source: String,
     ) {
         if (next == lastStableKeyguardAodScene) return
@@ -2804,12 +2804,12 @@ class CombinedStatusModule : XposedModule() {
     private fun resolveCurrentKeyguardAodProjection(
         resolved: SystemUiKeyguardHostResolver.ResolvedHost,
         fullAodVisualBoundary: Boolean = false,
-    ): CombinedStatusScenePolicy.KeyguardAodProjection? {
+    ): ScenePolicy.KeyguardAodProjection? {
         val settings = RuntimeFeaturePreferencesOwner.currentSettings()
         val aodState =
             SystemUiKeyguardAodStateSource.currentState(resolved.battery)
                 ?: return null
-        return CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+        return ScenePolicy.resolveKeyguardAodProjection(
             featureEnabled = settings.enabled,
             keyguardEnabled = settings.keyguardEnabled,
             aodEnabled = settings.aodEnabled,
@@ -2885,7 +2885,7 @@ class CombinedStatusModule : XposedModule() {
                             return
                         }
                 when (projection) {
-                    CombinedStatusScenePolicy.KeyguardAodProjection.AOD -> {
+                    ScenePolicy.KeyguardAodProjection.AOD -> {
                         if (
                             attachAodRenderer(
                                 resolved = resolution.host,
@@ -2896,7 +2896,7 @@ class CombinedStatusModule : XposedModule() {
                         }
                     }
 
-                    CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD -> {
+                    ScenePolicy.KeyguardAodProjection.KEYGUARD -> {
                         if (
                             attachKeyguardRenderer(
                                 resolved = resolution.host,
@@ -2907,7 +2907,7 @@ class CombinedStatusModule : XposedModule() {
                         }
                     }
 
-                    CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE -> {
+                    ScenePolicy.KeyguardAodProjection.NATIVE -> {
                         deactivateAodRuntime("keyguard-aod-native")
                         deactivateKeyguardRuntime("keyguard-aod-native")
                     }
@@ -3104,7 +3104,7 @@ class CombinedStatusModule : XposedModule() {
             resolveCurrentKeyguardAodProjection(
                 resolved = resolved.host,
                 fullAodVisualBoundary = keyguardBoundaryVisualHandoffActive,
-            ) != CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD
+            ) != ScenePolicy.KeyguardAodProjection.KEYGUARD
         ) {
             deactivateKeyguardRuntime("projection-ineligible")
             return
@@ -3238,7 +3238,7 @@ class CombinedStatusModule : XposedModule() {
             !settings.keyguardEnabled ||
             resolved !is SystemUiKeyguardHostResolver.ResolveResult.Ready ||
             resolveCurrentKeyguardAodProjection(resolved.host) !=
-                CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD
+                ScenePolicy.KeyguardAodProjection.KEYGUARD
         ) {
             deactivateKeyguardRuntime("cutover-projection-ineligible")
             return
@@ -3319,7 +3319,7 @@ class CombinedStatusModule : XposedModule() {
                 }
         if (
             resolveCurrentKeyguardAodProjection(resolved.host) !=
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD
+            ScenePolicy.KeyguardAodProjection.AOD
         ) {
             deactivateAodRuntime("projection-ineligible")
             return
@@ -3415,7 +3415,7 @@ class CombinedStatusModule : XposedModule() {
             !settings.aodEnabled ||
             resolved !is SystemUiKeyguardHostResolver.ResolveResult.Ready ||
             resolveCurrentKeyguardAodProjection(resolved.host) !=
-                CombinedStatusScenePolicy.KeyguardAodProjection.AOD
+                ScenePolicy.KeyguardAodProjection.AOD
         ) {
             deactivateAodRuntime("cutover-projection-ineligible")
             return
@@ -3496,7 +3496,7 @@ class CombinedStatusModule : XposedModule() {
         controlCenterSourceScene = CombinedStatusSourceScene.UNKNOWN
         steadyStatusSourceScene = CombinedStatusSourceScene.UNKNOWN
         lastStableKeyguardAodScene =
-            CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN
+            ScenePolicy.StableKeyguardAodScene.UNKNOWN
         keyguardAodFullTargetPending = false
         keyguardAodFullTransitionActive = false
         homeAodTargetPrearmPending = false

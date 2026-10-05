@@ -5,11 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusScenePolicyTest {
-class CombinedStatusScenePolicyTest {
+class ScenePolicyTest {
+class ScenePolicyTest {
     @Test
     fun everySceneHasExactlyOneCapability() {
-        val capabilities = CombinedStatusScenePolicy.all()
+        val capabilities = ScenePolicy.all()
 
         assertEquals(CombinedStatusScene.entries.size, capabilities.size)
         assertEquals(
@@ -20,7 +20,7 @@ class CombinedStatusScenePolicyTest {
 
     @Test
     fun homeStableUsesProjectedOverlayWithoutNativeSlotMutation() {
-        val home = CombinedStatusScenePolicy.capability(CombinedStatusScene.HOME_STABLE)
+        val home = ScenePolicy.capability(CombinedStatusScene.HOME_STABLE)
 
         assertEquals(CombinedStatusRenderMode.PROJECTED, home.renderMode)
         assertEquals(CombinedStatusMotionOwnership.NONE, home.motionOwnership)
@@ -30,7 +30,7 @@ class CombinedStatusScenePolicyTest {
     @Test
     fun systemUiOwnedTransitionsDoNotRequestCombinedSlotMutation() {
         val systemUiOwned =
-            CombinedStatusScenePolicy.all()
+            ScenePolicy.all()
                 .filter { it.motionOwnership == CombinedStatusMotionOwnership.SYSTEM_UI }
 
         assertTrue(systemUiOwned.isNotEmpty())
@@ -51,21 +51,21 @@ class CombinedStatusScenePolicyTest {
     @Test
     fun retainedTransitionSourceWitnessSurvivesPresentationHandoff() {
         assertTrue(
-            CombinedStatusScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 0,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = false,

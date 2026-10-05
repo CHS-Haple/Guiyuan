@@ -4,46 +4,46 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusSceneControlCenterTest {
+class SceneControlCenterTest {
     @Test
     fun controlCenterProjectionInheritsVerifiedSourceSceneCapability() {
         assertTrue(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = CombinedStatusSourceScene.HOME,
                 keyguardEnabled = false,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 keyguardEnabled = false,
             ),
         )
         assertTrue(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = CombinedStatusSourceScene.UNKNOWN,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
                 sourceScene = CombinedStatusSourceScene.HOME,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 keyguardEnabled = true,
@@ -54,7 +54,7 @@ class CombinedStatusSceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseRejectsEveryIndependentInvalidBoundary() {
         val base =
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -66,7 +66,7 @@ class CombinedStatusSceneControlCenterTest {
         assertTrue(base)
 
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = false,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -77,7 +77,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = false,
@@ -88,7 +88,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -99,7 +99,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -114,28 +114,28 @@ class CombinedStatusSceneControlCenterTest {
     @Test
     fun hiddenControlCenterIgnoresKeyguardLifecycleChurnUntilItActuallyOpens() {
         assertFalse(
-            CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
                 controlCenterVisible = false,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
                 controlCenterVisible = true,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
                 controlCenterVisible = false,
                 nativeFraction = 0.1f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            CombinedStatusScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
                 controlCenterVisible = false,
                 nativeFraction = 0f,
                 leaseActive = true,
@@ -146,7 +146,7 @@ class CombinedStatusSceneControlCenterTest {
     @Test
     fun incomingKeyguardBoundaryPresentationCanBridgeStableReadiness() {
         assertTrue(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -155,7 +155,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = false,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -164,7 +164,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = false,
                 compactLayoutReady = true,
@@ -173,7 +173,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = false,
@@ -182,7 +182,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -191,7 +191,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.incomingKeyguardPresentationReady(
+            ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -204,7 +204,7 @@ class CombinedStatusSceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseMaySpanIncomingBoundaryBeforeStableFamily() {
         assertTrue(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -216,7 +216,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -232,14 +232,14 @@ class CombinedStatusSceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseExistsOnlyInsideVerifiedNativeTransitionLifetime() {
         assertTrue(
-            CombinedStatusScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            ScenePolicy.shouldAcquireKeyguardControlCenterLease(
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0.5f,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            ScenePolicy.shouldAcquireKeyguardControlCenterLease(
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0f,
@@ -247,7 +247,7 @@ class CombinedStatusSceneControlCenterTest {
         )
 
         assertTrue(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -258,7 +258,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.HOME,
                 featureEnabled = true,
@@ -269,7 +269,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -280,7 +280,7 @@ class CombinedStatusSceneControlCenterTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardControlCenterLease(
                 leaseActive = true,
                 sourceScene = CombinedStatusSourceScene.KEYGUARD,
                 featureEnabled = true,

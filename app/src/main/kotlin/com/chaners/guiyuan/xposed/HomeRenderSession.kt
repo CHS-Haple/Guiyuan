@@ -329,7 +329,7 @@ internal object HomeRenderSession {
             val motion = statusIcons.get() ?: return null
             val render = probeView
             if (
-                !CombinedStatusScenePolicy.retainedTransitionSourceWitnessAvailable(
+                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
                     widthPx = render.width,
                     heightPx = render.height,
                     hostAttached =

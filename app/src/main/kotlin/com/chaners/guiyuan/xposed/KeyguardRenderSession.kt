@@ -348,7 +348,7 @@ internal object KeyguardRenderSession {
             val motion = statusIcons.get() ?: return null
             val render = renderView
             if (
-                !CombinedStatusScenePolicy.retainedTransitionSourceWitnessAvailable(
+                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
                     widthPx = render.width,
                     heightPx = render.height,
                     hostAttached =

@@ -5,42 +5,42 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusSceneAodPolicyTest {
+class SceneAodPolicyTest {
     @Test
     fun keyguardAndStableAodAreIndependentProjectedCandidates() {
-        val keyguard = CombinedStatusScenePolicy.capability(CombinedStatusScene.KEYGUARD)
+        val keyguard = ScenePolicy.capability(CombinedStatusScene.KEYGUARD)
         assertEquals(CombinedStatusRenderMode.PROJECTED, keyguard.renderMode)
         assertEquals(CombinedStatusMotionOwnership.SYSTEM_UI, keyguard.motionOwnership)
         assertEquals(CombinedStatusSceneEvidence.STATIC_VERIFIED, keyguard.evidence)
 
-        val aod = CombinedStatusScenePolicy.capability(CombinedStatusScene.AOD)
+        val aod = ScenePolicy.capability(CombinedStatusScene.AOD)
         assertEquals(CombinedStatusRenderMode.PROJECTED, aod.renderMode)
         assertEquals(CombinedStatusMotionOwnership.SYSTEM_UI, aod.motionOwnership)
         assertEquals(CombinedStatusSceneEvidence.STATIC_VERIFIED, aod.evidence)
 
         assertTrue(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,
                 aodEnabled = true,
                 stableAod = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,
                 aodEnabled = false,
                 stableAod = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = false,
                 aodEnabled = true,
                 stableAod = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,
                 aodEnabled = true,
                 stableAod = false,
@@ -57,7 +57,7 @@ class CombinedStatusSceneAodPolicyTest {
             toAod: Boolean,
             source: CombinedStatusSourceScene,
         ) =
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = feature,
                 keyguardEnabled = keyguard,
                 aodEnabled = aod,
@@ -67,27 +67,27 @@ class CombinedStatusSceneAodPolicyTest {
             )
 
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
             resolveStable(true, true, false, false, CombinedStatusSourceScene.KEYGUARD),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             resolveStable(true, false, true, false, CombinedStatusSourceScene.KEYGUARD),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.KeyguardAodProjection.AOD,
             resolveStable(true, false, true, true, CombinedStatusSourceScene.KEYGUARD),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             resolveStable(true, true, false, true, CombinedStatusSourceScene.KEYGUARD),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             resolveStable(true, true, true, false, CombinedStatusSourceScene.HOME),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             resolveStable(false, true, true, false, CombinedStatusSourceScene.KEYGUARD),
         )
     }
@@ -95,8 +95,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun aodAnimationRoutesFromLatchedStableFamilySceneNotMutableOwnership() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -104,12 +104,12 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -117,12 +117,12 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -130,12 +130,12 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -143,7 +143,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
             ),
         )
     }
@@ -151,8 +151,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun directAodToHomeUnlockCannotReversePrearmAod() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -160,13 +160,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 homePresentationOwned = true,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -174,7 +174,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
             ),
         )
@@ -184,19 +184,19 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun nativeAodTargetCanPrearmHomeBeforeAnimationFlagCatchesUp() {
         assertTrue(
-            CombinedStatusScenePolicy.shouldArmHomeAodTargetPrearm(
+            ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
                 nativeToLockScreenTarget = false,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -204,7 +204,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = false,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = false,
                 nativeToLockScreenTarget = false,
                 fullAodTargetSourceReady = true,
@@ -216,23 +216,23 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun homeAodTargetPrearmRejectsReverseOrKnownFamilyOrigin() {
         assertFalse(
-            CombinedStatusScenePolicy.shouldArmHomeAodTargetPrearm(
+            ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
                 nativeToLockScreenTarget = true,
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.shouldArmHomeAodTargetPrearm(
+            ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 homePresentationOwned = true,
                 nativeToLockScreenTarget = false,
             ),
@@ -242,8 +242,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun singleEnabledFamilyUsesNativeKeyguardStatusIconsBoundary() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -251,13 +251,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 1f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -265,13 +265,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0.99f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -279,13 +279,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -293,13 +293,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 0f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -307,7 +307,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 0.005f,
             ),
         )
@@ -316,8 +316,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun singleEnabledIncomingChildWaitsForNativeStatusIconsTakeover() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -325,13 +325,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 0f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -339,13 +339,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 keyguardStatusIconsAlpha = 0.01f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -353,13 +353,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 1f,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -367,7 +367,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 keyguardStatusIconsAlpha = 0.99f,
             ),
         )
@@ -377,8 +377,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun aodOnlyHomePrearmBeatsTransientKeyguardStatusIconsBoundary() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -386,7 +386,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
                 keyguardStatusIconsAlpha = 1f,
             ),
@@ -397,64 +397,64 @@ class CombinedStatusSceneAodPolicyTest {
     fun controlCenterSourceConflictUsesStableFamilyHistoryAsDirectionEvidence() {
         assertEquals(
             CombinedStatusSourceScene.HOME,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.HOME,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.HOME,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.KEYGUARD,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.KEYGUARD,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.KEYGUARD,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.KEYGUARD,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.HOME,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.HOME,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.HOME,
                 steadySourceScene = CombinedStatusSourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.KEYGUARD,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.HOME,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 incomingKeyguardPresentationReady = true,
             ),
         )
         assertEquals(
             CombinedStatusSourceScene.HOME,
-            CombinedStatusScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = CombinedStatusSourceScene.HOME,
                 steadySourceScene = CombinedStatusSourceScene.HOME,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 incomingKeyguardPresentationReady = true,
             ),
         )
@@ -463,8 +463,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun singleEnabledFamilyFallsBackConservativelyWhenVisualEvidenceIsUnavailable() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -475,8 +475,8 @@ class CombinedStatusSceneAodPolicyTest {
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -488,8 +488,8 @@ class CombinedStatusSceneAodPolicyTest {
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -505,8 +505,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun latchedAodOriginBeatsStaleHomeOwnershipDuringAodToKeyguard() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.KEYGUARD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -514,7 +514,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.AOD,
+                    ScenePolicy.StableKeyguardAodScene.AOD,
                 homePresentationOwned = true,
             ),
         )
@@ -523,8 +523,8 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun aodOnlyPrearmRequiresAnActualAnimationSignal() {
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.NATIVE,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -532,13 +532,13 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = false,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
             ),
         )
         assertEquals(
-            CombinedStatusScenePolicy.KeyguardAodProjection.AOD,
-            CombinedStatusScenePolicy.resolveKeyguardAodProjection(
+            ScenePolicy.KeyguardAodProjection.AOD,
+            ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -546,7 +546,7 @@ class CombinedStatusSceneAodPolicyTest {
                 isAodAnimate = true,
                 steadySourceScene = CombinedStatusSourceScene.KEYGUARD,
                 lastStableFamilyScene =
-                    CombinedStatusScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
             ),
         )
@@ -554,7 +554,7 @@ class CombinedStatusSceneAodPolicyTest {
     @Test
     fun aodPrearmRequiresAodFeatureAndVisibleHomeOwnership() {
         assertTrue(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,
                 aodEnabled = true,
                 stableAod = false,
@@ -562,7 +562,7 @@ class CombinedStatusSceneAodPolicyTest {
             ),
         )
         assertFalse(
-            CombinedStatusScenePolicy.aodProjectionEligible(
+            ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,
                 aodEnabled = false,
                 stableAod = false,
