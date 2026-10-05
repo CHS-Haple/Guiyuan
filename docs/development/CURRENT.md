@@ -3,8 +3,8 @@
 ## Repository / build
 
 - Product: Guiyuan 0.2.0.
-- Stable baseline: `main` remains Build 709; `dev` now integrates PR #218 as Guiyuan 0.2.0 / Build 742 (`20261006-742`).
-- Active work: stable promotion of the integrated 0.2.0 checkpoint from `dev` to `main`.
+- Stable baseline: `main` and `dev` are synchronized at Guiyuan 0.2.0 / Build 742 (`20261006-742`).
+- Active work: no new work branch is active after the 0.2.0 stable promotion; future work starts from the synchronized `dev` baseline.
 - Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
 - Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
 - Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
@@ -13,7 +13,8 @@
 - Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
 - Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; Build 742 changed only version/release metadata and documentation. PR #218 was squash-merged into `dev`, and integrated dev Runtime CI #2757 passed with signed Canary validation.
 - Known residual wording is now explicit: steady Home itself is not observed to fall back to native. The intermittent native exposure occurs on the **Home pull-down -> swipe-up/collapse return path**, where the returning status presentation can briefly become native during the handoff back to Home.
-- Next: keep that return-path issue attributed to Control Center collapse/handoff ownership rather than steady Home acquisition, and promote the accepted 0.2.0 checkpoint through the `dev` -> `main` stable-boundary PR.
+- PR #219 promoted the accepted 0.2.0 checkpoint to `main`; the long-lived `dev` branch was automatically deleted by GitHub and recreated at the promoted main commit as required by CONTRIBUTING.md.
+- Next: keep the residual return-path issue attributed to Control Center collapse/handoff ownership rather than steady Home acquisition. Any new implementation work must branch from the synchronized `dev` baseline.
 
 ## Accepted runtime facts carried into Build 685
 
