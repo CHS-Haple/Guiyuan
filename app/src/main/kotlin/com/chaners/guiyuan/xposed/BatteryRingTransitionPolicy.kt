@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import kotlin.math.max
 import kotlin.math.min
 
-internal object CombinedStatusBatteryRingTransitionPolicy {
+internal object BatteryRingTransitionPolicy {
     private const val TRANSITION_COMPLETE_PROGRESS = 0.45f
     private const val FRONT_LOAD = 0.92f
 
@@ -19,8 +19,8 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
     }
 
     internal data class Segments(
-        val background: List<CombinedStatusBatteryTopArcPolicy.Arc>,
-        val active: List<CombinedStatusBatteryTopArcPolicy.Arc>,
+        val background: List<BatteryTopArcPolicy.Arc>,
+        val active: List<BatteryTopArcPolicy.Arc>,
         val remainingFraction: Float,
     )
 
@@ -66,7 +66,7 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
     }
 
     fun resolve(
-        drawableArcs: List<CombinedStatusBatteryTopArcPolicy.Arc>,
+        drawableArcs: List<BatteryTopArcPolicy.Arc>,
         batteryPercent: Int,
         progress: Float,
         exitDirection: ExitDirection = ExitDirection.NONE,
@@ -126,13 +126,13 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
     }
 
     private fun slice(
-        arcs: List<CombinedStatusBatteryTopArcPolicy.Arc>,
+        arcs: List<BatteryTopArcPolicy.Arc>,
         rangeStart: Float,
         rangeEnd: Float,
-    ): List<CombinedStatusBatteryTopArcPolicy.Arc> {
+    ): List<BatteryTopArcPolicy.Arc> {
         if (rangeEnd <= rangeStart) return emptyList()
         var cursor = 0f
-        val result = ArrayList<CombinedStatusBatteryTopArcPolicy.Arc>(arcs.size)
+        val result = ArrayList<BatteryTopArcPolicy.Arc>(arcs.size)
         arcs.forEach { arc ->
             val sweep = arc.sweepDegrees.coerceAtLeast(0f)
             val arcStart = cursor
@@ -140,7 +140,7 @@ internal object CombinedStatusBatteryRingTransitionPolicy {
             val visibleStart = max(arcStart, rangeStart)
             val visibleEnd = min(arcEnd, rangeEnd)
             if (visibleEnd > visibleStart) {
-                result += CombinedStatusBatteryTopArcPolicy.Arc(
+                result += BatteryTopArcPolicy.Arc(
                     startDegrees = arc.startDegrees + visibleStart - arcStart,
                     sweepDegrees = visibleEnd - visibleStart,
                 )

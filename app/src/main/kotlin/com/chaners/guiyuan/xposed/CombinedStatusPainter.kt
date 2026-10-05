@@ -236,8 +236,8 @@ internal class CombinedStatusPainter(
         batteryNumberTargetStyle: TransitionTextStyle? = null,
         centerTargetTextWeight: Int? = null,
         centerTargetTextStyle: TransitionTextStyle? = null,
-        batteryRingExitDirection: CombinedStatusBatteryRingTransitionPolicy.ExitDirection =
-            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE,
+        batteryRingExitDirection: BatteryRingTransitionPolicy.ExitDirection =
+            BatteryRingTransitionPolicy.ExitDirection.NONE,
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
 
@@ -281,7 +281,7 @@ internal class CombinedStatusPainter(
                     drawReadoutChargingIcon = false,
                     ringRetractProgress =
                         if (shapePolicy == TransitionShapePolicy.BATTERY_RETRACT) {
-                            CombinedStatusBatteryRingTransitionPolicy.transitionProgress(shape)
+                            BatteryRingTransitionPolicy.transitionProgress(shape)
                         } else {
                             null
                         },
@@ -460,10 +460,10 @@ internal class CombinedStatusPainter(
         }
 
         internal fun chargingRingLifetimeProgress(progress: Float): Float =
-            CombinedStatusBatteryRingTransitionPolicy.transitionProgress(progress)
+            BatteryRingTransitionPolicy.transitionProgress(progress)
 
         internal fun chargingRingRemaining(progress: Float): Float =
-            CombinedStatusBatteryRingTransitionPolicy.remainingFraction(
+            BatteryRingTransitionPolicy.remainingFraction(
                 chargingRingLifetimeProgress(progress),
             )
 
@@ -1503,14 +1503,14 @@ internal class CombinedStatusPainter(
     private fun resolveBatteryTopGap(
         avoidance: TopSlotAvoidance,
         ringStroke: Float,
-    ): CombinedStatusBatteryTopArcPolicy.Gap {
+    ): BatteryTopArcPolicy.Gap {
         // Preserve disconnected visible shapes (notably Wi-Fi arcs) instead of
         // reserving the empty corners of their union rectangle.
         val gaps =
             avoidance.components
                 .ifEmpty { listOf(avoidance.bounds) }
                 .map { component ->
-                    CombinedStatusBatteryTopArcPolicy.resolveGap(
+                    BatteryTopArcPolicy.resolveGap(
                         contentLeft = component.left,
                         contentTop = component.top,
                         contentRight = component.right,
@@ -1524,7 +1524,7 @@ internal class CombinedStatusPainter(
                         maxSweep = BATTERY_MAX_SWEEP,
                     )
                 }
-        return CombinedStatusBatteryTopArcPolicy.mergeGaps(gaps)
+        return BatteryTopArcPolicy.mergeGaps(gaps)
     }
 
     private fun batteryReadoutPreferredCenterY(
@@ -1557,8 +1557,8 @@ internal class CombinedStatusPainter(
         drawReadoutText: Boolean = true,
         drawReadoutChargingIcon: Boolean = true,
         ringRetractProgress: Float? = null,
-        ringRetractExitDirection: CombinedStatusBatteryRingTransitionPolicy.ExitDirection =
-            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE,
+        ringRetractExitDirection: BatteryRingTransitionPolicy.ExitDirection =
+            BatteryRingTransitionPolicy.ExitDirection.NONE,
     ) {
         val readout =
             resolveBatteryTopReadoutLayout(
@@ -1587,7 +1587,7 @@ internal class CombinedStatusPainter(
             val drawableArcs =
                 if (topContentAvoidance == null) {
                     listOf(
-                        CombinedStatusBatteryTopArcPolicy.Arc(
+                        BatteryTopArcPolicy.Arc(
                             startDegrees = BATTERY_START_DEGREES,
                             sweepDegrees = BATTERY_MAX_SWEEP,
                         ),
@@ -1598,7 +1598,7 @@ internal class CombinedStatusPainter(
                             avoidance = topContentAvoidance,
                             ringStroke = geometry.ringStroke,
                         )
-                    CombinedStatusBatteryTopArcPolicy.drawableArcs(
+                    BatteryTopArcPolicy.drawableArcs(
                         startDegrees = BATTERY_START_DEGREES,
                         maxSweep = BATTERY_MAX_SWEEP,
                         gapCenterDegrees = gap.centerDegrees,
@@ -1606,7 +1606,7 @@ internal class CombinedStatusPainter(
                     )
                 }
             val segments =
-                CombinedStatusBatteryRingTransitionPolicy.resolve(
+                BatteryRingTransitionPolicy.resolve(
                     drawableArcs = drawableArcs,
                     batteryPercent = model.batteryPercent,
                     progress = ringRetractProgress,
@@ -1619,7 +1619,7 @@ internal class CombinedStatusPainter(
                     .sumOf { arc -> arc.sweepDegrees.coerceAtLeast(0f).toDouble() }
                     .toFloat()
             val terminalCapDominated =
-                CombinedStatusBatteryRingTransitionPolicy.isTerminalCapDominated(
+                BatteryRingTransitionPolicy.isTerminalCapDominated(
                     remainingFraction = segments.remainingFraction,
                     totalSweepDegrees = totalSweepDegrees,
                     radiusPx = CombinedStatusOuterGeometry.RING_RADIUS,
@@ -1687,7 +1687,7 @@ internal class CombinedStatusPainter(
                     ringStroke = geometry.ringStroke,
                 )
             val segments =
-                CombinedStatusBatteryTopArcPolicy.resolve(
+                BatteryTopArcPolicy.resolve(
                     batteryPercent = model.batteryPercent,
                     startDegrees = BATTERY_START_DEGREES,
                     maxSweep = BATTERY_MAX_SWEEP,

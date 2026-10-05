@@ -6,7 +6,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-internal object CombinedStatusBatteryTopArcPolicy {
+internal object BatteryTopArcPolicy {
     internal data class Arc(
         val startDegrees: Float,
         val sweepDegrees: Float,

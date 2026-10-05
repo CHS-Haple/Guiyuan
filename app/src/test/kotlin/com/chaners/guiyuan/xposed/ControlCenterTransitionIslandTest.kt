@@ -11,12 +11,12 @@ class ControlCenterTransitionIslandTest {
             CombinedStatusControlCenterTransitionOwner.Policy
                 .batteryRingExitDirection(
                     liveCenterDirection =
-                        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT,
+                        BatteryRingTransitionPolicy.ExitDirection.RIGHT,
                     nativeBatteryIslandActive = true,
                     targetRowRtl = false,
                 )
         assertEquals(
-            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT,
+            BatteryRingTransitionPolicy.ExitDirection.LEFT,
             direction,
         )
 
@@ -24,19 +24,19 @@ class ControlCenterTransitionIslandTest {
             CombinedStatusControlCenterTransitionOwner.Policy
                 .batteryRingExitDirection(
                     liveCenterDirection =
-                        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT,
+                        BatteryRingTransitionPolicy.ExitDirection.LEFT,
                     nativeBatteryIslandActive = true,
                     targetRowRtl = true,
                 )
         assertEquals(
-            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT,
+            BatteryRingTransitionPolicy.ExitDirection.RIGHT,
             rtlDirection,
         )
     }
 
     @Test
     fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
-        CombinedStatusBatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
+        BatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
             assertEquals(
                 live,
                 CombinedStatusControlCenterTransitionOwner.Policy

@@ -4,11 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusBatteryTopArcPolicyTest {
+class BatteryTopArcPolicyTest {
     @Test
     fun halfBatteryFillsFirstVisibleShoulderBeforeGap() {
         val result =
-            CombinedStatusBatteryTopArcPolicy.resolve(
+            BatteryTopArcPolicy.resolve(
                 batteryPercent = 50,
                 startDegrees = 150f,
                 maxSweep = 240f,
@@ -17,11 +17,11 @@ class CombinedStatusBatteryTopArcPolicyTest {
             )
 
         assertEquals(
-            listOf(CombinedStatusBatteryTopArcPolicy.Arc(150f, 90f)),
+            listOf(BatteryTopArcPolicy.Arc(150f, 90f)),
             result.active,
         )
         assertEquals(
-            listOf(CombinedStatusBatteryTopArcPolicy.Arc(300f, 90f)),
+            listOf(BatteryTopArcPolicy.Arc(300f, 90f)),
             result.inactive,
         )
     }
@@ -106,7 +106,7 @@ class CombinedStatusBatteryTopArcPolicyTest {
                 bottom = 20f,
             )
         val componentAware =
-            CombinedStatusBatteryTopArcPolicy.mergeGaps(
+            BatteryTopArcPolicy.mergeGaps(
                 listOf(
                     gapFor(
                         left = 30f,
@@ -178,7 +178,7 @@ class CombinedStatusBatteryTopArcPolicyTest {
                 bottom = 24f,
             )
         val merged =
-            CombinedStatusBatteryTopArcPolicy.mergeGaps(
+            BatteryTopArcPolicy.mergeGaps(
                 listOf(center, rightBadge),
             )
 
@@ -201,7 +201,7 @@ class CombinedStatusBatteryTopArcPolicyTest {
                 bottom = 22f,
             )
         val merged =
-            CombinedStatusBatteryTopArcPolicy.mergeGaps(
+            BatteryTopArcPolicy.mergeGaps(
                 listOf(original),
             )
 
@@ -228,8 +228,8 @@ class CombinedStatusBatteryTopArcPolicyTest {
         top: Float,
         right: Float,
         bottom: Float,
-    ): CombinedStatusBatteryTopArcPolicy.Gap =
-        CombinedStatusBatteryTopArcPolicy.resolveGap(
+    ): BatteryTopArcPolicy.Gap =
+        BatteryTopArcPolicy.resolveGap(
             contentLeft = left,
             contentTop = top,
             contentRight = right,

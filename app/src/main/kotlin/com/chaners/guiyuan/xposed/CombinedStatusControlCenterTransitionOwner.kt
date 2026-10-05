@@ -240,29 +240,29 @@ internal object CombinedStatusControlCenterTransitionOwner {
         fun horizontalExitDirection(
             source: FloatArray,
             target: FloatArray,
-        ): CombinedStatusBatteryRingTransitionPolicy.ExitDirection {
+        ): BatteryRingTransitionPolicy.ExitDirection {
             if (source.size != 6 || target.size != 6) {
-                return CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+                return BatteryRingTransitionPolicy.ExitDirection.NONE
             }
             val sourceCenterX = source[0] + (source[2] + source[4]) * 0.5f
             val targetCenterX = target[0] + (target[2] + target[4]) * 0.5f
             if (!sourceCenterX.isFinite() || !targetCenterX.isFinite()) {
-                return CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+                return BatteryRingTransitionPolicy.ExitDirection.NONE
             }
             return when {
                 targetCenterX - sourceCenterX < -0.5f ->
-                    CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT
+                    BatteryRingTransitionPolicy.ExitDirection.LEFT
                 targetCenterX - sourceCenterX > 0.5f ->
-                    CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT
-                else -> CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+                    BatteryRingTransitionPolicy.ExitDirection.RIGHT
+                else -> BatteryRingTransitionPolicy.ExitDirection.NONE
             }
         }
 
         fun batteryRingExitDirection(
-            liveCenterDirection: CombinedStatusBatteryRingTransitionPolicy.ExitDirection,
+            liveCenterDirection: BatteryRingTransitionPolicy.ExitDirection,
             nativeBatteryIslandActive: Boolean,
             targetRowRtl: Boolean,
-        ): CombinedStatusBatteryRingTransitionPolicy.ExitDirection {
+        ): BatteryRingTransitionPolicy.ExitDirection {
             if (!nativeBatteryIslandActive) return liveCenterDirection
 
             // During HyperOS Battery-Island expansion the final status row is
@@ -270,9 +270,9 @@ internal object CombinedStatusControlCenterTransitionOwner {
             // direction authority for the ring's first frames. The structural
             // destination is still toward the status-row logical start.
             return if (targetRowRtl) {
-                CombinedStatusBatteryRingTransitionPolicy.ExitDirection.RIGHT
+                BatteryRingTransitionPolicy.ExitDirection.RIGHT
             } else {
-                CombinedStatusBatteryRingTransitionPolicy.ExitDirection.LEFT
+                BatteryRingTransitionPolicy.ExitDirection.LEFT
             }
         }
 
@@ -466,7 +466,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
 
         fun transitionTintProgress(progress: Float): Float {
             val ringPhase =
-                CombinedStatusBatteryRingTransitionPolicy
+                BatteryRingTransitionPolicy
                     .transitionProgress(progress)
                     .coerceIn(0f, 1f)
             return ringPhase * ringPhase * (3f - 2f * ringPhase)
@@ -1363,7 +1363,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                             targetOpticalBounds = centerSpec.targetOpticalBounds,
                         ) ?: return@let null
                     Policy.horizontalExitDirection(source, target)
-                } ?: CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+                } ?: BatteryRingTransitionPolicy.ExitDirection.NONE
             val batteryRingExitDirection =
                 Policy.batteryRingExitDirection(
                     liveCenterDirection = liveCenterExitDirection,
@@ -1781,7 +1781,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                         if (spec.component == CombinedStatusPainter.TransitionComponent.BATTERY) {
                             batteryRingExitDirection
                         } else {
-                            CombinedStatusBatteryRingTransitionPolicy.ExitDirection.NONE
+                            BatteryRingTransitionPolicy.ExitDirection.NONE
                         },
                 )
                 canvas.restoreToCount(save)
