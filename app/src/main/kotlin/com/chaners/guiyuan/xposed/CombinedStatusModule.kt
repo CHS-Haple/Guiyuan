@@ -1890,7 +1890,7 @@ class CombinedStatusModule : XposedModule() {
         val liveStatusIconTint =
             SystemUiNativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
         val resolvedState =
-            CombinedStatusTintAuthority.resolveBatteryEvent(
+            TintAuthority.resolveBatteryEvent(
                 batteryState = update.state,
                 liveStatusIconTint = liveStatusIconTint,
             )
@@ -3695,7 +3695,7 @@ class CombinedStatusModule : XposedModule() {
 
         val rendererInitialTintState =
             initialTintState?.let { transferred ->
-                CombinedStatusTintAuthority.rebaseTransferred(
+                TintAuthority.rebaseTransferred(
                     transferred = transferred,
                     liveStatusIconTint =
                         SystemUiNativeNetworkSuppressionOwner

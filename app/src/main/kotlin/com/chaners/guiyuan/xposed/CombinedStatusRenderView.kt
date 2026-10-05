@@ -298,7 +298,7 @@ internal class CombinedStatusRenderView(
             height = logicalHeight,
             model = current,
             colors =
-                CombinedStatusColorPolicy.resolve(
+                ColorPolicy.resolve(
                     model = current,
                     tintState = tint,
                     visualSettings = visualSettings,

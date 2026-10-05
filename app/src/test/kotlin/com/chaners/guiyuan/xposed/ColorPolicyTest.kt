@@ -6,11 +6,11 @@ import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusColorPolicyTest {
+class ColorPolicyTest {
     @Test
     fun normalUsesResolvedStatusIconTintAcrossLayers() {
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model = model(),
                 tintState =
                     CombinedStatusTintState(
@@ -29,7 +29,7 @@ class CombinedStatusColorPolicyTest {
     fun hyperosPresetUsesPinnedTemplateColorInsteadOfRuntimeSemanticInput() {
         val semanticColor = 0xff123456.toInt()
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model =
                     model(
                         state = CombinedStatusBatterySemanticState.CHARGING,
@@ -56,7 +56,7 @@ class CombinedStatusColorPolicyTest {
     fun modeColorOnlyChangesBatteryByDefault() {
         val semanticColor = 0xff3482ff.toInt()
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model =
                     model(
                         state = CombinedStatusBatterySemanticState.PERFORMANCE,
@@ -88,7 +88,7 @@ class CombinedStatusColorPolicyTest {
     fun optionalLinksConsumeFinalBatteryColor() {
         val semanticColor = 0xffff9f05.toInt()
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model =
                     model(
                         state = CombinedStatusBatterySemanticState.POWER_SAVE,
@@ -117,7 +117,7 @@ class CombinedStatusColorPolicyTest {
         val semanticColor = 0xff1dcd3a.toInt()
         val statusTint = 0xff445566.toInt()
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model =
                     model(
                         state = CombinedStatusBatterySemanticState.CHARGING,
@@ -144,7 +144,7 @@ class CombinedStatusColorPolicyTest {
     @Test
     fun invalidStatusIconTintFallsBackToBatteryAnchorTint() {
         val colors =
-            CombinedStatusColorPolicy.resolve(
+            ColorPolicy.resolve(
                 model = model(),
                 tintState =
                     CombinedStatusTintState(

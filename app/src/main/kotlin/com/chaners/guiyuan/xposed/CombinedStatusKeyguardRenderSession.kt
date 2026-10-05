@@ -396,7 +396,7 @@ internal object CombinedStatusKeyguardRenderSession {
             )
             SystemUiTintStateSource.currentState(battery)?.let { state ->
                 applyTintState(
-                    CombinedStatusTintAuthority.resolveBatteryEvent(
+                    TintAuthority.resolveBatteryEvent(
                         batteryState = state,
                         liveStatusIconTint = null,
                     ),
@@ -491,7 +491,7 @@ internal object CombinedStatusKeyguardRenderSession {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(
-                CombinedStatusTintAuthority.resolveBatteryEvent(
+                TintAuthority.resolveBatteryEvent(
                     batteryState = update.state,
                     liveStatusIconTint = null,
                 ),

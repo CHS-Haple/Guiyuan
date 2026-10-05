@@ -449,7 +449,7 @@ internal object CombinedStatusHomeRenderSession {
 
         fun updateStatusIconTint(statusIconTint: Int?) {
             val resolved =
-                CombinedStatusTintAuthority.resolveStatusIconEvent(
+                TintAuthority.resolveStatusIconEvent(
                     previous = renderController.currentTintState(),
                     liveStatusIconTint = statusIconTint,
                 ) ?: return

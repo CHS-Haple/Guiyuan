@@ -8,24 +8,24 @@ import com.chaners.guiyuan.settings.CombinedStatusIosStyleBatteryPalette
 import com.chaners.guiyuan.settings.CombinedStatusRecommendedBatteryPalette
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 
-internal sealed interface CombinedStatusBatteryColorSource {
-    data object SystemDefault : CombinedStatusBatteryColorSource
-    data object FollowStatusIcon : CombinedStatusBatteryColorSource
-    data class Custom(val color: Int) : CombinedStatusBatteryColorSource
+internal sealed interface BatteryColorSource {
+    data object SystemDefault : BatteryColorSource
+    data object FollowStatusIcon : BatteryColorSource
+    data class Custom(val color: Int) : BatteryColorSource
 }
 
-internal data class CombinedStatusBatteryColorPreferences(
-    val normal: CombinedStatusBatteryColorSource = CombinedStatusBatteryColorSource.SystemDefault,
-    val charging: CombinedStatusBatteryColorSource = CombinedStatusBatteryColorSource.SystemDefault,
-    val powerSave: CombinedStatusBatteryColorSource = CombinedStatusBatteryColorSource.SystemDefault,
-    val superPowerSave: CombinedStatusBatteryColorSource =
-        CombinedStatusBatteryColorSource.SystemDefault,
-    val performance: CombinedStatusBatteryColorSource = CombinedStatusBatteryColorSource.SystemDefault,
-    val low: CombinedStatusBatteryColorSource = CombinedStatusBatteryColorSource.SystemDefault,
+internal data class BatteryColorPrefs(
+    val normal: BatteryColorSource = BatteryColorSource.SystemDefault,
+    val charging: BatteryColorSource = BatteryColorSource.SystemDefault,
+    val powerSave: BatteryColorSource = BatteryColorSource.SystemDefault,
+    val superPowerSave: BatteryColorSource =
+        BatteryColorSource.SystemDefault,
+    val performance: BatteryColorSource = BatteryColorSource.SystemDefault,
+    val low: BatteryColorSource = BatteryColorSource.SystemDefault,
 ) {
     fun sourceFor(
         state: CombinedStatusBatterySemanticState,
-    ): CombinedStatusBatteryColorSource =
+    ): BatteryColorSource =
         when (state) {
             CombinedStatusBatterySemanticState.NORMAL -> normal
             CombinedStatusBatterySemanticState.CHARGING -> charging
@@ -36,38 +36,38 @@ internal data class CombinedStatusBatteryColorPreferences(
         }
 }
 
-internal object CombinedStatusBatteryColorPolicy {
+internal object BatteryColorPolicy {
     fun preferencesFor(
         settings: CombinedStatusVisualSettings,
-    ): CombinedStatusBatteryColorPreferences {
-        fun presetSource(slot: CombinedStatusBatteryColorSlot): CombinedStatusBatteryColorSource =
+    ): BatteryColorPrefs {
+        fun presetSource(slot: CombinedStatusBatteryColorSlot): BatteryColorSource =
             when (settings.batteryColorPreset) {
                 CombinedStatusBatteryColorPreset.RECOMMENDED ->
                     CombinedStatusRecommendedBatteryPalette.colorFor(slot)
-                        ?.let(CombinedStatusBatteryColorSource::Custom)
-                        ?: CombinedStatusBatteryColorSource.FollowStatusIcon
+                        ?.let(BatteryColorSource::Custom)
+                        ?: BatteryColorSource.FollowStatusIcon
                 CombinedStatusBatteryColorPreset.HYPEROS ->
                     CombinedStatusHyperOsBatteryPalette.colorFor(slot)
-                        ?.let(CombinedStatusBatteryColorSource::Custom)
-                        ?: CombinedStatusBatteryColorSource.FollowStatusIcon
+                        ?.let(BatteryColorSource::Custom)
+                        ?: BatteryColorSource.FollowStatusIcon
                 CombinedStatusBatteryColorPreset.IOS_STYLE ->
                     CombinedStatusIosStyleBatteryPalette.colorFor(slot)
-                        ?.let(CombinedStatusBatteryColorSource::Custom)
-                        ?: CombinedStatusBatteryColorSource.FollowStatusIcon
+                        ?.let(BatteryColorSource::Custom)
+                        ?: BatteryColorSource.FollowStatusIcon
             }
 
-        fun source(slot: CombinedStatusBatteryColorSlot): CombinedStatusBatteryColorSource =
+        fun source(slot: CombinedStatusBatteryColorSlot): BatteryColorSource =
             when (settings.batteryColorModes.modeFor(slot)) {
                 CombinedStatusBatteryColorMode.PRESET -> presetSource(slot)
                 CombinedStatusBatteryColorMode.FOLLOW_SYSTEM ->
-                    CombinedStatusBatteryColorSource.FollowStatusIcon
+                    BatteryColorSource.FollowStatusIcon
                 CombinedStatusBatteryColorMode.CUSTOM ->
                     settings.batteryColorOverrides.colorFor(slot)
-                        ?.let(CombinedStatusBatteryColorSource::Custom)
+                        ?.let(BatteryColorSource::Custom)
                         ?: presetSource(slot)
             }
 
-        return CombinedStatusBatteryColorPreferences(
+        return BatteryColorPrefs(
             normal = source(CombinedStatusBatteryColorSlot.NORMAL),
             charging = source(CombinedStatusBatteryColorSlot.CHARGING),
             powerSave = source(CombinedStatusBatteryColorSlot.POWER_SAVE),
@@ -81,14 +81,14 @@ internal object CombinedStatusBatteryColorPolicy {
         state: CombinedStatusBatterySemanticState,
         settings: CombinedStatusVisualSettings,
     ): Boolean =
-        preferencesFor(settings).sourceFor(state) is CombinedStatusBatteryColorSource.Custom
+        preferencesFor(settings).sourceFor(state) is BatteryColorSource.Custom
 
     fun resolve(
         state: CombinedStatusBatterySemanticState,
         systemSemanticColor: Int?,
         statusIconTint: Int,
-        preferences: CombinedStatusBatteryColorPreferences =
-            CombinedStatusBatteryColorPreferences(),
+        preferences: BatteryColorPrefs =
+            BatteryColorPrefs(),
     ): Int {
         val systemDefault =
             if (state == CombinedStatusBatterySemanticState.NORMAL) {
@@ -99,9 +99,9 @@ internal object CombinedStatusBatteryColorPolicy {
                     ?: statusIconTint
             }
         return when (val source = preferences.sourceFor(state)) {
-            CombinedStatusBatteryColorSource.SystemDefault -> systemDefault
-            CombinedStatusBatteryColorSource.FollowStatusIcon -> statusIconTint
-            is CombinedStatusBatteryColorSource.Custom ->
+            BatteryColorSource.SystemDefault -> systemDefault
+            BatteryColorSource.FollowStatusIcon -> statusIconTint
+            is BatteryColorSource.Custom ->
                 source.color
                     .takeIf(::isVisibleColor)
                     ?: systemDefault

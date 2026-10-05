@@ -3,11 +3,11 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CombinedStatusTintAuthorityTest {
+class TintAuthorityTest {
     @Test
     fun liveStatusIconTintWinsForBatteryEvent() {
         val resolved =
-            CombinedStatusTintAuthority.resolveBatteryEvent(
+            TintAuthority.resolveBatteryEvent(
                 batteryState =
                     CombinedStatusTintState(
                         appliedTint = 0xbf000000.toInt(),
@@ -23,7 +23,7 @@ class CombinedStatusTintAuthorityTest {
     @Test
     fun batteryAppliedTintIsFailNativeFallbackWhenLiveStatusTintIsUnavailable() {
         val resolved =
-            CombinedStatusTintAuthority.resolveBatteryEvent(
+            TintAuthority.resolveBatteryEvent(
                 batteryState =
                     CombinedStatusTintState(
                         appliedTint = 0xbf223344.toInt(),
@@ -39,7 +39,7 @@ class CombinedStatusTintAuthorityTest {
     @Test
     fun batteryEventDoesNotReuseEmbeddedStaleStatusTintWhenLiveAuthorityIsMissing() {
         val resolved =
-            CombinedStatusTintAuthority.resolveBatteryEvent(
+            TintAuthority.resolveBatteryEvent(
                 batteryState =
                     CombinedStatusTintState(
                         appliedTint = 0xbf112233.toInt(),
@@ -60,7 +60,7 @@ class CombinedStatusTintAuthorityTest {
             )
 
         val resolved =
-            CombinedStatusTintAuthority.resolveStatusIconEvent(
+            TintAuthority.resolveStatusIconEvent(
                 previous = previous,
                 liveStatusIconTint = 0xbf556677.toInt(),
             )
@@ -72,7 +72,7 @@ class CombinedStatusTintAuthorityTest {
     @Test
     fun statusIconEventCanSeedTintWithoutBatteryState() {
         val resolved =
-            CombinedStatusTintAuthority.resolveStatusIconEvent(
+            TintAuthority.resolveStatusIconEvent(
                 previous = null,
                 liveStatusIconTint = 0xe6ffffff.toInt(),
             )
@@ -90,7 +90,7 @@ class CombinedStatusTintAuthorityTest {
             )
 
         val resolved =
-            CombinedStatusTintAuthority.rebaseTransferred(
+            TintAuthority.rebaseTransferred(
                 transferred = transferred,
                 liveStatusIconTint = 0xbf334455.toInt(),
             )
@@ -108,7 +108,7 @@ class CombinedStatusTintAuthorityTest {
             )
 
         val resolved =
-            CombinedStatusTintAuthority.rebaseTransferred(
+            TintAuthority.rebaseTransferred(
                 transferred = transferred,
                 liveStatusIconTint = null,
             )

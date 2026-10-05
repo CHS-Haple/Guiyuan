@@ -982,8 +982,8 @@ internal object CombinedStatusControlCenterTransitionOwner {
         private var started = false
         private var lastStateVersion = sourceSnapshot.stateVersion
         private var lastWitnessSummary = "pending"
-        private var lastTintSourceColors: CombinedStatusColors? = null
-        private var lastTintTransitionColors: CombinedStatusColors? = null
+        private var lastTintSourceColors: RenderColors? = null
+        private var lastTintTransitionColors: RenderColors? = null
         private var lastTintBatteryTinted: Boolean? = null
         private var lastTintTransitionEnabled: Boolean? = null
         private var lastTintMotionProgress: Float? = null
@@ -1373,7 +1373,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
                 )
 
             val batteryTinted =
-                CombinedStatusBatteryColorPolicy.isTinted(
+                BatteryColorPolicy.isTinted(
                     state = model.batterySemanticState,
                     settings = currentSnapshot.visualSettings,
                 )
@@ -1859,7 +1859,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             sourceWidth: Int,
             sourceHeight: Int,
             model: CombinedStatusRenderModel,
-            colors: CombinedStatusColors,
+            colors: RenderColors,
             mobileSpec: CombinedStatusPainter.TransitionComponentSpec,
             preferredMobileSubId: Int?,
             motionProgress: Float,
@@ -2016,7 +2016,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             sourceWidth: Int,
             sourceHeight: Int,
             model: CombinedStatusRenderModel,
-            colors: CombinedStatusColors,
+            colors: RenderColors,
             motionProgress: Float,
             opacity: Float,
             carrierFrames: CarrierFrames?,
@@ -2111,7 +2111,7 @@ internal object CombinedStatusControlCenterTransitionOwner {
             sourceWidth: Int,
             sourceHeight: Int,
             model: CombinedStatusRenderModel,
-            colors: CombinedStatusColors,
+            colors: RenderColors,
             motionProgress: Float,
             opacity: Float,
             carrierFrames: CarrierFrames?,

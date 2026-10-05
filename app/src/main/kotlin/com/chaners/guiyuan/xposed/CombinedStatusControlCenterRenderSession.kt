@@ -556,7 +556,7 @@ internal object CombinedStatusControlCenterRenderSession {
                 anchorView = anchorView,
                 model = model,
                 colors =
-                    CombinedStatusColorPolicy.resolve(
+                    ColorPolicy.resolve(
                         model = model,
                         tintState = tint,
                         visualSettings = currentVisualSettings,
@@ -803,7 +803,7 @@ internal object CombinedStatusControlCenterRenderSession {
                     SystemUiNativeNetworkSuppressionOwner::currentAppliedStatusIconTintForGroup,
                 )
             val resolved =
-                CombinedStatusTintAuthority.resolveBatteryEvent(
+                TintAuthority.resolveBatteryEvent(
                     batteryState,
                     peerTint,
                 )
@@ -1018,7 +1018,7 @@ internal object CombinedStatusControlCenterRenderSession {
         val view: View,
         val anchorView: View,
         val model: CombinedStatusRenderModel,
-        val colors: CombinedStatusColors,
+        val colors: RenderColors,
         val visualSettings: CombinedStatusVisualSettings,
         val stateVersion: Long,
     )

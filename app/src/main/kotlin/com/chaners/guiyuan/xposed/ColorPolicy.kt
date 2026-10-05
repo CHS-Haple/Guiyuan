@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 
-internal data class CombinedStatusColors(
+internal data class RenderColors(
     val centerTint: Int,
     val mobileTint: Int,
     val batteryTint: Int,
@@ -10,28 +10,28 @@ internal data class CombinedStatusColors(
     val chargingIconTint: Int,
 )
 
-internal object CombinedStatusColorPolicy {
+internal object ColorPolicy {
     fun resolve(
         model: CombinedStatusRenderModel,
         tintState: CombinedStatusTintState,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
-        batteryColorPreferences: CombinedStatusBatteryColorPreferences? = null,
-    ): CombinedStatusColors {
+        batteryColorPreferences: BatteryColorPrefs? = null,
+    ): RenderColors {
         val nativeParticipantTint =
             tintState.statusIconTint
                 ?.takeIf { color -> (color ushr 24) != 0 }
                 ?: tintState.appliedTint
         val batteryTint =
-            CombinedStatusBatteryColorPolicy.resolve(
+            BatteryColorPolicy.resolve(
                 state = model.batterySemanticState,
                 systemSemanticColor = model.batterySystemSemanticColor,
                 statusIconTint = nativeParticipantTint,
                 preferences =
                     batteryColorPreferences
-                        ?: CombinedStatusBatteryColorPolicy.preferencesFor(visualSettings),
+                        ?: BatteryColorPolicy.preferencesFor(visualSettings),
             )
 
-        return CombinedStatusColors(
+        return RenderColors(
             centerTint =
                 if (visualSettings.centerFollowsBatteryColor) batteryTint
                 else nativeParticipantTint,

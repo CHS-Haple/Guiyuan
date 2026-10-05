@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CombinedStatusTintAuthority {
+internal object TintAuthority {
     fun resolveBatteryEvent(
         batteryState: CombinedStatusTintState,
         liveStatusIconTint: Int?,
