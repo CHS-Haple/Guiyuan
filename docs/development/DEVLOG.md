@@ -4884,3 +4884,19 @@ The warning was a lifecycle-order mismatch rather than a missing target contract
 
 Pre-CI review removed the obsolete pager imports, kept pending readiness weak and single-host, closes pending state on success/failure/deactivation, and preserves full-summary localization. Run repository-selected exact-head CI; device validation is required afterward for nested-sheet Back continuity and cold-start absence of the former warning.
 
+## 2026-10-06 — Home collapse-path device-evidence wording correction
+
+**Type:** device evidence clarification / development memory
+**Build:** 742 / `20261006-742`
+**Branch:** `dev`
+
+The maintainer clarified the residual native-status symptom before the 0.2.0 stable promotion:
+
+- steady Home itself is not observed to switch back to native;
+- the visible native exposure occurs after starting a panel pull from Home and then swiping/collapsing it back up;
+- the defect therefore belongs to the Control Center collapse / return-handoff path, not to steady Home ownership or steady Home acquisition.
+
+Future diagnosis must preserve that distinction. A shorthand such as “Home/desktop becomes native” is too broad and can send investigation toward the wrong owner. If this residual issue is reopened, inspect the QS_FAKE -> Home return boundary, projection release/reacquisition ordering, and native visibility handoff first; do not assume steady Home presentation has been lost without separate evidence.
+
+This entry is documentation-only and changes no APK/runtime behavior. Build 742 device/runtime acceptance remains the Build 741 implementation checkpoint plus release metadata, with integrated dev Runtime CI #2757 passed.
+

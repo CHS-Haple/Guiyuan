@@ -3,16 +3,17 @@
 ## Repository / build
 
 - Product: Guiyuan 0.2.0.
-- Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`.
-- Active work: PR #218 / `fix/companion-ui-polish`, Build 742 / `20261006-742`, preparing the accepted companion-UI/runtime-readiness changes as the Guiyuan 0.2.0 stable checkpoint.
+- Stable baseline: `main` remains Build 709; `dev` now integrates PR #218 as Guiyuan 0.2.0 / Build 742 (`20261006-742`).
+- Active work: stable promotion of the integrated 0.2.0 checkpoint from `dev` to `main`.
 - Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
 - Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
 - Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
 - Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
 - Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
 - Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
-- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; maintainer promotion to 0.2.0 accepts that runtime/device checkpoint. Build 742 changes only version/release metadata and documentation.
-- Next: validate the 0.2.0 exact head, squash PR #218 into `dev`, validate integrated `dev`, then promote `dev` to `main` through the stable-boundary PR.
+- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; Build 742 changed only version/release metadata and documentation. PR #218 was squash-merged into `dev`, and integrated dev Runtime CI #2757 passed with signed Canary validation.
+- Known residual wording is now explicit: steady Home itself is not observed to fall back to native. The intermittent native exposure occurs on the **Home pull-down -> swipe-up/collapse return path**, where the returning status presentation can briefly become native during the handoff back to Home.
+- Next: keep that return-path issue attributed to Control Center collapse/handoff ownership rather than steady Home acquisition, and promote the accepted 0.2.0 checkpoint through the `dev` -> `main` stable-boundary PR.
 
 ## Accepted runtime facts carried into Build 685
 
