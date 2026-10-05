@@ -3,16 +3,15 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`, including the completed lightweight-code cleanup from PR #217.
-- Active work: `fix/companion-ui-polish`, Build 740 / `20261006-740`, based directly on current `dev`.
-- Scope: companion-app UI/navigation/text only. No Xposed/SystemUI runtime hook, ownership, lifecycle, geometry, state source, renderer, or persisted preference/protocol contract is changed.
-- Battery-color detail navigation now treats the internal editor as a real second level: the detail level owns Back and returns to the scheme overview before the outer MIUIX sheet may dismiss.
-- Diagnostics keeps the existing Back + Filter and Share + Export + More layout. The English title uses the pinned MIUIX SmallTopAppBar title-padding seam instead of shrinking text or changing action geometry.
-- Preview Sandbox no longer gives localized Network/Battery labels a fixed 48 dp column; labels size to their actual text and keep a stable gap to the value.
-- Features removes the directional hint from the top-information vertical-offset title.
-- About copy is normalized; device/codename, Android/API, and scope/package pairs use the full-width vertical separator `｜`.
-- Pre-CI review caught and removed an invalid explicit Compose `layout.weight` import already known from the Build 562 regression history; `Modifier.weight()` remains RowScope-owned.
-- Next: complete exact-head diff review, run the single appropriate Runtime PR validation, then request one Work-branch Canary only if focused device interaction/optical evidence is still needed.
+- Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`.
+- Active work: PR #218 / `fix/companion-ui-polish`, Build 741 / `20261006-741`, ahead of current `dev` with no behind commits at this checkpoint.
+- Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
+- Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
+- Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
+- Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
+- Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
+- Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
+- Next: exact-head full-diff review -> repository-selected CI -> one Work-branch Canary because Build 741 changes both device-visible nested-sheet behavior and SystemUI startup observation lifecycle.
 
 ## Accepted runtime facts carried into Build 685
 
