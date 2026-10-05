@@ -18,9 +18,9 @@ internal object RuntimeFeaturePreferencesOwner {
             aodEnabled = false,
         )
 
-    private var preferences: SharedPreferences? = null
+    private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var bindingToken: Any? = null
+    private var bindToken: Any? = null
 
     fun currentSettings(): CombinedStatusFeatureSettings = current
 
@@ -43,8 +43,8 @@ internal object RuntimeFeaturePreferencesOwner {
                 ) {
                     val next = resolve(changed)
                     if (next != current) {
-                        val receivedAtElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
-                        val changedAtElapsedRealtimeNanos =
+                        val recvNs = SystemClock.elapsedRealtimeNanos()
+                        val changedNs =
                             changed.getLong(
                                 COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
                                 0L,
@@ -53,8 +53,8 @@ internal object RuntimeFeaturePreferencesOwner {
                         onChanged(
                             next,
                             resolveTransportLatencyNanos(
-                                changedAtElapsedRealtimeNanos,
-                                receivedAtElapsedRealtimeNanos,
+                                changedNs,
+                                recvNs,
                             ),
                         )
                     }
@@ -62,9 +62,9 @@ internal object RuntimeFeaturePreferencesOwner {
             }
 
         preferences.registerOnSharedPreferenceChangeListener(listener)
-        this.preferences = preferences
+        this.prefs = preferences
         this.listener = listener
-        bindingToken = token
+        bindToken = token
         onChanged(initial, null)
         return initial
     }
@@ -80,13 +80,14 @@ internal object RuntimeFeaturePreferencesOwner {
     }
 
     private fun unbindLocked() {
-        val currentPreferences = preferences
-        val currentListener = listener
-        preferences = null
+        val oldPrefs = prefs
+        val oldListener = listener
+        prefs = null
         listener = null
-        bindingToken = null
-        if (currentPreferences != null && currentListener != null) {
-            currentPreferences.unregisterOnSharedPreferenceChangeListener(currentListener)
+        bindToken = null
+        // 先清掉当前绑定，避免旧监听在解绑边界抢回状态。
+        if (oldPrefs != null && oldListener != null) {
+            oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
 
@@ -95,8 +96,8 @@ internal object RuntimeFeaturePreferencesOwner {
         preferences: SharedPreferences,
         token: Any,
     ): Boolean =
-        this.preferences === preferences &&
-            bindingToken === token
+        prefs === preferences &&
+            bindToken === token
 
     internal fun resolveTransportLatencyNanos(
         changedAtElapsedRealtimeNanos: Long,

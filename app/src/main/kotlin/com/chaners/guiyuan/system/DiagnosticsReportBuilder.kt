@@ -11,39 +11,39 @@ internal object DiagnosticsReportBuilder {
         build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
 
     internal fun build(snapshot: DiagnosticsSnapshot): String {
-        val environment = snapshot.environment
-        val diagnosticsLevel = snapshot.diagnosticsLevel
-        val selected = snapshot.runtimeLog
+        val env = snapshot.environment
+        val level = snapshot.diagnosticsLevel
+        val log = snapshot.runtimeLog
         val lineLimit =
             if (
-                diagnosticsLevel.name == "Detailed" &&
+                level.name == "Detailed" &&
                 (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
             ) {
                 DetailedLogLineLimit
             } else {
                 ReleaseLogLineLimit
             }
-        val sessionLines = selected.latestSessionLines
-        val runtimeHealth = snapshot.runtimeHealth
-        val moduleLines = sessionLines.takeLast(lineLimit)
-        val requestedDiagnosticsLevel = diagnosticsLevel.name.lowercase()
-        val runtimeDiagnostics = runtimeHealth.component("diagnostics")
-        val effectiveDiagnosticsLevel = runtimeDiagnostics?.fields?.get("level")
-        val diagnosticsSyncState =
+        val lines = log.latestSessionLines
+        val health = snapshot.runtimeHealth
+        val moduleLines = lines.takeLast(lineLimit)
+        val requestedLevel = level.name.lowercase()
+        val runtimeDiag = health.component("diagnostics")
+        val effectiveLevel = runtimeDiag?.fields?.get("level")
+        val syncState =
             when {
                 !BuildConfig.RUNTIME_DIAGNOSTICS && !BuildConfig.DEVELOPMENT_PROBES ->
                     "not-applicable"
-                runtimeDiagnostics == null ||
-                    runtimeDiagnostics.state == "unknown" ||
-                    runtimeDiagnostics.state == "unavailable" ->
+                runtimeDiag == null ||
+                    runtimeDiag.state == "unknown" ||
+                    runtimeDiag.state == "unavailable" ->
                     "unavailable"
                 BuildConfig.DEVELOPMENT_PROBES ->
-                    if (effectiveDiagnosticsLevel == "detailed") {
+                    if (effectiveLevel == "detailed") {
                         "development-forced"
                     } else {
                         "mismatch"
                     }
-                effectiveDiagnosticsLevel == requestedDiagnosticsLevel ->
+                effectiveLevel == requestedLevel ->
                     "matched"
                 else ->
                     "mismatch"
@@ -58,7 +58,7 @@ internal object DiagnosticsReportBuilder {
             appendLine("package=" + BuildConfig.APPLICATION_ID)
             appendLine("buildType=" + BuildConfig.BUILD_TYPE)
             appendLine("channel=" + BuildConfig.BUILD_CHANNEL)
-            appendLine("diagnosticsPreference=" + diagnosticsLevel.name.lowercase())
+            appendLine("diagnosticsPreference=" + level.name.lowercase())
             appendLine(
                 "diagnosticsCapability=" +
                     when {
@@ -69,32 +69,32 @@ internal object DiagnosticsReportBuilder {
             )
             appendLine()
             appendLine("[Diagnostics state]")
-            appendLine("requestedLevel=" + requestedDiagnosticsLevel)
-            appendLine("effectiveRuntimeLevel=" + (effectiveDiagnosticsLevel ?: "unavailable"))
-            appendLine("syncState=" + diagnosticsSyncState)
-            appendLine("schemaVersion=" + runtimeHealth.schemaVersion)
-            appendLine("sessionId=" + (runtimeHealth.sessionId ?: "legacy-or-unavailable"))
+            appendLine("requestedLevel=" + requestedLevel)
+            appendLine("effectiveRuntimeLevel=" + (effectiveLevel ?: "unavailable"))
+            appendLine("syncState=" + syncState)
+            appendLine("schemaVersion=" + health.schemaVersion)
+            appendLine("sessionId=" + (health.sessionId ?: "legacy-or-unavailable"))
             appendLine()
             appendLine("[Device]")
-            appendLine("manufacturer=" + environment.manufacturer)
-            appendLine("name=" + environment.deviceName)
-            appendLine("model=" + environment.model)
-            appendLine("device=" + environment.codename)
-            appendLine("android=" + environment.androidVersion)
-            appendLine("sdk=" + environment.sdk)
-            appendLine("os=" + environment.osVersion)
-            appendLine("systemUiVersion=" + environment.systemUiVersionName)
+            appendLine("manufacturer=" + env.manufacturer)
+            appendLine("name=" + env.deviceName)
+            appendLine("model=" + env.model)
+            appendLine("device=" + env.codename)
+            appendLine("android=" + env.androidVersion)
+            appendLine("sdk=" + env.sdk)
+            appendLine("os=" + env.osVersion)
+            appendLine("systemUiVersion=" + env.systemUiVersionName)
             appendLine(
                 "systemUiVersionCode=" +
-                    (environment.systemUiVersionCode?.toString() ?: "unknown"),
+                    (env.systemUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
             appendLine("[Runtime health]")
             appendLine("source=structured-runtime-events")
-            runtimeHealth.reportLines().forEach(::appendLine)
+            health.reportLines().forEach(::appendLine)
             appendLine()
             appendLine("[Runtime log]")
-            appendLine("source=" + selected.source.reportName)
+            appendLine("source=" + log.source.reportName)
             appendLine("collection=" + collectionState(selected.result))
             appendLine("lines=" + moduleLines.size)
             if (moduleLines.isEmpty()) {

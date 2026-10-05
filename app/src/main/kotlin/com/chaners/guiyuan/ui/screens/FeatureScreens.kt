@@ -80,7 +80,7 @@ import com.chaners.guiyuan.settings.DiagnosticsLevel
 import com.chaners.guiyuan.settings.FloatingNavigationContent
 import com.chaners.guiyuan.settings.FloatingNavigationStyle
 import com.chaners.guiyuan.settings.DiagnosticsSettings
-import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
+import com.chaners.guiyuan.settings.DiagnosticsRepo
 import com.chaners.guiyuan.system.DiagnosticLogCategory
 import com.chaners.guiyuan.system.DiagnosticLogEntry
 import com.chaners.guiyuan.system.DiagnosticLogLevel
@@ -709,7 +709,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val diagnosticsRepository =
         remember(context.applicationContext) {
-            DiagnosticsSettingsRepository(context.applicationContext)
+            DiagnosticsRepo(context.applicationContext)
         }
     val diagnosticsSettings by
         diagnosticsRepository.settings.collectAsState(
