@@ -10,7 +10,7 @@ class ControlCenterTransitionReservationTest {
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -10f,
                     sourceRight = 0f,
                     targetLeft = -30f,
@@ -20,7 +20,7 @@ class ControlCenterTransitionReservationTest {
 
         assertEquals(
             10,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -29,7 +29,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             20,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -38,7 +38,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             30,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -51,7 +51,7 @@ class ControlCenterTransitionReservationTest {
     fun totalWidthInterpolationAvoidsOverlappingSpanDeadZone() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -60,13 +60,13 @@ class ControlCenterTransitionReservationTest {
             )
 
         val oldGeometryUnion =
-            ControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.25f,
             )
         val transitionWidth =
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -82,7 +82,7 @@ class ControlCenterTransitionReservationTest {
     fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -90,14 +90,14 @@ class ControlCenterTransitionReservationTest {
                 ),
             )
         val semantic =
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     progress = 0.25f,
                 )
         val native =
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -113,7 +113,7 @@ class ControlCenterTransitionReservationTest {
     fun batteryIslandNativePeerReservationProjectsTargetIntoCurrentFakeEndFrame() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -105f,
                     sourceRight = 0f,
                     targetLeft = -240f,
@@ -122,7 +122,7 @@ class ControlCenterTransitionReservationTest {
             )
 
         val unprojected =
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -130,7 +130,7 @@ class ControlCenterTransitionReservationTest {
                     progress = 0.5f,
                 )
         val projected =
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -147,7 +147,7 @@ class ControlCenterTransitionReservationTest {
     fun batteryIslandNativePeerReservationIgnoresEndSideProjection() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -40f,
                     sourceRight = 0f,
                     targetLeft = -140f,
@@ -157,7 +157,7 @@ class ControlCenterTransitionReservationTest {
 
         assertEquals(
             80,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 40,
                     spans = spans,
@@ -172,7 +172,7 @@ class ControlCenterTransitionReservationTest {
     fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -182,7 +182,7 @@ class ControlCenterTransitionReservationTest {
 
         assertEquals(
             135,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -192,7 +192,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             180,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -202,12 +202,12 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             150,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans =
                         listOf(
-                            ControlCenterTransitionOwner.Policy.ReservationSpan(
+                            ControlCenterTransitionPolicy.ReservationSpan(
                                 sourceLeft = -105f,
                                 sourceRight = 0f,
                                 targetLeft = -220f,
@@ -226,7 +226,7 @@ class ControlCenterTransitionReservationTest {
 
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy.latentRevealVisibleFraction(
+            ControlCenterTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 95f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -236,7 +236,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy.latentRevealVisibleFraction(
+            ControlCenterTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 79f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -246,7 +246,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.latentRevealVisibleFraction(
+            ControlCenterTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 90f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -256,7 +256,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.latentRevealVisibleFraction(
+            ControlCenterTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 93f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -266,7 +266,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.latentRevealVisibleFraction(
+            ControlCenterTransitionPolicy.latentRevealVisibleFraction(
                 current = target,
                 target = target,
                 visualExtent = 20f,
@@ -280,23 +280,23 @@ class ControlCenterTransitionReservationTest {
     fun latentRevealAcceleratesAfterOccupancyUnlockWithoutChangingTheGate() {
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .acceleratedLatentRevealProgress(0f),
             0.0001f,
         )
         assertTrue(
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .acceleratedLatentRevealProgress(0.2f) > 0.5f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .acceleratedLatentRevealProgress(0.35f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy
+            ControlCenterTransitionPolicy
                 .acceleratedLatentRevealProgress(1f),
             0.0001f,
         )
@@ -306,7 +306,7 @@ class ControlCenterTransitionReservationTest {
     fun latentReservationProgressTracksVisibleEnvelopeCoverage() {
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy.latentReservationProgress(
+            ControlCenterTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 100,
                 requiredReservationPx = 200,
@@ -316,7 +316,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             0.5f,
-            ControlCenterTransitionOwner.Policy.latentReservationProgress(
+            ControlCenterTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 150,
                 requiredReservationPx = 200,
@@ -326,7 +326,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.latentReservationProgress(
+            ControlCenterTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 200,
                 requiredReservationPx = 200,
@@ -392,24 +392,24 @@ class ControlCenterTransitionReservationTest {
     fun unmatchedComponentsClipOutFastWithoutChangingTheirScale() {
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.unmatchedExitVisibleFraction(0f),
+            ControlCenterTransitionPolicy.unmatchedExitVisibleFraction(0f),
             0.0001f,
         )
         assertEquals(
             0.125f,
-            ControlCenterTransitionOwner.Policy.unmatchedExitVisibleFraction(0.5f),
+            ControlCenterTransitionPolicy.unmatchedExitVisibleFraction(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy.unmatchedExitVisibleFraction(1f),
+            ControlCenterTransitionPolicy.unmatchedExitVisibleFraction(1f),
             0.0001f,
         )
     }
 
     @Test
     fun horizontalClipKeepsPixelsOpaqueAndAnchorsTowardChosenEdge() {
-        val policy = ControlCenterTransitionOwner.Policy
+        val policy = ControlCenterTransitionPolicy
         val rightAnchored =
             policy.horizontalClipBounds(
                 left = 0f,
@@ -458,7 +458,7 @@ class ControlCenterTransitionReservationTest {
                 bottom = 60f,
             )
         val expanded =
-            ControlCenterTransitionOwner.Policy.expandedClipBounds(
+            ControlCenterTransitionPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 1.5f,
                 heightScale = 1.25f,
@@ -470,7 +470,7 @@ class ControlCenterTransitionReservationTest {
         assertEquals(65f, expanded.bottom, 0.0001f)
 
         val unchanged =
-            ControlCenterTransitionOwner.Policy.expandedClipBounds(
+            ControlCenterTransitionPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 0.75f,
                 heightScale = Float.NaN,
@@ -480,7 +480,7 @@ class ControlCenterTransitionReservationTest {
 
     @Test
     fun nativePeerTintNeverFallsBackToBatteryTintAuthority() {
-        val policy = ControlCenterTransitionOwner.Policy
+        val policy = ControlCenterTransitionPolicy
         val peer = 0xffe0e0e0.toInt()
         val cached = 0xffdddddd.toInt()
 

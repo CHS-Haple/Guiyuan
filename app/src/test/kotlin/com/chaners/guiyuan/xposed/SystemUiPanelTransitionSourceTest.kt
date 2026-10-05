@@ -94,20 +94,20 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMatrixUsesRawNativeExpansionProgress() {
-        assertEquals(0f, ControlCenterTransitionOwner.Policy.geometryProgress(0f))
+        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionOwner.Policy.geometryProgress(0.41f),
+            ControlCenterTransitionPolicy.geometryProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionOwner.Policy.geometryProgress(0.82f),
+            ControlCenterTransitionPolicy.geometryProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionOwner.Policy.geometryProgress(1f))
-        assertEquals(0f, ControlCenterTransitionOwner.Policy.geometryProgress(-0.2f))
-        assertEquals(1f, ControlCenterTransitionOwner.Policy.geometryProgress(1.4f))
+        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1f))
+        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(-0.2f))
+        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1.4f))
     }
 
     @Test
@@ -122,7 +122,7 @@ class SystemUiPanelTransitionSourceTest {
             )
         val component =
             requireNotNull(
-                ControlCenterTransitionOwner.Policy.componentGeometry(
+                ControlCenterTransitionPolicy.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,
@@ -139,32 +139,32 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMotionAndMobileMorphUseNativeExpansion() {
-        assertEquals(0f, ControlCenterTransitionOwner.Policy.motionProgress(0f))
+        assertEquals(0f, ControlCenterTransitionPolicy.motionProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionOwner.Policy.motionProgress(0.41f),
+            ControlCenterTransitionPolicy.motionProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionOwner.Policy.motionProgress(0.82f),
+            ControlCenterTransitionPolicy.motionProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionOwner.Policy.motionProgress(1f))
+        assertEquals(1f, ControlCenterTransitionPolicy.motionProgress(1f))
 
         assertEquals(
             0f,
-            ControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(0f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0f),
             0.0001f,
         )
         assertEquals(
             0.25f,
-            ControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(0.5f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(1f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(1f),
             0.0001f,
         )
     }
@@ -173,13 +173,13 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                ControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -189,7 +189,7 @@ class SystemUiPanelTransitionSourceTest {
 
         assertEquals(
             105,
-            ControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -197,7 +197,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             105,
-            ControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -205,7 +205,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             145,
-            ControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
@@ -309,12 +309,12 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionDoesNotOwnANativeReleaseTimeline() {
         assertEquals(
             0.92f,
-            ControlCenterTransitionOwner.Policy.geometryProgress(0.92f),
+            ControlCenterTransitionPolicy.geometryProgress(0.92f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionOwner.Policy.geometryProgress(1f),
+            ControlCenterTransitionPolicy.geometryProgress(1f),
             0.0001f,
         )
     }
@@ -324,7 +324,7 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
-            ControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
+            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -344,7 +344,7 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
-            ControlCenterTransitionOwner.Policy.interpolateGeometry(
+            ControlCenterTransitionPolicy.interpolateGeometry(
                 source,
                 target,
                 0.5f,
