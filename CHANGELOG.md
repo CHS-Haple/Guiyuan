@@ -6,6 +6,9 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` describes
 
 ## [Unreleased]
 
+### Changed
+- Companion-app navigation and localization polish keeps battery-color detail Back inside the existing MIUIX sheet hierarchy, preserves the full English Diagnostics title with its dense toolbar actions, lets Preview Sandbox status labels size to localized text, and normalizes About environment separators/copy.
+
 ## [0.1.0] - 2026-10-04
 
 ### Added
