@@ -8,8 +8,14 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` describes
 
 ## [0.2.0] - 2026-10-06
 
+### Added
+- Diagnostics now provides a parsed, filterable runtime-log workbench with MIUIX pull-to-refresh, structured severity presentation, raw-view access, per-entry long-press copy, and compact toolbar actions; About is separated into its own MIUIX page with device/system, project, license, and exact third-party dependency metadata.
+- Small icon actions across the companion app expose MIUIX tooltip guidance, and explanatory row-leading icons use the shared Material semantic-icon contract.
+
 ### Changed
 - Companion-app navigation and localization polish uses a real nested MIUIX sheet for battery-color detail navigation, preserves the full English Diagnostics title with its dense toolbar actions, lets Preview Sandbox status labels size to localized text, adds compact battery-state control labels, supports long-press copying of individual diagnostics events, and normalizes About environment separators/copy.
+- Material semantic leading icons are normalized to the Outlined W400 optical baseline, with W500 or Filled reserved for evidence-backed glyph exceptions rather than per-icon geometry patches.
+- Internal source structure and naming were simplified across settings, rendering, transition policy, diagnostics, and tests, removing redundant product-name prefixes and splitting oversized responsibilities while preserving persisted keys, runtime ownership/lifecycle, geometry, hooks, and diagnostic protocol fields.
 - Home status-icon observation now waits on the exact native Home icon-manager registration boundary when host capture precedes `mDarkIconManager` readiness, avoiding a false startup warning without polling or changing presentation ownership.
 
 ## [0.1.0] - 2026-10-04
