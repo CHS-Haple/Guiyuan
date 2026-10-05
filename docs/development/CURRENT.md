@@ -2,16 +2,17 @@
 
 ## Repository / build
 
-- Product: Guiyuan 0.1.0.
+- Product: Guiyuan 0.2.0.
 - Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`.
-- Active work: PR #218 / `fix/companion-ui-polish`, Build 741 / `20261006-741`, ahead of current `dev` with no behind commits at this checkpoint.
+- Active work: PR #218 / `fix/companion-ui-polish`, Build 742 / `20261006-742`, preparing the accepted companion-UI/runtime-readiness changes as the Guiyuan 0.2.0 stable checkpoint.
 - Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
 - Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
 - Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
 - Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
 - Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
 - Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
-- Next: exact-head full-diff review -> repository-selected CI -> one Work-branch Canary because Build 741 changes both device-visible nested-sheet behavior and SystemUI startup observation lifecycle.
+- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; maintainer promotion to 0.2.0 accepts that runtime/device checkpoint. Build 742 changes only version/release metadata and documentation.
+- Next: validate the 0.2.0 exact head, squash PR #218 into `dev`, validate integrated `dev`, then promote `dev` to `main` through the stable-boundary PR.
 
 ## Accepted runtime facts carried into Build 685
 
