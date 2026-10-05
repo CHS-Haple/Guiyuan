@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal enum class CombinedStatusBatterySemanticState {
+internal enum class BatterySemanticState {
     NORMAL,
     CHARGING,
     POWER_SAVE,
@@ -12,23 +12,23 @@ internal enum class CombinedStatusBatterySemanticState {
 internal object SystemUiBatterySemanticPolicy {
     fun fromNativeProgressStatus(
         statusName: String?,
-    ): CombinedStatusBatterySemanticState? {
+    ): BatterySemanticState? {
         val normalized = statusName?.removeSuffix("_DARK") ?: return null
         return when (normalized) {
             "CHARGING",
             "QUICK_CHARGING",
             "PERF_CHARGE_MODE",
             "PERF_QC_MODE",
-            -> CombinedStatusBatterySemanticState.CHARGING
-            "POWER_SAVE" -> CombinedStatusBatterySemanticState.POWER_SAVE
+            -> BatterySemanticState.CHARGING
+            "POWER_SAVE" -> BatterySemanticState.POWER_SAVE
             "SUPER_POWER_SAVE",
             "SUPER_POWER_SAVE_MODE",
             "SUPER_SAVE",
             "ULTRA_POWER_SAVE",
-            -> CombinedStatusBatterySemanticState.SUPER_POWER_SAVE
-            "PERFORMANCE_MODE" -> CombinedStatusBatterySemanticState.PERFORMANCE
-            "LOW" -> CombinedStatusBatterySemanticState.LOW
-            "NORMAL" -> CombinedStatusBatterySemanticState.NORMAL
+            -> BatterySemanticState.SUPER_POWER_SAVE
+            "PERFORMANCE_MODE" -> BatterySemanticState.PERFORMANCE
+            "LOW" -> BatterySemanticState.LOW
+            "NORMAL" -> BatterySemanticState.NORMAL
             else -> null
         }
     }

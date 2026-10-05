@@ -32,7 +32,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model =
                     model(
-                        state = CombinedStatusBatterySemanticState.CHARGING,
+                        state = BatterySemanticState.CHARGING,
                         systemColor = semanticColor,
                     ),
                 tintState =
@@ -59,7 +59,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model =
                     model(
-                        state = CombinedStatusBatterySemanticState.PERFORMANCE,
+                        state = BatterySemanticState.PERFORMANCE,
                         systemColor = semanticColor,
                     ),
                 tintState =
@@ -91,7 +91,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model =
                     model(
-                        state = CombinedStatusBatterySemanticState.POWER_SAVE,
+                        state = BatterySemanticState.POWER_SAVE,
                         systemColor = semanticColor,
                     ),
                 tintState =
@@ -120,7 +120,7 @@ class ColorPolicyTest {
             ColorPolicy.resolve(
                 model =
                     model(
-                        state = CombinedStatusBatterySemanticState.CHARGING,
+                        state = BatterySemanticState.CHARGING,
                         systemColor = semanticColor,
                     ),
                 tintState =
@@ -158,13 +158,13 @@ class ColorPolicyTest {
     }
 
     private fun model(
-        state: CombinedStatusBatterySemanticState =
-            CombinedStatusBatterySemanticState.NORMAL,
+        state: BatterySemanticState =
+            BatterySemanticState.NORMAL,
         systemColor: Int? = null,
     ) =
         RenderModel(
             batteryPercent = 80,
-            charging = state == CombinedStatusBatterySemanticState.CHARGING,
+            charging = state == BatterySemanticState.CHARGING,
             centerIndicator =
                 CenterIndicator.Wifi(
                     segments = 3,

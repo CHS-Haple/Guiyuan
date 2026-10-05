@@ -24,15 +24,15 @@ internal data class BatteryColorPrefs(
     val low: BatteryColorSource = BatteryColorSource.SystemDefault,
 ) {
     fun sourceFor(
-        state: CombinedStatusBatterySemanticState,
+        state: BatterySemanticState,
     ): BatteryColorSource =
         when (state) {
-            CombinedStatusBatterySemanticState.NORMAL -> normal
-            CombinedStatusBatterySemanticState.CHARGING -> charging
-            CombinedStatusBatterySemanticState.POWER_SAVE -> powerSave
-            CombinedStatusBatterySemanticState.SUPER_POWER_SAVE -> superPowerSave
-            CombinedStatusBatterySemanticState.PERFORMANCE -> performance
-            CombinedStatusBatterySemanticState.LOW -> low
+            BatterySemanticState.NORMAL -> normal
+            BatterySemanticState.CHARGING -> charging
+            BatterySemanticState.POWER_SAVE -> powerSave
+            BatterySemanticState.SUPER_POWER_SAVE -> superPowerSave
+            BatterySemanticState.PERFORMANCE -> performance
+            BatterySemanticState.LOW -> low
         }
 }
 
@@ -78,20 +78,20 @@ internal object BatteryColorPolicy {
     }
 
     fun isTinted(
-        state: CombinedStatusBatterySemanticState,
+        state: BatterySemanticState,
         settings: CombinedStatusVisualSettings,
     ): Boolean =
         preferencesFor(settings).sourceFor(state) is BatteryColorSource.Custom
 
     fun resolve(
-        state: CombinedStatusBatterySemanticState,
+        state: BatterySemanticState,
         systemSemanticColor: Int?,
         statusIconTint: Int,
         preferences: BatteryColorPrefs =
             BatteryColorPrefs(),
     ): Int {
         val systemDefault =
-            if (state == CombinedStatusBatterySemanticState.NORMAL) {
+            if (state == BatterySemanticState.NORMAL) {
                 statusIconTint
             } else {
                 systemSemanticColor

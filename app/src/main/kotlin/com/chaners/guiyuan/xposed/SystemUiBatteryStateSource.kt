@@ -269,7 +269,7 @@ internal object SystemUiBatteryStateSource {
 
     private fun semanticColor(
         icon: Any,
-        state: CombinedStatusBatterySemanticState,
+        state: BatterySemanticState,
         chargingColorField: Field,
         powerSaveColorField: Field,
         superPowerSaveColorField: Field?,
@@ -278,13 +278,13 @@ internal object SystemUiBatteryStateSource {
     ): Int? {
         val field =
             when (state) {
-                CombinedStatusBatterySemanticState.NORMAL -> return null
-                CombinedStatusBatterySemanticState.CHARGING -> chargingColorField
-                CombinedStatusBatterySemanticState.POWER_SAVE -> powerSaveColorField
-                CombinedStatusBatterySemanticState.SUPER_POWER_SAVE ->
+                BatterySemanticState.NORMAL -> return null
+                BatterySemanticState.CHARGING -> chargingColorField
+                BatterySemanticState.POWER_SAVE -> powerSaveColorField
+                BatterySemanticState.SUPER_POWER_SAVE ->
                     superPowerSaveColorField ?: powerSaveColorField
-                CombinedStatusBatterySemanticState.PERFORMANCE -> performanceColorField
-                CombinedStatusBatterySemanticState.LOW -> lowColorField
+                BatterySemanticState.PERFORMANCE -> performanceColorField
+                BatterySemanticState.LOW -> lowColorField
             }
         return runCatching { field.getInt(icon) }
             .getOrNull()

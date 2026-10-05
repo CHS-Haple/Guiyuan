@@ -61,7 +61,7 @@ class CombinedStatusStateStoreTest {
             CombinedStatusStateStore.BatteryState(
                 percent = 61,
                 charging = false,
-                semanticState = CombinedStatusBatterySemanticState.PERFORMANCE,
+                semanticState = BatterySemanticState.PERFORMANCE,
                 systemSemanticColor = 0xff3482ff.toInt(),
             ),
         )
@@ -72,7 +72,7 @@ class CombinedStatusStateStoreTest {
 
         assertEquals(61, restored.percent)
         assertFalse(restored.charging)
-        assertEquals(CombinedStatusBatterySemanticState.PERFORMANCE, restored.semanticState)
+        assertEquals(BatterySemanticState.PERFORMANCE, restored.semanticState)
         assertEquals(0xff3482ff.toInt(), restored.systemSemanticColor)
     }
 

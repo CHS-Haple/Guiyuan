@@ -207,7 +207,7 @@ internal object CombinedStatusStateStore {
                     semanticState =
                         bundle.getString(KEY_BATTERY_SEMANTIC)?.let { name ->
                             runCatching {
-                                CombinedStatusBatterySemanticState.valueOf(name)
+                                BatterySemanticState.valueOf(name)
                             }.getOrNull()
                         },
                     systemSemanticColor =
@@ -340,7 +340,7 @@ internal object CombinedStatusStateStore {
     internal data class BatteryState(
         val percent: Int,
         val charging: Boolean,
-        val semanticState: CombinedStatusBatterySemanticState? = null,
+        val semanticState: BatterySemanticState? = null,
         val systemSemanticColor: Int? = null,
         val chargingIconResId: Int? = null,
     )

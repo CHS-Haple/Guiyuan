@@ -8,8 +8,8 @@ internal data class RenderModel(
     val mobileLevel: Int?,
     val mobileUnavailableMark: Boolean = false,
     val effectiveDataSubscriptionId: Int,
-    val batterySemanticState: CombinedStatusBatterySemanticState =
-        CombinedStatusBatterySemanticState.NORMAL,
+    val batterySemanticState: BatterySemanticState =
+        BatterySemanticState.NORMAL,
     val batterySystemSemanticColor: Int? = null,
 ) {
     companion object {
@@ -100,7 +100,7 @@ internal data class RenderModel(
             val batteryPercent = battery.percent.coerceIn(0, 100)
             val batterySemanticState =
                 battery.semanticState
-                    ?: CombinedStatusBatterySemanticState.NORMAL
+                    ?: BatterySemanticState.NORMAL
 
             return RenderModel(
                 batteryPercent = batteryPercent,
