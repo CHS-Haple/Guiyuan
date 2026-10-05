@@ -4,7 +4,7 @@
 
 - Product: Guiyuan 0.2.0.
 - Stable baseline: `main` and `dev` are synchronized at Guiyuan 0.2.0 / Build 742 (`20261006-742`).
-- Active work: no new work branch is active after the 0.2.0 stable promotion; future work starts from the synchronized `dev` baseline.
+- Active baseline: `dev` contains no post-0.2.0 work. Any open work branch or PR must be revalidated against the synchronized `dev` baseline before it is treated as the active development line.
 - Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
 - Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
 - Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
