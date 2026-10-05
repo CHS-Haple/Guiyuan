@@ -8,7 +8,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
 @Composable
-internal fun CombinedStatusTheme(
+internal fun GyTheme(
     themeMode: AppThemeMode,
     dynamicColorEnabled: Boolean,
     content: @Composable () -> Unit,

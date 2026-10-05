@@ -32,13 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.CombinedStatusApplication
+import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.CombinedStatusFeatureSettingsRepository
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettingsRepository
 import com.chaners.guiyuan.system.XposedRuntimeStatus
-import com.chaners.guiyuan.ui.components.CombinedStatusPreview
+import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -91,7 +91,7 @@ internal fun HomeScreen(
     val context = LocalContext.current
     val application =
         remember(context.applicationContext) {
-            context.applicationContext as CombinedStatusApplication
+            context.applicationContext as GyApplication
         }
     val featureRepository =
         remember(context.applicationContext) {
@@ -350,7 +350,7 @@ private fun HomePreviewSandboxCard(
                     .padding(top = 2.dp),
             contentAlignment = Alignment.Center,
         ) {
-            CombinedStatusPreview(
+            StatusPreview(
                 model = state.toRenderModel(resources),
                 visualSettings = visualSettings,
                 modifier =

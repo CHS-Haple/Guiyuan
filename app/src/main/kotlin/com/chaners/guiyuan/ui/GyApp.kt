@@ -25,7 +25,7 @@ import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
-import com.chaners.guiyuan.ui.theme.CombinedStatusTheme
+import com.chaners.guiyuan.ui.theme.GyTheme
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun CombinedStatusApp(
+internal fun GyApp(
     settings: AppearanceSettings,
     darkMode: Boolean,
     appLanguage: AppLanguage,
@@ -50,7 +50,7 @@ internal fun CombinedStatusApp(
     onAppLanguageChange: (AppLanguage) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
 ) {
-    CombinedStatusTheme(
+    GyTheme(
         themeMode = settings.themeMode,
         dynamicColorEnabled = settings.dynamicColorEnabled,
     ) {

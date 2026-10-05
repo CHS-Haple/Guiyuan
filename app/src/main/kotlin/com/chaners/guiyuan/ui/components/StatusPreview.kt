@@ -11,7 +11,7 @@ import com.chaners.guiyuan.xposed.TintState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun CombinedStatusPreview(
+internal fun StatusPreview(
     model: RenderModel,
     visualSettings: CombinedStatusVisualSettings,
     modifier: Modifier = Modifier,
