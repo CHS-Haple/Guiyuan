@@ -6,7 +6,7 @@ internal class RenderController(
     private val view: RenderView,
 ) {
     private var stableModel: RenderModel? = null
-    private var stableTint: CombinedStatusTintState? = null
+    private var stableTint: TintState? = null
 
     fun update(
         snapshot: CombinedStatusStateStore.Snapshot,
@@ -45,9 +45,9 @@ internal class RenderController(
         view.setVisualSettings(state)
     }
 
-    fun currentTintState(): CombinedStatusTintState? = stableTint
+    fun currentTintState(): TintState? = stableTint
 
-    fun updateTint(state: CombinedStatusTintState): TintUpdate {
+    fun updateTint(state: TintState): TintUpdate {
         val previous = stableTint
         val resolved =
             PresentationPolicy.resolveTint(
@@ -78,7 +78,7 @@ internal class RenderController(
     )
 
     internal data class TintUpdate(
-        val resolved: CombinedStatusTintState?,
+        val resolved: TintState?,
         val changed: Boolean,
         val rejectedInvalidCandidate: Boolean,
     )

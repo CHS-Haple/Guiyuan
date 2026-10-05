@@ -13,7 +13,7 @@ internal data class RenderColors(
 internal object ColorPolicy {
     fun resolve(
         model: RenderModel,
-        tintState: CombinedStatusTintState,
+        tintState: TintState,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
         batteryColorPreferences: BatteryColorPrefs? = null,
     ): RenderColors {

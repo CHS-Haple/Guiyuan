@@ -40,7 +40,7 @@ internal class RenderView(
     private var centerTransitionAnimator: ValueAnimator? = null
 
     @Volatile
-    private var tintState: CombinedStatusTintState? = null
+    private var tintState: TintState? = null
 
     @Volatile
     private var visualSettings = CombinedStatusVisualSettings()
@@ -118,7 +118,7 @@ internal class RenderView(
         requestRedraw()
     }
 
-    fun setTintState(state: CombinedStatusTintState) {
+    fun setTintState(state: TintState) {
         if (tintState == state) {
             return
         }

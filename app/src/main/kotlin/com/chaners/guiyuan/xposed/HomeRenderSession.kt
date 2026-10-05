@@ -25,7 +25,7 @@ internal object HomeRenderSession {
         onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         initialNativeHandoffActive: Boolean = false,
-        initialTintState: CombinedStatusTintState? = null,
+        initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
     ): AttachResult {
@@ -125,7 +125,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun currentTintState(): CombinedStatusTintState? = current?.currentTintState()
+    fun currentTintState(): TintState? = current?.currentTintState()
 
     @Synchronized
     fun currentTransitionSourceWitness(): CombinedStatusTransitionSourceWitness? =
@@ -160,14 +160,14 @@ internal object HomeRenderSession {
             hostAttached
 
     internal data class InitialTintSeed(
-        val state: CombinedStatusTintState,
+        val state: TintState,
         val source: String,
     )
 
     internal fun resolveInitialTintSeed(
-        transferred: CombinedStatusTintState?,
+        transferred: TintState?,
         allowLiveSeed: Boolean,
-        liveState: () -> CombinedStatusTintState?,
+        liveState: () -> TintState?,
     ): InitialTintSeed? {
         val transferredValid =
             transferred?.takeIf(PresentationPolicy::isValidTint)
@@ -211,7 +211,7 @@ internal object HomeRenderSession {
         private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         initialNativeHandoffActive: Boolean,
-        private val initialTintState: CombinedStatusTintState?,
+        private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
         private val onPresentationReadinessChanged: ((Boolean) -> Unit)?,
@@ -322,7 +322,7 @@ internal object HomeRenderSession {
             layoutProbe()
         }
 
-        fun currentTintState(): CombinedStatusTintState? =
+        fun currentTintState(): TintState? =
             renderController.currentTintState()
 
         fun transitionSourceWitness(): CombinedStatusTransitionSourceWitness? {
@@ -457,7 +457,7 @@ internal object HomeRenderSession {
         }
 
         private fun applyTintState(
-            state: CombinedStatusTintState,
+            state: TintState,
             source: String,
         ) {
             val update = renderController.updateTint(state)

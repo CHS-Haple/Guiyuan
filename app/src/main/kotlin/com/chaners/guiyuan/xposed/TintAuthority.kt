@@ -2,9 +2,9 @@ package com.chaners.guiyuan.xposed
 
 internal object TintAuthority {
     fun resolveBatteryEvent(
-        batteryState: CombinedStatusTintState,
+        batteryState: TintState,
         liveStatusIconTint: Int?,
-    ): CombinedStatusTintState {
+    ): TintState {
         val statusIconTint =
             visible(liveStatusIconTint)
                 ?: visible(batteryState.appliedTint)
@@ -12,25 +12,25 @@ internal object TintAuthority {
     }
 
     fun resolveStatusIconEvent(
-        previous: CombinedStatusTintState?,
+        previous: TintState?,
         liveStatusIconTint: Int?,
-    ): CombinedStatusTintState? {
+    ): TintState? {
         val statusIconTint = visible(liveStatusIconTint) ?: return previous
         val appliedTint =
             previous
                 ?.appliedTint
                 ?.takeIf(::isVisible)
                 ?: statusIconTint
-        return CombinedStatusTintState(
+        return TintState(
             appliedTint = appliedTint,
             statusIconTint = statusIconTint,
         )
     }
 
     fun rebaseTransferred(
-        transferred: CombinedStatusTintState,
+        transferred: TintState,
         liveStatusIconTint: Int?,
-    ): CombinedStatusTintState {
+    ): TintState {
         val statusIconTint =
             visible(liveStatusIconTint)
                 ?: visible(transferred.statusIconTint)

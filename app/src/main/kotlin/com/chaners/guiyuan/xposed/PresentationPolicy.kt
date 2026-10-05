@@ -8,16 +8,16 @@ internal object PresentationPolicy {
         candidate ?: previous
 
     fun resolveTint(
-        previous: CombinedStatusTintState?,
-        candidate: CombinedStatusTintState,
-    ): CombinedStatusTintState? =
+        previous: TintState?,
+        candidate: TintState,
+    ): TintState? =
         if (alpha(candidate.appliedTint) == 0) {
             previous
         } else {
             candidate
         }
 
-    fun isValidTint(state: CombinedStatusTintState): Boolean =
+    fun isValidTint(state: TintState): Boolean =
         alpha(state.appliedTint) != 0
 
     private fun alpha(color: Int): Int =

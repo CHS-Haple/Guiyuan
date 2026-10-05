@@ -518,7 +518,7 @@ class CombinedStatusModule : XposedModule() {
                 } ?: "late-fallback"
             val transferredTint =
                 restored.appliedTint?.let { appliedTint ->
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = appliedTint,
                         statusIconTint = restored.statusIconTint,
                     )
@@ -3554,7 +3554,7 @@ class CombinedStatusModule : XposedModule() {
         host: Any,
         source: String,
         initialNativeHandoffActive: Boolean = false,
-        initialTintState: CombinedStatusTintState? = null,
+        initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
     ) {
         val hostContext = (host as? android.view.View)?.context
