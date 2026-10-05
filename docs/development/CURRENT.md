@@ -2,14 +2,18 @@
 
 ## Repository / build
 
-- Product: Guiyuan 0.1.0.
-- `main` and `dev` are aligned on the promoted Build 709 stable checkpoint (`20261004-709`, versionCode `261004709`) after dev-to-main PR #212.
-- Build 709 upgrades Gradle Wrapper 9.7.1 -> 9.8.0 and refreshes pinned GitHub Actions: gradle/actions 4.4.3 -> 6.4.0, checkout 5 -> 7.0.1, setup-java 5 -> 6.0.1, and upload-artifact 4 -> 7.0.1.
-- `gradle/actions/setup-gradle` explicitly uses `cache-provider: basic`; the Basic open-source cache provider is active and the proprietary enhanced provider is not used.
-- Stable-boundary Full CI #2634 and trusted main Full CI #2635 passed; the main run completed wrapper validation, target-profile verification, tests/build, Modern Xposed metadata checks, Haple APK signature verification, non-debuggable Canary verification, and artifact upload.
-- Gradle 9.8 deprecation audit CI #2632 (`--warning-mode all`) attributes the only concrete warning to Android Gradle Plugin 9.4.1 internals: `Configuration.setVisible(boolean)`, scheduled for removal in Gradle 11. No Guiyuan Gradle/settings script or Kotlin-plugin frame is implicated, so no project-local workaround is warranted.
-- No runtime/UI behavior changed and no device validation is required. No active dependency/toolchain maintenance branch remains.
-- Verified target: Xiaomi 15 Pro / HyperOS SystemUI 17.03.260226.r / Android 17 / SDK 37 / Modern Xposed API 102.
+- Product: Guiyuan 0.2.0.
+- Stable baseline: `main` remains Build 709; `dev` now integrates PR #218 as Guiyuan 0.2.0 / Build 742 (`20261006-742`).
+- Active work: stable promotion of the integrated 0.2.0 checkpoint from `dev` to `main`.
+- Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
+- Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
+- Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
+- Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
+- Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
+- Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
+- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; Build 742 changed only version/release metadata and documentation. PR #218 was squash-merged into `dev`, and integrated dev Runtime CI #2757 passed with signed Canary validation.
+- Known residual wording is now explicit: steady Home itself is not observed to fall back to native. The intermittent native exposure occurs on the **Home pull-down -> swipe-up/collapse return path**, where the returning status presentation can briefly become native during the handoff back to Home.
+- Next: keep that return-path issue attributed to Control Center collapse/handoff ownership rather than steady Home acquisition, and promote the accepted 0.2.0 checkpoint through the `dev` -> `main` stable-boundary PR.
 
 ## Accepted runtime facts carried into Build 685
 

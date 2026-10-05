@@ -19,7 +19,7 @@ internal object SystemUiBatteryRuntimeOwner {
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onBatteryState: (CombinedStatusStateStore.BatteryState) -> Unit,
+        onBatteryState: (StatusStateStore.BatteryState) -> Unit,
         onChargingIconResource: (Int?) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): AttachResult =

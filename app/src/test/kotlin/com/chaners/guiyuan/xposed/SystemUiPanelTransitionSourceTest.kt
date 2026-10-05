@@ -94,27 +94,27 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMatrixUsesRawNativeExpansionProgress() {
-        assertEquals(0f, CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(0f))
+        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(0f))
         assertEquals(
             0.41f,
-            CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(0.41f),
+            ControlCenterTransitionPolicy.geometryProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(0.82f),
+            ControlCenterTransitionPolicy.geometryProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(1f))
-        assertEquals(0f, CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(-0.2f))
-        assertEquals(1f, CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(1.4f))
+        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1f))
+        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(-0.2f))
+        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1.4f))
     }
 
     @Test
     fun transitionComponentGeometryFollowsLocalBoundsWithoutAnimationCoordinateConstants() {
         val parent = floatArrayOf(100f, 200f, 120f, 0f, 0f, 120f)
         val bounds =
-            CombinedStatusPainter.TransitionBounds(
+            StatusPainter.TransitionBounds(
                 left = 30f,
                 top = 40f,
                 right = 90f,
@@ -122,7 +122,7 @@ class SystemUiPanelTransitionSourceTest {
             )
         val component =
             requireNotNull(
-                CombinedStatusControlCenterTransitionOwner.Policy.componentGeometry(
+                ControlCenterTransitionPolicy.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,
@@ -139,32 +139,32 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMotionAndMobileMorphUseNativeExpansion() {
-        assertEquals(0f, CombinedStatusControlCenterTransitionOwner.Policy.motionProgress(0f))
+        assertEquals(0f, ControlCenterTransitionPolicy.motionProgress(0f))
         assertEquals(
             0.41f,
-            CombinedStatusControlCenterTransitionOwner.Policy.motionProgress(0.41f),
+            ControlCenterTransitionPolicy.motionProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            CombinedStatusControlCenterTransitionOwner.Policy.motionProgress(0.82f),
+            ControlCenterTransitionPolicy.motionProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, CombinedStatusControlCenterTransitionOwner.Policy.motionProgress(1f))
+        assertEquals(1f, ControlCenterTransitionPolicy.motionProgress(1f))
 
         assertEquals(
             0f,
-            CombinedStatusControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(0f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0f),
             0.0001f,
         )
         assertEquals(
             0.25f,
-            CombinedStatusControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(0.5f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CombinedStatusControlCenterTransitionOwner.Policy.mobileSignalShapeProgress(1f),
+            ControlCenterTransitionPolicy.mobileSignalShapeProgress(1f),
             0.0001f,
         )
     }
@@ -173,13 +173,13 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                CombinedStatusControlCenterTransitionOwner.Policy.ReservationSpan(
+                ControlCenterTransitionPolicy.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -189,7 +189,7 @@ class SystemUiPanelTransitionSourceTest {
 
         assertEquals(
             105,
-            CombinedStatusControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -197,7 +197,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             105,
-            CombinedStatusControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -205,7 +205,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             145,
-            CombinedStatusControlCenterTransitionOwner.Policy.resolveReservationWidth(
+            ControlCenterTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
@@ -217,22 +217,22 @@ class SystemUiPanelTransitionSourceTest {
     fun mobileSignalMorphRowsDotsBeforeGrowingBars() {
         assertEquals(
             0f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.rowProgress(0f),
+            StatusPainter.MobileSignalMorphPolicy.rowProgress(0f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.rowProgress(0.5f),
+            StatusPainter.MobileSignalMorphPolicy.rowProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.barProgress(0.5f),
+            StatusPainter.MobileSignalMorphPolicy.barProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.barProgress(1f),
+            StatusPainter.MobileSignalMorphPolicy.barProgress(1f),
             0.0001f,
         )
     }
@@ -241,17 +241,17 @@ class SystemUiPanelTransitionSourceTest {
     fun mobileSignalMorphKeepsBarGrowthOutUntilRowPhaseCompletes() {
         assertEquals(
             0f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.barProgress(0.25f),
+            StatusPainter.MobileSignalMorphPolicy.barProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.rowProgress(0.25f),
+            StatusPainter.MobileSignalMorphPolicy.rowProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            CombinedStatusPainter.MobileSignalMorphPolicy.barProgress(0.75f),
+            StatusPainter.MobileSignalMorphPolicy.barProgress(0.75f),
             0.0001f,
         )
     }
@@ -261,13 +261,13 @@ class SystemUiPanelTransitionSourceTest {
         val maxBarHeight = 54f
         val diameter = 6f
         val half =
-            CombinedStatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
+            StatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 0.5f,
             )
         val full =
-            CombinedStatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
+            StatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 1f,
@@ -281,19 +281,19 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun mobileSignalMorphUsesNativeHeightOnlyAsACap() {
         val maxBarHeight =
-            CombinedStatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
+            StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
                 sourceBoundsHeight = 24f,
                 diameter = 6f,
                 targetHeightRatio = 3f,
             )
         val highest =
-            CombinedStatusPainter.MobileSignalMorphPolicy.targetBarHeight(
+            StatusPainter.MobileSignalMorphPolicy.targetBarHeight(
                 index = 3,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,
             )
         val lowest =
-            CombinedStatusPainter.MobileSignalMorphPolicy.targetBarHeight(
+            StatusPainter.MobileSignalMorphPolicy.targetBarHeight(
                 index = 0,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,
@@ -309,12 +309,12 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionDoesNotOwnANativeReleaseTimeline() {
         assertEquals(
             0.92f,
-            CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(0.92f),
+            ControlCenterTransitionPolicy.geometryProgress(0.92f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CombinedStatusControlCenterTransitionOwner.Policy.geometryProgress(1f),
+            ControlCenterTransitionPolicy.geometryProgress(1f),
             0.0001f,
         )
     }
@@ -324,11 +324,11 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
-            CombinedStatusControlCenterTransitionOwner.Policy.interpolateSimilarityGeometry(
+            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
-                scalePolicy = CombinedStatusPainter.TransitionScalePolicy.TARGET,
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
             )
 
         assertEquals(110f, end[0], 0.0001f)
@@ -344,7 +344,7 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
-            CombinedStatusControlCenterTransitionOwner.Policy.interpolateGeometry(
+            ControlCenterTransitionPolicy.interpolateGeometry(
                 source,
                 target,
                 0.5f,
@@ -360,24 +360,24 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
         assertEquals(
-            CombinedStatusSourceScene.HOME,
+            SourceScene.HOME,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = true,
-                structuralScene = CombinedStatusSourceScene.UNKNOWN,
+                structuralScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.KEYGUARD,
+            SourceScene.KEYGUARD,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
-                structuralScene = CombinedStatusSourceScene.KEYGUARD,
+                structuralScene = SourceScene.KEYGUARD,
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.UNKNOWN,
+            SourceScene.UNKNOWN,
             SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
-                structuralScene = CombinedStatusSourceScene.UNKNOWN,
+                structuralScene = SourceScene.UNKNOWN,
             ),
         )
     }
@@ -426,8 +426,8 @@ class SystemUiPanelTransitionSourceTest {
                 expanded = null,
                 tracking = null,
                 visible = true,
-                controlCenterSourceScene = CombinedStatusSourceScene.KEYGUARD,
+                controlCenterSourceScene = SourceScene.KEYGUARD,
             )
-        assertEquals(CombinedStatusSourceScene.KEYGUARD, update.controlCenterSourceScene)
+        assertEquals(SourceScene.KEYGUARD, update.controlCenterSourceScene)
     }
 }

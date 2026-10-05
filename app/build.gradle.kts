@@ -9,6 +9,13 @@ val combinedStatusVersionCode = providers.gradleProperty("combinedStatus.version
 val combinedStatusBuildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
+val libxposedVersion = "102.0.0"
+val activityComposeVersion = "1.13.0"
+val navigationEventComposeVersion = "1.1.2"
+val dataStorePreferencesVersion = "1.2.1"
+val kotlinxSerializationCoreVersion = "1.11.0"
+val junitVersion = "4.13.2"
+val gradleVersion = gradle.gradleVersion
 
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
@@ -40,6 +47,13 @@ android {
         buildConfigField("String", "BUILD_ID", "\"$combinedStatusBuildId\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
         buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
+        buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
+        buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
+        buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
+        buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
+        buildConfigField("String", "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
+        buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
+        buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
     }
 
     signingConfigs {
@@ -112,18 +126,18 @@ android {
 }
 
 dependencies {
-    compileOnly("io.github.libxposed:api:102.0.0")
-    implementation("io.github.libxposed:service:102.0.0")
+    compileOnly("io.github.libxposed:api:$libxposedVersion")
+    implementation("io.github.libxposed:service:$libxposedVersion")
 
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("junit:junit:$junitVersion")
 
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.navigationevent:navigationevent-compose:1.1.2")
-    implementation("androidx.datastore:datastore-preferences:1.2.1")
+    implementation("androidx.activity:activity-compose:$activityComposeVersion")
+    implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
+    implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
 }

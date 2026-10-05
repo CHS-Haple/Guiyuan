@@ -38,11 +38,11 @@ internal object SystemUiHotReloadRuntimeOwner {
         val host =
             SystemUiHostRegistry.currentStatusHost()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
-        val snapshot = CombinedStatusStateStore.snapshot()
-        val stableTint = CombinedStatusHomeRenderSession.currentTintState()
+        val snapshot = StatusStateStore.snapshot()
+        val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SystemUiNetworkStateSource.hotReloadBindingCounts()
         val bindingStateReady =
-            (snapshot.wifi is CombinedStatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
+            (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
                 (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
         if (!bindingStateReady) {
             return PrepareResult.Unavailable(
@@ -53,13 +53,13 @@ internal object SystemUiHotReloadRuntimeOwner {
         }
 
         val controlCenterCompactReady =
-            CombinedStatusControlCenterRenderSession
+            ControlCenterRenderSession
                 .currentNativePresentationReadyForHotReload()
 
         val transfer =
-            CombinedStatusHotReloadTransfer.capture(
+            HotReloadTransfer.capture(
                 host = host,
-                state = CombinedStatusStateStore.exportHotReloadState(),
+                state = StatusStateStore.exportHotReloadState(),
                 bindings = SystemUiNetworkStateSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
@@ -69,7 +69,7 @@ internal object SystemUiHotReloadRuntimeOwner {
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    CombinedStatusControlCenterRenderSession.currentAttachedHostForHotReload(),
+                    ControlCenterRenderSession.currentAttachedHostForHotReload(),
                 controlCenterCompactReady = controlCenterCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
@@ -129,6 +129,6 @@ internal object SystemUiHotReloadRuntimeOwner {
         )
     }
 
-    fun restoreTransfer(param: HotReloadedParam): CombinedStatusHotReloadTransfer.Restored? =
-        CombinedStatusHotReloadTransfer.restore(param.savedInstanceState)
+    fun restoreTransfer(param: HotReloadedParam): HotReloadTransfer.Restored? =
+        HotReloadTransfer.restore(param.savedInstanceState)
 }

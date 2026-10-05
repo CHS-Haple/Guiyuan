@@ -502,14 +502,14 @@ internal object SystemUiPanelTransitionSource {
         return contract.batteryIslandActive(header)
     }
 
-    private fun resolveControlCenterSourceScene(delegate: Any?): CombinedStatusSourceScene {
-        val contract = controlAnchorContract ?: return CombinedStatusSourceScene.UNKNOWN
+    private fun resolveControlCenterSourceScene(delegate: Any?): SourceScene {
+        val contract = controlAnchorContract ?: return SourceScene.UNKNOWN
         val header =
             resolveControlCenterHeader(delegate)
-                ?: return CombinedStatusSourceScene.UNKNOWN
+                ?: return SourceScene.UNKNOWN
         val realSystemIcons =
             contract.realSystemIcons(header)
-                ?: return CombinedStatusSourceScene.UNKNOWN
+                ?: return SourceScene.UNKNOWN
         return classifyControlCenterSourceScene(
             homeIdentityMatches =
                 SystemUiHomePresentationOwner.ownsBatteryContainer(realSystemIcons),
@@ -520,10 +520,10 @@ internal object SystemUiPanelTransitionSource {
 
     internal fun classifyControlCenterSourceScene(
         homeIdentityMatches: Boolean,
-        structuralScene: CombinedStatusSourceScene,
-    ): CombinedStatusSourceScene =
+        structuralScene: SourceScene,
+    ): SourceScene =
         if (homeIdentityMatches) {
-            CombinedStatusSourceScene.HOME
+            SourceScene.HOME
         } else {
             structuralScene
         }
@@ -601,7 +601,7 @@ internal object SystemUiPanelTransitionSource {
         val tracking: Boolean?,
         val visible: Boolean?,
         val controlCenterPresentationHost: ViewGroup? = null,
-        val controlCenterSourceScene: CombinedStatusSourceScene? = null,
+        val controlCenterSourceScene: SourceScene? = null,
         val controlCenterAppearance: Boolean? = null,
         val controlCenterAppearanceAnimated: Boolean? = null,
         val controlCenterTransitionEndpoints: ControlCenterTransitionEndpoints? = null,
@@ -977,7 +977,7 @@ internal object SystemUiPanelTransitionSource {
         var expanded: Boolean? = null,
         var tracking: Boolean? = null,
         var visible: Boolean? = null,
-        var sourceScene: CombinedStatusSourceScene? = null,
+        var sourceScene: SourceScene? = null,
         var batteryIsland: Boolean? = null,
     )
 }

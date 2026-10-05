@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,8 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettingsRepository
-import com.chaners.guiyuan.ui.components.CombinedStatusPreview
+import com.chaners.guiyuan.settings.VisualSettingsRepo
+import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -39,6 +40,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -68,7 +70,7 @@ internal fun PreviewSandboxScreen(
         }
     val visualRepository =
         remember(context.applicationContext) {
-            CombinedStatusVisualSettingsRepository(context.applicationContext)
+            VisualSettingsRepo(context.applicationContext)
         }
     val visualSettings by
         visualRepository.settings.collectAsState(
@@ -107,15 +109,15 @@ internal fun PreviewSandboxScreen(
     val batteryModeOptions =
         listOf(
             stringResource(R.string.home_preview_battery_mode_balanced),
-            stringResource(R.string.home_preview_battery_mode_power_save),
-            stringResource(R.string.home_preview_battery_mode_performance),
-            stringResource(R.string.home_preview_battery_mode_super_power_save),
+            stringResource(R.string.home_preview_battery_mode_power_save_compact),
+            stringResource(R.string.home_preview_battery_mode_performance_compact),
+            stringResource(R.string.home_preview_battery_mode_super_power_save_compact),
         )
     val chargingOptions =
         listOf(
             stringResource(R.string.home_preview_charging_none),
             stringResource(R.string.home_preview_charging_normal),
-            stringResource(R.string.home_preview_charging_super_fast),
+            stringResource(R.string.home_preview_charging_super_fast_compact),
         )
 
     val mobileDisabledSummary =
@@ -139,11 +141,13 @@ internal fun PreviewSandboxScreen(
                     color = barColor,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.back),
-                            )
+                        TooltipBox(text = stringResource(R.string.back)) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    MiuixIcons.Back,
+                                    contentDescription = stringResource(R.string.back),
+                                )
+                            }
                         }
                     },
                 )
@@ -195,7 +199,7 @@ internal fun PreviewSandboxScreen(
                                     .height(192.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CombinedStatusPreview(
+                            StatusPreview(
                                 model = renderModel,
                                 visualSettings = visualSettings,
                                 modifier =
@@ -387,13 +391,14 @@ private fun PreviewStatusLine(
     ) {
         Text(
             text = label,
-            modifier = Modifier.width(48.dp),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = 1,
         )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = value,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             style = MiuixTheme.textStyles.body1,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
         )

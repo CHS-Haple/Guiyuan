@@ -4398,3 +4398,505 @@ Drawable resources only; no Compose geometry, settings behavior, diagnostics/run
 ### Validation
 
 Exact-head CI plus focused Build 705 vs 706 optical A/B is sufficient.
+
+
+## 2026-10-04 — Build 711 diagnostics event-viewer pass
+
+### Device evidence
+- Build 710 proved the new Diagnostics destination can read the real LSPosed module log, but full raw envelope lines made cards visually noisy and inconsistent in height.
+- Device review selected LSPosed's information hierarchy as a reference: explicit level, time, event summary, compact collapsed rows, and expanded detail on demand.
+- The product requirement is not to clone LSPosed styling. Guiyuan should use MIUIX-native components, preserve technical identifiers in English, and localize only the human-facing display layer.
+
+### Decision
+- Keep the existing runtime log producers unchanged for this checkpoint.
+- Add a read-side envelope/event parser that understands current LSPosed envelopes, logcat fallback, RuntimeDiagnosticsProtocol Schema 1, and legacy key/value messages.
+- Display log level through MIUIX Badge rather than a custom-drawn tag.
+- Expose only All / Info / Warning / Error filters because current Guiyuan runtime producers use INFO, WARN, and ERROR; do not invent unused Verbose/Debug/Fatal controls.
+- Rename the scope to This run / Current log: the first is the latest runtime session selected by sessionId/PID, while the second is every Guiyuan line in the currently selected source file.
+- Use the middle dot only for short peer-level summary metadata; structural hierarchy uses layout rather than separator characters.
+
+
+## 2026-10-04 — Build 712 useful-log hierarchy pass
+
+- Build 711 device review confirmed INFO/WARN/ERROR parsing works, but healthy sessions naturally contain mostly INFO. The issue is relevance, not missing severity support: real WARN/ERROR producers remain compatibility-unavailable, hot-reload-declined/incomplete, hook-install failures and similar abnormal paths.
+- The visible source label was removed. LSPosed/logcat are transport/storage sources, not the product identity of the logs.
+- Runtime view is now a positive allow-list of stable lifecycle/state events plus every warning/error; Detailed view remains the full Guiyuan-filtered source. This avoids treating high-frequency tint, presentation probes and latency telemetry as the primary user-facing log stream.
+- Range (This run / Current log) and severity are filter dimensions, not top-level log types, so they move into the MIUIX filter menu. Runtime / Detailed becomes the page-level view switch.
+- Expanded fields use vertical labels/values and raw transport text is second-level disclosure. Bulk parsing is moved to Dispatchers.Default so thousands of source lines are not regex-parsed during Compose recomposition.
+
+
+## 2026-10-04 — Build 713 unify diagnostics snapshot ownership
+
+**Problem**
+
+The Diagnostics page and diagnostic-report path both consumed Guiyuan runtime evidence, but each assembled its own view of that evidence. This made LSPosed/logcat transport appear like a separate product from the report and allowed page state and an exported report to be captured at different boundaries.
+
+**Conclusion**
+
+Guiyuan has one diagnostic data model. LSPosed/logcat remains a transport/storage source only. App-side presentation and report formatting must consume one canonical on-demand snapshot rather than becoming independent collectors.
+
+**Change**
+
+- add `DiagnosticsSnapshotProvider` as the single app-side capture boundary for environment, diagnostics preference, runtime log source, parsed entries, Runtime health, share diagnostics and capture time;
+- make `DiagnosticsScreen` consume that snapshot instead of directly reading/parsing the transport log;
+- make `DiagnosticsReportBuilder` format a `DiagnosticsSnapshot`, retaining its context overload only as a convenience that captures through the same provider;
+- keep runtime producers, hooks, event schema, LSPosed/logcat fallback and diagnostics-level semantics unchanged.
+
+**Validation**
+
+Exact-head Runtime CI and static review are required. No device gate is required for this data-ownership refactor because it intentionally preserves the Build 712 visible presentation and SystemUI runtime behavior.
+
+
+## 2026-10-04 — Build 714 diagnostics workbench product boundary
+
+**Problem**
+
+Even after Build 713 unified app-side capture, the visible UI still behaved like a second LSPosed log browser: range/severity controls and raw transport disclosure competed with Runtime health and the generated report. Report actions also remained in About, reinforcing the impression that logs and diagnostics were separate products.
+
+**Conclusion**
+
+LSPosed/logcat is an implementation transport, not Guiyuan's diagnostics UI. Guiyuan Diagnostics should present interpreted health and useful events from one captured snapshot; the diagnostic report is simply another representation of that same snapshot.
+
+**Change**
+
+- replace the log-viewer hierarchy with Runtime health and a bounded useful-event stream;
+- keep raw transport lines out of the first-class Guiyuan UI while retaining them as report evidence;
+- move diagnostics level, refresh, Clear view, copy, export and share into the Diagnostics top-bar action menu;
+- make copy/export/share format the exact in-memory snapshot currently displayed by Diagnostics;
+- define Clear view as presentation-only state: no LSPosed/logcat file or Guiyuan diagnostic evidence is deleted;
+- remove diagnostics/report controls from About so it returns to static identity/environment information.
+
+**Validation**
+
+Exact-head Runtime CI plus UI/code review are required. A focused Canary visual/interaction pass is warranted after automated validation because the page hierarchy and action placement change, while SystemUI runtime behavior does not.
+
+
+## 2026-10-04 — Build 716 keep Diagnostics snapshot capture lightweight
+
+**Review finding**
+
+Build 713 unified app-side diagnostic ownership, but it also moved the existing share-feature logcat probe into every Diagnostics page capture. That made opening/refreshing the workbench pay for evidence unrelated to SystemUI runtime health, including on builds where share diagnostics are not populated.
+
+**Change**
+
+- remove the `CombinedStatusShare` logcat Root command and share-operation store from `DiagnosticsSnapshotProvider`;
+- remove the unrelated Share diagnostics section from the generated diagnostic report;
+- keep share-operation debug ownership in `DiagnosticsReportFiles` / `ShareDiagnosticsStore` where those records are produced;
+- preserve the LSPosed-first Guiyuan runtime evidence, parsed events, Runtime health, environment and diagnostics-level data used by both the workbench and report.
+
+**Validation**
+
+Exact-head Runtime CI is required. No device gate is added for this capture-cost reduction because it removes unrelated collection work without changing the workbench hierarchy or SystemUI runtime behavior.
+
+
+## 2026-10-04 — Build 717 remove retired diagnostics viewer surface
+
+- Build 716 Runtime CI #2645 passed.
+- Static review found the pre-workbench raw-log card, raw-line disclosure, severity filter helper and About diagnostic action helpers remained in `FeatureScreens.kt` with zero call sites after the workbench cutover.
+- Remove those retired composables/helpers, their now-unused MIUIX/icon imports, and strings that only served source/range/severity/raw-log browsing.
+- No runtime producer, snapshot semantics, report content, workbench behavior or SystemUI path changes.
+- Exact-head Runtime CI is the final automated gate before focused Canary validation.
+
+
+## 2026-10-04 — Build 718 parse only the diagnostic session
+
+- After the raw-log viewer was removed, `DiagnosticsSnapshot.allEntries` had no consumer.
+- Stop parsing every Guiyuan line in the selected source file; parse only `latestSessionLines` for the workbench.
+- Keep the underlying reader's full source lines only long enough to identify the latest session; the diagnostic report already embeds only that same session's bounded raw evidence.
+- This is an allocation/CPU cleanup only; no UI, report semantics, runtime producer or SystemUI behavior changes.
+
+
+## 2026-10-04 — Build 719 align Diagnostics product wording and action affordance
+
+- The workbench no longer presents raw LSPosed/logcat browsing, so its loading state now says “Refreshing diagnostics / 正在刷新诊断” instead of “Reading logs”.
+- The top-bar menu owns diagnostics level, refresh, Clear view, copy, export and share; use the MIUIX `More` affordance rather than `Tune`, which would incorrectly imply a filter/settings-only menu.
+- No snapshot content, report content, Root collection, runtime producer, SystemUI/Xposed behavior or interaction semantics change.
+- Exact-head Runtime CI is sufficient before the already-required focused Canary UI gate.
+
+
+## 2026-10-04 — Build 720 restore Preview Sandbox Tune import
+
+**CI evidence**
+
+Build 719 Runtime CI #2647 failed compilation at `FeatureScreens.kt:603` and `:623` with unresolved `Tune`. The Diagnostics action menu had correctly moved to MIUIX `More`, but the same file still uses `MiuixIcons.Normal.Tune` in two pre-existing Preview Sandbox navigation examples.
+
+**Change**
+
+Restore the MIUIX `Tune` extension import. Diagnostics remains on `More`; Preview Sandbox retains its existing `Tune` icons.
+
+**Validation**
+
+Exact-head Runtime CI must pass before Canary. No device-only behavior changed.
+
+
+## 2026-10-04 — Build 721 restore compact Diagnostics presentation
+
+**Device evidence**
+
+Build 720 Canary #766 passed automated, signing, Modern Xposed metadata and non-debuggable checks. Device review rejected the visible workbench hierarchy: the Runtime health card rendered expected-but-unobserved components as repeated `unknown` rows after hot reload, occupied most of the first screen, and a structured event with no friendly summary fell back to internal `key=value` payload text.
+
+**Decision**
+
+Keep the Build 713-720 unified Diagnostics data/report architecture. Reuse the Build 712 compact semantic event-card presentation as the visual baseline instead of exposing the report-oriented health matrix as a first-class UI.
+
+**Change**
+
+- remove the Runtime health matrix from the visible Diagnostics page; it remains intact in `DiagnosticsSnapshot` and exported/copied/shared reports;
+- restore the compact event-list hierarchy with one lightweight “This run · N key events” summary above the list;
+- retain the Build 712 card rhythm: level + category + time, title, one-line summary, structured details on expansion;
+- never use a structured transport message as the default summary fallback; use “Recorded / 已记录” when no user-facing state/source/reason summary exists;
+- keep the MIUIX More menu, diagnostics level, refresh, Clear view, and same-snapshot copy/export/share actions unchanged.
+
+**Safety**
+
+No Xposed/SystemUI producer, RuntimeDiagnosticsProtocol, snapshot capture, report content, hook, writer, lifecycle, transition or native fallback behavior changes.
+
+**Validation**
+
+Exact-head Runtime CI plus focused Canary visual review are required.
+
+
+## 2026-10-04 — Build 722 restore compact event-card helper
+
+Static diff review of Build 721 caught that removing the rejected Runtime health block also mechanically removed `DiagnosticsUsefulEventCard`, while the new compact list still referenced it. Restore the same compact card implementation used by the prior workbench: level/category/time, title, one-line summary, and structured details on expansion. No diagnostics model, filtering, report, menu, runtime or SystemUI behavior changes.
+
+
+## 2026-10-04 — Build 723 toolbar actions, grouped More menu and dated event time
+
+- toolbar order is Share -> Export -> More, using MIUIX `Share`, `FileDownloads` and `More` icon actions;
+- Share, Export and More use MIUIX `TooltipBox`, so touch long-press shows their labels without custom gesture or bubble code;
+- Copy diagnostic report is removed from the product UI;
+- the More popup uses three `DropdownEntry` groups, allowing MIUIX `OverlayIconCascadingDropdownMenu` to insert native `HorizontalDivider` separators:
+  1. diagnostics level + refresh;
+  2. scroll to top + scroll to bottom;
+  3. Clear view;
+- Diagnostics owns its `LazyListState`; scroll actions animate the existing list and never refresh or recapture data;
+- the shared private `SettingsPage` accepts an optional list state while existing callers retain an internally remembered state;
+- event timestamps display `MM-dd HH:mm:ss` for both LSPosed and logcat envelopes, covered by parser tests.
+
+No snapshot/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition or native fallback behavior changes.
+
+
+## 2026-10-04 — Build 724 diagnostics interaction and typography redesign
+
+**Device evidence**
+
+Build 723 Canary #767 confirmed the compact event-list direction but exposed several presentation issues: the export glyph was visually inconsistent with Share/More, the cascading diagnostics-level selector replaced/morphed over the primary menu instead of reading as a side submenu, the page still relied on middle-dot separators, and the overall text hierarchy needed a full MIUIX typography pass. The user also requested a multi-select Filter control beside Back.
+
+**Interaction changes**
+
+- top bar leading side: Back + MIUIX Normal Filter; Filter long-press uses MIUIX Tooltip and a theme-primary dot indicates any non-default filter;
+- top bar trailing side: MIUIX Normal Share + Download + More, each with long-press Tooltip;
+- Filter opens MIUIX OverlayBottomSheet with multi-select log-level and event-type groups, Reset filters and Done actions;
+- view filters are local presentation state only. They do not modify DiagnosticsSnapshot or report content;
+- filter order is semantic-event selection -> user filter -> 40-event display cap, so matching older events are not hidden by unrelated newer entries;
+- More is rebuilt from MIUIX OverlayListPopup. Diagnostics level opens a second MIUIX OverlayListPopup anchored to its own row using a dedicated PopupPositionProvider, preserving the primary menu as the spatial parent;
+- native HorizontalDivider rows separate diagnostics controls, list navigation and Clear view.
+
+**Visual/typography changes**
+
+- replace FileDownloads with the lighter MIUIX Normal Download glyph;
+- remove middle-dot separators from Diagnostics UI copy; localized natural separators are used instead;
+- map the page to the pinned MIUIX text scale with no hand-added font weights: metadata/run summary -> footnote1, event title -> body1, summaries/values -> body2, detail labels -> footnote1;
+- collapsed event cards use `heightIn(min = 86.dp)` rather than a fixed 96dp height, preserving font-scale growth;
+- any recognized semantic/legacy event without a friendly summary shows “Recorded / 已记录” instead of exposing raw `key=value` payload text;
+- filter rows are data-driven to avoid nine duplicated CheckboxPreference blocks.
+
+**Runtime boundary**
+
+No RuntimeDiagnosticsProtocol, DiagnosticsSnapshot capture, report serialization, SystemUI/Xposed hook, writer, lifecycle, transition, renderer or native-fallback behavior changes.
+
+**Validation**
+
+Runtime CI #2657 passed on the behavior-complete code before the final deduplication/docs-only cleanup. Run exact-head validation after this commit, then a focused signed Canary visual/interaction gate.
+
+
+## 2026-10-04 — Builds 725-727 MIUIX window controls and semantic status tags
+
+**Device evidence**
+
+Build 724 Canary #768 passed automated/signing checks, but device review found three first-class UI problems:
+- the Filter icon rendered beside Back but tapping it did not open the filter sheet;
+- Share / Download / More did not have balanced optical weight;
+- the diagnostics-level submenu still appeared to replace/overlap the primary More menu instead of reading as a side hierarchy.
+
+The event-level INFO badge also read visually like a small button. Reference review established that the intended treatment is the small META-style rounded-rectangle status tag rather than a notification badge or plain text.
+
+**MIUIX component decision**
+
+Use MIUIX semantic components wherever the library provides them, and use MIUIX basic primitives to reproduce a missing higher-level component:
+- `WindowBottomSheet` replaces the Scaffold/overlay-dependent filter sheet;
+- `WindowListPopup` replaces overlay popups for the primary More menu and diagnostics-level selector;
+- `IconButton`, `TooltipBox`, `CheckboxPreference`, `HorizontalDivider`, `Card`, `SnackbarHost`, `SmallTopAppBar` and MIUIX `Text` remain the first-class controls;
+- Compose `Row`, `Box`, `Column`, `Spacer` and `LazyColumn` remain layout primitives only;
+- MIUIX has no dedicated Tag/Chip component in the pinned revision, so the event-level tag is composed from non-clickable MIUIX `Surface + Text`, not custom Canvas drawing and not a Button.
+
+**Toolbar**
+
+- leading: Back + Light Filter;
+- trailing: Light Share + Light Download + Medium More;
+- all auxiliary actions retain MIUIX long-press Tooltip behavior and the standard IconButton hit area;
+- visual weight is tuned through the MIUIX icon weight family rather than geometry scaling or positional compensation.
+
+**Event-level tag**
+
+- read-only rounded rectangle, not a circular badge or button;
+- minimum height: 20dp;
+- corner radius: 5dp;
+- padding: 6dp horizontal / 2dp vertical;
+- typography: MIUIX `footnote2` (11sp) + Bold to match the reference status-label hierarchy;
+- INFO: MIUIX `tertiaryContainer/onTertiaryContainer`;
+- ERROR/FATAL: MIUIX error family;
+- neutral/debug: MIUIX secondary/surface family;
+- WARN: Guiyuan's pre-existing runtime warning accent rather than a new diagnostics-only color.
+
+Build 727 moves the existing Home runtime success/warning accents into `ui/theme/RuntimeStatusColors.kt` so Home and Diagnostics share the same semantic warning token.
+
+**Badge semantics**
+
+MIUIX `Badge` is retained only for the active-filter dot, where its documented dynamic-indicator semantics are appropriate. It is no longer used for INFO/WARN/ERROR labels.
+
+**Runtime boundary**
+
+No diagnostics capture/parser/report schema, runtime producer, Xposed/SystemUI hook, writer, lifecycle, transition, renderer, or native fallback behavior changes.
+
+**Validation**
+
+- Build 725 intermediate window-component checkpoint: Runtime CI #2659 passed.
+- Build 726 status-tag checkpoint: Runtime CI #2661 passed after replacing the failed pure-text experiment from #2660.
+- Build 727 exact-code Runtime CI #2662 passed.
+- Run final exact-head validation after this documentation commit, then a focused signed Canary device gate.
+
+## 2026-10-04 — Build 728 dedicated MIUIX diagnostics menus
+
+**Problem**
+
+Build 727 used MIUIX primitives but still manually composed Filter and More from lower-level window popups/sheets. Device evidence showed that the result did not read like native MIUIX: Filter was too heavy as a settings-style sheet, menu/submenu placement was fragile, group dividers were manually owned, and Light/Medium icon mixing produced inconsistent toolbar visual mass.
+
+**Pinned-revision audit**
+
+The exact pinned MIUIX revision `5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca` provides `WindowIconCascadingDropdownMenu`. It owns IconButton interaction, hold-down state, haptics, window popup, two-level cascade and grouped-entry separators. `DropdownEntry` boundaries render MIUIX dividers internally. The revision has no Tag/Chip component, so the read-only `Surface + Text` status tag remains the smallest correct representation for INFO/WARN/ERROR metadata.
+
+**Change**
+
+- Filter moves from `WindowBottomSheet + CheckboxPreference` to `WindowIconCascadingDropdownMenu`.
+- Log level and Event type are child menus; selected leaves use MIUIX dropdown selection semantics; Reset filters is a separate entry group.
+- Filter changes apply immediately to local presentation state; the draft/apply state machine is removed.
+- More moves from hand-built `WindowListPopup` instances and a custom position provider to `WindowIconCascadingDropdownMenu`.
+- Diagnostics level becomes a native child menu; Refresh, scroll actions and Clear view use `DropdownEntry` groups so MIUIX owns separators.
+- Filter/Share/Download/More use the MIUIX default alias (Regular weight in this revision), removing Light/Medium mixing.
+
+**Diagnostics page component audit**
+
+Keep MIUIX `SmallTopAppBar`, `IconButton`, `TooltipBox`, `WindowIconCascadingDropdownMenu`, `Card`, `SnackbarHost`, `Surface`, `Text`, and `Badge/BadgedBox` only for the active-filter indicator. Keep Compose layout primitives only where no MIUIX semantic component exists. No higher-level MIUIX Tag/Chip or event-detail component exists in this revision.
+
+**Runtime boundary**
+
+No snapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, renderer, transition, native fallback, or exported diagnostic content changes.
+
+## 2026-10-04 — Build 730 diagnostics continuity, hierarchy and technical detail language
+
+**Device evidence**
+
+Build 729 confirmed that MIUIX cascading menus themselves animate correctly, but the surrounding Diagnostics page still felt discontinuous because presentation-owned state changed abruptly: card expansion inserted detail rows immediately, filtering replaced/reordered LazyColumn items without item transitions, refresh swapped list/state content without a live indicator, and the active-filter badge changed wrapper structure. Device review also found the toolbar glyphs optically unbalanced despite using one nominal weight family, and the event-card typography hierarchy remained too flat.
+
+**Motion**
+
+- Keep MIUIX menu/submenu motion untouched.
+- Give every diagnostic event a stable LazyColumn key and use the Compose lazy-item animation path for filtered insertion/removal/placement.
+- Animate expanded detail with fade + top-anchored vertical expand/shrink.
+- Animate the summary's one/two-line size change.
+- Keep the Filter anchor stable and fade only the MIUIX Badge dot.
+- Use MIUIX `InfiniteProgressIndicator` for the refresh/loading state instead of static text-only feedback.
+
+**Optical icon balance**
+
+No scaling, translation or custom drawing is introduced. Weight selection stays inside the pinned MIUIX icon family:
+- Back: default Regular;
+- Filter: Normal;
+- Share: Medium;
+- Download: Medium;
+- More: Normal.
+
+This is deliberately optical rather than mechanically identical: Filter/More occupy more dark area at the same 24dp canvas, while Share/Download are more open outlines.
+
+**Typography hierarchy**
+
+- run summary: `subtitle` (14sp Bold);
+- event title: `headline1` (17sp) + Medium;
+- category/time: `footnote2` (11sp);
+- event summary: `body2` (14sp);
+- expanded technical labels: `footnote2` + Medium;
+- expanded technical values: `footnote1` (13sp);
+- INFO/WARN/ERROR/FATAL tag remains `footnote2 + Bold`.
+
+**Expanded technical language**
+
+The collapsed event surface remains localized and friendly. Once an event is expanded, the technical field layer is intentionally language-stable: `Event`, `Component`, `State` and raw protocol field names remain English regardless of app locale. The three now-unused localized resource strings are removed.
+
+**Runtime boundary**
+
+No DiagnosticsSnapshot capture, parser/report schema, runtime producer, SystemUI/Xposed hook, writer, lifecycle, transition, native fallback or report export content changes.
+
+### Build 731 review correction
+
+Post-commit diff review of Build 730 caught one mechanical scope leak and one missing animation attachment before device testing:
+- restore `AppearanceMiniPreview` to its pre-Build-730 root `Modifier`; the Diagnostics presentation pass must not alter Appearance;
+- attach the passed LazyItemScope animation modifier to `DiagnosticsUsefulEventCard` itself, so stable-key filter/reorder animation actually reaches the card.
+
+No motion design, typography, icon-weight decision, technical-detail language, runtime path or report behavior otherwise changes from Build 730.
+
+### Build 732 toolbar optical correction
+
+Build 731 device evidence shows the Download glyph materially heavier than Share even when both use MIUIX Medium. The mismatch is intrinsic to the glyph silhouettes: Download concentrates the vertical arrow and tray into a denser dark area, so matching nominal weight does not produce matching optical weight.
+
+Correction:
+- Share stays `MiuixIcons.Medium.Share`;
+- Download returns to the default `MiuixIcons.Download` alias (Regular at the pinned revision);
+- Back remains Regular; Filter and More remain Normal;
+- keep the native 24dp vector canvas and IconButton hit target unchanged; do not scale, translate, stroke, or redraw icons.
+
+This is presentation-only. Cascading-menu behavior and all runtime/report paths remain unchanged.
+
+### Build 733 — restore pinned MIUIX toolbar defaults
+
+Maintainer review rejects project-local per-glyph weight compensation for small toolbar actions. The pinned MIUIX revision already defines the icon aliases, intrinsic 24dp vectors and 40dp IconButton geometry; project code should not mix Normal/Medium weights to force optical matching.
+
+Build 733 therefore restores the Diagnostics toolbar to the upstream defaults:
+- Back: `MiuixIcons.Back`;
+- Filter: `MiuixIcons.Filter`;
+- Share: `MiuixIcons.Share`;
+- Download: `MiuixIcons.Download`;
+- More: `MiuixIcons.More`.
+
+Direct actions remain MIUIX `IconButton`; Filter/More remain MIUIX `WindowIconCascadingDropdownMenu`, whose trigger is the same MIUIX IconButton primitive. No explicit icon size, scale, translation, stroke, or weight override remains.
+
+Final device acceptance is deferred to an integrated dev Canary so this Diagnostics conformance pass can be checked together with the battery-color menu/pager cleanup requested by the maintainer.
+
+
+## 2026-10-04 — Build 738 About conformance and Diagnostics pull refresh
+
+**About**
+
+- Keep the existing Guiyuan animated identity-mark implementation unchanged.
+- Replace the short placeholder identity copy with the same application/LSPosed description resource used by the package manifest.
+- Separate brand identity from version metadata with pinned-MIUIX `HorizontalDivider` using upstream default thickness and divider color.
+- Keep read-only metadata on MIUIX `BasicComponent`; use MIUIX `ArrowPreference` only for real navigation/actions.
+- Project homepage and GNU GPL v3.0 license open directly; the redundant license detail route/page is removed.
+- Third-party dependencies remain a real secondary page in the MIUIX navigation stack.
+- Project homepage uses a Material Symbols `code` glyph and license uses `license`; third-party dependencies keeps `inventory_2`. Shared Material Symbols renderer and its geometry are unchanged.
+- Device name/codename and Android/API metadata use same-line spacing rather than line breaks.
+- Remove the duplicate project-address row from the outer Settings hub.
+
+**Dependency/version/license audit**
+
+- Direct dependency versions displayed in About now come from the same Gradle variables that declare the dependencies; UI constants no longer duplicate those versions.
+- MIUIX shows the exact published snapshot `0.9.4-5c91d5e5-SNAPSHOT` rather than truncating it to `0.9.4`.
+- Displayed license identifiers use SPDX forms: `Apache-2.0` and `EPL-1.0`.
+- Material Symbols is explicitly classified as a local embedded asset with no fabricated library version.
+- `THIRD_PARTY_NOTICES.md` is synchronized with the exact direct versions and SPDX license identifiers.
+
+**Diagnostics**
+
+- Add pinned-MIUIX `PullToRefresh` around the existing Diagnostics LazyColumn.
+- Pull refresh and the existing More > Refresh action share the same `DiagnosticsSnapshotProvider.capture` generation path.
+- Initial page load does not display the pull-refresh indicator; only a user pull raises the pull-refresh state.
+- Refresh gesture state/text is localized; the MIUIX component owns drag threshold, animation and nested-scroll interaction.
+
+**Runtime boundary**
+
+No Xposed/SystemUI hook, renderer, transition, network source, native participant, writer, fail-native policy or runtime lifecycle behavior changes in this build.
+
+
+## 2026-10-04 — Build 739 semantic-icon and refresh ownership normalization
+
+- Extend the Material Symbols left-side semantic icon policy to the whole companion app, not a single page.
+- Require actual glyph-shape inspection before selection; semantic correctness outranks visual neatness.
+- Align the default Material Symbols baseline with pinned MIUIX Regular: Outlined W400 first, W500 only for perceptually light glyphs, Filled only when state semantics or legibility justify an exception.
+- Enforce one renderer geometry contract through `SemanticLeadingIcon`: 24 dp optical box, 22 dp visual size, common alignment/tint; remove per-call visual-size overrides.
+- Re-audit current semantic icons and replace About package/project/dependency glyphs with `package_2`, `folder_code`, and `account_tree`; normalize the remaining semantic vectors to official Material Symbols Outlined W400 sources where applicable.
+- Remove superseded `data_object`, `code_blocks`, and `inventory_2` assets.
+- Diagnostics refresh now has one UI owner. Initial capture alone may show the loading state card; all later recaptures keep the current list visible and use pinned-MIUIX `PullToRefresh`.
+- Pull gesture, More > Refresh, and diagnostics-level recapture call the same guarded `requestRefresh()` path; duplicate refresh requests are ignored while capture is active.
+- Pull-to-refresh is not installed during the initial empty snapshot, avoiding gesture/header feedback before the first capture completes.
+- No Xposed/SystemUI runtime behavior changes.
+
+## 2026-10-06 — Build 740 companion UI hierarchy and localization polish
+
+**Type:** companion app / MIUIX navigation / localization
+**Build:** 740 / `20261006-740`
+**Branch:** `fix/companion-ui-polish`
+
+### Problem
+
+Device review exposed five companion-app issues: battery-color detail Back visually dismissed the whole sheet, the English Diagnostics title was ellipsized, the Preview Sandbox `Network` label wrapped in its fixed column, the top-information offset title carried redundant direction text, and About metadata/copy used ambiguous plain-space separation.
+
+### Evidence / root cause
+
+- Pinned MIUIX `OverlayBottomSheet` completes its Back dismissal motion before calling `onDismissRequest`. Changing the internal pager only from that callback is therefore too late: the sheet has already moved off-screen.
+- Pinned MIUIX `SmallTopAppBar` reserves its default 26 dp horizontal title padding inside the width left after navigation/actions. Diagnostics has two leading and three trailing actions, so the English title loses another 52 dp even though the action geometry itself is valid.
+- `PreviewStatusLine` assigned every localized label a fixed 48 dp width; `Network` is wider and wrapped.
+- About device/codename and Android/API values were joined with ordinary spaces, and the Chinese About summary itself contained a plain space after “版本”.
+
+### Conclusion / change
+
+- Give the battery-color detail page its own nested NavigationBackHandler and disable outer-sheet dismissal while that detail level is active; Back first returns to the overview, while overview retains normal MIUIX dismiss behavior.
+- Expose the upstream `SmallTopAppBar.titlePadding` seam through `SettingsPage` and set only Diagnostics to zero padding. Font size, button size, positions, and MIUIX action components remain unchanged.
+- Let Preview status labels use intrinsic text width with a normal 12 dp gap; the value owns the remaining Row width.
+- Remove the directional suffix from the top-information offset label in both locales.
+- Use `｜` for Device/Codename, Android/API, and Scope/Package pairs; refine About summary copy to “Version, project, and runtime environment” / “版本、项目与运行环境”.
+
+### Review / validation
+
+This checkpoint does not touch Material semantic-icon resources or the shared `SemanticLeadingIcon` contract. Pre-CI review also removed an explicit `androidx.compose.foundation.layout.weight` import because the project already records that import as invalid for the pinned Compose version; `Modifier.weight()` is supplied by RowScope.
+
+Run one exact-head Runtime PR validation. A Work-branch Canary is only needed if the interaction and optical fixes require focused device acceptance after automated validation.
+
+## 2026-10-06 — Build 741 nested-sheet and Home observation readiness follow-up
+
+**Type:** companion UI / MIUIX navigation / runtime readiness
+**Build:** 741 / `20261006-741`
+**Branch / PR:** `fix/companion-ui-polish` / #218
+
+### Device evidence
+
+Build 740 confirmed the first companion-UI fixes but exposed four follow-ups:
+- Preview battery-mode and super-fast-charging labels still ellipsized in compact segmented controls;
+- predictive Back from the battery-color detail page briefly shifted the returning overview horizontally;
+- diagnostics event cards had no direct per-entry copy action;
+- startup could log `statusIconObservation unavailable ... dark-icon-manager-missing` from `hostCapture`.
+
+### Root cause
+
+The battery-color implementation placed a non-scrollable `HorizontalPager` inside one MIUIX `OverlayBottomSheet` and added a second `NavigationBackHandler` while the sheet retained its own predictive-Back handler. One gesture could therefore participate in both sheet resistance and pager return, producing the observed transient horizontal offset.
+
+The warning was a lifecycle-order mismatch rather than a missing target contract. Guiyuan captures `MiuiNotificationStatusContainer.onFinishInflate()`, while the required `mDarkIconManager` belongs to the parent `MiuiPhoneStatusBarView`. Exact-target SystemUI evidence already establishes `StatusBarIconControllerImpl.addIconGroup(...)` as the Home manager readiness boundary and explicitly rejects fixed delay/polling.
+
+### Change
+
+- Replace the pager/detail-back stack with a real second MIUIX `OverlayBottomSheet`; the overview remains the first-level owner and the detail sheet owns its own dismissal.
+- Keep full battery-state names for summaries and add compact-only segmented labels.
+- Add MIUIX Card `onLongPress` copy of `DiagnosticLogEntry.rawLine` plus localized Toast feedback.
+- Add one read-only `addIconGroup` observation hook to the existing native-network owner. A missing Home manager at host capture becomes INFO/pending; registration of the same manager completes observation and emits structured ready state. True structural failures remain WARN + fail native.
+- Hook count for that owner becomes five; suppression, native geometry and presentation writer ownership are unchanged.
+
+### Review / validation gate
+
+Pre-CI review removed the obsolete pager imports, kept pending readiness weak and single-host, closes pending state on success/failure/deactivation, and preserves full-summary localization. Run repository-selected exact-head CI; device validation is required afterward for nested-sheet Back continuity and cold-start absence of the former warning.
+
+## 2026-10-06 — Home collapse-path device-evidence wording correction
+
+**Type:** device evidence clarification / development memory
+**Build:** 742 / `20261006-742`
+**Branch:** `dev`
+
+The maintainer clarified the residual native-status symptom before the 0.2.0 stable promotion:
+
+- steady Home itself is not observed to switch back to native;
+- the visible native exposure occurs after starting a panel pull from Home and then swiping/collapsing it back up;
+- the defect therefore belongs to the Control Center collapse / return-handoff path, not to steady Home ownership or steady Home acquisition.
+
+Future diagnosis must preserve that distinction. A shorthand such as “Home/desktop becomes native” is too broad and can send investigation toward the wrong owner. If this residual issue is reopened, inspect the QS_FAKE -> Home return boundary, projection release/reacquisition ordering, and native visibility handoff first; do not assume steady Home presentation has been lost without separate evidence.
+
+This entry is documentation-only and changes no APK/runtime behavior. Build 742 device/runtime acceptance remains the Build 741 implementation checkpoint plus release metadata, with integrated dev Runtime CI #2757 passed.
+

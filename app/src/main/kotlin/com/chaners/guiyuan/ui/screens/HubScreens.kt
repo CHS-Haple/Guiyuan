@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -62,9 +61,9 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
-import com.chaners.guiyuan.settings.CombinedStatusContentLayout
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettingsRepository
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettingsRepository
+import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.FeatureSettingsRepo
+import com.chaners.guiyuan.settings.VisualSettingsRepo
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScale
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopTextUiScale
@@ -93,8 +92,6 @@ import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
-private const val PROJECT_REPOSITORY_URL = "https://github.com/CHS-Haple/Guiyuan"
-
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
@@ -103,7 +100,7 @@ internal fun FeaturesScreen(
     val context = LocalContext.current
     val featureRepository =
         remember(context.applicationContext) {
-            CombinedStatusFeatureSettingsRepository(context.applicationContext)
+            FeatureSettingsRepo(context.applicationContext)
         }
     val featureSettings by
         featureRepository.settings.collectAsState(
@@ -111,7 +108,7 @@ internal fun FeaturesScreen(
         )
     val visualRepository =
         remember(context.applicationContext) {
-            CombinedStatusVisualSettingsRepository(context.applicationContext)
+            VisualSettingsRepo(context.applicationContext)
         }
     val visualSettings by
         visualRepository.settings.collectAsState(
@@ -439,7 +436,7 @@ internal fun FeaturesScreen(
             showValue = true,
             enabled = featureSettings.enabled,
             onSelectedIndexChange = { index ->
-                CombinedStatusContentLayout.entries
+                ContentLayout.entries
                     .getOrNull(index)
                     ?.let(visualRepository::setContentLayout)
             },
@@ -520,7 +517,6 @@ internal fun SettingsHubScreen(
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
     val languageOptions = listOf(
         stringResource(R.string.language_system),
         stringResource(R.string.language_english),
@@ -558,6 +554,11 @@ internal fun SettingsHubScreen(
         tertiarySectionTitle = stringResource(R.string.section_diagnostics_maintenance),
         tertiaryContent = {
             ArrowPreference(
+                title = stringResource(R.string.about_title),
+                summary = stringResource(R.string.about_summary),
+                onClick = { onNavigate(AppRoute.About) },
+            )
+            ArrowPreference(
                 title = stringResource(R.string.diagnostics_title),
                 summary = stringResource(R.string.diagnostics_summary),
                 onClick = { onNavigate(AppRoute.Diagnostics) },
@@ -567,14 +568,6 @@ internal fun SettingsHubScreen(
                 summary = stringResource(R.string.restart_scope_summary),
                 enabled = !restartInProgress,
                 onClick = { showRestartDialog = true },
-            )
-        },
-        quaternarySectionTitle = stringResource(R.string.section_other),
-        quaternaryContent = {
-            ArrowPreference(
-                title = stringResource(R.string.project_address_title),
-                summary = stringResource(R.string.project_address_summary),
-                onClick = { uriHandler.openUri(PROJECT_REPOSITORY_URL) },
             )
         },
         overlay = {

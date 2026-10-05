@@ -104,18 +104,26 @@ Build-channel diagnostic flags such as `RUNTIME_DIAGNOSTICS` and `DEVELOPMENT_PR
 For app UI, prefer current MIUIX components and conventions for spacing, typography, shape, state feedback, dialogs, navigation, back behavior, themes, and localization. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
 
 
-For semantic row-leading icons:
-- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, and action affordances;
-- choose the glyph from the row's semantic meaning, not from a previous icon shape or incidental text in the row value;
-- prefer Filled variants and begin from the standard optical weight;
-- normalize perceived visual mass rather than numeric weight: line-constructed or hollow-looking glyphs may use a heavier official weight, while already-solid glyphs should remain lighter;
-- when Filled becomes too dense or harms legibility, an Outline variant with suitable weight compensation is allowed;
-- do not enlarge the whole glyph merely to compensate for low visual mass; preserve the shared optical box, alignment, and tint contract;
-- compare neighboring glyphs in both light and dark themes; identical `FILL` / `wght` values are not a goal by themselves.
+For Material Symbols used as semantic row-leading icons:
+- this policy is global across the companion app. It applies to Appearance, About, Diagnostics, settings/information rows, and any future explanatory leading icon that uses Material Symbols; do not create page-specific optical rules;
+- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, menus, and action affordances;
+- align Material Symbols with the visual language of the pinned MIUIX icon set. MIUIX default aliases are Regular/line-oriented and its static preference-row examples normally use non-filled icons, so Outline/Regular is the default starting style for semantic row-leading Material Symbols;
+- choose the glyph from the row's semantic meaning, not from a previous icon shape, incidental text in the row value, or a desire to make neighboring silhouettes mechanically identical;
+- before accepting a new Material Symbol, inspect the actual official glyph shape/rendering rather than inferring suitability from its name. Judge the silhouette, recognizable details, optical center, negative space, and how the glyph reads at the final 22 dp visual size; use repository vectors, official previews, or device screenshots as evidence;
+- semantic correctness has priority over visual neatness. First select the glyph whose actual rendered shape best communicates the row meaning; only after that choice should style/weight and optical-mass normalization be applied. Do not pick a semantically weaker glyph merely because it looks more balanced beside neighboring icons;
+- within one visual group or card, style coherence has priority over a single glyph's isolated local optimum. Start from the semantically correct Outline Material Symbol at the standard optical weight, then normalize perceived mass using official glyph/weight variants;
+- W400 is the default starting weight. Use an official heavier weight such as W500 when the actual Outline glyph is perceptually too light because of thin, linear, ring-like, or highly open construction;
+- negative space does not by itself mean a glyph is visually too light. Judge the actual occupied mass, optical center, and neighboring glyphs at the final 22 dp visual size;
+- if an Outline glyph cannot reach acceptable legibility or perceived mass with a semantically correct official glyph/weight, a Filled variant may be used as a documented exception. Filled is also appropriate when fill itself communicates a real selected/active/stateful meaning, matching MIUIX's use of explicit Fill variants;
+- before choosing Filled for a static semantic row, first try another semantically correct Outline glyph and/or an official heavier weight. Do not use Filled merely to make one icon look darker in isolation;
+- normalize perceived visual mass with official glyph/variant/weight selection, not geometry hacks. Do not compensate with per-icon scale, translation, custom stroke, alpha, viewport edits, or ad-hoc padding;
+- all such icons share the same renderer contract: a 24 dp optical box, 22 dp visual size, common alignment, and common tint. A page must not override those dimensions merely to make one glyph look larger or smaller;
+- compare neighboring glyphs in both light and dark themes. Identical variant/weight values are not the goal; coherent perceived mass, optical center, and MIUIX-consistent style are the goal.
 
-Current semantic leading icons use a 24 dp optical box with a 22 dp visual size. W400 is the normal starting point; W500 is a common compensation for visually light linear glyphs, not a universal target.
 
-Public identity is Guiyuan / 归元, package com.chaners.guiyuan. Existing CombinedStatus* internal implementation names may remain.
+`SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
+
+Public identity is Guiyuan / 归元, package com.chaners.guiyuan. In internal code, use `Gy` only where product identity is actually needed and omit product-name prefixes when package or domain context already makes ownership clear. Preserve established platform names such as `SystemUi` when they communicate a real integration boundary; prefer natural abbreviations over project-specific shorthand.
 
 ## 6. Git workflow
 

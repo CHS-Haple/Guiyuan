@@ -15,7 +15,7 @@ internal enum class AppLanguage(
 }
 
 internal object AppPlatformSettings {
-    private const val LauncherAliasClassSuffix = ".LauncherAlias"
+    private const val LauncherAliasSuffix = ".LauncherAlias"
 
     fun currentLanguage(context: Context): AppLanguage {
         val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
@@ -62,6 +62,7 @@ internal object AppPlatformSettings {
         context: Context,
         hidden: Boolean,
     ) {
+        // 这里只切桌面入口，不重启进程，设置页可以原地更新状态。
         context.packageManager.setComponentEnabledSetting(
             launcherComponent(context),
             if (hidden) {
@@ -76,6 +77,6 @@ internal object AppPlatformSettings {
     private fun launcherComponent(context: Context): ComponentName =
         ComponentName(
             context.packageName,
-            context.packageName + LauncherAliasClassSuffix,
+            context.packageName + LauncherAliasSuffix,
         )
 }

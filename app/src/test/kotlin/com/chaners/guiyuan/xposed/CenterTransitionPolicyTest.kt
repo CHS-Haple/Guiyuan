@@ -149,7 +149,7 @@ class CenterTransitionPolicyTest {
     fun noSimIsItsOwnNativeCenterFamily() {
         val noSim =
             CenterIndicator.NoSim(
-                CombinedStatusPresentationStateStore.NativeIconResource(
+                PresentationStore.NativeIconResource(
                     packageName = "com.android.systemui",
                     resourceId = 42,
                 ),

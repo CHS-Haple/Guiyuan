@@ -27,7 +27,7 @@ class SystemUiSceneStateSourceTest {
     @Test
     fun steadySourceAuthorityRequiresMatchingStructuralHost() {
         assertEquals(
-            CombinedStatusSourceScene.HOME,
+            SourceScene.HOME,
             SystemUiSceneStateSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
@@ -36,7 +36,7 @@ class SystemUiSceneStateSourceTest {
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.KEYGUARD,
+            SourceScene.KEYGUARD,
             SystemUiSceneStateSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
@@ -45,7 +45,7 @@ class SystemUiSceneStateSourceTest {
             ),
         )
         assertEquals(
-            CombinedStatusSourceScene.UNKNOWN,
+            SourceScene.UNKNOWN,
             SystemUiSceneStateSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",

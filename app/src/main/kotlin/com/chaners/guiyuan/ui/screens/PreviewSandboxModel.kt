@@ -3,9 +3,9 @@ package com.chaners.guiyuan.ui.screens
 import android.content.Context
 import android.content.res.Resources
 import com.chaners.guiyuan.xposed.CenterIndicator
-import com.chaners.guiyuan.xposed.CombinedStatusBatterySemanticState
-import com.chaners.guiyuan.xposed.CombinedStatusPresentationStateStore
-import com.chaners.guiyuan.xposed.CombinedStatusRenderModel
+import com.chaners.guiyuan.xposed.BatterySemanticState
+import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.InternetState
 
 internal enum class PreviewNetworkMode {
@@ -138,7 +138,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSystemUiResourceResolver,
-): CombinedStatusRenderModel {
+): RenderModel {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
         if (mobileControlsEnabled) {
@@ -173,7 +173,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     .drawableId("stat_sys_no_sim")
                     ?.let { resourceId ->
                         CenterIndicator.NoSim(
-                            CombinedStatusPresentationStateStore.NativeIconResource(
+                            PresentationStore.NativeIconResource(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             ),
@@ -194,18 +194,18 @@ internal fun PreviewSandboxUiState.toRenderModel(
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
     val semanticState =
         if (charging) {
-            CombinedStatusBatterySemanticState.CHARGING
+            BatterySemanticState.CHARGING
         } else {
             when (batteryMode) {
-                PreviewBatteryMode.BALANCED -> CombinedStatusBatterySemanticState.NORMAL
-                PreviewBatteryMode.POWER_SAVE -> CombinedStatusBatterySemanticState.POWER_SAVE
-                PreviewBatteryMode.PERFORMANCE -> CombinedStatusBatterySemanticState.PERFORMANCE
+                PreviewBatteryMode.BALANCED -> BatterySemanticState.NORMAL
+                PreviewBatteryMode.POWER_SAVE -> BatterySemanticState.POWER_SAVE
+                PreviewBatteryMode.PERFORMANCE -> BatterySemanticState.PERFORMANCE
                 PreviewBatteryMode.SUPER_POWER_SAVE ->
-                    CombinedStatusBatterySemanticState.SUPER_POWER_SAVE
+                    BatterySemanticState.SUPER_POWER_SAVE
             }
         }
 
-    return CombinedStatusRenderModel(
+    return RenderModel(
         batteryPercent = batteryPercent.coerceIn(0, 100),
         charging = charging,
         centerIndicator = center,
@@ -285,7 +285,7 @@ private fun previewBatterySemanticColor(
     resources: PreviewSystemUiResourceResolver,
     batteryMode: PreviewBatteryMode,
     chargingState: PreviewChargingState,
-    semanticState: CombinedStatusBatterySemanticState,
+    semanticState: BatterySemanticState,
 ): Int? =
     when {
         chargingState == PreviewChargingState.SUPER_FAST_CHARGING ->
@@ -305,10 +305,10 @@ private fun previewBatterySemanticColor(
                 "status_bar_battery_power_save",
             )
 
-        semanticState == CombinedStatusBatterySemanticState.POWER_SAVE ->
+        semanticState == BatterySemanticState.POWER_SAVE ->
             resources.color("status_bar_battery_power_save")
 
-        semanticState == CombinedStatusBatterySemanticState.PERFORMANCE ->
+        semanticState == BatterySemanticState.PERFORMANCE ->
             resources.color("status_bar_battery_performance")
 
         else -> null

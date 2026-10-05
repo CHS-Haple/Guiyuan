@@ -19,7 +19,7 @@ Application preferences such as appearance, language-related state, launcher vis
 Root access is requested only for explicit maintenance/diagnostic actions that require it, currently including:
 
 - restarting SystemUI after user confirmation;
-- reading Guiyuan-related LSPosed/runtime logs when the user generates a diagnostic report.
+- reading Guiyuan-related local runtime logs when the user opens or refreshes the Diagnostics log view, or generates a diagnostic report.
 
 There is no resident Root service.
 
@@ -69,7 +69,7 @@ Guiyuan 以本地运行和最小化数据处理为设计原则。
 只有用户明确触发且确实需要时才使用 Root，目前主要用于：
 
 - 经用户确认后重启 SystemUI；
-- 用户主动生成诊断报告时读取与 Guiyuan 相关的 LSPosed / 运行日志。
+- 用户打开或刷新“诊断”日志视图，或主动生成诊断报告时，读取与 Guiyuan 相关的本地运行日志。
 
 项目不使用常驻 Root 服务。
 

@@ -9,8 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import com.chaners.guiyuan.settings.CombinedStatusFeatureSettings
-import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
+import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.VisualSettings
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -66,8 +66,8 @@ internal object SystemUiNativeCombinedParticipantOwner {
     private var visualBoundsHook: HookHandle? = null
     private var slotTranslationHook: HookHandle? = null
     private var rootRef: WeakReference<FrameLayout>? = null
-    private var renderViewRef: WeakReference<CombinedStatusRenderView>? = null
-    private var renderController: CombinedStatusRenderController? = null
+    private var renderViewRef: WeakReference<RenderView>? = null
+    private var renderController: RenderController? = null
     private var hostRef: WeakReference<ViewGroup>? = null
     private var eventSink: ((String) -> Unit)? = null
     private var nativeStateIcon: Int? = null
@@ -952,10 +952,10 @@ internal object SystemUiNativeCombinedParticipantOwner {
                     (0 until root.childCount)
                         .asSequence()
                         .map { index -> root.getChildAt(index) }
-                        .filterIsInstance<CombinedStatusRenderView>()
+                        .filterIsInstance<RenderView>()
                         .firstOrNull()
                 attached
-                    ?: CombinedStatusRenderView(root.context).also { child ->
+                    ?: RenderView(root.context).also { child ->
                         root.addView(
                             child,
                             FrameLayout.LayoutParams(
@@ -978,12 +978,12 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
         renderViewRef = WeakReference(render)
         renderController =
-            renderController ?: CombinedStatusRenderController(render)
+            renderController ?: RenderController(render)
         renderController?.updateVisualSettings(
-            RuntimeVisualPreferencesOwner.currentSettings(),
+            VisualPrefsOwner.currentSettings(),
         )
         featureEnabled =
-            RuntimeFeaturePreferencesOwner.currentSettings().enabled
+            FeaturePrefsOwner.currentSettings().enabled
 
         render.measure(
             View.MeasureSpec.makeMeasureSpec(activeSlotWidth, View.MeasureSpec.EXACTLY),
@@ -1002,7 +1002,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             renderTop + activeSlotHeight,
         )
         val modelUpdate =
-            renderController?.update(CombinedStatusStateStore.snapshot())
+            renderController?.update(StatusStateStore.snapshot())
         val batteryTintState =
             SystemUiTintStateSource.currentState(battery)
         val tintUpdate =
@@ -1065,7 +1065,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
     @Synchronized
     fun onState(
-        snapshot: CombinedStatusStateStore.Snapshot,
+        snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
     ) {
         val update = renderController?.update(snapshot, trace)
@@ -1140,7 +1140,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
         val update =
             renderController?.update(
-                CombinedStatusStateStore.snapshot(),
+                StatusStateStore.snapshot(),
                 trace,
             )
         if (update?.model != null && update.candidateComplete) {
@@ -1150,7 +1150,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: CombinedStatusFeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureSettings) {
         val root = rootRef?.get()
         if (
             root != null &&
@@ -1277,7 +1277,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: CombinedStatusVisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualSettings) {
         renderController?.updateVisualSettings(settings)
     }
 
@@ -1328,7 +1328,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                     ?: (0 until candidateRoot.childCount)
                         .asSequence()
                         .map(candidateRoot::getChildAt)
-                        .filterIsInstance<CombinedStatusRenderView>()
+                        .filterIsInstance<RenderView>()
                         .firstOrNull()
             }
         val dot =
@@ -1496,7 +1496,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
         val update =
             renderController?.updateTint(
-                CombinedStatusTintState(
+                TintState(
                     appliedTint = tint,
                     statusIconTint = tint,
                 ),
@@ -1645,7 +1645,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
     private fun detailedTintReady(
         nativeTint: Int?,
-        batteryTint: CombinedStatusTintState?,
+        batteryTint: TintState?,
     ): Boolean =
         nativeTint != null || batteryTint != null
 
@@ -1657,19 +1657,19 @@ internal object SystemUiNativeCombinedParticipantOwner {
             ?: "none"
 
     internal fun mergeNativeParticipantTint(
-        batteryTint: CombinedStatusTintState,
+        batteryTint: TintState,
         nativeTint: Int?,
-    ): CombinedStatusTintState {
+    ): TintState {
         val resolvedNativeTint =
             nativeTint
                 ?.takeIf { color -> (color ushr 24) != 0 }
         return if (resolvedNativeTint != null) {
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = resolvedNativeTint,
                 statusIconTint = resolvedNativeTint,
             )
         } else {
-            CombinedStatusTintState(
+            TintState(
                 appliedTint = batteryTint.appliedTint,
             )
         }

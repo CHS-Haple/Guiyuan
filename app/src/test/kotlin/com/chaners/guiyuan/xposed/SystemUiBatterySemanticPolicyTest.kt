@@ -8,31 +8,31 @@ class SystemUiBatterySemanticPolicyTest {
     @Test
     fun mapsNativeProgressStatusesWithoutReconstructingPriority() {
         assertEquals(
-            CombinedStatusBatterySemanticState.CHARGING,
+            BatterySemanticState.CHARGING,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("QUICK_CHARGING"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.CHARGING,
+            BatterySemanticState.CHARGING,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("PERF_CHARGE_MODE"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.POWER_SAVE,
+            BatterySemanticState.POWER_SAVE,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("POWER_SAVE"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.SUPER_POWER_SAVE,
+            BatterySemanticState.SUPER_POWER_SAVE,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("SUPER_POWER_SAVE"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.PERFORMANCE,
+            BatterySemanticState.PERFORMANCE,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("PERFORMANCE_MODE"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.LOW,
+            BatterySemanticState.LOW,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("LOW"),
         )
         assertEquals(
-            CombinedStatusBatterySemanticState.NORMAL,
+            BatterySemanticState.NORMAL,
             SystemUiBatterySemanticPolicy.fromNativeProgressStatus("NORMAL_DARK"),
         )
         assertNull(SystemUiBatterySemanticPolicy.fromNativeProgressStatus("UNKNOWN"))
