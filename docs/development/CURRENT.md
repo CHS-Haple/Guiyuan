@@ -3,16 +3,16 @@
 ## Repository / build
 
 - Product: Guiyuan 0.1.0.
-- Stable baseline: `main` remains Build 709; `dev` is the current integration base for this refactor.
-- Active work: `feat/code-lightweight` / PR #217 (`refactor: close lightweight code cleanup`), ready against current `dev`.
-- Objective: reduce mechanical product-name prefixes, oversized mixed-responsibility source files, stale aliases and redundant naming without changing runtime behavior, ownership, lifecycle, geometry, persisted preference keys or diagnostic protocol fields.
-- Naming direction: use `Gy` only where product identity is useful; omit redundant `CombinedStatus` prefixes in package-local domain/runtime types; keep `SystemUi` where it identifies the authoritative platform/integration boundary. Do not introduce a repository-wide `SysUi` rename.
-- Completed in the active branch: settings/UI decomposition; pure render-policy extraction from `StatusPainter`; pure Control Center transition policy extraction from `ControlCenterTransitionOwner`; app-shell, policy/session/model, runtime preference owner and core runtime naming cleanup; Xposed entry alignment; and broad test-name alignment without compatibility aliases.
-- Source-level mechanical `CombinedStatus*` naming is closed out where package/domain context already carries the meaning. Settings/domain types now use concise names such as `FeatureSettings`, `VisualSettings`, `ContentLayout` and `BatteryColor*`; scene/render types use names such as `StatusScene`, `SourceScene`, `RenderMode` and `MotionOwnership`.
-- Persisted preference keys, shared-preference file names, remote-preference protocol strings and historical DEVLOG/CHANGELOG records retain their established values. This refactor does not migrate or rewrite user data.
-- `SystemUi*` types are intentionally not shortened: their prefix carries platform-authority meaning and a global shorthand conversion would add churn without reducing runtime complexity.
-- No runtime behavior is intentionally changed by this checkpoint. No device gate is required unless automated/static review exposes behavior-affecting fallout.
-- Validation: PR #217 Runtime CI #2739 confirms main Kotlin now compiles after restoring visual-settings helper ownership. Unit-test compilation then exposed five residual pre-rename symbols across three test files; a full scan of all 64 test Kotlin files confirmed those were the only remaining `CombinedStatus*` / `isCombinedStatus*` source references, and they are aligned to the current names. Exact-head Runtime revalidation is pending. No Work-branch Canary/device gate is required unless automated validation exposes behavior-affecting fallout.
+- Stable baseline: `main` remains Build 709; current `dev` is `ac62a4ce8daa87fe5d8b9ba86ac57ebd0add4c3d`, including the completed lightweight-code cleanup from PR #217.
+- Active work: `fix/companion-ui-polish`, Build 740 / `20261006-740`, based directly on current `dev`.
+- Scope: companion-app UI/navigation/text only. No Xposed/SystemUI runtime hook, ownership, lifecycle, geometry, state source, renderer, or persisted preference/protocol contract is changed.
+- Battery-color detail navigation now treats the internal editor as a real second level: the detail level owns Back and returns to the scheme overview before the outer MIUIX sheet may dismiss.
+- Diagnostics keeps the existing Back + Filter and Share + Export + More layout. The English title uses the pinned MIUIX SmallTopAppBar title-padding seam instead of shrinking text or changing action geometry.
+- Preview Sandbox no longer gives localized Network/Battery labels a fixed 48 dp column; labels size to their actual text and keep a stable gap to the value.
+- Features removes the directional hint from the top-information vertical-offset title.
+- About copy is normalized; device/codename, Android/API, and scope/package pairs use the full-width vertical separator `｜`.
+- Pre-CI review caught and removed an invalid explicit Compose `layout.weight` import already known from the Build 562 regression history; `Modifier.weight()` remains RowScope-owned.
+- Next: complete exact-head diff review, run the single appropriate Runtime PR validation, then request one Work-branch Canary only if focused device interaction/optical evidence is still needed.
 
 ## Accepted runtime facts carried into Build 685
 
