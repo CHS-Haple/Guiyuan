@@ -712,6 +712,18 @@ class GyModule : XposedModule() {
                             log(Log.INFO, TAG, event)
                         }
                     },
+                    onObservationAttached = { observationSource ->
+                        logDiagnostic(
+                            level = Log.INFO,
+                            event = "source.attach",
+                            component = "statusIconObservation",
+                            state = "ready",
+                            "source" to observationSource,
+                            "trigger" to "home-dark-icon-manager-registration",
+                            "mode" to "observation-only",
+                            "suppressionWriters" to 0,
+                        )
+                    },
                     onStatusPresentationChanged = ::onStatusIconPresentationChanged,
                 )
         ) {
@@ -3666,7 +3678,10 @@ class GyModule : XposedModule() {
 
         when (
             val observation =
-                SystemUiNativeNetworkSuppressionOwner.attachObserver(host)
+                SystemUiNativeNetworkSuppressionOwner.attachObserver(
+                    host = host,
+                    source = source,
+                )
         ) {
             is SystemUiNativeNetworkSuppressionOwner.StateResult.Active -> {
                 logDiagnostic(
