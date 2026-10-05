@@ -162,7 +162,7 @@ class ColorPolicyTest {
             CombinedStatusBatterySemanticState.NORMAL,
         systemColor: Int? = null,
     ) =
-        CombinedStatusRenderModel(
+        RenderModel(
             batteryPercent = 80,
             charging = state == CombinedStatusBatterySemanticState.CHARGING,
             centerIndicator =

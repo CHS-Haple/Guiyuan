@@ -33,7 +33,7 @@ internal class CombinedStatusRenderView(
         )
 
     @Volatile
-    private var model: CombinedStatusRenderModel? = null
+    private var model: RenderModel? = null
 
     private var previousCenterIndicator: CenterIndicator? = null
     private var centerTransitionFraction = 1f
@@ -77,7 +77,7 @@ internal class CombinedStatusRenderView(
     }
 
     fun setModel(
-        model: CombinedStatusRenderModel?,
+        model: RenderModel?,
         trace: RuntimeRenderTrace? = null,
     ) {
         if (this.model == model) {

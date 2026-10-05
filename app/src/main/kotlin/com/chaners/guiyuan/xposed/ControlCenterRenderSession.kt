@@ -494,7 +494,7 @@ internal object ControlCenterRenderSession {
         private val hostLocationScratch = IntArray(2)
         private val statusAreaLocationScratch = IntArray(2)
 
-        private var currentModel: CombinedStatusRenderModel? = null
+        private var currentModel: RenderModel? = null
         private var currentTint: CombinedStatusTintState? = null
         private var currentVisualSettings = RuntimeVisualPreferencesOwner.currentSettings()
         private var transitionStateVersion = 0L
@@ -1017,7 +1017,7 @@ internal object ControlCenterRenderSession {
     internal data class TransitionSourceSnapshot(
         val view: View,
         val anchorView: View,
-        val model: CombinedStatusRenderModel,
+        val model: RenderModel,
         val colors: RenderColors,
         val visualSettings: CombinedStatusVisualSettings,
         val stateVersion: Long,

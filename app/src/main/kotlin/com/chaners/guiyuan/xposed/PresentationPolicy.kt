@@ -2,9 +2,9 @@ package com.chaners.guiyuan.xposed
 
 internal object PresentationPolicy {
     fun resolveModel(
-        previous: CombinedStatusRenderModel?,
-        candidate: CombinedStatusRenderModel?,
-    ): CombinedStatusRenderModel? =
+        previous: RenderModel?,
+        candidate: RenderModel?,
+    ): RenderModel? =
         candidate ?: previous
 
     fun resolveTint(

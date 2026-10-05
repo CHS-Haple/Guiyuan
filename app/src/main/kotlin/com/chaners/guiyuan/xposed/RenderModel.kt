@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal data class CombinedStatusRenderModel(
+internal data class RenderModel(
     val batteryPercent: Int,
     val charging: Boolean,
     val centerIndicator: CenterIndicator,
@@ -17,7 +17,7 @@ internal data class CombinedStatusRenderModel(
             snapshot: CombinedStatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
-        ): CombinedStatusRenderModel? {
+        ): RenderModel? {
             val battery = snapshot.battery ?: return null
 
             val nativeNoSimVisible = presentation.statusIcons.noSimVisible
@@ -102,7 +102,7 @@ internal data class CombinedStatusRenderModel(
                 battery.semanticState
                     ?: CombinedStatusBatterySemanticState.NORMAL
 
-            return CombinedStatusRenderModel(
+            return RenderModel(
                 batteryPercent = batteryPercent,
                 charging = battery.charging,
                 centerIndicator = centerIndicator,

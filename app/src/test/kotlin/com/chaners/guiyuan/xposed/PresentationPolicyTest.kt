@@ -86,7 +86,7 @@ class PresentationPolicyTest {
         centerIndicator: CenterIndicator,
         mobileLevel: Int?,
     ) =
-        CombinedStatusRenderModel(
+        RenderModel(
             batteryPercent = 83,
             charging = false,
             centerIndicator = centerIndicator,

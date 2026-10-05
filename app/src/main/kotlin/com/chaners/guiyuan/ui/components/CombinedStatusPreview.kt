@@ -5,14 +5,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
-import com.chaners.guiyuan.xposed.CombinedStatusRenderModel
+import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.CombinedStatusRenderView
 import com.chaners.guiyuan.xposed.CombinedStatusTintState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun CombinedStatusPreview(
-    model: CombinedStatusRenderModel,
+    model: RenderModel,
     visualSettings: CombinedStatusVisualSettings,
     modifier: Modifier = Modifier,
 ) {

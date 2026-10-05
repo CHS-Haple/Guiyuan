@@ -80,7 +80,7 @@ internal class CombinedStatusPainter(
         canvas: Canvas,
         width: Int,
         height: Int,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         colors: RenderColors,
         opacity: Float,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
@@ -173,7 +173,7 @@ internal class CombinedStatusPainter(
     fun requiredTopOverflowPx(
         width: Int,
         height: Int,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         visualSettings: CombinedStatusVisualSettings,
         previousCenterIndicator: CenterIndicator? = null,
         centerExitAmount: Float = 0f,
@@ -221,7 +221,7 @@ internal class CombinedStatusPainter(
         canvas: Canvas,
         width: Int,
         height: Int,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         colors: RenderColors,
         component: TransitionComponent,
         shapePolicy: TransitionShapePolicy,
@@ -672,7 +672,7 @@ internal class CombinedStatusPainter(
     fun transitionComponentSpecs(
         width: Int,
         height: Int,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         visualSettings: CombinedStatusVisualSettings = CombinedStatusVisualSettings(),
     ): List<TransitionComponentSpec> {
         if (width <= 0 || height <= 0) return emptyList()
@@ -1540,7 +1540,7 @@ internal class CombinedStatusPainter(
 
     private fun drawBattery(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         batteryTint: Int,
         batteryTextTint: Int,
         chargingIconTint: Int,
@@ -1739,7 +1739,7 @@ internal class CombinedStatusPainter(
     }
 
     private fun resolveBatteryTopReadoutLayout(
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         visualSettings: CombinedStatusVisualSettings,
         nativeTransform: NativeRenderTransform,
     ): BatteryTopReadoutLayout? {
@@ -2008,7 +2008,7 @@ internal class CombinedStatusPainter(
 
     private fun drawBatteryTopNumberTransition(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         textTint: Int,
         opacity: Float,
         visualSettings: CombinedStatusVisualSettings,
@@ -2045,7 +2045,7 @@ internal class CombinedStatusPainter(
 
     private fun drawBatteryTopChargingIconTransition(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         chargingIconTint: Int,
         opacity: Float,
         visualSettings: CombinedStatusVisualSettings,
@@ -2128,7 +2128,7 @@ internal class CombinedStatusPainter(
     fun transitionBatteryNumberCurrentBounds(
         width: Int,
         height: Int,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         visualSettings: CombinedStatusVisualSettings,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
@@ -3205,7 +3205,7 @@ internal class CombinedStatusPainter(
 
     private fun resolveMobileSignalTransitionLayout(
         geometry: CombinedStatusOuterGeometry.Resolved,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
     ): MobileSignalTransitionLayout {
         val sourceCenters = ArrayList<TransitionPoint>(MOBILE_DOT_COUNT)
         var left = Float.POSITIVE_INFINITY
@@ -3260,7 +3260,7 @@ internal class CombinedStatusPainter(
 
     private fun drawMobileSignalTransition(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         tint: Int,
         opacity: Float,
         geometry: CombinedStatusOuterGeometry.Resolved,
@@ -3346,7 +3346,7 @@ internal class CombinedStatusPainter(
 
     private fun drawMobileSignalTransitionToExactBars(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         tint: Int,
         opacity: Float,
         geometry: CombinedStatusOuterGeometry.Resolved,
@@ -3441,7 +3441,7 @@ internal class CombinedStatusPainter(
 
     private fun drawMobile(
         canvas: Canvas,
-        model: CombinedStatusRenderModel,
+        model: RenderModel,
         tint: Int,
         opacity: Float,
         geometry: CombinedStatusOuterGeometry.Resolved,

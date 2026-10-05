@@ -5,7 +5,7 @@ import com.chaners.guiyuan.settings.CombinedStatusVisualSettings
 internal class RenderController(
     private val view: CombinedStatusRenderView,
 ) {
-    private var stableModel: CombinedStatusRenderModel? = null
+    private var stableModel: RenderModel? = null
     private var stableTint: CombinedStatusTintState? = null
 
     fun update(
@@ -15,7 +15,7 @@ internal class RenderController(
         val defaultDataSubscriptionId =
             SystemUiDefaultDataSubscriptionSource.currentSubscriptionId()
         val candidate =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot = snapshot,
                 presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
@@ -72,7 +72,7 @@ internal class RenderController(
     internal data class ModelUpdate(
         val candidateComplete: Boolean,
         val retainedStable: Boolean,
-        val model: CombinedStatusRenderModel?,
+        val model: RenderModel?,
         val changed: Boolean,
         val defaultDataSubscriptionId: Int,
     )

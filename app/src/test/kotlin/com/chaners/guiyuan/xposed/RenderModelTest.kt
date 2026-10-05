@@ -5,11 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CombinedStatusRenderModelTest {
+class RenderModelTest {
     @Test
     fun wifiValidatedWinsTheCenterIndicator() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -44,7 +44,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun unknownNativeWifiInternetWithCellularDefaultUsesMobilePresentation() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -80,7 +80,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun defaultDataFallbackSelectsMatchingMobileSignal() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -116,7 +116,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun cellularValidatedUsesSystemMobileType() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -148,7 +148,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun wifiConnectedWithoutInternetKeepsWifiWithNoInternetState() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -182,7 +182,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun wifiDisconnectedFallsBackToValidatedCellularType() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -212,7 +212,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun otherTransportWithUnknownWifiInternetFallsBackToMobileType() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -248,7 +248,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun otherTransportFallsBackToMobileTypeWhenWifiIsHidden() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -280,7 +280,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun mobileDataEnabledWithoutActiveTransportLeavesCenterEmpty() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -310,7 +310,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun mobileDataDisabledWithSignalLeavesCenterEmptyAndKeepsSignalLevel() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -342,7 +342,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun completeNoNetworkLeavesCenterEmptyAndUsesSignalAreaForStatus() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -373,7 +373,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun unknownConnectivityDoesNotInventNoNetwork() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -400,7 +400,7 @@ class CombinedStatusRenderModelTest {
                 resourceId = 42,
             )
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -452,7 +452,7 @@ class CombinedStatusRenderModelTest {
                 resourceId = 42,
             )
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -509,7 +509,7 @@ class CombinedStatusRenderModelTest {
                 resourceId = 42,
             )
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -545,7 +545,7 @@ class CombinedStatusRenderModelTest {
                 resourceId = 42,
             )
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi =
@@ -581,7 +581,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun airplaneModeUsesAirplaneCenterAndUnavailableMobileSignal() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,
@@ -614,7 +614,7 @@ class CombinedStatusRenderModelTest {
     @Test
     fun airplaneExitRecoveryShowsEmptyCenterAndDimDotsWithoutCross() {
         val model =
-            CombinedStatusRenderModel.from(
+            RenderModel.from(
                 snapshot =
                     snapshot(
                         wifi = CombinedStatusStateStore.WifiState.Hidden,

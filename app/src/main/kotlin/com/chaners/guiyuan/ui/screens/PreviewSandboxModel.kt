@@ -5,7 +5,7 @@ import android.content.res.Resources
 import com.chaners.guiyuan.xposed.CenterIndicator
 import com.chaners.guiyuan.xposed.CombinedStatusBatterySemanticState
 import com.chaners.guiyuan.xposed.PresentationStore
-import com.chaners.guiyuan.xposed.CombinedStatusRenderModel
+import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.InternetState
 
 internal enum class PreviewNetworkMode {
@@ -138,7 +138,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSystemUiResourceResolver,
-): CombinedStatusRenderModel {
+): RenderModel {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
         if (mobileControlsEnabled) {
@@ -205,7 +205,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
             }
         }
 
-    return CombinedStatusRenderModel(
+    return RenderModel(
         batteryPercent = batteryPercent.coerceIn(0, 100),
         charging = charging,
         centerIndicator = center,
