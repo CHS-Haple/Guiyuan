@@ -12,7 +12,7 @@
 - Persisted preference keys, shared-preference file names, remote-preference protocol strings and historical DEVLOG/CHANGELOG records retain their established values. This refactor does not migrate or rewrite user data.
 - `SystemUi*` types are intentionally not shortened: their prefix carries platform-authority meaning and a global shorthand conversion would add churn without reducing runtime complexity.
 - No runtime behavior is intentionally changed by this checkpoint. No device gate is required unless automated/static review exposes behavior-affecting fallout.
-- Validation: PR #217 Runtime CI #2738 reached Kotlin compilation and failed because four visual-settings serialization helpers remained file-private in `VisualSettingsDefaults.kt` after the repository split while `VisualSettingsRepo.kt` owned their only callers. The helpers are moved back under the Repo file with `private` visibility preserved; exact-head Runtime revalidation is pending. No Work-branch Canary/device gate is required unless automated validation exposes behavior-affecting fallout.
+- Validation: PR #217 Runtime CI #2739 confirms main Kotlin now compiles after restoring visual-settings helper ownership. Unit-test compilation then exposed five residual pre-rename symbols across three test files; a full scan of all 64 test Kotlin files confirmed those were the only remaining `CombinedStatus*` / `isCombinedStatus*` source references, and they are aligned to the current names. Exact-head Runtime revalidation is pending. No Work-branch Canary/device gate is required unless automated validation exposes behavior-affecting fallout.
 
 ## Accepted runtime facts carried into Build 685
 

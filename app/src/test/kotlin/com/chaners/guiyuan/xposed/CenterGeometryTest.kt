@@ -178,7 +178,7 @@ class CenterGeometryTest {
         fun physicalSize(combinedScale: Float): Float {
             val canvasScale = hostScale * combinedScale
             val local =
-                CombinedStatusMobileTypeScalePolicy.localValue(
+                MobileTypeScalePolicy.localValue(
                     baseValue = base,
                     canvasScale = canvasScale,
                     combinedScale = combinedScale,
@@ -196,7 +196,7 @@ class CenterGeometryTest {
         val base = 39f
         assertEquals(
             base,
-            CombinedStatusMobileTypeScalePolicy.localValue(
+            MobileTypeScalePolicy.localValue(
                 baseValue = base,
                 canvasScale = 0.6f,
                 combinedScale = 0.6f,
@@ -212,7 +212,7 @@ class CenterGeometryTest {
 
         assertEquals(
             raw,
-            CombinedStatusTopInfoOffsetPolicy.readoutRequestedOffset(
+            TopInfoOffsetPolicy.readoutRequestedOffset(
                 layout = ContentLayout.NETWORK_CENTER,
                 rawOffset = raw,
             ),
@@ -220,7 +220,7 @@ class CenterGeometryTest {
         )
         assertEquals(
             0f,
-            CombinedStatusTopInfoOffsetPolicy.networkTranslationDelta(
+            TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = ContentLayout.NETWORK_CENTER,
                 rawOffset = raw,
             ),
@@ -234,7 +234,7 @@ class CenterGeometryTest {
 
         assertEquals(
             BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
-            CombinedStatusTopInfoOffsetPolicy.readoutRequestedOffset(
+            TopInfoOffsetPolicy.readoutRequestedOffset(
                 layout = ContentLayout.BATTERY_CENTER,
                 rawOffset = raw,
             ),
@@ -242,7 +242,7 @@ class CenterGeometryTest {
         )
         assertEquals(
             -5f,
-            CombinedStatusTopInfoOffsetPolicy.networkTranslationDelta(
+            TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = ContentLayout.BATTERY_CENTER,
                 rawOffset = raw,
             ),
@@ -254,7 +254,7 @@ class CenterGeometryTest {
     fun fiveGaAccessSuffixUsesLowerRightVerticalDirection() {
         assertEquals(
             8f,
-            CombinedStatusMobileTypeSuffixPolicy.verticalOffset(
+            MobileTypeSuffixPolicy.verticalOffset(
                 suffix = "A",
                 magnitude = 8f,
             ),
@@ -262,7 +262,7 @@ class CenterGeometryTest {
         )
         assertEquals(
             -8f,
-            CombinedStatusMobileTypeSuffixPolicy.verticalOffset(
+            MobileTypeSuffixPolicy.verticalOffset(
                 suffix = "++",
                 magnitude = 8f,
             ),

@@ -321,20 +321,20 @@ class ControlCenterTransitionGeometryTest {
     fun tinySecondaryComponentsRemainVisibleToTopologyClassifier() {
         val fourBars =
             listOf(
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
             )
         val tinyDots =
             listOf(
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.12f, 0.05f, 0.14f, 0.07f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.42f, 0.05f, 0.44f, 0.07f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.72f, 0.05f, 0.74f, 0.07f),
+                ParticipantVisualSnapshot.NormalizedRect(0.12f, 0.05f, 0.14f, 0.07f),
+                ParticipantVisualSnapshot.NormalizedRect(0.42f, 0.05f, 0.44f, 0.07f),
+                ParticipantVisualSnapshot.NormalizedRect(0.72f, 0.05f, 0.74f, 0.07f),
             )
 
         val retained =
-            CombinedStatusParticipantVisualSnapshot.filterProbeComponents(
+            ParticipantVisualSnapshot.filterProbeComponents(
                 components = fourBars + tinyDots,
                 probeWidth = 96,
                 probeHeight = 96,
@@ -342,8 +342,8 @@ class ControlCenterTransitionGeometryTest {
 
         assertEquals(7, retained.size)
         assertEquals(
-            CombinedStatusParticipantVisualSnapshot.Topology.COMPOSITE,
-            CombinedStatusParticipantVisualSnapshot.classifyComponents(retained),
+            ParticipantVisualSnapshot.Topology.COMPOSITE,
+            ParticipantVisualSnapshot.classifyComponents(retained),
         )
     }
 
@@ -351,31 +351,31 @@ class ControlCenterTransitionGeometryTest {
     fun dualRowCompositeCannotExposeExactFourBarCapability() {
         val components =
             listOf(
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.55f, 0.05f, 0.65f, 0.12f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.80f, 0.05f, 0.90f, 0.12f),
+                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
+                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
+                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.05f, 0.65f, 0.12f),
+                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.05f, 0.90f, 0.12f),
             )
         val envelope =
-            CombinedStatusParticipantVisualSnapshot.NormalizedRect(
+            ParticipantVisualSnapshot.NormalizedRect(
                 left = 0.05f,
                 top = 0.05f,
                 right = 0.90f,
                 bottom = 0.95f,
             )
         val snapshot =
-            CombinedStatusParticipantVisualSnapshot.Snapshot(
+            ParticipantVisualSnapshot.Snapshot(
                 envelope = envelope,
                 components = components,
-                topology = CombinedStatusParticipantVisualSnapshot.classifyComponents(components),
+                topology = ParticipantVisualSnapshot.classifyComponents(components),
             )
 
         assertEquals(
-            CombinedStatusParticipantVisualSnapshot.Topology.COMPOSITE,
+            ParticipantVisualSnapshot.Topology.COMPOSITE,
             snapshot.topology,
         )
         assertNull(snapshot.fourVerticalBarsWithinEnvelope())
@@ -385,25 +385,25 @@ class ControlCenterTransitionGeometryTest {
     fun participantVisualTopologyDistinguishesFourBarsFromComposite() {
         val fourBars =
             listOf(
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
             )
         assertEquals(
-            CombinedStatusParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
-            CombinedStatusParticipantVisualSnapshot.classifyComponents(fourBars),
+            ParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
+            ParticipantVisualSnapshot.classifyComponents(fourBars),
         )
 
         val composite =
             fourBars +
                 listOf(
-                    CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
-                    CombinedStatusParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
+                    ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
+                    ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
                 )
         assertEquals(
-            CombinedStatusParticipantVisualSnapshot.Topology.COMPOSITE,
-            CombinedStatusParticipantVisualSnapshot.classifyComponents(composite),
+            ParticipantVisualSnapshot.Topology.COMPOSITE,
+            ParticipantVisualSnapshot.classifyComponents(composite),
         )
     }
 }

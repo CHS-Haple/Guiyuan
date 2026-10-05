@@ -213,7 +213,7 @@ class VisualSettingsTest {
 
     @Test
     fun clearNotificationParticipatesInVisualRuntimeSync() {
-        assertEquals(true, isCombinedStatusVisualPreferenceKey(null))
+        assertEquals(true, isVisualPreferenceKey(null))
     }
 
     @Test
@@ -228,7 +228,7 @@ class VisualSettingsTest {
             )
 
         keys.forEach { key ->
-            assertEquals(true, isCombinedStatusVisualPreferenceKey(key))
+            assertEquals(true, isVisualPreferenceKey(key))
         }
     }
 
@@ -307,7 +307,7 @@ class VisualSettingsTest {
             ).forEach { baseKey ->
                 assertEquals(
                     true,
-                    isCombinedStatusVisualPreferenceKey(
+                    isVisualPreferenceKey(
                         visualProfileKey(layout, baseKey),
                     ),
                 )
@@ -332,7 +332,7 @@ class VisualSettingsTest {
             BATTERY_COLOR_CHARGING_KEY,
             BATTERY_COLOR_LOW_KEY,
         ).forEach { key ->
-            assertEquals(true, isCombinedStatusVisualPreferenceKey(key))
+            assertEquals(true, isVisualPreferenceKey(key))
         }
     }
 
