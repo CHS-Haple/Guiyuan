@@ -51,6 +51,8 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var pendingObservationHost: WeakReference<View>? = null
+    private var pendingObservationSource: String? = null
+    private var observationAttachedSink: ((String) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
@@ -102,11 +104,13 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
+        onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): InstallResult {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
+            observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             return InstallResult.AlreadyInstalled
         }
@@ -234,6 +238,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             installedHandles.clear()
             installedHandles.addAll(created)
             eventSink = onEvent
+            observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             InstallResult.Installed
         }.getOrElse { error ->
@@ -250,7 +255,9 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             activeManager = null
             activeGroup = null
             pendingObservationHost = null
+            pendingObservationSource = null
             eventSink = onEvent
+            observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             InstallResult.Failure(
                 error.message ?: error.javaClass.simpleName,
@@ -259,7 +266,10 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     }
 
     @Synchronized
-    fun attachObserver(host: Any): StateResult {
+    fun attachObserver(
+        host: Any,
+        source: String = "observerAttach",
+    ): StateResult {
         val hostView =
             host as? View
                 ?: return StateResult.Failure("host-not-view")
@@ -271,6 +281,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     // Keep a single weak pending host and complete observation from the
                     // authoritative StatusBarIconControllerImpl.addIconGroup registration.
                     pendingObservationHost = WeakReference(hostView)
+                    pendingObservationSource = source
                     return StateResult.Pending("home-dark-icon-manager-registration")
                 }
         val group =
@@ -293,6 +304,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         }
 
         pendingObservationHost = null
+        pendingObservationSource = null
         activeManager = manager
         activeGroup = WeakReference(group)
         observationOnly = true
@@ -304,7 +316,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         refreshStatusPresentationLocked("observerAttach")
 
         eventSink?.invoke(
-            "nativeNetworkSuppression observerOnly source=observerAttach " +
+            "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name +
                 " suppressionWriters=0 nativeGeometryWrites=0",
@@ -412,6 +424,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     @Synchronized
     fun deactivate(source: String): StateResult {
         pendingObservationHost = null
+        pendingObservationSource = null
         val group = activeGroup?.get()
         val previousCount = suppressedBindings.count { reference -> reference.get() != null }
         val restoredVisualMasks = restoreMobileVisualMasksLocked()
@@ -436,6 +449,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         deactivate(source)
         installedHandles.clear()
         eventSink = null
+        observationAttachedSink = null
         statusPresentationSink = null
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
@@ -514,20 +528,34 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             if (manager?.javaClass?.name == HOME_MANAGER_CLASS) {
                 synchronized(this) {
                     val pendingHost = pendingObservationHost?.get()
+                    val pendingSource = pendingObservationSource
                     if (
                         pendingHost != null &&
                         NativeParticipantRuntimeAccess.managerFor(pendingHost) === manager
                     ) {
-                        when (val state = attachObserver(pendingHost)) {
-                            is StateResult.Active ->
+                        when (
+                            val state =
+                                attachObserver(
+                                    host = pendingHost,
+                                    source = pendingSource ?: "homeManagerRegistered",
+                                )
+                        ) {
+                            is StateResult.Active -> {
+                                observationAttachedSink?.invoke(
+                                    pendingSource ?: "homeManagerRegistered",
+                                )
                                 eventSink?.invoke(
-                                    "statusIconObservation ready source=homeManagerRegistered " +
+                                    "statusIconObservation ready source=" +
+                                        (pendingSource ?: "homeManagerRegistered") +
+                                        " trigger=homeManagerRegistered " +
                                         "suppressionWriters=0 nativeGeometryWrites=0",
                                 )
+                            }
                             is StateResult.Failure ->
                                 eventSink?.invoke(
                                     "statusIconObservation unavailable " +
-                                        "source=homeManagerRegistered reason=" + state.reason,
+                                        "source=" + (pendingSource ?: "homeManagerRegistered") +
+                                        " reason=" + state.reason,
                                 )
                             is StateResult.Pending,
                             is StateResult.Inactive,
