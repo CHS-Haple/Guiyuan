@@ -67,49 +67,49 @@ internal object SystemUiSceneStateSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id == HOOK_ID
 
-    fun steadySourceScene(update: SceneUpdate): CombinedStatusSourceScene {
+    fun steadySourceScene(update: SceneUpdate): SourceScene {
         val structural = steadySourceScene(update.sourceView)
         return when (structural) {
-            CombinedStatusSourceScene.HOME ->
+            SourceScene.HOME ->
                 if (update.surface == Surface.UNLOCKED_STATUS_BAR) {
-                    CombinedStatusSourceScene.HOME
+                    SourceScene.HOME
                 } else {
-                    CombinedStatusSourceScene.UNKNOWN
+                    SourceScene.UNKNOWN
                 }
 
-            CombinedStatusSourceScene.KEYGUARD ->
+            SourceScene.KEYGUARD ->
                 if (
                     update.surface == Surface.KEYGUARD ||
                     update.surface == Surface.SHADE_LOCKED
                 ) {
-                    CombinedStatusSourceScene.KEYGUARD
+                    SourceScene.KEYGUARD
                 } else {
-                    CombinedStatusSourceScene.UNKNOWN
+                    SourceScene.UNKNOWN
                 }
 
-            CombinedStatusSourceScene.UNKNOWN -> CombinedStatusSourceScene.UNKNOWN
+            SourceScene.UNKNOWN -> SourceScene.UNKNOWN
         }
     }
 
-    fun steadySourceScene(sourceView: View): CombinedStatusSourceScene {
+    fun steadySourceScene(sourceView: View): SourceScene {
         var current: View? = sourceView
         while (current != null) {
             when (current.javaClass.name) {
-                KEYGUARD_HOST_CLASS_NAME -> return CombinedStatusSourceScene.KEYGUARD
-                HOME_HOST_CLASS_NAME -> return CombinedStatusSourceScene.HOME
+                KEYGUARD_HOST_CLASS_NAME -> return SourceScene.KEYGUARD
+                HOME_HOST_CLASS_NAME -> return SourceScene.HOME
             }
             current = current.parent as? View
         }
-        return CombinedStatusSourceScene.UNKNOWN
+        return SourceScene.UNKNOWN
     }
 
     internal fun classifySteadySourceAncestors(
         classNames: List<String>,
-    ): CombinedStatusSourceScene =
+    ): SourceScene =
         when {
-            KEYGUARD_HOST_CLASS_NAME in classNames -> CombinedStatusSourceScene.KEYGUARD
-            HOME_HOST_CLASS_NAME in classNames -> CombinedStatusSourceScene.HOME
-            else -> CombinedStatusSourceScene.UNKNOWN
+            KEYGUARD_HOST_CLASS_NAME in classNames -> SourceScene.KEYGUARD
+            HOME_HOST_CLASS_NAME in classNames -> SourceScene.HOME
+            else -> SourceScene.UNKNOWN
         }
 
     @Synchronized

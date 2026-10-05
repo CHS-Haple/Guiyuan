@@ -19,20 +19,20 @@ class BatteryColorSchemeLibraryTest {
             0xFF1DCD3A.toInt(),
             batteryBuiltInColor(
                 BatteryBuiltInColorScheme.HYPEROS,
-                CombinedStatusBatteryColorSlot.CHARGING,
+                BatteryColorSlot.CHARGING,
             ),
         )
         assertEquals(
             0xFFFF9F05.toInt(),
             batteryBuiltInColor(
                 BatteryBuiltInColorScheme.HYPEROS,
-                CombinedStatusBatteryColorSlot.SUPER_POWER_SAVE,
+                BatteryColorSlot.SUPER_POWER_SAVE,
             ),
         )
         assertNull(
             batteryBuiltInColor(
                 BatteryBuiltInColorScheme.HYPEROS,
-                CombinedStatusBatteryColorSlot.NORMAL,
+                BatteryColorSlot.NORMAL,
             ),
         )
     }
@@ -48,7 +48,7 @@ class BatteryColorSchemeLibraryTest {
             0xFF34C759.toInt(),
             batterySchemeEntryColor(
                 entries.charging,
-                CombinedStatusBatteryColorSlot.CHARGING,
+                BatteryColorSlot.CHARGING,
             ),
         )
     }
@@ -62,7 +62,7 @@ class BatteryColorSchemeLibraryTest {
                     source = BatteryColorSchemeSource.CUSTOM,
                     customColor = 0x002468AC,
                 ).normalized(),
-                CombinedStatusBatteryColorSlot.CHARGING,
+                BatteryColorSlot.CHARGING,
             ),
         )
         assertNull(
@@ -71,7 +71,7 @@ class BatteryColorSchemeLibraryTest {
                     source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
                     customColor = 0xFF2468AC.toInt(),
                 ),
-                CombinedStatusBatteryColorSlot.CHARGING,
+                BatteryColorSlot.CHARGING,
             ),
         )
     }
@@ -81,7 +81,7 @@ class BatteryColorSchemeLibraryTest {
         assertEquals(
             BatteryColorSchemeSource.IOS,
             batteryColorSchemeSourceFromLegacy(
-                mode = CombinedStatusBatteryColorMode.CUSTOM,
+                mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = false,
                 presetSource = BatteryColorSchemeSource.IOS,
             ),
@@ -89,7 +89,7 @@ class BatteryColorSchemeLibraryTest {
         assertEquals(
             BatteryColorSchemeSource.CUSTOM,
             batteryColorSchemeSourceFromLegacy(
-                mode = CombinedStatusBatteryColorMode.CUSTOM,
+                mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = true,
                 presetSource = BatteryColorSchemeSource.IOS,
             ),
@@ -97,7 +97,7 @@ class BatteryColorSchemeLibraryTest {
         assertEquals(
             BatteryColorSchemeSource.FOLLOW_SYSTEM,
             batteryColorSchemeSourceFromLegacy(
-                mode = CombinedStatusBatteryColorMode.FOLLOW_SYSTEM,
+                mode = BatteryColorMode.FOLLOW_SYSTEM,
                 hasStoredCustom = true,
                 presetSource = BatteryColorSchemeSource.IOS,
             ),

@@ -21,7 +21,7 @@ internal object SystemUiTintStateSource {
 
     private const val UPDATE_HOOK_ID = "combinedstatus.tint.battery.update"
     private const val INTERNAL_HOOK_ID = "combinedstatus.tint.battery.internal"
-    private val lastStates = WeakHashMap<View, CombinedStatusTintState>()
+    private val lastStates = WeakHashMap<View, TintState>()
     private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
     private val lastSemanticBatteryTints = WeakHashMap<View, List<Int>>()
@@ -153,7 +153,7 @@ internal object SystemUiTintStateSource {
         sourceView: View,
         percentField: Field,
         onTintState: (TintUpdate) -> Unit,
-    ): CombinedStatusTintState? {
+    ): TintState? {
         val state =
             readAppliedState(
                 sourceView = sourceView,
@@ -353,10 +353,10 @@ internal object SystemUiTintStateSource {
     fun currentSourceView(): View? = lastSourceView?.get()
 
     @Synchronized
-    fun currentState(sourceView: View): CombinedStatusTintState? {
+    fun currentState(sourceView: View): TintState? {
         val cached =
             lastStates[sourceView]
-                ?.takeIf(CombinedStatusPresentationPolicy::isValidTint)
+                ?.takeIf(PresentationPolicy::isValidTint)
         val field = batteryPercentViewField
         val refreshed =
             field?.let { percentField ->
@@ -367,7 +367,7 @@ internal object SystemUiTintStateSource {
             }
         if (
             refreshed != null &&
-            CombinedStatusPresentationPolicy.isValidTint(refreshed)
+            PresentationPolicy.isValidTint(refreshed)
         ) {
             lastStates[sourceView] = refreshed
             return refreshed
@@ -378,12 +378,12 @@ internal object SystemUiTintStateSource {
     private fun readAppliedState(
         sourceView: View,
         percentField: Field,
-    ): CombinedStatusTintState? {
+    ): TintState? {
         val percentView =
             runCatching {
                 percentField.get(sourceView) as? TextView
             }.getOrNull() ?: return null
-        return CombinedStatusTintState(
+        return TintState(
             appliedTint = percentView.currentTextColor,
         )
     }
@@ -399,6 +399,6 @@ internal object SystemUiTintStateSource {
 
     internal data class TintUpdate(
         val sourceView: View,
-        val state: CombinedStatusTintState,
+        val state: TintState,
     )
 }

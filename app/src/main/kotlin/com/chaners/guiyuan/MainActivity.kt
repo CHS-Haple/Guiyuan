@@ -22,13 +22,13 @@ import com.chaners.guiyuan.settings.AppearanceSettings
 import com.chaners.guiyuan.settings.AppearanceSettingsRepository
 import com.chaners.guiyuan.settings.FloatingNavigationContent
 import com.chaners.guiyuan.settings.FloatingNavigationStyle
-import com.chaners.guiyuan.ui.CombinedStatusApp
+import com.chaners.guiyuan.ui.GyApp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        (application as CombinedStatusApplication).refreshXposedRuntimeStatus()
+        (application as GyApplication).refreshXposedRuntimeStatus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,13 +75,13 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            CombinedStatusApp(
+            GyApp(
                 settings = settings,
                 darkMode = darkMode,
                 appLanguage = appLanguage,
                 launcherIconHidden = launcherIconHidden,
                 onHotReload = { onComplete ->
-                    (application as CombinedStatusApplication).hotReloadSystemUi(onComplete)
+                    (application as GyApplication).hotReloadSystemUi(onComplete)
                 },
                 onThemeModeChange = { mode ->
                     scope.launch { repository.setThemeMode(mode) }

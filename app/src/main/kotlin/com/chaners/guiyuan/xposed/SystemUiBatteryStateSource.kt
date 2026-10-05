@@ -28,7 +28,7 @@ internal object SystemUiBatteryStateSource {
     private const val CHARGING_GLYPH_HOOK_ID = "combinedstatus.battery.charging-glyph"
 
     @Volatile
-    private var lastState: CombinedStatusStateStore.BatteryState? = null
+    private var lastState: StatusStateStore.BatteryState? = null
 
     @Volatile
     private var lastChargingIconResId: Int? = null
@@ -36,7 +36,7 @@ internal object SystemUiBatteryStateSource {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onBatteryState: (CombinedStatusStateStore.BatteryState) -> Unit,
+        onBatteryState: (StatusStateStore.BatteryState) -> Unit,
         onChargingIconResource: (Int?) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
@@ -68,7 +68,7 @@ internal object SystemUiBatteryStateSource {
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
 
-        fun readState(iconView: View): CombinedStatusStateStore.BatteryState? {
+        fun readState(iconView: View): StatusStateStore.BatteryState? {
             val level =
                 runCatching { levelField.getInt(iconView) }
                     .getOrNull()
@@ -106,7 +106,7 @@ internal object SystemUiBatteryStateSource {
                     null
                 }
 
-            return CombinedStatusStateStore.BatteryState(
+            return StatusStateStore.BatteryState(
                 percent = level,
                 charging = charging,
                 semanticState = semanticState,
@@ -269,7 +269,7 @@ internal object SystemUiBatteryStateSource {
 
     private fun semanticColor(
         icon: Any,
-        state: CombinedStatusBatterySemanticState,
+        state: BatterySemanticState,
         chargingColorField: Field,
         powerSaveColorField: Field,
         superPowerSaveColorField: Field?,
@@ -278,13 +278,13 @@ internal object SystemUiBatteryStateSource {
     ): Int? {
         val field =
             when (state) {
-                CombinedStatusBatterySemanticState.NORMAL -> return null
-                CombinedStatusBatterySemanticState.CHARGING -> chargingColorField
-                CombinedStatusBatterySemanticState.POWER_SAVE -> powerSaveColorField
-                CombinedStatusBatterySemanticState.SUPER_POWER_SAVE ->
+                BatterySemanticState.NORMAL -> return null
+                BatterySemanticState.CHARGING -> chargingColorField
+                BatterySemanticState.POWER_SAVE -> powerSaveColorField
+                BatterySemanticState.SUPER_POWER_SAVE ->
                     superPowerSaveColorField ?: powerSaveColorField
-                CombinedStatusBatterySemanticState.PERFORMANCE -> performanceColorField
-                CombinedStatusBatterySemanticState.LOW -> lowColorField
+                BatterySemanticState.PERFORMANCE -> performanceColorField
+                BatterySemanticState.LOW -> lowColorField
             }
         return runCatching { field.getInt(icon) }
             .getOrNull()

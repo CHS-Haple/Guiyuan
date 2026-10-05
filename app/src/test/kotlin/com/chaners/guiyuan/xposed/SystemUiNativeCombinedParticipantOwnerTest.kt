@@ -374,7 +374,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                         statusIconTint = 0xff202020.toInt(),
                     ),
@@ -390,7 +390,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     ),
                 nativeTint = 0xff303030.toInt(),
@@ -405,7 +405,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf101010.toInt(),
                         statusIconTint = 0xff202020.toInt(),
                     ),
@@ -421,7 +421,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         val merged =
             SystemUiNativeCombinedParticipantOwner.mergeNativeParticipantTint(
                 batteryTint =
-                    CombinedStatusTintState(
+                    TintState(
                         appliedTint = 0xbf000000.toInt(),
                     ),
                 nativeTint = 0x00303030,
@@ -434,14 +434,14 @@ class SystemUiNativeCombinedParticipantOwnerTest {
     @Test
     fun masterSwitchBlocksHomeOverlayRegardlessOfControlCenterOrHandoffState() {
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = false,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = false,
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = false,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = true,
@@ -452,7 +452,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
     @Test
     fun controlCenterOwnershipBlocksHomeOverlay() {
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = false,
                 nativeHandoffActive = false,
@@ -463,14 +463,14 @@ class SystemUiNativeCombinedParticipantOwnerTest {
     @Test
     fun enabledMasterSwitchStillDefersToControlCenterAndNativeHandoff() {
         assertTrue(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = false,
             ),
         )
         assertFalse(
-            CombinedStatusHomeRenderSession.resolveOverlayVisible(
+            HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
                 controlCenterAllowsHome = true,
                 nativeHandoffActive = true,

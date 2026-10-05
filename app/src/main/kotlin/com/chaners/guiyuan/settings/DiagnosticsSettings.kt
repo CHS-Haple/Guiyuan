@@ -16,12 +16,13 @@ internal data class DiagnosticsSettings(
     val level: DiagnosticsLevel = DiagnosticsLevel.General,
 )
 
-internal fun decodeDiagnosticsLevel(storedValue: String?): DiagnosticsLevel =
-    DiagnosticsLevel.entries.firstOrNull { it.name == storedValue }
+internal fun decodeDiagnosticsLevel(stored: String?): DiagnosticsLevel =
+    DiagnosticsLevel.entries.firstOrNull { it.name == stored }
         ?: DiagnosticsLevel.General
 
-internal class DiagnosticsSettingsRepository(context: Context) {
-    private val preferences =
+// 诊断等级只存这一份，运行时通过 RemotePreferences 直接读它。
+internal class DiagnosticsRepo(context: Context) {
+    private val prefs =
         context.applicationContext.getSharedPreferences(
             DIAGNOSTICS_PREFS_NAME,
             Context.MODE_PRIVATE,
@@ -40,23 +41,23 @@ internal class DiagnosticsSettingsRepository(context: Context) {
                     }
                 }
 
-            preferences.registerOnSharedPreferenceChangeListener(listener)
+            prefs.registerOnSharedPreferenceChangeListener(listener)
             emitCurrent()
             awaitClose {
-                preferences.unregisterOnSharedPreferenceChangeListener(listener)
+                prefs.unregisterOnSharedPreferenceChangeListener(listener)
             }
         }.distinctUntilChanged()
 
     fun currentLevel(): DiagnosticsLevel =
         decodeDiagnosticsLevel(
-            preferences.getString(
+            prefs.getString(
                 DIAGNOSTICS_LEVEL_KEY,
                 DiagnosticsLevel.General.name,
             ),
         )
 
     fun setLevel(level: DiagnosticsLevel) {
-        preferences
+        prefs
             .edit()
             .putString(DIAGNOSTICS_LEVEL_KEY, level.name)
             .apply()

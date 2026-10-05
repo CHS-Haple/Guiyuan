@@ -48,13 +48,13 @@ internal object SystemUiNativeNetworkSuppressionOwner {
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var eventSink: ((String) -> Unit)? = null
     private var statusPresentationSink:
-        ((CombinedStatusPresentationStateStore.StatusIconPresentation) -> Unit)? = null
+        ((PresentationStore.StatusIconPresentation) -> Unit)? = null
     private var airplaneSlotAccessor: Method? = null
     private var statusIconVisibleAccessor: Method? = null
     private var statusIconSourceAccessor: Method? = null
     private var statusIconStaticColorAccessor: Method? = null
     private var lastStatusPresentation =
-        CombinedStatusPresentationStateStore.StatusIconPresentation()
+        PresentationStore.StatusIconPresentation()
 
     // The island peer mirror samples native icon state from onLayout. These
     // reflective contracts are stable for the SystemUI process lifetime, so
@@ -98,7 +98,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
-            ((CombinedStatusPresentationStateStore.StatusIconPresentation) -> Unit)? = null,
+            ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): InstallResult {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
@@ -400,7 +400,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
         lastStatusPresentation =
-            CombinedStatusPresentationStateStore.StatusIconPresentation()
+            PresentationStore.StatusIconPresentation()
     }
 
     private fun visibilityHooker(): Hooker =
@@ -873,7 +873,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                 fallbackTint = lastStatusPresentation.appliedTint,
             )
         val presentation =
-            CombinedStatusPresentationStateStore.StatusIconPresentation(
+            PresentationStore.StatusIconPresentation(
                 appliedTint = appliedTint,
                 noSimVisible = noSimVisible,
                 noSimIcon = noSimIcon,
@@ -954,7 +954,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
 
     private fun resolveNativeIconResource(
         view: View,
-    ): CombinedStatusPresentationStateStore.NativeIconResource? {
+    ): PresentationStore.NativeIconResource? {
         val accessor = statusIconSourceAccessor ?: return null
         val icon =
             runCatching {
@@ -971,7 +971,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         if (resourceId == 0) {
             return null
         }
-        return CombinedStatusPresentationStateStore.NativeIconResource(
+        return PresentationStore.NativeIconResource(
             packageName = packageName,
             resourceId = resourceId,
         )
@@ -1560,7 +1560,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         noSimSuppressionEnabled = false
         observationOnly = false
         lastStatusPresentation =
-            CombinedStatusPresentationStateStore.StatusIconPresentation()
+            PresentationStore.StatusIconPresentation()
         if (requestLayout) {
             group?.requestLayout()
         }

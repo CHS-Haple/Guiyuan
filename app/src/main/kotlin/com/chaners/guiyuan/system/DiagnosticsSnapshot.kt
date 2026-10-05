@@ -2,7 +2,7 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import com.chaners.guiyuan.settings.DiagnosticsLevel
-import com.chaners.guiyuan.settings.DiagnosticsSettingsRepository
+import com.chaners.guiyuan.settings.DiagnosticsRepo
 import java.time.OffsetDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,22 +18,22 @@ internal data class DiagnosticsSnapshot(
 
 internal object DiagnosticsSnapshotProvider {
     suspend fun capture(context: Context): DiagnosticsSnapshot {
-        val appContext = context.applicationContext
-        val environment = RuntimeEnvironmentInfo.resolve(appContext)
-        val diagnosticsLevel = DiagnosticsSettingsRepository(appContext).currentLevel()
-        val runtimeLog = DiagnosticsLogReader.read()
-        val sessionEntries =
+        val appCtx = context.applicationContext
+        val env = RuntimeEnvironmentInfo.resolve(appCtx)
+        val level = DiagnosticsRepo(appCtx).currentLevel()
+        val log = DiagnosticsLogReader.read()
+        val entries =
             withContext(Dispatchers.Default) {
-                runtimeLog.latestSessionLines.map(DiagnosticsLogParser::parse)
+                log.latestSessionLines.map(DiagnosticsLogParser::parse)
             }
-        val runtimeHealth = RuntimeHealthSnapshot.fromLines(runtimeLog.latestSessionLines)
+        val health = RuntimeHealthSnapshot.fromLines(log.latestSessionLines)
 
         return DiagnosticsSnapshot(
-            environment = environment,
-            diagnosticsLevel = diagnosticsLevel,
-            runtimeLog = runtimeLog,
-            runtimeHealth = runtimeHealth,
-            sessionEntries = sessionEntries,
+            environment = env,
+            diagnosticsLevel = level,
+            runtimeLog = log,
+            runtimeHealth = health,
+            sessionEntries = entries,
             capturedAt = OffsetDateTime.now(),
         )
     }

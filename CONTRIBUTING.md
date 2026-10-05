@@ -123,7 +123,7 @@ For Material Symbols used as semantic row-leading icons:
 
 `SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
 
-Public identity is Guiyuan / 归元, package com.chaners.guiyuan. Existing CombinedStatus* internal implementation names may remain.
+Public identity is Guiyuan / 归元, package com.chaners.guiyuan. In internal code, use `Gy` only where product identity is actually needed and omit product-name prefixes when package or domain context already makes ownership clear. Preserve established platform names such as `SystemUi` when they communicate a real integration boundary; prefer natural abbreviations over project-specific shorthand.
 
 ## 6. Git workflow
 

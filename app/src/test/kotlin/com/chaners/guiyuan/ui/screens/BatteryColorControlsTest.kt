@@ -2,7 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import com.chaners.guiyuan.settings.BatteryColorSchemeEntry
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
-import com.chaners.guiyuan.settings.CombinedStatusBatteryColorSlot
+import com.chaners.guiyuan.settings.BatteryColorSlot
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -47,7 +47,7 @@ class BatteryColorControlsTest {
                     source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
                     customColor = null,
                 ),
-                CombinedStatusBatteryColorSlot.NORMAL,
+                BatteryColorSlot.NORMAL,
             ),
         )
     }
@@ -61,7 +61,7 @@ class BatteryColorControlsTest {
                     source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
                     customColor = 0xFF2468AC.toInt(),
                 ),
-                CombinedStatusBatteryColorSlot.NORMAL,
+                BatteryColorSlot.NORMAL,
             ),
         )
     }
