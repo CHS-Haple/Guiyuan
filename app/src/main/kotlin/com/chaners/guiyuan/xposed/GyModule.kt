@@ -3679,6 +3679,18 @@ class GyModule : XposedModule() {
                     "suppressionWriters" to 0,
                 )
             }
+            is SystemUiNativeNetworkSuppressionOwner.StateResult.Pending -> {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "source.attach",
+                    component = "statusIconObservation",
+                    state = "pending",
+                    "source" to source,
+                    "reason" to observation.reason,
+                    "trigger" to "home-dark-icon-manager-registration",
+                    "suppressionWriters" to 0,
+                )
+            }
             is SystemUiNativeNetworkSuppressionOwner.StateResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
