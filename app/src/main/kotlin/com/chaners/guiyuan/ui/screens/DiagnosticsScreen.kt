@@ -212,6 +212,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
+        titlePadding = 0.dp,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
             DiagnosticsFilterMenu(
