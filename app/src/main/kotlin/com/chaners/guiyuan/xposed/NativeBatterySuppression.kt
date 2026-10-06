@@ -574,7 +574,7 @@ internal object NativeBatterySuppression {
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
             null -> "none"
-            else -> visibility.function toString() { [native code] }()
+            else -> visibility.toString()
         }
 
     internal sealed interface InstallResult {

@@ -520,7 +520,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
                             " authority=keyguard-battery eventDriven=true stable=true"
                     }
                 }

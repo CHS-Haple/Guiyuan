@@ -995,7 +995,7 @@ internal object NativeNetworkSuppression {
                     " tint=" +
                     (presentation.appliedTint
                         ?.toUInt()
-                        ?.function function toString() { [native code] }() { [native code] }(16)
+                        ?.toString(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAuthority=" +
@@ -1008,19 +1008,19 @@ internal object NativeNetworkSuppression {
                     " locationAwareTint=" +
                     (locationAwareTint
                         ?.toUInt()
-                        ?.function function toString() { [native code] }() { [native code] }(16)
+                        ?.toString(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " peerTint=" +
                     (peerTint
                         ?.toUInt()
-                        ?.function function toString() { [native code] }() { [native code] }(16)
+                        ?.toString(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " managerFallbackTint=" +
                     (managerFallbackTint
                         ?.toUInt()
-                        ?.function function toString() { [native code] }() { [native code] }(16)
+                        ?.toString(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAnchorSlot=" +
