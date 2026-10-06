@@ -68,13 +68,13 @@ internal fun PreviewSandboxScreen(
         remember(context.applicationContext) {
             PreviewSystemUiResourceResolver(context.applicationContext)
         }
-    val visualRepository =
+    val visualRepo =
         remember(context.applicationContext) {
             VisualRepo(context.applicationContext)
         }
-    val visualSettings by
-        visualRepository.settings.collectAsState(
-            initial = visualRepository.current(),
+    val visual by
+        visualRepo.settings.collectAsState(
+            initial = visualRepo.current(),
         )
     val renderModel = state.toRenderModel(resourceResolver)
 
@@ -201,7 +201,7 @@ internal fun PreviewSandboxScreen(
                         ) {
                             StatusPreview(
                                 model = renderModel,
-                                visualSettings = visualSettings,
+                                visual = visual,
                                 modifier =
                                     Modifier
                                         .width(120.dp)

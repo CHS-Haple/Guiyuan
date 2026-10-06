@@ -13,7 +13,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun StatusPreview(
     model: RenderModel,
-    visualSettings: VisualCfg,
+    visual: VisualCfg,
     modifier: Modifier = Modifier,
 ) {
     val tint = MiuixTheme.colorScheme.onSurfaceContainer.toArgb()
@@ -31,7 +31,7 @@ internal fun StatusPreview(
                         statusIconTint = tint,
                     ),
                 )
-                setVisualCfg(visualSettings)
+                setVisualCfg(visual)
                 setModel(model)
             }
         },
@@ -45,7 +45,7 @@ internal fun StatusPreview(
                     statusIconTint = tint,
                 ),
             )
-            view.setVisualCfg(visualSettings)
+            view.setVisualCfg(visual)
             view.setModel(model)
         },
     )

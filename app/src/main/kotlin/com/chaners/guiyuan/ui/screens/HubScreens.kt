@@ -106,13 +106,13 @@ internal fun FeaturesScreen(
         featureRepo.settings.collectAsState(
             initial = featureRepo.current(),
         )
-    val visualRepository =
+    val visualRepo =
         remember(context.applicationContext) {
             VisualRepo(context.applicationContext)
         }
-    val visualSettings by
-        visualRepository.settings.collectAsState(
-            initial = visualRepository.current(),
+    val visual by
+        visualRepo.settings.collectAsState(
+            initial = visualRepo.current(),
         )
     val batteryColorSchemeRepository =
         remember(context.applicationContext) {
@@ -137,13 +137,13 @@ internal fun FeaturesScreen(
         secondarySectionTitle = stringResource(R.string.section_network),
         secondaryContent = {
             SliderPreference(
-                value = visualSettings.wifiScale,
-                onValueChange = visualRepository::setWifiScale,
+                value = visual.wifiScale,
+                onValueChange = visualRepo::setWifiScale,
                 title = stringResource(R.string.wifi_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.wifiScale * 100f).roundToInt(),
+                        (visual.wifiScale * 100f).roundToInt(),
                     ),
                 valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
                 steps = 16,
@@ -153,13 +153,13 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.airplaneScale,
-                onValueChange = visualRepository::setAirplaneScale,
+                value = visual.airplaneScale,
+                onValueChange = visualRepo::setAirplaneScale,
                 title = stringResource(R.string.airplane_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.airplaneScale * 100f).roundToInt(),
+                        (visual.airplaneScale * 100f).roundToInt(),
                     ),
                 valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
                 steps = 16,
@@ -169,13 +169,13 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.noSimScale,
-                onValueChange = visualRepository::setNoSimScale,
+                value = visual.noSimScale,
+                onValueChange = visualRepo::setNoSimScale,
                 title = stringResource(R.string.no_sim_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.noSimScale * 100f).roundToInt(),
+                        (visual.noSimScale * 100f).roundToInt(),
                     ),
                 valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
                 steps = 16,
@@ -185,13 +185,13 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.mobileTypeScale,
-                onValueChange = visualRepository::setMobileTypeScale,
+                value = visual.mobileTypeScale,
+                onValueChange = visualRepo::setMobileTypeScale,
                 title = stringResource(R.string.mobile_type_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.mobileTypeScale * 100f).roundToInt(),
+                        (visual.mobileTypeScale * 100f).roundToInt(),
                     ),
                 valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
                 steps = 16,
@@ -199,22 +199,22 @@ internal fun FeaturesScreen(
                 keyPoints =
                     listOf(
                         mobileTypeScaleDefault(
-                            visualSettings.layout,
+                            visual.layout,
                         ),
                     ),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.mobileTypeWeight.toFloat(),
+                value = visual.mobileTypeWeight.toFloat(),
                 onValueChange = { value ->
-                    visualRepository.setMobileTypeWeight(value.roundToInt())
+                    visualRepo.setMobileTypeWeight(value.roundToInt())
                 },
                 title = stringResource(R.string.mobile_type_weight),
                 valueText =
                     stringResource(
                         R.string.integer_value,
-                        visualSettings.mobileTypeWeight,
+                        visual.mobileTypeWeight,
                     ),
                 valueRange =
                     MOBILE_TYPE_WEIGHT_MIN.toFloat()..
@@ -228,16 +228,16 @@ internal fun FeaturesScreen(
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
                 summary = stringResource(R.string.mobile_follow_battery_color_summary),
-                checked = visualSettings.mobileFollowsBatteryColor,
+                checked = visual.mobileFollowsBatteryColor,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepository::setMobileFollowsBatteryColor,
+                onCheckedChange = visualRepo::setMobileFollowsBatteryColor,
             )
             SwitchPreference(
                 title = stringResource(R.string.center_follow_battery_color),
                 summary = stringResource(R.string.center_follow_battery_color_summary),
-                checked = visualSettings.centerFollowsBatteryColor,
+                checked = visual.centerFollowsBatteryColor,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepository::setCenterFollowsBatteryColor,
+                onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
             )
         },
         tertiarySectionTitle = stringResource(R.string.section_battery),
@@ -253,25 +253,25 @@ internal fun FeaturesScreen(
             SwitchPreference(
                 title = stringResource(R.string.battery_fill_follow_retract),
                 summary = stringResource(R.string.battery_fill_follow_retract_summary),
-                checked = visualSettings.batteryFillFollowsRetractEndpoint,
+                checked = visual.batteryFillFollowsRetractEndpoint,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepository::setBatteryFillFollowsRetractEndpoint,
+                onCheckedChange = visualRepo::setBatteryFillFollowsRetractEndpoint,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
                 summary = stringResource(R.string.battery_top_readout_summary),
-                checked = visualSettings.batteryTopReadoutEnabled,
+                checked = visual.batteryTopReadoutEnabled,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepository::setBatteryTopReadoutEnabled,
+                onCheckedChange = visualRepo::setBatteryTopReadoutEnabled,
             )
-            AnimatedPreferenceGroup(visible = visualSettings.batteryTopReadoutEnabled) {
+            AnimatedPreferenceGroup(visible = visual.batteryTopReadoutEnabled) {
                 val textUiScale =
                     batteryTopTextUiScale(
-                        visualSettings.batteryTopTextScale,
+                        visual.batteryTopTextScale,
                     )
                 SliderPreference(
                     value = textUiScale,
-                    onValueChange = visualRepository::setBatteryTopTextScale,
+                    onValueChange = visualRepo::setBatteryTopTextScale,
                     title = stringResource(R.string.battery_top_text_size),
                     valueText =
                         stringResource(
@@ -286,22 +286,22 @@ internal fun FeaturesScreen(
                     keyPoints =
                         listOf(
                             batteryTopTextUiScaleDefault(
-                                visualSettings.layout,
+                                visual.layout,
                             ),
                         ),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
                 )
                 SliderPreference(
-                    value = visualSettings.batteryTopTextWeight.toFloat(),
+                    value = visual.batteryTopTextWeight.toFloat(),
                     onValueChange = { value ->
-                        visualRepository.setBatteryTopTextWeight(value.roundToInt())
+                        visualRepo.setBatteryTopTextWeight(value.roundToInt())
                     },
                     title = stringResource(R.string.battery_top_text_weight),
                     valueText =
                         stringResource(
                             R.string.battery_top_weight_value,
-                            visualSettings.batteryTopTextWeight,
+                            visual.batteryTopTextWeight,
                         ),
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
@@ -315,27 +315,27 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
-                    checked = visualSettings.batteryTopTextFollowsBatteryColor,
+                    checked = visual.batteryTopTextFollowsBatteryColor,
                     enabled = featureCfg.enabled,
-                    onCheckedChange = visualRepository::setBatteryTopTextFollowsBatteryColor,
+                    onCheckedChange = visualRepo::setBatteryTopTextFollowsBatteryColor,
                 )
             }
 
             SwitchPreference(
                 title = stringResource(R.string.battery_charging_icon),
                 summary = stringResource(R.string.battery_charging_icon_summary),
-                checked = visualSettings.batteryTopChargingIconEnabled,
+                checked = visual.batteryTopChargingIconEnabled,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepository::setBatteryTopChargingIconEnabled,
+                onCheckedChange = visualRepo::setBatteryTopChargingIconEnabled,
             )
-            AnimatedPreferenceGroup(visible = visualSettings.batteryTopChargingIconEnabled) {
+            AnimatedPreferenceGroup(visible = visual.batteryTopChargingIconEnabled) {
                 val chargingIconUiScale =
                     batteryTopChargingIconUiScale(
-                        visualSettings.batteryTopChargingIconScale,
+                        visual.batteryTopChargingIconScale,
                     )
                 SliderPreference(
                     value = chargingIconUiScale,
-                    onValueChange = visualRepository::setBatteryTopChargingIconScale,
+                    onValueChange = visualRepo::setBatteryTopChargingIconScale,
                     title = stringResource(R.string.battery_top_charging_icon_size),
                     valueText =
                         stringResource(
@@ -350,7 +350,7 @@ internal fun FeaturesScreen(
                     keyPoints =
                         listOf(
                             batteryTopChargingIconUiScaleDefault(
-                                visualSettings.layout,
+                                visual.layout,
                             ),
                         ),
                     magnetThreshold = 0.035f,
@@ -359,10 +359,10 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
-                    checked = visualSettings.batteryTopChargingIconFollowsBatteryColor,
+                    checked = visual.batteryTopChargingIconFollowsBatteryColor,
                     enabled = featureCfg.enabled,
                     onCheckedChange =
-                        visualRepository::setBatteryTopChargingIconFollowsBatteryColor,
+                        visualRepo::setBatteryTopChargingIconFollowsBatteryColor,
                 )
             }
 
@@ -407,7 +407,7 @@ internal fun FeaturesScreen(
                         onClick = {
                             showResetDialog = false
                             featureRepo.reset()
-                            visualRepository.resetToDefaults()
+                            visualRepo.resetToDefaults()
                         },
                     )
                 }
@@ -430,7 +430,7 @@ internal fun FeaturesScreen(
         )
         OverlayDropdownPreference(
             items = layoutOptions,
-            selectedIndex = visualSettings.layout.ordinal,
+            selectedIndex = visual.layout.ordinal,
             title = stringResource(R.string.content_layout_title),
             summary = stringResource(R.string.content_layout_summary),
             showValue = true,
@@ -438,16 +438,16 @@ internal fun FeaturesScreen(
             onSelectedIndexChange = { index ->
                 ContentLayout.entries
                     .getOrNull(index)
-                    ?.let(visualRepository::setLayout)
+                    ?.let(visualRepo::setLayout)
             },
         )
         val topInfoVerticalOffsetUi =
             batteryTopVerticalOffsetUi(
-                visualSettings.batteryTopVerticalOffset,
+                visual.batteryTopVerticalOffset,
             )
         SliderPreference(
             value = topInfoVerticalOffsetUi,
-            onValueChange = visualRepository::setBatteryTopVerticalOffset,
+            onValueChange = visualRepo::setBatteryTopVerticalOffset,
             title = stringResource(R.string.top_info_vertical_offset),
             valueText =
                 stringResource(
@@ -464,13 +464,13 @@ internal fun FeaturesScreen(
             enabled = featureCfg.enabled,
         )
         SliderPreference(
-            value = visualSettings.combinedScale,
-            onValueChange = visualRepository::setCombinedScale,
+            value = visual.combinedScale,
+            onValueChange = visualRepo::setCombinedScale,
             title = stringResource(R.string.combined_size),
             valueText =
                 stringResource(
                     R.string.percent_value,
-                    (visualSettings.combinedScale * 100f).roundToInt(),
+                    (visual.combinedScale * 100f).roundToInt(),
                 ),
             valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
             steps = 7,
@@ -480,14 +480,14 @@ internal fun FeaturesScreen(
             enabled = featureCfg.enabled,
         )
         SliderPreference(
-            value = visualSettings.outerWeightScale,
-            onValueChange = visualRepository::setOuterWeightScale,
+            value = visual.outerWeightScale,
+            onValueChange = visualRepo::setOuterWeightScale,
             title = stringResource(R.string.outer_weight),
             summary = stringResource(R.string.outer_weight_summary),
             valueText =
                 stringResource(
                     R.string.percent_value,
-                    (visualSettings.outerWeightScale * 100f).roundToInt(),
+                    (visual.outerWeightScale * 100f).roundToInt(),
                 ),
             valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
             steps = 11,
@@ -499,9 +499,9 @@ internal fun FeaturesScreen(
         SwitchPreference(
             title = stringResource(R.string.control_center_tint_transition),
             summary = stringResource(R.string.control_center_tint_transition_summary),
-            checked = visualSettings.controlCenterTintTransitionEnabled,
+            checked = visual.controlCenterTintTransitionEnabled,
             enabled = featureCfg.enabled,
-            onCheckedChange = visualRepository::setControlCenterTintTransitionEnabled,
+            onCheckedChange = visualRepo::setControlCenterTintTransitionEnabled,
         )
     }
 }

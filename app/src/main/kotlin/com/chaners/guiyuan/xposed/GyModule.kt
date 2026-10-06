@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.system.RuntimeDiagnosticsProtocol
 import io.github.libxposed.api.XposedModule
@@ -4575,12 +4576,12 @@ class GyModule : XposedModule() {
     }
 
     private fun onVisualCfgChanged(
-        settings: com.chaners.guiyuan.settings.VisualCfg,
+        visual: VisualCfg,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {
-                    onVisualCfgChanged(settings)
+                    onVisualCfgChanged(visual)
                 }
             val hostView = SystemUiHostRegistry.currentStatusHost() as? android.view.View
             val scheduled =
@@ -4600,13 +4601,13 @@ class GyModule : XposedModule() {
             return
         }
 
-        if (settings != VisualPrefsOwner.current()) {
+        if (visual != VisualPrefsOwner.current()) {
             return
         }
 
-        HomeRenderSession.onVisualCfgChanged(settings)
-        KeyguardRenderSession.onVisualCfgChanged(settings)
-        ControlCenterRenderSession.onVisualCfgChanged(settings)
+        HomeRenderSession.onVisualCfgChanged(visual)
+        KeyguardRenderSession.onVisualCfgChanged(visual)
+        ControlCenterRenderSession.onVisualCfgChanged(visual)
         SystemUiHomePresentationOwner.onVisualCfgChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
@@ -4614,17 +4615,17 @@ class GyModule : XposedModule() {
                 event = "visualSettings.changed",
                 component = "renderer",
                 state = "ready",
-                "layout" to settings.layout.persistedValue,
-                "combinedScale" to settings.combinedScale,
-                "wifiSizeScale" to settings.wifiScale,
-                "mobileTypeSizeScale" to settings.mobileTypeScale,
-                "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
-                "networkFollowsBattery" to settings.centerFollowsBatteryColor,
-                "batteryNumber" to settings.batteryTopReadoutEnabled,
-                "chargingIcon" to settings.batteryTopChargingIconEnabled,
-                "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
+                "layout" to visual.layout.persistedValue,
+                "combinedScale" to visual.combinedScale,
+                "wifiSizeScale" to visual.wifiScale,
+                "mobileTypeSizeScale" to visual.mobileTypeScale,
+                "mobileFollowsBattery" to visual.mobileFollowsBatteryColor,
+                "networkFollowsBattery" to visual.centerFollowsBatteryColor,
+                "batteryNumber" to visual.batteryTopReadoutEnabled,
+                "chargingIcon" to visual.batteryTopChargingIconEnabled,
+                "batteryNumberFollowsBattery" to visual.batteryTopTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
-                    settings.batteryTopChargingIconFollowsBatteryColor,
+                    visual.batteryTopChargingIconFollowsBatteryColor,
                 "eventDriven" to true,
                 "mainThread" to true,
             )

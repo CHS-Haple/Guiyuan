@@ -101,13 +101,13 @@ internal fun HomeScreen(
         featureRepository.settings.collectAsState(
             initial = featureRepository.current(),
         )
-    val visualRepository =
+    val visualRepo =
         remember(context.applicationContext) {
             VisualRepo(context.applicationContext)
         }
-    val visualSettings by
-        visualRepository.settings.collectAsState(
-            initial = visualRepository.current(),
+    val visual by
+        visualRepo.settings.collectAsState(
+            initial = visualRepo.current(),
         )
     val xposedStatus by
         application.xposedStatus.collectAsState()
@@ -176,7 +176,7 @@ internal fun HomeScreen(
                     HomePreviewSandboxCard(
                         state = previewState,
                         resources = previewResources,
-                        visualSettings = visualSettings,
+                        visual = visual,
                         onOpen = onOpenPreviewSandbox,
                         modifier =
                             Modifier
@@ -306,7 +306,7 @@ private fun HomeRuntimeStatusCard(
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSystemUiResourceResolver,
-    visualSettings: VisualCfg,
+    visual: VisualCfg,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -352,7 +352,7 @@ private fun HomePreviewSandboxCard(
         ) {
             StatusPreview(
                 model = state.toRenderModel(resources),
-                visualSettings = visualSettings,
+                visual = visual,
                 modifier =
                     Modifier
                         .width(HomePreviewIconSize)

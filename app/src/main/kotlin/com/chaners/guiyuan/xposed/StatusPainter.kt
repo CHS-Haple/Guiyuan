@@ -73,11 +73,11 @@ internal class StatusPainter(
         model: RenderModel,
         colors: RenderColors,
         opacity: Float,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
         previousCenterIndicator: CenterIndicator? = null,
         centerExitAmount: Float = 0f,
         centerEnterAmount: Float = 1f,
-        outerWeightScale: Float = visualSettings.outerWeightScale,
+        outerWeightScale: Float = visual.outerWeightScale,
         scaleMobileTypeWithCanvas: Boolean = false,
     ) {
         if (width <= 0 || height <= 0) {
@@ -88,7 +88,7 @@ internal class StatusPainter(
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
@@ -98,7 +98,7 @@ internal class StatusPainter(
         canvas.scale(scale, scale)
 
         val outerGeometry = resolveOuterGeometry(outerWeightScale)
-        val centerGeometry = resolveCenterGeometry(visualSettings)
+        val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
             model = model,
@@ -108,7 +108,7 @@ internal class StatusPainter(
             opacity = opacity,
             geometry = outerGeometry,
             centerGeometry = centerGeometry,
-            visualSettings = visualSettings,
+            visual = visual,
             nativeTransform = nativeTransform,
             scale = scale,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
@@ -116,10 +116,10 @@ internal class StatusPainter(
             centerExitAmount = centerExitAmount,
             centerEnterAmount = centerEnterAmount,
         )
-        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
             resolveBatteryTopReadoutLayout(
                 model = model,
-                visualSettings = visualSettings,
+                visual = visual,
                 nativeTransform = nativeTransform,
             )?.let { readout ->
                 drawBatteryTopReadout(
@@ -133,8 +133,8 @@ internal class StatusPainter(
             }
         }
         val centerSave = canvas.save()
-        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-            canvas.translate(0f, networkTopTranslationY(visualSettings))
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
+            canvas.translate(0f, networkTopTranslationY(visual))
         }
         drawCenterTransition(
             canvas = canvas,
@@ -164,7 +164,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         previousCenterIndicator: CenterIndicator? = null,
         centerExitAmount: Float = 0f,
         centerEnterAmount: Float = 1f,
@@ -175,16 +175,16 @@ internal class StatusPainter(
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return 0
         val scale = nativeTransform.scale
         val offsetY = nativeTransform.offsetY
         val topBounds =
-            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
                 val geometry =
-                    resolveCenterGeometry(visualSettings)
+                    resolveCenterGeometry(visual)
                 resolveNetworkTopSlotAvoidance(
-                    visualSettings = visualSettings,
+                    visual = visual,
                     current = model.centerIndicator,
                     previous = previousCenterIndicator,
                     scale = scale,
@@ -196,7 +196,7 @@ internal class StatusPainter(
             } else {
                 resolveBatteryTopReadoutLayout(
                     model = model,
-                    visualSettings = visualSettings,
+                    visual = visual,
                     nativeTransform = nativeTransform,
                 )?.groupOpticalBounds
             } ?: return 0
@@ -216,7 +216,7 @@ internal class StatusPainter(
         component: TransitionComponent,
         shapePolicy: TransitionShapePolicy,
         opacity: Float = 1f,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
         motionProgress: Float = 0f,
         shapeProgress: Float = 0f,
         mobileTargetWidthRatio: Float? = null,
@@ -235,7 +235,7 @@ internal class StatusPainter(
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
@@ -259,11 +259,11 @@ internal class StatusPainter(
                     opacity = opacity,
                     geometry =
                         resolveOuterGeometry(
-                            visualSettings.outerWeightScale,
+                            visual.outerWeightScale,
                         ),
                     centerGeometry =
-                        resolveCenterGeometry(visualSettings),
-                    visualSettings = visualSettings,
+                        resolveCenterGeometry(visual),
+                    visual = visual,
                     nativeTransform = nativeTransform,
                     scale = scale,
                     scaleMobileTypeWithCanvas = false,
@@ -284,7 +284,7 @@ internal class StatusPainter(
                     model = model,
                     textTint = colors.batteryTextTint,
                     opacity = opacity,
-                    visualSettings = visualSettings,
+                    visual = visual,
                     motionProgress = motion,
                     targetWeight = batteryNumberTargetWeight,
                     targetStyle = batteryNumberTargetStyle,
@@ -297,16 +297,16 @@ internal class StatusPainter(
                     model = model,
                     chargingIconTint = colors.chargingIconTint,
                     opacity = opacity,
-                    visualSettings = visualSettings,
+                    visual = visual,
                     nativeTransform = nativeTransform,
                 )
 
             TransitionComponent.CENTER -> {
-                if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-                    canvas.translate(0f, networkTopTranslationY(visualSettings))
+                if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                    canvas.translate(0f, networkTopTranslationY(visual))
                 }
                 val baseGeometry =
-                    resolveCenterGeometry(visualSettings)
+                    resolveCenterGeometry(visual)
                 val transitionGeometry =
                     if (model.centerIndicator is CenterIndicator.MobileType) {
                         baseGeometry.copy(
@@ -338,7 +338,7 @@ internal class StatusPainter(
             TransitionComponent.MOBILE -> {
                 val outerGeometry =
                     resolveOuterGeometry(
-                        visualSettings.outerWeightScale,
+                        visual.outerWeightScale,
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -663,7 +663,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ): List<TransitionComponentSpec> {
         if (width <= 0 || height <= 0) return emptyList()
 
@@ -671,15 +671,15 @@ internal class StatusPainter(
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return emptyList()
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visualSettings.outerWeightScale)
+            resolveOuterGeometry(visual.outerWeightScale)
         val centerGeometry =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
 
         fun toViewBounds(bounds: TransitionBounds): TransitionBounds =
             TransitionBounds(
@@ -710,7 +710,7 @@ internal class StatusPainter(
 
         resolveBatteryTopReadoutLayout(
             model = model,
-            visualSettings = visualSettings,
+            visual = visual,
             nativeTransform = nativeTransform,
         )?.let { readout ->
             if (readout.textVisible) {
@@ -867,12 +867,12 @@ internal class StatusPainter(
             }
         centerSpec?.let { spec ->
             specs +=
-                if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
+                if (visual.layout == ContentLayout.BATTERY_CENTER) {
                     spec.copy(
                         sourceBounds =
                             shiftBoundsY(
                                 spec.sourceBounds,
-                                networkTopTranslationY(visualSettings) * scale,
+                                networkTopTranslationY(visual) * scale,
                             ),
                     )
                 } else {
@@ -909,20 +909,20 @@ internal class StatusPainter(
     fun transitionAirplaneSourceBounds(
         width: Int,
         height: Int,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return null
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val geometry =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
         val metrics =
             airplaneResourceId()
                 ?.let { resourceId ->
@@ -944,8 +944,8 @@ internal class StatusPainter(
                 height = metrics?.sourceOpticalHeight ?: geometry.airplaneMaxSize,
             )
         val local =
-            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
             } else {
                 baseLocal
             }
@@ -963,25 +963,25 @@ internal class StatusPainter(
         height: Int,
         tint: Int,
         opacity: Float,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val nativeTransform =
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val geometry =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
         val save = canvas.save()
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
-        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-            canvas.translate(0f, networkTopTranslationY(visualSettings))
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
+            canvas.translate(0f, networkTopTranslationY(visual))
         }
         drawNativeAirplane(
             canvas = canvas,
@@ -998,20 +998,20 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         resource: PresentationStore.NativeIconResource,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return null
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val geometry =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
         val metrics =
             transitionNativeCenterMetrics(
                 resource = resource,
@@ -1026,8 +1026,8 @@ internal class StatusPainter(
                 height = metrics?.sourceOpticalHeight ?: geometry.noSimMaxSize,
             )
         val local =
-            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
             } else {
                 baseLocal
             }
@@ -1046,25 +1046,25 @@ internal class StatusPainter(
         resource: PresentationStore.NativeIconResource,
         tint: Int,
         opacity: Float,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val nativeTransform =
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val geometry =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
         val save = canvas.save()
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
-        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-            canvas.translate(0f, networkTopTranslationY(visualSettings))
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
+            canvas.translate(0f, networkTopTranslationY(visual))
         }
         drawNativeCenterResource(
             canvas = canvas,
@@ -1171,11 +1171,11 @@ internal class StatusPainter(
     private fun resolveCanvasTransform(
         width: Int,
         height: Int,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
     ): NativeRenderTransform? {
         if (width <= 0 || height <= 0) return null
         val combinedScale =
-            visualSettings.combinedScale
+            visual.combinedScale
                 .takeIf(Float::isFinite)
                 ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
                 ?: COMBINED_SCALE_DEFAULT
@@ -1193,15 +1193,15 @@ internal class StatusPainter(
     }
 
     private fun resolveCenterGeometry(
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
     ): CenterGeometry.Resolved =
         CenterGeometry.resolve(
-            wifiScale = visualSettings.wifiScale,
-            mobileTypeScale = visualSettings.mobileTypeScale,
-            airplaneScale = visualSettings.airplaneScale,
-            noSimScale = visualSettings.noSimScale,
-            mobileTypeWeight = visualSettings.mobileTypeWeight,
-            combinedScale = visualSettings.combinedScale,
+            wifiScale = visual.wifiScale,
+            mobileTypeScale = visual.mobileTypeScale,
+            airplaneScale = visual.airplaneScale,
+            noSimScale = visual.noSimScale,
+            mobileTypeWeight = visual.mobileTypeWeight,
+            combinedScale = visual.combinedScale,
         )
 
     private fun resolveOuterGeometry(weightScale: Float): OuterGeometry.Resolved {
@@ -1215,13 +1215,13 @@ internal class StatusPainter(
     }
 
     private fun networkTopTranslationY(
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
     ): Float =
         TOP_SLOT_CENTER_Y -
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
-                layout = visualSettings.layout,
-                rawOffset = visualSettings.batteryTopVerticalOffset,
+                layout = visual.layout,
+                rawOffset = visual.batteryTopVerticalOffset,
             )
 
     private fun shiftBoundsY(
@@ -1234,7 +1234,7 @@ internal class StatusPainter(
         )
 
     private fun resolveNetworkTopSlotAvoidance(
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         current: CenterIndicator,
         previous: CenterIndicator?,
         scale: Float,
@@ -1243,7 +1243,7 @@ internal class StatusPainter(
         exitAmount: Float,
         enterAmount: Float,
     ): TopSlotAvoidance? {
-        val translationY = networkTopTranslationY(visualSettings)
+        val translationY = networkTopTranslationY(visual)
         if (previous == null || previous == current) {
             return resolveCenterIndicatorAvoidance(
                 indicator = current,
@@ -1518,9 +1518,9 @@ internal class StatusPainter(
     }
 
     private fun batteryReadoutPreferredCenterY(
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
     ): Float =
-        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
             BATTERY_COMPONENT_CENTER_Y +
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE +
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
@@ -1537,7 +1537,7 @@ internal class StatusPainter(
         opacity: Float,
         geometry: OuterGeometry.Resolved,
         centerGeometry: CenterGeometry.Resolved,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
         scale: Float,
         scaleMobileTypeWithCanvas: Boolean,
@@ -1553,13 +1553,13 @@ internal class StatusPainter(
         val readout =
             resolveBatteryTopReadoutLayout(
                 model = model,
-                visualSettings = visualSettings,
+                visual = visual,
                 nativeTransform = nativeTransform,
             )
         val topContentAvoidance =
-            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
                 resolveNetworkTopSlotAvoidance(
-                    visualSettings = visualSettings,
+                    visual = visual,
                     current = model.centerIndicator,
                     previous = previousCenterIndicator,
                     scale = scale,
@@ -1602,7 +1602,7 @@ internal class StatusPainter(
                     progress = ringRetractProgress,
                     exitDirection = ringRetractExitDirection,
                     followRetractEndpoint =
-                        visualSettings.batteryFillFollowsRetractEndpoint,
+                        visual.batteryFillFollowsRetractEndpoint,
                 )
             val totalSweepDegrees =
                 drawableArcs
@@ -1712,7 +1712,7 @@ internal class StatusPainter(
         }
 
         if (
-            visualSettings.layout == ContentLayout.NETWORK_CENTER &&
+            visual.layout == ContentLayout.NETWORK_CENTER &&
             readout != null
         ) {
             drawBatteryTopReadout(
@@ -1730,26 +1730,26 @@ internal class StatusPainter(
 
     private fun resolveBatteryTopReadoutLayout(
         model: RenderModel,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ): BatteryTopReadoutLayout? {
-        val textVisible = visualSettings.batteryTopReadoutEnabled
+        val textVisible = visual.batteryTopReadoutEnabled
         val chargingSlotVisible =
-            model.charging && visualSettings.batteryTopChargingIconEnabled
+            model.charging && visual.batteryTopChargingIconEnabled
         if (!textVisible && !chargingSlotVisible) return null
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
-        val textSize = BATTERY_TOP_TEXT_SIZE * visualSettings.batteryTopTextScale
+        val textSize = BATTERY_TOP_TEXT_SIZE * visual.batteryTopTextScale
         val textExtraStroke =
             if (textVisible) {
                 batteryTopTextExtraStroke(
-                    weight = visualSettings.batteryTopTextWeight,
+                    weight = visual.batteryTopTextWeight,
                     textSize = textSize,
                 )
             } else {
                 0f
             }
-        paint.typeface = batteryTopTextTypeface(visualSettings.batteryTopTextWeight)
+        paint.typeface = batteryTopTextTypeface(visual.batteryTopTextWeight)
         paint.textSize = textSize
         paint.textAlign = Paint.Align.LEFT
         if (textVisible) {
@@ -1772,7 +1772,7 @@ internal class StatusPainter(
         val chargingIconSize =
             if (chargingSlotVisible) {
                 BATTERY_TOP_CHARGING_ICON_SIZE *
-                    visualSettings.batteryTopChargingIconScale
+                    visual.batteryTopChargingIconScale
             } else {
                 0f
             }
@@ -1863,7 +1863,7 @@ internal class StatusPainter(
 
         val groupBaseCenterY =
             BatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
-                preferredCenterY = batteryReadoutPreferredCenterY(visualSettings),
+                preferredCenterY = batteryReadoutPreferredCenterY(visual),
                 defaultOpticalRise = BATTERY_TOP_DEFAULT_OPTICAL_RISE,
             )
         val groupCenterY =
@@ -1871,8 +1871,8 @@ internal class StatusPainter(
                 baseCenterY = groupBaseCenterY,
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
-                        layout = visualSettings.layout,
-                        rawOffset = visualSettings.batteryTopVerticalOffset,
+                        layout = visual.layout,
+                        rawOffset = visual.batteryTopVerticalOffset,
                     ),
             )
         val textBaselineY =
@@ -1926,7 +1926,7 @@ internal class StatusPainter(
             textVisible = textVisible,
             text = text,
             textSize = textSize,
-            textWeight = visualSettings.batteryTopTextWeight,
+            textWeight = visual.batteryTopTextWeight,
             textExtraStroke = textExtraStroke,
             textX =
                 textInkLeft +
@@ -2001,7 +2001,7 @@ internal class StatusPainter(
         model: RenderModel,
         textTint: Int,
         opacity: Float,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         motionProgress: Float,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
@@ -2010,7 +2010,7 @@ internal class StatusPainter(
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
-                visualSettings = visualSettings,
+                visual = visual,
                 nativeTransform = nativeTransform,
             ) ?: return
         if (!layout.textVisible) return
@@ -2038,13 +2038,13 @@ internal class StatusPainter(
         model: RenderModel,
         chargingIconTint: Int,
         opacity: Float,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ) {
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
-                visualSettings = visualSettings,
+                visual = visual,
                 nativeTransform = nativeTransform,
             ) ?: return
         val resourceId = layout.chargingIconResourceId ?: return
@@ -2073,18 +2073,18 @@ internal class StatusPainter(
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,
-        visualSettings: VisualCfg = VisualCfg(),
+        visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return null
         val scale = nativeTransform.scale
         val base =
-            resolveCenterGeometry(visualSettings)
+            resolveCenterGeometry(visual)
         val weight =
             MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = base.mobileTypeWeight,
@@ -2102,8 +2102,8 @@ internal class StatusPainter(
                 transitionProgress = progress,
             ).bounds
         val local =
-            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
             } else {
                 baseLocal
             }
@@ -2119,7 +2119,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualCfg,
+        visual: VisualCfg,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,
@@ -2129,13 +2129,13 @@ internal class StatusPainter(
             resolveCanvasTransform(
                 width = width,
                 height = height,
-                visualSettings = visualSettings,
+                visual = visual,
             ) ?: return null
         val scale = nativeTransform.scale
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
-                visualSettings = visualSettings,
+                visual = visual,
                 nativeTransform = nativeTransform,
             ) ?: return null
         val sourceWeight = layout.textWeight
