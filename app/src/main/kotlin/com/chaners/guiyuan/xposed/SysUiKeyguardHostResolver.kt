@@ -138,7 +138,7 @@ internal object SysUiKeyguardHostResolver {
         }
 
         val batteryCarrier =
-            SysUiCarrierMetrics.resolveCarrierView(battery)
+            SysUiCarrierMetrics.resolveView(battery)
                 ?: return ResolveResult.Failure("keyguard-battery-core-carrier-missing")
 
         return ResolveResult.Ready(
