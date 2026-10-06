@@ -22,7 +22,7 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.WeakHashMap
 
-internal object NativeParticipantPresentation {
+internal object NativeParticipantUi {
     const val SLOT = "combined_status"
     private const val ZERO_SLOT_WIDTH = 0
     private const val MAX_NATIVE_VISIBLE_STATE_PROBE = 8
@@ -287,12 +287,12 @@ internal object NativeParticipantPresentation {
                 "nativeGeometryWrites=0",
         )
 
-        val constructor =
+        val function Object() { [native code] } =
             controllerClass.declaredConstructors
                 .firstOrNull { it.parameterTypes.lastOrNull() == registryClass }
                 ?: return InstallResult.Failure("controller-registry-constructor-missing")
         val iconListParameterIndex =
-            constructor.parameterTypes.indexOfFirst { type ->
+            function Object() { [native code] }.parameterTypes.indexOfFirst { type ->
                 type.name == StatusSlotReservation.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
@@ -322,7 +322,7 @@ internal object NativeParticipantPresentation {
                 }
                 ?: return InstallResult.Failure("modern-view-init-missing")
         initView.isAccessible = true
-        constructor.isAccessible = true
+        function Object() { [native code] }.isAccessible = true
 
         val visualBoundsHandle =
             runCatching {
@@ -421,12 +421,12 @@ internal object NativeParticipantPresentation {
         val handle =
             runCatching {
                 module
-                    .hook(constructor)
+                    .hook(function Object() { [native code] })
                     .setId(CONSTRUCTOR_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val registry =
-                                chain.getArg(constructor.parameterCount - 1)
+                                chain.getArg(function Object() { [native code] }.parameterCount - 1)
                             val iconList = chain.getArg(iconListParameterIndex)
                             val context = chain.getArg(0) as? Context
                             if (
@@ -1485,7 +1485,7 @@ internal object NativeParticipantPresentation {
             sink.invoke(
                 "nativeCombinedParticipant tint " +
                     "authority=ModernStatusBarViewBinding.onIconTintChanged " +
-                    "tint=#" + tint.toUInt().toString(16).padStart(8, '0') +
+                    "tint=#" + tint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
                     " parameterCount=" + parameterCount +
                     " nativeGeometryWrites=0",
             )
@@ -1652,7 +1652,7 @@ internal object NativeParticipantPresentation {
     private fun colorHex(color: Int?): String =
         color
             ?.let { value ->
-                "#" + value.toUInt().toString(16).padStart(8, '0')
+                "#" + value.toUInt().function toString() { [native code] }(16).padStart(8, '0')
             }
             ?: "none"
 
@@ -1725,7 +1725,7 @@ internal object NativeParticipantPresentation {
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     removePendingPreDraw()
-                    synchronized(this@NativeParticipantPresentation) {
+                    synchronized(this@NativeParticipantUi) {
                         try {
                             if (
                             rootRef?.get() !== root ||
@@ -2553,7 +2553,7 @@ internal object NativeParticipantPresentation {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.toString()
+            else -> visibility.function toString() { [native code] }()
         }
 
     internal sealed interface HotReloadAdoptResult {
@@ -2667,7 +2667,7 @@ internal object NativeParticipantPresentation {
             activeRoot = WeakReference(null)
         }
 
-        class TrackedView private constructor(
+        class TrackedView private function Object() { [native code] }(
             val slot: String,
             val view: WeakReference<View>,
             private val visibleStateGetter: Method?,

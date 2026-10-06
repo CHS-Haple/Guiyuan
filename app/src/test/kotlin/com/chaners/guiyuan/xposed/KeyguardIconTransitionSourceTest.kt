@@ -8,19 +8,19 @@ class KeyguardIconTransitionSourceTest {
     @Test
     fun pinnedAnimateIconContainerContractRequiresOneBoolean() {
         assertTrue(
-            KeyguardIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransition.matchesAnimateIconContainerSignature(
                 arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
                 Void.TYPE,
             ),
         )
         assertFalse(
-            KeyguardIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransition.matchesAnimateIconContainerSignature(
                 emptyArray(),
                 Void.TYPE,
             ),
         )
         assertFalse(
-            KeyguardIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransition.matchesAnimateIconContainerSignature(
                 arrayOf<Class<*>>(Int::class.javaPrimitiveType!!),
                 Void.TYPE,
             ),

@@ -621,7 +621,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                NativeParticipantPresentation.install(
+                NativeParticipantUi.install(
                     module = this,
                     classLoader = classLoader,
                     onEvent = { event ->
@@ -670,21 +670,21 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            NativeParticipantPresentation.InstallResult.Installed,
-            NativeParticipantPresentation.InstallResult.AlreadyInstalled -> {
+            NativeParticipantUi.InstallResult.Installed,
+            NativeParticipantUi.InstallResult.AlreadyInstalled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "hook.install",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "hooks" to NativeParticipantPresentation.installedHookCount,
+                    "hooks" to NativeParticipantUi.installedHookCount,
                     "visible" to false,
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is NativeParticipantPresentation.InstallResult.Failure -> {
+            is NativeParticipantUi.InstallResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hook.install",
@@ -769,7 +769,7 @@ class GyModule : XposedModule() {
                         }
                     },
                     onNativeLayoutHideChanged = { hidden ->
-                        NativeParticipantPresentation
+                        NativeParticipantUi
                             .onNativeBatteryLayoutHideChanged(hidden)
                     },
                 )
@@ -1888,7 +1888,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
+                                ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1919,12 +1919,12 @@ class GyModule : XposedModule() {
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1932,7 +1932,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -4056,7 +4056,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val nativeCombined =
-                NativeParticipantPresentation.attachHidden(
+                NativeParticipantUi.attachHidden(
                     host = host,
                     onHandoffStateChanged = { active ->
                         val presentation =
@@ -4126,7 +4126,7 @@ class GyModule : XposedModule() {
                                                         connectivity = presentation.connectivity,
                                                     ),
                                         suppressMobile =
-                                            NativeNetworkSuppressionPolicy.suppressMobile(
+                                            NetworkSuppressionPolicy.suppressMobile(
                                                 airplaneMode = state.airplaneMode,
                                                 presentation = presentation.mobilePresentation,
                                                 wasSuppressed = false,
@@ -4243,14 +4243,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is NativeParticipantPresentation.AttachResult.Ready -> {
+            is NativeParticipantUi.AttachResult.Ready -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "participant.attach",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "slot" to NativeParticipantPresentation.SLOT,
+                    "slot" to NativeParticipantUi.SLOT,
                     "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
@@ -4269,7 +4269,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is NativeParticipantPresentation.AttachResult.Failure -> {
+            is NativeParticipantUi.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "participant.attach",
@@ -4464,7 +4464,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        NativeParticipantPresentation.onFeatureSettingsChanged(settings)
+        NativeParticipantUi.onFeatureSettingsChanged(settings)
         if (
             !settings.enabled ||
             !settings.keyguardEnabled ||
@@ -4719,7 +4719,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().function function function toString() { [native code] }() { [native code] }() { [native code] }(36)
+            SystemClock.elapsedRealtime().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4732,12 +4732,12 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.function function function toString() { [native code] }() { [native code] }() { [native code] }())
+                        put(key, value.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().function function function toString() { [native code] }() { [native code] }() { [native code] }())
-                put("sequence", diagnosticSequence.incrementAndGet().function function function toString() { [native code] }() { [native code] }() { [native code] }())
+                put("uptimeMs", SystemClock.elapsedRealtime().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
             }
         log(
             level,

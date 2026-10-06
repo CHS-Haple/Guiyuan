@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeNetworkSuppressionPolicy {
+internal object NetworkSuppressionPolicy {
     fun suppressMobile(
         airplaneMode: Boolean?,
         presentation: NativePresentationResolver.Snapshot?,

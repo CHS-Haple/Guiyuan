@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 
-internal object KeyguardAodTransitionSource {
+internal object KeyguardAodTransition {
     const val HOOK_COUNT = 1
 
     private const val CONTROLLER_CLASS =

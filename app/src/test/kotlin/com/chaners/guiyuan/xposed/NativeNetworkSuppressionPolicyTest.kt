@@ -17,7 +17,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertTrue(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = true,
@@ -37,7 +37,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertFalse(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = true,
@@ -57,7 +57,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertFalse(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = false,

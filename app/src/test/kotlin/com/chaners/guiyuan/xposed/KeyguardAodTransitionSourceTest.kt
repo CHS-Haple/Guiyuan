@@ -8,7 +8,7 @@ class KeyguardAodTransitionSourceTest {
     @Test
     fun pinnedAnimateFullAodContractRequiresTwoBooleans() {
         assertTrue(
-            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransition.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,
@@ -18,7 +18,7 @@ class KeyguardAodTransitionSourceTest {
             ),
         )
         assertFalse(
-            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransition.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,
@@ -27,7 +27,7 @@ class KeyguardAodTransitionSourceTest {
             ),
         )
         assertFalse(
-            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransition.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,
