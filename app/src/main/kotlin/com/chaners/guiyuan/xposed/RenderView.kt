@@ -166,7 +166,7 @@ internal class RenderView(
     fun currentLogicalViewportWidthPx(): Int =
         logicalViewportWidthPx.takeIf { it > 0 } ?: width
 
-    fun currentLogicalViewportHeightPx(): Int =
+    fun logicalViewportHeightPx(): Int =
         logicalViewportHeightPx.takeIf { it > 0 } ?: height
 
     fun currentViewportTopInsetPx(): Int =
@@ -284,7 +284,7 @@ internal class RenderView(
         val transitionFraction =
             centerTransitionFraction.coerceIn(0f, 1f)
         val logicalWidth = currentLogicalViewportWidthPx()
-        val logicalHeight = currentLogicalViewportHeightPx()
+        val logicalHeight = logicalViewportHeightPx()
         val logicalTopInset = currentViewportTopInsetPx()
         val viewportSave = canvas.save()
         if (logicalTopInset > 0) {

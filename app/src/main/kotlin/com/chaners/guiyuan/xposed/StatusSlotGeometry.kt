@@ -11,7 +11,7 @@ internal object StatusSlotGeometry {
             else -> null
         }
 
-    internal fun resolveCapturedOrLiveChildWidth(
+    internal fun childWidth(
         capturedWidth: Int?,
         layoutWidth: Int,
         measuredWidth: Int,

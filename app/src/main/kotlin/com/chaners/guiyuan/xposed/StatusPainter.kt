@@ -119,7 +119,7 @@ internal class StatusPainter(
             centerEnterAmount = centerEnterAmount,
         )
         if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
-            resolveBatteryTopReadoutLayout(
+            batteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
@@ -185,7 +185,7 @@ internal class StatusPainter(
             if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
                 val geometry =
                     resolveCenterGeometry(visualSettings)
-                resolveNetworkTopSlotAvoidance(
+                networkTopAvoidance(
                     visualSettings = visualSettings,
                     current = model.centerIndicator,
                     previous = previousCenterIndicator,
@@ -196,7 +196,7 @@ internal class StatusPainter(
                     enterAmount = centerEnterAmount,
                 )?.bounds
             } else {
-                resolveBatteryTopReadoutLayout(
+                batteryTopReadoutLayout(
                     model = model,
                     visualSettings = visualSettings,
                     nativeTransform = nativeTransform,
@@ -283,7 +283,7 @@ internal class StatusPainter(
                 )
 
             TransitionComponent.BATTERY_NUMBER ->
-                drawBatteryTopNumberTransition(
+                drawBatteryNumberTransition(
                     canvas = canvas,
                     model = model,
                     textTint = colors.batteryTextTint,
@@ -404,15 +404,15 @@ internal class StatusPainter(
 
     internal object BatteryNumberFollowerPolicy {
         private const val CHARGING_HIDE_END = 0.40f
-        private const val CHARGING_TARGET_TRAVEL_COMPLETE = 0.80f
+        private const val CHARGE_TRAVEL_END = 0.80f
         private const val CHARGING_TARGET_REVEAL_START = 0.85f
-        private const val CHARGING_TARGET_REVEAL_COMPLETE = 0.90f
+        private const val CHARGE_REVEAL_END = 0.90f
 
         private const val chargingHideStartProgress = 0f
         private val chargingHideEndProgress =
             progressAtRingLifetime(CHARGING_HIDE_END)
         private val chargingTargetRevealComplete =
-            CHARGING_TARGET_REVEAL_COMPLETE
+            CHARGE_REVEAL_END
 
         fun chargingVisibleFraction(
             progress: Float,
@@ -448,7 +448,7 @@ internal class StatusPainter(
             val hiddenTravel =
                 (
                     (progress.coerceIn(0f, 1f) - chargingHideEndProgress) /
-                        (CHARGING_TARGET_TRAVEL_COMPLETE - chargingHideEndProgress)
+                        (CHARGE_TRAVEL_END - chargingHideEndProgress)
                 ).coerceIn(0f, 1f)
             return smooth(hiddenTravel)
         }
@@ -712,7 +712,7 @@ internal class StatusPainter(
                 scalePolicy = TransitionScalePolicy.TARGET,
             )
 
-        resolveBatteryTopReadoutLayout(
+        batteryTopReadoutLayout(
             model = model,
             visualSettings = visualSettings,
             nativeTransform = nativeTransform,
@@ -910,7 +910,7 @@ internal class StatusPainter(
         return specs
     }
 
-    fun transitionAirplaneSourceBounds(
+    fun airplaneSourceBounds(
         width: Int,
         height: Int,
         visualSettings: VisualSettings = VisualSettings(),
@@ -1237,7 +1237,7 @@ internal class StatusPainter(
             bottom = bounds.bottom + deltaY,
         )
 
-    private fun resolveNetworkTopSlotAvoidance(
+    private fun networkTopAvoidance(
         visualSettings: VisualSettings,
         current: CenterIndicator,
         previous: CenterIndicator?,
@@ -1249,7 +1249,7 @@ internal class StatusPainter(
     ): TopSlotAvoidance? {
         val translationY = networkTopTranslationY(visualSettings)
         if (previous == null || previous == current) {
-            return resolveCenterIndicatorAvoidance(
+            return centerAvoidance(
                 indicator = current,
                 scale = scale,
                 geometry = geometry,
@@ -1260,7 +1260,7 @@ internal class StatusPainter(
         }
 
         val previousAvoidance =
-            resolveCenterIndicatorAvoidance(
+            centerAvoidance(
                 indicator = previous,
                 scale = scale,
                 geometry = geometry,
@@ -1276,7 +1276,7 @@ internal class StatusPainter(
                 shiftAvoidanceY(avoidance, translationY)
             }
         val currentAvoidance =
-            resolveCenterIndicatorAvoidance(
+            centerAvoidance(
                 indicator = current,
                 scale = scale,
                 geometry = geometry,
@@ -1380,7 +1380,7 @@ internal class StatusPainter(
                 )
         }
 
-    private fun resolveCenterIndicatorAvoidance(
+    private fun centerAvoidance(
         indicator: CenterIndicator,
         scale: Float,
         geometry: CenterGeometry.Resolved,
@@ -1396,7 +1396,7 @@ internal class StatusPainter(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             )
-                        resolveNativeCenterDrawGeometry(
+                        nativeCenterGeometry(
                             resource = resource,
                             opticalReferenceResource = wifiOpticalReferenceResource(resource),
                             centerX = WIFI_CENTER_X,
@@ -1430,7 +1430,7 @@ internal class StatusPainter(
             CenterIndicator.Airplane ->
                 airplaneResourceId()
                     ?.let { resourceId ->
-                        resolveNativeCenterDrawGeometry(
+                        nativeCenterGeometry(
                             resource =
                                 PresentationStore.NativeIconResource(
                                     packageName = SYSTEM_UI_PACKAGE,
@@ -1444,7 +1444,7 @@ internal class StatusPainter(
                     }?.let(::singleTopSlotAvoidance)
 
             is CenterIndicator.NoSim ->
-                resolveNativeCenterDrawGeometry(
+                nativeCenterGeometry(
                     resource = indicator.nativeResource,
                     centerX = CENTER_TRANSITION_PIVOT_X,
                     centerY = CENTER_TRANSITION_PIVOT_Y,
@@ -1521,7 +1521,7 @@ internal class StatusPainter(
         return BatteryTopArcPolicy.mergeGaps(gaps)
     }
 
-    private fun batteryReadoutPreferredCenterY(
+    private fun batteryReadoutCenterY(
         visualSettings: VisualSettings,
     ): Float =
         if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
@@ -1557,14 +1557,14 @@ internal class StatusPainter(
             BatteryRingTransition.ExitDirection.NONE,
     ) {
         val readout =
-            resolveBatteryTopReadoutLayout(
+            batteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
             )
         val topContentAvoidance =
             if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
-                resolveNetworkTopSlotAvoidance(
+                networkTopAvoidance(
                     visualSettings = visualSettings,
                     current = model.centerIndicator,
                     previous = previousCenterIndicator,
@@ -1734,7 +1734,7 @@ internal class StatusPainter(
         }
     }
 
-    private fun resolveBatteryTopReadoutLayout(
+    private fun batteryTopReadoutLayout(
         model: RenderModel,
         visualSettings: VisualSettings,
         nativeTransform: NativeRenderTransform,
@@ -1777,7 +1777,7 @@ internal class StatusPainter(
                 ?.takeIf { chargingSlotVisible && it != 0 }
         val chargingIconSize =
             if (chargingSlotVisible) {
-                BATTERY_TOP_CHARGING_ICON_SIZE *
+                CHARGING_ICON_SIZE *
                     visualSettings.chargingIconScale
             } else {
                 0f
@@ -1869,7 +1869,7 @@ internal class StatusPainter(
 
         val groupBaseCenterY =
             BatteryTopLayout.resolveOpticalBaseCenterY(
-                preferredCenterY = batteryReadoutPreferredCenterY(visualSettings),
+                preferredCenterY = batteryReadoutCenterY(visualSettings),
                 defaultOpticalRise = TOP_OPTICAL_RISE,
             )
         val groupCenterY =
@@ -2002,7 +2002,7 @@ internal class StatusPainter(
         }
     }
 
-    private fun drawBatteryTopNumberTransition(
+    private fun drawBatteryNumberTransition(
         canvas: Canvas,
         model: RenderModel,
         textTint: Int,
@@ -2014,7 +2014,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
     ) {
         val layout =
-            resolveBatteryTopReadoutLayout(
+            batteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
@@ -2048,7 +2048,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
     ) {
         val layout =
-            resolveBatteryTopReadoutLayout(
+            batteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
@@ -2139,7 +2139,7 @@ internal class StatusPainter(
             ) ?: return null
         val scale = nativeTransform.scale
         val layout =
-            resolveBatteryTopReadoutLayout(
+            batteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
                 nativeTransform = nativeTransform,
@@ -2471,7 +2471,7 @@ internal class StatusPainter(
                     opacity = opacity,
                     geometry = geometry,
                     nativeTransform = nativeTransform,
-                    pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    pixelAligned = appearAmount >= NATIVE_STEADY_THRESHOLD,
                 )
 
             is CenterIndicator.MobileType ->
@@ -2494,7 +2494,7 @@ internal class StatusPainter(
                     opacity = animatedOpacity,
                     geometry = geometry,
                     nativeTransform = nativeTransform,
-                    pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    pixelAligned = appearAmount >= NATIVE_STEADY_THRESHOLD,
                 )
 
             is CenterIndicator.NoSim ->
@@ -2508,7 +2508,7 @@ internal class StatusPainter(
                     maxWidth = geometry.noSimMaxSize,
                     maxHeight = geometry.noSimMaxSize,
                     nativeTransform = nativeTransform,
-                    pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    pixelAligned = appearAmount >= NATIVE_STEADY_THRESHOLD,
                 )
 
             CenterIndicator.Empty -> Unit
@@ -2749,7 +2749,7 @@ internal class StatusPainter(
         )
     }
 
-    private fun resolveNativeCenterDrawGeometry(
+    private fun nativeCenterGeometry(
         resource: PresentationStore.NativeIconResource,
         opticalReferenceResource: PresentationStore.NativeIconResource? = null,
         centerX: Float,
@@ -2838,7 +2838,7 @@ internal class StatusPainter(
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
         val geometry =
-            resolveNativeCenterDrawGeometry(
+            nativeCenterGeometry(
                 resource = resource,
                 opticalReferenceResource = opticalReferenceResource,
                 centerX = centerX,
@@ -3616,11 +3616,11 @@ internal class StatusPainter(
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
         const val NATIVE_CENTER_CACHE_SIZE = 8
         const val MIN_OPTICAL_RATIO = 0.08f
-        const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
+        const val NATIVE_STEADY_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
         const val BATTERY_COMPONENT_CENTER_Y = 58f
         const val BATTERY_TOP_TEXT_SIZE = 24f
-        const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
+        const val CHARGING_ICON_SIZE = 18f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
         const val TOP_RING_CLEARANCE = 2f
         const val TOP_OPTICAL_RISE = 1.5f

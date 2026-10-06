@@ -209,7 +209,7 @@ internal object NativeRenderGeometry {
 
 internal object CenterGeometry {
     const val DEFAULT_WIFI_SIZE_SCALE = 1.00f
-    const val DEFAULT_MOBILE_TYPE_SIZE_SCALE = 1.00f
+    const val DEFAULT_TYPE_SIZE_SCALE = 1.00f
     const val MIN_WIFI_SIZE_SCALE = SETTINGS_WIFI_SIZE_SCALE_MIN
     const val MAX_WIFI_SIZE_SCALE = SETTINGS_WIFI_SIZE_SCALE_MAX
     const val DEFAULT_AIRPLANE_SIZE_SCALE = 1.00f
@@ -270,7 +270,7 @@ internal object CenterGeometry {
         val normalizedMobile =
             mobileTypeSizeScale.takeIf(Float::isFinite)
                 ?.coerceIn(MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE)
-                ?: DEFAULT_MOBILE_TYPE_SIZE_SCALE
+                ?: DEFAULT_TYPE_SIZE_SCALE
         val normalizedWeight =
             mobileTypeWeight.coerceIn(MIN_MOBILE_TYPE_WEIGHT, MAX_MOBILE_TYPE_WEIGHT)
         val normalizedCombined =

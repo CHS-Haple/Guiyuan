@@ -9,7 +9,7 @@ class StatusSlotGeometryTest {
     @Test
     fun capturedStableWidthWinsWhenChargingLayoutHasAlreadyCollapsed() {
         val resolvedWidth =
-            StatusSlotGeometry.resolveCapturedOrLiveChildWidth(
+            StatusSlotGeometry.childWidth(
                 capturedWidth = 478,
                 layoutWidth = 448,
                 measuredWidth = 448,
@@ -35,7 +35,7 @@ class StatusSlotGeometryTest {
     fun liveWidthRemainsFallbackWhenNoStableCaptureExists() {
         assertEquals(
             448,
-            StatusSlotGeometry.resolveCapturedOrLiveChildWidth(
+            StatusSlotGeometry.childWidth(
                 capturedWidth = null,
                 layoutWidth = 448,
                 measuredWidth = 448,

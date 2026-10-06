@@ -570,7 +570,7 @@ internal object ScenePolicy {
         }
     }
 
-    fun resolveControlCenterSourceScene(
+    fun resolveCcSourceScene(
         panelSourceScene: SourceScene,
         steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
@@ -603,7 +603,7 @@ internal object ScenePolicy {
         }
     }
 
-    fun controlCenterProjectionEligible(
+    fun ccProjectionEligible(
         featureEnabled: Boolean,
         sourceScene: SourceScene,
         keyguardEnabled: Boolean,

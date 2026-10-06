@@ -1241,7 +1241,7 @@ class GyModule : XposedModule() {
                 settings.keyguardEnabled &&
                 keyguardPresentationReady
         val nextEligible =
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = settings.enabled,
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,

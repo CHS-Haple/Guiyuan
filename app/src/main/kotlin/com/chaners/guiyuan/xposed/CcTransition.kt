@@ -1299,7 +1299,7 @@ internal object CcTransition {
                 return null
             }
             val bounds =
-                painter.transitionAirplaneSourceBounds(
+                painter.airplaneSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
                     visualSettings = currentSnapshot.visualSettings,

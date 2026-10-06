@@ -8,42 +8,42 @@ class SceneControlCenterTest {
     @Test
     fun controlCenterProjectionInheritsVerifiedSourceSceneCapability() {
         assertTrue(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = false,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = false,
             ),
         )
         assertTrue(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.UNKNOWN,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = false,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            ScenePolicy.ccProjectionEligible(
                 featureEnabled = false,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
