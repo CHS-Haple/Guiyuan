@@ -3795,7 +3795,7 @@ No visual behavior or ownership semantics are changed.
 
 - `FOLLOW_SYSTEM` classification was already correct: only resolved `Custom` semantic color sources are considered colorized.
 - Tint authority was wrong. Build 638 sampled `finalStatusIcons`, the fully-expanded QS destination, rather than `QS_FAKE / fakeStatusIcons`, the native transition carrier visible beside Guiyuan during the gesture. The final destination can legitimately already be white.
-- The temporary review attempt to use `SystemUiNativeNetworkSuppressionOwner.activeManager` for an arbitrary final group was rejected because that manager belongs to the Home status-bar host, not the independent QS/QS_FAKE icon group.
+- The temporary review attempt to use `NativeNetworkSuppressionOwner.activeManager` for an arbitrary final group was rejected because that manager belongs to the Home status-bar host, not the independent QS/QS_FAKE icon group.
 - Supplemental Airplane / No-SIM already resolve a native single-icon optical target, but Build 638 projected them with `SHRINK_ONLY`; therefore a larger native target could never be reached.
 - Charging Clip at retained ring 26% -> 20% starts too late.
 

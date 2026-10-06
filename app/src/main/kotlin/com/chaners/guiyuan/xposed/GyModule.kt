@@ -189,7 +189,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkRuntime.installedHookCount +
                 SysUiPresentationRuntime.installedHookCount +
                 SysUiPresentationOwner.installedHookCount +
-                SystemUiNativeNetworkSuppressionOwner.installedHookCount +
+                NativeNetworkSuppressionOwner.installedHookCount +
                 if (islandSourceInstalled) {
                     SysUiIslandSource.HOOK_COUNT
                 } else {
@@ -294,7 +294,7 @@ class GyModule : XposedModule() {
             SysUiPresentationRuntime.resetRuntimeState()
             SysUiKeyguardHostResolver.resetRuntimeState()
             SysUiPresentationOwner.resetRuntimeState("hotReload")
-            SystemUiNativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
+            NativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
@@ -622,7 +622,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                SystemUiNativeCombinedParticipantOwner.install(
+                NativeCombinedParticipantOwner.install(
                     module = this,
                     classLoader = classLoader,
                     onEvent = { event ->
@@ -671,21 +671,21 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            SystemUiNativeCombinedParticipantOwner.InstallResult.Installed,
-            SystemUiNativeCombinedParticipantOwner.InstallResult.AlreadyInstalled -> {
+            NativeCombinedParticipantOwner.InstallResult.Installed,
+            NativeCombinedParticipantOwner.InstallResult.AlreadyInstalled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "hook.install",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "hooks" to SystemUiNativeCombinedParticipantOwner.installedHookCount,
+                    "hooks" to NativeCombinedParticipantOwner.installedHookCount,
                     "visible" to false,
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is SystemUiNativeCombinedParticipantOwner.InstallResult.Failure -> {
+            is NativeCombinedParticipantOwner.InstallResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hook.install",
@@ -705,7 +705,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                SystemUiNativeNetworkSuppressionOwner.install(
+                NativeNetworkSuppressionOwner.install(
                     module = this,
                     classLoader = classLoader,
                     onEvent = { event ->
@@ -728,20 +728,20 @@ class GyModule : XposedModule() {
                     onStatusPresentationChanged = ::onStatusIconPresentationChanged,
                 )
         ) {
-            SystemUiNativeNetworkSuppressionOwner.InstallResult.Installed,
-            SystemUiNativeNetworkSuppressionOwner.InstallResult.AlreadyInstalled -> {
+            NativeNetworkSuppressionOwner.InstallResult.Installed,
+            NativeNetworkSuppressionOwner.InstallResult.AlreadyInstalled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "hook.install",
                     component = "nativeNetworkSuppression",
                     state = "ready",
                     "source" to source,
-                    "hooks" to SystemUiNativeNetworkSuppressionOwner.installedHookCount,
+                    "hooks" to NativeNetworkSuppressionOwner.installedHookCount,
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is SystemUiNativeNetworkSuppressionOwner.InstallResult.Failure -> {
+            is NativeNetworkSuppressionOwner.InstallResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hook.install",
@@ -761,7 +761,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                SystemUiNativeBatterySuppressionOwner.install(
+                NativeBatterySuppressionOwner.install(
                     module = this,
                     classLoader = classLoader,
                     onEvent = { event ->
@@ -770,27 +770,27 @@ class GyModule : XposedModule() {
                         }
                     },
                     onNativeLayoutHideChanged = { hidden ->
-                        SystemUiNativeCombinedParticipantOwner
+                        NativeCombinedParticipantOwner
                             .onNativeBatteryLayoutHideChanged(hidden)
                     },
                 )
         ) {
-            SystemUiNativeBatterySuppressionOwner.InstallResult.Installed,
-            SystemUiNativeBatterySuppressionOwner.InstallResult.AlreadyInstalled -> {
+            NativeBatterySuppressionOwner.InstallResult.Installed,
+            NativeBatterySuppressionOwner.InstallResult.AlreadyInstalled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "hook.install",
                     component = "nativeBatterySuppression",
                     state = "ready",
                     "source" to source,
-                    "hooks" to SystemUiNativeBatterySuppressionOwner.installedHookCount,
+                    "hooks" to NativeBatterySuppressionOwner.installedHookCount,
                     "contract" to
                         "MiuiStatusBatteryContainer.setIsHideBattery(Boolean):native-layout-authority+visual-mask",
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is SystemUiNativeBatterySuppressionOwner.InstallResult.Failure -> {
+            is NativeBatterySuppressionOwner.InstallResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hook.install",
@@ -810,7 +810,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                SystemUiNativeParticipantRuntimeOwner.installControllerObserver(
+                NativeParticipantRuntimeOwner.installControllerObserver(
                     module = this,
                     classLoader = classLoader,
                     onEvent = { event ->
@@ -820,20 +820,20 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            SystemUiNativeParticipantRuntimeOwner.InstallResult.Installed,
-            SystemUiNativeParticipantRuntimeOwner.InstallResult.AlreadyInstalled -> {
+            NativeParticipantRuntimeOwner.InstallResult.Installed,
+            NativeParticipantRuntimeOwner.InstallResult.AlreadyInstalled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "hook.install",
                     component = "nativeParticipantControllerObserver",
                     state = "ready",
                     "source" to source,
-                    "hooks" to SystemUiNativeParticipantRuntimeOwner.installedHookCount,
+                    "hooks" to NativeParticipantRuntimeOwner.installedHookCount,
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is SystemUiNativeParticipantRuntimeOwner.InstallResult.Failure -> {
+            is NativeParticipantRuntimeOwner.InstallResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "hook.install",
@@ -885,7 +885,7 @@ class GyModule : XposedModule() {
                     }
                 },
                 onMobileSignalWillApply = { image ->
-                    SystemUiNativeNetworkSuppressionOwner.preMaskMobileSignal(image)
+                    NativeNetworkSuppressionOwner.preMaskMobileSignal(image)
                 },
                 onPresentationChanged = {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
@@ -1858,7 +1858,7 @@ class GyModule : XposedModule() {
     }
 
     private fun refreshStatusIconObservation(source: String) {
-        SystemUiNativeNetworkSuppressionOwner.refreshObservation(source)
+        NativeNetworkSuppressionOwner.refreshObservation(source)
     }
 
     private fun onStatusIconPresentationChanged(
@@ -1905,7 +1905,7 @@ class GyModule : XposedModule() {
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
-            SystemUiNativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
+            NativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
         val resolvedState =
             TintAuthority.resolveBatteryEvent(
                 batteryState = update.state,
@@ -3536,7 +3536,7 @@ class GyModule : XposedModule() {
                     HotReloadHandoffPolicy
                         .shouldRequestLayoutOnRelease(continuousHandoff),
             )
-        SystemUiNativeNetworkSuppressionOwner.deactivate("hotReload-oldGeneration")
+        NativeNetworkSuppressionOwner.deactivate("hotReload-oldGeneration")
         StatusBarStableSession.detach()
         SysUiCoreRuntime.detach()
         SysUiPresentationRuntime.resetRuntimeState()
@@ -3683,12 +3683,12 @@ class GyModule : XposedModule() {
 
         when (
             val observation =
-                SystemUiNativeNetworkSuppressionOwner.attachObserver(
+                NativeNetworkSuppressionOwner.attachObserver(
                     host = host,
                     source = source,
                 )
         ) {
-            is SystemUiNativeNetworkSuppressionOwner.StateResult.Active -> {
+            is NativeNetworkSuppressionOwner.StateResult.Active -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3699,7 +3699,7 @@ class GyModule : XposedModule() {
                     "suppressionWriters" to 0,
                 )
             }
-            is SystemUiNativeNetworkSuppressionOwner.StateResult.Pending -> {
+            is NativeNetworkSuppressionOwner.StateResult.Pending -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3711,7 +3711,7 @@ class GyModule : XposedModule() {
                     "suppressionWriters" to 0,
                 )
             }
-            is SystemUiNativeNetworkSuppressionOwner.StateResult.Failure -> {
+            is NativeNetworkSuppressionOwner.StateResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "source.attach",
@@ -3722,7 +3722,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is SystemUiNativeNetworkSuppressionOwner.StateResult.Inactive -> Unit
+            is NativeNetworkSuppressionOwner.StateResult.Inactive -> Unit
         }
 
         val rendererInitialTintState =
@@ -3730,7 +3730,7 @@ class GyModule : XposedModule() {
                 TintAuthority.rebaseTransferred(
                     transferred = transferred,
                     liveStatusIconTint =
-                        SystemUiNativeNetworkSuppressionOwner
+                        NativeNetworkSuppressionOwner
                             .currentAppliedStatusIconTint(),
                 )
             }
@@ -3864,7 +3864,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val result =
-                SystemUiNativeParticipantRuntimeOwner.schedule(
+                NativeParticipantRuntimeOwner.schedule(
                     host = host,
                     onReady = { readyHost ->
                         attachNativeCombinedParticipant(
@@ -3891,7 +3891,7 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            SystemUiNativeParticipantRuntimeOwner.ScheduleResult.Scheduled -> {
+            NativeParticipantRuntimeOwner.ScheduleResult.Scheduled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "participant.lifecycle",
@@ -3903,7 +3903,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SystemUiNativeParticipantRuntimeOwner.ScheduleResult.Failure -> {
+            is NativeParticipantRuntimeOwner.ScheduleResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "participant.lifecycle",
@@ -4057,7 +4057,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val nativeCombined =
-                SystemUiNativeCombinedParticipantOwner.attachHidden(
+                NativeCombinedParticipantOwner.attachHidden(
                     host = host,
                     onHandoffStateChanged = { active ->
                         val presentation =
@@ -4070,11 +4070,11 @@ class GyModule : XposedModule() {
                             !FeaturePrefsOwner.current().enabled
                         ) {
                             val batterySuppression =
-                                SystemUiNativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressionOwner.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
                             val networkSuppression =
-                                SystemUiNativeNetworkSuppressionOwner.deactivate(
+                                NativeNetworkSuppressionOwner.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
                             HomeRenderSession.setNativeHandoffActive(false)
@@ -4094,13 +4094,13 @@ class GyModule : XposedModule() {
                             false
                         } else if (active) {
                             val batterySuppression =
-                                SystemUiNativeBatterySuppressionOwner.activate(
+                                NativeBatterySuppressionOwner.activate(
                                     host = host,
                                     source = "native-handoff:" + source,
                                 )
                             if (
                                 batterySuppression is
-                                    SystemUiNativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressionOwner.StateResult.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4117,7 +4117,7 @@ class GyModule : XposedModule() {
                                 false
                             } else {
                                 val networkSuppression =
-                                    SystemUiNativeNetworkSuppressionOwner.activate(
+                                    NativeNetworkSuppressionOwner.activate(
                                         host = host,
                                         suppressWifi =
                                             SysUiNetworkRuntime.wifiReady &&
@@ -4135,10 +4135,10 @@ class GyModule : XposedModule() {
                                     )
                                 if (
                                     networkSuppression is
-                                        SystemUiNativeNetworkSuppressionOwner.StateResult.Failure
+                                        NativeNetworkSuppressionOwner.StateResult.Failure
                                 ) {
                                     val batteryRollback =
-                                        SystemUiNativeBatterySuppressionOwner.deactivate(
+                                        NativeBatterySuppressionOwner.deactivate(
                                             "native-handoff-rollback",
                                         )
                                     logDiagnostic(
@@ -4154,7 +4154,7 @@ class GyModule : XposedModule() {
                                         "nativeGeometryWrites" to
                                             if (
                                                 batteryRollback is
-                                                    SystemUiNativeBatterySuppressionOwner.StateResult.Inactive &&
+                                                    NativeBatterySuppressionOwner.StateResult.Inactive &&
                                                 batteryRollback.changed
                                             ) {
                                                 1
@@ -4178,7 +4178,7 @@ class GyModule : XposedModule() {
                                         "nativeGeometryWrites" to
                                             if (
                                                 batterySuppression is
-                                                    SystemUiNativeBatterySuppressionOwner.StateResult.Active &&
+                                                    NativeBatterySuppressionOwner.StateResult.Active &&
                                                 batterySuppression.changed
                                             ) {
                                                 1
@@ -4191,12 +4191,12 @@ class GyModule : XposedModule() {
                             }
                         } else {
                             val batterySuppression =
-                                SystemUiNativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressionOwner.deactivate(
                                     "native-handoff-fallback",
                                 )
                             if (
                                 batterySuppression is
-                                    SystemUiNativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressionOwner.StateResult.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4213,7 +4213,7 @@ class GyModule : XposedModule() {
                                 false
                             } else {
                                 val networkSuppression =
-                                    SystemUiNativeNetworkSuppressionOwner.deactivate(
+                                    NativeNetworkSuppressionOwner.deactivate(
                                         "native-handoff-fallback",
                                     )
                                 HomeRenderSession.setNativeHandoffActive(false)
@@ -4230,7 +4230,7 @@ class GyModule : XposedModule() {
                                     "nativeGeometryWrites" to
                                         if (
                                             batterySuppression is
-                                                SystemUiNativeBatterySuppressionOwner.StateResult.Inactive &&
+                                                NativeBatterySuppressionOwner.StateResult.Inactive &&
                                             batterySuppression.changed
                                         ) {
                                             1
@@ -4244,14 +4244,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is SystemUiNativeCombinedParticipantOwner.AttachResult.Ready -> {
+            is NativeCombinedParticipantOwner.AttachResult.Ready -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "participant.attach",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "slot" to SystemUiNativeCombinedParticipantOwner.SLOT,
+                    "slot" to NativeCombinedParticipantOwner.SLOT,
                     "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
@@ -4270,7 +4270,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SystemUiNativeCombinedParticipantOwner.AttachResult.Failure -> {
+            is NativeCombinedParticipantOwner.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "participant.attach",
@@ -4465,7 +4465,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        SystemUiNativeCombinedParticipantOwner.onFeatureCfgChanged(cfg)
+        NativeCombinedParticipantOwner.onFeatureCfgChanged(cfg)
         if (
             !cfg.enabled ||
             !cfg.keyguard ||
@@ -4536,8 +4536,8 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        SystemUiNativeBatterySuppressionOwner.deactivate(source)
-        SystemUiNativeNetworkSuppressionOwner.deactivate(source)
+        NativeBatterySuppressionOwner.deactivate(source)
+        NativeNetworkSuppressionOwner.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
     }
 

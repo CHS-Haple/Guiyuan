@@ -12,7 +12,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object SystemUiNativeNetworkSuppressionOwner {
+internal object NativeNetworkSuppressionOwner {
     private const val WIFI_BINDING_CLASS =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
     private const val MOBILE_BINDING_CLASS =
