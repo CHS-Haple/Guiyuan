@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
@@ -248,12 +248,12 @@ internal object ControlCenterRenderSession {
         current?.transitionSourceSnapshot()
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
         val session = current
-        session?.setFeatureEnabled(settings.enabled)
-        if (!settings.enabled || !sceneEligible) {
+        session?.setFeatureEnabled(cfg.enabled)
+        if (!cfg.enabled || !sceneEligible) {
             SystemUiHomePresentationOwner.deactivateControlCenter(
-                if (!settings.enabled) "feature-disabled" else "scene-ineligible",
+                if (!cfg.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
             session?.prepareNativePresentation(reused = true)
@@ -502,7 +502,7 @@ internal object ControlCenterRenderSession {
         private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
-        private var featureEnabled = FeaturePrefsOwner.currentSettings().enabled
+        private var featureEnabled = FeaturePrefsOwner.current().enabled
         private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false

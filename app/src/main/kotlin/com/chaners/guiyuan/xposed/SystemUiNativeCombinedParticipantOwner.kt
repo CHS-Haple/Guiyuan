@@ -9,7 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -983,7 +983,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             VisualPrefsOwner.currentSettings(),
         )
         featureEnabled =
-            FeaturePrefsOwner.currentSettings().enabled
+            FeaturePrefsOwner.current().enabled
 
         render.measure(
             View.MeasureSpec.makeMeasureSpec(activeSlotWidth, View.MeasureSpec.EXACTLY),
@@ -1150,21 +1150,21 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
         val root = rootRef?.get()
         if (
             root != null &&
             Looper.myLooper() !== Looper.getMainLooper()
         ) {
             root.post {
-                onFeatureSettingsChanged(settings)
+                onFeatureCfgChanged(cfg)
             }
             return
         }
-        if (featureEnabled == settings.enabled) {
+        if (featureEnabled == cfg.enabled) {
             return
         }
-        featureEnabled = settings.enabled
+        featureEnabled = cfg.enabled
         if (featureEnabled) {
             if (!resumeValidatedHandoff()) {
                 reconcileVisibleHandoff("feature-enabled")

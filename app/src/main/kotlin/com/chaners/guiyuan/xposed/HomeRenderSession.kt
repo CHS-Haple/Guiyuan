@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 
@@ -69,7 +69,7 @@ internal object HomeRenderSession {
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
-                FeaturePrefsOwner.currentSettings().enabled,
+                FeaturePrefsOwner.current().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
         )
         current = session
@@ -102,8 +102,8 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
-        current?.setFeatureEnabled(settings.enabled)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureEnabled(cfg.enabled)
     }
 
     @Synchronized

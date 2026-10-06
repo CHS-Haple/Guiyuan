@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 
@@ -53,7 +53,7 @@ internal object KeyguardRenderSession {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
-        val settings = FeaturePrefsOwner.currentSettings()
+        val settings = FeaturePrefsOwner.current()
         if (!sceneEligible) {
             return AttachResult.Failure(
                 if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
@@ -62,8 +62,8 @@ internal object KeyguardRenderSession {
         val featureEnabled =
             resolveFamilyFeatureEnabled(
                 featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguardEnabled,
-                aodEnabled = settings.aodEnabled,
+                keyguardEnabled = settings.keyguard,
+                aodEnabled = settings.aod,
                 sceneIsAod = scene == Scene.AOD,
             )
 
@@ -112,8 +112,8 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
-        current?.setFeatureSettings(settings)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureCfg(cfg)
     }
 
     @Synchronized
@@ -415,12 +415,12 @@ internal object KeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureSettings(settings: FeatureSettings) {
+        fun setFeatureCfg(cfg: FeatureCfg) {
             val enabled =
                 resolveFamilyFeatureEnabled(
-                    featureEnabled = settings.enabled,
-                    keyguardEnabled = settings.keyguardEnabled,
-                    aodEnabled = settings.aodEnabled,
+                    featureEnabled = cfg.enabled,
+                    keyguardEnabled = cfg.keyguard,
+                    aodEnabled = cfg.aod,
                     sceneIsAod = scene == Scene.AOD,
                 )
             setFeatureState(enabled)

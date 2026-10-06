@@ -6,11 +6,11 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
-import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
+import com.chaners.guiyuan.settings.FEATURE_PREFS
+import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
@@ -36,7 +36,7 @@ class GyApplication :
     }
 
     private val featurePrefs: SharedPreferences by lazy {
-        getSharedPreferences(COMBINED_STATUS_FEATURE_PREFS_NAME, Context.MODE_PRIVATE)
+        getSharedPreferences(FEATURE_PREFS, Context.MODE_PRIVATE)
     }
 
     private val visualPrefs: SharedPreferences by lazy {
@@ -72,9 +72,9 @@ class GyApplication :
     private val featListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (
-                key == COMBINED_STATUS_ENABLED_KEY ||
-                key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
-                key == COMBINED_STATUS_AOD_ENABLED_KEY
+                key == FEATURE_ENABLED_KEY ||
+                key == FEATURE_KEYGUARD_KEY ||
+                key == FEATURE_AOD_KEY
             ) {
                 xposedService?.let(::syncRuntime)
             }
@@ -191,22 +191,22 @@ class GyApplication :
             ) ?: DiagLevel.General.name
         val enabled =
             featurePrefs.getBoolean(
-                COMBINED_STATUS_ENABLED_KEY,
+                FEATURE_ENABLED_KEY,
                 true,
             )
         val keyguard =
             featurePrefs.getBoolean(
-                COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                FEATURE_KEYGUARD_KEY,
                 false,
             )
         val aod =
             featurePrefs.getBoolean(
-                COMBINED_STATUS_AOD_ENABLED_KEY,
+                FEATURE_AOD_KEY,
                 false,
             )
         val featureChangedAtNs =
             featurePrefs.getLong(
-                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                FEATURE_CHANGED_AT_NS_KEY,
                 0L,
             )
         val visual =
@@ -218,19 +218,19 @@ class GyApplication :
             editor
                 .putString(DIAG_LEVEL_KEY, level)
                 .putBoolean(
-                    COMBINED_STATUS_ENABLED_KEY,
+                    FEATURE_ENABLED_KEY,
                     enabled,
                 )
                 .putBoolean(
-                    COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    FEATURE_KEYGUARD_KEY,
                     keyguard,
                 )
                 .putBoolean(
-                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    FEATURE_AOD_KEY,
                     aod,
                 )
                 .putLong(
-                    COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                    FEATURE_CHANGED_AT_NS_KEY,
                     featureChangedAtNs,
                 )
                 .putVisualSettings(visual)

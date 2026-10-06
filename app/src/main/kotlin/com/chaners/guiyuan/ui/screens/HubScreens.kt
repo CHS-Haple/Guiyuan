@@ -62,7 +62,7 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.FeatureSettingsRepo
+import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualSettingsRepo
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScale
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScaleDefault
@@ -98,13 +98,13 @@ internal fun FeaturesScreen(
     onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
-    val featureRepository =
+    val featureRepo =
         remember(context.applicationContext) {
-            FeatureSettingsRepo(context.applicationContext)
+            FeatureRepo(context.applicationContext)
         }
-    val featureSettings by
-        featureRepository.settings.collectAsState(
-            initial = featureRepository.current(),
+    val featureCfg by
+        featureRepo.settings.collectAsState(
+            initial = featureRepo.current(),
         )
     val visualRepository =
         remember(context.applicationContext) {
@@ -150,7 +150,7 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
             )
             SliderPreference(
                 value = visualSettings.airplaneSizeScale,
@@ -166,7 +166,7 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
             )
             SliderPreference(
                 value = visualSettings.noSimSizeScale,
@@ -182,7 +182,7 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 keyPoints = listOf(NO_SIM_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
             )
             SliderPreference(
                 value = visualSettings.mobileTypeSizeScale,
@@ -203,7 +203,7 @@ internal fun FeaturesScreen(
                         ),
                     ),
                 magnetThreshold = 0.035f,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
             )
             SliderPreference(
                 value = visualSettings.mobileTypeWeight.toFloat(),
@@ -223,20 +223,20 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
                 summary = stringResource(R.string.mobile_follow_battery_color_summary),
                 checked = visualSettings.mobileFollowsBatteryColor,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 onCheckedChange = visualRepository::setMobileFollowsBatteryColor,
             )
             SwitchPreference(
                 title = stringResource(R.string.center_follow_battery_color),
                 summary = stringResource(R.string.center_follow_battery_color_summary),
                 checked = visualSettings.centerFollowsBatteryColor,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 onCheckedChange = visualRepository::setCenterFollowsBatteryColor,
             )
         },
@@ -244,7 +244,7 @@ internal fun FeaturesScreen(
         tertiaryContent = {
             BatteryColorPreference(
                 library = batteryColorSchemeLibrary,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 holdDownState = showBatteryColorSheet,
                 onClick = {
                     showBatteryColorSheet = true
@@ -254,14 +254,14 @@ internal fun FeaturesScreen(
                 title = stringResource(R.string.battery_fill_follow_retract),
                 summary = stringResource(R.string.battery_fill_follow_retract_summary),
                 checked = visualSettings.batteryFillFollowsRetractEndpoint,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 onCheckedChange = visualRepository::setBatteryFillFollowsRetractEndpoint,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
                 summary = stringResource(R.string.battery_top_readout_summary),
                 checked = visualSettings.batteryTopReadoutEnabled,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 onCheckedChange = visualRepository::setBatteryTopReadoutEnabled,
             )
             AnimatedPreferenceGroup(visible = visualSettings.batteryTopReadoutEnabled) {
@@ -290,7 +290,7 @@ internal fun FeaturesScreen(
                             ),
                         ),
                     magnetThreshold = 0.035f,
-                    enabled = featureSettings.enabled,
+                    enabled = featureCfg.enabled,
                 )
                 SliderPreference(
                     value = visualSettings.batteryTopTextWeight.toFloat(),
@@ -310,13 +310,13 @@ internal fun FeaturesScreen(
                     showKeyPoints = true,
                     keyPoints = listOf(900f),
                     magnetThreshold = 0.035f,
-                    enabled = featureSettings.enabled,
+                    enabled = featureCfg.enabled,
                 )
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
                     checked = visualSettings.batteryTopTextFollowsBatteryColor,
-                    enabled = featureSettings.enabled,
+                    enabled = featureCfg.enabled,
                     onCheckedChange = visualRepository::setBatteryTopTextFollowsBatteryColor,
                 )
             }
@@ -325,7 +325,7 @@ internal fun FeaturesScreen(
                 title = stringResource(R.string.battery_charging_icon),
                 summary = stringResource(R.string.battery_charging_icon_summary),
                 checked = visualSettings.batteryTopChargingIconEnabled,
-                enabled = featureSettings.enabled,
+                enabled = featureCfg.enabled,
                 onCheckedChange = visualRepository::setBatteryTopChargingIconEnabled,
             )
             AnimatedPreferenceGroup(visible = visualSettings.batteryTopChargingIconEnabled) {
@@ -354,13 +354,13 @@ internal fun FeaturesScreen(
                             ),
                         ),
                     magnetThreshold = 0.035f,
-                    enabled = featureSettings.enabled,
+                    enabled = featureCfg.enabled,
                 )
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
                     checked = visualSettings.batteryTopChargingIconFollowsBatteryColor,
-                    enabled = featureSettings.enabled,
+                    enabled = featureCfg.enabled,
                     onCheckedChange =
                         visualRepository::setBatteryTopChargingIconFollowsBatteryColor,
                 )
@@ -406,7 +406,7 @@ internal fun FeaturesScreen(
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
                             showResetDialog = false
-                            featureRepository.resetToDefaults()
+                            featureRepo.reset()
                             visualRepository.resetToDefaults()
                         },
                     )
@@ -417,16 +417,16 @@ internal fun FeaturesScreen(
         SwitchPreference(
             title = stringResource(R.string.keyguard_combined_status_title),
             summary = stringResource(R.string.keyguard_combined_status_summary),
-            checked = featureSettings.keyguardEnabled,
-            enabled = featureSettings.enabled,
-            onCheckedChange = featureRepository::setKeyguardEnabled,
+            checked = featureCfg.keyguard,
+            enabled = featureCfg.enabled,
+            onCheckedChange = featureRepo::setKeyguard,
         )
         SwitchPreference(
             title = stringResource(R.string.aod_combined_status_title),
             summary = stringResource(R.string.aod_combined_status_summary),
-            checked = featureSettings.aodEnabled,
-            enabled = featureSettings.enabled,
-            onCheckedChange = featureRepository::setAodEnabled,
+            checked = featureCfg.aod,
+            enabled = featureCfg.enabled,
+            onCheckedChange = featureRepo::setAod,
         )
         OverlayDropdownPreference(
             items = layoutOptions,
@@ -434,7 +434,7 @@ internal fun FeaturesScreen(
             title = stringResource(R.string.content_layout_title),
             summary = stringResource(R.string.content_layout_summary),
             showValue = true,
-            enabled = featureSettings.enabled,
+            enabled = featureCfg.enabled,
             onSelectedIndexChange = { index ->
                 ContentLayout.entries
                     .getOrNull(index)
@@ -461,7 +461,7 @@ internal fun FeaturesScreen(
             showKeyPoints = true,
             keyPoints = listOf(0f),
             magnetThreshold = 0.035f,
-            enabled = featureSettings.enabled,
+            enabled = featureCfg.enabled,
         )
         SliderPreference(
             value = visualSettings.combinedScale,
@@ -477,7 +477,7 @@ internal fun FeaturesScreen(
             showKeyPoints = true,
             keyPoints = listOf(COMBINED_SCALE_DEFAULT),
             magnetThreshold = 0.035f,
-            enabled = featureSettings.enabled,
+            enabled = featureCfg.enabled,
         )
         SliderPreference(
             value = visualSettings.outerWeightScale,
@@ -494,13 +494,13 @@ internal fun FeaturesScreen(
             showKeyPoints = true,
             keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
             magnetThreshold = 0.035f,
-            enabled = featureSettings.enabled,
+            enabled = featureCfg.enabled,
         )
         SwitchPreference(
             title = stringResource(R.string.control_center_tint_transition),
             summary = stringResource(R.string.control_center_tint_transition_summary),
             checked = visualSettings.controlCenterTintTransitionEnabled,
-            enabled = featureSettings.enabled,
+            enabled = featureCfg.enabled,
             onCheckedChange = visualRepository::setControlCenterTintTransitionEnabled,
         )
     }
