@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 
@@ -102,7 +102,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureCfg) {
         current?.setFeatureEnabled(settings.enabled)
     }
 

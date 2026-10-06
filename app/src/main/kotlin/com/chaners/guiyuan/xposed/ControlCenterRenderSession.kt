@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
@@ -248,7 +248,7 @@ internal object ControlCenterRenderSession {
         current?.transitionSourceSnapshot()
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureCfg) {
         val session = current
         session?.setFeatureEnabled(settings.enabled)
         if (!settings.enabled || !sceneEligible) {

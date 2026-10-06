@@ -9,7 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -1150,7 +1150,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureCfg) {
         val root = rootRef?.get()
         if (
             root != null &&

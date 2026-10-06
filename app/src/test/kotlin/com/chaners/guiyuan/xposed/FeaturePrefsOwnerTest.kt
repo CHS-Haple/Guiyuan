@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.isFeaturePreferenceKey
+import com.chaners.guiyuan.settings.isFeatureKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -8,16 +8,16 @@ import org.junit.Test
 class FeaturePrefsOwnerTest {
     @Test
     fun clearNotificationParticipatesInFeatureRuntimeSync() {
-        assertEquals(true, isFeaturePreferenceKey(null))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_enabled"))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_keyguard_enabled"))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_aod_enabled"))
-        assertEquals(false, isFeaturePreferenceKey("unrelated"))
+        assertEquals(true, isFeatureKey(null))
+        assertEquals(true, isFeatureKey("combined_status_enabled"))
+        assertEquals(true, isFeatureKey("combined_status_keyguard_enabled"))
+        assertEquals(true, isFeatureKey("combined_status_aod_enabled"))
+        assertEquals(false, isFeatureKey("unrelated"))
     }
 
     @Test
     fun keyguardFeatureDefaultsFailNative() {
-        val settings = com.chaners.guiyuan.settings.FeatureSettings()
+        val settings = com.chaners.guiyuan.settings.FeatureCfg()
         assertEquals(true, settings.enabled)
         assertEquals(false, settings.keyguardEnabled)
         assertEquals(false, settings.aodEnabled)
@@ -26,19 +26,19 @@ class FeaturePrefsOwnerTest {
     @Test
     fun keyguardAndAodPreferencesRemainIndependentOfEachOtherAndMasterGate() {
         val keyguardOnly =
-            com.chaners.guiyuan.settings.FeatureSettings(
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
             )
         val aodOnly =
-            com.chaners.guiyuan.settings.FeatureSettings(
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
             )
         val masterDisabledWithChildrenPreserved =
-            com.chaners.guiyuan.settings.FeatureSettings(
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = false,
                 keyguardEnabled = true,
                 aodEnabled = true,

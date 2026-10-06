@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 
@@ -112,7 +112,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
+    fun onFeatureSettingsChanged(settings: FeatureCfg) {
         current?.setFeatureSettings(settings)
     }
 
@@ -415,7 +415,7 @@ internal object KeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureSettings(settings: FeatureSettings) {
+        fun setFeatureSettings(settings: FeatureCfg) {
             val enabled =
                 resolveFamilyFeatureEnabled(
                     featureEnabled = settings.enabled,

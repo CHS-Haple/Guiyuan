@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.FeatureSettingsRepo
+import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualSettings
 import com.chaners.guiyuan.settings.VisualSettingsRepo
 import com.chaners.guiyuan.system.XposedStatus
@@ -95,7 +95,7 @@ internal fun HomeScreen(
         }
     val featureRepository =
         remember(context.applicationContext) {
-            FeatureSettingsRepo(context.applicationContext)
+            FeatureRepo(context.applicationContext)
         }
     val featureSettings by
         featureRepository.settings.collectAsState(

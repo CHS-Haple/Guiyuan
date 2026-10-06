@@ -8,7 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.settings.FeatureSettings
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.system.RuntimeDiagnosticsProtocol
 import io.github.libxposed.api.XposedModule
@@ -4432,7 +4432,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onRuntimeFeatureSettingsChanged(
-        settings: FeatureSettings,
+        settings: FeatureCfg,
         preferenceTransportLatencyNanos: Long?,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {

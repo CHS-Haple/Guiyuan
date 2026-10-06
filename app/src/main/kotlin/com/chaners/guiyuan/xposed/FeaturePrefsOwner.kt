@@ -2,17 +2,17 @@ package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
 import android.os.SystemClock
-import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
-import com.chaners.guiyuan.settings.FeatureSettings
-import com.chaners.guiyuan.settings.isFeaturePreferenceKey
+import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
+import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.isFeatureKey
 
 internal object FeaturePrefsOwner {
     @Volatile
     private var current =
-        FeatureSettings(
+        FeatureCfg(
             enabled = false,
             keyguardEnabled = false,
             aodEnabled = false,
@@ -22,13 +22,13 @@ internal object FeaturePrefsOwner {
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun currentSettings(): FeatureSettings = current
+    fun currentSettings(): FeatureCfg = current
 
     @Synchronized
     fun bind(
         preferences: SharedPreferences,
-        onChanged: (FeatureSettings, Long?) -> Unit,
-    ): FeatureSettings {
+        onChanged: (FeatureCfg, Long?) -> Unit,
+    ): FeatureCfg {
         unbindLocked()
 
         val token = Any()
@@ -38,7 +38,7 @@ internal object FeaturePrefsOwner {
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
-                    isFeaturePreferenceKey(key) &&
+                    isFeatureKey(key) &&
                     isCurrentBinding(changed, token)
                 ) {
                     val next = resolve(changed)
@@ -46,7 +46,7 @@ internal object FeaturePrefsOwner {
                         val recvNs = SystemClock.elapsedRealtimeNanos()
                         val changedNs =
                             changed.getLong(
-                                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                                FEATURE_CHANGED_AT_NS_KEY,
                                 0L,
                             )
                         current = next
@@ -73,7 +73,7 @@ internal object FeaturePrefsOwner {
     fun unbind() {
         unbindLocked()
         current =
-            FeatureSettings(
+            FeatureCfg(
                 enabled = false,
                 keyguardEnabled = false,
             )
@@ -85,7 +85,7 @@ internal object FeaturePrefsOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 先让旧 token 失效，避免切换开关时收到上一轮回调。
+        // Drop ownership first so callbacks from the previous binding fail the token check.
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
@@ -112,21 +112,21 @@ internal object FeaturePrefsOwner {
             null
         }
 
-    private fun resolve(preferences: SharedPreferences): FeatureSettings =
-        FeatureSettings(
+    private fun resolve(preferences: SharedPreferences): FeatureCfg =
+        FeatureCfg(
             enabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_ENABLED_KEY,
+                    FEATURE_ENABLED_KEY,
                     true,
                 ),
             keyguardEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    FEATURE_KEYGUARD_KEY,
                     false,
                 ),
             aodEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    FEATURE_AOD_KEY,
                     false,
                 ),
         )
