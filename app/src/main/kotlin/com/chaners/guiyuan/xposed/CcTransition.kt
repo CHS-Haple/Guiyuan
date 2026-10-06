@@ -35,10 +35,10 @@ internal object CcTransition {
     private const val MOBILE_SLOT = "mobile"
     private const val WIFI_SLOT = "wifi"
     private const val STACKED_MOBILE_SLOT = "stacked_mobile"
-    private const val BATTERY_NUMBER_PROBE_MAX_VIEWS = 16
-    private const val BATTERY_NUMBER_PROBE_MAX_DEPTH = 4
-    private const val BATTERY_NUMBER_PROBE_MAX_PAINTS = 8
-    private const val BATTERY_NUMBER_MIN_TEXT_SIZE_PX = 8f
+    private const val NUMBER_PROBE_MAX_VIEWS = 16
+    private const val NUMBER_PROBE_MAX_DEPTH = 4
+    private const val NUMBER_PROBE_MAX_PAINTS = 8
+    private const val NUMBER_MIN_TEXT_SIZE_PX = 8f
 
     private var visible = false
     private var sceneEligible = false
@@ -138,7 +138,7 @@ internal object CcTransition {
         }
 
         val sourceSnapshot =
-            CcSession.currentTransitionSourceSnapshot()
+            CcSession.transitionSourceSnapshot()
                 ?: run {
                     current?.stop("source-unavailable")
                     current = null
@@ -159,9 +159,9 @@ internal object CcTransition {
         val steadySourceWitness =
             when (sourceScene) {
                 SourceScene.HOME ->
-                    HomeRenderSession.currentTransitionSourceWitness()
+                    HomeRenderSession.transitionSourceWitness()
                 SourceScene.KEYGUARD ->
-                    KeyguardRenderSession.currentTransitionSourceWitness()
+                    KeyguardRenderSession.transitionSourceWitness()
                 SourceScene.UNKNOWN ->
                     null
             }
@@ -263,7 +263,7 @@ internal object CcTransition {
         private var frozenReservationSpans: List<CcTransition.ReservationSpan>? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
-        private var lastNativePeerTargetEndOffsetPx: Float? = null
+        private var peerTargetEndPx: Float? = null
         private var transitionReservationEnabled = false
         private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
@@ -295,7 +295,7 @@ internal object CcTransition {
                 }
 
                 val latest =
-                    CcSession.currentTransitionSourceSnapshot()
+                    CcSession.transitionSourceSnapshot()
                 if (
                     latest != null &&
                     latest.view === source &&
@@ -320,7 +320,7 @@ internal object CcTransition {
                 ",appearanceAnimated=" + nativeAppearanceAnimated +
                 ",nativePeers=systemui" +
                 ",nativeTint=" +
-                (cachedNativePeerTint?.toUInt()?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)?.padStart(8, '0') ?: "none") +
+                (cachedNativePeerTint?.toUInt()?.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)?.padStart(8, '0') ?: "none") +
                 ",nativeTintAuthority=" + cachedNativePeerTintAuthority +
                 ",sourceAnchor=" + (sourceAnchorRef.get()?.javaClass?.simpleName ?: "none") +
                 ",sourceOrigin=" + (frozenSource?.source ?: "qs-fake-live") +
@@ -334,7 +334,7 @@ internal object CcTransition {
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
                 ",nativePeerTargetEndOffset=" +
-                (lastNativePeerTargetEndOffsetPx?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() ?: "none") +
+                (peerTargetEndPx?.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() ?: "none") +
                 ",batteryIsland=" + nativeBatteryIslandActive +
                 ",iconCapacity=" + statusIconCapacitySummary() +
                 ",nativeRows=" + nativeStatusRowSummary() +
@@ -390,7 +390,7 @@ internal object CcTransition {
                                     "(state=" +
                                     (ParticipantAccess.visibleState(child) ?: -1) +
                                     ",icon=" +
-                                    (ParticipantAccess.iconVisible(child)?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                                    (ParticipantAccess.iconVisible(child)?.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
                                         ?: "unknown") +
                                     ",v=" + child.visibility +
                                     ",a=" + child.alpha +
@@ -1088,7 +1088,7 @@ internal object CcTransition {
                     )
                 witnessDescriptions?.addAll(extras)
             }
-            drawSupplementalAirplaneReveal(
+            drawAirplaneReveal(
                 canvas = canvas,
                 rootView = rootView,
                 sourceParentGeometry = sourceParentGeometry,
@@ -1279,7 +1279,7 @@ internal object CcTransition {
             return descriptions ?: emptyList()
         }
 
-        private fun drawSupplementalAirplaneReveal(
+        private fun drawAirplaneReveal(
             canvas: Canvas,
             rootView: View,
             sourceParentGeometry: FloatArray,
@@ -1658,7 +1658,7 @@ internal object CcTransition {
             val motionProgress = lastTintMotionProgress ?: return "pending"
 
             fun tintHex(color: Int): String =
-                color.toUInt().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
+                color.toUInt().function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
 
             return "{batteryTinted=" + batteryTinted +
                 ",enabled=" + transitionEnabled +
@@ -1713,7 +1713,7 @@ internal object CcTransition {
                 }
                 lastReservationWidthPx = null
                 lastNativeReservationWidthPx = null
-                lastNativePeerTargetEndOffsetPx = null
+                peerTargetEndPx = null
                 return
             }
             val source = sourceViewRef.get() ?: return
@@ -1747,7 +1747,7 @@ internal object CcTransition {
                     // HyperOS translates the visible QS_FAKE carrier independently for
                     // Battery Island, so project that target end into the current fake
                     // end frame before measuring the current projected occupancy.
-                    lastNativePeerTargetEndOffsetPx = null
+                    peerTargetEndPx = null
                     val targetEndOffsetPx =
                         batteryPeerEndOffsetPx()
                             ?: run {
@@ -1764,7 +1764,7 @@ internal object CcTransition {
                                 }
                                 return
                             }
-                    lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
+                    peerTargetEndPx = targetEndOffsetPx
                     CcTransition.batteryPeerReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
@@ -1773,7 +1773,7 @@ internal object CcTransition {
                         targetEndOffsetPx = targetEndOffsetPx,
                     )
                 } else {
-                    lastNativePeerTargetEndOffsetPx = null
+                    peerTargetEndPx = null
                     requestedWidth
                 }
 
@@ -2519,7 +2519,7 @@ internal object CcTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                    .function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
 
             val textView =
                 digitalView
@@ -2637,16 +2637,16 @@ internal object CcTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                    .function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
             data class Candidate(
                 val view: TextView,
                 val score: Int,
             )
             val candidates = ArrayList<Candidate>()
             fun collect(view: View, depth: Int) {
-                if (depth > BATTERY_NUMBER_PROBE_MAX_DEPTH) return
+                if (depth > NUMBER_PROBE_MAX_DEPTH) return
                 if (view is TextView && view.visibility == View.VISIBLE) {
-                    val value = view.text?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
+                    val value = view.text?.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
                     val digits = value.filter(Char::isDigit)
                     val entry =
                         ParticipantAccess.resourceEntryName(view)
@@ -2684,7 +2684,7 @@ internal object CcTransition {
         ): StatusPainter.TransitionNormalizedBounds? {
             val layout = view.layout ?: return null
             if (layout.lineCount <= 0 || view.width <= 0 || view.height <= 0) return null
-            val text = view.text?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
+            val text = view.text?.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
             if (text.isEmpty()) return null
             val rect = Rect()
             view.paint.getTextBounds(text, 0, text.length, rect)
@@ -2792,7 +2792,7 @@ internal object CcTransition {
                         field.get(view) as? Paint
                     }.getOrNull()
                 }
-                .filter { paint -> paint.textSize > BATTERY_NUMBER_MIN_TEXT_SIZE_PX }
+                .filter { paint -> paint.textSize > NUMBER_MIN_TEXT_SIZE_PX }
                 .maxByOrNull { paint ->
                     paint.textSize +
                         (if (paint.textAlign == Paint.Align.CENTER) 8f else 0f) +
@@ -2872,7 +2872,7 @@ internal object CcTransition {
                             .getOrNull()
                             ?: -1
                     base +
-                        ":text=" + view.text.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().replace("|", "/") +
+                        ":text=" + view.text.function function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().replace("|", "/") +
                         ":textSize=" + view.textSize +
                         ":weight=" + weight +
                         ":style=" + (view.typeface?.style ?: -1)
@@ -2883,7 +2883,7 @@ internal object CcTransition {
 
             val descendants = ArrayList<String>()
             fun collect(view: View, depth: Int) {
-                if (descendants.size >= BATTERY_NUMBER_PROBE_MAX_VIEWS) return
+                if (descendants.size >= NUMBER_PROBE_MAX_VIEWS) return
                 val entry =
                     ParticipantAccess.resourceEntryName(view)
                         ?.lowercase()
@@ -2899,11 +2899,11 @@ internal object CcTransition {
                 ) {
                     descendants += viewToken(view)
                 }
-                if (depth >= BATTERY_NUMBER_PROBE_MAX_DEPTH) return
+                if (depth >= NUMBER_PROBE_MAX_DEPTH) return
                 val group = view as? ViewGroup ?: return
                 for (index in 0 until group.childCount) {
                     collect(group.getChildAt(index), depth + 1)
-                    if (descendants.size >= BATTERY_NUMBER_PROBE_MAX_VIEWS) return
+                    if (descendants.size >= NUMBER_PROBE_MAX_VIEWS) return
                 }
             }
             collect(battery, 0)
@@ -2929,7 +2929,7 @@ internal object CcTransition {
                                 }.getOrNull()
                             }
                             .filterNotNull()
-                            .take(BATTERY_NUMBER_PROBE_MAX_PAINTS)
+                            .take(NUMBER_PROBE_MAX_PAINTS)
                             .toList()
                     }
                     .orEmpty()

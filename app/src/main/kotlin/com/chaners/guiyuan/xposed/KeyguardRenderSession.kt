@@ -17,7 +17,7 @@ internal object KeyguardRenderSession {
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
-        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+        onReadyChanged: ((Boolean) -> Unit)? = null,
     ): AttachResult =
         attachFamily(
             resolved = resolved,
@@ -25,7 +25,7 @@ internal object KeyguardRenderSession {
             sceneEligible = sceneEligible,
             onEvent = onEvent,
             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-            onPresentationReadinessChanged = onPresentationReadinessChanged,
+            onReadyChanged = onReadyChanged,
         )
 
     @Synchronized
@@ -34,7 +34,7 @@ internal object KeyguardRenderSession {
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
-        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+        onReadyChanged: ((Boolean) -> Unit)? = null,
     ): AttachResult =
         attachFamily(
             resolved = resolved,
@@ -42,7 +42,7 @@ internal object KeyguardRenderSession {
             sceneEligible = sceneEligible,
             onEvent = onEvent,
             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-            onPresentationReadinessChanged = onPresentationReadinessChanged,
+            onReadyChanged = onReadyChanged,
         )
 
     private fun attachFamily(
@@ -51,7 +51,7 @@ internal object KeyguardRenderSession {
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
-        onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        onReadyChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
         val settings = FeaturePrefsOwner.currentSettings()
         if (!sceneEligible) {
@@ -73,7 +73,7 @@ internal object KeyguardRenderSession {
                 scene = scene,
                 featureEnabled = featureEnabled,
                 sceneEligible = sceneEligible,
-                onPresentationReadinessChanged = onPresentationReadinessChanged,
+                onReadyChanged = onReadyChanged,
             )
             existing.update(StatusStateStore.snapshot())
             return AttachResult.Ready
@@ -88,7 +88,7 @@ internal object KeyguardRenderSession {
                 scene = scene,
                 initialFeatureEnabled = featureEnabled,
                 initialSceneEligible = sceneEligible,
-                onPresentationReadinessChanged = onPresentationReadinessChanged,
+                onReadyChanged = onReadyChanged,
             )
         current = session
         session.start()
@@ -141,7 +141,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun currentTransitionSourceWitness(): TransitionSourceWitness? =
+    fun transitionSourceWitness(): TransitionSourceWitness? =
         current?.transitionSourceWitness()
 
     @Synchronized
@@ -281,7 +281,7 @@ internal object KeyguardRenderSession {
         private var scene: Scene,
         initialFeatureEnabled: Boolean,
         initialSceneEligible: Boolean,
-        private var onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        private var onReadyChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(resolved.host)
         private val systemIcons = WeakReference(resolved.systemIcons)
@@ -325,13 +325,13 @@ internal object KeyguardRenderSession {
             scene: Scene,
             featureEnabled: Boolean,
             sceneEligible: Boolean,
-            onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+            onReadyChanged: ((Boolean) -> Unit)?,
         ) {
             val changedScene = this.scene != scene
             this.scene = scene
             this.featureEnabled = featureEnabled
             this.sceneEligible = sceneEligible
-            this.onPresentationReadinessChanged = onPresentationReadinessChanged
+            this.onReadyChanged = onReadyChanged
             if (changedScene) {
                 readyLogged = false
                 rejectedTintLogged = false
@@ -520,7 +520,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                             " authority=keyguard-battery eventDriven=true stable=true"
                     }
                 }
@@ -722,7 +722,7 @@ internal object KeyguardRenderSession {
                     " aodOwned=" + scene.aodOwned +
                     " nativeGeometryWrites=0"
             }
-            onPresentationReadinessChanged?.invoke(ready)
+            onReadyChanged?.invoke(ready)
         }
 
         private inline fun emitEvent(message: () -> String) {

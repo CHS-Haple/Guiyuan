@@ -649,7 +649,7 @@ internal object HomePresentation {
                 eventPrefix = surface.eventPrefix,
                 keepReservationOnWidthLoss = false,
                 onEvent = { event -> keyguardFamilyEventSink?.invoke(event) },
-                onFailNative = ::onKeyguardFamilySessionFailure,
+                onFailNative = ::onKeyguardFamilyFailure,
             )
         keyguardFamilyCurrent = session
         keyguardFamilySurface = surface
@@ -1198,7 +1198,7 @@ internal object HomePresentation {
     }
 
     @Synchronized
-    private fun onKeyguardFamilySessionFailure(reason: String) {
+    private fun onKeyguardFamilyFailure(reason: String) {
         val session = keyguardFamilyCurrent ?: return
         val surface = keyguardFamilySurface ?: return
         keyguardFamilyCurrent = null
@@ -1354,7 +1354,7 @@ internal object HomePresentation {
         private var peerMirrorIslandReported = false
         private var nativePadding: PaddingState? = null
         private var appliedPadding: PaddingState? = null
-        private var nativeFakeCarrierLayoutWidthPx: Int? = null
+        private var fakeCarrierWidthPx: Int? = null
         private var fakeParentContentWidthPx: Int? = null
         private var appliedFakeCarrierWidthPx: Int? = null
         private var fakeCarrierCapacityDeltaPx: Int? = null
@@ -1366,7 +1366,7 @@ internal object HomePresentation {
         private var persistentIgnoredSlotsApplied = false
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String> = emptyList()
-        private var transitionRequestedSlotWidthPx: Int? = null
+        private var requestedSlotWidthPx: Int? = null
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
         private val batteryLayoutListener =
@@ -1545,7 +1545,7 @@ internal object HomePresentation {
             if (!syncEndReservation()) return 0
 
             if (
-                VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+                VisualMaskPolicy.shouldAdoptNativeLayout(
                     deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
                     laidOut = group.isLaidOut,
                     layoutRequested = group.isLayoutRequested,
@@ -1621,7 +1621,7 @@ internal object HomePresentation {
 
             val masked = refreshClipMasks()
             if (
-                VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+                VisualMaskPolicy.shouldAdoptNativeLayout(
                     deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
                     laidOut = group.isLaidOut,
                     layoutRequested = group.isLayoutRequested,
@@ -1831,7 +1831,7 @@ internal object HomePresentation {
                     ownedEntries = owned,
                 )
             val useNativeSetter =
-                PersistentIgnoredSlotPolicy.shouldUseNativeSetterOnRestore(
+                PersistentIgnoredSlotPolicy.useNativeSetterOnRestore(
                     requestLayout = requestLayout,
                 )
             val setMethod =
@@ -1907,7 +1907,7 @@ internal object HomePresentation {
                 return false
             }
             capacityLeaseSuppressed = true
-            return releaseCapacityAtHiddenBoundary()
+            return releaseCapacityWhenHidden()
         }
 
         fun updateTransitionReservation(
@@ -1915,15 +1915,15 @@ internal object HomePresentation {
         ): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return false
             val normalized = requestedSlotWidthPx.coerceAtLeast(0)
-            if (transitionRequestedSlotWidthPx == normalized) return true
-            transitionRequestedSlotWidthPx = normalized
+            if (requestedSlotWidthPx == normalized) return true
+            requestedSlotWidthPx = normalized
             return syncEndReservation()
         }
 
         fun clearTransitionReservation(source: String): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-            if (transitionRequestedSlotWidthPx == null) return true
-            transitionRequestedSlotWidthPx = null
+            if (requestedSlotWidthPx == null) return true
+            requestedSlotWidthPx = null
             val restored = syncEndReservation()
             onEvent(
                 eventPrefix +
@@ -1967,7 +1967,7 @@ internal object HomePresentation {
                     .takeIf { width -> width > 0 }
                     ?: run {
                         if (
-                            EndReservationPolicy.shouldDeferMissingBatteryWidth(
+                            EndReservationPolicy.shouldDeferBatteryWidth(
                                 retainOnTransientLoss = keepReservationOnWidthLoss,
                                 compactLayoutReady = compactLayoutReady,
                             )
@@ -2017,7 +2017,7 @@ internal object HomePresentation {
             val requestedSlotWidthPx =
                 EndReservationPolicy.resolveRequestedSlotWidth(
                     compactSlotWidthPx = compactSlotWidthPx,
-                    transitionRequestedSlotWidthPx = transitionRequestedSlotWidthPx,
+                    requestedSlotWidthPx = requestedSlotWidthPx,
                 )
             val requestedReservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
@@ -2026,7 +2026,7 @@ internal object HomePresentation {
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
             val capacityDeltaPx =
-                ensureFakeCarrierCapacityLease(hostView)
+                ensureCapacityLease(hostView)
                     ?: return false
             val reservationDelta =
                 if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
@@ -2073,7 +2073,7 @@ internal object HomePresentation {
                     surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
                         HotPathDiagnosticPolicy.shouldReportCcLayout(
                             detailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled(),
-                            transitionReservationActive = transitionRequestedSlotWidthPx != null,
+                            transitionReservationActive = requestedSlotWidthPx != null,
                         )
                 if (shouldReport) {
                     onEvent(
@@ -2084,7 +2084,7 @@ internal object HomePresentation {
                             " visualScale=" + VisualPrefsOwner.currentSettings().combinedScale +
                             " requestedSlotWidth=" + requestedSlotWidthPx +
                             " transitionRequestedSlotWidth=" +
-                            (transitionRequestedSlotWidthPx ?: -1) +
+                            (requestedSlotWidthPx ?: -1) +
                             " requestedPaddingEndDelta=" + requestedReservationDelta +
                             " paddingEndDelta=" + reservationDelta +
                             " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
@@ -2131,11 +2131,11 @@ internal object HomePresentation {
                     appliedPadding = null
                 }
             }
-            val carrierRestored = restoreFakeCarrierCapacityLease()
+            val carrierRestored = restoreCapacityLease()
             return paddingRestored && carrierRestored
         }
 
-        private fun ensureFakeCarrierCapacityLease(hostView: ViewGroup): Int? {
+        private fun ensureCapacityLease(hostView: ViewGroup): Int? {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return 0
 
             val parent =
@@ -2186,7 +2186,7 @@ internal object HomePresentation {
             val existingAppliedWidthPx = appliedFakeCarrierWidthPx
             if (existingAppliedWidthPx != null) {
                 when (
-                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                    CapacityLeasePolicy.resolveExistingLeaseAction(
                         visibleCycleActive = fakeCarrierVisibleCycleActive,
                         liveWidthPx = params.width,
                         appliedWidthPx = existingAppliedWidthPx,
@@ -2194,12 +2194,12 @@ internal object HomePresentation {
                         leasedParentContentWidthPx = fakeParentContentWidthPx,
                     )
                 ) {
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.REUSE ->
+                    CapacityLeasePolicy.ExistingLeaseAction.REUSE ->
                         return fakeCarrierCapacityDeltaPx
 
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE -> {
+                    CapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE -> {
                         val adoptedNativeWidthPx = params.width
-                        val previousNativeWidthPx = nativeFakeCarrierLayoutWidthPx
+                        val previousNativeWidthPx = fakeCarrierWidthPx
                         clearCapacityLease()
                         pendingNativeBaselineWidthPx = adoptedNativeWidthPx
                         onEvent(
@@ -2212,7 +2212,7 @@ internal object HomePresentation {
                         )
                     }
 
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT -> {
+                    CapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT -> {
                         onFailNative("fake-carrier-width-writer-conflict")
                         return null
                     }
@@ -2241,7 +2241,7 @@ internal object HomePresentation {
                 return null
             }
             val capacityDeltaPx =
-                EndReservationPolicy.resolveFakeCarrierCapacityDelta(
+                EndReservationPolicy.capacityDelta(
                     nativeCarrierWidthPx = baselineWidthPx,
                     parentContentWidthPx = parentContentWidthPx,
                 ) ?: run {
@@ -2249,7 +2249,7 @@ internal object HomePresentation {
                     return null
                 }
 
-            nativeFakeCarrierLayoutWidthPx = baselineWidthPx
+            fakeCarrierWidthPx = baselineWidthPx
             fakeParentContentWidthPx = parentContentWidthPx
             fakeCarrierCapacityDeltaPx = capacityDeltaPx
             pendingNativeBaselineWidthPx = null
@@ -2290,7 +2290,7 @@ internal object HomePresentation {
             }
         }
 
-        private fun releaseCapacityAtHiddenBoundary(): Boolean {
+        private fun releaseCapacityWhenHidden(): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             val appliedWidthPx = appliedFakeCarrierWidthPx
             if (appliedWidthPx == null) {
@@ -2298,7 +2298,7 @@ internal object HomePresentation {
                 return true
             }
             val hostView = host.get()
-            val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
+            val baselineLayoutWidthPx = fakeCarrierWidthPx
             val params = hostView?.layoutParams
             if (hostView == null || baselineLayoutWidthPx == null || params == null) {
                 clearCapacityLease()
@@ -2347,7 +2347,7 @@ internal object HomePresentation {
             return restored
         }
 
-        private fun restoreFakeCarrierCapacityLease(): Boolean {
+        private fun restoreCapacityLease(): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
 
             val appliedWidthPx = appliedFakeCarrierWidthPx
@@ -2356,7 +2356,7 @@ internal object HomePresentation {
                 return true
             }
             val hostView = host.get()
-            val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
+            val baselineLayoutWidthPx = fakeCarrierWidthPx
             if (hostView == null || baselineLayoutWidthPx == null) {
                 clearCapacityLease()
                 return false
@@ -2386,7 +2386,7 @@ internal object HomePresentation {
         }
 
         private fun clearCapacityLease() {
-            nativeFakeCarrierLayoutWidthPx = null
+            fakeCarrierWidthPx = null
             fakeParentContentWidthPx = null
             appliedFakeCarrierWidthPx = null
             fakeCarrierCapacityDeltaPx = null
@@ -2739,7 +2739,7 @@ internal object HomePresentation {
             return live.filterNot(owned::contains)
         }
 
-        fun shouldUseNativeSetterOnRestore(
+        fun useNativeSetterOnRestore(
             requestLayout: Boolean,
         ): Boolean = requestLayout
     }
@@ -2777,7 +2777,7 @@ internal object HomePresentation {
         ): Boolean =
             deferVisualMaskUntilLayout && preMaskBeforeLayout
 
-        fun shouldAdoptExistingNativeLayout(
+        fun shouldAdoptNativeLayout(
             deferVisualMaskUntilLayout: Boolean,
             laidOut: Boolean,
             layoutRequested: Boolean,
@@ -2817,7 +2817,7 @@ internal object HomePresentation {
             detailedDiagnosticsEnabled && !transitionReservationActive
 
     }
-    internal object FakeCarrierCapacityLeasePolicy {
+    internal object CapacityLeasePolicy {
         enum class ExistingLeaseAction {
             REUSE,
             ADOPT_HIDDEN_NATIVE,
@@ -2852,7 +2852,7 @@ internal object HomePresentation {
     }
 
     internal object EndReservationPolicy {
-        fun shouldDeferMissingBatteryWidth(
+        fun shouldDeferBatteryWidth(
             retainOnTransientLoss: Boolean,
             compactLayoutReady: Boolean,
         ): Boolean =
@@ -2860,10 +2860,10 @@ internal object HomePresentation {
 
         fun resolveRequestedSlotWidth(
             compactSlotWidthPx: Int,
-            transitionRequestedSlotWidthPx: Int?,
+            requestedSlotWidthPx: Int?,
         ): Int {
             val compact = compactSlotWidthPx.coerceAtLeast(0)
-            return transitionRequestedSlotWidthPx
+            return requestedSlotWidthPx
                 ?.coerceAtLeast(compact)
                 ?: compact
         }
@@ -2912,7 +2912,7 @@ internal object HomePresentation {
             }
         }
 
-        fun resolveFakeCarrierCapacityDelta(
+        fun capacityDelta(
             nativeCarrierWidthPx: Int,
             parentContentWidthPx: Int,
         ): Int? {

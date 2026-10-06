@@ -24,7 +24,7 @@ internal object KeyguardAodTransition {
         val candidates =
             controllerClass.declaredMethods.filter { method ->
                 method.name == ANIMATE_FULL_AOD_METHOD &&
-                    matchesAnimateFullAodSignature(
+                    matchesAnimateAodSignature(
                         parameterTypes = method.parameterTypes,
                         returnType = method.returnType,
                     )
@@ -68,7 +68,7 @@ internal object KeyguardAodTransition {
         return listOf(handle)
     }
 
-    internal fun matchesAnimateFullAodSignature(
+    internal fun matchesAnimateAodSignature(
         parameterTypes: Array<Class<*>>,
         returnType: Class<*>,
     ): Boolean =

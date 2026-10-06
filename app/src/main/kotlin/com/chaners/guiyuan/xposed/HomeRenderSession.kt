@@ -27,7 +27,7 @@ internal object HomeRenderSession {
         initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
-        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+        onReadyChanged: ((Boolean) -> Unit)? = null,
     ): AttachResult {
         val hostView = host as? ViewGroup
             ?: return AttachResult.Failure("host-not-view-group")
@@ -70,7 +70,7 @@ internal object HomeRenderSession {
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
                 FeaturePrefsOwner.currentSettings().enabled,
-            onPresentationReadinessChanged = onPresentationReadinessChanged,
+            onReadyChanged = onReadyChanged,
         )
         current = session
         session.start()
@@ -112,7 +112,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onControlCenterAuthorityChanged(homeEligible: Boolean) {
+    fun onCcAuthorityChanged(homeEligible: Boolean) {
         current?.updateCcHomeEligibility(
             homeEligible = homeEligible,
             source = "source-availability",
@@ -128,7 +128,7 @@ internal object HomeRenderSession {
     fun currentTintState(): TintState? = current?.currentTintState()
 
     @Synchronized
-    fun currentTransitionSourceWitness(): TransitionSourceWitness? =
+    fun transitionSourceWitness(): TransitionSourceWitness? =
         current?.transitionSourceWitness()
 
     @Synchronized
@@ -214,7 +214,7 @@ internal object HomeRenderSession {
         private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
-        private val onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        private val onReadyChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
@@ -470,7 +470,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                        state.appliedTint.toUInt().function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -481,12 +481,12 @@ internal object HomeRenderSession {
                     emitEvent {
                         "homeRenderTint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                             " statusIcon=#" +
                             (
                                 resolved.statusIconTint
                                     ?.toUInt()
-                                    ?.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                                    ?.function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +
@@ -637,7 +637,7 @@ internal object HomeRenderSession {
                     " featureEnabled=" + featureEnabled +
                     " nativeGeometryWrites=0"
             }
-            onPresentationReadinessChanged?.invoke(ownerReady)
+            onReadyChanged?.invoke(ownerReady)
         }
 
         private inline fun emitEvent(message: () -> String) {

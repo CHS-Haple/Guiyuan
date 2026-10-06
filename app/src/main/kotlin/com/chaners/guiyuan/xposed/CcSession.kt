@@ -142,7 +142,7 @@ internal object CcSession {
     }
 
     @Synchronized
-    fun currentAttachedHostForHotReload(): ViewGroup? =
+    fun attachedHostForReload(): ViewGroup? =
         current?.attachedHost()
             ?: pendingPrearm?.host()?.takeIf { candidate -> candidate.isAttachedToWindow }
 
@@ -244,7 +244,7 @@ internal object CcSession {
         current?.geometryDiagnostic() ?: "projection=unavailable"
 
     @Synchronized
-    fun currentTransitionSourceSnapshot(): TransitionSourceSnapshot? =
+    fun transitionSourceSnapshot(): TransitionSourceSnapshot? =
         current?.transitionSourceSnapshot()
 
     @Synchronized

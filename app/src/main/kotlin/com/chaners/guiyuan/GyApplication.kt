@@ -96,7 +96,7 @@ class GyApplication :
         XposedServiceHelper.registerListener(this)
         mainHandler.postDelayed(
             xposedServiceBindTimeout,
-            XPOSED_SERVICE_BIND_TIMEOUT_MS,
+            XPOSED_BIND_TIMEOUT_MS,
         )
     }
 
@@ -245,6 +245,6 @@ class GyApplication :
     private companion object {
         const val TAG = "CombinedStatus[App]"
         const val SYSTEM_UI_PROCESS = "com.android.systemui"
-        const val XPOSED_SERVICE_BIND_TIMEOUT_MS = 1_000L
+        const val XPOSED_BIND_TIMEOUT_MS = 1_000L
     }
 }

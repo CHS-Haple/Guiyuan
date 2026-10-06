@@ -12,7 +12,7 @@ internal const val TOP_TEXT_FOLLOWS_BATTERY_KEY =
     "battery_top_text_follows_battery_color"
 internal const val CHARGING_ICON_ENABLED_KEY =
     "battery_top_charging_icon_enabled"
-internal const val CHARGE_ICON_FOLLOWS_BATTERY_KEY =
+internal const val CHARGE_ICON_FOLLOWS_KEY =
     "battery_top_charging_icon_follows_battery_color"
 internal const val FILL_FOLLOWS_RETRACT_KEY =
     "battery_fill_follows_retract_endpoint"
@@ -51,7 +51,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         TOP_READOUT_KEY,
         TOP_TEXT_FOLLOWS_BATTERY_KEY,
         CHARGING_ICON_ENABLED_KEY,
-        CHARGE_ICON_FOLLOWS_BATTERY_KEY,
+        CHARGE_ICON_FOLLOWS_KEY,
         TOP_TEXT_SCALE_KEY,
         TOP_TEXT_WEIGHT_KEY,
         TOP_OFFSET_KEY,
@@ -88,13 +88,13 @@ internal val GLOBAL_VISUAL_KEYS =
 internal const val TOP_TEXT_UI_REF = 1.3f
 internal const val TOP_TEXT_UI_MIN = 0.4f
 internal const val TOP_TEXT_UI_MAX = 1.6f
-internal const val BATTERY_TOP_TEXT_SCALE_DEFAULT =
+internal const val TOP_TEXT_SCALE_DEFAULT =
     TOP_TEXT_UI_REF
 internal const val BATTERY_TOP_TEXT_SCALE_MIN =
     TOP_TEXT_UI_REF * TOP_TEXT_UI_MIN
 internal const val BATTERY_TOP_TEXT_SCALE_MAX =
     TOP_TEXT_UI_REF * TOP_TEXT_UI_MAX
-internal const val BATTERY_TOP_TEXT_WEIGHT_DEFAULT = 900
+internal const val TOP_TEXT_WEIGHT_DEFAULT = 900
 internal const val BATTERY_TOP_TEXT_WEIGHT_MIN = 400
 internal const val BATTERY_TOP_TEXT_WEIGHT_MAX = 1400
 // Runtime/persisted offset is physical canonical displacement. Device review
@@ -104,9 +104,9 @@ internal const val TOP_OFFSET_UI_MIN = -10f
 internal const val TOP_OFFSET_UI_MAX = 10f
 internal const val TOP_OFFSET_DEFAULT =
     TOP_OFFSET_UI_REF
-internal const val BATTERY_TOP_VERTICAL_OFFSET_MIN =
+internal const val TOP_OFFSET_MIN =
     TOP_OFFSET_UI_REF + TOP_OFFSET_UI_MIN
-internal const val BATTERY_TOP_VERTICAL_OFFSET_MAX =
+internal const val TOP_OFFSET_MAX =
     TOP_OFFSET_UI_REF + TOP_OFFSET_UI_MAX
 
 // Stored charging scale is a physical multiplier. Keep the old and current
@@ -121,7 +121,7 @@ internal const val CHARGING_ICON_SCALE_MIN =
     CHARGING_ICON_UI_REF * CHARGING_ICON_UI_MIN
 internal const val CHARGING_ICON_SCALE_MAX =
     CHARGING_ICON_UI_REF * CHARGING_ICON_UI_MAX
-private const val BATTERY_COLOR_PRESET_SCHEMA_KEY =
+private const val BATTERY_PRESET_SCHEMA_KEY =
     "battery_color_preset_schema"
 private const val BATTERY_PRESET_SCHEMA = 2
 internal const val CHARGING_SCALE_SCHEMA_KEY =
@@ -129,7 +129,7 @@ internal const val CHARGING_SCALE_SCHEMA_KEY =
 private const val CHARGING_SCALE_SCHEMA = 2
 private const val BATTERY_TOP_SCALE_EPSILON = 0.0001f
 
-internal fun batteryColorPresetForMissingKey(
+internal fun presetForMissingColorKey(
     hadPreviousVisualSchema: Boolean,
 ): BatteryColorPreset {
     @Suppress("UNUSED_VARIABLE")
@@ -141,7 +141,7 @@ internal fun migrateBatteryPreset(
     preferences: SharedPreferences,
 ) {
     if (
-        preferences.getInt(BATTERY_COLOR_PRESET_SCHEMA_KEY, 0) >=
+        preferences.getInt(BATTERY_PRESET_SCHEMA_KEY, 0) >=
             BATTERY_PRESET_SCHEMA
     ) {
         return
@@ -150,7 +150,7 @@ internal fun migrateBatteryPreset(
     val editor = preferences.edit()
     if (!preferences.contains(BATTERY_COLOR_PRESET_KEY)) {
         val preset =
-            batteryColorPresetForMissingKey(
+            presetForMissingColorKey(
                 hadPreviousVisualSchema =
                     preferences.contains(CHARGING_SCALE_SCHEMA_KEY),
             )
@@ -158,7 +158,7 @@ internal fun migrateBatteryPreset(
     }
     editor
         .putInt(
-            BATTERY_COLOR_PRESET_SCHEMA_KEY,
+            BATTERY_PRESET_SCHEMA_KEY,
             BATTERY_PRESET_SCHEMA,
         )
         .apply()
@@ -211,7 +211,7 @@ internal fun mobileTypeSizeScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
-        ContentLayout.NETWORK_CENTER -> MOBILE_TYPE_SIZE_SCALE_DEFAULT
+        ContentLayout.NETWORK_CENTER -> MOBILE_TYPE_SCALE_DEFAULT
         ContentLayout.BATTERY_CENTER -> 0.8f
     }
 
@@ -274,8 +274,8 @@ internal fun topOffsetRaw(uiOffset: Float): Float =
             TOP_OFFSET_UI_MAX,
         ) + TOP_OFFSET_UI_REF
     ).coerceIn(
-        BATTERY_TOP_VERTICAL_OFFSET_MIN,
-        BATTERY_TOP_VERTICAL_OFFSET_MAX,
+        TOP_OFFSET_MIN,
+        TOP_OFFSET_MAX,
     )
 
 
@@ -294,7 +294,7 @@ internal const val AIRPLANE_SIZE_SCALE_MAX = WIFI_SIZE_SCALE_MAX
 internal const val NO_SIM_SIZE_SCALE_DEFAULT = 1f
 internal const val NO_SIM_SIZE_SCALE_MIN = WIFI_SIZE_SCALE_MIN
 internal const val NO_SIM_SIZE_SCALE_MAX = WIFI_SIZE_SCALE_MAX
-internal const val MOBILE_TYPE_SIZE_SCALE_DEFAULT = 1f
+internal const val MOBILE_TYPE_SCALE_DEFAULT = 1f
 internal const val MOBILE_TYPE_SIZE_SCALE_MIN = 0.40f
 internal const val MOBILE_TYPE_SIZE_SCALE_MAX = 1.25f
 internal const val MOBILE_TYPE_WEIGHT_DEFAULT = 900

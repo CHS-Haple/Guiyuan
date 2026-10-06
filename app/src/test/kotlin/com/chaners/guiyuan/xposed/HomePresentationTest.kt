@@ -46,13 +46,13 @@ class HomePresentationTest {
     fun persistentIgnoredSlotRestoreAvoidsNativeSetterDuringContinuousHandoff() {
         assertFalse(
             HomePresentation.PersistentIgnoredSlotPolicy
-                .shouldUseNativeSetterOnRestore(
+                .useNativeSetterOnRestore(
                     requestLayout = false,
                 ),
         )
         assertTrue(
             HomePresentation.PersistentIgnoredSlotPolicy
-                .shouldUseNativeSetterOnRestore(
+                .useNativeSetterOnRestore(
                     requestLayout = true,
                 ),
         )
@@ -64,21 +64,21 @@ class HomePresentationTest {
             105,
             HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 80,
+                requestedSlotWidthPx = 80,
             ),
         )
         assertEquals(
             168,
             HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 168,
+                requestedSlotWidthPx = 168,
             ),
         )
         assertEquals(
             105,
             HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = null,
+                requestedSlotWidthPx = null,
             ),
         )
     }
@@ -114,9 +114,9 @@ class HomePresentationTest {
     @Test
     fun hiddenPrearmNativeWidthResetIsAdoptedInsteadOfFailNative() {
         assertEquals(
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 587,
@@ -130,9 +130,9 @@ class HomePresentationTest {
     @Test
     fun visibleLeaseWidthMismatchStillFailsNative() {
         assertEquals(
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = true,
                     liveWidthPx = 587,
@@ -146,9 +146,9 @@ class HomePresentationTest {
     @Test
     fun unchangedHiddenLeaseIsReused() {
         assertEquals(
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.REUSE,
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 836,
@@ -162,9 +162,9 @@ class HomePresentationTest {
     @Test
     fun hiddenLeaseDoesNotAdoptAcrossParentContractChange() {
         assertEquals(
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            HomePresentation.FakeCarrierCapacityLeasePolicy
+            HomePresentation.CapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 587,
@@ -180,7 +180,7 @@ class HomePresentationTest {
         assertEquals(
             250,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
+                .capacityDelta(
                     nativeCarrierWidthPx = 587,
                     parentContentWidthPx = 837,
                 ),
@@ -188,7 +188,7 @@ class HomePresentationTest {
         assertEquals(
             0,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
+                .capacityDelta(
                     nativeCarrierWidthPx = 587,
                     parentContentWidthPx = 587,
                 ),
@@ -196,7 +196,7 @@ class HomePresentationTest {
         assertEquals(
             null,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
+                .capacityDelta(
                     nativeCarrierWidthPx = 588,
                     parentContentWidthPx = 587,
                 ),
@@ -266,7 +266,7 @@ class HomePresentationTest {
     @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
-            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -275,7 +275,7 @@ class HomePresentationTest {
             ),
         )
         assertFalse(
-            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = false,
                 layoutRequested = false,
@@ -284,7 +284,7 @@ class HomePresentationTest {
             ),
         )
         assertFalse(
-            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = true,
@@ -293,7 +293,7 @@ class HomePresentationTest {
             ),
         )
         assertFalse(
-            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -303,7 +303,7 @@ class HomePresentationTest {
             ),
         )
         assertFalse(
-            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -361,21 +361,21 @@ class HomePresentationTest {
     fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
         assertTrue(
             HomePresentation.EndReservationPolicy
-                .shouldDeferMissingBatteryWidth(
+                .shouldDeferBatteryWidth(
                     retainOnTransientLoss = true,
                     compactLayoutReady = true,
                 ),
         )
         assertFalse(
             HomePresentation.EndReservationPolicy
-                .shouldDeferMissingBatteryWidth(
+                .shouldDeferBatteryWidth(
                     retainOnTransientLoss = true,
                     compactLayoutReady = false,
                 ),
         )
         assertFalse(
             HomePresentation.EndReservationPolicy
-                .shouldDeferMissingBatteryWidth(
+                .shouldDeferBatteryWidth(
                     retainOnTransientLoss = false,
                     compactLayoutReady = true,
                 ),

@@ -7,7 +7,7 @@ import android.content.IntentFilter
 import android.telephony.SubscriptionManager
 
 internal object DataSubSource {
-    private const val DEFAULT_DATA_SUB_CHANGED_ACTION =
+    private const val DEFAULT_DATA_SUB_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 
     private var registeredContext: Context? = null
@@ -46,7 +46,7 @@ internal object DataSubSource {
                     ) {
                         if (
                             intent?.action ==
-                            DEFAULT_DATA_SUB_CHANGED_ACTION
+                            DEFAULT_DATA_SUB_ACTION
                         ) {
                             publish(
                                 source = "broadcast",
@@ -61,7 +61,7 @@ internal object DataSubSource {
                     appContext.registerReceiver(
                         nextReceiver,
                         IntentFilter(
-                            DEFAULT_DATA_SUB_CHANGED_ACTION,
+                            DEFAULT_DATA_SUB_ACTION,
                         ),
                         Context.RECEIVER_EXPORTED,
                     )

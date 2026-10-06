@@ -112,14 +112,14 @@ internal class AppearanceRepo(context: Context) {
                 themeMode = themeSelection.mode,
                 dynamicColorEnabled = themeSelection.dynamicColorEnabled,
                 floatingNavigationBarEnabled =
-                    preferences[FloatingNavigationBarEnabledKey] ?: true,
+                    preferences[FloatingNavEnabledKey] ?: true,
                 floatingNavigationStyle =
                     decodeFloatingNavStyle(
                         storedStyle = preferences[FloatingNavStyleKey],
                         storedFloatingBlurEnabled =
                             preferences[LegacyFloatingNavBlurKey],
                         legacyBlurEnabled = preferences[LegacyBlurEnabledKey],
-                        legacyGlassEnabled = preferences[LegacyGlassBottomBarEnabledKey],
+                        legacyGlassEnabled = preferences[LegacyGlassBarKey],
                     ),
                 floatingNavigationContent =
                     decodeFloatingNavContent(
@@ -144,9 +144,9 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
-    suspend fun setFloatingNavigationBarEnabled(enabled: Boolean) {
+    suspend fun setFloatingNavEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
-            preferences[FloatingNavigationBarEnabledKey] = enabled
+            preferences[FloatingNavEnabledKey] = enabled
         }
     }
 
@@ -154,7 +154,7 @@ internal class AppearanceRepo(context: Context) {
         dataStore.edit { preferences ->
             preferences[FloatingNavStyleKey] = style.name
             preferences.remove(LegacyFloatingNavBlurKey)
-            preferences.remove(LegacyGlassBottomBarEnabledKey)
+            preferences.remove(LegacyGlassBarKey)
             preferences.remove(LegacyBlurEnabledKey)
         }
     }
@@ -175,8 +175,8 @@ internal class AppearanceRepo(context: Context) {
         val ThemeModeKey = stringPreferencesKey("theme_mode")
         val DynamicColorEnabledKey = booleanPreferencesKey("dynamic_color_enabled")
         val LegacyBlurEnabledKey = booleanPreferencesKey("blur_enabled")
-        val LegacyGlassBottomBarEnabledKey = booleanPreferencesKey("glass_bottom_bar_enabled")
-        val FloatingNavigationBarEnabledKey =
+        val LegacyGlassBarKey = booleanPreferencesKey("glass_bottom_bar_enabled")
+        val FloatingNavEnabledKey =
             booleanPreferencesKey("floating_navigation_bar_enabled")
         val FloatingNavStyleKey =
             stringPreferencesKey("floating_navigation_style")

@@ -8,7 +8,7 @@ internal object HotReloadTransfer {
     private const val VERSION = 9
     private const val PRESENTATION_TRANSFER_VERSION = 8
     private const val TINT_TRANSFER_VERSION = 7
-    private const val CONTROL_CENTER_TRANSFER_VERSION = 6
+    private const val CC_TRANSFER_VERSION = 6
     private const val SHADE_TRANSFER_VERSION = 5
     private const val PREVIOUS_VERSION = 4
     private const val NATIVE_TRANSFER_VERSION = 3
@@ -86,7 +86,7 @@ internal object HotReloadTransfer {
                 VERSION -> CURRENT_PAYLOAD_SIZE
                 PRESENTATION_TRANSFER_VERSION -> PRESENTATION_PAYLOAD_SIZE
                 TINT_TRANSFER_VERSION -> TINT_PAYLOAD_SIZE
-                CONTROL_CENTER_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
+                CC_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
                 SHADE_TRANSFER_VERSION -> SHADE_PAYLOAD_SIZE
                 PREVIOUS_VERSION -> PREVIOUS_PAYLOAD_SIZE
                 NATIVE_TRANSFER_VERSION -> NATIVE_PAYLOAD_SIZE
@@ -110,7 +110,7 @@ internal object HotReloadTransfer {
                 version == VERSION ||
                 version == PRESENTATION_TRANSFER_VERSION ||
                 version == TINT_TRANSFER_VERSION ||
-                version == CONTROL_CENTER_TRANSFER_VERSION ||
+                version == CC_TRANSFER_VERSION ||
                 version == SHADE_TRANSFER_VERSION
             ) {
                 payload.getOrNull(IDX_SHADE_HOME_ELIGIBLE) as? Boolean
@@ -122,7 +122,7 @@ internal object HotReloadTransfer {
                 version == VERSION ||
                 version == PRESENTATION_TRANSFER_VERSION ||
                 version == TINT_TRANSFER_VERSION ||
-                version == CONTROL_CENTER_TRANSFER_VERSION
+                version == CC_TRANSFER_VERSION
             ) {
                 payload.getOrNull(IDX_CC_HOME_ELIGIBLE) as? Boolean
             } else {

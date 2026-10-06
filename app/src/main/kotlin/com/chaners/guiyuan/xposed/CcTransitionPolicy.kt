@@ -5,7 +5,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 internal object CcTransition {
-    private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
+    private const val LATENT_REVEAL_END = 0.35f
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 
@@ -550,20 +550,20 @@ internal object CcTransition {
             (1f - remainingDistance / visualExtent)
                 .coerceIn(0f, 1f)
         val proximity =
-            acceleratedLatentRevealProgress(proximityProgress)
+            fastLatentRevealProgress(proximityProgress)
         val occupancy =
-            acceleratedLatentRevealProgress(reservation)
+            fastLatentRevealProgress(reservation)
         return min(proximity, occupancy)
     }
 
-    fun acceleratedLatentRevealProgress(progress: Float): Float {
+    fun fastLatentRevealProgress(progress: Float): Float {
         val normalized =
             (
                 progress
                     .takeIf(Float::isFinite)
                     ?.coerceIn(0f, 1f)
                     ?: 0f
-            ) / LATENT_REVEAL_COMPLETE_FRACTION
+            ) / LATENT_REVEAL_END
         val phase = normalized.coerceIn(0f, 1f)
         return phase * phase * (3f - 2f * phase)
     }
