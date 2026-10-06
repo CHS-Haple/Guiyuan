@@ -14,7 +14,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
-        assertEquals(true, settings.controlCenterTintTransitionEnabled)
+        assertEquals(true, settings.ccTintTransition)
 
         val normalized =
             settings.copy(

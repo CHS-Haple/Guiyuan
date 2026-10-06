@@ -1602,7 +1602,7 @@ internal class StatusPainter(
                     progress = ringRetractProgress,
                     exitDirection = ringRetractExitDirection,
                     followRetractEndpoint =
-                        visual.batteryFillFollowsRetractEndpoint,
+                        visual.fillFollowsRetract,
                 )
             val totalSweepDegrees =
                 drawableArcs

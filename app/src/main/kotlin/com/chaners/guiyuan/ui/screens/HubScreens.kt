@@ -253,9 +253,9 @@ internal fun FeaturesScreen(
             SwitchPreference(
                 title = stringResource(R.string.battery_fill_follow_retract),
                 summary = stringResource(R.string.battery_fill_follow_retract_summary),
-                checked = visual.batteryFillFollowsRetractEndpoint,
+                checked = visual.fillFollowsRetract,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepo::setBatteryFillFollowsRetractEndpoint,
+                onCheckedChange = visualRepo::setFillFollowsRetract,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
@@ -499,9 +499,9 @@ internal fun FeaturesScreen(
         SwitchPreference(
             title = stringResource(R.string.control_center_tint_transition),
             summary = stringResource(R.string.control_center_tint_transition_summary),
-            checked = visual.controlCenterTintTransitionEnabled,
+            checked = visual.ccTintTransition,
             enabled = featureCfg.enabled,
-            onCheckedChange = visualRepo::setControlCenterTintTransitionEnabled,
+            onCheckedChange = visualRepo::setCcTintTransition,
         )
     }
 }
