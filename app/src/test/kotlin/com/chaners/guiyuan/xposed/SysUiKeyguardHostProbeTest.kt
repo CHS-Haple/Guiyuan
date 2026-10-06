@@ -27,12 +27,12 @@ class SysUiKeyguardHostProbeTest {
     @Test
     fun hostGuardAcceptsOnlyPinnedMiuiKeyguardHost() {
         assertTrue(
-            SysUiKeyguardHostProbe.isKeyguardHostClassName(
+            SysUiKeyguardHostProbe.isHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
             ),
         )
         assertFalse(
-            SysUiKeyguardHostProbe.isKeyguardHostClassName(
+            SysUiKeyguardHostProbe.isHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
             ),
         )
