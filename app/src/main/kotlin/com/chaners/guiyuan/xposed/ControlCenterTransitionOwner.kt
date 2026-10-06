@@ -204,7 +204,7 @@ internal object ControlCenterTransitionOwner {
                     nativeBatteryIslandActive = nativeBatteryIslandActive,
                 ),
             sourceScene = sourceScene,
-            genericIslandShowing = SysUiIslandSource.currentIslandShowing(),
+            genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
