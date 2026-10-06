@@ -9,6 +9,7 @@
 - Build 744 scopes the Home-derived steady-peer mirror to Home-origin Control Center cycles. Keyguard/UNKNOWN sources keep native QS_FAKE island authority instead of consuming background Home peer state.
 - Repository consistency audit #222 is merged into `dev`. Its pre-release-grade review standard applies while Guiyuan remains in active development; this is not a release-candidate freeze or 1.0.0 qualification.
 - Exact-target compatibility claims must track the real runtime hook surface. Static profile entries are added only where the pinned SystemUI artifact has matching reference evidence; runtime-only seams must not be mislabeled as statically verified.
+- Parallel runtime work: PR #224 / `fix/control-center-alpha-layer-bounds`, Build 745 / `20261006-745`, is a separate compositing-cost candidate based on bounded `saveLayerAlpha` work. It is not yet accepted and remains behind its own Runtime CI, Canary, and device gate.
 - Historical PR #197 is closed as superseded and must not be restored as an active implementation route.
 
 ## Accepted runtime baseline
@@ -26,12 +27,13 @@
 
 No current device evidence keeps the former **Keyguard + active island + repeated full Control Center pull-down / swipe-up** gap open as a blocker after the Build 744 ownership correction passed focused validation and was integrated into `dev`.
 
-Current work is a pre-release-grade consistency and compatibility-contract audit while normal development continues:
+Current work has two independent active lines while normal development continues:
 
-1. keep the pinned HyperOS target profile aligned with exact-target contracts actually consumed by runtime source;
-2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code and device evidence;
-3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
-4. reopen TransitionDrawable/compositing or other performance work only from new reproducible device evidence, not from stale branch names or superseded investigation notes.
+1. PR #223 performs the pre-release-grade repository / compatibility-contract consistency audit without changing runtime behavior or Build identity;
+2. PR #224 evaluates a bounded TransitionDrawable/compositing optimization as Build 745, with its own runtime/device acceptance gate;
+3. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, current PRs, CI and device evidence;
+4. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
+5. do not infer a reopened ownership defect merely because a separate performance candidate exists.
 
 ## Non-negotiable bounds
 
@@ -45,7 +47,7 @@ Current work is a pre-release-grade consistency and compatibility-contract audit
 
 ## Immediate next
 
-- Complete the exact-target contract-coverage follow-up and repository-selected CI without changing runtime or Build identity.
-- Continue normal development from the live `dev` state after the consistency pass.
-- If new device evidence reproduces a residual Control Center/Keyguard performance gap, audit native/compositing work from that evidence before changing behavior.
+- Complete PR #223 exact-target contract coverage and repository-selected CI without changing runtime or Build identity.
+- Keep PR #224 separate: accept Build 745 only after its Runtime CI, signed Canary, and focused clipping/alpha/performance device gate; otherwise retain Build 744 as the runtime baseline.
+- Continue normal development from the live `dev` state after each line is independently disposed.
 - External version remains 0.2.0. Promotion to `main` remains an explicit maintainer decision.

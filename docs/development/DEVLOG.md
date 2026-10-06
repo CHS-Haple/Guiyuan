@@ -11,7 +11,7 @@ The repository consistency pass found two current-state drifts after #221 merged
 - `CURRENT.md` still described `dev` as Build 743 and PR #221 / Build 744 as an active candidate awaiting validation/merge;
 - the pinned HyperOS profile still covered the earlier hook surface even though current runtime source also consumes exact-target Keyguard/AOD and Control Center lifecycle callbacks.
 
-Build 744 has already passed its exact-head Runtime CI, signed Work-branch Canary, focused device validation, and integrated `dev` Runtime CI #2779. The previous Keyguard + active-island performance gap is therefore no longer carried as an open blocker; any further compositing work requires new reproducible evidence.
+Build 744 has already passed its exact-head Runtime CI, signed Work-branch Canary, focused device validation, and integrated `dev` Runtime CI #2779. The previous Keyguard + active-island ownership gap is therefore no longer carried as an open blocker. Parallel PR #224 / Build 745 is a separate compositing-cost candidate based on a concrete `saveLayerAlpha` code path; it does not reopen the closed ownership defect and remains subject to its own Runtime CI, Canary, and focused device gate.
 
 ### Exact-target contract coverage
 

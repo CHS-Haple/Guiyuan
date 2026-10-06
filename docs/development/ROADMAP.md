@@ -25,7 +25,7 @@ Stable contracts:
 Ongoing guardrails:
 - preserve accepted steady Home/Keyguard/AOD geometry, Build-473 Wi-Fi optical behavior, and the verified QS_FAKE capacity/reservation boundaries;
 - treat Build 744's Home-mirror source scoping as the accepted ownership boundary on the pinned target;
-- reopen residual performance/compositing work only when new reproducible device evidence establishes a remaining gap;
+- require concrete code-level or reproducible device evidence before performance/compositing changes, and keep each runtime candidate behind CI/Canary/device acceptance;
 - avoid project-owned gesture timing, duplicate translation writers, endpoint snaps, duplicate occupancy, or benchmark-only geometry changes.
 
 ## Phase 3 — Keyguard / AOD ownership — integrated and runtime-verified
@@ -44,7 +44,7 @@ Established:
 Remaining:
 - preserve family continuity and preference independence as new features or targets are added;
 - revalidate the family owner on any new SystemUI target instead of inferring compatibility from the pinned target;
-- reopen cross-scene performance work only from new device evidence rather than carrying forward a closed pinned-target investigation.
+- reopen cross-scene performance work only from concrete code-level or device evidence rather than carrying forward a closed pinned-target ownership investigation.
 
 ## Phase 4 — Companion app and customization — product polish
 
