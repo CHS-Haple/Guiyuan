@@ -339,14 +339,14 @@ class ControlCenterTransitionReservationTest {
     @Test
     fun exactBarTargetCompensatesInsideSimilarityBasis() {
         val outerScale =
-            StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalMorphPolicy.outerSimilarityScale(
                 targetWidthRatio = 1.5f,
                 targetHeightRatio = 2f,
             )
         assertEquals(1f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            StatusPainter.MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalMorphPolicy.exactTargetAxisCompensation(
                 targetAxisRatio = 1.5f,
                 outerScale = outerScale,
             ),
@@ -354,7 +354,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             2f,
-            StatusPainter.MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalMorphPolicy.exactTargetAxisCompensation(
                 targetAxisRatio = 2f,
                 outerScale = outerScale,
             ),
@@ -365,14 +365,14 @@ class ControlCenterTransitionReservationTest {
     @Test
     fun exactBarTargetPreservesUniformOuterShrinkAndCompensatesAxes() {
         val outerScale =
-            StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalMorphPolicy.outerSimilarityScale(
                 targetWidthRatio = 0.75f,
                 targetHeightRatio = 0.5f,
             )
         assertEquals(0.5f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            StatusPainter.MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalMorphPolicy.exactTargetAxisCompensation(
                 targetAxisRatio = 0.75f,
                 outerScale = outerScale,
             ),
@@ -380,7 +380,7 @@ class ControlCenterTransitionReservationTest {
         )
         assertEquals(
             1f,
-            StatusPainter.MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalMorphPolicy.exactTargetAxisCompensation(
                 targetAxisRatio = 0.5f,
                 outerScale = outerScale,
             ),

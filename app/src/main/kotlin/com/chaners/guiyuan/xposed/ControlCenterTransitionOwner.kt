@@ -813,7 +813,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingSourceVisibleFraction(motionProgress)
                     } else {
                         0f
@@ -827,7 +827,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingMotionProgress(motionProgress)
                     } else {
                         motionProgress
@@ -879,7 +879,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingVisibleFraction(
                                 progress = motionProgress,
                                 targetAvailable = targetGeometry != null,
@@ -1186,7 +1186,7 @@ internal object ControlCenterTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+                    MobileSignalMorphPolicy.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )
@@ -1194,13 +1194,13 @@ internal object ControlCenterTransitionOwner {
                     ControlCenterTransitionPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            StatusPainter.MobileSignalMorphPolicy
+                            MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            StatusPainter.MobileSignalMorphPolicy
+                            MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,

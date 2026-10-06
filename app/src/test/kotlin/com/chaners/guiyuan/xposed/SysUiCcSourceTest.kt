@@ -217,22 +217,22 @@ class SysUiCcSourceTest {
     fun mobileSignalMorphRowsDotsBeforeGrowingBars() {
         assertEquals(
             0f,
-            StatusPainter.MobileSignalMorphPolicy.rowProgress(0f),
+            MobileSignalMorphPolicy.rowProgress(0f),
             0.0001f,
         )
         assertEquals(
             1f,
-            StatusPainter.MobileSignalMorphPolicy.rowProgress(0.5f),
+            MobileSignalMorphPolicy.rowProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            StatusPainter.MobileSignalMorphPolicy.barProgress(0.5f),
+            MobileSignalMorphPolicy.barProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            StatusPainter.MobileSignalMorphPolicy.barProgress(1f),
+            MobileSignalMorphPolicy.barProgress(1f),
             0.0001f,
         )
     }
@@ -241,17 +241,17 @@ class SysUiCcSourceTest {
     fun mobileSignalMorphKeepsBarGrowthOutUntilRowPhaseCompletes() {
         assertEquals(
             0f,
-            StatusPainter.MobileSignalMorphPolicy.barProgress(0.25f),
+            MobileSignalMorphPolicy.barProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            StatusPainter.MobileSignalMorphPolicy.rowProgress(0.25f),
+            MobileSignalMorphPolicy.rowProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            StatusPainter.MobileSignalMorphPolicy.barProgress(0.75f),
+            MobileSignalMorphPolicy.barProgress(0.75f),
             0.0001f,
         )
     }
@@ -261,13 +261,13 @@ class SysUiCcSourceTest {
         val maxBarHeight = 54f
         val diameter = 6f
         val half =
-            StatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalMorphPolicy.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 0.5f,
             )
         val full =
-            StatusPainter.MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalMorphPolicy.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 1f,
@@ -281,19 +281,19 @@ class SysUiCcSourceTest {
     @Test
     fun mobileSignalMorphUsesNativeHeightOnlyAsACap() {
         val maxBarHeight =
-            StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalMorphPolicy.targetMaxBarHeight(
                 sourceBoundsHeight = 24f,
                 diameter = 6f,
                 targetHeightRatio = 3f,
             )
         val highest =
-            StatusPainter.MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalMorphPolicy.targetBarHeight(
                 index = 3,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,
             )
         val lowest =
-            StatusPainter.MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalMorphPolicy.targetBarHeight(
                 index = 0,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,

@@ -9,20 +9,20 @@ class ControlCenterTransitionOwnerTest {
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(
             0f,
-            StatusPainter.TransitionTypographyPolicy.styleProgress(0.42f),
+            TransitionTypographyPolicy.styleProgress(0.42f),
             0.0001f,
         )
         assertTrue(
-            StatusPainter.TransitionTypographyPolicy.styleProgress(0.70f) in 0f..1f,
+            TransitionTypographyPolicy.styleProgress(0.70f) in 0f..1f,
         )
         assertEquals(
             1f,
-            StatusPainter.TransitionTypographyPolicy.styleProgress(0.88f),
+            TransitionTypographyPolicy.styleProgress(0.88f),
             0.0001f,
         )
         assertEquals(
             1f,
-            StatusPainter.TransitionTypographyPolicy.styleProgress(1f),
+            TransitionTypographyPolicy.styleProgress(1f),
             0.0001f,
         )
     }
@@ -46,7 +46,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun chargingGlyphUsesOpaqueClipHideAndAcceleratedLateReveal() {
-        val policy = StatusPainter.BatteryNumberFollowerPolicy
+        val policy = BatteryNumberFollowerPolicy
         val (hideStart, hideEnd) = policy.sourceHideWindow()
         val (revealStart, revealEnd) = policy.targetRevealWindow()
 
@@ -116,7 +116,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun chargingGlyphNeverUsesItsOwnTargetMotionWhileSourceClipRemains() {
-        val policy = StatusPainter.BatteryNumberFollowerPolicy
+        val policy = BatteryNumberFollowerPolicy
         val (_, hideEnd) = policy.sourceHideWindow()
         var observedPartialClip = false
 
@@ -270,7 +270,7 @@ class ControlCenterTransitionOwnerTest {
     fun mobileTypeWeightInterpolatesToNativeTarget() {
         assertEquals(
             800,
-            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 0f,
@@ -278,7 +278,7 @@ class ControlCenterTransitionOwnerTest {
         )
         assertEquals(
             650,
-            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 0.5f,
@@ -286,7 +286,7 @@ class ControlCenterTransitionOwnerTest {
         )
         assertEquals(
             500,
-            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = 500,
                 progress = 1f,
@@ -298,7 +298,7 @@ class ControlCenterTransitionOwnerTest {
     fun mobileTypeWeightFailsNativeWhenTargetTypographyIsUnavailable() {
         assertEquals(
             800,
-            StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
+            MobileTypeTransitionPolicy.resolveWeight(
                 sourceWeight = 800,
                 targetWeight = null,
                 progress = 1f,
@@ -373,7 +373,7 @@ class ControlCenterTransitionOwnerTest {
     fun roundedCapsAreIncludedInsideTheNativeOpticalHeightBudget() {
         assertEquals(
             45f,
-            StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalMorphPolicy.targetMaxBarHeight(
                 sourceBoundsHeight = 40f,
                 diameter = 10f,
                 targetHeightRatio = 1.25f,
