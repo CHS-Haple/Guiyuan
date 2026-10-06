@@ -117,6 +117,8 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 
 ### Refactor discipline
 - Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
+- Do not add a type or helper just to name an obvious boolean expression, pass a value through, or wrap a single caller. Keep an abstraction only when it makes the caller simpler or carries a real lifecycle, ownership, compatibility, or domain contract.
+- When several fields describe one lifecycle and can form invalid combinations, prefer one explicit state over a wall of `pending/ready/active` booleans. Keep independent facts independent; do not force unrelated flags into a state machine just for symmetry.
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
 - Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
 - Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
@@ -131,6 +133,8 @@ Diagnostics should be event-driven and bounded:
 ~~~text
 event -> bounded snapshot -> report
 ~~~
+
+Do not invent diagnostic facts. A field presented as a metric, readiness input, health signal, or observed value must come from a real runtime observation or calculation. Do not hard-code values such as `0`, `true`, or `false` merely to prove that Guiyuan did not write something, then feed that value back into readiness/health checks. If something is only a design invariant, express it in the code structure or a short comment; log it only when there is real evidence worth recording.
 
 Canary/Release may retain low-frequency operational diagnostics. Detailed geometry/topology probes must stay behind development/Detailed diagnostics and out of hot paths.
 

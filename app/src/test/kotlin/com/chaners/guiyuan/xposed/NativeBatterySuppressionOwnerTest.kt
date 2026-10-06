@@ -29,7 +29,7 @@ class NativeBatterySuppressionOwnerTest {
     fun activeSuppressionKeepsChargingSlotButRemovesGlyph() {
         assertEquals(
             View.INVISIBLE,
-            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingVisibility(
                 nativeVisibility = View.VISIBLE,
                 suppressionActive = true,
             ),
@@ -40,7 +40,7 @@ class NativeBatterySuppressionOwnerTest {
     fun activeSuppressionPreservesNativeGoneState() {
         assertEquals(
             View.GONE,
-            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingVisibility(
                 nativeVisibility = View.GONE,
                 suppressionActive = true,
             ),
@@ -51,7 +51,7 @@ class NativeBatterySuppressionOwnerTest {
     fun activeSuppressionPreservesNativeInvisibleState() {
         assertEquals(
             View.INVISIBLE,
-            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingVisibility(
                 nativeVisibility = View.INVISIBLE,
                 suppressionActive = true,
             ),
@@ -62,7 +62,7 @@ class NativeBatterySuppressionOwnerTest {
     fun inactiveSuppressionPreservesNativeVisibility() {
         assertEquals(
             View.VISIBLE,
-            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingVisibility(
                 nativeVisibility = View.VISIBLE,
                 suppressionActive = false,
             ),

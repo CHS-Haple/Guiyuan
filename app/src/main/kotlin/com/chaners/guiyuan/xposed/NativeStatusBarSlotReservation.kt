@@ -326,7 +326,7 @@ internal object NativeStatusBarSlotReservation {
                         " slots=" + slotCount +
                         " viewOnlySynced=" + viewOnlySynced +
                         " originalOrderPreserved=" + originalOrderPreserved +
-                        " mode=controller-pre-init nativeGeometryWrites=0"
+                        " mode=controller-pre-init"
         }
 
         data class Failure(
@@ -337,7 +337,7 @@ internal object NativeStatusBarSlotReservation {
                     "nativeSlotOrder unchanged slot=" +
                         NativeCombinedParticipantOwner.SLOT +
                         " reason=" + reason +
-                        " mode=controller-pre-init nativeGeometryWrites=0"
+                        " mode=controller-pre-init"
         }
     }
 }

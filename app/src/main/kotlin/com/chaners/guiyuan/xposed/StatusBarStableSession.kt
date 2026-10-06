@@ -242,8 +242,7 @@ internal object StatusBarStableSession {
                 "stableStatus anchor source=$source hostId=$hostIdentity " +
                     "containerIndex=$batteryContainerIndex batteryIndex=$batteryIndex " +
                     "batterySize=${batteryWidth}x$batteryHeight " +
-                    "batteryMeasured=${batteryMeasuredWidth}x$batteryMeasuredHeight " +
-                    "nativeGeometryWrites=0"
+                    "batteryMeasured=${batteryMeasuredWidth}x$batteryMeasuredHeight "
     }
 
     internal data class SlotMetrics(
@@ -280,8 +279,7 @@ internal object StatusBarStableSession {
                     "statusIconsWidth=$statusIconsWidth statusIconsRight=$statusIconsRight " +
                     "batteryBounds=$batteryLeft-$batteryRight adjacentGap=$adjacentGap " +
                     "clipChildren=$batteryClipChildren,$containerClipChildren " +
-                    "rtl=$layoutRtl translationX=$batteryTranslationX " +
-                    "nativeGeometryWrites=0"
+                    "rtl=$layoutRtl translationX=$batteryTranslationX "
     }
 
 }

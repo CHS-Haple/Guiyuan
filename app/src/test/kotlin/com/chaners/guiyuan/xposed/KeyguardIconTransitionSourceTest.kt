@@ -4,23 +4,23 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SysUiKeyguardStatusIconTransitionSourceTest {
+class KeyguardIconTransitionSourceTest {
     @Test
     fun pinnedAnimateIconContainerContractRequiresOneBoolean() {
         assertTrue(
-            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransitionSource.matchesSignature(
                 arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
                 Void.TYPE,
             ),
         )
         assertFalse(
-            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransitionSource.matchesSignature(
                 emptyArray(),
                 Void.TYPE,
             ),
         )
         assertFalse(
-            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+            KeyguardIconTransitionSource.matchesSignature(
                 arrayOf<Class<*>>(Int::class.javaPrimitiveType!!),
                 Void.TYPE,
             ),

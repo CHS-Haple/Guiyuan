@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 
-internal object SysUiKeyguardStatusIconTransitionSource {
+internal object KeyguardIconTransitionSource {
     const val HOOK_COUNT = 1
 
     private const val KEYGUARD_VIEW_CLASS =
@@ -23,7 +23,7 @@ internal object SysUiKeyguardStatusIconTransitionSource {
         val candidates =
             viewClass.declaredMethods.filter { method ->
                 method.name == ANIMATE_ICON_CONTAINER_METHOD &&
-                    matchesAnimateIconContainerSignature(
+                    matchesSignature(
                         parameterTypes = method.parameterTypes,
                         returnType = method.returnType,
                     )
@@ -47,8 +47,7 @@ internal object SysUiKeyguardStatusIconTransitionSource {
                         onTransition()
                         onEvent?.invoke(
                             "keyguardStatusIconTransition source=animateIconContainer" +
-                                " arg0=" + (rawArg0 ?: "unavailable") +
-                                " eventDriven=true readOnly=true nativeGeometryWrites=0",
+                                " arg0=" + (rawArg0 ?: "unavailable"),
                         )
                         result
                     },
@@ -56,7 +55,7 @@ internal object SysUiKeyguardStatusIconTransitionSource {
         )
     }
 
-    internal fun matchesAnimateIconContainerSignature(
+    internal fun matchesSignature(
         parameterTypes: Array<Class<*>>,
         returnType: Class<*>,
     ): Boolean =

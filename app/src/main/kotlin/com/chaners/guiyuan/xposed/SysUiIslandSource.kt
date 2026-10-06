@@ -58,7 +58,7 @@ internal object SysUiIslandSource {
                                 "islandOwner event showing=" + showing +
                                     " secondary=" + secondary +
                                     " animate=" + animate +
-                                    " geometryWrites=0",
+                                    "",
                             )
                         }
                         result

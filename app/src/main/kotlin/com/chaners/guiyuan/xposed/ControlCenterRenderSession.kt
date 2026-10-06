@@ -65,25 +65,25 @@ internal object ControlCenterRenderSession {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onProjectionReadinessChanged: (Boolean) -> Unit,
-    ): AttachResult {
+    ): String? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return AttachResult.Failure("main-thread-required")
+            return "main-thread-required"
         }
         if (host.javaClass.name != FAKE_ROOT_CLASS_NAME) {
-            return AttachResult.Failure("fake-root-type-mismatch")
+            return "fake-root-type-mismatch"
         }
         val statusBarArea =
             host.uniqueDescendant(BATTERY_CONTAINER_CLASS_NAME)
-                ?: return AttachResult.Failure("fake-status-bar-area-unresolved")
+                ?: return "fake-status-bar-area-unresolved"
         val statusIcons =
             statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
-                ?: return AttachResult.Failure("status-icons-missing")
+                ?: return "status-icons-missing"
         val battery =
             statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
-                ?: return AttachResult.Failure("battery-view-missing")
+                ?: return "battery-view-missing"
         val carrier =
             SysUiCarrierMetrics.resolveView(battery)
-                ?: return AttachResult.Failure("battery-core-carrier-missing")
+                ?: return "battery-core-carrier-missing"
         val existing = current
         if (
             existing?.matches(
@@ -157,19 +157,19 @@ internal object ControlCenterRenderSession {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onProjectionReadinessChanged: (Boolean) -> Unit,
         transferredCompactReady: Boolean = false,
-    ): AttachResult {
+    ): String? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return AttachResult.Failure("main-thread-required")
+            return "main-thread-required"
         }
         if (
-            !shouldRestoreLaidOutHostAfterHotReload(
+            !canRestoreAfterReload(
                 attached = host.isAttachedToWindow,
                 inLayout = host.isInLayout,
                 width = host.width,
                 height = host.height,
             )
         ) {
-            return AttachResult.Failure("fake-root-hot-reload-layout-unavailable")
+            return "fake-root-hot-reload-layout-unavailable"
         }
 
         pendingPrearm?.cancel()
@@ -182,41 +182,37 @@ internal object ControlCenterRenderSession {
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
             )
         if (
-            result == AttachResult.Ready &&
-            shouldAdoptTransferredCompactReadiness(transferredCompactReady)
+            result == null &&
+            transferredCompactReady
         ) {
             when (SysUiPresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
-                is SysUiPresentationOwner.ControlCenterStateResult.Active -> {
+                is SysUiPresentationOwner.StateResult.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
                                 "source=transferred-laid-out-fake-root " +
-                                "next=native-status-icons-layout-refresh nativeGeometryWrites=0",
+                                "next=native-status-icons-layout-refresh",
                         )
                     }
-                    return AttachResult.Ready
+                    return null
                 }
 
                 else -> Unit
             }
         }
-        if (result == AttachResult.Ready && isDetailedDiagnosticsEnabled()) {
+        if (result == null && isDetailedDiagnosticsEnabled()) {
             onEvent(
                 "controlCenterProjection hotReloadRestore state=prepared " +
                     "source=transferred-laid-out-fake-root " +
                     "transferredCompactReady=" + transferredCompactReady +
                     " layoutRequestBoundary=outside-native-layout " +
-                    "next=native-status-icons-layout nativeGeometryWrites=0",
+                    "next=native-status-icons-layout",
             )
         }
         return result
     }
 
-    internal fun shouldAdoptTransferredCompactReadiness(
-        transferredCompactReady: Boolean,
-    ): Boolean = transferredCompactReady
-
-    internal fun shouldRestoreLaidOutHostAfterHotReload(
+    internal fun canRestoreAfterReload(
         attached: Boolean,
         inLayout: Boolean,
         width: Int,
@@ -290,48 +286,43 @@ internal object ControlCenterRenderSession {
         }
 
         val attempt = pending.nextAttempt()
-        when (
-            val result =
-                attach(
-                    host = host,
-                    onEvent = pending.onEvent,
-                    isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
-                    onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
-                )
-        ) {
-            AttachResult.Ready -> {
-                pending.cancel()
-                pendingPrearm = null
-                pending.emit(
-                    "controlCenterProjection prearm state=armed " +
-                        "source=fake-root-first-layout attempt=" + attempt +
-                        " nativeGeometryWrites=0",
-                )
-            }
+        val failure =
+            attach(
+                host = host,
+                onEvent = pending.onEvent,
+                isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
+                onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
+            )
+        if (failure == null) {
+            pending.cancel()
+            pendingPrearm = null
+            pending.emit(
+                "controlCenterProjection prearm state=armed " +
+                    "source=fake-root-first-layout attempt=" + attempt,
+            )
+            return
+        }
 
-            is AttachResult.Failure -> {
-                val retry =
-                    isFirstLayoutRetryable(result.reason) &&
-                        attempt < MAX_PREARM_LAYOUT_ATTEMPTS
-                if (retry) {
-                    pending.emit(
-                        "controlCenterProjection prearm state=deferred " +
-                            "source=fake-root-first-layout attempt=" + attempt +
-                            " reason=" + result.reason +
-                            " next=native-root-layout nativeGeometryWrites=0",
-                    )
-                    host.requestLayout()
-                } else {
-                    pending.cancel()
-                    pendingPrearm = null
-                    pending.emit(
-                        "controlCenterProjection prearm state=failed " +
-                            "source=fake-root-first-layout attempt=" + attempt +
-                            " reason=" + result.reason +
-                            " fallback=native-qs-fake nativeGeometryWrites=0",
-                    )
-                }
-            }
+        val retry =
+            isFirstLayoutRetryable(failure) &&
+                attempt < MAX_PREARM_LAYOUT_ATTEMPTS
+        if (retry) {
+            pending.emit(
+                "controlCenterProjection prearm state=deferred " +
+                    "source=fake-root-first-layout attempt=" + attempt +
+                    " reason=" + failure +
+                    " next=native-root-layout",
+            )
+            host.requestLayout()
+        } else {
+            pending.cancel()
+            pendingPrearm = null
+            pending.emit(
+                "controlCenterProjection prearm state=failed " +
+                    "source=fake-root-first-layout attempt=" + attempt +
+                    " reason=" + failure +
+                    " fallback=native-qs-fake",
+            )
         }
     }
 
@@ -387,8 +378,7 @@ internal object ControlCenterRenderSession {
             root.requestLayout()
             emit(
                 "controlCenterProjection prearm state=scheduled " +
-                    "source=fake-root-attached next=native-root-layout " +
-                    "nativeGeometryWrites=0",
+                    "source=fake-root-attached next=native-root-layout",
             )
         }
 
@@ -449,12 +439,6 @@ internal object ControlCenterRenderSession {
             ")"
     }
 
-    internal fun shouldRetainNativePresentationOnLayoutUnavailable(
-        hostAttached: Boolean,
-        nativePresentationReady: Boolean,
-    ): Boolean =
-        hostAttached && nativePresentationReady
-
     internal fun resolveProjectionReady(
         featureEnabled: Boolean,
         sceneEligible: Boolean,
@@ -499,7 +483,7 @@ internal object ControlCenterRenderSession {
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
-        private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
+        private var cachedTransitionVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
         private var featureEnabled = FeaturePrefsOwner.current().enabled
@@ -545,7 +529,7 @@ internal object ControlCenterRenderSession {
         fun transitionSourceSnapshot(): TransitionSourceSnapshot? {
             if (!projectionReady()) return null
             cachedTransitionSourceSnapshot
-                ?.takeIf { cachedTransitionSourceSnapshotVersion == transitionStateVersion }
+                ?.takeIf { cachedTransitionVersion == transitionStateVersion }
                 ?.let { return it }
 
             val anchorView = carrier.get() ?: return null
@@ -565,7 +549,7 @@ internal object ControlCenterRenderSession {
                 stateVersion = transitionStateVersion,
             ).also { snapshot ->
                 cachedTransitionSourceSnapshot = snapshot
-                cachedTransitionSourceSnapshotVersion = transitionStateVersion
+                cachedTransitionVersion = transitionStateVersion
             }
         }
 
@@ -610,28 +594,20 @@ internal object ControlCenterRenderSession {
             }
             emitEvent {
                 "controlCenterProjection cleanup source=" + source +
-                    " nativeCompactRestored=true nativeGeometryWrites=0 " +
-                    "nativeAlphaWrites=0 nativeVisibilityWrites=0"
+                    " nativeCompactRestored=true"
             }
         }
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (
-                shouldBeginCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = requestedVisible,
-                    nextRequestedVisible = visible,
-                ) &&
+                !requestedVisible &&
+                visible &&
                 !SysUiPresentationOwner.onControlCenterVisibilityChanged(true)
             ) {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
             }
-            if (
-                shouldEndCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = requestedVisible,
-                    nextRequestedVisible = visible,
-                )
-            ) {
+            if (requestedVisible && !visible) {
                 SysUiPresentationOwner.onControlCenterVisibilityChanged(false)
             }
             requestedVisible = visible
@@ -639,26 +615,26 @@ internal object ControlCenterRenderSession {
             return projectionReady()
         }
 
-        fun prepareNativePresentation(reused: Boolean): AttachResult {
+        fun prepareNativePresentation(reused: Boolean): String? {
             if (!featureEnabled || !sceneEligible) {
                 nativePresentationReady = false
                 syncPresentation(
                     if (!featureEnabled) "feature-ineligible" else "scene-ineligible",
                 )
-                return AttachResult.Ready
+                return null
             }
             val statusArea =
                 statusBarArea.get()
-                    ?: return AttachResult.Failure("fake-status-bar-area-released")
+                    ?: return "fake-status-bar-area-released"
             val statusIconGroup =
                 statusIcons.get()
-                    ?: return AttachResult.Failure("status-icons-released")
+                    ?: return "status-icons-released"
             val batteryView =
                 battery.get()
-                    ?: return AttachResult.Failure("battery-view-released")
+                    ?: return "battery-view-released"
             val carrierView =
                 carrier.get()
-                    ?: return AttachResult.Failure("battery-core-carrier-released")
+                    ?: return "battery-core-carrier-released"
 
             return when (
                 val result =
@@ -686,41 +662,40 @@ internal object ControlCenterRenderSession {
                         },
                     )
             ) {
-                is SysUiPresentationOwner.ControlCenterStateResult.Active -> {
+                is SysUiPresentationOwner.StateResult.Active -> {
                     setNativePresentationReady(
                         ready = true,
                         maskedViews = result.maskedViews,
                         source = if (reused) "prearm-reuse" else "prearm-activation",
                     )
-                    AttachResult.Ready
+                    null
                 }
 
-                is SysUiPresentationOwner.ControlCenterStateResult.Prepared -> {
+                is SysUiPresentationOwner.StateResult.Prepared -> {
                     emitEvent {
                         "controlCenterProjection prearm state=prepared " +
                             "reused=" + reused +
-                            " requestedVisible=" + requestedVisible +
-                            " nativeGeometryWrites=0"
+                            " requestedVisible=" + requestedVisible
                     }
-                    AttachResult.Ready
+                    null
                 }
 
-                is SysUiPresentationOwner.ControlCenterStateResult.Failure -> {
+                is SysUiPresentationOwner.StateResult.Failure -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
                         source = "prepare-failed:" + result.reason,
                     )
-                    AttachResult.Failure(result.reason)
+                    result.reason
                 }
 
-                is SysUiPresentationOwner.ControlCenterStateResult.Inactive -> {
+                is SysUiPresentationOwner.StateResult.Inactive -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
                         source = "prepare-inactive",
                     )
-                    AttachResult.Failure("compact-presentation-inactive")
+                    "compact-presentation-inactive"
                 }
             }
         }
@@ -800,7 +775,7 @@ internal object ControlCenterRenderSession {
         ) {
             val peerTint =
                 statusIcons.get()?.let(
-                    NativeNetworkSuppressionOwner::currentAppliedStatusIconTintForGroup,
+                    NativeNetworkSuppressionOwner::currentStatusIconTint,
                 )
             val resolved =
                 TintAuthority.resolveBatteryEvent(
@@ -876,8 +851,7 @@ internal object ControlCenterRenderSession {
                         "geometrySource=MiuiStatusBatteryContainer bounds=" +
                         anchorRect.left + "," + anchorRect.top + "-" +
                         anchorRect.right + "," + anchorRect.bottom +
-                        " target=stable-battery-slot motion=root-alpha-translation-inherited " +
-                        "nativeGeometryWrites=0 nativeAlphaWrites=0 nativeVisibilityWrites=0"
+                        " target=stable-battery-slot motion=root-alpha-translation-inherited"
                 }
             }
         }
@@ -889,10 +863,7 @@ internal object ControlCenterRenderSession {
 
             val hostAttached = host.get()?.isAttachedToWindow == true
             val retainNativePresentation =
-                shouldRetainNativePresentationOnLayoutUnavailable(
-                    hostAttached = hostAttached,
-                    nativePresentationReady = nativePresentationReady,
-                )
+                hostAttached && nativePresentationReady
             if (!retainNativePresentation) {
                 nativePresentationReady = false
                 SysUiPresentationOwner.deactivateControlCenter(
@@ -902,8 +873,7 @@ internal object ControlCenterRenderSession {
             emitEvent {
                 "controlCenterProjection layoutUnavailable action=pause-render " +
                     "compactPresentationRetained=" + retainNativePresentation +
-                    " hostAttached=" + hostAttached +
-                    " nativeGeometryWrites=0"
+                    " hostAttached=" + hostAttached
             }
             dispatchReadiness("layout-unavailable")
         }
@@ -946,8 +916,7 @@ internal object ControlCenterRenderSession {
                     " modelReady=" + modelReady +
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
-                    " nativePresentationReady=" + nativePresentationReady +
-                    " rootAlphaInherited=true nativeGeometryWrites=0"
+                    " nativePresentationReady=" + nativePresentationReady
             }
             onProjectionReadinessChanged(ready)
         }
@@ -1002,18 +971,6 @@ internal object ControlCenterRenderSession {
         return found
     }
 
-    internal fun shouldBeginCapacityLeaseOnVisibilityChange(
-        previousRequestedVisible: Boolean,
-        nextRequestedVisible: Boolean,
-    ): Boolean =
-        !previousRequestedVisible && nextRequestedVisible
-
-    internal fun shouldEndCapacityLeaseOnVisibilityChange(
-        previousRequestedVisible: Boolean,
-        nextRequestedVisible: Boolean,
-    ): Boolean =
-        previousRequestedVisible && !nextRequestedVisible
-
     internal data class TransitionSourceSnapshot(
         val view: View,
         val anchorView: View,
@@ -1033,11 +990,4 @@ internal object ControlCenterRenderSession {
         ) : PrearmResult
     }
 
-    internal sealed interface AttachResult {
-        data object Ready : AttachResult
-
-        data class Failure(
-            val reason: String,
-        ) : AttachResult
-    }
 }

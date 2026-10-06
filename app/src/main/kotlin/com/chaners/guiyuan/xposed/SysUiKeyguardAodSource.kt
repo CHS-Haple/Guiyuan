@@ -157,8 +157,7 @@ internal object SysUiKeyguardAodSource {
                 " toAod=" + update.toAod +
                 " isAodAnimate=" + update.isAodAnimate +
                 " animToAod=" + (update.animToAod ?: "unavailable") +
-                " blocked=" + update.blocksProjection +
-                " readOnly=true nativeGeometryWrites=0",
+                " blocked=" + update.blocksProjection,
         )
     }
 

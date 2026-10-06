@@ -24,16 +24,23 @@
 
 ## Active objective
 
-PR #247 is merged after exact-head Full validation, and the long-lived `dev` branch has been restored/synchronized to the promoted stable state. The behavior-neutral maintainability review through PR #246 is closed.
+Current work is on `refactor/runtime-plumbing`, based on synchronized `dev` at Guiyuan 0.2.1 / Build 746. This is a behavior-neutral maintainability pass for concrete runtime-plumbing problems found after the previous cleanup, not another line-count or naming-standardization sweep.
 
-The remaining large runtime files are ownership/lifecycle-dense, tooling-bound, or have no clear tested stateless boundary. Do not continue splitting or renaming them merely to reduce line count or standardize names; start another maintenance batch only when a concrete readability, ownership, dead-indirection, or compatibility problem has a clear net benefit.
+The current batch is limited to changes with clear maintenance value:
+
+- remove synthetic diagnostic fields that were hard-coded rather than observed;
+- collapse boolean fields that describe one lifecycle into explicit local state;
+- remove one-line Policy/Result wrappers and dead lifecycle entry points;
+- reuse one result type where two sealed hierarchies carried the same states;
+- shorten plumbing names only where surrounding scope already supplies the missing context;
+- keep ownership, fail-native, native geometry, transition timing and accepted Build 746 behavior unchanged.
 
 Current priorities:
 
-1. start future work from the synchronized `dev` branch;
-2. preserve the accepted runtime ownership/lifecycle/fail-native contracts and Build 746 identity until a real behavior change or explicit version decision requires otherwise;
-3. prefer high-value structural simplification over cosmetic churn;
-4. request device evidence only when a future diff can plausibly change runtime behavior or an engineering decision.
+1. finish the full `dev -> refactor/runtime-plumbing` diff review and exact-head CI before integration;
+2. preserve accepted ownership/lifecycle/fail-native contracts and Build 746 identity;
+3. stop the cleanup when the remaining abstractions carry real domain, compatibility or lifecycle meaning;
+4. request device evidence only if the final diff or CI leaves a runtime question that device evidence can actually resolve.
 
 ## Non-negotiable bounds
 
@@ -48,7 +55,7 @@ Current priorities:
 ## Immediate next
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 remains the stable 0.2.1 release/build identity.
-- `main` and `dev` must remain synchronized at promotion closeout before the next work branch starts.
-- Begin the next coherent task from current `dev`; do not reopen the closed alpha-layer performance experiment or resume low-value cosmetic cleanup without new evidence.
-- Keep comments concise and natural, and apply the cross-file extraction review rule for imports, annotations, visibility, top-level constants, and receiver context.
+- Review the complete maintenance diff, run the branch CI once at the coherent checkpoint, and fix only concrete findings.
+- Do not reopen the rejected alpha-layer experiment or broaden this branch into unrelated cosmetic cleanup.
+- Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

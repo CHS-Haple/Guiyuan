@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 
-internal object SysUiKeyguardFullAodTransitionSource {
+internal object FullAodTransitionSource {
     const val HOOK_COUNT = 1
 
     private const val CONTROLLER_CLASS =
@@ -24,7 +24,7 @@ internal object SysUiKeyguardFullAodTransitionSource {
         val candidates =
             controllerClass.declaredMethods.filter { method ->
                 method.name == ANIMATE_FULL_AOD_METHOD &&
-                    matchesAnimateFullAodSignature(
+                    matchesSignature(
                         parameterTypes = method.parameterTypes,
                         returnType = method.returnType,
                     )
@@ -59,8 +59,7 @@ internal object SysUiKeyguardFullAodTransitionSource {
                         onEvent?.invoke(
                             "keyguardFullAod source=animateFullAod" +
                                 " arg0=" + (rawArg0 ?: "unavailable") +
-                                " arg1=" + (rawArg1 ?: "unavailable") +
-                                " eventDriven=true readOnly=true nativeGeometryWrites=0",
+                                " arg1=" + (rawArg1 ?: "unavailable"),
                         )
                         result
                     },
@@ -68,7 +67,7 @@ internal object SysUiKeyguardFullAodTransitionSource {
         return listOf(handle)
     }
 
-    internal fun matchesAnimateFullAodSignature(
+    internal fun matchesSignature(
         parameterTypes: Array<Class<*>>,
         returnType: Class<*>,
     ): Boolean =

@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeParticipantContractProbe {
+internal object ParticipantContractProbe {
     fun inspect(host: Any): Snapshot {
         val resolution = NativeParticipantRuntimeAccess.resolve(host)
         val handles =
@@ -204,8 +204,7 @@ internal object NativeParticipantContractProbe {
                     " registrationReady=" + registrationContractReady +
                     " setIconSignatures=" + setIconSignatures.joinToString("|") +
                     " removeSignatures=" + removeSignatures.joinToString("|") +
-                    " holderFactories=" + holderFactorySignatures.joinToString("|") +
-                    " geometryWrites=0"
+                    " holderFactories=" + holderFactorySignatures.joinToString("|")
 
         companion object {
             fun unavailable(reason: String): Snapshot =

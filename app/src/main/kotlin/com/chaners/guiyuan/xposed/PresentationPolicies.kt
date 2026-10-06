@@ -14,9 +14,6 @@ internal object SteadyPeerMirrorPolicy {
     private const val VISIBLE_STATE_HIDDEN = 2
     private const val ISLAND_STATE_HIDDEN = 10
 
-    fun shouldUseHomeMirror(sourceScene: SourceScene): Boolean =
-        sourceScene == SourceScene.HOME
-
     fun isIslandHidden(
         visibleState: Int?,
         inIslandState: Int?,
@@ -31,59 +28,7 @@ internal object SteadyPeerMirrorPolicy {
         nativeIslandShowing && !steadyMirrorActive
 }
 
-internal object PersistentIgnoredSlotPolicy {
-    fun <T> ownedDelta(
-        existing: Collection<T>,
-        requested: Collection<T>,
-    ): List<T> =
-        requested.filterNot(existing::contains)
-
-    fun <T> restoreTarget(
-        live: List<T>,
-        ownedEntries: Collection<T>,
-    ): List<T> {
-        val owned = ownedEntries.toHashSet()
-        return live.filterNot(owned::contains)
-    }
-
-    fun shouldUseNativeSetterOnRestore(
-        requestLayout: Boolean,
-    ): Boolean = requestLayout
-}
-
-internal object ActivationCommitPolicy {
-    fun canReportSuccess(
-        ownerStillCurrent: Boolean,
-        surfaceStillCurrent: Boolean = true,
-    ): Boolean =
-        ownerStillCurrent && surfaceStillCurrent
-}
-
-internal object HotReloadHandoffPolicy {
-    fun shouldRequestLayoutOnRelease(
-        continuousHandoff: Boolean,
-    ): Boolean = !continuousHandoff
-}
-
-internal object KeyguardFamilyHandoffPolicy {
-    fun shouldRelease(
-        activeSurface: KeyguardFamilySurface?,
-        requestedSurface: KeyguardFamilySurface,
-    ): Boolean =
-        activeSurface == requestedSurface
-}
-
 internal object VisualMaskPolicy {
-    fun shouldPreserveNativeBeforeCompactCutover(
-        deferVisualMaskUntilLayout: Boolean,
-    ): Boolean = deferVisualMaskUntilLayout
-
-    fun shouldPreMaskBeforeCompactCutover(
-        deferVisualMaskUntilLayout: Boolean,
-        preMaskBeforeLayout: Boolean,
-    ): Boolean =
-        deferVisualMaskUntilLayout && preMaskBeforeLayout
-
     fun shouldAdoptExistingNativeLayout(
         deferVisualMaskUntilLayout: Boolean,
         laidOut: Boolean,
@@ -98,31 +43,6 @@ internal object VisualMaskPolicy {
             !capacityLeaseAwaitingLayout &&
             width > 0 &&
             height > 0
-}
-
-internal object DeferredNativeLayoutPolicy {
-    fun shouldWriteNativeLayout(
-        nativeLayoutOwnershipDeferred: Boolean,
-    ): Boolean = !nativeLayoutOwnershipDeferred
-
-    fun shouldCompleteCompactLayout(
-        nativeLayoutOwnershipDeferred: Boolean,
-    ): Boolean = !nativeLayoutOwnershipDeferred
-
-    fun shouldResumeOwnershipForRetarget(
-        nativeLayoutOwnershipDeferred: Boolean,
-        nextDeferNativeLayoutOwnership: Boolean,
-    ): Boolean =
-        nativeLayoutOwnershipDeferred && !nextDeferNativeLayoutOwnership
-}
-
-internal object HotPathDiagnosticPolicy {
-    fun shouldReportControlCenterLayoutState(
-        detailedDiagnosticsEnabled: Boolean,
-        transitionReservationActive: Boolean,
-    ): Boolean =
-        detailedDiagnosticsEnabled && !transitionReservationActive
-
 }
 
 internal object FakeCarrierCapacityLeasePolicy {
@@ -160,12 +80,6 @@ internal object FakeCarrierCapacityLeasePolicy {
 }
 
 internal object EndReservationPolicy {
-    fun shouldDeferLiveBatteryWidthUnavailable(
-        retainOnTransientLoss: Boolean,
-        compactLayoutReady: Boolean,
-    ): Boolean =
-        retainOnTransientLoss && compactLayoutReady
-
     fun resolveRequestedSlotWidth(
         compactSlotWidthPx: Int,
         transitionRequestedSlotWidthPx: Int?,
@@ -230,8 +144,22 @@ internal object EndReservationPolicy {
     }
 }
 
-internal object OwnedListEntries {
-    fun <T> addOwnedEntries(
+internal object OwnedEntries {
+    fun <T> delta(
+        existing: Collection<T>,
+        requested: Collection<T>,
+    ): List<T> =
+        requested.filterNot(existing::contains)
+
+    fun <T> restoreTarget(
+        live: List<T>,
+        ownedEntries: Collection<T>,
+    ): List<T> {
+        val owned = ownedEntries.toHashSet()
+        return live.filterNot(owned::contains)
+    }
+
+    fun <T> add(
         target: MutableList<T>,
         entries: Collection<T>,
     ): List<T> {
@@ -249,23 +177,23 @@ internal object OwnedListEntries {
         }
     }
 
-    fun <T> restoreOwnedEntries(
+    fun <T> restore(
         target: MutableList<T>,
         ownedEntries: List<T>,
     ) {
         ownedEntries.asReversed().forEach(target::remove)
     }
 
-    fun <T, R> withTemporaryEntries(
+    fun <T, R> withTemporary(
         target: MutableList<T>,
         entries: Collection<T>,
         block: () -> R,
     ): R {
-        val owned = addOwnedEntries(target, entries)
+        val owned = add(target, entries)
         return try {
             block()
         } finally {
-            restoreOwnedEntries(target, owned)
+            restore(target, owned)
         }
     }
 }

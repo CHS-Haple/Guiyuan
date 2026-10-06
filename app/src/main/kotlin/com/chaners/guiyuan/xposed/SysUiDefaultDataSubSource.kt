@@ -108,8 +108,7 @@ internal object SysUiDefaultDataSubSource {
         onChanged?.invoke(next)
         onEvent?.invoke(
             "defaultDataSubscription id=" + next +
-                " source=" + source +
-                " eventDriven=true authoritativeRead=true",
+                " source=" + source,
         )
     }
 

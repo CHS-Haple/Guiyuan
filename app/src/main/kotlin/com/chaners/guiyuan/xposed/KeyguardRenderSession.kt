@@ -373,7 +373,7 @@ internal object KeyguardRenderSession {
                 positionHost = systemIcons.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SysUiPresentationOwner.currentKeyguardRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.keyguardSlots(),
             )
         }
 
@@ -437,8 +437,7 @@ internal object KeyguardRenderSession {
             emitEvent {
                 scene.logPrefix + "Feature enabled=" + featureEnabled +
                     " overlayVisible=" + visible +
-                    " nativeHandoffActive=" + nativeHandoffActive +
-                    " nativeGeometryWrites=0"
+                    " nativeHandoffActive=" + nativeHandoffActive
             }
             dispatchPresentationReadiness("feature")
         }
@@ -449,8 +448,7 @@ internal object KeyguardRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Handoff nativeActive=" + nativeHandoffActive +
-                    " overlayVisible=" + visible +
-                    " nativeGeometryWrites=0"
+                    " overlayVisible=" + visible
             }
         }
 
@@ -482,8 +480,7 @@ internal object KeyguardRenderSession {
                             readViewField(owner, "mKeyguardStatusBarContent")
                         },
                     ) + "}" +
-                    " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}" +
-                    " nativeGeometryWrites=0"
+                    " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}"
             }
         }
 
@@ -521,7 +518,7 @@ internal object KeyguardRenderSession {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
                             resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
-                            " authority=keyguard-battery eventDriven=true stable=true"
+                            " authority=keyguard-battery"
                     }
                 }
             }
@@ -542,8 +539,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + " ready battery=" + model.batteryPercent +
                             " charging=" + model.charging +
-                            " center=" + model.centerIndicator.javaClass.simpleName +
-                            " nativeGeometryWrites=0"
+                            " center=" + model.centerIndicator.javaClass.simpleName
                     }
                 }
             }
@@ -589,9 +585,7 @@ internal object KeyguardRenderSession {
                         anchorRect.right + "," + anchorRect.bottom +
                         " logicalSize=" + anchorRect.width() + "x" + anchorRect.height() +
                         " physicalSize=" + renderView.width + "x" + renderView.height +
-                        " topOverflowPx=" + renderView.currentLogicalViewportTopInsetPx() +
-                        " nativeVisibilityInherited=true nativeAlphaInherited=true " +
-                        "nativeTranslationInherited=true nativeGeometryWrites=0"
+                        " topOverflowPx=" + renderView.currentLogicalViewportTopInsetPx()
                 }
             }
             dispatchPresentationReadiness("layout")
@@ -719,8 +713,7 @@ internal object KeyguardRenderSession {
                     " layoutReady=" + layoutReady +
                     " featureEnabled=" + featureEnabled +
                     " sceneEligible=" + sceneEligible +
-                    " aodOwned=" + scene.aodOwned +
-                    " nativeGeometryWrites=0"
+                    " aodOwned=" + scene.aodOwned
             }
             onPresentationReadinessChanged?.invoke(ready)
         }
