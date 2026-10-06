@@ -33,17 +33,17 @@ internal object ColorPolicy {
 
         return RenderColors(
             centerTint =
-                if (visualSettings.centerFollowsBatteryColor) batteryTint
+                if (visualSettings.centerFollowsBattery) batteryTint
                 else nativeParticipantTint,
             mobileTint =
-                if (visualSettings.mobileFollowsBatteryColor) batteryTint
+                if (visualSettings.mobileFollowsBattery) batteryTint
                 else nativeParticipantTint,
             batteryTint = batteryTint,
             batteryTextTint =
-                if (visualSettings.batteryTopTextFollowsBatteryColor) batteryTint
+                if (visualSettings.topTextFollowsBattery) batteryTint
                 else nativeParticipantTint,
             chargingIconTint =
-                if (visualSettings.batteryTopChargingIconFollowsBatteryColor) batteryTint
+                if (visualSettings.chargingIconFollowsBattery) batteryTint
                 else nativeParticipantTint,
         )
     }

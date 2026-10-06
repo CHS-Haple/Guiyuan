@@ -10,7 +10,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+import com.chaners.guiyuan.settings.TOP_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
@@ -1221,7 +1221,7 @@ internal class StatusPainter(
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = visualSettings.contentLayout,
-                rawOffset = visualSettings.batteryTopVerticalOffset,
+                rawOffset = visualSettings.topOffset,
             )
 
     private fun shiftBoundsY(
@@ -1523,7 +1523,7 @@ internal class StatusPainter(
         if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
             BATTERY_COMPONENT_CENTER_Y +
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE +
-                BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+                TOP_OFFSET_DEFAULT
         } else {
             BATTERY_TOP_CONTENT_CENTER_Y
         }
@@ -1602,7 +1602,7 @@ internal class StatusPainter(
                     progress = ringRetractProgress,
                     exitDirection = ringRetractExitDirection,
                     followRetractEndpoint =
-                        visualSettings.batteryFillFollowsRetractEndpoint,
+                        visualSettings.fillFollowsRetract,
                 )
             val totalSweepDegrees =
                 drawableArcs
@@ -1733,12 +1733,12 @@ internal class StatusPainter(
         visualSettings: VisualSettings,
         nativeTransform: NativeRenderTransform,
     ): BatteryTopReadoutLayout? {
-        val textVisible = visualSettings.batteryTopReadoutEnabled
+        val textVisible = visualSettings.topReadoutEnabled
         val chargingSlotVisible =
-            model.charging && visualSettings.batteryTopChargingIconEnabled
+            model.charging && visualSettings.chargingIconEnabled
         if (!textVisible && !chargingSlotVisible) return null
 
-        val text = model.batteryPercent.coerceIn(0, 100).toString()
+        val text = model.batteryPercent.coerceIn(0, 100).function toString() { [native code] }()
         val textSize = BATTERY_TOP_TEXT_SIZE * visualSettings.batteryTopTextScale
         val textExtraStroke =
             if (textVisible) {
@@ -1772,7 +1772,7 @@ internal class StatusPainter(
         val chargingIconSize =
             if (chargingSlotVisible) {
                 BATTERY_TOP_CHARGING_ICON_SIZE *
-                    visualSettings.batteryTopChargingIconScale
+                    visualSettings.chargingIconScale
             } else {
                 0f
             }
@@ -1872,7 +1872,7 @@ internal class StatusPainter(
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
                         layout = visualSettings.contentLayout,
-                        rawOffset = visualSettings.batteryTopVerticalOffset,
+                        rawOffset = visualSettings.topOffset,
                     ),
             )
         val textBaselineY =
@@ -3618,7 +3618,7 @@ internal class StatusPainter(
         const val TOP_SLOT_CENTER_Y =
             BATTERY_TOP_CONTENT_CENTER_Y -
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
-                BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+                TOP_OFFSET_DEFAULT
         const val BATTERY_TOP_NATIVE_WEIGHT_MAX = 1000
         const val BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE = 400
         const val BATTERY_TOP_SYNTHETIC_STROKE_RATIO = 0.07f

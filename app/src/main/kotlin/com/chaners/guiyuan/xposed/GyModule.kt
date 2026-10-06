@@ -1888,7 +1888,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                                ?.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1919,12 +1919,12 @@ class GyModule : XposedModule() {
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1932,7 +1932,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -4553,13 +4553,13 @@ class GyModule : XposedModule() {
                 component = "visualSettings",
                 state = "ready",
                 "layout" to settings.contentLayout.persistedValue,
-                "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
-                "networkFollowsBattery" to settings.centerFollowsBatteryColor,
-                "batteryNumber" to settings.batteryTopReadoutEnabled,
-                "chargingIcon" to settings.batteryTopChargingIconEnabled,
-                "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
+                "mobileFollowsBattery" to settings.mobileFollowsBattery,
+                "networkFollowsBattery" to settings.centerFollowsBattery,
+                "batteryNumber" to settings.topReadoutEnabled,
+                "chargingIcon" to settings.chargingIconEnabled,
+                "batteryNumberFollowsBattery" to settings.topTextFollowsBattery,
                 "chargingIconFollowsBattery" to
-                    settings.batteryTopChargingIconFollowsBatteryColor,
+                    settings.chargingIconFollowsBattery,
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
@@ -4618,13 +4618,13 @@ class GyModule : XposedModule() {
                 "combinedScale" to settings.combinedScale,
                 "wifiSizeScale" to settings.wifiSizeScale,
                 "mobileTypeSizeScale" to settings.mobileTypeSizeScale,
-                "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
-                "networkFollowsBattery" to settings.centerFollowsBatteryColor,
-                "batteryNumber" to settings.batteryTopReadoutEnabled,
-                "chargingIcon" to settings.batteryTopChargingIconEnabled,
-                "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
+                "mobileFollowsBattery" to settings.mobileFollowsBattery,
+                "networkFollowsBattery" to settings.centerFollowsBattery,
+                "batteryNumber" to settings.topReadoutEnabled,
+                "chargingIcon" to settings.chargingIconEnabled,
+                "batteryNumberFollowsBattery" to settings.topTextFollowsBattery,
                 "chargingIconFollowsBattery" to
-                    settings.batteryTopChargingIconFollowsBatteryColor,
+                    settings.chargingIconFollowsBattery,
                 "eventDriven" to true,
                 "mainThread" to true,
             )
@@ -4719,7 +4719,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(36)
+            SystemClock.elapsedRealtime().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4732,12 +4732,12 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                        put(key, value.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
-                put("sequence", diagnosticSequence.incrementAndGet().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                put("uptimeMs", SystemClock.elapsedRealtime().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
             }
         log(
             level,

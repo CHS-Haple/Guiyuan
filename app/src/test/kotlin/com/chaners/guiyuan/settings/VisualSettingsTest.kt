@@ -14,7 +14,7 @@ class VisualSettingsTest {
         assertEquals(1f, settings.noSimSizeScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeSizeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
-        assertEquals(true, settings.controlCenterTintTransitionEnabled)
+        assertEquals(true, settings.ccTintTransitionEnabled)
 
         val normalized =
             settings.copy(
@@ -155,28 +155,28 @@ class VisualSettingsTest {
     fun previousPhysicalPlusThreeIsTheNewUserFacingZero() {
         assertEquals(
             0f,
-            batteryTopVerticalOffsetUi(3f),
+            topOffsetUi(3f),
             0.0001f,
         )
         assertEquals(
             3f,
-            batteryTopVerticalOffsetRaw(0f),
+            topOffsetRaw(0f),
             0.0001f,
         )
     }
 
     @Test
     fun userFacingOffsetRangeIsPlusMinusTenAroundPhysicalReference() {
-        assertEquals(-10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MIN, 0.0001f)
-        assertEquals(10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MAX, 0.0001f)
+        assertEquals(-10f, TOP_OFFSET_UI_MIN, 0.0001f)
+        assertEquals(10f, TOP_OFFSET_UI_MAX, 0.0001f)
         assertEquals(
             -7f,
-            batteryTopVerticalOffsetRaw(-10f),
+            topOffsetRaw(-10f),
             0.0001f,
         )
         assertEquals(
             13f,
-            batteryTopVerticalOffsetRaw(10f),
+            topOffsetRaw(10f),
             0.0001f,
         )
     }
@@ -185,12 +185,12 @@ class VisualSettingsTest {
     fun offsetMappingClampsOnlyAtVisibleSliderEnds() {
         assertEquals(
             -10f,
-            batteryTopVerticalOffsetUi(-30f),
+            topOffsetUi(-30f),
             0.0001f,
         )
         assertEquals(
             10f,
-            batteryTopVerticalOffsetUi(30f),
+            topOffsetUi(30f),
             0.0001f,
         )
     }
@@ -199,15 +199,15 @@ class VisualSettingsTest {
     fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
         val high =
             VisualSettings(
-                batteryTopVerticalOffset = 30f,
+                topOffset = 30f,
             ).normalized()
         val low =
             VisualSettings(
-                batteryTopVerticalOffset = -30f,
+                topOffset = -30f,
             ).normalized()
 
-        assertEquals(13f, high.batteryTopVerticalOffset, 0.0001f)
-        assertEquals(-7f, low.batteryTopVerticalOffset, 0.0001f)
+        assertEquals(13f, high.topOffset, 0.0001f)
+        assertEquals(-7f, low.topOffset, 0.0001f)
     }
 
 
@@ -221,10 +221,10 @@ class VisualSettingsTest {
         val keys =
             listOf(
                 CONTENT_LAYOUT_KEY,
-                BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
-                BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
-                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+                TOP_TEXT_FOLLOWS_BATTERY_KEY,
+                CHARGING_ICON_ENABLED_KEY,
+                CHARGING_ICON_FOLLOWS_BATTERY_KEY,
+                CC_TINT_TRANSITION_KEY,
             )
 
         keys.forEach { key ->
@@ -239,14 +239,14 @@ class VisualSettingsTest {
             "network_center.battery_top_text_scale",
             visualProfileKey(
                 ContentLayout.NETWORK_CENTER,
-                BATTERY_TOP_TEXT_SCALE_KEY,
+                TOP_TEXT_SCALE_KEY,
             ),
         )
         assertEquals(
             "battery_center.battery_top_text_scale",
             visualProfileKey(
                 ContentLayout.BATTERY_CENTER,
-                BATTERY_TOP_TEXT_SCALE_KEY,
+                TOP_TEXT_SCALE_KEY,
             ),
         )
     }
@@ -289,14 +289,14 @@ class VisualSettingsTest {
             listOf(
                 MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
                 CENTER_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_READOUT_ENABLED_KEY,
-                BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
-                BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_TEXT_SCALE_KEY,
-                BATTERY_TOP_TEXT_WEIGHT_KEY,
-                BATTERY_TOP_VERTICAL_OFFSET_KEY,
-                BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
+                TOP_READOUT_KEY,
+                TOP_TEXT_FOLLOWS_BATTERY_KEY,
+                CHARGING_ICON_ENABLED_KEY,
+                CHARGING_ICON_FOLLOWS_BATTERY_KEY,
+                TOP_TEXT_SCALE_KEY,
+                TOP_TEXT_WEIGHT_KEY,
+                TOP_OFFSET_KEY,
+                CHARGING_ICON_SCALE_KEY,
                 COMBINED_SCALE_KEY,
                 OUTER_WEIGHT_SCALE_KEY,
                 WIFI_SIZE_SCALE_KEY,
@@ -341,9 +341,9 @@ class VisualSettingsTest {
         val settings = VisualSettings()
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.contentLayout)
-        assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
-        assertEquals(true, settings.batteryTopChargingIconEnabled)
-        assertEquals(true, settings.batteryTopChargingIconFollowsBatteryColor)
+        assertEquals(true, settings.topTextFollowsBattery)
+        assertEquals(true, settings.chargingIconEnabled)
+        assertEquals(true, settings.chargingIconFollowsBattery)
     }
 
     @Test
@@ -363,25 +363,25 @@ class VisualSettingsTest {
     fun batteryCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.4f,
-            batteryTopTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
+            topTextUiDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
+            chargingIconUiDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.4f,
             batteryTopTextUiScale(
-                batteryTopTextScaleDefault(ContentLayout.BATTERY_CENTER),
+                topTextScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
         assertEquals(
             1.2f,
             batteryTopChargingIconUiScale(
-                batteryTopChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
+                chargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
@@ -407,7 +407,7 @@ class VisualSettingsTest {
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScale(settings.batteryTopChargingIconScale),
+            batteryTopChargingIconUiScale(settings.chargingIconScale),
             0.0001f,
         )
         assertEquals(0.8f, settings.mobileTypeSizeScale, 0.0001f)
@@ -417,12 +417,12 @@ class VisualSettingsTest {
     fun networkCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.2f,
-            batteryTopTextUiScaleDefault(ContentLayout.NETWORK_CENTER),
+            topTextUiDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
             1f,
-            batteryTopChargingIconUiScaleDefault(ContentLayout.NETWORK_CENTER),
+            chargingIconUiDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
@@ -434,10 +434,10 @@ class VisualSettingsTest {
 
     @Test
     fun batteryTopScaleRangesAreFortyToOneHundredSixtyPercent() {
-        assertEquals(0.4f, BATTERY_TOP_TEXT_UI_SCALE_MIN, 0.0001f)
-        assertEquals(1.6f, BATTERY_TOP_TEXT_UI_SCALE_MAX, 0.0001f)
-        assertEquals(0.4f, BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN, 0.0001f)
-        assertEquals(1.6f, BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX, 0.0001f)
+        assertEquals(0.4f, TOP_TEXT_UI_MIN, 0.0001f)
+        assertEquals(1.6f, TOP_TEXT_UI_MAX, 0.0001f)
+        assertEquals(0.4f, CHARGING_ICON_UI_MIN, 0.0001f)
+        assertEquals(1.6f, CHARGING_ICON_UI_MAX, 0.0001f)
 
         assertEquals(
             0.4f,

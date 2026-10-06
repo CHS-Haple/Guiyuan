@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+import com.chaners.guiyuan.settings.TOP_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
@@ -13,7 +13,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
+import com.chaners.guiyuan.settings.topOffsetUi
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -29,7 +29,7 @@ internal object TopInfoOffsetPolicy {
         if (layout == ContentLayout.NETWORK_CENTER) {
             rawOffset
         } else {
-            BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+            TOP_OFFSET_DEFAULT
         }
 
     fun networkTranslationDelta(
@@ -37,7 +37,7 @@ internal object TopInfoOffsetPolicy {
         rawOffset: Float,
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
-            -batteryTopVerticalOffsetUi(rawOffset)
+            -topOffsetUi(rawOffset)
         } else {
             0f
         }

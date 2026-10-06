@@ -101,8 +101,8 @@ class ColorPolicyTest {
                     ),
                 visualSettings =
                     VisualSettings(
-                        mobileFollowsBatteryColor = true,
-                        centerFollowsBatteryColor = true,
+                        mobileFollowsBattery = true,
+                        centerFollowsBattery = true,
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
@@ -130,8 +130,8 @@ class ColorPolicyTest {
                     ),
                 visualSettings =
                     VisualSettings(
-                        batteryTopTextFollowsBatteryColor = false,
-                        batteryTopChargingIconFollowsBatteryColor = false,
+                        topTextFollowsBattery = false,
+                        chargingIconFollowsBattery = false,
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )

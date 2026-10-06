@@ -2,10 +2,10 @@ package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
 import android.os.SystemClock
-import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
+import com.chaners.guiyuan.settings.AOD_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_CHANGED_NS_KEY
+import com.chaners.guiyuan.settings.KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.FeatureSettings
 import com.chaners.guiyuan.settings.isFeaturePreferenceKey
 
@@ -46,7 +46,7 @@ internal object FeaturePrefsOwner {
                         val recvNs = SystemClock.elapsedRealtimeNanos()
                         val changedNs =
                             changed.getLong(
-                                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                                FEATURE_CHANGED_NS_KEY,
                                 0L,
                             )
                         current = next
@@ -116,17 +116,17 @@ internal object FeaturePrefsOwner {
         FeatureSettings(
             enabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_ENABLED_KEY,
+                    FEATURE_ENABLED_KEY,
                     true,
                 ),
             keyguardEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    KEYGUARD_ENABLED_KEY,
                     false,
                 ),
             aodEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    AOD_ENABLED_KEY,
                     false,
                 ),
         )
