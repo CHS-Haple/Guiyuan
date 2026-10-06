@@ -36,7 +36,7 @@ internal object SysUiHotReload {
         }
 
         val host =
-            SysUiHostRegistry.currentStatusHost()
+            SysUiHostRegistry.current()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
