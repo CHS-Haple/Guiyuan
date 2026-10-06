@@ -979,7 +979,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         renderViewRef = WeakReference(render)
         renderController =
             renderController ?: RenderController(render)
-        renderController?.updateVisualSettings(
+        renderController?.updateVisualCfg(
             VisualPrefsOwner.current(),
         )
         featureEnabled =
@@ -1277,8 +1277,8 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualCfg) {
-        renderController?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        renderController?.updateVisualCfg(settings)
     }
 
     @Synchronized

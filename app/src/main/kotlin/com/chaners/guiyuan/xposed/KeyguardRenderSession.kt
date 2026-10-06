@@ -117,8 +117,8 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualCfg) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        current?.updateVisualCfg(settings)
     }
 
     @Synchronized
@@ -391,7 +391,7 @@ internal object KeyguardRenderSession {
                 renderView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
+            renderController.updateVisualCfg(
                 VisualPrefsOwner.current(),
             )
             SystemUiTintStateSource.currentState(battery)?.let { state ->
@@ -454,8 +454,8 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualCfg) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(settings: VisualCfg) {
+            renderController.updateVisualCfg(settings)
             layoutProbe()
         }
 

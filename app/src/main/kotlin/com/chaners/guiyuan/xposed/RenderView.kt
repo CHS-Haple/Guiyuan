@@ -126,7 +126,7 @@ internal class RenderView(
         requestRedraw()
     }
 
-    fun setVisualSettings(state: VisualCfg) {
+    fun setVisualCfg(state: VisualCfg) {
         if (visualSettings == state) {
             return
         }

@@ -55,7 +55,7 @@ class GyModule : XposedModule() {
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
-        bindRuntimeVisualSettings()
+        bindVisualCfg()
         log(
             Log.INFO,
             TAG,
@@ -246,7 +246,7 @@ class GyModule : XposedModule() {
         if (takeover == null) {
             bindRuntimeDiagnostics()
             bindFeatureCfg()
-            bindRuntimeVisualSettings()
+            bindVisualCfg()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -296,7 +296,7 @@ class GyModule : XposedModule() {
             SystemUiNativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
             bindRuntimeDiagnostics()
             bindFeatureCfg()
-            bindRuntimeVisualSettings()
+            bindVisualCfg()
             logDiagnostic(
                 level = Log.INFO,
                 event = "module.reloaded",
@@ -4540,11 +4540,11 @@ class GyModule : XposedModule() {
         HomeRenderSession.setNativeHandoffActive(true)
     }
 
-    private fun bindRuntimeVisualSettings() {
+    private fun bindVisualCfg() {
         runCatching {
             VisualPrefsOwner.bind(
                 source = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
-                onChanged = ::onRuntimeVisualSettingsChanged,
+                onChanged = ::onVisualCfgChanged,
             )
         }.onSuccess { settings ->
             logDiagnostic(
@@ -4574,13 +4574,13 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onRuntimeVisualSettingsChanged(
+    private fun onVisualCfgChanged(
         settings: com.chaners.guiyuan.settings.VisualCfg,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {
-                    onRuntimeVisualSettingsChanged(settings)
+                    onVisualCfgChanged(settings)
                 }
             val hostView = SystemUiHostRegistry.currentStatusHost() as? android.view.View
             val scheduled =
@@ -4604,10 +4604,10 @@ class GyModule : XposedModule() {
             return
         }
 
-        HomeRenderSession.onVisualSettingsChanged(settings)
-        KeyguardRenderSession.onVisualSettingsChanged(settings)
-        ControlCenterRenderSession.onVisualSettingsChanged(settings)
-        SystemUiHomePresentationOwner.onVisualSettingsChanged()
+        HomeRenderSession.onVisualCfgChanged(settings)
+        KeyguardRenderSession.onVisualCfgChanged(settings)
+        ControlCenterRenderSession.onVisualCfgChanged(settings)
+        SystemUiHomePresentationOwner.onVisualCfgChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,

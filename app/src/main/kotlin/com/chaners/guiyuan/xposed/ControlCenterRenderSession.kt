@@ -261,8 +261,8 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualCfg) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        current?.updateVisualCfg(settings)
     }
 
     @Synchronized
@@ -587,7 +587,7 @@ internal object ControlCenterRenderSession {
             carrier.get()?.addOnLayoutChangeListener(carrierLayoutListener)
             renderView.visibility = View.GONE
             hostView.overlay.add(renderView)
-            renderController.updateVisualSettings(currentVisualSettings)
+            renderController.updateVisualCfg(currentVisualSettings)
             update(StatusStateStore.snapshot())
             refreshTint()
             layoutProjection()
@@ -780,12 +780,12 @@ internal object ControlCenterRenderSession {
             syncPresentation("feature")
         }
 
-        fun updateVisualSettings(settings: VisualCfg) {
+        fun updateVisualCfg(settings: VisualCfg) {
             if (currentVisualSettings != settings) {
                 currentVisualSettings = settings
                 transitionStateVersion += 1
             }
-            renderController.updateVisualSettings(settings)
+            renderController.updateVisualCfg(settings)
         }
 
         private fun refreshTint() {

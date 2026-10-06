@@ -31,7 +31,7 @@ internal fun StatusPreview(
                         statusIconTint = tint,
                     ),
                 )
-                setVisualSettings(visualSettings)
+                setVisualCfg(visualSettings)
                 setModel(model)
             }
         },
@@ -45,7 +45,7 @@ internal fun StatusPreview(
                     statusIconTint = tint,
                 ),
             )
-            view.setVisualSettings(visualSettings)
+            view.setVisualCfg(visualSettings)
             view.setModel(model)
         },
     )

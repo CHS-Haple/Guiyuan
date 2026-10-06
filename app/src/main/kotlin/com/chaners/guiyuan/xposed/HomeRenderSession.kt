@@ -107,8 +107,8 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualCfg) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        current?.updateVisualCfg(settings)
     }
 
     @Synchronized
@@ -307,7 +307,7 @@ internal object HomeRenderSession {
                 probeView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
+            renderController.updateVisualCfg(
                 VisualPrefsOwner.current(),
             )
             resolveInitialTintSeed(
@@ -434,8 +434,8 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualCfg) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(settings: VisualCfg) {
+            renderController.updateVisualCfg(settings)
             layoutProbe()
         }
 

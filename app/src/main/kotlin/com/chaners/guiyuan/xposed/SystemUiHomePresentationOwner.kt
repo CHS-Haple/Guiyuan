@@ -139,7 +139,7 @@ internal object SystemUiHomePresentationOwner {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged() {
+    fun onVisualCfgChanged() {
         current?.syncEndReservation()
         keyguardFamilyCurrent?.syncEndReservation()
         controlCenterCurrent?.syncEndReservation()
