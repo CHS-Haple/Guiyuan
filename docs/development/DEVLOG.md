@@ -1,8 +1,8 @@
 ## 2026-10-06 — Guiyuan 0.2.1 stable promotion complete
 
-**Type:** stable promotion / repository state  
-**Display version:** 0.2.1  
-**Build:** 746 / `20261006-746`  
+**Type:** stable promotion / repository state
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
 **Accepted runtime baseline:** Build 744
 
 ### Promotion result
