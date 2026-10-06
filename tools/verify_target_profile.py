@@ -6,16 +6,16 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROFILE_PATH = ROOT / "compat" / "targets" / "hyperos-17.03.260226.r.json"
-PROBE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiCompatibilityProbe.kt"
+PROBE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "CompatibilityProbe.kt"
 STATUS_HOST_CAPTURE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "StatusBarHostCapture.kt"
-NATIVE_STATUS_INVENTORY_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiNativeStatusInventory.kt"
-NETWORK_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiNetworkStateSource.kt"
-SCENE_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiSceneStateSource.kt"
-BATTERY_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiBatteryStateSource.kt"
-KEYGUARD_AOD_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardAodStateSource.kt"
-KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardFullAodTransitionSource.kt"
-KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardStatusIconTransitionSource.kt"
-PANEL_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiPanelTransitionSource.kt"
+NATIVE_STATUS_INVENTORY_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "NativeStatusInventory.kt"
+NETWORK_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "NetworkStateSource.kt"
+SCENE_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SceneSource.kt"
+BATTERY_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "BatterySource.kt"
+KEYGUARD_AOD_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardAodSource.kt"
+KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardAodTransition.kt"
+KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardIconTransition.kt"
+PANEL_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "PanelTransitionSource.kt"
 
 HEX_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64}
 
@@ -110,8 +110,8 @@ network_source_hook_constants = {
     "wifiIconCollected": ("WIFI_ICON_EMITTER_CLASS_NAME", "WIFI_ICON_EMIT_METHOD_NAME"),
     "mobileBinderBind": ("MOBILE_BINDER_CLASS_NAME", "MOBILE_BIND_METHOD_NAME"),
     "mobileSignalCollected": (
-        "MOBILE_SIGNAL_EMITTER_CLASS_NAME",
-        "MOBILE_SIGNAL_EMIT_METHOD_NAME",
+        "MOBILE_SIGNAL_EMITTER_CLASS",
+        "MOBILE_SIGNAL_EMIT_METHOD",
     ),
 }
 for hook_name, (class_constant, method_constant) in network_source_hook_constants.items():
@@ -274,21 +274,21 @@ lifecycle_hook_specs = (
         "controlCenterVisibility",
         PANEL_TRANSITION_SOURCE_PATH,
         "CONTROL_CENTER_CLASS",
-        "CONTROL_CENTER_VISIBLE_METHOD",
+        "CC_VISIBLE_METHOD",
         "(Z)V",
     ),
     (
         "controlCenterExpansion",
         PANEL_TRANSITION_SOURCE_PATH,
-        "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
-        "CONTROL_CENTER_EXPANSION_METHOD",
+        "CC_HEADER_CALLBACK_CLASS",
+        "CC_EXPANSION_METHOD",
         "(F)V",
     ),
     (
         "controlCenterAppearance",
         PANEL_TRANSITION_SOURCE_PATH,
-        "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
-        "CONTROL_CENTER_APPEARANCE_METHOD",
+        "CC_HEADER_CALLBACK_CLASS",
+        "CC_APPEARANCE_METHOD",
         "(ZZ)V",
     ),
 )
@@ -355,7 +355,7 @@ if not set(native_status_views.values()).issubset(verified_systemui):
 inventory_text = NATIVE_STATUS_INVENTORY_PATH.read_text(encoding="utf-8")
 inventory_constants = {
     "mobileNetwork": re.search(
-        r'MOBILE_NETWORK_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        r'MOBILE_NETWORK_VIEW_CLASS\s*=\s*\n?\s*"([^"]+)"',
         inventory_text,
     ),
     "wifi": re.search(
@@ -382,11 +382,11 @@ if not set(native_status_containers.values()).issubset(verified_systemui):
 
 container_constants = {
     "miuiStatusIcons": re.search(
-        r'(?m)^\s*const val MIUI_STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        r'(?m)^\s*const val MIUI_STATUS_CONTAINER_CLASS\s*=\s*\n?\s*"([^"]+)"',
         inventory_text,
     ),
     "statusIcons": re.search(
-        r'(?m)^\s*const val STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        r'(?m)^\s*const val STATUS_ICON_CONTAINER_CLASS\s*=\s*\n?\s*"([^"]+)"',
         inventory_text,
     ),
     "batteryContainer": re.search(
