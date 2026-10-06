@@ -77,7 +77,7 @@ internal object SysUiKeyguardHostProbe {
     internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD
 
-    internal fun isKeyguardHostClassName(className: String): Boolean =
+    internal fun isHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
 
     internal fun shouldFreezeSample(
