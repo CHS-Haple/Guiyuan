@@ -1994,9 +1994,9 @@ internal object ControlCenterTransitionOwner {
                 }
             }
 
-            // Latent occupancy may move native peers through the existing
-            // reservation writer, but it never becomes geometry authority.
-            // Build 504 keeps every projected endpoint in absolute root space.
+            // Latent occupancy may move native peers through the reservation writer,
+            // but it never becomes geometry authority. Projected endpoints stay in
+            // absolute root space.
             return result.takeIf { it.isNotEmpty() }
         }
 
