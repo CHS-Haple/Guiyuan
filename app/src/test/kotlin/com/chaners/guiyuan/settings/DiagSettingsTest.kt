@@ -3,7 +3,7 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class DiagnosticsSettingsTest {
+class DiagSettingsTest {
     @Test
     fun defaultsToGeneralWhenValueIsMissing() {
         assertEquals(

@@ -73,8 +73,8 @@ internal object DiagLogParser {
     fun parse(line: String): DiagLogEntry {
         val envelope = parseEnvelope(line)
         val structured =
-            DiagnosticsProtocol.parse(envelope.message)
-                ?: DiagnosticsProtocol.parse(line)
+            DiagProtocol.parse(envelope.message)
+                ?: DiagProtocol.parse(line)
         val legacy =
             if (structured == null) {
                 parseLegacyMessage(envelope.message)

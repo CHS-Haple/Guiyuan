@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.system
 
-internal object SystemUiScope {
+internal object SysUiScope {
     private const val CommandTimeoutSeconds = 10L
     internal const val RestartProbeAttempts = 60
     internal const val RestartProbeIntervalSeconds = "0.1"

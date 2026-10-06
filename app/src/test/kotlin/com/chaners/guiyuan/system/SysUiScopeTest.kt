@@ -4,13 +4,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiScopeTest {
+class SysUiScopeTest {
     @Test
     fun restartUsesExactPidAndSigterm() {
-        val command = SystemUiScope.RestartCommand
+        val command = SysUiScope.RestartCommand
 
         assertTrue(command.contains("pidof"))
-        assertTrue(command.contains(SystemUiScope.SystemUiPackage))
+        assertTrue(command.contains(SysUiScope.SystemUiPackage))
         assertTrue(command.contains("kill -TERM"))
         assertTrue(command.contains("old_alive"))
         assertTrue(command.contains("new_pids"))
@@ -19,7 +19,7 @@ class SystemUiScopeTest {
 
     @Test
     fun restartDoesNotUseCrashForceStopSigkillOrBlindKillall() {
-        val command = SystemUiScope.RestartCommand
+        val command = SysUiScope.RestartCommand
 
         assertFalse(command.contains("am force-stop"))
         assertFalse(command.contains("am crash"))
@@ -30,7 +30,7 @@ class SystemUiScopeTest {
 
     @Test
     fun replacementProbeIsBounded() {
-        assertTrue(SystemUiScope.RestartProbeAttempts in 1..100)
-        assertTrue(SystemUiScope.RestartProbeIntervalSeconds == "0.1")
+        assertTrue(SysUiScope.RestartProbeAttempts in 1..100)
+        assertTrue(SysUiScope.RestartProbeIntervalSeconds == "0.1")
     }
 }

@@ -4,11 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-class DiagnosticsProtocolTest {
+class DiagProtocolTest {
     @Test
     fun formattedEventRoundTripsStructuredFields() {
         val line =
-            DiagnosticsProtocol.format(
+            DiagProtocol.format(
                 event = "source.install",
                 component = "network",
                 state = "ready",
@@ -19,9 +19,9 @@ class DiagnosticsProtocolTest {
                     ),
             )
 
-        val parsed = requireNotNull(DiagnosticsProtocol.parse(line))
+        val parsed = requireNotNull(DiagProtocol.parse(line))
 
-        assertEquals(DiagnosticsProtocol.SchemaVersion, parsed.schemaVersion)
+        assertEquals(DiagProtocol.SchemaVersion, parsed.schemaVersion)
         assertEquals("source.install", parsed.event)
         assertEquals("network", parsed.component)
         assertEquals("ready", parsed.state)
@@ -33,7 +33,7 @@ class DiagnosticsProtocolTest {
     fun legacyEventWithoutSchemaStillParses() {
         val parsed =
             requireNotNull(
-                DiagnosticsProtocol.parse(
+                DiagProtocol.parse(
                     "diag event=module.loaded component=module state=ready",
                 ),
             )
@@ -46,12 +46,12 @@ class DiagnosticsProtocolTest {
     fun healthSnapshotUsesLatestEventForEachComponent() {
         val lines =
             listOf(
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
                 ),
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -73,7 +73,7 @@ class DiagnosticsProtocolTest {
     fun healthSnapshotScopesToLatestRuntimeSession() {
         val lines =
             listOf(
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -84,7 +84,7 @@ class DiagnosticsProtocolTest {
                             "uptimeMs" to "100",
                         ),
                 ),
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
@@ -95,7 +95,7 @@ class DiagnosticsProtocolTest {
                             "uptimeMs" to "110",
                         ),
                 ),
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -106,7 +106,7 @@ class DiagnosticsProtocolTest {
                             "uptimeMs" to "200",
                         ),
                 ),
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -124,7 +124,7 @@ class DiagnosticsProtocolTest {
         val network = requireNotNull(snapshot.component("network"))
 
         assertEquals("new", snapshot.sessionId)
-        assertEquals(DiagnosticsProtocol.SchemaVersion, snapshot.schemaVersion)
+        assertEquals(DiagProtocol.SchemaVersion, snapshot.schemaVersion)
         assertEquals("ready", network.state)
         assertEquals("4", network.fields["hooks"])
         assertFalse(network.fields.containsKey("sessionId"))
@@ -136,13 +136,13 @@ class DiagnosticsProtocolTest {
     fun metricEventsDoNotReplaceHealthState() {
         val lines =
             listOf(
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
                     fields = mapOf("hooks" to "4"),
                 ),
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "pipeline.latency",
                     component = "network",
                     state = "observed",
@@ -184,14 +184,14 @@ class DiagnosticsProtocolTest {
             )
         val lines =
             coreComponents.mapIndexed { index, component ->
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "hotReload.test",
                     component = component,
                     state = "ready",
                     fields =
                         mapOf(
                             "sessionId" to "hot",
-                            "sequence" to (index + 1).toString(),
+                            "sequence" to (index + 1).function toString() { [native code] }(),
                         ),
                 )
             }
@@ -220,11 +220,11 @@ class DiagnosticsProtocolTest {
             )
         val lines =
             coreComponents.mapIndexed { index, component ->
-                DiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.ready",
                     component = component,
                     state = "ready",
-                    fields = mapOf("sequence" to (index + 1).toString()),
+                    fields = mapOf("sequence" to (index + 1).function toString() { [native code] }()),
                 )
             }
 
@@ -241,7 +241,7 @@ class DiagnosticsProtocolTest {
         val snapshot =
             RuntimeHealthSnapshot.fromLines(
                 listOf(
-                    DiagnosticsProtocol.format(
+                    DiagProtocol.format(
                         event = "module.loaded",
                         component = "module",
                         state = "ready",

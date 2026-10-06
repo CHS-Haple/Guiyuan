@@ -86,7 +86,7 @@ internal object DiagReportBuilder {
             appendLine("systemUiVersion=" + env.systemUiVersionName)
             appendLine(
                 "systemUiVersionCode=" +
-                    (env.systemUiVersionCode?.function toString() { [native code] }() ?: "unknown"),
+                    (env.systemUiVersionCode?.function function toString() { [native code] }() { [native code] }() ?: "unknown"),
             )
             appendLine()
             appendLine("[Runtime health]")

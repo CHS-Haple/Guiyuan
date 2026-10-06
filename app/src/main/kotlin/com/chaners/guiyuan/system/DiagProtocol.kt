@@ -44,7 +44,7 @@ internal data class RuntimeHealthSnapshot(
                                 append(' ')
                                 append(key)
                                 append('=')
-                                append(DiagnosticsProtocol.encode(value))
+                                append(DiagProtocol.encode(value))
                             }
                     },
                 )
@@ -103,7 +103,7 @@ internal data class RuntimeHealthSnapshot(
 
         fun fromLines(lines: List<String>): RuntimeHealthSnapshot {
             val parsedEvents =
-                lines.mapNotNull(DiagnosticsProtocol::parse)
+                lines.mapNotNull(DiagProtocol::parse)
             val latestSessionId =
                 parsedEvents
                     .asReversed()
@@ -179,7 +179,7 @@ internal data class RuntimeHealthSnapshot(
     }
 }
 
-internal object DiagnosticsProtocol {
+internal object DiagProtocol {
     const val SchemaVersion = 1
 
     private const val Marker = "diag "
