@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: synchronized with stable `main` at Guiyuan 0.2.1 / Build 746 after PR #247 promotion closeout. Runtime behavior and Build identity remain unchanged.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 with PR #248 runtime-plumbing maintainability cleanup merged after exact-head Full validation. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,23 +24,24 @@
 
 ## Active objective
 
-Current work is on `refactor/runtime-plumbing`, based on synchronized `dev` at Guiyuan 0.2.1 / Build 746. This is a behavior-neutral maintainability pass for concrete runtime-plumbing problems found after the previous cleanup, not another line-count or naming-standardization sweep.
+PR #248 is merged to `dev` after full base→HEAD review and exact-head Full CI #2879. The runtime-plumbing maintenance batch is closed.
 
-The current batch is limited to changes with clear maintenance value:
+The accepted cleanup now includes:
 
-- remove synthetic diagnostic fields that were hard-coded rather than observed;
-- collapse boolean fields that describe one lifecycle into explicit local state;
-- remove one-line Policy/Result wrappers and dead lifecycle entry points;
-- reuse one result type where two sealed hierarchies carried the same states;
-- shorten plumbing names only where surrounding scope already supplies the missing context;
-- keep ownership, fail-native, native geometry, transition timing and accepted Build 746 behavior unchanged.
+- synthetic diagnostic metrics and fixed self-proof tags removed from the touched runtime paths;
+- full-AOD and Keyguard boundary handoff state consolidated where the fields described one lifecycle;
+- thin Policy/Result wrappers, duplicate result hierarchies and a dead detach path removed;
+- internal plumbing names shortened only where scope already carries the context;
+- CONTRIBUTING updated to prohibit synthetic metrics and low-value abstraction wrappers.
+
+No device validation is required for this batch: static lifecycle comparison, compile/tests, target-profile validation and exact-head Full CI resolved the engineering questions without leaving a device-only uncertainty.
 
 Current priorities:
 
-1. finish the full `dev -> refactor/runtime-plumbing` diff review and exact-head CI before integration;
+1. start the next coherent task from current `dev`;
 2. preserve accepted ownership/lifecycle/fail-native contracts and Build 746 identity;
-3. stop the cleanup when the remaining abstractions carry real domain, compatibility or lifecycle meaning;
-4. request device evidence only if the final diff or CI leaves a runtime question that device evidence can actually resolve.
+3. do not reopen this cleanup just to chase shorter names, fewer lines or zero compiler warnings;
+4. keep `main` unchanged until a separate dev-to-main promotion is explicitly chosen.
 
 ## Non-negotiable bounds
 
@@ -54,8 +55,8 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime baseline; Build 746 remains the stable 0.2.1 release/build identity.
-- Review the complete maintenance diff, run the branch CI once at the coherent checkpoint, and fix only concrete findings.
-- Do not reopen the rejected alpha-layer experiment or broaden this branch into unrelated cosmetic cleanup.
+- Treat Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
+- Begin future work from current `dev` at PR #248 merge commit `6f7c3a1`.
+- Do not reopen the rejected alpha-layer experiment or continue runtime-plumbing cleanup without a concrete maintenance or compatibility problem.
 - Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
