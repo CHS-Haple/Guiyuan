@@ -1,3 +1,28 @@
+## 2026-10-06 — Guiyuan 0.2.1 stable promotion complete
+
+**Type:** stable promotion / repository state  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746`  
+**Accepted runtime baseline:** Build 744
+
+### Promotion result
+
+PR #226 promoted the accepted `dev` state to `main` as Guiyuan 0.2.1 after the dev-to-main Full validation boundary passed. This is a maintenance checkpoint over 0.2.0, not a new architecture or feature phase.
+
+Build 746 changes version/release metadata only over the accepted Build 744 runtime. The rejected Build 745 alpha-layer experiment remains closed and unmerged.
+
+GitHub automatically removed the long-lived `dev` branch when the dev-to-main PR merged. Per repository policy, `dev` was immediately recreated at the promoted `main` commit before further development. This closeout commit is then applied identically to `main` and `dev` so current-state documentation remains synchronized.
+
+### Validation
+
+- Build 746 trusted `dev` validation #2785 passed, including signed Canary/signature and non-debuggable checks;
+- README 0.2.1 consistency PR #225 Light validation #2786 and integrated `dev` #2787 passed;
+- stable promotion PR #226 Full validation #2788 passed;
+- CodeQL / code-scanning checks on the promotion boundary passed;
+- no `v0.2.1` tag or existing stable Release conflicted with the promotion.
+
+No runtime behavior, dependency, compatibility target, renderer, transition geometry, native writer, or Build identity changes in this closeout.
+
 ## 2026-10-06 — Pre-release consistency follow-up: pinned target contract coverage
 
 **Type:** repository / compatibility contract / CI audit  

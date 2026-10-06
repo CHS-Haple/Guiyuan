@@ -2,9 +2,9 @@
 
 ## Repository / build
 
-- Product / promotion candidate: Guiyuan 0.2.1.
-- Stable `main` remains Guiyuan 0.2.0 / Build 742 (`20261006-742`) until the dev-to-main promotion completes.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 (`20261006-746`). Build 746 changes only version/release metadata over the accepted Build 744 runtime.
+- Product / stable checkpoint: Guiyuan 0.2.1.
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
+- Integration `dev`: synchronized to the same Guiyuan 0.2.1 / Build 746 checkpoint after promotion. Build 746 changes only version/release metadata over the accepted Build 744 runtime.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,7 +24,7 @@
 
 ## Active objective
 
-The recent Keyguard / Control Center performance line is **closed at Build 744**. Guiyuan 0.2.1 / Build 746 is the stable-promotion checkpoint and does not reopen that runtime line.
+The recent Keyguard / Control Center performance line is **closed at Build 744**. Guiyuan 0.2.1 / Build 746 is the promoted maintenance checkpoint and does not reopen that runtime line.
 
 Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
 
@@ -32,7 +32,7 @@ Normal development may continue from the current `dev` state. Performance work s
 
 Current priorities:
 
-1. complete the Guiyuan 0.2.1 / Build 746 dev-to-main stable promotion;
+1. continue normal product, UI, compatibility and maintenance work from the synchronized 0.2.1 stable/integration baseline;
 2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
 3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
 4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
@@ -49,7 +49,7 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime baseline; Build 746 is release metadata only.
+- Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
 - Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
-- Run the dev-to-main stable promotion boundary with Full validation, then synchronize long-lived `dev` to the promoted `main` head.
-- External version is 0.2.1 for this explicitly authorized promotion.
+- Start subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
+- External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
