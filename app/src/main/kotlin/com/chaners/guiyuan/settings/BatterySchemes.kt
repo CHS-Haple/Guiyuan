@@ -468,7 +468,7 @@ internal class BatterySchemeRepo(context: Context) {
             .putString(BATTERY_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
             .putString(
                 BATTERY_SCHEME_ORDER_KEY,
-                library.customSchemes.joinToString(",") { it.id.function function toString() { [native code] }() { [native code] }() },
+                library.customSchemes.joinToString(",") { it.id.toString() },
             )
         library.customSchemes.forEach { scheme ->
             val prefix = customPrefix(scheme.id)

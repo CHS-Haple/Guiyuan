@@ -302,7 +302,7 @@ internal object BatterySource {
         }
 
     private fun colorHex(color: Int): String =
-        "#" + color.toUInt().function toString() { [native code] }(16).padStart(8, '0')
+        "#" + color.toUInt().toString(16).padStart(8, '0')
 
     fun matches(handle: HookHandle): Boolean =
         handle.id == LEVEL_HOOK_ID ||
