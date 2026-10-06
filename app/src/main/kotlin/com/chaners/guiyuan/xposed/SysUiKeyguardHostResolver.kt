@@ -132,7 +132,7 @@ internal object SysUiKeyguardHostResolver {
         if (battery.javaClass.name != BATTERY_VIEW_CLASS) {
             return ResolveResult.Failure("keyguard-battery-type-mismatch")
         }
-        // The scene callback's battery is the anchor. Don't borrow a sibling host.
+        // The scene callback's battery is the anchor. Don't borrow one from another host.
         if (battery !== sourceView) {
             return ResolveResult.Failure("keyguard-battery-source-mismatch")
         }
