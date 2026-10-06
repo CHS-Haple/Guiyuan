@@ -120,6 +120,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
 - Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
 - Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
+- When moving code between files, check file-level imports, annotations, visibility, top-level constants, and receiver/extension context; an unchanged body can still depend on the old file.
 - Prefer deleting proven dead code and redundant indirection over renaming it.
 - Do not run CI for every micro-edit. Validate at meaningful checkpoints; request device evidence only when the refactor can plausibly change runtime behavior.
 
