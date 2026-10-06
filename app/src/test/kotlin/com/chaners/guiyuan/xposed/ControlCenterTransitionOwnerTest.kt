@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ControlCenterTransitionOwnerTest {
+class ControlCenterTransitionTest {
     @Test
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(
@@ -33,7 +33,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateGeometry(
+            ControlCenterTransition.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -165,7 +165,7 @@ class ControlCenterTransitionOwnerTest {
             )
 
         val follower =
-            ControlCenterTransitionPolicy.followAnchorGeometry(
+            ControlCenterTransition.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -182,7 +182,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = ControlCenterTransitionPolicy
+        val policy = ControlCenterTransition
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -220,7 +220,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = ControlCenterTransitionPolicy
+        val policy = ControlCenterTransition
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
@@ -312,7 +312,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            ControlCenterTransition.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -329,7 +329,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            ControlCenterTransition.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -343,9 +343,9 @@ class ControlCenterTransitionOwnerTest {
     @Test
     fun fourBarSnapshotTargetsRemainOrderedAndBounded() {
         val snapshot =
-            ParticipantVisualSnapshot.Snapshot(
+            VisualSnapshot.Snapshot(
                 envelope =
-                    ParticipantVisualSnapshot.NormalizedRect(
+                    VisualSnapshot.NormalizedRect(
                         left = 0.1f,
                         top = 0.2f,
                         right = 0.9f,
@@ -353,13 +353,13 @@ class ControlCenterTransitionOwnerTest {
                     ),
                 components =
                     listOf(
-                        ParticipantVisualSnapshot.NormalizedRect(0.1f, 0.55f, 0.2f, 0.9f),
-                        ParticipantVisualSnapshot.NormalizedRect(0.3f, 0.45f, 0.4f, 0.9f),
-                        ParticipantVisualSnapshot.NormalizedRect(0.5f, 0.35f, 0.6f, 0.9f),
-                        ParticipantVisualSnapshot.NormalizedRect(0.7f, 0.2f, 0.8f, 0.9f),
+                        VisualSnapshot.NormalizedRect(0.1f, 0.55f, 0.2f, 0.9f),
+                        VisualSnapshot.NormalizedRect(0.3f, 0.45f, 0.4f, 0.9f),
+                        VisualSnapshot.NormalizedRect(0.5f, 0.35f, 0.6f, 0.9f),
+                        VisualSnapshot.NormalizedRect(0.7f, 0.2f, 0.8f, 0.9f),
                     ),
                 topology =
-                    ParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
+                    VisualSnapshot.Topology.FOUR_VERTICAL_BARS,
             )
 
         val bars = requireNotNull(snapshot.fourVerticalBarsWithinEnvelope())

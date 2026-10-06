@@ -18,7 +18,7 @@ class ControlCenterTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
@@ -34,7 +34,7 @@ class ControlCenterTransitionGeometryTest {
         val source = floatArrayOf(1240f, 55f, 105f, 0f, 0f, 108f)
         val sourceCarrier = floatArrayOf(997f, 54f, 478f, 0f, 0f, 108f)
         val carried =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .rebaseSourceToCurrentCarrier(
                     source = source,
                     sourceCarrier = sourceCarrier,
@@ -55,7 +55,7 @@ class ControlCenterTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
@@ -80,7 +80,7 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(130f, 120f, 140f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
@@ -108,7 +108,7 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(60f, 65f, 140f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
@@ -136,7 +136,7 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(60f, 58f, 140f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
@@ -164,7 +164,7 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
@@ -192,7 +192,7 @@ class ControlCenterTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
@@ -214,7 +214,7 @@ class ControlCenterTransitionGeometryTest {
         val target = transitionGeometry(width = 75f, height = 75f)
 
         val result =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .interpolateSimilarityGeometry(
                     source = source,
                     target = target,
@@ -229,7 +229,7 @@ class ControlCenterTransitionGeometryTest {
     @Test
     fun nativeTargetHeightCanBoundLocalShapeWithoutOwningItsExactScale() {
         val ratio =
-            ControlCenterTransitionPolicy.relativeGeometryHeight(
+            ControlCenterTransition.relativeGeometryHeight(
                 target = transitionGeometry(width = 20f, height = 50f),
                 current = transitionGeometry(width = 10f, height = 20f),
             )
@@ -243,7 +243,7 @@ class ControlCenterTransitionGeometryTest {
         val host = floatArrayOf(300f, 54f, 600f, 0f, 0f, 108f)
 
         val ltr =
-            ControlCenterTransitionPolicy.endAnchoredSlotGeometry(
+            ControlCenterTransition.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -257,7 +257,7 @@ class ControlCenterTransitionGeometryTest {
         assertEquals(108f, ltr[5], 0.0001f)
 
         val rtl =
-            ControlCenterTransitionPolicy.endAnchoredSlotGeometry(
+            ControlCenterTransition.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -274,7 +274,7 @@ class ControlCenterTransitionGeometryTest {
         val stableRenderBasis = floatArrayOf(900f, 900f, 105f, 0f, 0f, 169f)
 
         val result =
-            ControlCenterTransitionPolicy.composeSourceGeometry(
+            ControlCenterTransition.composeSourceGeometry(
                 positionAuthority = nativePosition,
                 basisAuthority = stableRenderBasis,
             )
@@ -288,12 +288,12 @@ class ControlCenterTransitionGeometryTest {
     @Test
     fun semanticFallbackSeparatesMobileTypeAndSignalInsteadOfSharingSlotCenter() {
         val type =
-            ControlCenterTransitionPolicy.semanticFallbackBounds(
+            ControlCenterTransition.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
             )
         val signal =
-            ControlCenterTransitionPolicy.semanticFallbackBounds(
+            ControlCenterTransition.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = false,
             )
@@ -303,12 +303,12 @@ class ControlCenterTransitionGeometryTest {
         assertTrue(type.right < signal.left)
 
         val rtlType =
-            ControlCenterTransitionPolicy.semanticFallbackBounds(
+            ControlCenterTransition.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
             )
         val rtlSignal =
-            ControlCenterTransitionPolicy.semanticFallbackBounds(
+            ControlCenterTransition.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = true,
             )
@@ -321,20 +321,20 @@ class ControlCenterTransitionGeometryTest {
     fun tinySecondaryComponentsRemainVisibleToTopologyClassifier() {
         val fourBars =
             listOf(
-                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
             )
         val tinyDots =
             listOf(
-                ParticipantVisualSnapshot.NormalizedRect(0.12f, 0.05f, 0.14f, 0.07f),
-                ParticipantVisualSnapshot.NormalizedRect(0.42f, 0.05f, 0.44f, 0.07f),
-                ParticipantVisualSnapshot.NormalizedRect(0.72f, 0.05f, 0.74f, 0.07f),
+                VisualSnapshot.NormalizedRect(0.12f, 0.05f, 0.14f, 0.07f),
+                VisualSnapshot.NormalizedRect(0.42f, 0.05f, 0.44f, 0.07f),
+                VisualSnapshot.NormalizedRect(0.72f, 0.05f, 0.74f, 0.07f),
             )
 
         val retained =
-            ParticipantVisualSnapshot.filterProbeComponents(
+            VisualSnapshot.filterProbeComponents(
                 components = fourBars + tinyDots,
                 probeWidth = 96,
                 probeHeight = 96,
@@ -342,8 +342,8 @@ class ControlCenterTransitionGeometryTest {
 
         assertEquals(7, retained.size)
         assertEquals(
-            ParticipantVisualSnapshot.Topology.COMPOSITE,
-            ParticipantVisualSnapshot.classifyComponents(retained),
+            VisualSnapshot.Topology.COMPOSITE,
+            VisualSnapshot.classifyComponents(retained),
         )
     }
 
@@ -351,31 +351,31 @@ class ControlCenterTransitionGeometryTest {
     fun dualRowCompositeCannotExposeExactFourBarCapability() {
         val components =
             listOf(
-                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
-                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
-                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.05f, 0.65f, 0.12f),
-                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.05f, 0.90f, 0.12f),
+                VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
+                VisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
+                VisualSnapshot.NormalizedRect(0.55f, 0.05f, 0.65f, 0.12f),
+                VisualSnapshot.NormalizedRect(0.80f, 0.05f, 0.90f, 0.12f),
             )
         val envelope =
-            ParticipantVisualSnapshot.NormalizedRect(
+            VisualSnapshot.NormalizedRect(
                 left = 0.05f,
                 top = 0.05f,
                 right = 0.90f,
                 bottom = 0.95f,
             )
         val snapshot =
-            ParticipantVisualSnapshot.Snapshot(
+            VisualSnapshot.Snapshot(
                 envelope = envelope,
                 components = components,
-                topology = ParticipantVisualSnapshot.classifyComponents(components),
+                topology = VisualSnapshot.classifyComponents(components),
             )
 
         assertEquals(
-            ParticipantVisualSnapshot.Topology.COMPOSITE,
+            VisualSnapshot.Topology.COMPOSITE,
             snapshot.topology,
         )
         assertNull(snapshot.fourVerticalBarsWithinEnvelope())
@@ -385,25 +385,25 @@ class ControlCenterTransitionGeometryTest {
     fun participantVisualTopologyDistinguishesFourBarsFromComposite() {
         val fourBars =
             listOf(
-                ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
-                ParticipantVisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.30f, 0.48f, 0.40f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.55f, 0.34f, 0.65f, 0.95f),
+                VisualSnapshot.NormalizedRect(0.80f, 0.18f, 0.90f, 0.95f),
             )
         assertEquals(
-            ParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
-            ParticipantVisualSnapshot.classifyComponents(fourBars),
+            VisualSnapshot.Topology.FOUR_VERTICAL_BARS,
+            VisualSnapshot.classifyComponents(fourBars),
         )
 
         val composite =
             fourBars +
                 listOf(
-                    ParticipantVisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
-                    ParticipantVisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
+                    VisualSnapshot.NormalizedRect(0.05f, 0.05f, 0.15f, 0.12f),
+                    VisualSnapshot.NormalizedRect(0.30f, 0.05f, 0.40f, 0.12f),
                 )
         assertEquals(
-            ParticipantVisualSnapshot.Topology.COMPOSITE,
-            ParticipantVisualSnapshot.classifyComponents(composite),
+            VisualSnapshot.Topology.COMPOSITE,
+            VisualSnapshot.classifyComponents(composite),
         )
     }
 }

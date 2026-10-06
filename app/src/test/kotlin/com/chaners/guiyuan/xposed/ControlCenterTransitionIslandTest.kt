@@ -8,38 +8,38 @@ class ControlCenterTransitionIslandTest {
     @Test
     fun batteryIslandRingExitUsesLogicalStartWhileNativeTargetRowReflows() {
         val direction =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .batteryRingExitDirection(
                     liveCenterDirection =
-                        BatteryRingTransitionPolicy.ExitDirection.RIGHT,
+                        BatteryRingTransition.ExitDirection.RIGHT,
                     nativeBatteryIslandActive = true,
                     targetRowRtl = false,
                 )
         assertEquals(
-            BatteryRingTransitionPolicy.ExitDirection.LEFT,
+            BatteryRingTransition.ExitDirection.LEFT,
             direction,
         )
 
         val rtlDirection =
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .batteryRingExitDirection(
                     liveCenterDirection =
-                        BatteryRingTransitionPolicy.ExitDirection.LEFT,
+                        BatteryRingTransition.ExitDirection.LEFT,
                     nativeBatteryIslandActive = true,
                     targetRowRtl = true,
                 )
         assertEquals(
-            BatteryRingTransitionPolicy.ExitDirection.RIGHT,
+            BatteryRingTransition.ExitDirection.RIGHT,
             rtlDirection,
         )
     }
 
     @Test
     fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
-        BatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
+        BatteryRingTransition.ExitDirection.entries.forEach { live ->
             assertEquals(
                 live,
-                ControlCenterTransitionPolicy
+                ControlCenterTransition
                     .batteryRingExitDirection(
                         liveCenterDirection = live,
                         nativeBatteryIslandActive = false,
@@ -52,7 +52,7 @@ class ControlCenterTransitionIslandTest {
     @Test
     fun islandScenesKeepSemanticReservationForGuiyuanExpansion() {
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
@@ -60,7 +60,7 @@ class ControlCenterTransitionIslandTest {
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
@@ -68,7 +68,7 @@ class ControlCenterTransitionIslandTest {
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
@@ -76,7 +76,7 @@ class ControlCenterTransitionIslandTest {
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(
                     sourceScene = SourceScene.KEYGUARD,
                     charging = true,
@@ -88,35 +88,35 @@ class ControlCenterTransitionIslandTest {
     @Test
     fun nativeIslandCollisionDoesNotDisableGuiyuanPaddingReflow() {
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .allowsNativeTransitionPaddingExpansion(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .allowsNativeTransitionPaddingExpansion(
                     sourceScene = SourceScene.KEYGUARD,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .allowsNativeTransitionPaddingExpansion(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = false,
                 ),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .allowsNativeTransitionPaddingExpansion(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = null,
                 ),
         )
         assertTrue(
-            !ControlCenterTransitionPolicy
+            !ControlCenterTransition
                 .allowsNativeTransitionPaddingExpansion(
                     sourceScene = SourceScene.UNKNOWN,
                     genericIslandShowing = true,
@@ -127,15 +127,15 @@ class ControlCenterTransitionIslandTest {
     @Test
     fun verifiedSourceScenesKeepSemanticReservationThroughProjection() {
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(SourceScene.HOME),
         )
         assertTrue(
-            ControlCenterTransitionPolicy
+            ControlCenterTransition
                 .usesSemanticTransitionReservation(SourceScene.KEYGUARD),
         )
         assertTrue(
-            !ControlCenterTransitionPolicy
+            !ControlCenterTransition
                 .usesSemanticTransitionReservation(SourceScene.UNKNOWN),
         )
     }
@@ -144,7 +144,7 @@ class ControlCenterTransitionIslandTest {
     fun nativeFinalAppearanceConsumesOnlyRemainingOutwardDistance() {
         assertEquals(
             0.696f,
-            ControlCenterTransitionPolicy.handoffMotionProgress(
+            ControlCenterTransition.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.2f,
                 finalAppearanceActive = true,
@@ -153,7 +153,7 @@ class ControlCenterTransitionIslandTest {
         )
         assertEquals(
             0.9316f,
-            ControlCenterTransitionPolicy.handoffMotionProgress(
+            ControlCenterTransition.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.82f,
                 finalAppearanceActive = true,
@@ -162,7 +162,7 @@ class ControlCenterTransitionIslandTest {
         )
         assertEquals(
             1f,
-            ControlCenterTransitionPolicy.handoffMotionProgress(
+            ControlCenterTransition.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 1f,
                 finalAppearanceActive = true,
@@ -171,7 +171,7 @@ class ControlCenterTransitionIslandTest {
         )
         assertEquals(
             0.62f,
-            ControlCenterTransitionPolicy.handoffMotionProgress(
+            ControlCenterTransition.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.82f,
                 finalAppearanceActive = false,
