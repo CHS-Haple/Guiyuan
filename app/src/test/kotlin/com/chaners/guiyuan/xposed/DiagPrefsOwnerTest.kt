@@ -94,8 +94,8 @@ class DiagPrefsOwnerTest {
         val listenerCount: Int
             get() = listeners.size
 
-        fun setLevel(level: String) {
-            level = level
+        fun setLevel(value: String) {
+            level = value
             listeners.toList().forEach { listener ->
                 listener.onSharedPreferenceChanged(
                     this,
@@ -104,8 +104,8 @@ class DiagPrefsOwnerTest {
             }
         }
 
-        fun setRaw(level: String) {
-            level = level
+        fun setRaw(value: String) {
+            level = value
         }
 
         override fun getString(
