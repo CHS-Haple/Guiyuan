@@ -188,7 +188,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             emptyList()
         } else {
             snapshot
-                ?.sessionEntries
+                ?.entries
                 .orEmpty()
                 .asSequence()
                 .filter(::isRuntimeLog)

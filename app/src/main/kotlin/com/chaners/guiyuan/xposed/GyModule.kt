@@ -4397,7 +4397,7 @@ class GyModule : XposedModule() {
     private fun bindRuntimeFeatureSettings() {
         runCatching {
             FeaturePrefsOwner.bind(
-                prefs = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeFeatureSettingsChanged,
             )
         }.onSuccess { settings ->
@@ -4543,7 +4543,7 @@ class GyModule : XposedModule() {
     private fun bindRuntimeVisualSettings() {
         runCatching {
             VisualPrefsOwner.bind(
-                prefs = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeVisualSettingsChanged,
             )
         }.onSuccess { settings ->
