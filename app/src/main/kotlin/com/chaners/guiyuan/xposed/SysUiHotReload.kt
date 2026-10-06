@@ -31,12 +31,12 @@ internal object SysUiHotReload {
         param: HotReloadingParam,
         generationHandoff: Runnable,
     ): PrepareResult {
-        if (!SystemUiHostRuntimeOwner.isReady) {
+        if (!SysUiHostHook.isReady) {
             return PrepareResult.Unavailable("status-host-hook-not-ready")
         }
 
         val host =
-            SystemUiHostRegistry.currentStatusHost()
+            SysUiHostRegistry.currentStatusHost()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
@@ -99,16 +99,16 @@ internal object SysUiHotReload {
 
     fun takeOverHooks(
         param: HotReloadedParam,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (SysUiHostRegistry.Capture) -> Unit,
     ): HookTakeover? {
         val oldHandles = param.oldHookHandles
-        val hostHandle = SystemUiHostRuntimeOwner.findOwnedHandle(oldHandles)
+        val hostHandle = SysUiHostHook.findOwnedHandle(oldHandles)
             ?: run {
                 oldHandles.forEach { handle -> runCatching { handle.unhook() } }
                 return null
             }
 
-        SystemUiHostRuntimeOwner.replace(
+        SysUiHostHook.replace(
             handle = hostHandle,
             onCaptured = onCaptured,
         )
