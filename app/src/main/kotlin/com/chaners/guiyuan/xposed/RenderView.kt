@@ -181,7 +181,7 @@ internal class RenderView(
             width = logicalWidthPx,
             height = logicalHeightPx,
             model = current,
-            visualSettings = visualSettings,
+            visual = visualSettings,
             previousCenterIndicator = previousCenterIndicator,
             // 这里预留的是布局空间，两端都按完整尺寸算，动画时才不会被裁掉。
             centerExitAmount = 1f,
@@ -302,7 +302,7 @@ internal class RenderView(
                     visualSettings = visualSettings,
                 ),
             opacity = 1f,
-            visualSettings = visualSettings,
+            visual = visualSettings,
             previousCenterIndicator = previousCenterIndicator,
             centerExitAmount =
                 1f -

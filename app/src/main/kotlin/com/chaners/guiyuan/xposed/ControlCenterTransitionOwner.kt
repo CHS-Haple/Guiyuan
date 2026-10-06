@@ -585,7 +585,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visualSettings,
                 )
             if (specs.isEmpty()) return
 
@@ -902,7 +902,7 @@ internal object ControlCenterTransitionOwner {
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
-                                visualSettings = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visualSettings,
                             ) ?: spec.sourceBounds
 
                         spec.component ==
@@ -911,7 +911,7 @@ internal object ControlCenterTransitionOwner {
                                 width = sourceWidth,
                                 height = sourceHeight,
                                 model = model,
-                                visualSettings = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visualSettings,
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
@@ -965,7 +965,7 @@ internal object ControlCenterTransitionOwner {
                     component = spec.component,
                     shapePolicy = spec.shapePolicy,
                     opacity = 1f,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visualSettings,
                     motionProgress = motionProgress,
                     shapeProgress =
                         when (spec.shapePolicy) {
@@ -1298,7 +1298,7 @@ internal object ControlCenterTransitionOwner {
                 painter.transitionAirplaneSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visualSettings,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1364,7 +1364,7 @@ internal object ControlCenterTransitionOwner {
                 height = sourceHeight,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visualSettings = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visualSettings,
             )
             canvas.restoreToCount(save)
             return "airplane-reveal:" + witness.summary
@@ -1398,7 +1398,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     resource = resource,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visualSettings,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1465,7 +1465,7 @@ internal object ControlCenterTransitionOwner {
                 resource = resource,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visualSettings = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visualSettings,
             )
             canvas.restoreToCount(save)
             return "no-sim-reveal:" + witness.summary
