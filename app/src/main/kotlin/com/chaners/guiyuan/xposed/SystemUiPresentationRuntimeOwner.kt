@@ -37,11 +37,11 @@ internal object SystemUiPresentationRuntimeOwner {
         val tintReady: Boolean
             get() = tintHooks == SysUiTintSource.HOOK_COUNT
         val sceneReady: Boolean
-            get() = sceneHooks == SystemUiSceneStateSource.HOOK_COUNT
+            get() = sceneHooks == SysUiSceneSource.HOOK_COUNT
         val mobileTypeReady: Boolean
             get() = mobileTypeHooks == SysUiMobileTypeSource.HOOK_COUNT
         val keyguardAodReady: Boolean
-            get() = keyguardAodHooks == SystemUiKeyguardAodStateSource.HOOK_COUNT
+            get() = keyguardAodHooks == SysUiKeyguardAodSource.HOOK_COUNT
         val keyguardFullAodReady: Boolean
             get() =
                 keyguardFullAodHooks ==
@@ -57,8 +57,8 @@ internal object SystemUiPresentationRuntimeOwner {
         module: XposedModule,
         classLoader: ClassLoader,
         onTintState: (SysUiTintSource.TintUpdate) -> Unit,
-        onSceneState: (SystemUiSceneStateSource.SceneUpdate) -> Unit,
-        onKeyguardAodState: (SystemUiKeyguardAodStateSource.AodUpdate) -> Unit,
+        onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
+        onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
@@ -76,7 +76,7 @@ internal object SystemUiPresentationRuntimeOwner {
             ).size
         val keyguardAodHooks =
             runCatching {
-                SystemUiKeyguardAodStateSource.install(
+                SysUiKeyguardAodSource.install(
                     module = module,
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
@@ -124,7 +124,7 @@ internal object SystemUiPresentationRuntimeOwner {
                 0
             }
         val sceneHooks =
-            SystemUiSceneStateSource.install(
+            SysUiSceneSource.install(
                 module = module,
                 classLoader = classLoader,
                 onSceneState = onSceneState,
@@ -151,8 +151,8 @@ internal object SystemUiPresentationRuntimeOwner {
     fun resetRuntimeState() {
         current = null
         SysUiTintSource.resetRuntimeState()
-        SystemUiSceneStateSource.resetRuntimeState()
-        SystemUiKeyguardAodStateSource.resetRuntimeState()
+        SysUiSceneSource.resetRuntimeState()
+        SysUiKeyguardAodSource.resetRuntimeState()
         SystemUiKeyguardHostProbe.resetRuntimeState()
     }
 }

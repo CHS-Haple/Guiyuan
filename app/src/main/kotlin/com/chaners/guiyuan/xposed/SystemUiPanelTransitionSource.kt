@@ -514,7 +514,7 @@ internal object SystemUiPanelTransitionSource {
             homeIdentityMatches =
                 SystemUiHomePresentationOwner.ownsBatteryContainer(realSystemIcons),
             structuralScene =
-                SystemUiSceneStateSource.steadySourceScene(realSystemIcons),
+                SysUiSceneSource.steadySourceScene(realSystemIcons),
         )
     }
 

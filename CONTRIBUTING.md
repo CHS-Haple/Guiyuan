@@ -91,17 +91,19 @@ The pinned SystemUI profile is evidence for the current target, not proof for ev
 
 ## 5. Maintainability
 
-Optimize for the next human maintainer. Prefer the shortest name or structure that stays obvious in its actual scope; do not optimize for maximum verbosity or for clever brevity.
+Optimize for the next human maintainer. Prefer the clearest concise name or structure in its actual scope. Avoid both redundant verbosity and cryptic brevity: remove context the surrounding code already provides, but retain words that materially distinguish responsibility, ownership, platform, or behavior.
 
 ### Naming
 - Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`; internal shortening must not change public or compatibility identity.
 - Name to the scope. Local variables and private members may be short when nearby context already carries the meaning; cross-file and architecture-boundary names must retain enough context to stay searchable and unambiguous.
-- When the original meaning stays obvious, shorten aggressively with familiar project/platform forms such as `SysUi`, `Diag`, `Env`, `Repo`, `Prefs`, `Ctx`, `Cfg`, `AOD`, `QS`, and `CC`. Use natural Kotlin casing such as `SysUi` for a type segment and `sysUi` for a value.
+- Use familiar project/platform forms such as `SysUi`, `Diag`, `Env`, `Repo`, `Prefs`, `Ctx`, `Cfg`, `AOD`, `QS`, and `CC` when they make a name easier to read and write without increasing ambiguity. Prefer the shortest form that remains self-explanatory at the call site.
 - Remove repeated product or domain wording when the package, file, receiver, or owner already establishes it. Use `Gy` only where Guiyuan identity is actually useful.
+- Keep a platform, domain, or responsibility term when it carries real distinguishing information. For example, `SysUiBatterySource` is preferable to both the redundant `SystemUiBatteryStateSource` and the overly generic `BatterySource`.
 - Keep words such as `Owner`, `Source`, `Policy`, `Session`, `Contract`, and `Probe` only when they carry real responsibility, lifecycle, authority, or compatibility meaning. Do not keep them merely to make a name sound formal.
 - File names should normally match the primary type. Cohesive helper files may keep a broader domain name when splitting them would make navigation worse.
 - Persisted preference keys, protocol/event names, log schema fields, reflection/class/member targets, resource identities, Xposed-facing identifiers, and other externally consumed names are compatibility surfaces. Do not rename them as cleanup without an explicit migration reason.
 - Do not keep obsolete aliases solely to preserve old internal names. Retain an alias only when a real compatibility or migration boundary requires it.
+- Do not rename solely to save characters. Consider typing cost, scanability, searchability, call-site clarity, and diff churn; a rename should provide a net maintenance benefit.
 - Do not use broad search/replace as the renaming method. Inspect each symbol, its call sites, and same-text uses first; edit the intended references explicitly, then search again for stale old names and accidental changes.
 - Remove dead helpers only after confirming they have no normal references and are not reached through reflection, serialization, resources, generated code, or another external contract.
 

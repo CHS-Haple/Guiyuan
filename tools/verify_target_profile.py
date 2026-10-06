@@ -9,10 +9,10 @@ PROFILE_PATH = ROOT / "compat" / "targets" / "hyperos-17.03.260226.r.json"
 PROBE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiCompatibilityProbe.kt"
 STATUS_HOST_CAPTURE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "StatusBarHostCapture.kt"
 NATIVE_STATUS_INVENTORY_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiNativeStatusInventory.kt"
-NETWORK_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiNetworkStateSource.kt"
-SCENE_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiSceneStateSource.kt"
-BATTERY_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiBatteryStateSource.kt"
-KEYGUARD_AOD_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardAodStateSource.kt"
+NETWORK_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiNetworkSource.kt"
+SCENE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiSceneSource.kt"
+BATTERY_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiBatterySource.kt"
+KEYGUARD_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardAodSource.kt"
 KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardFullAodTransitionSource.kt"
 KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardStatusIconTransitionSource.kt"
 PANEL_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiPanelTransitionSource.kt"
@@ -104,7 +104,7 @@ if capture_class.group(1) != status_hook_class:
 if capture_method.group(1) != status_hook.get("methodName"):
     fail("status host capture method drifted from the pinned APK profile")
 
-network_source_text = NETWORK_STATE_SOURCE_PATH.read_text(encoding="utf-8")
+network_source_text = NETWORK_SOURCE_PATH.read_text(encoding="utf-8")
 network_source_hook_constants = {
     "wifiBinderBind": ("WIFI_BINDER_CLASS_NAME", "WIFI_BIND_METHOD_NAME"),
     "wifiIconCollected": ("WIFI_ICON_EMITTER_CLASS_NAME", "WIFI_ICON_EMIT_METHOD_NAME"),
@@ -138,7 +138,7 @@ scene_hook = hook_points.get("batteryStatusBarState")
 if not isinstance(scene_hook, dict):
     fail("missing batteryStatusBarState hook point")
 
-scene_source_text = SCENE_STATE_SOURCE_PATH.read_text(encoding="utf-8")
+scene_source_text = SCENE_SOURCE_PATH.read_text(encoding="utf-8")
 scene_class = re.search(
     r'BATTERY_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
     scene_source_text,
@@ -164,7 +164,7 @@ if scene_field.group(1) not in set(verified_fields.get(scene_class.group(1), [])
 
 
 
-battery_source_text = BATTERY_STATE_SOURCE_PATH.read_text(encoding="utf-8")
+battery_source_text = BATTERY_SOURCE_PATH.read_text(encoding="utf-8")
 battery_source_class = re.search(
     r'BATTERY_ICON_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
     battery_source_text,
@@ -244,14 +244,14 @@ if not battery_semantic_fields.issubset(source_required_fields):
 lifecycle_hook_specs = (
     (
         "batteryAodSetAnimate",
-        KEYGUARD_AOD_STATE_SOURCE_PATH,
+        KEYGUARD_AOD_SOURCE_PATH,
         "BATTERY_VIEW_CLASS",
         "SET_AOD_ANIMATE_METHOD",
         "(Z)V",
     ),
     (
         "batteryAodToggleMode",
-        KEYGUARD_AOD_STATE_SOURCE_PATH,
+        KEYGUARD_AOD_SOURCE_PATH,
         "BATTERY_VIEW_CLASS",
         "TOGGLE_AOD_METHOD",
         "(Z)V",
@@ -324,9 +324,9 @@ for (
     if hook_point.get("descriptor") != expected_descriptor:
         fail(f"lifecycle hook descriptor drifted from profile: {hook_name}")
 
-keyguard_aod_text = source_cache.get(KEYGUARD_AOD_STATE_SOURCE_PATH)
+keyguard_aod_text = source_cache.get(KEYGUARD_AOD_SOURCE_PATH)
 if keyguard_aod_text is None:
-    keyguard_aod_text = KEYGUARD_AOD_STATE_SOURCE_PATH.read_text(encoding="utf-8")
+    keyguard_aod_text = KEYGUARD_AOD_SOURCE_PATH.read_text(encoding="utf-8")
 keyguard_aod_class = source_string_constant(
     keyguard_aod_text,
     "BATTERY_VIEW_CLASS",

@@ -17,15 +17,15 @@ internal object SystemUiKeyguardHostResolver {
     private const val TO_LOCK_SCREEN_FIELD = "mToLockScreen"
 
     private var lastSourceView: WeakReference<View>? = null
-    private var lastSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+    private var lastSurface = SysUiSceneSource.Surface.UNKNOWN
     private var lastRawState = Int.MIN_VALUE
 
     @Synchronized
     fun observe(
-        update: SystemUiSceneStateSource.SceneUpdate,
+        update: SysUiSceneSource.SceneUpdate,
     ): ResolveResult? {
         if (
-            SystemUiSceneStateSource.steadySourceScene(update.sourceView) !=
+            SysUiSceneSource.steadySourceScene(update.sourceView) !=
                 SourceScene.KEYGUARD
         ) {
             return null
@@ -51,10 +51,10 @@ internal object SystemUiKeyguardHostResolver {
     }
 
     internal fun isSteadyKeyguardSurface(
-        surface: SystemUiSceneStateSource.Surface,
+        surface: SysUiSceneSource.Surface,
     ): Boolean =
-        surface == SystemUiSceneStateSource.Surface.KEYGUARD ||
-            surface == SystemUiSceneStateSource.Surface.SHADE_LOCKED
+        surface == SysUiSceneSource.Surface.KEYGUARD ||
+            surface == SysUiSceneSource.Surface.SHADE_LOCKED
 
     internal fun isKeyguardHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
@@ -91,13 +91,13 @@ internal object SystemUiKeyguardHostResolver {
     @Synchronized
     fun resetRuntimeState() {
         lastSourceView = null
-        lastSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+        lastSurface = SysUiSceneSource.Surface.UNKNOWN
         lastRawState = Int.MIN_VALUE
     }
 
     private fun resolve(
         sourceView: View,
-        surface: SystemUiSceneStateSource.Surface,
+        surface: SysUiSceneSource.Surface,
         rawState: Int,
     ): ResolveResult {
         if (!isSteadyKeyguardSurface(surface)) {
@@ -202,7 +202,7 @@ internal object SystemUiKeyguardHostResolver {
         val statusIcons: ViewGroup,
         val battery: View,
         val batteryCarrier: View,
-        val surface: SystemUiSceneStateSource.Surface,
+        val surface: SysUiSceneSource.Surface,
         val rawState: Int,
     )
 
@@ -210,7 +210,7 @@ internal object SystemUiKeyguardHostResolver {
         data class Ready(val host: ResolvedHost) : ResolveResult
 
         data class Inactive(
-            val surface: SystemUiSceneStateSource.Surface,
+            val surface: SysUiSceneSource.Surface,
         ) : ResolveResult
 
         data class Failure(val reason: String) : ResolveResult

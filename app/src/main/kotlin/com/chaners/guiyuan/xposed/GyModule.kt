@@ -441,8 +441,8 @@ class GyModule : XposedModule() {
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
             val bindings =
-                SystemUiNetworkStateSource.restoreHotReloadBindings(restored.bindings)
-            SystemUiNetworkStateSource.seedRestoredWifiState(
+                SysUiNetworkSource.restoreHotReloadBindings(restored.bindings)
+            SysUiNetworkSource.seedRestoredWifiState(
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
                         ::onNetworkPipelineEvent
@@ -897,7 +897,7 @@ class GyModule : XposedModule() {
             val fullyReady =
                 result.wifiReady &&
                     result.mobileReady &&
-                    SystemUiNetworkRuntimeOwner.installedHookCount == SystemUiNetworkStateSource.HOOK_COUNT
+                    SystemUiNetworkRuntimeOwner.installedHookCount == SysUiNetworkSource.HOOK_COUNT
             val state =
                 when {
                     fullyReady -> "ready"
@@ -915,7 +915,7 @@ class GyModule : XposedModule() {
                 component = "network",
                 state = state,
                 "hooks" to SystemUiNetworkRuntimeOwner.installedHookCount,
-                "expectedHooks" to SystemUiNetworkStateSource.HOOK_COUNT,
+                "expectedHooks" to SysUiNetworkSource.HOOK_COUNT,
                 "wifi" to if (result.wifiReady) "ready" else "error",
                 "mobile" to if (result.mobileReady) "ready" else "error",
                 "source" to source,
@@ -946,7 +946,7 @@ class GyModule : XposedModule() {
                 TAG,
                 "networkSource state=" + state +
                     " hooks=" + SystemUiNetworkRuntimeOwner.installedHookCount +
-                    "/" + SystemUiNetworkStateSource.HOOK_COUNT +
+                    "/" + SysUiNetworkSource.HOOK_COUNT +
                     " wifi=" + result.wifiReady +
                     " mobile=" + result.mobileReady +
                     " source=" + source +
@@ -1336,7 +1336,7 @@ class GyModule : XposedModule() {
                 ?: return false
         val settings = FeaturePrefsOwner.current()
         val aodBlocked =
-            SystemUiKeyguardAodStateSource
+            SysUiKeyguardAodSource
                 .currentState(resolved.host.battery)
                 ?.blocksProjection
                 ?: true
@@ -1660,7 +1660,7 @@ class GyModule : XposedModule() {
                 component = "batteryState",
                 state = if (result.ready) "ready" else "partial",
                 "hooks" to result.hooks,
-                "expectedHooks" to SystemUiBatteryStateSource.HOOK_COUNT,
+                "expectedHooks" to SysUiBatterySource.HOOK_COUNT,
                 "source" to source,
                 "authority" to
                     "MiuiBatteryMeterIconView.getProgressStatus() via " +
@@ -2126,7 +2126,7 @@ class GyModule : XposedModule() {
                     return
                 }
         val aodState =
-            SystemUiKeyguardAodStateSource.currentState(resolution.host.battery)
+            SysUiKeyguardAodSource.currentState(resolution.host.battery)
         val target =
             SystemUiKeyguardHostResolver.nativeToLockScreenTarget(resolution.host)
 
@@ -2532,7 +2532,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onKeyguardAodStateUpdate(
-        update: SystemUiKeyguardAodStateSource.AodUpdate,
+        update: SysUiKeyguardAodSource.AodUpdate,
     ) {
         if (
             !update.isAodAnimate &&
@@ -2576,7 +2576,7 @@ class GyModule : XposedModule() {
         }
 
         val stableAod =
-            SystemUiKeyguardAodStateSource.isStableAod(
+            SysUiKeyguardAodSource.isStableAod(
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
             )
@@ -2651,8 +2651,8 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onSceneStateUpdate(update: SystemUiSceneStateSource.SceneUpdate) {
-        val sourceScene = SystemUiSceneStateSource.steadySourceScene(update)
+    private fun onSceneStateUpdate(update: SysUiSceneSource.SceneUpdate) {
+        val sourceScene = SysUiSceneSource.steadySourceScene(update)
         if (sourceScene != SourceScene.UNKNOWN) {
             steadyStatusSourceScene = sourceScene
         }
@@ -2728,19 +2728,19 @@ class GyModule : XposedModule() {
         }
         if (
             update.surface ==
-                SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR
+                SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR
         ) {
             refreshStatusIconObservation("scene-unlocked")
         }
     }
 
     private fun refreshStableKeyguardAodSceneFromAodState(
-        update: SystemUiKeyguardAodStateSource.AodUpdate,
+        update: SysUiKeyguardAodSource.AodUpdate,
     ) {
         if (update.isAodAnimate) return
         val next =
             when {
-                SystemUiKeyguardAodStateSource.isStableAod(
+                SysUiKeyguardAodSource.isStableAod(
                     toAod = update.toAod,
                     isAodAnimate = update.isAodAnimate,
                 ) ->
@@ -2761,12 +2761,12 @@ class GyModule : XposedModule() {
     }
 
     private fun refreshStableKeyguardAodSceneFromSceneState(
-        update: SystemUiSceneStateSource.SceneUpdate,
+        update: SysUiSceneSource.SceneUpdate,
         sourceScene: SourceScene,
     ) {
         when (sourceScene) {
             SourceScene.HOME -> {
-                val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
+                val aodState = SysUiKeyguardAodSource.currentState(update.sourceView)
                 if (
                     aodState != null &&
                     !aodState.isAodAnimate &&
@@ -2780,11 +2780,11 @@ class GyModule : XposedModule() {
             }
 
             SourceScene.KEYGUARD -> {
-                val aodState = SystemUiKeyguardAodStateSource.currentState(update.sourceView)
+                val aodState = SysUiKeyguardAodSource.currentState(update.sourceView)
                 if (
                     aodState != null &&
                     !aodState.isAodAnimate &&
-                    !SystemUiKeyguardAodStateSource.isStableAod(
+                    !SysUiKeyguardAodSource.isStableAod(
                         toAod = aodState.toAod,
                         isAodAnimate = aodState.isAodAnimate,
                     )
@@ -2824,7 +2824,7 @@ class GyModule : XposedModule() {
     ): ScenePolicy.KeyguardAodProjection? {
         val settings = FeaturePrefsOwner.current()
         val aodState =
-            SystemUiKeyguardAodStateSource.currentState(resolved.battery)
+            SysUiKeyguardAodSource.currentState(resolved.battery)
                 ?: return null
         return ScenePolicy.resolveKeyguardAodProjection(
             featureEnabled = settings.enabled,
@@ -3329,7 +3329,7 @@ class GyModule : XposedModule() {
             return
         }
         val aodState =
-            SystemUiKeyguardAodStateSource.currentState(resolved.host.battery)
+            SysUiKeyguardAodSource.currentState(resolved.host.battery)
                 ?: run {
                     deactivateAodRuntime("aod-state-unavailable")
                     return
@@ -4297,7 +4297,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        SystemUiNetworkStateSource.bindingTopologyLines().forEach { line ->
+        SysUiNetworkSource.bindingTopologyLines().forEach { line ->
             log(Log.INFO, TAG, line)
         }
 

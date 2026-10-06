@@ -101,7 +101,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         assertEquals(
             SystemUiNativeCombinedParticipantOwner.HandoffMode.VISIBLE_HOME,
             SystemUiNativeCombinedParticipantOwner.resolveHandoffMode(
-                surface = SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR,
+                surface = SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR,
                 rootShown = true,
             ),
         )
@@ -112,7 +112,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         assertEquals(
             SystemUiNativeCombinedParticipantOwner.HandoffMode.PREARMED_KEYGUARD,
             SystemUiNativeCombinedParticipantOwner.resolveHandoffMode(
-                surface = SystemUiSceneStateSource.Surface.KEYGUARD,
+                surface = SysUiSceneSource.Surface.KEYGUARD,
                 rootShown = false,
             ),
         )
@@ -123,7 +123,7 @@ class SystemUiNativeCombinedParticipantOwnerTest {
         assertEquals(
             SystemUiNativeCombinedParticipantOwner.HandoffMode.BLOCKED,
             SystemUiNativeCombinedParticipantOwner.resolveHandoffMode(
-                surface = SystemUiSceneStateSource.Surface.KEYGUARD,
+                surface = SysUiSceneSource.Surface.KEYGUARD,
                 rootShown = true,
             ),
         )
@@ -132,8 +132,8 @@ class SystemUiNativeCombinedParticipantOwnerTest {
     @Test
     fun handoffModeFailsClosedForUnknownAndShadeLocked() {
         listOf(
-            SystemUiSceneStateSource.Surface.UNKNOWN,
-            SystemUiSceneStateSource.Surface.SHADE_LOCKED,
+            SysUiSceneSource.Surface.UNKNOWN,
+            SysUiSceneSource.Surface.SHADE_LOCKED,
         ).forEach { surface ->
             assertEquals(
                 SystemUiNativeCombinedParticipantOwner.HandoffMode.BLOCKED,

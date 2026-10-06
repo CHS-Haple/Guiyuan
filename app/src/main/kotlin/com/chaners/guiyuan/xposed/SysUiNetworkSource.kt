@@ -11,7 +11,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.WeakHashMap
 
-internal object SystemUiNetworkStateSource {
+internal object SysUiNetworkSource {
     const val WIFI_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder"
     const val WIFI_BIND_METHOD_NAME = "bind"

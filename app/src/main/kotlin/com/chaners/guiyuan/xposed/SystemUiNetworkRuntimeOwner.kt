@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import io.github.libxposed.api.XposedModule
 
 internal object SystemUiNetworkRuntimeOwner {
-    private var current: SystemUiNetworkStateSource.InstallResult? = null
+    private var current: SysUiNetworkSource.InstallResult? = null
 
     val installedHookCount: Int
         @Synchronized get() = current?.handles?.size ?: 0
@@ -20,8 +20,8 @@ internal object SystemUiNetworkRuntimeOwner {
         onMobileSignalWillApply: ((android.widget.ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
-    ): SystemUiNetworkStateSource.InstallResult =
-        SystemUiNetworkStateSource.install(
+    ): SysUiNetworkSource.InstallResult =
+        SysUiNetworkSource.install(
             module = module,
             classLoader = classLoader,
             onWifiState = onWifiState,
@@ -34,6 +34,6 @@ internal object SystemUiNetworkRuntimeOwner {
     @Synchronized
     fun resetRuntimeState() {
         current = null
-        SystemUiNetworkStateSource.resetEventState()
+        SysUiNetworkSource.resetEventState()
     }
 }

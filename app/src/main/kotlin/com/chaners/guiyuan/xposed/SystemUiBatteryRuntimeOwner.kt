@@ -12,7 +12,7 @@ internal object SystemUiBatteryRuntimeOwner {
         val hooks: Int,
     ) {
         val ready: Boolean
-            get() = hooks == SystemUiBatteryStateSource.HOOK_COUNT
+            get() = hooks == SysUiBatterySource.HOOK_COUNT
     }
 
     @Synchronized
@@ -25,7 +25,7 @@ internal object SystemUiBatteryRuntimeOwner {
     ): AttachResult =
         AttachResult(
             hooks =
-                SystemUiBatteryStateSource.install(
+                SysUiBatterySource.install(
                     module = module,
                     classLoader = classLoader,
                     onBatteryState = onBatteryState,
@@ -37,6 +37,6 @@ internal object SystemUiBatteryRuntimeOwner {
     @Synchronized
     fun resetRuntimeState() {
         current = null
-        SystemUiBatteryStateSource.resetRuntimeState()
+        SysUiBatterySource.resetRuntimeState()
     }
 }

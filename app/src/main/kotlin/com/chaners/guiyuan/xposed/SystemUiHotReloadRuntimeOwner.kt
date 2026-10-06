@@ -40,7 +40,7 @@ internal object SystemUiHotReloadRuntimeOwner {
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
-        val bindingCounts = SystemUiNetworkStateSource.hotReloadBindingCounts()
+        val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
         val bindingStateReady =
             (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
                 (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
@@ -60,7 +60,7 @@ internal object SystemUiHotReloadRuntimeOwner {
             HotReloadTransfer.capture(
                 host = host,
                 state = StatusStateStore.exportHotReloadState(),
-                bindings = SystemUiNetworkStateSource.exportHotReloadBindings(),
+                bindings = SysUiNetworkSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
                 notificationShadeHomeEligible = null,

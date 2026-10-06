@@ -157,7 +157,7 @@ class SystemUiSignalParserTest {
 
         assertEquals(
             true,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            SysUiNetworkSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 100,
                 previousTaggedResId = 99,
@@ -167,7 +167,7 @@ class SystemUiSignalParserTest {
         )
         assertEquals(
             false,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            SysUiNetworkSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 100,
                 previousTaggedResId = 100,
@@ -177,7 +177,7 @@ class SystemUiSignalParserTest {
         )
         assertEquals(
             false,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            SysUiNetworkSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 101,
                 previousTaggedResId = 100,
