@@ -33,7 +33,7 @@ class CcTransitionTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            CcTransition.interpolateGeometry(
+            CcTransitionPolicy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -165,7 +165,7 @@ class CcTransitionTest {
             )
 
         val follower =
-            CcTransition.followAnchorGeometry(
+            CcTransitionPolicy.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -312,7 +312,7 @@ class CcTransitionTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            CcTransition.interpolateSimilarityGeometry(
+            CcTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -329,7 +329,7 @@ class CcTransitionTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            CcTransition.interpolateSimilarityGeometry(
+            CcTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,

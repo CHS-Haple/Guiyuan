@@ -8,7 +8,7 @@ class CcTransitionIslandTest {
     @Test
     fun islandRingExitUsesLogicalStart() {
         val direction =
-            CcTransition
+            CcTransitionPolicy
                 .batteryRingExitDirection(
                     liveCenterDirection =
                         BatteryRingTransition.ExitDirection.RIGHT,
@@ -21,7 +21,7 @@ class CcTransitionIslandTest {
         )
 
         val rtlDirection =
-            CcTransition
+            CcTransitionPolicy
                 .batteryRingExitDirection(
                     liveCenterDirection =
                         BatteryRingTransition.ExitDirection.LEFT,
@@ -39,7 +39,7 @@ class CcTransitionIslandTest {
         BatteryRingTransition.ExitDirection.entries.forEach { live ->
             assertEquals(
                 live,
-                CcTransition
+                CcTransitionPolicy
                     .batteryRingExitDirection(
                         liveCenterDirection = live,
                         nativeBatteryIslandActive = false,
@@ -52,32 +52,32 @@ class CcTransitionIslandTest {
     @Test
     fun islandKeepsSemanticReservation() {
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(
+            CcTransitionPolicy
+                .usesSemanticReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = true,
                 ),
         )
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(
+            CcTransitionPolicy
+                .usesSemanticReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = false,
                 ),
         )
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(
+            CcTransitionPolicy
+                .usesSemanticReservation(
                     sourceScene = SourceScene.HOME,
                     charging = true,
                     nativeBatteryIslandActive = null,
                 ),
         )
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(
+            CcTransitionPolicy
+                .usesSemanticReservation(
                     sourceScene = SourceScene.KEYGUARD,
                     charging = true,
                     nativeBatteryIslandActive = true,
@@ -88,36 +88,36 @@ class CcTransitionIslandTest {
     @Test
     fun islandCollisionKeepsPaddingReflow() {
         assertTrue(
-            CcTransition
-                .allowsNativeTransitionPaddingExpansion(
+            CcTransitionPolicy
+                .allowsNativePadding(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
-            CcTransition
-                .allowsNativeTransitionPaddingExpansion(
+            CcTransitionPolicy
+                .allowsNativePadding(
                     sourceScene = SourceScene.KEYGUARD,
                     genericIslandShowing = true,
                 ),
         )
         assertTrue(
-            CcTransition
-                .allowsNativeTransitionPaddingExpansion(
+            CcTransitionPolicy
+                .allowsNativePadding(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = false,
                 ),
         )
         assertTrue(
-            CcTransition
-                .allowsNativeTransitionPaddingExpansion(
+            CcTransitionPolicy
+                .allowsNativePadding(
                     sourceScene = SourceScene.HOME,
                     genericIslandShowing = null,
                 ),
         )
         assertTrue(
-            !CcTransition
-                .allowsNativeTransitionPaddingExpansion(
+            !CcTransitionPolicy
+                .allowsNativePadding(
                     sourceScene = SourceScene.UNKNOWN,
                     genericIslandShowing = true,
                 ),
@@ -127,16 +127,16 @@ class CcTransitionIslandTest {
     @Test
     fun verifiedSceneKeepsReservation() {
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(SourceScene.HOME),
+            CcTransitionPolicy
+                .usesSemanticReservation(SourceScene.HOME),
         )
         assertTrue(
-            CcTransition
-                .usesSemanticTransitionReservation(SourceScene.KEYGUARD),
+            CcTransitionPolicy
+                .usesSemanticReservation(SourceScene.KEYGUARD),
         )
         assertTrue(
-            !CcTransition
-                .usesSemanticTransitionReservation(SourceScene.UNKNOWN),
+            !CcTransitionPolicy
+                .usesSemanticReservation(SourceScene.UNKNOWN),
         )
     }
 
@@ -144,7 +144,7 @@ class CcTransitionIslandTest {
     fun finalAppearanceUsesRemainingDistance() {
         assertEquals(
             0.696f,
-            CcTransition.handoffMotionProgress(
+            CcTransitionPolicy.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.2f,
                 finalAppearanceActive = true,
@@ -153,7 +153,7 @@ class CcTransitionIslandTest {
         )
         assertEquals(
             0.9316f,
-            CcTransition.handoffMotionProgress(
+            CcTransitionPolicy.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.82f,
                 finalAppearanceActive = true,
@@ -162,7 +162,7 @@ class CcTransitionIslandTest {
         )
         assertEquals(
             1f,
-            CcTransition.handoffMotionProgress(
+            CcTransitionPolicy.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 1f,
                 finalAppearanceActive = true,
@@ -171,7 +171,7 @@ class CcTransitionIslandTest {
         )
         assertEquals(
             0.62f,
-            CcTransition.handoffMotionProgress(
+            CcTransitionPolicy.handoffMotionProgress(
                 expansionProgress = 0.62f,
                 finalAppearanceAlpha = 0.82f,
                 finalAppearanceActive = false,

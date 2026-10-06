@@ -18,8 +18,8 @@ class CcTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CcTransition
-                .endAnchoredMotionCarrierGeometry(
+            CcTransitionPolicy
+                .endAnchoredCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
                     carrierHeight = 169,
@@ -34,7 +34,7 @@ class CcTransitionGeometryTest {
         val source = floatArrayOf(1240f, 55f, 105f, 0f, 0f, 108f)
         val sourceCarrier = floatArrayOf(997f, 54f, 478f, 0f, 0f, 108f)
         val carried =
-            CcTransition
+            CcTransitionPolicy
                 .rebaseSourceToCurrentCarrier(
                     source = source,
                     sourceCarrier = sourceCarrier,
@@ -55,8 +55,8 @@ class CcTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CcTransition
-                .endAnchoredMotionCarrierGeometry(
+            CcTransitionPolicy
+                .endAnchoredCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
                     carrierHeight = 169,
@@ -80,8 +80,8 @@ class CcTransitionGeometryTest {
             floatArrayOf(130f, 120f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransition
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionPolicy
+                .interpolateCarriedToRoot(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
@@ -108,8 +108,8 @@ class CcTransitionGeometryTest {
             floatArrayOf(60f, 65f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransition
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionPolicy
+                .interpolateCarriedToRoot(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
@@ -136,8 +136,8 @@ class CcTransitionGeometryTest {
             floatArrayOf(60f, 58f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransition
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionPolicy
+                .interpolateCarriedToRoot(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
@@ -164,8 +164,8 @@ class CcTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransition
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionPolicy
+                .interpolateCarriedToRoot(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
@@ -192,8 +192,8 @@ class CcTransitionGeometryTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransition
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionPolicy
+                .interpolateCarriedToRoot(
                     source = source,
                     target = target,
                     sourceCarrier = sourceCarrier,
@@ -214,7 +214,7 @@ class CcTransitionGeometryTest {
         val target = transitionGeometry(width = 75f, height = 75f)
 
         val result =
-            CcTransition
+            CcTransitionPolicy
                 .interpolateSimilarityGeometry(
                     source = source,
                     target = target,
@@ -229,7 +229,7 @@ class CcTransitionGeometryTest {
     @Test
     fun nativeHeightBoundsLocalShape() {
         val ratio =
-            CcTransition.relativeGeometryHeight(
+            CcTransitionPolicy.relativeGeometryHeight(
                 target = transitionGeometry(width = 20f, height = 50f),
                 current = transitionGeometry(width = 10f, height = 20f),
             )
@@ -243,7 +243,7 @@ class CcTransitionGeometryTest {
         val host = floatArrayOf(300f, 54f, 600f, 0f, 0f, 108f)
 
         val ltr =
-            CcTransition.endAnchoredSlotGeometry(
+            CcTransitionPolicy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -257,7 +257,7 @@ class CcTransitionGeometryTest {
         assertEquals(108f, ltr[5], 0.0001f)
 
         val rtl =
-            CcTransition.endAnchoredSlotGeometry(
+            CcTransitionPolicy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -274,7 +274,7 @@ class CcTransitionGeometryTest {
         val stableRenderBasis = floatArrayOf(900f, 900f, 105f, 0f, 0f, 169f)
 
         val result =
-            CcTransition.composeSourceGeometry(
+            CcTransitionPolicy.composeSourceGeometry(
                 positionAuthority = nativePosition,
                 basisAuthority = stableRenderBasis,
             )
@@ -288,12 +288,12 @@ class CcTransitionGeometryTest {
     @Test
     fun fallbackSeparatesTypeAndSignal() {
         val type =
-            CcTransition.semanticFallbackBounds(
+            CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
             )
         val signal =
-            CcTransition.semanticFallbackBounds(
+            CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = false,
             )
@@ -303,12 +303,12 @@ class CcTransitionGeometryTest {
         assertTrue(type.right < signal.left)
 
         val rtlType =
-            CcTransition.semanticFallbackBounds(
+            CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
             )
         val rtlSignal =
-            CcTransition.semanticFallbackBounds(
+            CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_signal"),
                 isRtl = true,
             )

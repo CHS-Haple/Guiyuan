@@ -10,7 +10,7 @@ class CcTransitionReservationTest {
     fun reservationInterpolatesWidth() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = -10f,
                     sourceRight = 0f,
                     targetLeft = -30f,
@@ -20,8 +20,8 @@ class CcTransitionReservationTest {
 
         assertEquals(
             10,
-            CcTransition
-                .resolveTransitionReservationWidth(
+            CcTransitionPolicy
+                .reservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0f,
@@ -29,8 +29,8 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             20,
-            CcTransition
-                .resolveTransitionReservationWidth(
+            CcTransitionPolicy
+                .reservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0.5f,
@@ -38,8 +38,8 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             30,
-            CcTransition
-                .resolveTransitionReservationWidth(
+            CcTransitionPolicy
+                .reservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 1f,
@@ -51,7 +51,7 @@ class CcTransitionReservationTest {
     fun widthInterpolationAvoidsDeadZone() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -60,14 +60,14 @@ class CcTransitionReservationTest {
             )
 
         val oldGeometryUnion =
-            CcTransition.resolveReservationWidth(
+            CcTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.25f,
             )
         val transitionWidth =
-            CcTransition
-                .resolveTransitionReservationWidth(
+            CcTransitionPolicy
+                .reservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     progress = 0.25f,
@@ -82,7 +82,7 @@ class CcTransitionReservationTest {
     fun islandReservationSkipsLatentGap() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -90,14 +90,14 @@ class CcTransitionReservationTest {
                 ),
             )
         val semantic =
-            CcTransition
-                .resolveTransitionReservationWidth(
+            CcTransitionPolicy
+                .reservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     progress = 0.25f,
                 )
         val native =
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -113,7 +113,7 @@ class CcTransitionReservationTest {
     fun islandReservationProjectsIntoFakeFrame() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = -105f,
                     sourceRight = 0f,
                     targetLeft = -240f,
@@ -122,7 +122,7 @@ class CcTransitionReservationTest {
             )
 
         val unprojected =
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -130,7 +130,7 @@ class CcTransitionReservationTest {
                     progress = 0.5f,
                 )
         val projected =
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -147,7 +147,7 @@ class CcTransitionReservationTest {
     fun islandReservationIgnoresEndSide() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = -40f,
                     sourceRight = 0f,
                     targetLeft = -140f,
@@ -157,7 +157,7 @@ class CcTransitionReservationTest {
 
         assertEquals(
             80,
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 40,
                     spans = spans,
@@ -172,7 +172,7 @@ class CcTransitionReservationTest {
     fun islandReservationConverges() {
         val spans =
             listOf(
-                CcTransition.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -182,7 +182,7 @@ class CcTransitionReservationTest {
 
         assertEquals(
             135,
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -192,7 +192,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             180,
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -202,12 +202,12 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             150,
-            CcTransition
+            CcTransitionPolicy
                 .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans =
                         listOf(
-                            CcTransition.ReservationSpan(
+                            CcTransitionPolicy.ReservationSpan(
                                 sourceLeft = -105f,
                                 sourceRight = 0f,
                                 targetLeft = -220f,
@@ -226,7 +226,7 @@ class CcTransitionReservationTest {
 
         assertEquals(
             0f,
-            CcTransition.latentRevealVisibleFraction(
+            CcTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 95f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -236,7 +236,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             0f,
-            CcTransition.latentRevealVisibleFraction(
+            CcTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 79f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -246,7 +246,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             1f,
-            CcTransition.latentRevealVisibleFraction(
+            CcTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 90f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -256,7 +256,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             1f,
-            CcTransition.latentRevealVisibleFraction(
+            CcTransitionPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 93f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -266,7 +266,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             1f,
-            CcTransition.latentRevealVisibleFraction(
+            CcTransitionPolicy.latentRevealVisibleFraction(
                 current = target,
                 target = target,
                 visualExtent = 20f,
@@ -280,24 +280,24 @@ class CcTransitionReservationTest {
     fun latentRevealAcceleratesAfterUnlock() {
         assertEquals(
             0f,
-            CcTransition
-                .acceleratedLatentRevealProgress(0f),
+            CcTransitionPolicy
+                .fastLatentRevealProgress(0f),
             0.0001f,
         )
         assertTrue(
-            CcTransition
-                .acceleratedLatentRevealProgress(0.2f) > 0.5f,
+            CcTransitionPolicy
+                .fastLatentRevealProgress(0.2f) > 0.5f,
         )
         assertEquals(
             1f,
-            CcTransition
-                .acceleratedLatentRevealProgress(0.35f),
+            CcTransitionPolicy
+                .fastLatentRevealProgress(0.35f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CcTransition
-                .acceleratedLatentRevealProgress(1f),
+            CcTransitionPolicy
+                .fastLatentRevealProgress(1f),
             0.0001f,
         )
     }
@@ -306,7 +306,7 @@ class CcTransitionReservationTest {
     fun latentReservationTracksCoverage() {
         assertEquals(
             0f,
-            CcTransition.latentReservationProgress(
+            CcTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 100,
                 requiredReservationPx = 200,
@@ -316,7 +316,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             0.5f,
-            CcTransition.latentReservationProgress(
+            CcTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 150,
                 requiredReservationPx = 200,
@@ -326,7 +326,7 @@ class CcTransitionReservationTest {
         )
         assertEquals(
             1f,
-            CcTransition.latentReservationProgress(
+            CcTransitionPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 200,
                 requiredReservationPx = 200,
@@ -392,17 +392,17 @@ class CcTransitionReservationTest {
     fun unmatchedComponentsClipWithoutScale() {
         assertEquals(
             1f,
-            CcTransition.unmatchedExitVisibleFraction(0f),
+            CcTransitionPolicy.unmatchedExitVisibleFraction(0f),
             0.0001f,
         )
         assertEquals(
             0.125f,
-            CcTransition.unmatchedExitVisibleFraction(0.5f),
+            CcTransitionPolicy.unmatchedExitVisibleFraction(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            CcTransition.unmatchedExitVisibleFraction(1f),
+            CcTransitionPolicy.unmatchedExitVisibleFraction(1f),
             0.0001f,
         )
     }
@@ -458,7 +458,7 @@ class CcTransitionReservationTest {
                 bottom = 60f,
             )
         val expanded =
-            CcTransition.expandedClipBounds(
+            CcTransitionPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 1.5f,
                 heightScale = 1.25f,
@@ -470,7 +470,7 @@ class CcTransitionReservationTest {
         assertEquals(65f, expanded.bottom, 0.0001f)
 
         val unchanged =
-            CcTransition.expandedClipBounds(
+            CcTransitionPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 0.75f,
                 heightScale = Float.NaN,

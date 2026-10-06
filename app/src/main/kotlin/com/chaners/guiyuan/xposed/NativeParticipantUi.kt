@@ -840,7 +840,7 @@ internal object NativeParticipantUi {
         val stableSlotMetrics =
             StatusBarSession.currentSlotMetrics(host)
         val stableStatusIconsWidth =
-            StatusSlotGeometry.resolveCapturedOrLiveChildWidth(
+            StatusSlotGeometry.childWidth(
                 capturedWidth = stableSlotMetrics?.statusIconsWidth,
                 layoutWidth = statusIcons.width,
                 measuredWidth = statusIcons.measuredWidth,
