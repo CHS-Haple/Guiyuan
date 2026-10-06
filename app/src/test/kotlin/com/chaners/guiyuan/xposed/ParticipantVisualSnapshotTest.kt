@@ -5,11 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ParticipantVisualSnapshotTest {
+class VisualSnapshotTest {
     @Test
     fun alphaWeightedCenterTracksInkMassInsteadOfEnvelopeMidpoint() {
         val center =
-            ParticipantVisualSnapshot.resolveAlphaWeightedCenter(
+            VisualSnapshot.resolveAlphaWeightedCenter(
                 pixels =
                     intArrayOf(
                         0xff000000.toInt(),
@@ -29,7 +29,7 @@ class ParticipantVisualSnapshotTest {
     @Test
     fun alphaWeightedCenterRejectsFullyTransparentInput() {
         val center =
-            ParticipantVisualSnapshot.resolveAlphaWeightedCenter(
+            VisualSnapshot.resolveAlphaWeightedCenter(
                 pixels = IntArray(4),
                 width = 2,
                 height = 2,

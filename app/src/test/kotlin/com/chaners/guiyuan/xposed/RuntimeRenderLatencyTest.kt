@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class RuntimeRenderLatencyTest {
+class RenderLatencyTest {
     @Test
     fun sampleReportsStageDurationsInMicroseconds() {
         val trace =
@@ -16,7 +16,7 @@ class RuntimeRenderLatencyTest {
                 .withPresentationCommitted(2_500_000L)
 
         val sample =
-            RuntimeRenderLatencySample.from(
+            RenderLatencySample.from(
                 trace = trace,
                 modelCommittedNanos = 3_000_000L,
                 drawNanos = 5_000_000L,
@@ -45,7 +45,7 @@ class RuntimeRenderLatencyTest {
             ).withStateCommitted(10_250_000L)
 
         val sample =
-            RuntimeRenderLatencySample.from(
+            RenderLatencySample.from(
                 trace = trace,
                 modelCommittedNanos = 10_500_000L,
                 drawNanos = 11_000_000L,
@@ -71,7 +71,7 @@ class RuntimeRenderLatencyTest {
             ).withPresentationCommitted(20_400_000L)
 
         val sample =
-            RuntimeRenderLatencySample.from(
+            RenderLatencySample.from(
                 trace = trace,
                 modelCommittedNanos = 20_800_000L,
                 drawNanos = 21_300_000L,
@@ -116,7 +116,7 @@ class RuntimeRenderLatencyTest {
             ).withStateCommitted(4_000L)
 
         val sample =
-            RuntimeRenderLatencySample.from(
+            RenderLatencySample.from(
                 trace = trace,
                 modelCommittedNanos = 3_000L,
                 drawNanos = 2_000L,
