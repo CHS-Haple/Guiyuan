@@ -362,15 +362,15 @@ internal object ScenePolicy {
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
-        homeNativeAodFallbackCandidate: Boolean,
-        homePresentationOwnedAtFullAodStart: Boolean,
+        homeAodFallbackCandidate: Boolean,
+        homeOwnedAtAodStart: Boolean,
         nativeToLockScreenTarget: Boolean?,
     ): Boolean =
         featureEnabled &&
             keyguardEnabled &&
             !aodEnabled &&
-            homeNativeAodFallbackCandidate &&
-            homePresentationOwnedAtFullAodStart &&
+            homeAodFallbackCandidate &&
+            homeOwnedAtAodStart &&
             nativeToLockScreenTarget == false
 
     fun aodTargetReachedStableState(

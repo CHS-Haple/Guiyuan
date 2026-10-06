@@ -59,9 +59,9 @@ internal object PresentationRuntime {
         onTintState: (TintSource.TintUpdate) -> Unit,
         onSceneState: (SceneSource.SceneUpdate) -> Unit,
         onKeyguardAodState: (KeyguardAodSource.AodUpdate) -> Unit,
-        onKeyguardFullAodTransitionStarted: () -> Unit,
-        onKeyguardFullAodTransitionCommitted: () -> Unit,
-        onKeyguardStatusIconTransition: () -> Unit,
+        onAodTransitionStart: () -> Unit,
+        onAodTransitionCommit: () -> Unit,
+        onKeyguardIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
         onSceneEvent: ((String) -> Unit)?,
@@ -95,8 +95,8 @@ internal object PresentationRuntime {
                 KeyguardAodTransition.install(
                     module = module,
                     classLoader = classLoader,
-                    onTransitionStarted = onKeyguardFullAodTransitionStarted,
-                    onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
+                    onTransitionStarted = onAodTransitionStart,
+                    onTransitionCommitted = onAodTransitionCommit,
                     onEvent = onKeyguardAodEvent,
                 ).size
             }.getOrElse { error ->
@@ -112,7 +112,7 @@ internal object PresentationRuntime {
                 KeyguardIconTransition.install(
                     module = module,
                     classLoader = classLoader,
-                    onTransition = onKeyguardStatusIconTransition,
+                    onTransition = onKeyguardIconTransition,
                     onEvent = onKeyguardAodEvent,
                 ).size
             }.getOrElse { error ->
