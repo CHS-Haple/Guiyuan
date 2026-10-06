@@ -6,9 +6,9 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
 /**
- * Diagnostic only. Reuses the existing scene callback and never installs its own hook.
- * Once a complete Keyguard host is seen, keep it until runtime reset.
- * CC `realSystemIcons` is context only; it does not gate steady Keyguard readiness.
+ * Diagnostic only. Reuses the scene callback and never installs its own hook.
+ * A complete host is enough; don't resample the same instance on every scene callback.
+ * CC `realSystemIcons` is context only; it doesn't gate Keyguard readiness.
  */
 internal object SysUiKeyguardHostProbe {
     private const val KEYGUARD_HOST_CLASS =
