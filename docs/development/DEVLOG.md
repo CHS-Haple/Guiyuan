@@ -1,3 +1,29 @@
+## 2026-10-06 — pre-release-grade repository consistency audit
+
+**Type:** repository/documentation consistency maintenance
+**Runtime baseline:** Guiyuan 0.2.0 / Build 743 (`20261006-743`)
+**Branch:** `fix/pre-release-consistency-audit`
+
+### Scope
+
+This is a pre-release-grade audit standard applied while Guiyuan remains in active development. It is not a release-candidate freeze, a 1.0.0 qualification pass, or a runtime promotion.
+
+### Findings corrected
+
+- public README still advertised the promoted line as 0.1.0 and described AOD as native-only even though the accepted runtime family owner supports independently gated AOD;
+- architecture/roadmap/reference documents still presented Build 537/625 Keyguard/AOD work as current candidates or pending validation, risking restoration of superseded ownership routes;
+- layout policy referenced the removed `CombinedStatusHomeLayoutResolver` symbol instead of the current `HomeLayoutResolver -> LayoutPolicy` chain;
+- privacy documentation still named the old `Download/CombinedStatus` share directory while runtime writes `Download/Guiyuan`;
+- third-party notices still named Gradle 9.7.1 while the checked-in wrapper is 9.8.0;
+- the security-advisory link still pointed to the former CombinedStatus repository;
+- the bug-report version placeholder was tied to obsolete 0.0.3.
+
+### Review boundary
+
+Historical CHANGELOG/DEVLOG facts remain untouched. Established internal `CombinedStatus*` preference, hook, diagnostic, and compatibility identities are not treated as branding defects. Runtime code, Build 743 behavior, version identity, CI workflow behavior, and the active Keyguard-island performance investigation remain unchanged.
+
+Validation for this branch is repository-selected Light validation; no Canary or device gate is required unless later edits cross into runtime/build surfaces.
+
 ## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
 
 **Type:** integration / lifecycle + Control Center recovery reconciliation  
