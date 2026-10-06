@@ -110,7 +110,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 
 ### Comments
 - Add a comment only when it helps a future maintainer understand something the code cannot express cleanly.
-- Prefer short, natural comments that explain **why**, an invariant, ownership, lifecycle, fallback behavior, or a non-obvious Android/HyperOS/Xposed limitation.
+- Prefer short, natural comments that explain **why**, an invariant, ownership, lifecycle, fallback behavior, or a non-obvious Android/HyperOS/Xposed limitation. Plain or conversational wording is fine when it stays precise.
 - Do not narrate the next line, repeat names/types, document obvious control flow, or leave Build-by-Build debugging history in source comments.
 - Do not stamp the same comment template across similar files. Different code may need different explanation, and many locations need no comment at all.
 - Keep the comment beside the invariant it protects. Update or remove it when that invariant changes so comments do not become a second, stale implementation.
