@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CenterTransitionPolicyTest {
+class CenterTransitionTest {
     @Test
     fun mobileTypeChangesStayInTheSamePresentationFamily() {
         val fourG =
@@ -27,8 +27,8 @@ class CenterTransitionPolicyTest {
                 internet = InternetState.VALIDATED,
             )
 
-        assertFalse(CenterTransitionPolicy.shouldAnimate(fourG, fiveG))
-        assertFalse(CenterTransitionPolicy.shouldAnimate(fiveG, fiveGa))
+        assertFalse(CenterTransition.shouldAnimate(fourG, fiveG))
+        assertFalse(CenterTransition.shouldAnimate(fiveG, fiveGa))
     }
 
     @Test
@@ -44,7 +44,7 @@ class CenterTransitionPolicyTest {
                 internet = InternetState.NO_INTERNET,
             )
 
-        assertFalse(CenterTransitionPolicy.shouldAnimate(weak, strongNoInternet))
+        assertFalse(CenterTransition.shouldAnimate(weak, strongNoInternet))
     }
 
     @Test
@@ -61,9 +61,9 @@ class CenterTransitionPolicyTest {
                 internet = InternetState.VALIDATED,
             )
 
-        assertTrue(CenterTransitionPolicy.shouldAnimate(mobile, wifi))
-        assertTrue(CenterTransitionPolicy.shouldAnimate(wifi, CenterIndicator.Airplane))
-        assertTrue(CenterTransitionPolicy.shouldAnimate(CenterIndicator.Airplane, CenterIndicator.Empty))
+        assertTrue(CenterTransition.shouldAnimate(mobile, wifi))
+        assertTrue(CenterTransition.shouldAnimate(wifi, CenterIndicator.Airplane))
+        assertTrue(CenterTransition.shouldAnimate(CenterIndicator.Airplane, CenterIndicator.Empty))
     }
 
     @Test
@@ -86,8 +86,8 @@ class CenterTransitionPolicyTest {
             )
 
         assertEquals(
-            CenterTransitionPolicy.Decision.KEEP,
-            CenterTransitionPolicy.decide(
+            CenterTransition.Decision.KEEP,
+            CenterTransition.decide(
                 previous = previousTarget,
                 current = currentTarget,
                 activeSource = source,
@@ -111,8 +111,8 @@ class CenterTransitionPolicyTest {
             )
 
         assertEquals(
-            CenterTransitionPolicy.Decision.SNAP,
-            CenterTransitionPolicy.decide(
+            CenterTransition.Decision.SNAP,
+            CenterTransition.decide(
                 previous = target,
                 current = source,
                 activeSource = source,
@@ -136,8 +136,8 @@ class CenterTransitionPolicyTest {
             )
 
         assertEquals(
-            CenterTransitionPolicy.Decision.SNAP,
-            CenterTransitionPolicy.decide(
+            CenterTransition.Decision.SNAP,
+            CenterTransition.decide(
                 previous = target,
                 current = CenterIndicator.Airplane,
                 activeSource = source,
@@ -156,11 +156,11 @@ class CenterTransitionPolicyTest {
             )
 
         assertEquals(
-            CenterTransitionPolicy.Family.NO_SIM,
-            CenterTransitionPolicy.family(noSim),
+            CenterTransition.Family.NO_SIM,
+            CenterTransition.family(noSim),
         )
         assertTrue(
-            CenterTransitionPolicy.shouldAnimate(
+            CenterTransition.shouldAnimate(
                 CenterIndicator.Airplane,
                 noSim,
             ),
