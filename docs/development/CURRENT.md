@@ -4,13 +4,11 @@
 
 - Product: Guiyuan 0.2.0.
 - Stable `main`: Guiyuan 0.2.0 / Build 742 (`20261006-742`).
-- Integration `dev`: Guiyuan 0.2.0 / Build 744 (`20261006-744`). PR #221 is merged after exact-head Runtime CI #2778, Work-branch Canary #788, focused device validation, and integrated `dev` Runtime CI #2779.
-- Build 743 bounded only the QS_FAKE native peer reservation to verified live carrier capacity, fixing the rare Home pull-down -> swipe-up/collapse native fallback without changing Guiyuan semantic transition geometry.
-- Build 744 scopes the Home-derived steady-peer mirror to Home-origin Control Center cycles. Keyguard/UNKNOWN sources keep native QS_FAKE island authority instead of consuming background Home peer state.
-- Repository consistency audit #222 is merged into `dev`. Its pre-release-grade review standard applies while Guiyuan remains in active development; this is not a release-candidate freeze or 1.0.0 qualification.
-- Exact-target compatibility claims must track the real runtime hook surface. Static profile entries are added only where the pinned SystemUI artifact has matching reference evidence; runtime-only seams must not be mislabeled as statically verified.
-- Parallel runtime work: PR #224 / `fix/control-center-alpha-layer-bounds`, Build 745 / `20261006-745`, is a separate compositing-cost candidate based on bounded `saveLayerAlpha` work. It is not yet accepted and remains behind its own Runtime CI, Canary, and device gate.
-- Historical PR #197 is closed as superseded and must not be restored as an active implementation route.
+- Integration `dev`: Guiyuan 0.2.0 / Build 744 (`20261006-744`). Build 744 is the accepted runtime baseline.
+- PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
+- PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
+- PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
+- Historical PR #197 remains superseded and must not be restored as an active implementation route.
 
 ## Accepted runtime baseline
 
@@ -22,18 +20,22 @@
 - One transition-reservation writer remains. Fake-carrier capacity is a bounded visible-cycle lease and fail-native restores only the affected surface.
 - The Home steady-peer mirror is Home-source data. Build 744 rejects it for Keyguard/UNKNOWN Control Center sources and restores it only when Home becomes authoritative again.
 - Build 689-693 removed or bounded the previously identified diagnostic/reflection hot-path costs. Detailed diagnostics remain observational and must not change functional behavior.
+- Build 745 does not belong to the accepted runtime line. Do not reintroduce bounded per-component alpha layers or compensate the observed clipping with guessed padding/margins.
 
 ## Active objective
 
-No current device evidence keeps the former **Keyguard + active island + repeated full Control Center pull-down / swipe-up** gap open as a blocker after the Build 744 ownership correction passed focused validation and was integrated into `dev`.
+The recent Keyguard / Control Center performance line is **closed at Build 744**.
 
-Current work has two independent active lines while normal development continues:
+Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
 
-1. PR #223 performs the pre-release-grade repository / compatibility-contract consistency audit without changing runtime behavior or Build identity;
-2. PR #224 evaluates a bounded TransitionDrawable/compositing optimization as Build 745, with its own runtime/device acceptance gate;
-3. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, current PRs, CI and device evidence;
-4. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
-5. do not infer a reopened ownership defect merely because a separate performance candidate exists.
+Normal development may continue from the current `dev` state. Performance work should reopen only for a concrete regression, reproducible hotspot, or new evidence that identifies a bounded root cause.
+
+Current priorities:
+
+1. continue normal product / UI / compatibility work from Build 744;
+2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
+3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
+4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
 
 ## Non-negotiable bounds
 
@@ -42,12 +44,12 @@ Current work has two independent active lines while normal development continues
 - Do not add polling, delay, retry loops, custom gesture clocks, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final-QS appearance ownership.
 - Do not weaken fail-native or restoration boundaries to gain smoothness.
-- Do not trade accepted Home, Keyguard/AOD, charging-island or Control Center geometry for benchmark-only optimization.
+- Do not trade accepted Home, Keyguard/AOD, charging-island or Control Center geometry for speculative performance work.
 - A branch name alone does not make a route active; require code/PR/CI/device evidence that agrees with the current objective.
 
 ## Immediate next
 
-- Complete PR #223 exact-target contract coverage and repository-selected CI without changing runtime or Build identity.
-- Keep PR #224 separate: accept Build 745 only after its Runtime CI, signed Canary, and focused clipping/alpha/performance device gate; otherwise retain Build 744 as the runtime baseline.
-- Continue normal development from the live `dev` state after each line is independently disposed.
+- Treat Build 744 as the accepted runtime baseline.
+- Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
+- Resume normal development from live `dev`; reopen this performance line only if new device evidence materially changes the decision.
 - External version remains 0.2.0. Promotion to `main` remains an explicit maintainer decision.

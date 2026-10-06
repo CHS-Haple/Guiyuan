@@ -5029,3 +5029,29 @@ No transition geometry, reservation/capacity, tint, progress, draw layer, alpha/
 
 A/B Build 744 against Build 743 with Keyguard + active island and repeated complete pull-down / swipe-up cycles. Verify Home + island remains unchanged. If a meaningful gap remains, continue to residual TransitionDrawable/compositing audit rather than adding more mirror logic.
 
+## 2026-10-06 — Build 745 rejected: bounded alpha layers clipped mobile signal
+
+**Type:** rejected rendering-performance experiment
+**Display version:** 0.2.0
+**Candidate build:** 745 / `20261006-745`
+**Branch / PR:** `fix/control-center-alpha-layer-bounds` / #224
+**Integration status:** closed unmerged; accepted runtime baseline remains Build 744
+
+### Intent
+
+After Build 744 closed the proven Home-mirror ownership mismatch, one residual audit examined the cost of per-component `Canvas.saveLayerAlpha(null, ...)` calls in the Control Center transition drawable. Build 745 kept group-alpha semantics but bounded each offscreen layer to the source viewport plus known transition overflow.
+
+### Device evidence
+
+Focused Canary validation showed a visible mobile-signal clipping regression during the transition. The affected path is consistent with the new finite offscreen-layer boundary: mobile morph / latent reveal pixels can extend beyond the nominal source viewport after transform and axis compensation, while the previous unbounded layer did not impose that additional local edge.
+
+The diagnostic session otherwise retained healthy runtime ownership and mobile presentation state, so the visual failure is sufficient to reject the optimization rather than reinterpret it as a state-source defect.
+
+### Decision
+
+- PR #224 is closed without merge.
+- Do not add guessed padding, margins, or geometry compensation around the bounded layer.
+- Do not carry Build 745 into `dev`, `main`, or a later checkpoint as an optimization baseline.
+- Build 744 remains the accepted runtime baseline.
+- The recent Keyguard / Control Center performance optimization line is closed. Reopen it only if new reproducible device evidence identifies a concrete blocker or bounded root cause.
+
