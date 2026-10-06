@@ -7,10 +7,10 @@ import org.junit.Test
 class SystemUiKeyguardHostResolverTest {
     @Test
     fun steadyKeyguardAcceptsKeyguardAndShadeLockedOnly() {
-        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.KEYGUARD))
-        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.SHADE_LOCKED))
-        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR))
-        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.UNKNOWN))
+        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.KEYGUARD))
+        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.SHADE_LOCKED))
+        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.UNKNOWN))
     }
 
     @Test

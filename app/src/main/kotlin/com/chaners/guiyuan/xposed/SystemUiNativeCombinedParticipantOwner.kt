@@ -92,7 +92,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     private var pendingPreDrawListener: ViewTreeObserver.OnPreDrawListener? = null
     private var modelReady = false
     private var tintReady = false
-    private var currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+    private var currentSurface = SysUiSceneSource.Surface.UNKNOWN
     private var handoffPending = false
     private var handoffCommitted = false
     private var handoffValidated = false
@@ -641,7 +641,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         bindingStates.clear()
         modelReady = false
         tintReady = false
-        currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+        currentSurface = SysUiSceneSource.Surface.UNKNOWN
         handoffPending = false
         handoffCommitted = false
         modelReadyLogged = false
@@ -1040,8 +1040,8 @@ internal object SystemUiNativeCombinedParticipantOwner {
                 modelUpdate.candidateComplete
         tintReady = tintUpdate?.resolved != null
         currentSurface =
-            SystemUiSceneStateSource.currentState(battery)?.surface
-                ?: SystemUiSceneStateSource.Surface.UNKNOWN
+            SysUiSceneSource.currentState(battery)?.surface
+                ?: SysUiSceneSource.Surface.UNKNOWN
         reconcileVisibleHandoff("attach")
 
         return AttachResult.Ready(
@@ -1098,7 +1098,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onSceneUpdate(update: SystemUiSceneStateSource.SceneUpdate) {
+    fun onSceneUpdate(update: SysUiSceneSource.SceneUpdate) {
         val sourceBattery = batteryRef?.get()
         if (sourceBattery != null && update.sourceView !== sourceBattery) {
             return
@@ -1106,7 +1106,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         currentSurface = update.surface
         reconcileVisibleHandoff("scene-" + update.surface.name)
         if (
-            update.surface != SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR ||
+            update.surface != SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR ||
             unlockedGeometryLogged
         ) {
             return
@@ -1984,13 +1984,13 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     internal fun resolveHandoffMode(
-        surface: SystemUiSceneStateSource.Surface,
+        surface: SysUiSceneSource.Surface,
         rootShown: Boolean,
     ): HandoffMode =
         when {
-            surface == SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR ->
+            surface == SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR ->
                 HandoffMode.VISIBLE_HOME
-            surface == SystemUiSceneStateSource.Surface.KEYGUARD && !rootShown ->
+            surface == SysUiSceneSource.Surface.KEYGUARD && !rootShown ->
                 HandoffMode.PREARMED_KEYGUARD
             else ->
                 HandoffMode.BLOCKED
@@ -2284,7 +2284,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         targetBindingState = null
         modelReady = false
         tintReady = false
-        currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+        currentSurface = SysUiSceneSource.Surface.UNKNOWN
         handoffPending = false
         handoffCommitted = false
         eventSink = null

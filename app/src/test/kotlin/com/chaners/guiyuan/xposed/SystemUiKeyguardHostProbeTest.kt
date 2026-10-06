@@ -9,17 +9,17 @@ class SystemUiKeyguardHostProbeTest {
     fun probeRunsOnlyForKeyguardSurface() {
         assertTrue(
             SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.KEYGUARD,
+                SysUiSceneSource.Surface.KEYGUARD,
             ),
         )
         assertFalse(
             SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR,
+                SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR,
             ),
         )
         assertFalse(
             SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.SHADE_LOCKED,
+                SysUiSceneSource.Surface.SHADE_LOCKED,
             ),
         )
     }

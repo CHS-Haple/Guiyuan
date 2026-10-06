@@ -122,7 +122,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+    fun onAodState(update: SysUiKeyguardAodSource.AodUpdate) {
         current?.updateAodState(update)
     }
 
@@ -459,7 +459,7 @@ internal object KeyguardRenderSession {
             layoutProbe()
         }
 
-        fun updateAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+        fun updateAodState(update: SysUiKeyguardAodSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             val visible = applyResolvedVisibility()

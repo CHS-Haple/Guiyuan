@@ -7,7 +7,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.util.WeakHashMap
 
-internal object SystemUiKeyguardAodStateSource {
+internal object SysUiKeyguardAodSource {
     const val HOOK_COUNT = 2
 
     private const val BATTERY_VIEW_CLASS =

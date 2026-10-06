@@ -22,7 +22,7 @@ internal object SystemUiKeyguardHostProbe {
     private var confirmedHost = WeakReference<ViewGroup>(null)
 
     @Synchronized
-    fun capture(update: SystemUiSceneStateSource.SceneUpdate): Snapshot? {
+    fun capture(update: SysUiSceneSource.SceneUpdate): Snapshot? {
         if (!shouldProbe(update.surface)) return null
 
         val host =
@@ -79,8 +79,8 @@ internal object SystemUiKeyguardHostProbe {
         )
     }
 
-    internal fun shouldProbe(surface: SystemUiSceneStateSource.Surface): Boolean =
-        surface == SystemUiSceneStateSource.Surface.KEYGUARD
+    internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
+        surface == SysUiSceneSource.Surface.KEYGUARD
 
     internal fun isKeyguardHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
