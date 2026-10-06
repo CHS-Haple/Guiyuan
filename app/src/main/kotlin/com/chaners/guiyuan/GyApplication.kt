@@ -12,9 +12,9 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALT
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
 import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
-import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DIAGNOSTICS_PREFS_NAME
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
+import com.chaners.guiyuan.settings.DIAG_PREFS
+import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
@@ -32,7 +32,7 @@ class GyApplication :
     XposedServiceHelper.OnServiceListener {
 
     private val diagPrefs: SharedPreferences by lazy {
-        getSharedPreferences(DIAGNOSTICS_PREFS_NAME, Context.MODE_PRIVATE)
+        getSharedPreferences(DIAG_PREFS, Context.MODE_PRIVATE)
     }
 
     private val featurePrefs: SharedPreferences by lazy {
@@ -64,7 +64,7 @@ class GyApplication :
 
     private val diagListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == DIAGNOSTICS_LEVEL_KEY) {
+            if (key == DIAG_LEVEL_KEY) {
                 xposedService?.let(::syncRuntime)
             }
         }
@@ -186,9 +186,9 @@ class GyApplication :
     private fun syncRuntime(service: XposedService) {
         val level =
             diagPrefs.getString(
-                DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
-            ) ?: DiagnosticsLevel.General.name
+                DIAG_LEVEL_KEY,
+                DiagLevel.General.name,
+            ) ?: DiagLevel.General.name
         val enabled =
             featurePrefs.getBoolean(
                 COMBINED_STATUS_ENABLED_KEY,
@@ -216,7 +216,7 @@ class GyApplication :
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
-                .putString(DIAGNOSTICS_LEVEL_KEY, level)
+                .putString(DIAG_LEVEL_KEY, level)
                 .putBoolean(
                     COMBINED_STATUS_ENABLED_KEY,
                     enabled,

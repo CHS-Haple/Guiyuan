@@ -47,9 +47,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.DiagnosticsLevel
-import com.chaners.guiyuan.settings.DiagnosticsSettings
-import com.chaners.guiyuan.settings.DiagnosticsRepo
+import com.chaners.guiyuan.settings.DiagLevel
+import com.chaners.guiyuan.settings.DiagSettings
+import com.chaners.guiyuan.settings.DiagRepo
 import com.chaners.guiyuan.system.LogCategory
 import com.chaners.guiyuan.system.LogEntry
 import com.chaners.guiyuan.system.LogLevel
@@ -89,11 +89,11 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val diagRepo =
         remember(context.applicationContext) {
-            DiagnosticsRepo(context.applicationContext)
+            DiagRepo(context.applicationContext)
         }
     val diagSettings by
         diagRepo.settings.collectAsState(
-            initial = DiagnosticsSettings(level = diagRepo.currentLevel()),
+            initial = DiagSettings(level = diagRepo.current()),
         )
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
@@ -298,7 +298,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
                 canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
                 canClear = snapshot != null && !viewCleared,
-                onDiagnosticsLevelChange = { level ->
+                onDiagLevelChange = { level ->
                     if (level != diagSettings.level) {
                         diagRepo.setLevel(level)
                         requestRefresh()
@@ -603,12 +603,12 @@ private fun LogFilterMenu(
 @Composable
 private fun DiagMenu(
     title: String,
-    diagnosticsLevel: DiagnosticsLevel,
+    diagnosticsLevel: DiagLevel,
     refreshEnabled: Boolean,
     canScrollTop: Boolean,
     canScrollBottom: Boolean,
     canClear: Boolean,
-    onDiagnosticsLevelChange: (DiagnosticsLevel) -> Unit,
+    onDiagLevelChange: (DiagLevel) -> Unit,
     onRefresh: () -> Unit,
     onScrollTop: () -> Unit,
     onScrollBottom: () -> Unit,
@@ -616,25 +616,25 @@ private fun DiagMenu(
 ) {
     val currentLevelLabel =
         stringResource(
-            if (diagnosticsLevel == DiagnosticsLevel.Detailed) {
+            if (diagnosticsLevel == DiagLevel.Detailed) {
                 R.string.diagnostics_mode_detailed
             } else {
                 R.string.diagnostics_mode_basic
             },
         )
     val levelItems =
-        DiagnosticsLevel.entries.map { level ->
+        DiagLevel.entries.map { level ->
             DropdownItem(
                 text =
                     stringResource(
-                        if (level == DiagnosticsLevel.Detailed) {
+                        if (level == DiagLevel.Detailed) {
                             R.string.diagnostics_mode_detailed
                         } else {
                             R.string.diagnostics_mode_basic
                         },
                     ),
                 selected = diagnosticsLevel == level,
-                onClick = { onDiagnosticsLevelChange(level) },
+                onClick = { onDiagLevelChange(level) },
             )
         }
     val entries =

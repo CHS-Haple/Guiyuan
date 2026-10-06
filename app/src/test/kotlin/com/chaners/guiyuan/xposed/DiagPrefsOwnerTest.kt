@@ -1,8 +1,8 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
+import com.chaners.guiyuan.settings.DiagLevel
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,104 +16,104 @@ class DiagPrefsOwnerTest {
     }
 
     @Test
-    fun bindOwnsListenerAndPropagatesDetailedChanges() {
-        val preferences = FakePreferences()
+    fun bindPropagatesDetail() {
+        val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
 
         val result =
             DiagPrefsOwner.bind(
-                preferences = preferences,
+                prefs = prefs,
                 forceDetailed = false,
-                onDetailedChanged = observed::add,
+                onChanged = observed::add,
             )
 
-        assertFalse(result.detailedEnabled)
+        assertFalse(result.detailed)
         assertTrue(DiagPrefsOwner.isBound)
-        assertEquals(1, preferences.listenerCount)
+        assertEquals(1, prefs.listenerCount)
         assertEquals(listOf(false), observed)
 
-        preferences.setDiagnosticsLevel(DiagnosticsLevel.Detailed.name)
+        prefs.setLevel(DiagLevel.Detailed.name)
 
         assertEquals(listOf(false, true), observed)
     }
 
     @Test
-    fun unbindUnregistersAndRejectsStaleCallbacks() {
-        val preferences = FakePreferences()
+    fun unbindRejectsStaleCallback() {
+        val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
 
         DiagPrefsOwner.bind(
-            preferences = preferences,
+            prefs = prefs,
             forceDetailed = false,
-            onDetailedChanged = observed::add,
+            onChanged = observed::add,
         )
-        val staleListener = preferences.lastRegisteredListener
+        val staleListener = prefs.lastListener
 
         DiagPrefsOwner.unbind()
 
         assertFalse(DiagPrefsOwner.isBound)
-        assertEquals(0, preferences.listenerCount)
+        assertEquals(0, prefs.listenerCount)
 
-        preferences.setRawDiagnosticsLevel(DiagnosticsLevel.Detailed.name)
+        prefs.setRaw(DiagLevel.Detailed.name)
         staleListener?.onSharedPreferenceChanged(
-            preferences,
-            DIAGNOSTICS_LEVEL_KEY,
+            prefs,
+            DIAG_LEVEL_KEY,
         )
 
         assertEquals(listOf(false), observed)
     }
 
     @Test
-    fun developmentProbeForcesDetailedState() {
-        val preferences = FakePreferences()
+    fun devProbeForcesDetail() {
+        val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
 
         val result =
             DiagPrefsOwner.bind(
-                preferences = preferences,
+                prefs = prefs,
                 forceDetailed = true,
-                onDetailedChanged = observed::add,
+                onChanged = observed::add,
             )
 
-        assertTrue(result.detailedEnabled)
+        assertTrue(result.detailed)
         assertEquals(listOf(true), observed)
 
-        preferences.setDiagnosticsLevel(DiagnosticsLevel.General.name)
+        prefs.setLevel(DiagLevel.General.name)
 
         assertEquals(listOf(true, true), observed)
     }
 
     private class FakePreferences : SharedPreferences {
-        private var diagnosticsLevel: String = DiagnosticsLevel.General.name
+        private var level: String = DiagLevel.General.name
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
-        var lastRegisteredListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+        var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
         val listenerCount: Int
             get() = listeners.size
 
-        fun setDiagnosticsLevel(level: String) {
-            diagnosticsLevel = level
+        fun setLevel(level: String) {
+            level = level
             listeners.toList().forEach { listener ->
                 listener.onSharedPreferenceChanged(
                     this,
-                    DIAGNOSTICS_LEVEL_KEY,
+                    DIAG_LEVEL_KEY,
                 )
             }
         }
 
-        fun setRawDiagnosticsLevel(level: String) {
-            diagnosticsLevel = level
+        fun setRaw(level: String) {
+            level = level
         }
 
         override fun getString(
             key: String?,
             defValue: String?,
         ): String? =
-            if (key == DIAGNOSTICS_LEVEL_KEY) {
-                diagnosticsLevel
+            if (key == DIAG_LEVEL_KEY) {
+                level
             } else {
                 defValue
             }
@@ -123,7 +123,7 @@ class DiagPrefsOwnerTest {
         ) {
             if (listener != null) {
                 listeners += listener
-                lastRegisteredListener = listener
+                lastListener = listener
             }
         }
 
@@ -162,7 +162,7 @@ class DiagPrefsOwnerTest {
             defValue: Boolean,
         ): Boolean = defValue
 
-        override fun contains(key: String?): Boolean = key == DIAGNOSTICS_LEVEL_KEY
+        override fun contains(key: String?): Boolean = key == DIAG_LEVEL_KEY
 
         override fun edit(): SharedPreferences.Editor =
             throw UnsupportedOperationException("not needed by this test")

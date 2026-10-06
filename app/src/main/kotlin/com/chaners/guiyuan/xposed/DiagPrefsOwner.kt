@@ -1,8 +1,8 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
+import com.chaners.guiyuan.settings.DiagLevel
 
 internal object DiagPrefsOwner {
     private var prefs: SharedPreferences? = null
@@ -13,55 +13,55 @@ internal object DiagPrefsOwner {
         @Synchronized get() = prefs != null
 
     internal data class BindResult(
-        val detailedEnabled: Boolean,
+        val detailed: Boolean,
     )
 
     @Synchronized
     fun bind(
-        preferences: SharedPreferences,
+        prefs: SharedPreferences,
         forceDetailed: Boolean,
-        onDetailedChanged: (Boolean) -> Unit,
+        onChanged: (Boolean) -> Unit,
     ): BindResult {
         unbindLocked()
 
-        val detailedEnabled =
-            resolveDetailed(
-                preferences = preferences,
+        val detailed =
+            isDetailed(
+                prefs = prefs,
                 forceDetailed = forceDetailed,
             )
         val token = Any()
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
-                    key == DIAGNOSTICS_LEVEL_KEY &&
-                    isCurrentBinding(
-                        preferences = changed,
+                    key == DIAG_LEVEL_KEY &&
+                    isCurrent(
+                        prefs = changed,
                         token = token,
                     )
                 ) {
-                    onDetailedChanged(
-                        resolveDetailed(
-                            preferences = changed,
+                    onChanged(
+                        isDetailed(
+                            prefs = changed,
                             forceDetailed = forceDetailed,
                         ),
                     )
                 }
             }
 
-        preferences.registerOnSharedPreferenceChangeListener(listener)
-        this.prefs = preferences
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        this.prefs = prefs
         this.listener = listener
         bindToken = token
 
         runCatching {
-            onDetailedChanged(detailedEnabled)
+            onChanged(detailed)
         }.onFailure {
             unbindLocked()
             throw it
         }
 
         return BindResult(
-            detailedEnabled = detailedEnabled,
+            detailed = detailed,
         )
     }
 
@@ -76,27 +76,27 @@ internal object DiagPrefsOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 先断开这次绑定，晚到的旧回调会被 token 挡住。
+        // Drop ownership first so late callbacks fail the token check.
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
 
     @Synchronized
-    private fun isCurrentBinding(
-        preferences: SharedPreferences,
+    private fun isCurrent(
+        prefs: SharedPreferences,
         token: Any,
     ): Boolean =
-        prefs === preferences &&
+        this.prefs === prefs &&
             bindToken === token
 
-    private fun resolveDetailed(
-        preferences: SharedPreferences,
+    private fun isDetailed(
+        prefs: SharedPreferences,
         forceDetailed: Boolean,
     ): Boolean =
         forceDetailed ||
-            preferences.getString(
-                DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
-            ) == DiagnosticsLevel.Detailed.name
+            prefs.getString(
+                DIAG_LEVEL_KEY,
+                DiagLevel.General.name,
+            ) == DiagLevel.Detailed.name
 }

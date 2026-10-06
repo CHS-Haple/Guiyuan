@@ -4367,9 +4367,9 @@ class GyModule : XposedModule() {
 
         runCatching {
             DiagPrefsOwner.bind(
-                preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                prefs = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 forceDetailed = BuildConfig.DEVELOPMENT_PROBES,
-                onDetailedChanged = ::setDetailedDiagnosticsEnabled,
+                onChanged = ::setDetailedDiagnosticsEnabled,
             )
         }.onSuccess { result ->
             logDiagnostic(
@@ -4377,7 +4377,7 @@ class GyModule : XposedModule() {
                 event = "diagnostics.bind",
                 component = "diagnostics",
                 state = "ready",
-                "level" to if (result.detailedEnabled) "detailed" else "general",
+                "level" to if (result.detailed) "detailed" else "general",
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
@@ -4397,7 +4397,7 @@ class GyModule : XposedModule() {
     private fun bindRuntimeFeatureSettings() {
         runCatching {
             FeaturePrefsOwner.bind(
-                preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                prefs = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeFeatureSettingsChanged,
             )
         }.onSuccess { settings ->
@@ -4543,7 +4543,7 @@ class GyModule : XposedModule() {
     private fun bindRuntimeVisualSettings() {
         runCatching {
             VisualPrefsOwner.bind(
-                preferences = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                prefs = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
                 onChanged = ::onRuntimeVisualSettingsChanged,
             )
         }.onSuccess { settings ->
