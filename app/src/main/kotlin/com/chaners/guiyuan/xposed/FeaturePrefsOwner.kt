@@ -3,66 +3,53 @@ package com.chaners.guiyuan.xposed
 import android.content.SharedPreferences
 import android.os.SystemClock
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
-import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
 
 internal object FeaturePrefsOwner {
     @Volatile
-    private var current =
+    private var cfg =
         FeatureCfg(
             enabled = false,
-            keyguardEnabled = false,
-            aodEnabled = false,
+            keyguard = false,
+            aod = false,
         )
 
     private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun currentSettings(): FeatureCfg = current
+    fun current(): FeatureCfg = cfg
 
     @Synchronized
     fun bind(
-        preferences: SharedPreferences,
+        source: SharedPreferences,
         onChanged: (FeatureCfg, Long?) -> Unit,
     ): FeatureCfg {
         unbindLocked()
 
         val token = Any()
-        val initial = resolve(preferences)
-        current = initial
+        val initial = resolve(source)
+        cfg = initial
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (
-                    isFeatureKey(key) &&
-                    isCurrentBinding(changed, token)
-                ) {
+                if (isFeatureKey(key) && isCurrent(changed, token)) {
                     val next = resolve(changed)
-                    if (next != current) {
-                        val recvNs = SystemClock.elapsedRealtimeNanos()
-                        val changedNs =
-                            changed.getLong(
-                                FEATURE_CHANGED_AT_NS_KEY,
-                                0L,
-                            )
-                        current = next
-                        onChanged(
-                            next,
-                            resolveTransportLatencyNanos(
-                                changedNs,
-                                recvNs,
-                            ),
-                        )
+                    if (next != cfg) {
+                        val receivedAtNs = SystemClock.elapsedRealtimeNanos()
+                        val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
+                        cfg = next
+                        onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
                     }
                 }
             }
 
-        preferences.registerOnSharedPreferenceChangeListener(listener)
-        this.prefs = preferences
+        source.registerOnSharedPreferenceChangeListener(listener)
+        prefs = source
         this.listener = listener
         bindToken = token
         onChanged(initial, null)
@@ -72,10 +59,10 @@ internal object FeaturePrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        current =
+        cfg =
             FeatureCfg(
                 enabled = false,
-                keyguardEnabled = false,
+                keyguard = false,
             )
     }
 
@@ -92,42 +79,27 @@ internal object FeaturePrefsOwner {
     }
 
     @Synchronized
-    private fun isCurrentBinding(
-        preferences: SharedPreferences,
+    private fun isCurrent(
+        source: SharedPreferences,
         token: Any,
     ): Boolean =
-        prefs === preferences &&
+        prefs === source &&
             bindToken === token
 
-    internal fun resolveTransportLatencyNanos(
-        changedAtElapsedRealtimeNanos: Long,
-        receivedAtElapsedRealtimeNanos: Long,
+    internal fun transportLatencyNs(
+        changedAtNs: Long,
+        receivedAtNs: Long,
     ): Long? =
-        if (
-            changedAtElapsedRealtimeNanos > 0L &&
-            receivedAtElapsedRealtimeNanos >= changedAtElapsedRealtimeNanos
-        ) {
-            receivedAtElapsedRealtimeNanos - changedAtElapsedRealtimeNanos
+        if (changedAtNs > 0L && receivedAtNs >= changedAtNs) {
+            receivedAtNs - changedAtNs
         } else {
             null
         }
 
-    private fun resolve(preferences: SharedPreferences): FeatureCfg =
+    private fun resolve(source: SharedPreferences): FeatureCfg =
         FeatureCfg(
-            enabled =
-                preferences.getBoolean(
-                    FEATURE_ENABLED_KEY,
-                    true,
-                ),
-            keyguardEnabled =
-                preferences.getBoolean(
-                    FEATURE_KEYGUARD_KEY,
-                    false,
-                ),
-            aodEnabled =
-                preferences.getBoolean(
-                    FEATURE_AOD_KEY,
-                    false,
-                ),
+            enabled = source.getBoolean(FEATURE_ENABLED_KEY, true),
+            keyguard = source.getBoolean(FEATURE_KEYGUARD_KEY, false),
+            aod = source.getBoolean(FEATURE_AOD_KEY, false),
         )
 }

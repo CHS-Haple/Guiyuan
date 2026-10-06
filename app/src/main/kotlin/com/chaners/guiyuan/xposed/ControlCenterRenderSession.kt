@@ -502,7 +502,7 @@ internal object ControlCenterRenderSession {
         private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
-        private var featureEnabled = FeaturePrefsOwner.currentSettings().enabled
+        private var featureEnabled = FeaturePrefsOwner.current().enabled
         private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false

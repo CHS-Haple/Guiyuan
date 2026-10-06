@@ -53,7 +53,7 @@ internal object KeyguardRenderSession {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
-        val settings = FeaturePrefsOwner.currentSettings()
+        val settings = FeaturePrefsOwner.current()
         if (!sceneEligible) {
             return AttachResult.Failure(
                 if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
@@ -62,8 +62,8 @@ internal object KeyguardRenderSession {
         val featureEnabled =
             resolveFamilyFeatureEnabled(
                 featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguardEnabled,
-                aodEnabled = settings.aodEnabled,
+                keyguardEnabled = settings.keyguard,
+                aodEnabled = settings.aod,
                 sceneIsAod = scene == Scene.AOD,
             )
 
@@ -419,8 +419,8 @@ internal object KeyguardRenderSession {
             val enabled =
                 resolveFamilyFeatureEnabled(
                     featureEnabled = settings.enabled,
-                    keyguardEnabled = settings.keyguardEnabled,
-                    aodEnabled = settings.aodEnabled,
+                    keyguardEnabled = settings.keyguard,
+                    aodEnabled = settings.aod,
                     sceneIsAod = scene == Scene.AOD,
                 )
             setFeatureState(enabled)

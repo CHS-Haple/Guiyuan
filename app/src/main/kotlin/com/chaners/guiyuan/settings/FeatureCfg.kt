@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal data class FeatureCfg(
     val enabled: Boolean = true,
-    val keyguardEnabled: Boolean = false,
-    val aodEnabled: Boolean = false,
+    val keyguard: Boolean = false,
+    val aod: Boolean = false,
 )
 
 internal class FeatureRepo(context: Context) {
@@ -44,23 +44,23 @@ internal class FeatureRepo(context: Context) {
     fun current(): FeatureCfg =
         FeatureCfg(
             enabled = prefs.getBoolean(FEATURE_ENABLED_KEY, true),
-            keyguardEnabled = prefs.getBoolean(FEATURE_KEYGUARD_KEY, false),
-            aodEnabled = prefs.getBoolean(FEATURE_AOD_KEY, false),
+            keyguard = prefs.getBoolean(FEATURE_KEYGUARD_KEY, false),
+            aod = prefs.getBoolean(FEATURE_AOD_KEY, false),
         )
 
     fun setEnabled(enabled: Boolean) {
         writeBool(FEATURE_ENABLED_KEY, enabled)
     }
 
-    fun setKeyguardEnabled(enabled: Boolean) {
+    fun setKeyguard(enabled: Boolean) {
         writeBool(FEATURE_KEYGUARD_KEY, enabled)
     }
 
-    fun setAodEnabled(enabled: Boolean) {
+    fun setAod(enabled: Boolean) {
         writeBool(FEATURE_AOD_KEY, enabled)
     }
 
-    fun resetToDefaults() {
+    fun reset() {
         val changedAtNs = SystemClock.elapsedRealtimeNanos()
         prefs.edit()
             .clear()

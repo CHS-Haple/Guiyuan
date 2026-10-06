@@ -69,7 +69,7 @@ internal object HomeRenderSession {
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
-                FeaturePrefsOwner.currentSettings().enabled,
+                FeaturePrefsOwner.current().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
         )
         current = session

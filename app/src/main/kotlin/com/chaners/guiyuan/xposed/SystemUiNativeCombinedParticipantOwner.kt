@@ -983,7 +983,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             VisualPrefsOwner.currentSettings(),
         )
         featureEnabled =
-            FeaturePrefsOwner.currentSettings().enabled
+            FeaturePrefsOwner.current().enabled
 
         render.measure(
             View.MeasureSpec.makeMeasureSpec(activeSlotWidth, View.MeasureSpec.EXACTLY),
