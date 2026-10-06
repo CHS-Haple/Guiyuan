@@ -17,7 +17,7 @@ internal data class FeatureSettings(
 internal class FeatureSettingsRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
-            COMBINED_STATUS_FEATURE_PREFS_NAME,
+            FEATURE_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
 
@@ -45,31 +45,31 @@ internal class FeatureSettingsRepo(context: Context) {
         FeatureSettings(
             enabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_ENABLED_KEY,
+                    FEATURE_ENABLED_KEY,
                     true,
                 ),
             keyguardEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    KEYGUARD_ENABLED_KEY,
                     false,
                 ),
             aodEnabled =
                 preferences.getBoolean(
-                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    AOD_ENABLED_KEY,
                     false,
                 ),
         )
 
     fun setEnabled(enabled: Boolean) {
-        writeFeatureBoolean(COMBINED_STATUS_ENABLED_KEY, enabled)
+        writeFeatureBoolean(FEATURE_ENABLED_KEY, enabled)
     }
 
     fun setKeyguardEnabled(enabled: Boolean) {
-        writeFeatureBoolean(COMBINED_STATUS_KEYGUARD_ENABLED_KEY, enabled)
+        writeFeatureBoolean(KEYGUARD_ENABLED_KEY, enabled)
     }
 
     fun setAodEnabled(enabled: Boolean) {
-        writeFeatureBoolean(COMBINED_STATUS_AOD_ENABLED_KEY, enabled)
+        writeFeatureBoolean(AOD_ENABLED_KEY, enabled)
     }
 
     fun resetToDefaults() {
@@ -78,7 +78,7 @@ internal class FeatureSettingsRepo(context: Context) {
             .edit()
             .clear()
             .putLong(
-                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                FEATURE_CHANGED_NS_KEY,
                 changedAtElapsedRealtimeNanos,
             )
             .apply()
@@ -92,7 +92,7 @@ internal class FeatureSettingsRepo(context: Context) {
         preferences
             .edit()
             .putLong(
-                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                FEATURE_CHANGED_NS_KEY,
                 changedAtElapsedRealtimeNanos,
             )
             .putBoolean(key, enabled)
@@ -100,16 +100,16 @@ internal class FeatureSettingsRepo(context: Context) {
     }
 }
 
-internal const val COMBINED_STATUS_FEATURE_PREFS_NAME = "combined_status_feature"
-internal const val COMBINED_STATUS_ENABLED_KEY = "combined_status_enabled"
-internal const val COMBINED_STATUS_KEYGUARD_ENABLED_KEY = "combined_status_keyguard_enabled"
-internal const val COMBINED_STATUS_AOD_ENABLED_KEY = "combined_status_aod_enabled"
-internal const val COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY =
+internal const val FEATURE_PREFS_NAME = "combined_status_feature"
+internal const val FEATURE_ENABLED_KEY = "combined_status_enabled"
+internal const val KEYGUARD_ENABLED_KEY = "combined_status_keyguard_enabled"
+internal const val AOD_ENABLED_KEY = "combined_status_aod_enabled"
+internal const val FEATURE_CHANGED_NS_KEY =
     "combined_status_feature_change_elapsed_realtime_nanos"
 
 
 internal fun isFeaturePreferenceKey(key: String?): Boolean =
     key == null ||
-        key == COMBINED_STATUS_ENABLED_KEY ||
-        key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
-        key == COMBINED_STATUS_AOD_ENABLED_KEY
+        key == FEATURE_ENABLED_KEY ||
+        key == KEYGUARD_ENABLED_KEY ||
+        key == AOD_ENABLED_KEY

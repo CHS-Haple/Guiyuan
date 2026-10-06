@@ -6,18 +6,18 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.chaners.guiyuan.settings.COMBINED_STATUS_AOD_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
-import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
+import com.chaners.guiyuan.settings.AOD_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_CHANGED_NS_KEY
+import com.chaners.guiyuan.settings.FEATURE_PREFS_NAME
+import com.chaners.guiyuan.settings.KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS_NAME
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
-import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
+import com.chaners.guiyuan.settings.migrateChargingScaleRef
 import com.chaners.guiyuan.settings.putVisualSettings
 import com.chaners.guiyuan.settings.readVisualSettings
 import com.chaners.guiyuan.system.XposedStatus
@@ -36,7 +36,7 @@ class GyApplication :
     }
 
     private val featurePreferences: SharedPreferences by lazy {
-        getSharedPreferences(COMBINED_STATUS_FEATURE_PREFS_NAME, Context.MODE_PRIVATE)
+        getSharedPreferences(FEATURE_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     private val visualPreferences: SharedPreferences by lazy {
@@ -72,9 +72,9 @@ class GyApplication :
     private val featureListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (
-                key == COMBINED_STATUS_ENABLED_KEY ||
-                key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
-                key == COMBINED_STATUS_AOD_ENABLED_KEY
+                key == FEATURE_ENABLED_KEY ||
+                key == KEYGUARD_ENABLED_KEY ||
+                key == AOD_ENABLED_KEY
             ) {
                 xposedService?.let(::syncRuntimeConfig)
             }
@@ -89,7 +89,7 @@ class GyApplication :
 
     override fun onCreate() {
         super.onCreate()
-        migrateBatteryTopChargingScaleReferenceIfNeeded(visualPreferences)
+        migrateChargingScaleRef(visualPreferences)
         diagPrefs.registerOnSharedPreferenceChangeListener(diagnosticsListener)
         featurePreferences.registerOnSharedPreferenceChangeListener(featureListener)
         visualPreferences.registerOnSharedPreferenceChangeListener(visualListener)
@@ -190,22 +190,22 @@ class GyApplication :
             ) ?: DiagLevel.General.name
         val combinedStatusEnabled =
             featurePreferences.getBoolean(
-                COMBINED_STATUS_ENABLED_KEY,
+                FEATURE_ENABLED_KEY,
                 true,
             )
         val keyguardEnabled =
             featurePreferences.getBoolean(
-                COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                KEYGUARD_ENABLED_KEY,
                 false,
             )
         val aodEnabled =
             featurePreferences.getBoolean(
-                COMBINED_STATUS_AOD_ENABLED_KEY,
+                AOD_ENABLED_KEY,
                 false,
             )
         val featureChangeElapsedRealtimeNanos =
             featurePreferences.getLong(
-                COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                FEATURE_CHANGED_NS_KEY,
                 0L,
             )
         val visualSettings =
@@ -217,19 +217,19 @@ class GyApplication :
             editor
                 .putString(DIAGNOSTICS_LEVEL_KEY, level)
                 .putBoolean(
-                    COMBINED_STATUS_ENABLED_KEY,
+                    FEATURE_ENABLED_KEY,
                     combinedStatusEnabled,
                 )
                 .putBoolean(
-                    COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
+                    KEYGUARD_ENABLED_KEY,
                     keyguardEnabled,
                 )
                 .putBoolean(
-                    COMBINED_STATUS_AOD_ENABLED_KEY,
+                    AOD_ENABLED_KEY,
                     aodEnabled,
                 )
                 .putLong(
-                    COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
+                    FEATURE_CHANGED_NS_KEY,
                     featureChangeElapsedRealtimeNanos,
                 )
                 .putVisualSettings(visualSettings)

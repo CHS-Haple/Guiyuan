@@ -172,19 +172,19 @@ internal object IosStyleBatteryPalette {
 
 internal data class VisualSettings(
     val contentLayout: ContentLayout = ContentLayout.NETWORK_CENTER,
-    val mobileFollowsBatteryColor: Boolean = false,
-    val centerFollowsBatteryColor: Boolean = false,
-    val batteryTopReadoutEnabled: Boolean = false,
-    val batteryTopTextFollowsBatteryColor: Boolean = true,
-    val batteryTopChargingIconEnabled: Boolean = true,
-    val batteryTopChargingIconFollowsBatteryColor: Boolean = true,
-    val batteryFillFollowsRetractEndpoint: Boolean = false,
-    val controlCenterTintTransitionEnabled: Boolean = true,
-    val batteryTopTextScale: Float = batteryTopTextScaleDefault(contentLayout),
+    val mobileFollowsBattery: Boolean = false,
+    val centerFollowsBattery: Boolean = false,
+    val topReadoutEnabled: Boolean = false,
+    val topTextFollowsBattery: Boolean = true,
+    val chargingIconEnabled: Boolean = true,
+    val chargingIconFollowsBattery: Boolean = true,
+    val fillFollowsRetract: Boolean = false,
+    val ccTintTransitionEnabled: Boolean = true,
+    val batteryTopTextScale: Float = topTextScaleDefault(contentLayout),
     val batteryTopTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
-    val batteryTopVerticalOffset: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
-    val batteryTopChargingIconScale: Float =
-        batteryTopChargingIconScaleDefault(contentLayout),
+    val topOffset: Float = TOP_OFFSET_DEFAULT,
+    val chargingIconScale: Float =
+        chargingIconScaleDefault(contentLayout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
     val wifiSizeScale: Float = WIFI_SIZE_SCALE_DEFAULT,
@@ -212,15 +212,15 @@ internal fun VisualSettings.normalized(): VisualSettings =
                 BATTERY_TOP_TEXT_WEIGHT_MIN,
                 BATTERY_TOP_TEXT_WEIGHT_MAX,
             ),
-        batteryTopVerticalOffset =
-            batteryTopVerticalOffset.coerceIn(
+        topOffset =
+            topOffset.coerceIn(
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
             ),
-        batteryTopChargingIconScale =
-            batteryTopChargingIconScale.coerceIn(
-                BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
-                BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
+        chargingIconScale =
+            chargingIconScale.coerceIn(
+                CHARGING_ICON_SCALE_MIN,
+                CHARGING_ICON_SCALE_MAX,
             ),
         combinedScale = combinedScale.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX),
         outerWeightScale =

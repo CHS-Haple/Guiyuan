@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val BATTERY_COLOR_SCHEME_CUSTOM_MAX = 5
-internal const val BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS = 24
+internal const val BATTERY_SCHEME_NAME_LIMIT = 24
 internal const val BATTERY_COLOR_SCHEME_HYPEROS_KEY = "builtin:hyperos"
 internal const val BATTERY_COLOR_SCHEME_IOS_KEY = "builtin:ios"
-internal const val BATTERY_COLOR_SCHEME_LOW_SATURATION_KEY = "builtin:low_saturation"
+internal const val BATTERY_SCHEME_LOW_SAT_KEY = "builtin:low_saturation"
 
 private const val BATTERY_COLOR_SCHEME_PREFIX = "battery_color_scheme_library."
 private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
-private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
+private const val BATTERY_SCHEME_SCHEMA = 1
 private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
@@ -32,7 +32,7 @@ internal enum class BuiltInBatteryScheme(
         BatteryColorPreset.IOS_STYLE,
     ),
     LOW_SATURATION(
-        BATTERY_COLOR_SCHEME_LOW_SATURATION_KEY,
+        BATTERY_SCHEME_LOW_SAT_KEY,
         BatteryColorPreset.RECOMMENDED,
     );
 
@@ -357,7 +357,7 @@ internal class BatterySchemeRepo(context: Context) {
     private fun migrateIfNeeded() {
         if (
             preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >=
-                BATTERY_COLOR_SCHEME_SCHEMA_CURRENT
+                BATTERY_SCHEME_SCHEMA
         ) return
 
         val visual = preferences.readVisualSettings()
@@ -464,11 +464,11 @@ internal class BatterySchemeRepo(context: Context) {
         library: BatterySchemeLibrary,
     ) {
         editor
-            .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
+            .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_SCHEME_SCHEMA)
             .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
             .putString(
                 BATTERY_COLOR_SCHEME_ORDER_KEY,
-                library.customSchemes.joinToString(",") { it.id.toString() },
+                library.customSchemes.joinToString(",") { it.id.function toString() { [native code] }() },
             )
         library.customSchemes.forEach { scheme ->
             val prefix = customPrefix(scheme.id)
@@ -547,7 +547,7 @@ internal class BatterySchemeRepo(context: Context) {
         BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
             val source =
-                batteryColorSchemeSourceFromLegacy(
+                legacySchemeSource(
                     mode = visual.batteryColorModes.modeFor(slot),
                     hasStoredCustom = storedCustom != null,
                     presetSource = preset,
@@ -612,11 +612,11 @@ private fun customColorKey(
 
 internal fun limitBatteryCustomSchemeNameInput(value: String): String {
     val codePointCount = value.codePointCount(0, value.length)
-    if (codePointCount <= BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS) return value
+    if (codePointCount <= BATTERY_SCHEME_NAME_LIMIT) return value
     val endIndex =
         value.offsetByCodePoints(
             0,
-            BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS,
+            BATTERY_SCHEME_NAME_LIMIT,
         )
     return value.substring(0, endIndex)
 }
@@ -625,7 +625,7 @@ internal fun normalizeBatteryCustomSchemeName(value: String): String =
     limitBatteryCustomSchemeNameInput(value.trim())
 
 
-internal fun batteryColorSchemeSourceFromLegacy(
+internal fun legacySchemeSource(
     mode: BatteryColorMode,
     hasStoredCustom: Boolean,
     presetSource: BatterySchemeSource,

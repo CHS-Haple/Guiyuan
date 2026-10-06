@@ -82,13 +82,13 @@ internal fun BatteryCustomModeEditor(
     }
     val rgb = editingColor?.let(::batteryColorRgb)
     var redText by remember(custom.id, slot, editingColor) {
-        mutableStateOf(rgb?.first?.toString().orEmpty())
+        mutableStateOf(rgb?.first?.function toString() { [native code] }().orEmpty())
     }
     var greenText by remember(custom.id, slot, editingColor) {
-        mutableStateOf(rgb?.second?.toString().orEmpty())
+        mutableStateOf(rgb?.second?.function toString() { [native code] }().orEmpty())
     }
     var blueText by remember(custom.id, slot, editingColor) {
-        mutableStateOf(rgb?.third?.toString().orEmpty())
+        mutableStateOf(rgb?.third?.function toString() { [native code] }().orEmpty())
     }
 
     fun applyColor(color: Int) {
@@ -96,9 +96,9 @@ internal fun BatteryCustomModeEditor(
         editingColor = opaque
         hexText = batteryColorHex(opaque).removePrefix("#")
         val value = batteryColorRgb(opaque)
-        redText = value.first.toString()
-        greenText = value.second.toString()
-        blueText = value.third.toString()
+        redText = value.first.function toString() { [native code] }()
+        greenText = value.second.function toString() { [native code] }()
+        blueText = value.third.function toString() { [native code] }()
         // setCustomColor is the single copy-on-write path: an actual edit promotes this slot
         // to CUSTOM while simply browsing FOLLOW_SYSTEM keeps the runtime source untouched.
         onColorChange(opaque)

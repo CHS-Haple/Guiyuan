@@ -29,8 +29,8 @@ internal class VisualSettingsRepo(context: Context) {
         )
 
     init {
-        migrateBatteryColorPresetDefaultIfNeeded(preferences)
-        migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
+        migrateBatteryPreset(preferences)
+        migrateChargingScaleRef(preferences)
     }
 
     val settings: Flow<VisualSettings> =
@@ -83,85 +83,85 @@ internal class VisualSettingsRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopReadoutEnabled(enabled: Boolean) {
+    fun setTopReadoutEnabled(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_READOUT_ENABLED_KEY), enabled)
+            .putBoolean(activeProfileKey(TOP_READOUT_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopTextFollowsBatteryColor(enabled: Boolean) {
+    fun setTopTextFollowsBattery(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY), enabled)
+            .putBoolean(activeProfileKey(TOP_TEXT_FOLLOWS_BATTERY_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopChargingIconEnabled(enabled: Boolean) {
+    fun setChargingIconEnabled(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY), enabled)
+            .putBoolean(activeProfileKey(CHARGING_ICON_ENABLED_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopChargingIconFollowsBatteryColor(enabled: Boolean) {
+    fun setChargingIconFollowsBattery(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY), enabled)
+            .putBoolean(activeProfileKey(CHARGING_ICON_FOLLOWS_BATTERY_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryFillFollowsRetractEndpoint(enabled: Boolean) {
+    fun setFillFollowsRetract(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, enabled)
+            .putBoolean(FILL_FOLLOWS_RETRACT_KEY, enabled)
             .apply()
     }
 
-    fun setControlCenterTintTransitionEnabled(enabled: Boolean) {
+    fun setCcTintTransition(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, enabled)
+            .putBoolean(CC_TINT_TRANSITION_KEY, enabled)
             .apply()
     }
 
-    fun setBatteryTopTextScale(scale: Float) {
+    fun setTopTextScale(scale: Float) {
         val uiScale =
             scale.coerceIn(
-                BATTERY_TOP_TEXT_UI_SCALE_MIN,
-                BATTERY_TOP_TEXT_UI_SCALE_MAX,
+                TOP_TEXT_UI_MIN,
+                TOP_TEXT_UI_MAX,
             )
         preferences
             .edit()
             .putFloat(
-                activeProfileKey(BATTERY_TOP_TEXT_SCALE_KEY),
-                (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
+                activeProfileKey(TOP_TEXT_SCALE_KEY),
+                (uiScale * TOP_TEXT_UI_REF)
                     .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
             )
             .apply()
     }
 
-    fun setBatteryTopTextWeight(weight: Int) {
+    fun setTopTextWeight(weight: Int) {
         preferences
             .edit()
             .putInt(
-                activeProfileKey(BATTERY_TOP_TEXT_WEIGHT_KEY),
+                activeProfileKey(TOP_TEXT_WEIGHT_KEY),
                 weight.coerceIn(BATTERY_TOP_TEXT_WEIGHT_MIN, BATTERY_TOP_TEXT_WEIGHT_MAX),
             )
             .apply()
     }
 
-    fun setBatteryTopVerticalOffset(offset: Float) {
+    fun setTopOffset(offset: Float) {
         val uiOffset =
             offset.coerceIn(
-                BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
-                BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                TOP_OFFSET_UI_MIN,
+                TOP_OFFSET_UI_MAX,
             )
         preferences
             .edit()
             .putFloat(
-                activeProfileKey(BATTERY_TOP_VERTICAL_OFFSET_KEY),
-                batteryTopVerticalOffsetRaw(uiOffset),
+                activeProfileKey(TOP_OFFSET_KEY),
+                topOffsetRaw(uiOffset),
             )
             .apply()
     }
@@ -278,20 +278,20 @@ internal class VisualSettingsRepo(context: Context) {
         preferences.edit().clear().apply()
     }
 
-    fun setBatteryTopChargingIconScale(scale: Float) {
+    fun setChargingIconScale(scale: Float) {
         val uiScale =
             scale.coerceIn(
-                BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
-                BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+                CHARGING_ICON_UI_MIN,
+                CHARGING_ICON_UI_MAX,
             )
         preferences
             .edit()
             .putFloat(
-                activeProfileKey(BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-                (uiScale * BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
+                activeProfileKey(CHARGING_ICON_SCALE_KEY),
+                (uiScale * CHARGING_ICON_UI_REF)
                     .coerceIn(
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
+                        CHARGING_ICON_SCALE_MIN,
+                        CHARGING_ICON_SCALE_MAX,
                     ),
             )
             .apply()
@@ -354,75 +354,75 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
     val layout = readContentLayout()
     return VisualSettings(
         contentLayout = layout,
-        mobileFollowsBatteryColor =
+        mobileFollowsBattery =
             profileBoolean(
                 layout = layout,
                 baseKey = MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = false,
             ),
-        centerFollowsBatteryColor =
+        centerFollowsBattery =
             profileBoolean(
                 layout = layout,
                 baseKey = CENTER_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = false,
             ),
-        batteryTopReadoutEnabled =
+        topReadoutEnabled =
             profileBoolean(
                 layout = layout,
-                baseKey = BATTERY_TOP_READOUT_ENABLED_KEY,
+                baseKey = TOP_READOUT_KEY,
                 defaultValue = false,
             ),
-        batteryTopTextFollowsBatteryColor =
+        topTextFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
+                baseKey = TOP_TEXT_FOLLOWS_BATTERY_KEY,
                 defaultValue = true,
             ),
-        batteryTopChargingIconEnabled =
+        chargingIconEnabled =
             profileBoolean(
                 layout = layout,
-                baseKey = BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
+                baseKey = CHARGING_ICON_ENABLED_KEY,
                 defaultValue = true,
             ),
-        batteryTopChargingIconFollowsBatteryColor =
+        chargingIconFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
+                baseKey = CHARGING_ICON_FOLLOWS_BATTERY_KEY,
                 defaultValue = true,
             ),
-        batteryFillFollowsRetractEndpoint =
+        fillFollowsRetract =
             getBoolean(
-                BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+                FILL_FOLLOWS_RETRACT_KEY,
                 false,
             ),
-        controlCenterTintTransitionEnabled =
+        ccTintTransitionEnabled =
             getBoolean(
-                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+                CC_TINT_TRANSITION_KEY,
                 true,
             ),
         batteryTopTextScale =
             profileFloat(
                 layout = layout,
-                baseKey = BATTERY_TOP_TEXT_SCALE_KEY,
-                defaultValue = batteryTopTextScaleDefault(layout),
+                baseKey = TOP_TEXT_SCALE_KEY,
+                defaultValue = topTextScaleDefault(layout),
             ),
         batteryTopTextWeight =
             profileInt(
                 layout = layout,
-                baseKey = BATTERY_TOP_TEXT_WEIGHT_KEY,
+                baseKey = TOP_TEXT_WEIGHT_KEY,
                 defaultValue = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
             ),
-        batteryTopVerticalOffset =
+        topOffset =
             profileFloat(
                 layout = layout,
-                baseKey = BATTERY_TOP_VERTICAL_OFFSET_KEY,
-                defaultValue = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+                baseKey = TOP_OFFSET_KEY,
+                defaultValue = TOP_OFFSET_DEFAULT,
             ),
-        batteryTopChargingIconScale =
+        chargingIconScale =
             profileFloat(
                 layout = layout,
-                baseKey = BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
-                defaultValue = batteryTopChargingIconScaleDefault(layout),
+                baseKey = CHARGING_ICON_SCALE_KEY,
+                defaultValue = chargingIconScaleDefault(layout),
             ),
         combinedScale =
             profileFloat(layout, COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
@@ -448,7 +448,7 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
                     BATTERY_COLOR_PRESET_KEY,
                     batteryColorPresetForMissingKey(
                         hadPreviousVisualSchema =
-                            contains(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY),
+                            contains(CHARGING_SCALE_SCHEMA_KEY),
                     ).persistedValue,
                 ),
             ),
@@ -507,40 +507,40 @@ internal fun SharedPreferences.Editor.putVisualSettings(
         layout.persistedValue,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.mobileFollowsBatteryColor,
+        normalized.mobileFollowsBattery,
     ).putBoolean(
         visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.centerFollowsBatteryColor,
+        normalized.centerFollowsBattery,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
-        normalized.batteryTopReadoutEnabled,
+        visualProfileKey(layout, TOP_READOUT_KEY),
+        normalized.topReadoutEnabled,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopTextFollowsBatteryColor,
+        visualProfileKey(layout, TOP_TEXT_FOLLOWS_BATTERY_KEY),
+        normalized.topTextFollowsBattery,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
-        normalized.batteryTopChargingIconEnabled,
+        visualProfileKey(layout, CHARGING_ICON_ENABLED_KEY),
+        normalized.chargingIconEnabled,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopChargingIconFollowsBatteryColor,
+        visualProfileKey(layout, CHARGING_ICON_FOLLOWS_BATTERY_KEY),
+        normalized.chargingIconFollowsBattery,
     ).putBoolean(
-        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-        normalized.batteryFillFollowsRetractEndpoint,
+        FILL_FOLLOWS_RETRACT_KEY,
+        normalized.fillFollowsRetract,
     ).putBoolean(
-        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-        normalized.controlCenterTintTransitionEnabled,
+        CC_TINT_TRANSITION_KEY,
+        normalized.ccTintTransitionEnabled,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
+        visualProfileKey(layout, TOP_TEXT_SCALE_KEY),
         normalized.batteryTopTextScale,
     ).putInt(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
+        visualProfileKey(layout, TOP_TEXT_WEIGHT_KEY),
         normalized.batteryTopTextWeight,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
-        normalized.batteryTopVerticalOffset,
+        visualProfileKey(layout, TOP_OFFSET_KEY),
+        normalized.topOffset,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-        normalized.batteryTopChargingIconScale,
+        visualProfileKey(layout, CHARGING_ICON_SCALE_KEY),
+        normalized.chargingIconScale,
     ).putFloat(
         visualProfileKey(layout, COMBINED_SCALE_KEY),
         normalized.combinedScale,

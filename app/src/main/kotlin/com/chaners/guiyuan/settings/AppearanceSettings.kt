@@ -117,7 +117,7 @@ internal class AppearanceRepo(context: Context) {
                     decodeFloatingNavStyle(
                         storedStyle = preferences[FloatingNavStyleKey],
                         storedFloatingBlurEnabled =
-                            preferences[LegacyFloatingNavigationBlurEnabledKey],
+                            preferences[LegacyFloatingNavBlurKey],
                         legacyBlurEnabled = preferences[LegacyBlurEnabledKey],
                         legacyGlassEnabled = preferences[LegacyGlassBottomBarEnabledKey],
                     ),
@@ -153,7 +153,7 @@ internal class AppearanceRepo(context: Context) {
     suspend fun setFloatingNavStyle(style: FloatingNavStyle) {
         dataStore.edit { preferences ->
             preferences[FloatingNavStyleKey] = style.name
-            preferences.remove(LegacyFloatingNavigationBlurEnabledKey)
+            preferences.remove(LegacyFloatingNavBlurKey)
             preferences.remove(LegacyGlassBottomBarEnabledKey)
             preferences.remove(LegacyBlurEnabledKey)
         }
@@ -182,7 +182,7 @@ internal class AppearanceRepo(context: Context) {
             stringPreferencesKey("floating_navigation_style")
         val FloatingNavContentKey =
             stringPreferencesKey("floating_navigation_content")
-        val LegacyFloatingNavigationBlurEnabledKey =
+        val LegacyFloatingNavBlurKey =
             booleanPreferencesKey("floating_navigation_blur_enabled")
         val SwipeBackEnabledKey = booleanPreferencesKey("swipe_back_enabled")
     }
