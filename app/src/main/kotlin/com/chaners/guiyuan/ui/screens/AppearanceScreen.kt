@@ -27,12 +27,12 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppThemeMode
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
-import com.chaners.guiyuan.ui.components.FloatingNavigationContentItem
-import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.ui.components.NavContentItem
+import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
@@ -58,13 +58,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun AppearanceScreen(
-    settings: AppearanceSettings,
-    darkMode: Boolean,
-    onThemeModeChange: (AppThemeMode) -> Unit,
-    onDynamicColorEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
+    appearance: Appearance,
+    dark: Boolean,
+    onThemeChange: (ThemeMode) -> Unit,
+    onDynamicChange: (Boolean) -> Unit,
+    onNavEnabledChange: (Boolean) -> Unit,
+    onNavStyleChange: (NavStyle) -> Unit,
+    onNavContentChange: (NavContent) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -88,15 +88,15 @@ internal fun AppearanceScreen(
     SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
         item {
             AppearanceThemePreview(
-                settings = settings,
-                darkMode = darkMode,
+                appearance = appearance,
+                dark = dark,
             )
         }
 
         Section(R.string.section_theme) {
             OverlayDropdownPreference(
                 items = themeOptions,
-                selectedIndex = settings.themeMode.ordinal,
+                selectedIndex = appearance.theme.ordinal,
                 title = stringResource(R.string.theme_mode),
                 summary = stringResource(R.string.theme_mode_summary),
                 startAction = {
@@ -106,9 +106,9 @@ internal fun AppearanceScreen(
                 },
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    AppThemeMode.entries.getOrNull(index)?.let { mode ->
-                        if (mode != settings.themeMode) {
-                            onThemeModeChange(mode)
+                    ThemeMode.entries.getOrNull(index)?.let { mode ->
+                        if (mode != appearance.theme) {
+                            onThemeChange(mode)
                         }
                     }
                 },
@@ -121,8 +121,8 @@ internal fun AppearanceScreen(
                         iconRes = R.drawable.ic_material_symbol_palette,
                     )
                 },
-                checked = settings.dynamicColorEnabled,
-                onCheckedChange = onDynamicColorEnabledChange,
+                checked = appearance.dynamicColor,
+                onCheckedChange = onDynamicChange,
             )
         }
 
@@ -135,13 +135,13 @@ internal fun AppearanceScreen(
                         iconRes = R.drawable.ic_material_symbol_bottom_navigation,
                     )
                 },
-                checked = settings.floatingNavigationBarEnabled,
-                onCheckedChange = onFloatingNavigationBarEnabledChange,
+                checked = appearance.navEnabled,
+                onCheckedChange = onNavEnabledChange,
             )
-            AnimatedPreferenceGroup(visible = settings.floatingNavigationBarEnabled) {
+            AnimatedPreferenceGroup(visible = appearance.navEnabled) {
                 OverlayDropdownPreference(
                     items = floatingStyleOptions,
-                    selectedIndex = settings.floatingNavigationStyle.ordinal,
+                    selectedIndex = appearance.navStyle.ordinal,
                     title = stringResource(R.string.floating_navigation_style),
                     summary = stringResource(R.string.floating_navigation_style_summary),
                     startAction = {
@@ -151,16 +151,16 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationStyle.entries.getOrNull(index)?.let { style ->
-                            if (style != settings.floatingNavigationStyle) {
-                                onFloatingNavigationStyleChange(style)
+                        NavStyle.entries.getOrNull(index)?.let { style ->
+                            if (style != appearance.navStyle) {
+                                onNavStyleChange(style)
                             }
                         }
                     },
                 )
                 OverlayDropdownPreference(
                     items = floatingContentOptions,
-                    selectedIndex = settings.floatingNavigationContent.ordinal,
+                    selectedIndex = appearance.navContent.ordinal,
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
@@ -170,9 +170,9 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationContent.entries.getOrNull(index)?.let { content ->
-                            if (content != settings.floatingNavigationContent) {
-                                onFloatingNavigationContentChange(content)
+                        NavContent.entries.getOrNull(index)?.let { content ->
+                            if (content != appearance.navContent) {
+                                onNavContentChange(content)
                             }
                         }
                     },
@@ -184,8 +184,8 @@ internal fun AppearanceScreen(
 
 @Composable
 private fun AppearanceThemePreview(
-    settings: AppearanceSettings,
-    darkMode: Boolean,
+    appearance: Appearance,
+    dark: Boolean,
 ) {
     Card(
         modifier =
@@ -209,8 +209,8 @@ private fun AppearanceThemePreview(
             )
 
             AppearanceMiniPreview(
-                settings = settings,
-                darkMode = darkMode,
+                appearance = appearance,
+                dark = dark,
             )
         }
     }
@@ -218,8 +218,8 @@ private fun AppearanceThemePreview(
 
 @Composable
 private fun AppearanceMiniPreview(
-    settings: AppearanceSettings,
-    darkMode: Boolean,
+    appearance: Appearance,
+    dark: Boolean,
 ) {
     Surface(
         modifier =
@@ -249,10 +249,10 @@ private fun AppearanceMiniPreview(
                 MiniSwitchSettingPreview()
                 MiniSliderSettingPreview()
                 MiniNavigationPreview(
-                    floating = settings.floatingNavigationBarEnabled,
-                    style = settings.floatingNavigationStyle,
-                    content = settings.floatingNavigationContent,
-                    darkMode = darkMode,
+                    floating = appearance.navEnabled,
+                    style = appearance.navStyle,
+                    content = appearance.navContent,
+                    dark = dark,
                 )
             }
         }
@@ -442,9 +442,9 @@ private fun ScaledPreviewContent(
 @Composable
 private fun MiniNavigationPreview(
     floating: Boolean,
-    style: FloatingNavigationStyle,
-    content: FloatingNavigationContent,
-    darkMode: Boolean,
+    style: NavStyle,
+    content: NavContent,
+    dark: Boolean,
 ) {
     val materialActive =
         floating &&
@@ -462,9 +462,9 @@ private fun MiniNavigationPreview(
         }
     val floatingModifier =
         if (backdrop != null) {
-            Modifier.floatingNavigationMaterial(
+            Modifier.floatingNavMaterial(
                 backdrop = backdrop,
-                darkMode = darkMode,
+                dark = dark,
                 style = style,
             )
         } else {
@@ -518,21 +518,21 @@ private fun MiniNavigationPreview(
                         },
                     defaultWindowInsetsPadding = false,
                 ) {
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Home,
                         label = stringResource(R.string.nav_home),
                     )
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Tune,
                         label = stringResource(R.string.nav_features),
                     )
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = true,
                         onClick = {},

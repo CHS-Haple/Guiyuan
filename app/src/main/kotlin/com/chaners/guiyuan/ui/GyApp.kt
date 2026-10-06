@@ -8,11 +8,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.chaners.guiyuan.settings.AppLanguage
-import com.chaners.guiyuan.settings.AppThemeMode
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
@@ -36,23 +36,23 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GyApp(
-    settings: AppearanceSettings,
-    darkMode: Boolean,
-    appLanguage: AppLanguage,
-    launcherIconHidden: Boolean,
+    appearance: Appearance,
+    dark: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
-    onThemeModeChange: (AppThemeMode) -> Unit,
-    onDynamicColorEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
-    onAppLanguageChange: (AppLanguage) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
+    onThemeChange: (ThemeMode) -> Unit,
+    onDynamicChange: (Boolean) -> Unit,
+    onNavEnabledChange: (Boolean) -> Unit,
+    onNavStyleChange: (NavStyle) -> Unit,
+    onNavContentChange: (NavContent) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
 ) {
     GyTheme(
-        themeMode = settings.themeMode,
-        dynamicColorEnabled = settings.dynamicColorEnabled,
+        themeMode = appearance.theme,
+        dynamicColorEnabled = appearance.dynamicColor,
     ) {
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
@@ -120,7 +120,7 @@ internal fun GyApp(
 
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
         val swipeBackDirection = when {
-            !settings.swipeBackEnabled -> NavSwipeDirection.None
+            !appearance.swipeBack -> NavSwipeDirection.None
             LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
             else -> NavSwipeDirection.RightToLeft
         }
@@ -148,30 +148,30 @@ internal fun GyApp(
         ) {
             entry<AppRoute.Home> {
                 MainHub(
-                    settings = settings,
-                    darkMode = darkMode,
-                    appLanguage = appLanguage,
-                    launcherIconHidden = launcherIconHidden,
+                    appearance = appearance,
+                    dark = dark,
+                    lang = lang,
+                    iconHidden = iconHidden,
                     onHotReload = onHotReload,
-                    onAppLanguageChange = onAppLanguageChange,
-                    onLauncherIconHiddenChange = onLauncherIconHiddenChange,
-                    onSwipeBackEnabledChange = onSwipeBackEnabledChange,
+                    onLangChange = onLangChange,
+                    onIconHiddenChange = onIconHiddenChange,
+                    onSwipeBackChange = onSwipeBackChange,
                     previewState = previewState,
                     onNavigate = ::navigate,
                 )
             }
             entry<AppRoute.Appearance>(swipeDismiss = swipeBackDirection) {
                 AppearanceScreen(
-                    settings = settings,
-                    darkMode = darkMode,
-                    onThemeModeChange = onThemeModeChange,
-                    onDynamicColorEnabledChange = onDynamicColorEnabledChange,
-                    onFloatingNavigationBarEnabledChange =
-                        onFloatingNavigationBarEnabledChange,
-                    onFloatingNavigationStyleChange =
-                        onFloatingNavigationStyleChange,
-                    onFloatingNavigationContentChange =
-                        onFloatingNavigationContentChange,
+                    appearance = appearance,
+                    dark = dark,
+                    onThemeChange = onThemeChange,
+                    onDynamicChange = onDynamicChange,
+                    onNavEnabledChange =
+                        onNavEnabledChange,
+                    onNavStyleChange =
+                        onNavStyleChange,
+                    onNavContentChange =
+                        onNavContentChange,
                     onBack = ::navigateBack,
                 )
             }

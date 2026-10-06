@@ -6,88 +6,70 @@ import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal data class RuntimeEnvironmentInfo(
+internal data class RuntimeEnv(
     val manufacturer: String,
-    val deviceName: String,
+    val device: String,
     val model: String,
     val codename: String,
     val androidVersion: String,
     val sdk: Int,
     val osVersion: String,
-    val systemUiVersionName: String,
-    val systemUiVersionCode: Long?,
+    val sysUiVersion: String,
+    val sysUiVersionCode: Long?,
 ) {
-    val modelAndCodename: String
-        get() =
-            if (codename.isBlank() || codename.equals(model, ignoreCase = true)) {
-                model
-            } else {
-                "$model ($codename)"
-            }
-
-    val androidDisplay: String
-        get() = "Android $androidVersion (API $sdk)"
-
-    val systemUiDisplay: String
-        get() =
-            if (systemUiVersionCode != null) {
-                "$systemUiVersionName ($systemUiVersionCode)"
-            } else {
-                systemUiVersionName
-            }
 
     companion object {
-        private const val SystemUiPackageName = "com.android.systemui"
-        private val SoftwareRevisionPattern = Regex("^[A-Za-z][0-9]{1,3}$")
+        private const val SYS_UI_PACKAGE = "com.android.systemui"
+        private val revisionRe = Regex("^[A-Za-z][0-9]{1,3}$")
 
-        fun basic(): RuntimeEnvironmentInfo =
-            RuntimeEnvironmentInfo(
+        fun basic(): RuntimeEnv =
+            RuntimeEnv(
                 manufacturer = Build.MANUFACTURER.orEmpty(),
-                deviceName = Build.MODEL.orEmpty(),
+                device = Build.MODEL.orEmpty(),
                 model = Build.MODEL.orEmpty(),
                 codename = Build.DEVICE.orEmpty(),
                 androidVersion = Build.VERSION.RELEASE.orEmpty(),
                 sdk = Build.VERSION.SDK_INT,
                 osVersion = Build.VERSION.INCREMENTAL.orEmpty(),
-                systemUiVersionName = "—",
-                systemUiVersionCode = null,
+                sysUiVersion = "—",
+                sysUiVersionCode = null,
             )
 
-        suspend fun resolve(context: Context): RuntimeEnvironmentInfo =
+        suspend fun resolve(context: Context): RuntimeEnv =
             withContext(Dispatchers.IO) {
-                val marketName =
+                val device =
                     readSystemProperty("ro.product.marketname")
                         .ifBlank { Build.MODEL.orEmpty() }
-                val baseOsVersion =
+                val baseVersion =
                     readSystemProperty("ro.mi.os.version.incremental")
                         .ifBlank { Build.VERSION.INCREMENTAL.orEmpty() }
                 val primaryRevision = readSystemProperty("persist.sys.xms.version")
                 val secondaryRevision = readSystemProperty("ro.mi.xms.version.incremental")
                 val osVersion =
                     composeOsVersion(
-                        baseVersion = baseOsVersion,
+                        baseVersion = baseVersion,
                         primaryRevision = primaryRevision,
                         secondaryRevision = secondaryRevision,
                     )
 
-                val systemUiPackage =
+                val sysUiPkg =
                     runCatching {
                         context.packageManager.getPackageInfo(
-                            SystemUiPackageName,
+                            SYS_UI_PACKAGE,
                             PackageManager.PackageInfoFlags.of(0),
                         )
                     }.getOrNull()
 
-                RuntimeEnvironmentInfo(
+                RuntimeEnv(
                     manufacturer = Build.MANUFACTURER.orEmpty(),
-                    deviceName = marketName,
+                    device = device,
                     model = Build.MODEL.orEmpty(),
                     codename = Build.DEVICE.orEmpty(),
                     androidVersion = Build.VERSION.RELEASE.orEmpty(),
                     sdk = Build.VERSION.SDK_INT,
                     osVersion = osVersion.ifBlank { Build.VERSION.INCREMENTAL.orEmpty() },
-                    systemUiVersionName = systemUiPackage?.versionName.orEmpty().ifBlank { "—" },
-                    systemUiVersionCode = systemUiPackage?.longVersionCode,
+                    sysUiVersion = sysUiPkg?.versionName.orEmpty().ifBlank { "—" },
+                    sysUiVersionCode = sysUiPkg?.longVersionCode,
                 )
             }
 
@@ -125,8 +107,8 @@ internal data class RuntimeEnvironmentInfo(
             primary: String,
             secondary: String,
         ): String? {
-            val first = primary.trim().takeIf(SoftwareRevisionPattern::matches)
-            val second = secondary.trim().takeIf(SoftwareRevisionPattern::matches)
+            val first = primary.trim().takeIf(revisionRe::matches)
+            val second = secondary.trim().takeIf(revisionRe::matches)
             if (first == null) return second
             if (second == null) return first
 
@@ -141,6 +123,7 @@ internal data class RuntimeEnvironmentInfo(
             return if (firstNumber >= secondNumber) first else second
         }
 
+        // Hidden API is cheaper when reachable; getprop keeps vendor builds compatible.
         private fun readSystemProperty(key: String): String {
             val reflected =
                 runCatching {

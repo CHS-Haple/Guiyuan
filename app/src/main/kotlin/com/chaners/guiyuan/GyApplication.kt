@@ -12,15 +12,15 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALT
 import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
 import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
-import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DIAGNOSTICS_PREFS_NAME
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
+import com.chaners.guiyuan.settings.DIAG_PREFS
+import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
 import com.chaners.guiyuan.settings.putVisualSettings
 import com.chaners.guiyuan.settings.readVisualSettings
-import com.chaners.guiyuan.system.XposedRuntimeStatus
+import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,109 +31,109 @@ class GyApplication :
     Application(),
     XposedServiceHelper.OnServiceListener {
 
-    private val diagnosticsPreferences: SharedPreferences by lazy {
-        getSharedPreferences(DIAGNOSTICS_PREFS_NAME, Context.MODE_PRIVATE)
+    private val diagPrefs: SharedPreferences by lazy {
+        getSharedPreferences(DIAG_PREFS, Context.MODE_PRIVATE)
     }
 
-    private val featurePreferences: SharedPreferences by lazy {
+    private val featurePrefs: SharedPreferences by lazy {
         getSharedPreferences(COMBINED_STATUS_FEATURE_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    private val visualPreferences: SharedPreferences by lazy {
+    private val visualPrefs: SharedPreferences by lazy {
         getSharedPreferences(COMBINED_STATUS_VISUAL_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     @Volatile
     private var xposedService: XposedService? = null
 
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val _xposedRuntimeStatus =
-        MutableStateFlow<XposedRuntimeStatus>(XposedRuntimeStatus.Checking)
-    internal val xposedRuntimeStatus: StateFlow<XposedRuntimeStatus> =
-        _xposedRuntimeStatus.asStateFlow()
+    private val handler = Handler(Looper.getMainLooper())
+    private val _xposedStatus =
+        MutableStateFlow<XposedStatus>(XposedStatus.Checking)
+    internal val xposedStatus: StateFlow<XposedStatus> =
+        _xposedStatus.asStateFlow()
 
-    private val xposedServiceBindTimeout =
+    private val bindTimeout =
         Runnable {
             if (
                 xposedService == null &&
-                _xposedRuntimeStatus.value == XposedRuntimeStatus.Checking
+                _xposedStatus.value == XposedStatus.Checking
             ) {
-                _xposedRuntimeStatus.value = XposedRuntimeStatus.FrameworkUnavailable
+                _xposedStatus.value = XposedStatus.FrameworkUnavailable
             }
         }
 
-    private val diagnosticsListener =
+    private val diagListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == DIAGNOSTICS_LEVEL_KEY) {
-                xposedService?.let(::syncRuntimeConfig)
+            if (key == DIAG_LEVEL_KEY) {
+                xposedService?.let(::syncRuntime)
             }
         }
 
-    private val featureListener =
+    private val featListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (
                 key == COMBINED_STATUS_ENABLED_KEY ||
                 key == COMBINED_STATUS_KEYGUARD_ENABLED_KEY ||
                 key == COMBINED_STATUS_AOD_ENABLED_KEY
             ) {
-                xposedService?.let(::syncRuntimeConfig)
+                xposedService?.let(::syncRuntime)
             }
         }
 
     private val visualListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (isVisualPreferenceKey(key)) {
-                xposedService?.let(::syncRuntimeConfig)
+                xposedService?.let(::syncRuntime)
             }
         }
 
     override fun onCreate() {
         super.onCreate()
-        migrateBatteryTopChargingScaleReferenceIfNeeded(visualPreferences)
-        diagnosticsPreferences.registerOnSharedPreferenceChangeListener(diagnosticsListener)
-        featurePreferences.registerOnSharedPreferenceChangeListener(featureListener)
-        visualPreferences.registerOnSharedPreferenceChangeListener(visualListener)
+        migrateBatteryTopChargingScaleReferenceIfNeeded(visualPrefs)
+        diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
+        featurePrefs.registerOnSharedPreferenceChangeListener(featListener)
+        visualPrefs.registerOnSharedPreferenceChangeListener(visualListener)
         XposedServiceHelper.registerListener(this)
-        mainHandler.postDelayed(
-            xposedServiceBindTimeout,
-            XPOSED_SERVICE_BIND_TIMEOUT_MS,
+        handler.postDelayed(
+            bindTimeout,
+            XPOSED_BIND_TIMEOUT_MS,
         )
     }
 
     override fun onServiceBind(service: XposedService) {
-        mainHandler.removeCallbacks(xposedServiceBindTimeout)
+        handler.removeCallbacks(bindTimeout)
         xposedService = service
-        syncRuntimeConfig(service)
-        refreshXposedRuntimeStatus(service)
+        syncRuntime(service)
+        refreshXposedStatus(service)
     }
 
     override fun onServiceDied(service: XposedService) {
         if (xposedService === service) {
             xposedService = null
-            _xposedRuntimeStatus.value = XposedRuntimeStatus.FrameworkUnavailable
+            _xposedStatus.value = XposedStatus.FrameworkUnavailable
         }
     }
 
     override fun onTerminate() {
-        diagnosticsPreferences.unregisterOnSharedPreferenceChangeListener(diagnosticsListener)
-        featurePreferences.unregisterOnSharedPreferenceChangeListener(featureListener)
-        visualPreferences.unregisterOnSharedPreferenceChangeListener(visualListener)
-        mainHandler.removeCallbacks(xposedServiceBindTimeout)
+        diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
+        featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
+        visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
+        handler.removeCallbacks(bindTimeout)
         xposedService = null
         super.onTerminate()
     }
 
-    internal fun refreshXposedRuntimeStatus() {
-        xposedService?.let(::refreshXposedRuntimeStatus)
+    internal fun refreshXposedStatus() {
+        xposedService?.let(::refreshXposedStatus)
     }
 
-    fun hotReloadSystemUi(onComplete: () -> Unit = {}): Boolean {
+    fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
         if (service.apiVersion < 102) return false
 
         val target =
             runCatching {
-                service.runningTargets.firstOrNull { it.processName == SYSTEM_UI_PROCESS }
+                service.runningTargets.firstOrNull { it.processName == SYS_UI_PROCESS }
             }.getOrElse { throwable ->
                 Log.w(TAG, "Unable to query running targets: " + throwable.message)
                 return false
@@ -146,7 +146,7 @@ class GyApplication :
                     "Hot reload completed process=" + process.processName + " result=" + result,
                 )
                 mainExecutor.execute {
-                    refreshXposedRuntimeStatus()
+                    refreshXposedStatus()
                     onComplete()
                 }
             }
@@ -157,82 +157,83 @@ class GyApplication :
         }
     }
 
-    private fun refreshXposedRuntimeStatus(service: XposedService) {
-        _xposedRuntimeStatus.value =
+    private fun refreshXposedStatus(service: XposedService) {
+        _xposedStatus.value =
             runCatching {
                 val running =
                     service.runningTargets.any { target ->
-                        target.processName == SYSTEM_UI_PROCESS
+                        target.processName == SYS_UI_PROCESS
                     }
                 val inScope =
                     service.scope.any { packageName ->
-                        packageName == SYSTEM_UI_PROCESS
+                        packageName == SYS_UI_PROCESS
                     }
 
-                XposedRuntimeStatus.Connected(
-                    systemUiInScope = inScope,
-                    systemUiRunning = running,
+                XposedStatus.Connected(
+                    sysUiInScope = inScope,
+                    sysUiRunning = running,
                 )
             }.getOrElse { throwable ->
                 Log.w(
                     TAG,
                     "Unable to query Xposed runtime status: " + throwable.message,
                 )
-                XposedRuntimeStatus.QueryUnavailable
+                XposedStatus.QueryUnavailable
             }
     }
 
-    private fun syncRuntimeConfig(service: XposedService) {
+    // App prefs stay authoritative; Xposed receives one mirrored runtime snapshot.
+    private fun syncRuntime(service: XposedService) {
         val level =
-            diagnosticsPreferences.getString(
-                DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
-            ) ?: DiagnosticsLevel.General.name
-        val combinedStatusEnabled =
-            featurePreferences.getBoolean(
+            diagPrefs.getString(
+                DIAG_LEVEL_KEY,
+                DiagLevel.General.name,
+            ) ?: DiagLevel.General.name
+        val enabled =
+            featurePrefs.getBoolean(
                 COMBINED_STATUS_ENABLED_KEY,
                 true,
             )
-        val keyguardEnabled =
-            featurePreferences.getBoolean(
+        val keyguard =
+            featurePrefs.getBoolean(
                 COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
                 false,
             )
-        val aodEnabled =
-            featurePreferences.getBoolean(
+        val aod =
+            featurePrefs.getBoolean(
                 COMBINED_STATUS_AOD_ENABLED_KEY,
                 false,
             )
-        val featureChangeElapsedRealtimeNanos =
-            featurePreferences.getLong(
+        val featureChangedAtNs =
+            featurePrefs.getLong(
                 COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
                 0L,
             )
-        val visualSettings =
-            visualPreferences.readVisualSettings()
+        val visual =
+            visualPrefs.readVisualSettings()
 
         runCatching {
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
-                .putString(DIAGNOSTICS_LEVEL_KEY, level)
+                .putString(DIAG_LEVEL_KEY, level)
                 .putBoolean(
                     COMBINED_STATUS_ENABLED_KEY,
-                    combinedStatusEnabled,
+                    enabled,
                 )
                 .putBoolean(
                     COMBINED_STATUS_KEYGUARD_ENABLED_KEY,
-                    keyguardEnabled,
+                    keyguard,
                 )
                 .putBoolean(
                     COMBINED_STATUS_AOD_ENABLED_KEY,
-                    aodEnabled,
+                    aod,
                 )
                 .putLong(
                     COMBINED_STATUS_FEATURE_CHANGE_ELAPSED_REALTIME_NANOS_KEY,
-                    featureChangeElapsedRealtimeNanos,
+                    featureChangedAtNs,
                 )
-                .putVisualSettings(visualSettings)
+                .putVisualSettings(visual)
             check(editor.commit()) { "remote preference commit failed" }
         }.onFailure { throwable ->
             Log.w(
@@ -244,7 +245,7 @@ class GyApplication :
 
     private companion object {
         const val TAG = "CombinedStatus[App]"
-        const val SYSTEM_UI_PROCESS = "com.android.systemui"
-        const val XPOSED_SERVICE_BIND_TIMEOUT_MS = 1_000L
+        const val SYS_UI_PROCESS = "com.android.systemui"
+        const val XPOSED_BIND_TIMEOUT_MS = 1_000L
     }
 }

@@ -15,22 +15,22 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal object DiagnosticsReportFiles {
-    const val ShareMimeType = "text/plain"
+internal object DiagFiles {
+    const val MIME_TYPE = "text/plain"
 
-    private const val ShareLogTag = "CombinedStatusShare"
-    private const val ShareNamePrefix = "Guiyuan-Diagnostic-"
-    private const val MaxSharedReports = 3
-    private val MaxSharedReportAgeMillis = TimeUnit.HOURS.toMillis(24)
-    private val ShareRelativePath = "${Environment.DIRECTORY_DOWNLOADS}/Guiyuan/"
-    private val ShareCollection =
+    private const val LOG_TAG = "CombinedStatusShare"
+    private const val NAME_PREFIX = "Guiyuan-Diagnostic-"
+    private const val MAX_FILES = 3
+    private val MAX_AGE_MS = TimeUnit.HOURS.toMillis(24)
+    private val SHARE_PATH = "${Environment.DIRECTORY_DOWNLOADS}/Guiyuan/"
+    private val COLLECTION =
         MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-    private val FileTimestampFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+    private val TIME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-    fun suggestedFileName(now: OffsetDateTime = OffsetDateTime.now()): String =
-        "$ShareNamePrefix${BuildConfig.BUILD_ID}-${now.format(FileTimestampFormatter)}.txt"
+    fun fileName(now: OffsetDateTime = OffsetDateTime.now()): String =
+        "$NAME_PREFIX${BuildConfig.BUILD_ID}-${now.format(TIME_FMT)}.txt"
 
-    suspend fun writeExport(
+    suspend fun write(
         context: Context,
         uri: Uri,
         report: String,
@@ -44,36 +44,36 @@ internal object DiagnosticsReportFiles {
         }.isSuccess
     }
 
-    suspend fun prepareShare(
+    suspend fun prepare(
         context: Context,
         report: String,
-    ): PreparedShare? = withContext(Dispatchers.IO) {
+    ): ShareFile? = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
-        var insertedUri: Uri? = null
+        var inserted: Uri? = null
 
         runCatching {
             runCatching {
-                pruneBeforeNewShare(context)
+                prune(context)
             }.onFailure { error ->
                 if (BuildConfig.DEBUG) {
                     val message =
                         "cleanup transport=mediaStore result=failed " +
                             "error=${error.javaClass.simpleName}"
-                    Log.w(ShareLogTag, message)
-                    ShareDiagnosticsStore.append(context, message)
+                    Log.w(LOG_TAG, message)
+                    DiagShareStore.append(context, message)
                 }
             }
 
             val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, suggestedFileName())
-                put(MediaStore.MediaColumns.MIME_TYPE, ShareMimeType)
-                put(MediaStore.MediaColumns.RELATIVE_PATH, ShareRelativePath)
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName())
+                put(MediaStore.MediaColumns.MIME_TYPE, MIME_TYPE)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, SHARE_PATH)
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
 
-            val uri = resolver.insert(ShareCollection, values)
+            val uri = resolver.insert(COLLECTION, values)
                 ?: error("Unable to create managed diagnostic report")
-            insertedUri = uri
+            inserted = uri
 
             val output = resolver.openOutputStream(uri, "w")
                 ?: error("Unable to open managed diagnostic report")
@@ -81,21 +81,21 @@ internal object DiagnosticsReportFiles {
                 writer.write(report)
             }
 
-            val publishValues = ContentValues().apply {
+            val publish = ContentValues().apply {
                 put(MediaStore.MediaColumns.IS_PENDING, 0)
             }
-            if (resolver.update(uri, publishValues, null, null) <= 0) {
+            if (resolver.update(uri, publish, null, null) <= 0) {
                 error("Unable to publish managed diagnostic report")
             }
 
             if (BuildConfig.DEBUG) {
                 val probe = runCatching {
                     val mimeType = resolver.getType(uri)
-                    val descriptorSize = resolver
+                    val size = resolver
                         .openFileDescriptor(uri, "r")
                         ?.use { descriptor -> descriptor.statSize }
                         ?: -1L
-                    val selfReadable = resolver
+                    val readable = resolver
                         .openInputStream(uri)
                         ?.use { input ->
                             input.read()
@@ -103,34 +103,34 @@ internal object DiagnosticsReportFiles {
                         }
                         ?: false
 
-                    "mime=$mimeType descriptorSize=$descriptorSize selfReadable=$selfReadable"
+                    "mime=$mimeType descriptorSize=$size selfReadable=$readable"
                 }.getOrElse { error ->
                     "probeError=${error.javaClass.simpleName}"
                 }
 
                 val message =
                     "prepare transport=mediaStore managed=true scheme=${uri.scheme} " +
-                        "authority=${uri.authority} relativePath=$ShareRelativePath $probe"
-                Log.i(ShareLogTag, message)
-                ShareDiagnosticsStore.append(context, message)
+                        "authority=${uri.authority} relativePath=$SHARE_PATH $probe"
+                Log.i(LOG_TAG, message)
+                DiagShareStore.append(context, message)
             }
 
-            PreparedShare(uri = uri)
+            ShareFile(uri = uri)
         }.onFailure { error ->
-            insertedUri?.let { uri ->
+            inserted?.let { uri ->
                 runCatching { resolver.delete(uri, null, null) }
             }
             if (BuildConfig.DEBUG) {
                 val message =
                     "prepare transport=mediaStore result=failed " +
                         "error=${error.javaClass.simpleName} message=${error.message.orEmpty()}"
-                Log.e(ShareLogTag, message)
-                ShareDiagnosticsStore.append(context, message)
+                Log.e(LOG_TAG, message)
+                DiagShareStore.append(context, message)
             }
         }.getOrNull()
     }
 
-    fun logShareIntent(
+    fun logIntent(
         context: Context,
         intent: Intent,
         uri: Uri,
@@ -142,11 +142,11 @@ internal object DiagnosticsReportFiles {
         val message =
             "intent action=${intent.action} type=${intent.type} flags=0x${intent.flags.toString(16)} " +
                 "clipItems=${intent.clipData?.itemCount ?: 0} uriAuthority=${uri.authority}"
-        Log.i(ShareLogTag, message)
-        ShareDiagnosticsStore.append(context, message)
+        Log.i(LOG_TAG, message)
+        DiagShareStore.append(context, message)
     }
 
-    fun logChooserLaunch(
+    fun logChooser(
         context: Context,
         error: Throwable? = null,
     ) {
@@ -162,23 +162,23 @@ internal object DiagnosticsReportFiles {
             }
 
         if (error == null) {
-            Log.i(ShareLogTag, message)
+            Log.i(LOG_TAG, message)
         } else {
-            Log.e(ShareLogTag, message)
+            Log.e(LOG_TAG, message)
         }
-        ShareDiagnosticsStore.append(context, message)
+        DiagShareStore.append(context, message)
     }
 
-    fun discardShare(
+    fun discard(
         context: Context,
-        preparedShare: PreparedShare,
+        file: ShareFile,
     ) {
         runCatching {
-            context.contentResolver.delete(preparedShare.uri, null, null)
+            context.contentResolver.delete(file.uri, null, null)
         }
     }
 
-    private fun pruneBeforeNewShare(context: Context) {
+    private fun prune(context: Context) {
         val resolver = context.contentResolver
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -187,59 +187,59 @@ internal object DiagnosticsReportFiles {
         val selection =
             "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND " +
                 "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
-        val selectionArgs = arrayOf(
-            ShareRelativePath,
-            "$ShareNamePrefix%",
+        val args = arrayOf(
+            SHARE_PATH,
+            "$NAME_PREFIX%",
         )
-        val reports = mutableListOf<ManagedShare>()
+        val reports = mutableListOf<StoredShare>()
 
         resolver.query(
-            ShareCollection,
+            COLLECTION,
             projection,
             selection,
-            selectionArgs,
+            args,
             "${MediaStore.MediaColumns.DATE_ADDED} DESC",
         )?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-            val dateAddedColumn =
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+            val dateCol =
                 cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
 
             while (cursor.moveToNext()) {
-                reports += ManagedShare(
+                reports += StoredShare(
                     uri = ContentUris.withAppendedId(
-                        ShareCollection,
-                        cursor.getLong(idColumn),
+                        COLLECTION,
+                        cursor.getLong(idCol),
                     ),
-                    dateAddedSeconds = cursor.getLong(dateAddedColumn),
+                    addedSec = cursor.getLong(dateCol),
                 )
             }
         }
 
         val nowMillis = System.currentTimeMillis()
-        val freshReports = reports.filter { report ->
-            val addedMillis = TimeUnit.SECONDS.toMillis(report.dateAddedSeconds)
+        val fresh = reports.filter { report ->
+            val addedMs = TimeUnit.SECONDS.toMillis(report.addedSec)
             val expired =
-                report.dateAddedSeconds > 0 &&
-                    nowMillis - addedMillis > MaxSharedReportAgeMillis
+                report.addedSec > 0 &&
+                    nowMillis - addedMs > MAX_AGE_MS
             if (expired) {
                 runCatching { resolver.delete(report.uri, null, null) }
             }
             !expired
         }
 
-        freshReports
-            .drop(MaxSharedReports - 1)
+        fresh
+            .drop(MAX_FILES - 1)
             .forEach { report ->
                 runCatching { resolver.delete(report.uri, null, null) }
             }
     }
 
-    internal data class PreparedShare(
+    internal data class ShareFile(
         val uri: Uri,
     )
 
-    private data class ManagedShare(
+    private data class StoredShare(
         val uri: Uri,
-        val dateAddedSeconds: Long,
+        val addedSec: Long,
     )
 }

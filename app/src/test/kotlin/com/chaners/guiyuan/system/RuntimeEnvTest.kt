@@ -3,12 +3,12 @@ package com.chaners.guiyuan.system
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class RuntimeEnvironmentInfoTest {
+class RuntimeEnvTest {
     @Test
     fun appendsSoftwareUpdateRevisionToHyperOsVersion() {
         assertEquals(
             "4.0.0.14.XOBCNXM.D01",
-            RuntimeEnvironmentInfo.composeOsVersion(
+            RuntimeEnv.composeOsVersion(
                 baseVersion = "OS4.0.0.14.XOBCNXM",
                 primaryRevision = "D01",
                 secondaryRevision = "",
@@ -20,7 +20,7 @@ class RuntimeEnvironmentInfoTest {
     fun keepsAlreadySuffixedVersionUnchanged() {
         assertEquals(
             "4.0.0.14.XOBCNXM.D01",
-            RuntimeEnvironmentInfo.composeOsVersion(
+            RuntimeEnv.composeOsVersion(
                 baseVersion = "4.0.0.14.XOBCNXM.D01",
                 primaryRevision = "D01",
                 secondaryRevision = "",
@@ -32,7 +32,7 @@ class RuntimeEnvironmentInfoTest {
     fun choosesNewerRevisionWithSamePrefix() {
         assertEquals(
             "4.0.0.14.XOBCNXM.D02",
-            RuntimeEnvironmentInfo.composeOsVersion(
+            RuntimeEnv.composeOsVersion(
                 baseVersion = "4.0.0.14.XOBCNXM",
                 primaryRevision = "D01",
                 secondaryRevision = "D02",
@@ -44,7 +44,7 @@ class RuntimeEnvironmentInfoTest {
     fun ignoresInvalidRevision() {
         assertEquals(
             "4.0.0.14.XOBCNXM",
-            RuntimeEnvironmentInfo.composeOsVersion(
+            RuntimeEnv.composeOsVersion(
                 baseVersion = "OS4.0.0.14.XOBCNXM",
                 primaryRevision = "invalid",
                 secondaryRevision = "",

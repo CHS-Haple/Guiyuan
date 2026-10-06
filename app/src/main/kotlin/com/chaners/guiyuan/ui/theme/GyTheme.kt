@@ -2,28 +2,28 @@ package com.chaners.guiyuan.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import com.chaners.guiyuan.settings.AppThemeMode
+import com.chaners.guiyuan.settings.ThemeMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
 @Composable
 internal fun GyTheme(
-    themeMode: AppThemeMode,
+    themeMode: ThemeMode,
     dynamicColorEnabled: Boolean,
     content: @Composable () -> Unit,
 ) {
     val colorSchemeMode =
         when {
-            dynamicColorEnabled && themeMode == AppThemeMode.System ->
+            dynamicColorEnabled && themeMode == ThemeMode.System ->
                 ColorSchemeMode.MonetSystem
-            dynamicColorEnabled && themeMode == AppThemeMode.Light ->
+            dynamicColorEnabled && themeMode == ThemeMode.Light ->
                 ColorSchemeMode.MonetLight
-            dynamicColorEnabled && themeMode == AppThemeMode.Dark ->
+            dynamicColorEnabled && themeMode == ThemeMode.Dark ->
                 ColorSchemeMode.MonetDark
-            themeMode == AppThemeMode.System ->
+            themeMode == ThemeMode.System ->
                 ColorSchemeMode.System
-            themeMode == AppThemeMode.Light ->
+            themeMode == ThemeMode.Light ->
                 ColorSchemeMode.Light
             else ->
                 ColorSchemeMode.Dark

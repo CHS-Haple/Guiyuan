@@ -31,7 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLanguage
+import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
@@ -70,7 +70,7 @@ import com.chaners.guiyuan.settings.batteryTopTextUiScale
 import com.chaners.guiyuan.settings.batteryTopTextUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
 import com.chaners.guiyuan.settings.mobileTypeSizeScaleDefault
-import com.chaners.guiyuan.system.SystemUiScopeController
+import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -509,12 +509,12 @@ internal fun FeaturesScreen(
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
-    appLanguage: AppLanguage,
-    launcherIconHidden: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     swipeBackEnabled: Boolean,
-    onAppLanguageChange: (AppLanguage) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val languageOptions = listOf(
@@ -536,19 +536,19 @@ internal fun SettingsHubScreen(
         secondaryContent = {
             OverlayDropdownPreference(
                 items = languageOptions,
-                selectedIndex = appLanguage.ordinal,
+                selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
                 summary = stringResource(R.string.language_summary),
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    AppLanguage.entries.getOrNull(index)?.let(onAppLanguageChange)
+                    AppLang.entries.getOrNull(index)?.let(onLangChange)
                 },
             )
             SwitchPreference(
                 title = stringResource(R.string.hide_launcher_icon),
                 summary = stringResource(R.string.hide_launcher_icon_summary),
-                checked = launcherIconHidden,
-                onCheckedChange = onLauncherIconHiddenChange,
+                checked = iconHidden,
+                onCheckedChange = onIconHiddenChange,
             )
         },
         tertiarySectionTitle = stringResource(R.string.section_diagnostics_maintenance),
@@ -584,7 +584,7 @@ internal fun SettingsHubScreen(
                         restartAfterDialogDismiss = false
                         restartInProgress = true
                         scope.launch {
-                            val success = SystemUiScopeController.restart()
+                            val success = SysUiScope.restart()
                             restartInProgress = false
                             if (!success) {
                                 showRestartFailure = true
@@ -642,7 +642,7 @@ internal fun SettingsHubScreen(
             title = stringResource(R.string.swipe_back),
             summary = stringResource(R.string.swipe_back_summary),
             checked = swipeBackEnabled,
-            onCheckedChange = onSwipeBackEnabledChange,
+            onCheckedChange = onSwipeBackChange,
         )
     }
 }

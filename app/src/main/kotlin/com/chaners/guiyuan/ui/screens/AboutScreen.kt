@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.system.RuntimeEnvironmentInfo
+import com.chaners.guiyuan.system.RuntimeEnv
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -52,12 +52,12 @@ internal fun AboutScreen(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val environment by
+    val env by
         produceState(
-            initialValue = RuntimeEnvironmentInfo.basic(),
+            initialValue = RuntimeEnv.basic(),
             key1 = context.applicationContext,
         ) {
-            value = RuntimeEnvironmentInfo.resolve(context.applicationContext)
+            value = RuntimeEnv.resolve(context.applicationContext)
         }
 
     SettingsPage(
@@ -141,12 +141,12 @@ internal fun AboutScreen(
             val unavailable = stringResource(R.string.about_value_unavailable)
             val deviceSummary =
                 listOf(
-                    environment.deviceName.trim(),
-                    environment.model
+                    env.device.trim(),
+                    env.model
                         .trim()
                         .takeIf { model ->
                             model.isNotBlank() &&
-                                !model.equals(environment.deviceName.trim(), ignoreCase = true)
+                                !model.equals(env.device.trim(), ignoreCase = true)
                         },
                 )
                     .filterNotNull()
@@ -154,13 +154,13 @@ internal fun AboutScreen(
                     .ifEmpty { listOf(unavailable) }
                     .joinToString(separator = ABOUT_VALUE_SEPARATOR)
             val androidSummary =
-                if (environment.androidVersion.isNotBlank()) {
+                if (env.androidVersion.isNotBlank()) {
                     buildString {
                         append("Android ")
-                        append(environment.androidVersion)
+                        append(env.androidVersion)
                         append(ABOUT_VALUE_SEPARATOR)
                         append("API ")
-                        append(environment.sdk)
+                        append(env.sdk)
                     }
                 } else {
                     unavailable
@@ -186,7 +186,7 @@ internal fun AboutScreen(
             )
             BasicComponent(
                 title = stringResource(R.string.os_version_label),
-                summary = environment.osVersion.ifBlank { unavailable },
+                summary = env.osVersion.ifBlank { unavailable },
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_layers,
@@ -195,7 +195,7 @@ internal fun AboutScreen(
             )
             BasicComponent(
                 title = stringResource(R.string.systemui_version_label),
-                summary = environment.systemUiVersionName.ifBlank { unavailable },
+                summary = env.sysUiVersion.ifBlank { unavailable },
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_dashboard,

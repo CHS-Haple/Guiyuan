@@ -47,16 +47,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.DiagnosticsLevel
-import com.chaners.guiyuan.settings.DiagnosticsSettings
-import com.chaners.guiyuan.settings.DiagnosticsRepo
-import com.chaners.guiyuan.system.DiagnosticLogCategory
-import com.chaners.guiyuan.system.DiagnosticLogEntry
-import com.chaners.guiyuan.system.DiagnosticLogLevel
-import com.chaners.guiyuan.system.DiagnosticsSnapshot
-import com.chaners.guiyuan.system.DiagnosticsSnapshotProvider
-import com.chaners.guiyuan.system.DiagnosticsReportBuilder
-import com.chaners.guiyuan.system.DiagnosticsReportFiles
+import com.chaners.guiyuan.settings.DiagLevel
+import com.chaners.guiyuan.settings.DiagSettings
+import com.chaners.guiyuan.settings.DiagRepo
+import com.chaners.guiyuan.system.LogCategory
+import com.chaners.guiyuan.system.LogEntry
+import com.chaners.guiyuan.system.LogLevel
+import com.chaners.guiyuan.system.DiagSnapshot
+import com.chaners.guiyuan.system.DiagReport
+import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -88,38 +87,38 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val diagnosticsRepository =
+    val diagRepo =
         remember(context.applicationContext) {
-            DiagnosticsRepo(context.applicationContext)
+            DiagRepo(context.applicationContext)
         }
-    val diagnosticsSettings by
-        diagnosticsRepository.settings.collectAsState(
-            initial = DiagnosticsSettings(level = diagnosticsRepository.currentLevel()),
+    val diagSettings by
+        diagRepo.settings.collectAsState(
+            initial = DiagSettings(level = diagRepo.current()),
         )
 
-    var snapshot by remember { mutableStateOf<DiagnosticsSnapshot?>(null) }
+    var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
     var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var refreshGeneration by rememberSaveable { mutableIntStateOf(0) }
-    var reportInProgress by rememberSaveable { mutableStateOf(false) }
-    var exportPickerOpen by rememberSaveable { mutableStateOf(false) }
+    var refreshGen by rememberSaveable { mutableIntStateOf(0) }
+    var reportBusy by rememberSaveable { mutableStateOf(false) }
+    var exportOpen by rememberSaveable { mutableStateOf(false) }
     var levelFilter by rememberSaveable {
-        mutableIntStateOf(DiagnosticsFilterLevelAll)
+        mutableIntStateOf(LEVEL_ALL)
     }
     var categoryFilter by rememberSaveable {
-        mutableIntStateOf(DiagnosticsFilterCategoryAll)
+        mutableIntStateOf(CAT_ALL)
     }
 
-    val exportSucceededMessage = stringResource(R.string.diagnostic_report_exported)
-    val exportFailedMessage = stringResource(R.string.diagnostic_report_export_failed)
-    val shareFailedMessage = stringResource(R.string.diagnostic_report_share_failed)
-    val reportShareTitle = stringResource(R.string.share_diagnostic_report)
-    val reportExportTitle = stringResource(R.string.export_diagnostic_report)
-    val moreActionsTitle = stringResource(R.string.diagnostics_more_actions)
+    val exportOkMsg = stringResource(R.string.diagnostic_report_exported)
+    val exportFailMsg = stringResource(R.string.diagnostic_report_export_failed)
+    val shareFailMsg = stringResource(R.string.diagnostic_report_share_failed)
+    val shareTitle = stringResource(R.string.share_diagnostic_report)
+    val exportTitle = stringResource(R.string.export_diagnostic_report)
+    val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
-    val pullRefreshTexts =
+    val refreshTexts =
         listOf(
             stringResource(R.string.diagnostics_pull_to_refresh),
             stringResource(R.string.diagnostics_release_to_refresh),
@@ -131,18 +130,18 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         if (loading) return
         loading = true
         pullRefreshing = true
-        refreshGeneration += 1
+        refreshGen += 1
     }
 
-    fun withCurrentReport(onReady: suspend (String) -> Unit) {
+    fun withReport(onReady: suspend (String) -> Unit) {
         val captured = snapshot ?: return
-        if (reportInProgress) return
-        reportInProgress = true
+        if (reportBusy) return
+        reportBusy = true
         scope.launch {
             try {
-                onReady(DiagnosticsReportBuilder.build(captured))
+                onReady(DiagReport.build(captured))
             } finally {
-                reportInProgress = false
+                reportBusy = false
             }
         }
     }
@@ -151,26 +150,26 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("text/plain"),
         ) { uri ->
-            exportPickerOpen = false
+            exportOpen = false
             if (uri != null) {
-                withCurrentReport { report ->
+                withReport { report ->
                     val success =
-                        DiagnosticsReportFiles.writeExport(
+                        DiagFiles.write(
                             context = context,
                             uri = uri,
                             report = report,
                         )
                     snackbarHostState.showSnackbar(
-                        if (success) exportSucceededMessage else exportFailedMessage,
+                        if (success) exportOkMsg else exportFailMsg,
                     )
                 }
             }
         }
 
-    LaunchedEffect(refreshGeneration) {
+    LaunchedEffect(refreshGen) {
         loading = true
         try {
-            snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
+            snapshot = DiagSnapshot.capture(context.applicationContext)
             expandedKey = null
             viewCleared = false
         } finally {
@@ -179,45 +178,45 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         }
     }
 
-    val reportActionsEnabled =
+    val reportEnabled =
         snapshot != null &&
             !loading &&
-            !reportInProgress &&
-            !exportPickerOpen
-    val runtimeEntries =
+            !reportBusy &&
+            !exportOpen
+    val entries =
         if (viewCleared) {
             emptyList()
         } else {
             snapshot
-                ?.sessionEntries
+                ?.entries
                 .orEmpty()
                 .asSequence()
-                .filter(::diagnosticLogIsRuntimeEntry)
+                .filter(::isRuntimeLog)
                 .toList()
                 .asReversed()
         }
-    val usefulEntries =
-        runtimeEntries
+    val visibleEntries =
+        entries
             .asSequence()
             .filter { entry ->
-                diagnosticsFilterMatches(
+                matchesFilter(
                     entry = entry,
                     levelMask = levelFilter,
                     categoryMask = categoryFilter,
                 )
             }
-            .take(MaxDiagnosticsUsefulEvents)
+            .take(MAX_EVENTS)
             .toList()
     val filterActive =
-        levelFilter != DiagnosticsFilterLevelAll ||
-            categoryFilter != DiagnosticsFilterCategoryAll
+        levelFilter != LEVEL_ALL ||
+            categoryFilter != CAT_ALL
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         titlePadding = 0.dp,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
-            DiagnosticsFilterMenu(
+            LogFilterMenu(
                 title = filterTitle,
                 levelMask = levelFilter,
                 categoryMask = categoryFilter,
@@ -230,78 +229,78 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     expandedKey = null
                 },
                 onReset = {
-                    levelFilter = DiagnosticsFilterLevelAll
-                    categoryFilter = DiagnosticsFilterCategoryAll
+                    levelFilter = LEVEL_ALL
+                    categoryFilter = CAT_ALL
                     expandedKey = null
                 },
             )
         },
         actions = {
-            TooltipBox(text = reportShareTitle) {
+            TooltipBox(text = shareTitle) {
                 IconButton(
                     onClick = {
-                        withCurrentReport { report ->
+                        withReport { report ->
                             val prepared =
-                                DiagnosticsReportFiles.prepareShare(
+                                DiagFiles.prepare(
                                     context = context,
                                     report = report,
                                 )
                             if (prepared == null) {
-                                snackbarHostState.showSnackbar(shareFailedMessage)
-                                return@withCurrentReport
+                                snackbarHostState.showSnackbar(shareFailMsg)
+                                return@withReport
                             }
                             val sendIntent =
                                 Intent(Intent.ACTION_SEND).apply {
-                                    type = DiagnosticsReportFiles.ShareMimeType
+                                    type = DiagFiles.MIME_TYPE
                                     putExtra(Intent.EXTRA_STREAM, prepared.uri)
                                     clipData =
                                         ClipData.newUri(
                                             context.contentResolver,
-                                            reportShareTitle,
+                                            shareTitle,
                                             prepared.uri,
                                         )
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
-                            DiagnosticsReportFiles.logShareIntent(context, sendIntent, prepared.uri)
+                            DiagFiles.logIntent(context, sendIntent, prepared.uri)
                             val chooserIntent =
-                                Intent.createChooser(sendIntent, reportShareTitle).apply {
+                                Intent.createChooser(sendIntent, shareTitle).apply {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                             runCatching { context.startActivity(chooserIntent) }
-                                .onSuccess { DiagnosticsReportFiles.logChooserLaunch(context) }
+                                .onSuccess { DiagFiles.logChooser(context) }
                                 .onFailure { error ->
-                                    DiagnosticsReportFiles.logChooserLaunch(context, error)
-                                    DiagnosticsReportFiles.discardShare(context, prepared)
-                                    snackbarHostState.showSnackbar(shareFailedMessage)
+                                    DiagFiles.logChooser(context, error)
+                                    DiagFiles.discard(context, prepared)
+                                    snackbarHostState.showSnackbar(shareFailMsg)
                                 }
                         }
                     },
-                    enabled = reportActionsEnabled,
+                    enabled = reportEnabled,
                 ) {
-                    Icon(MiuixIcons.Share, contentDescription = reportShareTitle)
+                    Icon(MiuixIcons.Share, contentDescription = shareTitle)
                 }
             }
-            TooltipBox(text = reportExportTitle) {
+            TooltipBox(text = exportTitle) {
                 IconButton(
                     onClick = {
-                        exportPickerOpen = true
-                        exportLauncher.launch(DiagnosticsReportFiles.suggestedFileName())
+                        exportOpen = true
+                        exportLauncher.launch(DiagFiles.fileName())
                     },
-                    enabled = reportActionsEnabled,
+                    enabled = reportEnabled,
                 ) {
-                    Icon(MiuixIcons.Download, contentDescription = reportExportTitle)
+                    Icon(MiuixIcons.Download, contentDescription = exportTitle)
                 }
             }
-            DiagnosticsMoreMenu(
-                title = moreActionsTitle,
-                diagnosticsLevel = diagnosticsSettings.level,
-                refreshEnabled = !loading && !exportPickerOpen,
+            DiagMenu(
+                title = menuTitle,
+                diagnosticsLevel = diagSettings.level,
+                refreshEnabled = !loading && !exportOpen,
                 canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
                 canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
                 canClear = snapshot != null && !viewCleared,
-                onDiagnosticsLevelChange = { level ->
-                    if (level != diagnosticsSettings.level) {
-                        diagnosticsRepository.setLevel(level)
+                onDiagLevelChange = { level ->
+                    if (level != diagSettings.level) {
+                        diagRepo.setLevel(level)
                         requestRefresh()
                     }
                 },
@@ -328,14 +327,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 SettingsPullToRefresh(
                     refreshing = pullRefreshing,
                     onRefresh = ::requestRefresh,
-                    texts = pullRefreshTexts,
+                    texts = refreshTexts,
                 )
             },
     ) {
         when {
             viewCleared -> {
                 item(key = "diagnostics-state-cleared") {
-                    DiagnosticsLogStateCard(
+                    LogStateCard(
                         text = stringResource(R.string.diagnostics_view_cleared),
                         modifier = Modifier.animateItem(),
                     )
@@ -343,19 +342,19 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             }
             loading && snapshot == null -> {
                 item(key = "diagnostics-state-loading") {
-                    DiagnosticsLogStateCard(
+                    LogStateCard(
                         text = stringResource(R.string.diagnostics_log_loading),
                         loading = true,
                         modifier = Modifier.animateItem(),
                     )
                 }
             }
-            usefulEntries.isEmpty() -> {
+            visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {
-                    DiagnosticsLogStateCard(
+                    LogStateCard(
                         text =
                             stringResource(
-                                if (runtimeEntries.isNotEmpty() && filterActive) {
+                                if (entries.isNotEmpty() && filterActive) {
                                     R.string.diagnostics_filter_empty
                                 } else {
                                     R.string.diagnostics_events_empty
@@ -371,7 +370,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                         text =
                             stringResource(
                                 R.string.diagnostics_events_summary,
-                                usefulEntries.size,
+                                visibleEntries.size,
                             ),
                         modifier =
                             Modifier
@@ -384,19 +383,19 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     )
                 }
                 itemsIndexed(
-                    items = usefulEntries,
-                    key = { _, entry -> entry.stableKey },
+                    items = visibleEntries,
+                    key = { _, entry -> entry.key },
                 ) { _, entry ->
-                    DiagnosticsUsefulEventCard(
+                    LogCard(
                         context = context,
                         entry = entry,
-                        expanded = expandedKey == entry.stableKey,
+                        expanded = expandedKey == entry.key,
                         onToggle = {
                             expandedKey =
-                                if (expandedKey == entry.stableKey) {
+                                if (expandedKey == entry.key) {
                                     null
                                 } else {
-                                    entry.stableKey
+                                    entry.key
                                 }
                         },
                         modifier = Modifier.animateItem(),
@@ -408,58 +407,58 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
 }
 
-private const val MaxDiagnosticsUsefulEvents = 40
+private const val MAX_EVENTS = 40
 
-private const val DiagnosticsFilterLevelInfo = 1 shl 0
-private const val DiagnosticsFilterLevelWarning = 1 shl 1
-private const val DiagnosticsFilterLevelError = 1 shl 2
-private const val DiagnosticsFilterLevelAll =
-    DiagnosticsFilterLevelInfo or DiagnosticsFilterLevelWarning or DiagnosticsFilterLevelError
+private const val LEVEL_INFO = 1 shl 0
+private const val LEVEL_WARN = 1 shl 1
+private const val LEVEL_ERROR = 1 shl 2
+private const val LEVEL_ALL =
+    LEVEL_INFO or LEVEL_WARN or LEVEL_ERROR
 
-private const val DiagnosticsFilterCategoryModuleCompatibility = 1 shl 0
-private const val DiagnosticsFilterCategoryNetwork = 1 shl 1
-private const val DiagnosticsFilterCategoryDisplayTransition = 1 shl 2
-private const val DiagnosticsFilterCategoryPerformance = 1 shl 3
-private const val DiagnosticsFilterCategorySettingsMaintenance = 1 shl 4
-private const val DiagnosticsFilterCategoryOther = 1 shl 5
-private const val DiagnosticsFilterCategoryAll =
-    DiagnosticsFilterCategoryModuleCompatibility or
-        DiagnosticsFilterCategoryNetwork or
-        DiagnosticsFilterCategoryDisplayTransition or
-        DiagnosticsFilterCategoryPerformance or
-        DiagnosticsFilterCategorySettingsMaintenance or
-        DiagnosticsFilterCategoryOther
+private const val CAT_MODULE = 1 shl 0
+private const val CAT_NETWORK = 1 shl 1
+private const val CAT_DISPLAY = 1 shl 2
+private const val CAT_PERF = 1 shl 3
+private const val CAT_SETTINGS = 1 shl 4
+private const val CAT_OTHER = 1 shl 5
+private const val CAT_ALL =
+    CAT_MODULE or
+        CAT_NETWORK or
+        CAT_DISPLAY or
+        CAT_PERF or
+        CAT_SETTINGS or
+        CAT_OTHER
 
-private fun diagnosticsFilterMatches(
-    entry: DiagnosticLogEntry,
+private fun matchesFilter(
+    entry: LogEntry,
     levelMask: Int,
     categoryMask: Int,
 ): Boolean {
     val levelBit =
         when (entry.level) {
-            DiagnosticLogLevel.Warning -> DiagnosticsFilterLevelWarning
-            DiagnosticLogLevel.Error,
-            DiagnosticLogLevel.Fatal,
-            -> DiagnosticsFilterLevelError
-            else -> DiagnosticsFilterLevelInfo
+            LogLevel.Warning -> LEVEL_WARN
+            LogLevel.Error,
+            LogLevel.Fatal,
+            -> LEVEL_ERROR
+            else -> LEVEL_INFO
         }
     val categoryBit =
         when (entry.category) {
-            DiagnosticLogCategory.Module,
-            DiagnosticLogCategory.Native,
-            -> DiagnosticsFilterCategoryModuleCompatibility
-            DiagnosticLogCategory.Network -> DiagnosticsFilterCategoryNetwork
-            DiagnosticLogCategory.Display,
-            DiagnosticLogCategory.Transition,
-            -> DiagnosticsFilterCategoryDisplayTransition
-            DiagnosticLogCategory.Performance -> DiagnosticsFilterCategoryPerformance
-            DiagnosticLogCategory.Settings -> DiagnosticsFilterCategorySettingsMaintenance
-            DiagnosticLogCategory.Other -> DiagnosticsFilterCategoryOther
+            LogCategory.Module,
+            LogCategory.Native,
+            -> CAT_MODULE
+            LogCategory.Network -> CAT_NETWORK
+            LogCategory.Display,
+            LogCategory.Transition,
+            -> CAT_DISPLAY
+            LogCategory.Performance -> CAT_PERF
+            LogCategory.Settings -> CAT_SETTINGS
+            LogCategory.Other -> CAT_OTHER
         }
     return levelMask and levelBit != 0 && categoryMask and categoryBit != 0
 }
 
-private fun diagnosticsToggleMask(
+private fun toggleMask(
     mask: Int,
     bit: Int,
     checked: Boolean,
@@ -470,39 +469,39 @@ private fun diagnosticsToggleMask(
         mask and bit.inv()
     }
 
-private data class DiagnosticsFilterOption(
+private data class FilterOption(
     @StringRes val titleRes: Int,
     val bit: Int,
 )
 
-private val DiagnosticsLevelFilterOptions =
+private val LevelOptions =
     listOf(
-        DiagnosticsFilterOption(R.string.diagnostics_filter_info, DiagnosticsFilterLevelInfo),
-        DiagnosticsFilterOption(R.string.diagnostics_filter_warning, DiagnosticsFilterLevelWarning),
-        DiagnosticsFilterOption(R.string.diagnostics_filter_error, DiagnosticsFilterLevelError),
+        FilterOption(R.string.diagnostics_filter_info, LEVEL_INFO),
+        FilterOption(R.string.diagnostics_filter_warning, LEVEL_WARN),
+        FilterOption(R.string.diagnostics_filter_error, LEVEL_ERROR),
     )
 
-private val DiagnosticsCategoryFilterOptions =
+private val CategoryOptions =
     listOf(
-        DiagnosticsFilterOption(
+        FilterOption(
             R.string.diagnostics_filter_module_compatibility,
-            DiagnosticsFilterCategoryModuleCompatibility,
+            CAT_MODULE,
         ),
-        DiagnosticsFilterOption(R.string.diagnostics_filter_network, DiagnosticsFilterCategoryNetwork),
-        DiagnosticsFilterOption(
+        FilterOption(R.string.diagnostics_filter_network, CAT_NETWORK),
+        FilterOption(
             R.string.diagnostics_filter_display_transition,
-            DiagnosticsFilterCategoryDisplayTransition,
+            CAT_DISPLAY,
         ),
-        DiagnosticsFilterOption(R.string.diagnostics_filter_performance, DiagnosticsFilterCategoryPerformance),
-        DiagnosticsFilterOption(
+        FilterOption(R.string.diagnostics_filter_performance, CAT_PERF),
+        FilterOption(
             R.string.diagnostics_filter_settings_maintenance,
-            DiagnosticsFilterCategorySettingsMaintenance,
+            CAT_SETTINGS,
         ),
-        DiagnosticsFilterOption(R.string.diagnostics_filter_other, DiagnosticsFilterCategoryOther),
+        FilterOption(R.string.diagnostics_filter_other, CAT_OTHER),
     )
 
 @Composable
-private fun DiagnosticsFilterMenu(
+private fun LogFilterMenu(
     title: String,
     levelMask: Int,
     categoryMask: Int,
@@ -511,17 +510,17 @@ private fun DiagnosticsFilterMenu(
     onReset: () -> Unit,
 ) {
     val filterActive =
-        levelMask != DiagnosticsFilterLevelAll ||
-            categoryMask != DiagnosticsFilterCategoryAll
+        levelMask != LEVEL_ALL ||
+            categoryMask != CAT_ALL
     val levelItems =
-        DiagnosticsLevelFilterOptions.map { option ->
+        LevelOptions.map { option ->
             val selected = levelMask and option.bit != 0
             DropdownItem(
                 text = stringResource(option.titleRes),
                 selected = selected,
                 onClick = {
                     onLevelMaskChange(
-                        diagnosticsToggleMask(
+                        toggleMask(
                             mask = levelMask,
                             bit = option.bit,
                             checked = !selected,
@@ -531,14 +530,14 @@ private fun DiagnosticsFilterMenu(
             )
         }
     val categoryItems =
-        DiagnosticsCategoryFilterOptions.map { option ->
+        CategoryOptions.map { option ->
             val selected = categoryMask and option.bit != 0
             DropdownItem(
                 text = stringResource(option.titleRes),
                 selected = selected,
                 onClick = {
                     onCategoryMaskChange(
-                        diagnosticsToggleMask(
+                        toggleMask(
                             mask = categoryMask,
                             bit = option.bit,
                             checked = !selected,
@@ -602,14 +601,14 @@ private fun DiagnosticsFilterMenu(
 }
 
 @Composable
-private fun DiagnosticsMoreMenu(
+private fun DiagMenu(
     title: String,
-    diagnosticsLevel: DiagnosticsLevel,
+    diagnosticsLevel: DiagLevel,
     refreshEnabled: Boolean,
     canScrollTop: Boolean,
     canScrollBottom: Boolean,
     canClear: Boolean,
-    onDiagnosticsLevelChange: (DiagnosticsLevel) -> Unit,
+    onDiagLevelChange: (DiagLevel) -> Unit,
     onRefresh: () -> Unit,
     onScrollTop: () -> Unit,
     onScrollBottom: () -> Unit,
@@ -617,25 +616,25 @@ private fun DiagnosticsMoreMenu(
 ) {
     val currentLevelLabel =
         stringResource(
-            if (diagnosticsLevel == DiagnosticsLevel.Detailed) {
+            if (diagnosticsLevel == DiagLevel.Detailed) {
                 R.string.diagnostics_mode_detailed
             } else {
                 R.string.diagnostics_mode_basic
             },
         )
     val levelItems =
-        DiagnosticsLevel.entries.map { level ->
+        DiagLevel.entries.map { level ->
             DropdownItem(
                 text =
                     stringResource(
-                        if (level == DiagnosticsLevel.Detailed) {
+                        if (level == DiagLevel.Detailed) {
                             R.string.diagnostics_mode_detailed
                         } else {
                             R.string.diagnostics_mode_basic
                         },
                     ),
                 selected = diagnosticsLevel == level,
-                onClick = { onDiagnosticsLevelChange(level) },
+                onClick = { onDiagLevelChange(level) },
             )
         }
     val entries =
@@ -690,16 +689,16 @@ private fun DiagnosticsMoreMenu(
 }
 
 @Composable
-private fun DiagnosticsUsefulEventCard(
+private fun LogCard(
     context: Context,
-    entry: DiagnosticLogEntry,
+    entry: LogEntry,
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val title = diagnosticLogTitle(context, entry)
-    val summary = diagnosticLogSummary(context, entry)
-    val category = diagnosticLogCategoryLabel(context, entry.category)
+    val title = logTitle(context, entry)
+    val summary = logSummary(context, entry)
+    val category = categoryLabel(context, entry.category)
 
     Card(
         modifier =
@@ -712,7 +711,7 @@ private fun DiagnosticsUsefulEventCard(
         showIndication = true,
         onClick = onToggle,
         onLongPress = {
-            copyDiagnosticLogEntry(
+            copyLog(
                 context = context,
                 entry = entry,
             )
@@ -722,7 +721,7 @@ private fun DiagnosticsUsefulEventCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DiagnosticsLogLevelTag(entry.level)
+            LogLevelTag(entry.level)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = category,
@@ -732,7 +731,7 @@ private fun DiagnosticsUsefulEventCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            entry.timeText?.let { time ->
+            entry.time?.let { time ->
                 Text(
                     text = time,
                     style = MiuixTheme.textStyles.footnote2,
@@ -768,27 +767,27 @@ private fun DiagnosticsUsefulEventCard(
         ) {
             Column {
                 Spacer(modifier = Modifier.height(10.dp))
-                DiagnosticLogDetailRow(
+                LogDetail(
                     label = "Event",
                     value = entry.event ?: "—",
                 )
                 entry.component?.let { component ->
-                    DiagnosticLogDetailRow(
+                    LogDetail(
                         label = "Component",
                         value = component,
                     )
                 }
                 entry.state?.let { state ->
-                    DiagnosticLogDetailRow(
+                    LogDetail(
                         label = "State",
                         value = state,
                     )
                 }
 
                 entry.fields
-                    .filterKeys { key -> key !in DiagnosticLogMetadataFields }
+                    .filterKeys { key -> key !in LOG_META_FIELDS }
                     .forEach { (key, value) ->
-                        DiagnosticLogDetailRow(label = key, value = value)
+                        LogDetail(label = key, value = value)
                     }
             }
         }
@@ -796,7 +795,7 @@ private fun DiagnosticsUsefulEventCard(
 }
 
 @Composable
-private fun DiagnosticsLogStateCard(
+private fun LogStateCard(
     text: String,
     loading: Boolean = false,
     modifier: Modifier = Modifier,
@@ -830,25 +829,25 @@ private fun DiagnosticsLogStateCard(
 }
 
 @Composable
-private fun DiagnosticsLogLevelTag(level: DiagnosticLogLevel) {
+private fun LogLevelTag(level: LogLevel) {
     val colors = MiuixTheme.colorScheme
     val warningColor = RuntimeWarningAccent
     val containerColor =
         when (level) {
-            DiagnosticLogLevel.Error,
-            DiagnosticLogLevel.Fatal,
+            LogLevel.Error,
+            LogLevel.Fatal,
             -> colors.errorContainer
-            DiagnosticLogLevel.Warning -> warningColor.copy(alpha = 0.14f)
-            DiagnosticLogLevel.Info -> colors.tertiaryContainer
+            LogLevel.Warning -> warningColor.copy(alpha = 0.14f)
+            LogLevel.Info -> colors.tertiaryContainer
             else -> colors.secondaryContainerVariant
         }
     val contentColor =
         when (level) {
-            DiagnosticLogLevel.Error,
-            DiagnosticLogLevel.Fatal,
+            LogLevel.Error,
+            LogLevel.Fatal,
             -> colors.error
-            DiagnosticLogLevel.Warning -> warningColor
-            DiagnosticLogLevel.Info -> colors.onTertiaryContainer
+            LogLevel.Warning -> warningColor
+            LogLevel.Info -> colors.onTertiaryContainer
             else -> colors.onSurfaceContainerVariant
         }
 
@@ -863,7 +862,7 @@ private fun DiagnosticsLogLevelTag(level: DiagnosticLogLevel) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = diagnosticLogLevelLabel(level),
+                text = levelLabel(level),
                 style =
                     MiuixTheme.textStyles.footnote2.copy(
                         fontWeight = FontWeight.Bold,
@@ -876,7 +875,7 @@ private fun DiagnosticsLogLevelTag(level: DiagnosticLogLevel) {
 }
 
 @Composable
-private fun DiagnosticLogDetailRow(
+private fun LogDetail(
     label: String,
     value: String,
 ) {
@@ -903,9 +902,9 @@ private fun DiagnosticLogDetailRow(
     }
 }
 
-private fun copyDiagnosticLogEntry(
+private fun copyLog(
     context: Context,
-    entry: DiagnosticLogEntry,
+    entry: LogEntry,
 ) {
     val clipboard =
         context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
@@ -913,7 +912,7 @@ private fun copyDiagnosticLogEntry(
     clipboard.setPrimaryClip(
         ClipData.newPlainText(
             context.getString(R.string.diagnostics_log_clipboard_label),
-            entry.rawLine,
+            entry.raw,
         ),
     )
     Toast.makeText(
@@ -923,51 +922,51 @@ private fun copyDiagnosticLogEntry(
     ).show()
 }
 
-private fun diagnosticLogIsRuntimeEntry(entry: DiagnosticLogEntry): Boolean {
+private fun isRuntimeLog(entry: LogEntry): Boolean {
     if (
-        entry.level == DiagnosticLogLevel.Warning ||
-        entry.level == DiagnosticLogLevel.Error ||
-        entry.level == DiagnosticLogLevel.Fatal
+        entry.level == LogLevel.Warning ||
+        entry.level == LogLevel.Error ||
+        entry.level == LogLevel.Fatal
     ) {
         return true
     }
     if (!entry.structured) {
         return false
     }
-    return entry.event in DiagnosticRuntimeEvents
+    return entry.event in RUNTIME_EVENTS
 }
 
-private fun diagnosticLogLevelLabel(level: DiagnosticLogLevel): String =
+private fun levelLabel(level: LogLevel): String =
     when (level) {
-        DiagnosticLogLevel.Verbose -> "VERBOSE"
-        DiagnosticLogLevel.Debug -> "DEBUG"
-        DiagnosticLogLevel.Info -> "INFO"
-        DiagnosticLogLevel.Warning -> "WARN"
-        DiagnosticLogLevel.Error -> "ERROR"
-        DiagnosticLogLevel.Fatal -> "FATAL"
-        DiagnosticLogLevel.Unknown -> "LOG"
+        LogLevel.Verbose -> "VERBOSE"
+        LogLevel.Debug -> "DEBUG"
+        LogLevel.Info -> "INFO"
+        LogLevel.Warning -> "WARN"
+        LogLevel.Error -> "ERROR"
+        LogLevel.Fatal -> "FATAL"
+        LogLevel.Unknown -> "LOG"
     }
 
-private fun diagnosticLogCategoryLabel(
+private fun categoryLabel(
     context: Context,
-    category: DiagnosticLogCategory,
+    category: LogCategory,
 ): String =
     context.getString(
         when (category) {
-            DiagnosticLogCategory.Module -> R.string.diagnostics_log_category_module
-            DiagnosticLogCategory.Network -> R.string.diagnostics_log_category_network
-            DiagnosticLogCategory.Display -> R.string.diagnostics_log_category_display
-            DiagnosticLogCategory.Native -> R.string.diagnostics_log_category_native
-            DiagnosticLogCategory.Transition -> R.string.diagnostics_log_category_transition
-            DiagnosticLogCategory.Performance -> R.string.diagnostics_log_category_performance
-            DiagnosticLogCategory.Settings -> R.string.diagnostics_log_category_settings
-            DiagnosticLogCategory.Other -> R.string.diagnostics_log_category_other
+            LogCategory.Module -> R.string.diagnostics_log_category_module
+            LogCategory.Network -> R.string.diagnostics_log_category_network
+            LogCategory.Display -> R.string.diagnostics_log_category_display
+            LogCategory.Native -> R.string.diagnostics_log_category_native
+            LogCategory.Transition -> R.string.diagnostics_log_category_transition
+            LogCategory.Performance -> R.string.diagnostics_log_category_performance
+            LogCategory.Settings -> R.string.diagnostics_log_category_settings
+            LogCategory.Other -> R.string.diagnostics_log_category_other
         },
     )
 
-private fun diagnosticLogTitle(
+private fun logTitle(
     context: Context,
-    entry: DiagnosticLogEntry,
+    entry: LogEntry,
 ): String {
     val res =
         when (entry.event) {
@@ -1019,13 +1018,13 @@ private fun diagnosticLogTitle(
         ?: context.getString(R.string.diagnostics_log_event_generic)
 }
 
-private fun diagnosticLogSummary(
+private fun logSummary(
     context: Context,
-    entry: DiagnosticLogEntry,
+    entry: LogEntry,
 ): String {
     if (entry.event == "connectivity") {
         return buildList {
-            entry.fields["transport"]?.let { add(diagnosticTransportLabel(it)) }
+            entry.fields["transport"]?.let { add(transportLabel(it)) }
             if (entry.fields["validated"] == "true") {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
@@ -1052,7 +1051,7 @@ private fun diagnosticLogSummary(
                 add(
                     context.getString(
                         R.string.diagnostics_log_summary_total_time,
-                        formatDiagnosticMicros(micros),
+                        formatMicros(micros),
                     ),
                 )
             }
@@ -1060,7 +1059,7 @@ private fun diagnosticLogSummary(
                 add(
                     context.getString(
                         R.string.diagnostics_log_summary_source,
-                        diagnosticTransportLabel(source),
+                        transportLabel(source),
                     ),
                 )
             }
@@ -1083,12 +1082,12 @@ private fun diagnosticLogSummary(
 
     val summary =
         buildList {
-            entry.state?.let { add(diagnosticStateLabel(context, it)) }
+            entry.state?.let { add(stateLabel(context, it)) }
             entry.fields["source"]?.let { source ->
                 add(
                     context.getString(
                         R.string.diagnostics_log_summary_source,
-                        diagnosticTransportLabel(source),
+                        transportLabel(source),
                     ),
                 )
             }
@@ -1106,7 +1105,7 @@ private fun diagnosticLogSummary(
     }
 }
 
-private fun diagnosticStateLabel(
+private fun stateLabel(
     context: Context,
     state: String,
 ): String =
@@ -1122,7 +1121,7 @@ private fun diagnosticStateLabel(
         else -> state
     }
 
-private fun diagnosticTransportLabel(value: String): String =
+private fun transportLabel(value: String): String =
     when (value.lowercase()) {
         "wifi" -> "Wi-Fi"
         "mobile" -> "Mobile"
@@ -1132,14 +1131,14 @@ private fun diagnosticTransportLabel(value: String): String =
         else -> value
     }
 
-private fun formatDiagnosticMicros(micros: Long): String =
+private fun formatMicros(micros: Long): String =
     if (micros >= 1_000L) {
         String.format(Locale.US, "%.2f ms", micros / 1_000.0)
     } else {
         "$micros μs"
     }
 
-private val DiagnosticRuntimeEvents =
+private val RUNTIME_EVENTS =
     setOf(
         "module.loaded",
         "module.reloaded",
@@ -1173,7 +1172,7 @@ private val DiagnosticRuntimeEvents =
         "aod.target",
     )
 
-private val DiagnosticLogMetadataFields =
+private val LOG_META_FIELDS =
     setOf(
         "sequence",
         "sessionId",

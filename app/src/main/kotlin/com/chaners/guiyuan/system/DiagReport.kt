@@ -1,49 +1,45 @@
 package com.chaners.guiyuan.system
 
-import android.content.Context
 import com.chaners.guiyuan.BuildConfig
 
-internal object DiagnosticsReportBuilder {
-    private const val DetailedLogLineLimit = 600
-    private const val ReleaseLogLineLimit = 120
+internal object DiagReport {
+    private const val DETAILED_LINES = 600
+    private const val RELEASE_LINES = 120
 
-    suspend fun build(context: Context): String =
-        build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
-
-    internal fun build(snapshot: DiagnosticsSnapshot): String {
-        val env = snapshot.environment
-        val level = snapshot.diagnosticsLevel
-        val log = snapshot.runtimeLog
-        val lineLimit =
+    internal fun build(snapshot: DiagSnapshot): String {
+        val env = snapshot.env
+        val level = snapshot.level
+        val log = snapshot.log
+        val limit =
             if (
                 level.name == "Detailed" &&
                 (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
             ) {
-                DetailedLogLineLimit
+                DETAILED_LINES
             } else {
-                ReleaseLogLineLimit
+                RELEASE_LINES
             }
-        val lines = log.latestSessionLines
-        val health = snapshot.runtimeHealth
-        val moduleLines = lines.takeLast(lineLimit)
-        val requestedLevel = level.name.lowercase()
-        val runtimeDiag = health.component("diagnostics")
-        val effectiveLevel = runtimeDiag?.fields?.get("level")
+        val lines = log.sessionLines
+        val health = snapshot.health
+        val logLines = lines.takeLast(limit)
+        val requested = level.name.lowercase()
+        val runtime = health.component("diagnostics")
+        val effective = runtime?.fields?.get("level")
         val syncState =
             when {
                 !BuildConfig.RUNTIME_DIAGNOSTICS && !BuildConfig.DEVELOPMENT_PROBES ->
                     "not-applicable"
-                runtimeDiag == null ||
-                    runtimeDiag.state == "unknown" ||
-                    runtimeDiag.state == "unavailable" ->
+                runtime == null ||
+                    runtime.state == "unknown" ||
+                    runtime.state == "unavailable" ->
                     "unavailable"
                 BuildConfig.DEVELOPMENT_PROBES ->
-                    if (effectiveLevel == "detailed") {
+                    if (effective == "detailed") {
                         "development-forced"
                     } else {
                         "mismatch"
                     }
-                effectiveLevel == requestedLevel ->
+                effective == requested ->
                     "matched"
                 else ->
                     "mismatch"
@@ -69,24 +65,24 @@ internal object DiagnosticsReportBuilder {
             )
             appendLine()
             appendLine("[Diagnostics state]")
-            appendLine("requestedLevel=" + requestedLevel)
-            appendLine("effectiveRuntimeLevel=" + (effectiveLevel ?: "unavailable"))
+            appendLine("requestedLevel=" + requested)
+            appendLine("effectiveRuntimeLevel=" + (effective ?: "unavailable"))
             appendLine("syncState=" + syncState)
             appendLine("schemaVersion=" + health.schemaVersion)
             appendLine("sessionId=" + (health.sessionId ?: "legacy-or-unavailable"))
             appendLine()
             appendLine("[Device]")
             appendLine("manufacturer=" + env.manufacturer)
-            appendLine("name=" + env.deviceName)
+            appendLine("name=" + env.device)
             appendLine("model=" + env.model)
             appendLine("device=" + env.codename)
             appendLine("android=" + env.androidVersion)
             appendLine("sdk=" + env.sdk)
             appendLine("os=" + env.osVersion)
-            appendLine("systemUiVersion=" + env.systemUiVersionName)
+            appendLine("systemUiVersion=" + env.sysUiVersion)
             appendLine(
                 "systemUiVersionCode=" +
-                    (env.systemUiVersionCode?.toString() ?: "unknown"),
+                    (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
             appendLine("[Runtime health]")
@@ -96,11 +92,11 @@ internal object DiagnosticsReportBuilder {
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)
             appendLine("collection=" + collectionState(log.result))
-            appendLine("lines=" + moduleLines.size)
-            if (moduleLines.isEmpty()) {
+            appendLine("lines=" + logLines.size)
+            if (logLines.isEmpty()) {
                 appendLine("No Guiyuan runtime log entries were available.")
             } else {
-                moduleLines.forEach(::appendLine)
+                logLines.forEach(::appendLine)
             }
             appendLine()
             appendLine("[Report]")

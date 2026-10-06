@@ -5,11 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class DiagnosticsLogParserTest {
+class DiagLogParserTest {
     @Test
     fun parsesLsposedStructuredEnvelope() {
         val entry =
-            DiagnosticsLogParser.parse(
+            DiagLogParser.parse(
                 "[ 2026-10-04T12:38:51.169     1000: 17495: 17495 I/LSPosedFramework ] " +
                     "(com.android.systemui) " +
                     "[com.chaners.guiyuan,CombinedStatus,4457-1a104c9eff0-2-2414,0,1] " +
@@ -17,24 +17,24 @@ class DiagnosticsLogParserTest {
                     "source=wifi sourceToDrawUs=6723 sequence=38 sessionId=20261004-710-17495-86yhn",
             )
 
-        assertEquals(DiagnosticLogLevel.Info, entry.level)
-        assertEquals("10-04 12:38:51", entry.timeText)
+        assertEquals(LogLevel.Info, entry.level)
+        assertEquals("10-04 12:38:51", entry.time)
         assertEquals("17495", entry.pid)
-        assertEquals("com.android.systemui", entry.hostPackage)
-        assertEquals("com.chaners.guiyuan", entry.modulePackage)
+        assertEquals("com.android.systemui", entry.hostPkg)
+        assertEquals("com.chaners.guiyuan", entry.modulePkg)
         assertEquals("CombinedStatus", entry.tag)
         assertEquals("pipeline.latency", entry.event)
         assertEquals("renderLatency", entry.component)
         assertEquals("observed", entry.state)
         assertEquals("6723", entry.fields["sourceToDrawUs"])
-        assertEquals(DiagnosticLogCategory.Performance, entry.category)
+        assertEquals(LogCategory.Performance, entry.category)
         assertTrue(entry.structured)
     }
 
     @Test
     fun parsesLsposedLegacyEnvelopeAndFields() {
         val entry =
-            DiagnosticsLogParser.parse(
+            DiagLogParser.parse(
                 "[ 2026-10-04T12:38:57.185     1000: 17495: 17495 W/LSPosedFramework ] " +
                     "(com.android.systemui) " +
                     "[com.chaners.guiyuan,CombinedStatus,4457-1a104c9eff0-2-2415,0,1] " +
@@ -42,29 +42,29 @@ class DiagnosticsLogParserTest {
                     "internetCapability=true mobileDataEnabled=true",
             )
 
-        assertEquals(DiagnosticLogLevel.Warning, entry.level)
+        assertEquals(LogLevel.Warning, entry.level)
         assertEquals("connectivity", entry.event)
         assertEquals("WIFI", entry.fields["transport"])
         assertEquals("true", entry.fields["validated"])
-        assertEquals(DiagnosticLogCategory.Network, entry.category)
+        assertEquals(LogCategory.Network, entry.category)
         assertFalse(entry.structured)
     }
 
     @Test
     fun parsesLogcatFallbackEnvelope() {
         val entry =
-            DiagnosticsLogParser.parse(
+            DiagLogParser.parse(
                 "10-04 12:38:57.185 17495 17495 E CombinedStatus: " +
                     "diag schema=1 event=hotReload.complete component=hotReload state=error " +
                     "reason=test",
             )
 
-        assertEquals(DiagnosticLogLevel.Error, entry.level)
-        assertEquals("10-04 12:38:57", entry.timeText)
+        assertEquals(LogLevel.Error, entry.level)
+        assertEquals("10-04 12:38:57", entry.time)
         assertEquals("CombinedStatus", entry.tag)
         assertEquals("hotReload.complete", entry.event)
         assertEquals("error", entry.state)
         assertEquals("test", entry.fields["reason"])
-        assertEquals(DiagnosticLogCategory.Settings, entry.category)
+        assertEquals(LogCategory.Settings, entry.category)
     }
 }

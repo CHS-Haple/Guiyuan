@@ -37,7 +37,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureSettingsRepo
 import com.chaners.guiyuan.settings.VisualSettings
 import com.chaners.guiyuan.settings.VisualSettingsRepo
-import com.chaners.guiyuan.system.XposedRuntimeStatus
+import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -109,8 +109,8 @@ internal fun HomeScreen(
         visualRepository.settings.collectAsState(
             initial = visualRepository.current(),
         )
-    val xposedRuntimeStatus by
-        application.xposedRuntimeStatus.collectAsState()
+    val xposedStatus by
+        application.xposedStatus.collectAsState()
     val previewResources =
         remember(context.applicationContext) {
             PreviewSystemUiResourceResolver(context.applicationContext)
@@ -161,7 +161,7 @@ internal fun HomeScreen(
                     SmallTitle(stringResource(R.string.section_home_runtime))
                     HomeRuntimeStatusCard(
                         enabled = featureSettings.enabled,
-                        runtimeStatus = xposedRuntimeStatus,
+                        runtimeStatus = xposedStatus,
                         hotReloadInProgress = hotReloadInProgress,
                         onEnabledChange = featureRepository::setEnabled,
                         modifier =
@@ -192,7 +192,7 @@ internal fun HomeScreen(
 @Composable
 private fun HomeRuntimeStatusCard(
     enabled: Boolean,
-    runtimeStatus: XposedRuntimeStatus,
+    runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -451,7 +451,7 @@ private fun RuntimeStatusMark(
 
 private fun resolveHomeRuntimeCardState(
     enabled: Boolean,
-    runtimeStatus: XposedRuntimeStatus,
+    runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
 ): HomeRuntimeCardState {
     if (!enabled) {
@@ -473,7 +473,7 @@ private fun resolveHomeRuntimeCardState(
     }
 
     return when (runtimeStatus) {
-        XposedRuntimeStatus.Checking ->
+        XposedStatus.Checking ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_checking,
                 summaryRes = R.string.home_runtime_checking_summary,
@@ -481,7 +481,7 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        XposedRuntimeStatus.FrameworkUnavailable ->
+        XposedStatus.FrameworkUnavailable ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_framework_unavailable,
                 summaryRes = R.string.home_runtime_framework_unavailable_summary,
@@ -489,7 +489,7 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        XposedRuntimeStatus.QueryUnavailable ->
+        XposedStatus.QueryUnavailable ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_unknown,
                 summaryRes = R.string.home_runtime_unknown_summary,
@@ -497,9 +497,9 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        is XposedRuntimeStatus.Connected ->
+        is XposedStatus.Connected ->
             when {
-                !runtimeStatus.systemUiInScope ->
+                !runtimeStatus.sysUiInScope ->
                     HomeRuntimeCardState(
                         titleRes = R.string.home_runtime_unhooked,
                         summaryRes = R.string.home_runtime_unhooked_summary,
@@ -507,7 +507,7 @@ private fun resolveHomeRuntimeCardState(
                         mark = RuntimeStatusMarkKind.Alert,
                     )
 
-                runtimeStatus.systemUiRunning ->
+                runtimeStatus.sysUiRunning ->
                     HomeRuntimeCardState(
                         titleRes = R.string.home_runtime_running,
                         summaryRes = R.string.home_runtime_running_summary,
