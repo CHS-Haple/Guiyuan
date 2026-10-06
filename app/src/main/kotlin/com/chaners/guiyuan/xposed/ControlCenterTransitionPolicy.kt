@@ -226,7 +226,7 @@ internal object ControlCenterTransition {
             ).roundToInt().coerceAtLeast(compact)
     }
 
-    fun resolveBatteryIslandNativePeerReservationWidth(
+    fun batteryPeerReservationWidth(
         compactWidthPx: Int,
         spans: List<ReservationSpan>,
         semanticWidthPx: Int,

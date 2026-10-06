@@ -147,11 +147,11 @@ internal object ControlCenterSession {
             ?: pendingPrearm?.host()?.takeIf { candidate -> candidate.isAttachedToWindow }
 
     @Synchronized
-    fun currentNativePresentationReadyForHotReload(): Boolean =
-        current?.nativePresentationReadyForHotReload() == true
+    fun isNativeReadyForReload(): Boolean =
+        current?.nativeReadyForReload() == true
 
     @Synchronized
-    fun restoreLaidOutHostAfterHotReload(
+    fun restoreLaidOutHost(
         host: ViewGroup,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -162,7 +162,7 @@ internal object ControlCenterSession {
             return AttachResult.Failure("main-thread-required")
         }
         if (
-            !shouldRestoreLaidOutHostAfterHotReload(
+            !shouldRestoreLaidOutHost(
                 attached = host.isAttachedToWindow,
                 inLayout = host.isInLayout,
                 width = host.width,
@@ -183,7 +183,7 @@ internal object ControlCenterSession {
             )
         if (
             result == AttachResult.Ready &&
-            shouldAdoptTransferredCompactReadiness(transferredCompactReady)
+            shouldAdoptCompactReady(transferredCompactReady)
         ) {
             when (HomePresentation.adoptControlCenterLayoutCutoverFromHotReload()) {
                 is HomePresentation.ControlCenterStateResult.Active -> {
@@ -212,11 +212,11 @@ internal object ControlCenterSession {
         return result
     }
 
-    internal fun shouldAdoptTransferredCompactReadiness(
+    internal fun shouldAdoptCompactReady(
         transferredCompactReady: Boolean,
     ): Boolean = transferredCompactReady
 
-    internal fun shouldRestoreLaidOutHostAfterHotReload(
+    internal fun shouldRestoreLaidOutHost(
         attached: Boolean,
         inLayout: Boolean,
         width: Int,
@@ -240,7 +240,7 @@ internal object ControlCenterSession {
     }
 
     @Synchronized
-    fun currentProjectionGeometryDiagnostic(): String =
+    fun projectionGeometryDiag(): String =
         current?.geometryDiagnostic() ?: "projection=unavailable"
 
     @Synchronized
@@ -449,7 +449,7 @@ internal object ControlCenterSession {
             ")"
     }
 
-    internal fun shouldRetainNativePresentationOnLayoutUnavailable(
+    internal fun keepNativeWhenLayoutMissing(
         hostAttached: Boolean,
         nativePresentationReady: Boolean,
     ): Boolean =
@@ -539,7 +539,7 @@ internal object ControlCenterSession {
         fun attachedHost(): ViewGroup? =
             host.get()?.takeIf { candidate -> candidate.isAttachedToWindow }
 
-        fun nativePresentationReadyForHotReload(): Boolean =
+        fun nativeReadyForReload(): Boolean =
             nativePresentationReady && attachedHost() != null
 
         fun transitionSourceSnapshot(): TransitionSourceSnapshot? {
@@ -617,7 +617,7 @@ internal object ControlCenterSession {
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (
-                shouldBeginCapacityLeaseOnVisibilityChange(
+                shouldBeginCapacityLease(
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
                 ) &&
@@ -627,7 +627,7 @@ internal object ControlCenterSession {
                 return false
             }
             if (
-                shouldEndCapacityLeaseOnVisibilityChange(
+                shouldEndCapacityLease(
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
                 )
@@ -889,7 +889,7 @@ internal object ControlCenterSession {
 
             val hostAttached = host.get()?.isAttachedToWindow == true
             val retainNativePresentation =
-                shouldRetainNativePresentationOnLayoutUnavailable(
+                keepNativeWhenLayoutMissing(
                     hostAttached = hostAttached,
                     nativePresentationReady = nativePresentationReady,
                 )
@@ -1002,13 +1002,13 @@ internal object ControlCenterSession {
         return found
     }
 
-    internal fun shouldBeginCapacityLeaseOnVisibilityChange(
+    internal fun shouldBeginCapacityLease(
         previousRequestedVisible: Boolean,
         nextRequestedVisible: Boolean,
     ): Boolean =
         !previousRequestedVisible && nextRequestedVisible
 
-    internal fun shouldEndCapacityLeaseOnVisibilityChange(
+    internal fun shouldEndCapacityLease(
         previousRequestedVisible: Boolean,
         nextRequestedVisible: Boolean,
     ): Boolean =

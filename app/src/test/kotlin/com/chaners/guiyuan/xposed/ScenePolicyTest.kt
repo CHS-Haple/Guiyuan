@@ -50,21 +50,21 @@ class ScenePolicyTest {
     @Test
     fun retainedTransitionSourceWitnessSurvivesPresentationHandoff() {
         assertTrue(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.hasRetainedSourceWitness(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.hasRetainedSourceWitness(
                 widthPx = 0,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            ScenePolicy.hasRetainedSourceWitness(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = false,

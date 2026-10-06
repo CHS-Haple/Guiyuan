@@ -87,7 +87,7 @@ internal object ScenePolicy {
     fun all(): List<SceneCapability> =
         StatusScene.entries.map(::capability)
 
-    fun shouldAcquireKeyguardControlCenterLease(
+    fun shouldAcquireKeyguardCcLease(
         sourceScene: SourceScene,
         keyguardPresentationReady: Boolean,
         nativeFraction: Float,
@@ -96,7 +96,7 @@ internal object ScenePolicy {
             keyguardPresentationReady &&
             nativeFraction > 0f
 
-    fun shouldReconcileControlCenterForKeyguardLifecycle(
+    fun shouldReconcileKeyguardControlCenter(
         controlCenterVisible: Boolean,
         nativeFraction: Float,
         leaseActive: Boolean,
@@ -105,7 +105,7 @@ internal object ScenePolicy {
             nativeFraction > 0f ||
             leaseActive
 
-    fun shouldRetainKeyguardControlCenterLease(
+    fun shouldKeepKeyguardCcLease(
         leaseActive: Boolean,
         sourceScene: SourceScene,
         featureEnabled: Boolean,
@@ -136,7 +136,7 @@ internal object ScenePolicy {
             visualBoundaryReached &&
             hostAttached
 
-    fun retainedTransitionSourceWitnessAvailable(
+    fun hasRetainedSourceWitness(
         widthPx: Int,
         heightPx: Int,
         hostAttached: Boolean,
@@ -233,7 +233,7 @@ internal object ScenePolicy {
             return KeyguardAodProjection.KEYGUARD
         }
         if (isAodAnimate) {
-            return resolveAnimatingKeyguardAodProjection(
+            return resolveAnimatingAodProjection(
                 keyguardEnabled = keyguardEnabled,
                 aodEnabled = aodEnabled,
                 steadySourceScene = steadySourceScene,
@@ -295,7 +295,7 @@ internal object ScenePolicy {
             homePresentationOwned &&
             nativeToLockScreenTarget == false
 
-    fun shouldUseKeyguardBoundaryVisualHandoff(
+    fun shouldUseKeyguardHandoff(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
@@ -310,7 +310,7 @@ internal object ScenePolicy {
             lastStableFamilyScene == StableKeyguardAodScene.AOD &&
             nativeToLockScreenTarget == true
 
-    fun shouldPrecommitKeyguardBoundaryLayout(
+    fun shouldPrecommitKeyguardLayout(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
@@ -319,7 +319,7 @@ internal object ScenePolicy {
         statusIconsPresentationAlpha: Float?,
         homeNativeAodFallbackActive: Boolean = false,
     ): Boolean =
-        shouldUseKeyguardBoundaryVisualHandoff(
+        shouldUseKeyguardHandoff(
             featureEnabled = featureEnabled,
             keyguardEnabled = keyguardEnabled,
             aodEnabled = aodEnabled,
@@ -330,7 +330,7 @@ internal object ScenePolicy {
             statusIconsPresentationAlpha != null &&
             statusIconsPresentationAlpha == 0f
 
-    fun shouldArmHomeNativeAodFallbackCandidate(
+    fun shouldArmHomeAodFallback(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
@@ -343,7 +343,7 @@ internal object ScenePolicy {
             homePresentationOwned &&
             homeCarrierPresentationVisible
 
-    fun shouldConsumeHomeNativeAodFallbackOnAodState(
+    fun shouldConsumeHomeAodFallback(
         candidateActive: Boolean,
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
@@ -358,7 +358,7 @@ internal object ScenePolicy {
             toAod &&
             isAodAnimate
 
-    fun shouldReleaseTransientHomeKeyguardForDisabledAod(
+    fun shouldReleaseHomeKeyguardForAodOff(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
@@ -373,7 +373,7 @@ internal object ScenePolicy {
             homePresentationOwnedAtFullAodStart &&
             nativeToLockScreenTarget == false
 
-    fun fullAodPendingTargetReachedStableState(
+    fun aodTargetReachedStableState(
         pendingTargetToLockScreen: Boolean?,
         toAod: Boolean,
         isAodAnimate: Boolean,
@@ -389,7 +389,7 @@ internal object ScenePolicy {
         }
     }
 
-    internal fun resolveAnimatingKeyguardAodProjection(
+    internal fun resolveAnimatingAodProjection(
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
         steadySourceScene: SourceScene,

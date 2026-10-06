@@ -279,7 +279,7 @@ class GyModule : XposedModule() {
             keyguardAodFullTargetPending = false
             keyguardAodPendingTargetToLockScreen = null
             keyguardAodFullTransitionActive = false
-            resetKeyguardBoundaryHandoffState()
+            resetKeyguardHandoff()
             homePresentationOwnedAtFullAodStart = false
             homeNativeAodFallbackCandidate = false
             homeNativeAodFallbackActive = false
@@ -511,7 +511,7 @@ class GyModule : XposedModule() {
             )
             val controlCenterFakeRestore =
                 restored.controlCenterFakeHost?.let { fakeHost ->
-                    restoreControlCenterFakePresentationAfterHotReload(
+                    restoreControlCenterAfterReload(
                         host = fakeHost,
                         transferredCompactReady = restored.controlCenterCompactReady,
                     )
@@ -1151,7 +1151,7 @@ class GyModule : XposedModule() {
             update.controlCenterSourceScene
                 ?: SourceScene.UNKNOWN
         val incomingBoundaryReady =
-            incomingKeyguardPresentationReadyForControlCenter()
+            incomingKeyguardReady()
         val effectiveSourceScene =
             ScenePolicy.resolveControlCenterSourceScene(
                 panelSourceScene = panelSourceScene,
@@ -1159,7 +1159,7 @@ class GyModule : XposedModule() {
                 lastStableFamilyScene = lastStableKeyguardAodScene,
                 incomingKeyguardPresentationReady = incomingBoundaryReady,
             )
-        updateControlCenterSourceSceneEligibility(
+        updateControlCenterSource(
             sourceScene = effectiveSourceScene,
             authority =
                 when {
@@ -1185,7 +1185,7 @@ class GyModule : XposedModule() {
             return effectiveSourceScene
         }
 
-        when (prepareControlCenterFakePresentation(carrier, "visible-fallback")) {
+        when (prepareControlCenter(carrier, "visible-fallback")) {
             ControlCenterSession.AttachResult.Ready -> {
                 val ready =
                     ControlCenterSession.setRequestedVisible(true)
@@ -1209,7 +1209,7 @@ class GyModule : XposedModule() {
         return effectiveSourceScene
     }
 
-    private fun updateControlCenterSourceSceneEligibility(
+    private fun updateControlCenterSource(
         sourceScene: SourceScene,
         authority: String,
     ) {
@@ -1217,19 +1217,19 @@ class GyModule : XposedModule() {
             keyguardControlCenterLeaseActive &&
             sourceScene != SourceScene.KEYGUARD
         ) {
-            releaseKeyguardControlCenterLease(
+            releaseKeyguardCcLease(
                 source = "source-scene:" + sourceScene.name + ":" + authority,
                 reconcileReadiness = true,
             )
         }
         controlCenterSourceScene = sourceScene
         HomePresentation.updateControlCenterSourceScene(sourceScene)
-        acquireKeyguardControlCenterLeaseIfEligible(
+        acquireKeyguardCcLease(
             source = "source-scene:" + authority,
         )
         val settings = FeaturePrefsOwner.currentSettings()
         val incomingBoundaryReady =
-            incomingKeyguardPresentationReadyForControlCenter()
+            incomingKeyguardReady()
         val keyguardPresentationReady =
             keyguardRuntimeReady || incomingBoundaryReady
         val keyguardEligible =
@@ -1274,14 +1274,14 @@ class GyModule : XposedModule() {
         if (fraction > 0f) {
             if (
                 controlCenterSourceScene != SourceScene.KEYGUARD &&
-                incomingKeyguardPresentationReadyForControlCenter()
+                incomingKeyguardReady()
             ) {
-                updateControlCenterSourceSceneEligibility(
+                updateControlCenterSource(
                     sourceScene = SourceScene.KEYGUARD,
                     authority = "incoming-keyguard-fraction",
                 )
             }
-            acquireKeyguardControlCenterLeaseIfEligible(
+            acquireKeyguardCcLease(
                 source = "native-fraction",
             )
             return
@@ -1291,20 +1291,20 @@ class GyModule : XposedModule() {
             keyguardControlCenterLeaseActive &&
             previous > 0f
         ) {
-            releaseKeyguardControlCenterLease(
+            releaseKeyguardCcLease(
                 source = "native-fraction-zero",
                 reconcileReadiness = true,
             )
         }
     }
 
-    private fun acquireKeyguardControlCenterLeaseIfEligible(source: String) {
+    private fun acquireKeyguardCcLease(source: String) {
         val keyguardPresentationReady =
             keyguardRuntimeReady ||
-                incomingKeyguardPresentationReadyForControlCenter()
+                incomingKeyguardReady()
         if (
             keyguardControlCenterLeaseActive ||
-            !ScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            !ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = controlCenterExpansionFraction,
@@ -1328,7 +1328,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun shouldRetainKeyguardControlCenterLease(): Boolean {
+    private fun shouldKeepKeyguardCcLease(): Boolean {
         val resolved =
             KeyguardHostResolver.current()
                 as? KeyguardHostResolver.ResolveResult.Ready
@@ -1340,8 +1340,8 @@ class GyModule : XposedModule() {
                 ?.blocksProjection
                 ?: true
         val incomingBoundaryReady =
-            incomingKeyguardPresentationReadyForControlCenter()
-        return ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            incomingKeyguardReady()
+        return ScenePolicy.shouldKeepKeyguardCcLease(
             leaseActive = keyguardControlCenterLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -1353,7 +1353,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun releaseKeyguardControlCenterLease(
+    private fun releaseKeyguardCcLease(
         source: String,
         reconcileReadiness: Boolean,
     ) {
@@ -1375,7 +1375,7 @@ class GyModule : XposedModule() {
         if (
             reconcileReadiness &&
             !keyguardPresentationReadyObserved &&
-            !incomingKeyguardPresentationReadyForControlCenter()
+            !incomingKeyguardReady()
         ) {
             applyKeyguardPresentationReadinessLost(
                 source = "lease-release:" + source,
@@ -1383,7 +1383,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun incomingKeyguardPresentationReadyForControlCenter(): Boolean {
+    private fun incomingKeyguardReady(): Boolean {
         val settings = FeaturePrefsOwner.currentSettings()
         if (
             !settings.enabled ||
@@ -1405,16 +1405,16 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun refreshControlCenterSourceSceneEligibility(authority: String) {
-        updateControlCenterSourceSceneEligibility(
+    private fun refreshControlCenterSource(authority: String) {
+        updateControlCenterSource(
             sourceScene = controlCenterSourceScene,
             authority = authority,
         )
     }
 
-    private fun reconcileControlCenterForKeyguardLifecycle(authority: String) {
+    private fun reconcileKeyguardControlCenter(authority: String) {
         if (
-            !ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
+            !ScenePolicy.shouldReconcileKeyguardControlCenter(
                 controlCenterVisible = controlCenterSceneVisible,
                 nativeFraction = controlCenterExpansionFraction,
                 leaseActive = keyguardControlCenterLeaseActive,
@@ -1422,27 +1422,27 @@ class GyModule : XposedModule() {
         ) {
             return
         }
-        refreshControlCenterSourceSceneEligibility(authority)
+        refreshControlCenterSource(authority)
     }
 
-    private fun restoreControlCenterFakePresentationAfterHotReload(
+    private fun restoreControlCenterAfterReload(
         host: ViewGroup,
         transferredCompactReady: Boolean,
     ): String {
         return when (
             val result =
-                ControlCenterSession.restoreLaidOutHostAfterHotReload(
+                ControlCenterSession.restoreLaidOutHost(
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
+                    onProjectionReadinessChanged = ::onControlCenterProjectionReady,
                     transferredCompactReady = transferredCompactReady,
                 )
         ) {
             ControlCenterSession.AttachResult.Ready -> {
                 val compactReady =
                     ControlCenterSession
-                        .currentNativePresentationReadyForHotReload()
+                        .isNativeReadyForReload()
                 logDiagnostic(
                     level = Log.INFO,
                     event = "projection.restore",
@@ -1490,7 +1490,7 @@ class GyModule : XposedModule() {
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
+                    onProjectionReadinessChanged = ::onControlCenterProjectionReady,
                 )
         ) {
             is ControlCenterSession.PrearmResult.Scheduled -> {
@@ -1521,7 +1521,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun prepareControlCenterFakePresentation(
+    private fun prepareControlCenter(
         host: ViewGroup,
         source: String,
     ): ControlCenterSession.AttachResult {
@@ -1530,7 +1530,7 @@ class GyModule : XposedModule() {
                 host = host,
                 onEvent = ::onPanelTransitionEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
+                onProjectionReadinessChanged = ::onControlCenterProjectionReady,
             )
         if (result is ControlCenterSession.AttachResult.Failure) {
             logDiagnostic(
@@ -1546,7 +1546,7 @@ class GyModule : XposedModule() {
         return result
     }
 
-    private fun onControlCenterProjectionReadinessChanged(ready: Boolean) {
+    private fun onControlCenterProjectionReady(ready: Boolean) {
         ControlCenterTransition.onProjectionReadinessChanged(ready)
         if (!controlCenterSceneVisible) {
             return
@@ -1578,7 +1578,7 @@ class GyModule : XposedModule() {
 
         if (keyguardControlCenterLeaseActive) {
             safely {
-                releaseKeyguardControlCenterLease(
+                releaseKeyguardCcLease(
                     source = "panel-runtime-failure",
                     reconcileReadiness = false,
                 )
@@ -1888,7 +1888,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.toString(16)
+                                ?.function toString() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1919,12 +1919,12 @@ class GyModule : XposedModule() {
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.toString(16)
+                            ?.function toString() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1932,7 +1932,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.toString(16)
+                            ?.function toString() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1955,7 +1955,7 @@ class GyModule : XposedModule() {
         keyguardAodPendingTargetToLockScreen = null
         homePresentationOwnedAtFullAodStart = homeOwnedAtStart
         if (
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2051,7 +2051,7 @@ class GyModule : XposedModule() {
         )
 
         val releaseTransientHomeKeyguard =
-            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2066,7 +2066,7 @@ class GyModule : XposedModule() {
             homeNativeAodFallbackActive = true
             homeAodTransitionOriginPending = false
             homeAodTargetPrearmPending = false
-            resetKeyguardBoundaryHandoffState()
+            resetKeyguardHandoff()
             deactivateKeyguardRuntime("home-aod-disabled-target")
             logDiagnostic(
                 level = Log.INFO,
@@ -2083,7 +2083,7 @@ class GyModule : XposedModule() {
 
         (resolution as? KeyguardHostResolver.ResolveResult.Ready)?.let { ready ->
             if (!releaseTransientHomeKeyguard) {
-                armKeyguardBoundaryVisualHandoffIfEligible(
+                armKeyguardHandoff(
                     resolution = ready,
                     nativeToLockScreenTarget = target,
                     source = "animateFullAod:after",
@@ -2180,7 +2180,7 @@ class GyModule : XposedModule() {
         if (!eligible) return
 
         val visualOnlyIncomingKeyguard =
-            armKeyguardBoundaryVisualHandoffIfEligible(
+            armKeyguardHandoff(
                 resolution = resolution,
                 nativeToLockScreenTarget = target,
                 source = "status-icon-animation",
@@ -2197,7 +2197,7 @@ class GyModule : XposedModule() {
         keyguardAodPendingTargetToLockScreen = null
     }
 
-    private fun armKeyguardBoundaryVisualHandoffIfEligible(
+    private fun armKeyguardHandoff(
         resolution: KeyguardHostResolver.ResolveResult.Ready,
         nativeToLockScreenTarget: Boolean?,
         source: String,
@@ -2205,14 +2205,14 @@ class GyModule : XposedModule() {
     ): Boolean {
         if (keyguardBoundaryVisualHandoffActive) {
             if (visualBoundaryReached) {
-                onKeyguardBoundaryVisualBoundaryReached(source)
+                onKeyguardVisualBoundary(source)
             }
             return true
         }
 
         val settings = FeaturePrefsOwner.currentSettings()
         val eligible =
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2222,7 +2222,7 @@ class GyModule : XposedModule() {
             )
         if (!eligible) return false
 
-        beginKeyguardBoundaryVisualHandoff(
+        beginKeyguardHandoff(
             resolution = resolution,
             source = source,
             visualBoundaryReached = visualBoundaryReached,
@@ -2230,7 +2230,7 @@ class GyModule : XposedModule() {
         return keyguardBoundaryVisualHandoffActive
     }
 
-    private fun beginKeyguardBoundaryVisualHandoff(
+    private fun beginKeyguardHandoff(
         resolution: KeyguardHostResolver.ResolveResult.Ready,
         source: String,
         visualBoundaryReached: Boolean,
@@ -2242,7 +2242,7 @@ class GyModule : XposedModule() {
                 resolution.host,
             )
         keyguardBoundaryLayoutPrecommitActive =
-            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
                 aodEnabled = settings.aodEnabled,
@@ -2263,7 +2263,7 @@ class GyModule : XposedModule() {
                 source = source + ":visual-only",
             )
         if (!attached) {
-            resetKeyguardBoundaryHandoffState()
+            resetKeyguardHandoff()
             return
         }
         logDiagnostic(
@@ -2286,7 +2286,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun precommitKeyguardBoundaryLayout(source: String) {
+    private fun precommitKeyguardLayout(source: String) {
         if (
             !keyguardBoundaryVisualHandoffActive ||
             !keyguardBoundaryLayoutPrecommitActive
@@ -2298,7 +2298,7 @@ class GyModule : XposedModule() {
                 HomePresentation.commitKeyguardDeferredLayoutOwnership()
         ) {
             is HomePresentation.StateResult.Active -> {
-                onKeyguardBoundaryPrelayoutReady(
+                onKeyguardPrelayoutReady(
                     result = result,
                     source = source + ":precommit-ready",
                 )
@@ -2331,7 +2331,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onKeyguardBoundaryPrelayoutReady(
+    private fun onKeyguardPrelayoutReady(
         result: HomePresentation.StateResult.Active,
         source: String,
     ) {
@@ -2367,13 +2367,13 @@ class GyModule : XposedModule() {
             "nativeGeometryWrites" to 0,
         )
         if (keyguardBoundaryVisualBoundaryReached) {
-            reconcileControlCenterForKeyguardLifecycle(
+            reconcileKeyguardControlCenter(
                 "keyguard-boundary-layout-ready",
             )
         }
     }
 
-    private fun onKeyguardBoundaryVisualBoundaryReached(source: String) {
+    private fun onKeyguardVisualBoundary(source: String) {
         keyguardBoundaryVisualBoundaryReached = true
         if (!keyguardBoundaryLayoutPrecommitActive) return
         if (keyguardBoundaryCompactLayoutReady) {
@@ -2387,7 +2387,7 @@ class GyModule : XposedModule() {
                 "layoutAuthority" to "precommitted-before-native-animation",
                 "nativeGeometryWrites" to 0,
             )
-            reconcileControlCenterForKeyguardLifecycle(
+            reconcileKeyguardControlCenter(
                 "keyguard-boundary-visual-ready",
             )
         } else {
@@ -2404,17 +2404,17 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun resetKeyguardBoundaryHandoffState() {
+    private fun resetKeyguardHandoff() {
         keyguardBoundaryVisualHandoffActive = false
         keyguardBoundaryLayoutPrecommitActive = false
         keyguardBoundaryCompactLayoutReady = false
         keyguardBoundaryVisualBoundaryReached = false
     }
 
-    private fun completeKeyguardBoundaryVisualHandoff(source: String): Boolean {
+    private fun completeKeyguardHandoff(source: String): Boolean {
         if (!keyguardBoundaryVisualHandoffActive) return false
         if (keyguardBoundaryLayoutPrecommitActive) {
-            resetKeyguardBoundaryHandoffState()
+            resetKeyguardHandoff()
             onKeyguardPresentationReadinessChanged(
                 ready = true,
                 source = source + ":precommitted-layout",
@@ -2536,7 +2536,7 @@ class GyModule : XposedModule() {
         if (
             !update.isAodAnimate &&
             !keyguardAodFullTransitionActive &&
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = keyguardAodPendingTargetToLockScreen,
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
@@ -2548,7 +2548,7 @@ class GyModule : XposedModule() {
 
         val settings = FeaturePrefsOwner.currentSettings()
         val activateHomeNativeAodFallback =
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            ScenePolicy.shouldConsumeHomeAodFallback(
                 candidateActive = homeNativeAodFallbackCandidate,
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguardEnabled,
@@ -2559,7 +2559,7 @@ class GyModule : XposedModule() {
         if (activateHomeNativeAodFallback) {
             homeNativeAodFallbackCandidate = false
             homeNativeAodFallbackActive = true
-            resetKeyguardBoundaryHandoffState()
+            resetKeyguardHandoff()
             deactivateKeyguardRuntime("home-aod-disabled-native-transition")
             logDiagnostic(
                 level = Log.INFO,
@@ -2585,12 +2585,12 @@ class GyModule : XposedModule() {
             homeAodTransitionOriginPending = false
             homeAodTargetPrearmPending = false
             if (keyguardBoundaryVisualHandoffActive) {
-                resetKeyguardBoundaryHandoffState()
+                resetKeyguardHandoff()
                 deactivateKeyguardRuntime("boundary-handoff-returned-to-aod")
             }
         }
 
-        refreshStableKeyguardAodSceneFromAodState(update)
+        refreshStableSceneFromAod(update)
         if (
             !update.isAodAnimate &&
             !update.toAod &&
@@ -2600,7 +2600,7 @@ class GyModule : XposedModule() {
             homeNativeAodFallbackActive = false
         }
         if (update.blocksProjection) {
-            releaseKeyguardControlCenterLease(
+            releaseKeyguardCcLease(
                 source = "aod:" + update.source,
                 reconcileReadiness = false,
             )
@@ -2608,7 +2608,7 @@ class GyModule : XposedModule() {
         val boundaryHandoffHandled =
             !update.isAodAnimate &&
                 !update.toAod &&
-                completeKeyguardBoundaryVisualHandoff(
+                completeKeyguardHandoff(
                     source = "aod:" + update.source,
                 )
         if (!boundaryHandoffHandled && !keyguardBoundaryVisualHandoffActive) {
@@ -2655,7 +2655,7 @@ class GyModule : XposedModule() {
         if (sourceScene != SourceScene.UNKNOWN) {
             steadyStatusSourceScene = sourceScene
         }
-        refreshStableKeyguardAodSceneFromSceneState(update, sourceScene)
+        refreshStableSceneFromStatusBar(update, sourceScene)
         if (sourceScene == SourceScene.KEYGUARD) {
             KeyguardHostResolver.observe(update)?.let { resolution ->
                 onKeyguardHostResolution(
@@ -2673,12 +2673,12 @@ class GyModule : XposedModule() {
             // otherwise a fast first pull-down can consume stale KEYGUARD
             // source state and temporarily fall back to native QS icons.
             if (keyguardControlCenterLeaseActive) {
-                releaseKeyguardControlCenterLease(
+                releaseKeyguardCcLease(
                     source = "authoritative-home",
                     reconcileReadiness = false,
                 )
             }
-            updateControlCenterSourceSceneEligibility(
+            updateControlCenterSource(
                 sourceScene = SourceScene.HOME,
                 authority = "steady-source-view",
             )
@@ -2707,7 +2707,7 @@ class GyModule : XposedModule() {
             // KEYGUARD eligibility.
             deactivateKeyguardRuntime("home-source-active")
         } else if (sourceScene != SourceScene.UNKNOWN) {
-            updateControlCenterSourceSceneEligibility(
+            updateControlCenterSource(
                 sourceScene = sourceScene,
                 authority = "steady-source-view",
             )
@@ -2733,7 +2733,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun refreshStableKeyguardAodSceneFromAodState(
+    private fun refreshStableSceneFromAod(
         update: KeyguardAodSource.AodUpdate,
     ) {
         if (update.isAodAnimate) return
@@ -2759,7 +2759,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun refreshStableKeyguardAodSceneFromSceneState(
+    private fun refreshStableSceneFromStatusBar(
         update: SceneSource.SceneUpdate,
         sourceScene: SourceScene,
     ) {
@@ -3071,7 +3071,7 @@ class GyModule : XposedModule() {
     ) {
         keyguardPresentationReadyObserved = ready
         if (!ready) {
-            if (incomingKeyguardPresentationReadyForControlCenter()) {
+            if (incomingKeyguardReady()) {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.readiness",
@@ -3086,7 +3086,7 @@ class GyModule : XposedModule() {
                 )
                 return
             }
-            if (shouldRetainKeyguardControlCenterLease()) {
+            if (shouldKeepKeyguardCcLease()) {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.readiness",
@@ -3143,7 +3143,7 @@ class GyModule : XposedModule() {
                             keyguardBoundaryVisualHandoffActive &&
                             keyguardBoundaryLayoutPrecommitActive
                         ) {
-                            onKeyguardBoundaryPrelayoutReady(
+                            onKeyguardPrelayoutReady(
                                 result = active,
                                 source = "native-layout",
                             )
@@ -3158,7 +3158,7 @@ class GyModule : XposedModule() {
         ) {
             is HomePresentation.StateResult.Active -> {
                 if (visualOnlyBoundary && keyguardBoundaryLayoutPrecommitActive) {
-                    onKeyguardBoundaryPrelayoutReady(
+                    onKeyguardPrelayoutReady(
                         result = result,
                         source = source,
                     )
@@ -3174,7 +3174,7 @@ class GyModule : XposedModule() {
                 if (visualOnlyBoundary && keyguardBoundaryLayoutPrecommitActive) {
                     keyguardRuntimeReady = false
                     KeyguardRenderSession.setNativeHandoffActive(true)
-                    precommitKeyguardBoundaryLayout(source)
+                    precommitKeyguardLayout(source)
                     return
                 }
                 keyguardRuntimeReady = false
@@ -3209,7 +3209,7 @@ class GyModule : XposedModule() {
                     "nativeGeometryWrites" to 0,
                 )
                 if (!visualOnlyBoundary) {
-                    refreshControlCenterSourceSceneEligibility(
+                    refreshControlCenterSource(
                         "keyguard-compact-layout-pending",
                     )
                 }
@@ -3228,7 +3228,7 @@ class GyModule : XposedModule() {
                     "reason" to result.reason,
                     "fallback" to "native-keyguard",
                 )
-                refreshControlCenterSourceSceneEligibility("keyguard-activation-failed")
+                refreshControlCenterSource("keyguard-activation-failed")
             }
 
             is HomePresentation.StateResult.Inactive -> Unit
@@ -3236,11 +3236,11 @@ class GyModule : XposedModule() {
     }
 
     private fun applyKeyguardPresentationReadinessLost(source: String) {
-        resetKeyguardBoundaryHandoffState()
+        resetKeyguardHandoff()
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
         HomePresentation.deactivateKeyguard("readiness-lost:" + source)
-        reconcileControlCenterForKeyguardLifecycle("keyguard-readiness-lost")
+        reconcileKeyguardControlCenter("keyguard-readiness-lost")
     }
 
     private fun completeKeyguardPresentationCutover(
@@ -3273,11 +3273,11 @@ class GyModule : XposedModule() {
             "motion" to "inherited-from-keyguard-system-icons",
             "aodOwned" to false,
         )
-        refreshControlCenterSourceSceneEligibility("keyguard-ready")
+        refreshControlCenterSource("keyguard-ready")
     }
 
     private fun onKeyguardPresentationRuntimeFailure(reason: String) {
-        resetKeyguardBoundaryHandoffState()
+        resetKeyguardHandoff()
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
@@ -3290,12 +3290,12 @@ class GyModule : XposedModule() {
             "reason" to reason,
             "fallback" to "native-keyguard",
         )
-        reconcileControlCenterForKeyguardLifecycle("keyguard-fail-native")
+        reconcileKeyguardControlCenter("keyguard-fail-native")
     }
 
     private fun deactivateKeyguardRuntime(source: String) {
         val wasReady = keyguardRuntimeReady
-        resetKeyguardBoundaryHandoffState()
+        resetKeyguardHandoff()
         keyguardControlCenterLeaseActive = false
         keyguardPresentationReadyObserved = false
         keyguardRuntimeReady = false
@@ -3303,7 +3303,7 @@ class GyModule : XposedModule() {
         HomePresentation.deactivateKeyguard(source)
         KeyguardRenderSession.detach()
         if (wasReady) {
-            reconcileControlCenterForKeyguardLifecycle("keyguard-deactivate:" + source)
+            reconcileKeyguardControlCenter("keyguard-deactivate:" + source)
         }
     }
 
@@ -4495,7 +4495,7 @@ class GyModule : XposedModule() {
                 )
             }
         }
-        refreshControlCenterSourceSceneEligibility("feature-settings")
+        refreshControlCenterSource("feature-settings")
 
         logDiagnostic(
             level = Log.INFO,
@@ -4521,7 +4521,7 @@ class GyModule : XposedModule() {
         keyguardAodFullTargetPending = false
         keyguardAodPendingTargetToLockScreen = null
         keyguardAodFullTransitionActive = false
-        resetKeyguardBoundaryHandoffState()
+        resetKeyguardHandoff()
         homePresentationOwnedAtFullAodStart = false
         homeNativeAodFallbackCandidate = false
         homeNativeAodFallbackActive = false
@@ -4719,7 +4719,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().toString(36)
+            SystemClock.elapsedRealtime().function toString() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4732,12 +4732,12 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.toString())
+                        put(key, value.function toString() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().toString())
-                put("sequence", diagnosticSequence.incrementAndGet().toString())
+                put("uptimeMs", SystemClock.elapsedRealtime().function toString() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function toString() { [native code] }())
             }
         log(
             level,

@@ -316,7 +316,7 @@ internal object ControlCenterTransition {
                 ",appearanceAnimated=" + nativeAppearanceAnimated +
                 ",nativePeers=systemui" +
                 ",nativeTint=" +
-                (cachedNativePeerTint?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none") +
+                (cachedNativePeerTint?.toUInt()?.function toString() { [native code] }(16)?.padStart(8, '0') ?: "none") +
                 ",nativeTintAuthority=" + cachedNativePeerTintAuthority +
                 ",sourceAnchor=" + (sourceAnchorRef.get()?.javaClass?.simpleName ?: "none") +
                 ",sourceOrigin=" + (frozenSource?.source ?: "qs-fake-live") +
@@ -330,7 +330,7 @@ internal object ControlCenterTransition {
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
                 ",nativePeerTargetEndOffset=" +
-                (lastNativePeerTargetEndOffsetPx?.toString() ?: "none") +
+                (lastNativePeerTargetEndOffsetPx?.function toString() { [native code] }() ?: "none") +
                 ",batteryIsland=" + nativeBatteryIslandActive +
                 ",iconCapacity=" + statusIconCapacitySummary() +
                 ",nativeRows=" + nativeStatusRowSummary() +
@@ -386,7 +386,7 @@ internal object ControlCenterTransition {
                                     "(state=" +
                                     (ParticipantAccess.visibleState(child) ?: -1) +
                                     ",icon=" +
-                                    (ParticipantAccess.iconVisible(child)?.toString()
+                                    (ParticipantAccess.iconVisible(child)?.function toString() { [native code] }()
                                         ?: "unknown") +
                                     ",v=" + child.visibility +
                                     ",a=" + child.alpha +
@@ -1160,7 +1160,7 @@ internal object ControlCenterTransition {
                 } else {
                     null
                 }
-            resolveFrozenAdditionalMobileTargets(primary).forEach { witness ->
+            frozenExtraMobileTargets(primary).forEach { witness ->
                 val subId = witness.subscriptionId ?: return@forEach
                 val level =
                     when (val signal = state.mobile[subId]?.signal) {
@@ -1540,7 +1540,7 @@ internal object ControlCenterTransition {
             val currentReservation =
                 lastReservationWidthPx ?: compactWidth
             val requiredReservation =
-                requiredReservationWidthForVisualEnvelope(witness)
+                requiredReservationWidth(witness)
                     ?: return 0f
 
             val targetWidth =
@@ -1573,7 +1573,7 @@ internal object ControlCenterTransition {
             )
         }
 
-        private fun requiredReservationWidthForVisualEnvelope(
+        private fun requiredReservationWidth(
             witness: TargetWitness,
         ): Int? {
             val source = sourceViewRef.get() ?: return null
@@ -1654,7 +1654,7 @@ internal object ControlCenterTransition {
             val motionProgress = lastTintMotionProgress ?: return "pending"
 
             fun tintHex(color: Int): String =
-                color.toUInt().toString(16).padStart(8, '0')
+                color.toUInt().function toString() { [native code] }(16).padStart(8, '0')
 
             return "{batteryTinted=" + batteryTinted +
                 ",enabled=" + transitionEnabled +
@@ -1745,7 +1745,7 @@ internal object ControlCenterTransition {
                     // end frame before measuring the current projected occupancy.
                     lastNativePeerTargetEndOffsetPx = null
                     val targetEndOffsetPx =
-                        resolveBatteryIslandNativePeerTargetEndOffsetPx()
+                        batteryPeerEndOffsetPx()
                             ?: run {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
@@ -1761,7 +1761,7 @@ internal object ControlCenterTransition {
                                 return
                             }
                     lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
-                    ControlCenterTransition.resolveBatteryIslandNativePeerReservationWidth(
+                    ControlCenterTransition.batteryPeerReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         semanticWidthPx = requestedWidth,
@@ -1796,7 +1796,7 @@ internal object ControlCenterTransition {
             }
         }
 
-        private fun resolveBatteryIslandNativePeerTargetEndOffsetPx(): Float? {
+        private fun batteryPeerEndOffsetPx(): Float? {
             if (
                 fakeStatusIcons.width <= 0 ||
                 finalBattery.width <= 0 ||
@@ -1921,7 +1921,7 @@ internal object ControlCenterTransition {
                         target = mobileSpec.target,
                         preferredMobileSubId = preferredMobileSubId,
                     )
-                resolveFrozenAdditionalMobileTargets(primary).forEach { witness ->
+                frozenExtraMobileTargets(primary).forEach { witness ->
                     val slot = witness.slotView
                     val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
@@ -2049,10 +2049,10 @@ internal object ControlCenterTransition {
                         ).takeIf { witness -> isUsableSlotView(witness.slotView) }
 
                     StatusPainter.TransitionTarget.BatteryNumber ->
-                        resolveBatteryNumberTargetWitness()
+                        findBatteryNumberTarget()
 
                     StatusPainter.TransitionTarget.BatteryChargingIcon ->
-                        resolveBatteryChargingIconTargetWitness()
+                        findChargingIconTarget()
 
                     is StatusPainter.TransitionTarget.Slots ->
                         target.preferredSlots.firstNotNullOfOrNull { slot ->
@@ -2103,7 +2103,7 @@ internal object ControlCenterTransition {
                     }
             val compatibilityOptical =
                 if (nativeOptical == null) {
-                    resolveCompatibilityOpticalTarget(
+                    compatOpticalTarget(
                         slotRoot = slotRoot,
                         preferredChildEntries = target.preferredChildEntries,
                     )
@@ -2116,7 +2116,7 @@ internal object ControlCenterTransition {
                     compatibilityOptical == null &&
                     singleIconOpticalRequired
                 ) {
-                    resolveSingleIconOpticalTarget(slotRoot)
+                    singleIconOpticalTarget(slotRoot)
                 } else {
                     null
                 }
@@ -2159,16 +2159,16 @@ internal object ControlCenterTransition {
             )
         }
 
-        private fun resolveFrozenAdditionalMobileTargets(
+        private fun frozenExtraMobileTargets(
             primary: TargetWitness?,
         ): List<TargetWitness> {
             frozenAdditionalMobileTargets?.let { return it }
-            val resolved = resolveAdditionalMobileTargets(primary)
+            val resolved = extraMobileTargets(primary)
             frozenAdditionalMobileTargets = resolved
             return resolved
         }
 
-        private fun resolveAdditionalMobileTargets(
+        private fun extraMobileTargets(
             primary: TargetWitness?,
         ): List<TargetWitness> {
             val target =
@@ -2475,7 +2475,7 @@ internal object ControlCenterTransition {
             )
         }
 
-        private fun resolveBatteryChargingIconTargetWitness(): TargetWitness? {
+        private fun findChargingIconTarget(): TargetWitness? {
             val chargingView =
                 readViewField(finalBattery, "mBatteryChargingView") as? ImageView
                     ?: return null
@@ -2500,7 +2500,7 @@ internal object ControlCenterTransition {
             )
         }
 
-        private fun resolveBatteryNumberTargetWitness(): TargetWitness? {
+        private fun findBatteryNumberTarget(): TargetWitness? {
             val digitalView =
                 readViewField(finalBattery, "mBatteryDigitalView")
                     ?: findDescendantByResourceEntry(finalBattery, "battery_icon_container")
@@ -2515,7 +2515,7 @@ internal object ControlCenterTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .toString()
+                    .function toString() { [native code] }()
 
             val textView =
                 digitalView
@@ -2553,7 +2553,7 @@ internal object ControlCenterTransition {
                 val nativeBodyPaint = resolveBatteryNumberPaint(visibleBatteryBody)
                 if (nativeBodyPaint != null) {
                     val bounds =
-                        centeredBatteryNumberPaintBounds(
+                        centeredBatteryTextBounds(
                             view = visibleBatteryBody,
                             paint = nativeBodyPaint,
                             text = expected,
@@ -2580,7 +2580,7 @@ internal object ControlCenterTransition {
                 // typography but anchor it inside the visible hollow battery.
                 if (textView != null) {
                     val bounds =
-                        centeredBatteryNumberPaintBounds(
+                        centeredBatteryTextBounds(
                             view = visibleBatteryBody,
                             paint = textView.paint,
                             text = expected,
@@ -2610,7 +2610,7 @@ internal object ControlCenterTransition {
                     ?: return null
             val paint = resolveBatteryNumberPaint(legacyIcon) ?: return null
             val bounds =
-                centeredBatteryNumberPaintBounds(
+                centeredBatteryTextBounds(
                     view = legacyIcon,
                     paint = paint,
                     text = expected,
@@ -2633,7 +2633,7 @@ internal object ControlCenterTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .toString()
+                    .function toString() { [native code] }()
             data class Candidate(
                 val view: TextView,
                 val score: Int,
@@ -2642,7 +2642,7 @@ internal object ControlCenterTransition {
             fun collect(view: View, depth: Int) {
                 if (depth > BATTERY_NUMBER_PROBE_MAX_DEPTH) return
                 if (view is TextView && view.visibility == View.VISIBLE) {
-                    val value = view.text?.toString().orEmpty()
+                    val value = view.text?.function toString() { [native code] }().orEmpty()
                     val digits = value.filter(Char::isDigit)
                     val entry =
                         ParticipantAccess.resourceEntryName(view)
@@ -2680,7 +2680,7 @@ internal object ControlCenterTransition {
         ): StatusPainter.TransitionNormalizedBounds? {
             val layout = view.layout ?: return null
             if (layout.lineCount <= 0 || view.width <= 0 || view.height <= 0) return null
-            val text = view.text?.toString().orEmpty()
+            val text = view.text?.function toString() { [native code] }().orEmpty()
             if (text.isEmpty()) return null
             val rect = Rect()
             view.paint.getTextBounds(text, 0, text.length, rect)
@@ -2795,7 +2795,7 @@ internal object ControlCenterTransition {
                         (if (paint.typeface != null) 4f else 0f)
                 }
 
-        private fun centeredBatteryNumberPaintBounds(
+        private fun centeredBatteryTextBounds(
             view: View,
             paint: Paint,
             text: String,
@@ -2868,7 +2868,7 @@ internal object ControlCenterTransition {
                             .getOrNull()
                             ?: -1
                     base +
-                        ":text=" + view.text.toString().replace("|", "/") +
+                        ":text=" + view.text.function toString() { [native code] }().replace("|", "/") +
                         ":textSize=" + view.textSize +
                         ":weight=" + weight +
                         ":style=" + (view.typeface?.style ?: -1)
@@ -2990,7 +2990,7 @@ internal object ControlCenterTransition {
                     }.getOrNull()
                 }
 
-        private fun resolveSingleIconOpticalTarget(root: View): ImageView? {
+        private fun singleIconOpticalTarget(root: View): ImageView? {
             val candidates = ArrayList<ImageView>(2)
             fun collect(view: View) {
                 if (
@@ -3014,7 +3014,7 @@ internal object ControlCenterTransition {
             return candidates.singleOrNull()
         }
 
-        private fun resolveCompatibilityOpticalTarget(
+        private fun compatOpticalTarget(
             slotRoot: View,
             preferredChildEntries: List<String>,
         ): CompatibilityOpticalTarget? {
