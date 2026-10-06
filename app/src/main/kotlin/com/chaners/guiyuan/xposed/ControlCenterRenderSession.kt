@@ -191,7 +191,7 @@ internal object ControlCenterRenderSession {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
                                 "source=transferred-laid-out-fake-root " +
-                                "next=native-status-icons-layout-refresh ",
+                                "next=native-status-icons-layout-refresh",
                         )
                     }
                     return null
@@ -206,7 +206,7 @@ internal object ControlCenterRenderSession {
                     "source=transferred-laid-out-fake-root " +
                     "transferredCompactReady=" + transferredCompactReady +
                     " layoutRequestBoundary=outside-native-layout " +
-                    "next=native-status-icons-layout ",
+                    "next=native-status-icons-layout",
             )
         }
         return result
@@ -378,8 +378,7 @@ internal object ControlCenterRenderSession {
             root.requestLayout()
             emit(
                 "controlCenterProjection prearm state=scheduled " +
-                    "source=fake-root-attached next=native-root-layout " +
-                    "",
+                    "source=fake-root-attached next=native-root-layout",
             )
         }
 
