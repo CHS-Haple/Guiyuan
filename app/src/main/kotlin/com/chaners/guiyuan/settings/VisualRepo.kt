@@ -83,28 +83,28 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopReadoutEnabled(enabled: Boolean) {
+    fun setTopReadout(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_READOUT_ENABLED_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopTextFollowsBatteryColor(enabled: Boolean) {
+    fun setTopTextFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopChargingIconEnabled(enabled: Boolean) {
+    fun setTopChargingIcon(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY), enabled)
             .apply()
     }
 
-    fun setBatteryTopChargingIconFollowsBatteryColor(enabled: Boolean) {
+    fun setTopChargingIconFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY), enabled)
@@ -125,7 +125,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopTextScale(scale: Float) {
+    fun setTopTextScale(scale: Float) {
         val uiScale =
             scale.coerceIn(
                 BATTERY_TOP_TEXT_UI_SCALE_MIN,
@@ -141,7 +141,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopTextWeight(weight: Int) {
+    fun setTopTextWeight(weight: Int) {
         preferences
             .edit()
             .putInt(
@@ -151,7 +151,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopVerticalOffset(offset: Float) {
+    fun setTopOffsetY(offset: Float) {
         val uiOffset =
             offset.coerceIn(
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
@@ -161,7 +161,7 @@ internal class VisualRepo(context: Context) {
             .edit()
             .putFloat(
                 activeProfileKey(BATTERY_TOP_VERTICAL_OFFSET_KEY),
-                batteryTopVerticalOffsetRaw(uiOffset),
+                topOffsetYRaw(uiOffset),
             )
             .apply()
     }
@@ -278,7 +278,7 @@ internal class VisualRepo(context: Context) {
         preferences.edit().clear().apply()
     }
 
-    fun setBatteryTopChargingIconScale(scale: Float) {
+    fun setTopChargingIconScale(scale: Float) {
         val uiScale =
             scale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
@@ -366,25 +366,25 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
                 baseKey = CENTER_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = false,
             ),
-        batteryTopReadoutEnabled =
+        showTopReadout =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_READOUT_ENABLED_KEY,
                 defaultValue = false,
             ),
-        batteryTopTextFollowsBatteryColor =
+        topTextFollowsBatteryColor =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = true,
             ),
-        batteryTopChargingIconEnabled =
+        showTopChargingIcon =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 defaultValue = true,
             ),
-        batteryTopChargingIconFollowsBatteryColor =
+        topChargingIconFollowsBatteryColor =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
@@ -400,29 +400,29 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
                 CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
                 true,
             ),
-        batteryTopTextScale =
+        topTextScale =
             profileFloat(
                 layout = layout,
                 baseKey = BATTERY_TOP_TEXT_SCALE_KEY,
-                defaultValue = batteryTopTextScaleDefault(layout),
+                defaultValue = topTextScaleDefault(layout),
             ),
-        batteryTopTextWeight =
+        topTextWeight =
             profileInt(
                 layout = layout,
                 baseKey = BATTERY_TOP_TEXT_WEIGHT_KEY,
                 defaultValue = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
             ),
-        batteryTopVerticalOffset =
+        topOffsetY =
             profileFloat(
                 layout = layout,
                 baseKey = BATTERY_TOP_VERTICAL_OFFSET_KEY,
                 defaultValue = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
             ),
-        batteryTopChargingIconScale =
+        topChargingIconScale =
             profileFloat(
                 layout = layout,
                 baseKey = BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
-                defaultValue = batteryTopChargingIconScaleDefault(layout),
+                defaultValue = topChargingIconScaleDefault(layout),
             ),
         combinedScale =
             profileFloat(layout, COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
@@ -513,16 +513,16 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.centerFollowsBatteryColor,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
-        normalized.batteryTopReadoutEnabled,
+        normalized.showTopReadout,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopTextFollowsBatteryColor,
+        normalized.topTextFollowsBatteryColor,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
-        normalized.batteryTopChargingIconEnabled,
+        normalized.showTopChargingIcon,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopChargingIconFollowsBatteryColor,
+        normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         normalized.batteryFillFollowsRetractEndpoint,
@@ -531,16 +531,16 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.controlCenterTintTransitionEnabled,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
-        normalized.batteryTopTextScale,
+        normalized.topTextScale,
     ).putInt(
         visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
-        normalized.batteryTopTextWeight,
+        normalized.topTextWeight,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
-        normalized.batteryTopVerticalOffset,
+        normalized.topOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-        normalized.batteryTopChargingIconScale,
+        normalized.topChargingIconScale,
     ).putFloat(
         visualProfileKey(layout, COMBINED_SCALE_KEY),
         normalized.combinedScale,

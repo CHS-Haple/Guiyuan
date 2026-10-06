@@ -4556,11 +4556,11 @@ class GyModule : XposedModule() {
                 "layout" to settings.layout.persistedValue,
                 "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
-                "batteryNumber" to settings.batteryTopReadoutEnabled,
-                "chargingIcon" to settings.batteryTopChargingIconEnabled,
-                "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
+                "batteryNumber" to settings.showTopReadout,
+                "chargingIcon" to settings.showTopChargingIcon,
+                "batteryNumberFollowsBattery" to settings.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
-                    settings.batteryTopChargingIconFollowsBatteryColor,
+                    settings.topChargingIconFollowsBatteryColor,
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
@@ -4621,11 +4621,11 @@ class GyModule : XposedModule() {
                 "mobileTypeSizeScale" to visual.mobileTypeScale,
                 "mobileFollowsBattery" to visual.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
-                "batteryNumber" to visual.batteryTopReadoutEnabled,
-                "chargingIcon" to visual.batteryTopChargingIconEnabled,
-                "batteryNumberFollowsBattery" to visual.batteryTopTextFollowsBatteryColor,
+                "batteryNumber" to visual.showTopReadout,
+                "chargingIcon" to visual.showTopChargingIcon,
+                "batteryNumberFollowsBattery" to visual.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
-                    visual.batteryTopChargingIconFollowsBatteryColor,
+                    visual.topChargingIconFollowsBatteryColor,
                 "eventDriven" to true,
                 "mainThread" to true,
             )

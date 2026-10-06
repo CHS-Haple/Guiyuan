@@ -1221,7 +1221,7 @@ internal class StatusPainter(
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = visual.layout,
-                rawOffset = visual.batteryTopVerticalOffset,
+                rawOffset = visual.topOffsetY,
             )
 
     private fun shiftBoundsY(
@@ -1733,23 +1733,23 @@ internal class StatusPainter(
         visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ): BatteryTopReadoutLayout? {
-        val textVisible = visual.batteryTopReadoutEnabled
+        val textVisible = visual.showTopReadout
         val chargingSlotVisible =
-            model.charging && visual.batteryTopChargingIconEnabled
+            model.charging && visual.showTopChargingIcon
         if (!textVisible && !chargingSlotVisible) return null
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
-        val textSize = BATTERY_TOP_TEXT_SIZE * visual.batteryTopTextScale
+        val textSize = BATTERY_TOP_TEXT_SIZE * visual.topTextScale
         val textExtraStroke =
             if (textVisible) {
                 batteryTopTextExtraStroke(
-                    weight = visual.batteryTopTextWeight,
+                    weight = visual.topTextWeight,
                     textSize = textSize,
                 )
             } else {
                 0f
             }
-        paint.typeface = batteryTopTextTypeface(visual.batteryTopTextWeight)
+        paint.typeface = batteryTopTextTypeface(visual.topTextWeight)
         paint.textSize = textSize
         paint.textAlign = Paint.Align.LEFT
         if (textVisible) {
@@ -1772,7 +1772,7 @@ internal class StatusPainter(
         val chargingIconSize =
             if (chargingSlotVisible) {
                 BATTERY_TOP_CHARGING_ICON_SIZE *
-                    visual.batteryTopChargingIconScale
+                    visual.topChargingIconScale
             } else {
                 0f
             }
@@ -1872,7 +1872,7 @@ internal class StatusPainter(
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
                         layout = visual.layout,
-                        rawOffset = visual.batteryTopVerticalOffset,
+                        rawOffset = visual.topOffsetY,
                     ),
             )
         val textBaselineY =
@@ -1926,7 +1926,7 @@ internal class StatusPainter(
             textVisible = textVisible,
             text = text,
             textSize = textSize,
-            textWeight = visual.batteryTopTextWeight,
+            textWeight = visual.topTextWeight,
             textExtraStroke = textExtraStroke,
             textX =
                 textInkLeft +

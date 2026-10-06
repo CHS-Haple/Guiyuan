@@ -64,11 +64,11 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.settings.batteryTopChargingIconUiScale
-import com.chaners.guiyuan.settings.batteryTopChargingIconUiScaleDefault
-import com.chaners.guiyuan.settings.batteryTopTextUiScale
-import com.chaners.guiyuan.settings.batteryTopTextUiScaleDefault
-import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
+import com.chaners.guiyuan.settings.topChargingIconUiScale
+import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
+import com.chaners.guiyuan.settings.topTextUiScale
+import com.chaners.guiyuan.settings.topTextUiScaleDefault
+import com.chaners.guiyuan.settings.topOffsetYUi
 import com.chaners.guiyuan.settings.mobileTypeScaleDefault
 import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -260,18 +260,18 @@ internal fun FeaturesScreen(
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
                 summary = stringResource(R.string.battery_top_readout_summary),
-                checked = visual.batteryTopReadoutEnabled,
+                checked = visual.showTopReadout,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepo::setBatteryTopReadoutEnabled,
+                onCheckedChange = visualRepo::setTopReadout,
             )
-            AnimatedPreferenceGroup(visible = visual.batteryTopReadoutEnabled) {
+            AnimatedPreferenceGroup(visible = visual.showTopReadout) {
                 val textUiScale =
-                    batteryTopTextUiScale(
-                        visual.batteryTopTextScale,
+                    topTextUiScale(
+                        visual.topTextScale,
                     )
                 SliderPreference(
                     value = textUiScale,
-                    onValueChange = visualRepo::setBatteryTopTextScale,
+                    onValueChange = visualRepo::setTopTextScale,
                     title = stringResource(R.string.battery_top_text_size),
                     valueText =
                         stringResource(
@@ -285,7 +285,7 @@ internal fun FeaturesScreen(
                     showKeyPoints = true,
                     keyPoints =
                         listOf(
-                            batteryTopTextUiScaleDefault(
+                            topTextUiScaleDefault(
                                 visual.layout,
                             ),
                         ),
@@ -293,15 +293,15 @@ internal fun FeaturesScreen(
                     enabled = featureCfg.enabled,
                 )
                 SliderPreference(
-                    value = visual.batteryTopTextWeight.toFloat(),
+                    value = visual.topTextWeight.toFloat(),
                     onValueChange = { value ->
-                        visualRepo.setBatteryTopTextWeight(value.roundToInt())
+                        visualRepo.setTopTextWeight(value.roundToInt())
                     },
                     title = stringResource(R.string.battery_top_text_weight),
                     valueText =
                         stringResource(
                             R.string.battery_top_weight_value,
-                            visual.batteryTopTextWeight,
+                            visual.topTextWeight,
                         ),
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
@@ -315,27 +315,27 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
-                    checked = visual.batteryTopTextFollowsBatteryColor,
+                    checked = visual.topTextFollowsBatteryColor,
                     enabled = featureCfg.enabled,
-                    onCheckedChange = visualRepo::setBatteryTopTextFollowsBatteryColor,
+                    onCheckedChange = visualRepo::setTopTextFollowsBatteryColor,
                 )
             }
 
             SwitchPreference(
                 title = stringResource(R.string.battery_charging_icon),
                 summary = stringResource(R.string.battery_charging_icon_summary),
-                checked = visual.batteryTopChargingIconEnabled,
+                checked = visual.showTopChargingIcon,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepo::setBatteryTopChargingIconEnabled,
+                onCheckedChange = visualRepo::setTopChargingIcon,
             )
-            AnimatedPreferenceGroup(visible = visual.batteryTopChargingIconEnabled) {
+            AnimatedPreferenceGroup(visible = visual.showTopChargingIcon) {
                 val chargingIconUiScale =
-                    batteryTopChargingIconUiScale(
-                        visual.batteryTopChargingIconScale,
+                    topChargingIconUiScale(
+                        visual.topChargingIconScale,
                     )
                 SliderPreference(
                     value = chargingIconUiScale,
-                    onValueChange = visualRepo::setBatteryTopChargingIconScale,
+                    onValueChange = visualRepo::setTopChargingIconScale,
                     title = stringResource(R.string.battery_top_charging_icon_size),
                     valueText =
                         stringResource(
@@ -349,7 +349,7 @@ internal fun FeaturesScreen(
                     showKeyPoints = true,
                     keyPoints =
                         listOf(
-                            batteryTopChargingIconUiScaleDefault(
+                            topChargingIconUiScaleDefault(
                                 visual.layout,
                             ),
                         ),
@@ -359,10 +359,10 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
-                    checked = visual.batteryTopChargingIconFollowsBatteryColor,
+                    checked = visual.topChargingIconFollowsBatteryColor,
                     enabled = featureCfg.enabled,
                     onCheckedChange =
-                        visualRepo::setBatteryTopChargingIconFollowsBatteryColor,
+                        visualRepo::setTopChargingIconFollowsBatteryColor,
                 )
             }
 
@@ -442,12 +442,12 @@ internal fun FeaturesScreen(
             },
         )
         val topInfoVerticalOffsetUi =
-            batteryTopVerticalOffsetUi(
-                visual.batteryTopVerticalOffset,
+            topOffsetYUi(
+                visual.topOffsetY,
             )
         SliderPreference(
             value = topInfoVerticalOffsetUi,
-            onValueChange = visualRepo::setBatteryTopVerticalOffset,
+            onValueChange = visualRepo::setTopOffsetY,
             title = stringResource(R.string.top_info_vertical_offset),
             valueText =
                 stringResource(

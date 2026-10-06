@@ -155,12 +155,12 @@ class VisualCfgTest {
     fun previousPhysicalPlusThreeIsTheNewUserFacingZero() {
         assertEquals(
             0f,
-            batteryTopVerticalOffsetUi(3f),
+            topOffsetYUi(3f),
             0.0001f,
         )
         assertEquals(
             3f,
-            batteryTopVerticalOffsetRaw(0f),
+            topOffsetYRaw(0f),
             0.0001f,
         )
     }
@@ -171,12 +171,12 @@ class VisualCfgTest {
         assertEquals(10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MAX, 0.0001f)
         assertEquals(
             -7f,
-            batteryTopVerticalOffsetRaw(-10f),
+            topOffsetYRaw(-10f),
             0.0001f,
         )
         assertEquals(
             13f,
-            batteryTopVerticalOffsetRaw(10f),
+            topOffsetYRaw(10f),
             0.0001f,
         )
     }
@@ -185,12 +185,12 @@ class VisualCfgTest {
     fun offsetMappingClampsOnlyAtVisibleSliderEnds() {
         assertEquals(
             -10f,
-            batteryTopVerticalOffsetUi(-30f),
+            topOffsetYUi(-30f),
             0.0001f,
         )
         assertEquals(
             10f,
-            batteryTopVerticalOffsetUi(30f),
+            topOffsetYUi(30f),
             0.0001f,
         )
     }
@@ -199,15 +199,15 @@ class VisualCfgTest {
     fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
         val high =
             VisualCfg(
-                batteryTopVerticalOffset = 30f,
+                topOffsetY = 30f,
             ).normalized()
         val low =
             VisualCfg(
-                batteryTopVerticalOffset = -30f,
+                topOffsetY = -30f,
             ).normalized()
 
-        assertEquals(13f, high.batteryTopVerticalOffset, 0.0001f)
-        assertEquals(-7f, low.batteryTopVerticalOffset, 0.0001f)
+        assertEquals(13f, high.topOffsetY, 0.0001f)
+        assertEquals(-7f, low.topOffsetY, 0.0001f)
     }
 
 
@@ -341,9 +341,9 @@ class VisualCfgTest {
         val settings = VisualCfg()
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.layout)
-        assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
-        assertEquals(true, settings.batteryTopChargingIconEnabled)
-        assertEquals(true, settings.batteryTopChargingIconFollowsBatteryColor)
+        assertEquals(true, settings.topTextFollowsBatteryColor)
+        assertEquals(true, settings.showTopChargingIcon)
+        assertEquals(true, settings.topChargingIconFollowsBatteryColor)
     }
 
     @Test
@@ -363,25 +363,25 @@ class VisualCfgTest {
     fun batteryCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.4f,
-            batteryTopTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
+            topTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
+            topChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
             1.4f,
-            batteryTopTextUiScale(
-                batteryTopTextScaleDefault(ContentLayout.BATTERY_CENTER),
+            topTextUiScale(
+                topTextScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScale(
-                batteryTopChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
+            topChargingIconUiScale(
+                topChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
@@ -402,12 +402,12 @@ class VisualCfgTest {
 
         assertEquals(
             1.4f,
-            batteryTopTextUiScale(settings.batteryTopTextScale),
+            topTextUiScale(settings.topTextScale),
             0.0001f,
         )
         assertEquals(
             1.2f,
-            batteryTopChargingIconUiScale(settings.batteryTopChargingIconScale),
+            topChargingIconUiScale(settings.topChargingIconScale),
             0.0001f,
         )
         assertEquals(0.8f, settings.mobileTypeScale, 0.0001f)
@@ -417,12 +417,12 @@ class VisualCfgTest {
     fun networkCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
             1.2f,
-            batteryTopTextUiScaleDefault(ContentLayout.NETWORK_CENTER),
+            topTextUiScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
             1f,
-            batteryTopChargingIconUiScaleDefault(ContentLayout.NETWORK_CENTER),
+            topChargingIconUiScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
         assertEquals(
@@ -441,22 +441,22 @@ class VisualCfgTest {
 
         assertEquals(
             0.4f,
-            batteryTopTextUiScale(0f),
+            topTextUiScale(0f),
             0.0001f,
         )
         assertEquals(
             1.6f,
-            batteryTopTextUiScale(Float.MAX_VALUE),
+            topTextUiScale(Float.MAX_VALUE),
             0.0001f,
         )
         assertEquals(
             0.4f,
-            batteryTopChargingIconUiScale(0f),
+            topChargingIconUiScale(0f),
             0.0001f,
         )
         assertEquals(
             1.6f,
-            batteryTopChargingIconUiScale(Float.MAX_VALUE),
+            topChargingIconUiScale(Float.MAX_VALUE),
             0.0001f,
         )
     }
