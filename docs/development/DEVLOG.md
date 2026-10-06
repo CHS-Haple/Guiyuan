@@ -5055,3 +5055,24 @@ The diagnostic session otherwise retained healthy runtime ownership and mobile p
 - Build 744 remains the accepted runtime baseline.
 - The recent Keyguard / Control Center performance optimization line is closed. Reopen it only if new reproducible device evidence identifies a concrete blocker or bounded root cause.
 
+## 2026-10-06 — Build 746: prepare Guiyuan 0.2.1 stable promotion
+
+**Type:** version / stable-promotion metadata
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Branch:** `dev`
+
+### Scope
+
+The maintainer explicitly authorized promotion of the accepted current development state to `main` as Guiyuan 0.2.1.
+
+Build 746 changes version/release metadata only. Its runtime code is the accepted Build 744 integration; rejected Build 745 remains closed and unmerged.
+
+### Release boundary
+
+- bump external version from 0.2.0 to 0.2.1;
+- advance the internal Build identity to 746 so the rejected 745 Canary identity is never reused;
+- add the dated 0.2.1 CHANGELOG section for the net accepted changes since 0.2.0;
+- keep Build 744 device evidence applicable because no APK/runtime behavior changes are introduced by this checkpoint;
+- require the normal dev-to-main Full stable-promotion validation before merge.
+
