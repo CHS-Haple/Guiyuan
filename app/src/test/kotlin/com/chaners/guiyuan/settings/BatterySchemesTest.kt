@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class BatterySchemeLibraryTest {
+class BatterySchemesTest {
     @Test
     fun builtInsMatchPinnedHyperOs() {
         assertEquals(
