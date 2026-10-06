@@ -25,7 +25,7 @@ import java.util.WeakHashMap
 internal object NativeParticipantUi {
     const val SLOT = "combined_status"
     private const val ZERO_SLOT_WIDTH = 0
-    private const val MAX_NATIVE_VISIBLE_STATE_PROBE = 8
+    private const val MAX_VISIBILITY_PROBE = 8
 
     private const val CONTROLLER_IMPL =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
@@ -99,7 +99,7 @@ internal object NativeParticipantUi {
     private var modelReadyLogged = false
     private var unlockedGeometryLogged = false
     private var visualBoundsLogged = false
-    private var slotTranslationCorrectionLogged = false
+    private var slotCorrectionLogged = false
     private var featureEnabled = false
     private var registryRestored = false
     private var injected = false
@@ -386,13 +386,13 @@ internal object NativeParticipantUi {
                             layoutTranslationXField.setFloat(state, desired)
 
                             if (
-                                !slotTranslationCorrectionLogged &&
+                                !slotCorrectionLogged &&
                                 (
                                     kotlin.math.abs(previousTranslation - desired) >= 0.5f ||
                                         kotlin.math.abs(previousLayoutTranslation - desired) >= 0.5f
                                 )
                             ) {
-                                slotTranslationCorrectionLogged = true
+                                slotCorrectionLogged = true
                                 eventSink?.invoke(
                                     "nativeCombinedParticipant slotTranslation " +
                                         "authority=native-end-side-slot-boundary " +
@@ -649,7 +649,7 @@ internal object NativeParticipantUi {
         modelReadyLogged = false
         unlockedGeometryLogged = false
         visualBoundsLogged = false
-        slotTranslationCorrectionLogged = false
+        slotCorrectionLogged = false
         featureEnabled = false
         eventSink = null
         return true
@@ -904,7 +904,7 @@ internal object NativeParticipantUi {
             root.layoutParams
                 ?: return AttachResult.Failure("native-root-layout-params-missing")
         val targetShellWidth =
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = nativeBatteryLayoutHidden,
                 visualWidth = activeSlotWidth,
             ) ?: return AttachResult.Failure("native-root-occupancy-width-invalid")
@@ -1226,7 +1226,7 @@ internal object NativeParticipantUi {
         handoffPending = true
         try {
             val removeFlag =
-                resolveNativeFeatureRemoveFlag(
+                resolveRemoveFlag(
                     featureEnabled = true,
                     handoffValidated = handoffValidated,
                 ) ?: return false
@@ -1344,7 +1344,7 @@ internal object NativeParticipantUi {
             }
 
         val resolved =
-            resolveNativeContentVisibility(
+            resolveContentVisibility(
                 state = state,
                 iconState = nativeStateIcon,
                 dotState = nativeStateDot,
@@ -1390,7 +1390,7 @@ internal object NativeParticipantUi {
         }
     }
 
-    internal fun resolveNativeContentVisibility(
+    internal fun resolveContentVisibility(
         state: Int,
         iconState: Int?,
         dotState: Int?,
@@ -1446,7 +1446,7 @@ internal object NativeParticipantUi {
         var dot: Int? = null
         var hidden: Int? = null
 
-        for (candidate in 0..MAX_NATIVE_VISIBLE_STATE_PROBE) {
+        for (candidate in 0..MAX_VISIBILITY_PROBE) {
             when (stateName(candidate)?.trim()?.uppercase()) {
                 "ICON" -> icon = candidate
                 "DOT" -> dot = candidate
@@ -1565,7 +1565,7 @@ internal object NativeParticipantUi {
             }
 
             val nativeRemoveFlag =
-                resolveNativeFeatureRemoveFlag(
+                resolveRemoveFlag(
                     featureEnabled = false,
                     handoffValidated = handoffValidated,
                 )
@@ -1935,7 +1935,7 @@ internal object NativeParticipantUi {
         renderRight: Int,
     ): Boolean =
         rootMeasuredWidth ==
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = nativeBatteryHidden,
                 visualWidth = expectedVisualWidth,
             ) &&
@@ -1964,7 +1964,7 @@ internal object NativeParticipantUi {
         renderRight: Int,
     ): Boolean =
         rootLayoutWidth ==
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = nativeBatteryHidden,
                 visualWidth = expectedVisualWidth,
             ) &&
@@ -2032,7 +2032,7 @@ internal object NativeParticipantUi {
                 ?.takeIf { width -> width > 0 }
                 ?: activeSlotWidth
         val targetWidth =
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = hidden,
                 visualWidth = visualWidth,
             ) ?: return false
@@ -2056,7 +2056,7 @@ internal object NativeParticipantUi {
         return root.layoutParams?.width == targetWidth
     }
 
-    internal fun resolveNativeSlotOccupancyWidth(
+    internal fun resolveSlotWidth(
         nativeBatteryHidden: Boolean,
         visualWidth: Int,
     ): Int? =
@@ -2077,7 +2077,7 @@ internal object NativeParticipantUi {
         nativeBatteryHidden: Boolean = false,
     ): Int? {
         val occupancyWidth =
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = nativeBatteryHidden,
                 visualWidth = visualWidth,
             ) ?: return null
@@ -2136,7 +2136,7 @@ internal object NativeParticipantUi {
             root.layout(left, top, right, bottom)
         }
         val expectedOccupancyWidth =
-            resolveNativeSlotOccupancyWidth(
+            resolveSlotWidth(
                 nativeBatteryHidden = nativeBatteryLayoutHidden,
                 visualWidth = resolvedWidth,
             ) ?: return false
@@ -2188,7 +2188,7 @@ internal object NativeParticipantUi {
         }.getOrNull()
     }
 
-    internal fun resolveNativeFeatureRemoveFlag(
+    internal fun resolveRemoveFlag(
         featureEnabled: Boolean,
         handoffValidated: Boolean,
     ): Boolean? =
@@ -2298,7 +2298,7 @@ internal object NativeParticipantUi {
         modelReadyLogged = false
         unlockedGeometryLogged = false
         visualBoundsLogged = false
-        slotTranslationCorrectionLogged = false
+        slotCorrectionLogged = false
         renderController = null
         injected = false
         registryRestored = false

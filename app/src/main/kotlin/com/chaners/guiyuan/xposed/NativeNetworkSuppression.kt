@@ -34,7 +34,7 @@ internal object NativeNetworkSuppression {
         "combinedstatus.nativeNetworkSuppression.mobileVisibility"
     private const val HOME_ICON_ADDED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
-    private const val HOME_MANAGER_REGISTERED_HOOK_ID =
+    private const val HOME_MANAGER_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
     private const val AIRPLANE_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
@@ -68,7 +68,7 @@ internal object NativeNetworkSuppression {
     // cache discovery by concrete class and keep the per-layout path to invoke
     // + direct Field.get only.
     private val transitionStateAccessorCache = ConcurrentHashMap<Class<*>, Method>()
-    private val transitionStateAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
+    private val transitionStateMissing = ConcurrentHashMap.newKeySet<Class<*>>()
     private val transitionStateFieldCache =
         ConcurrentHashMap<Class<*>, TransitionStateFields>()
 
@@ -227,7 +227,7 @@ internal object NativeNetworkSuppression {
             created +=
                 module
                     .hook(addIconGroup)
-                    .setId(HOME_MANAGER_REGISTERED_HOOK_ID)
+                    .setId(HOME_MANAGER_HOOK_ID)
                     .intercept(homeManagerRegisteredHooker())
             created +=
                 module
@@ -298,7 +298,7 @@ internal object NativeNetworkSuppression {
             activeGroup?.get() !== group ||
             !observationOnly
         ) {
-            restoreMobileVisualMasksLocked()
+            restoreMobileMasksLocked()
             clearSessionLocked(
                 requestLayout = false,
                 restoreVisualMasks = false,
@@ -313,7 +313,7 @@ internal object NativeNetworkSuppression {
         airplaneSuppressionEnabled = false
         noSimSuppressionEnabled = false
         suppressedBindings = emptyArray()
-        refreshStatusPresentationLocked("observerAttach")
+        refreshStatusUiLocked("observerAttach")
 
         eventSink?.invoke(
             "nativeNetworkSuppression observerOnly source=" + source + " " +
@@ -333,7 +333,7 @@ internal object NativeNetworkSuppression {
     @Synchronized
     fun refreshObservation(source: String) {
         if (observationOnly && activeGroup?.get() != null) {
-            refreshStatusPresentationLocked(source)
+            refreshStatusUiLocked(source)
         }
     }
 
@@ -365,7 +365,7 @@ internal object NativeNetworkSuppression {
         wifiSuppressionEnabled = suppressWifi
         mobileSuppressionEnabled = suppressMobile
         airplaneSuppressionEnabled = true
-        refreshStatusPresentationLocked("handoff")
+        refreshStatusUiLocked("handoff")
 
         val snapshot = refreshBindingsLocked("handoff")
         if (snapshot.failureReason != null) {
@@ -394,7 +394,7 @@ internal object NativeNetworkSuppression {
             wifiSuppressionEnabled != suppressWifi ||
                 mobileSuppressionEnabled != suppressMobile
         if (activeManager != null && activeGroup?.get() != null) {
-            refreshStatusPresentationLocked(source)
+            refreshStatusUiLocked(source)
         }
         if (!policyChanged && !forceRevalidate) {
             return null
@@ -427,7 +427,7 @@ internal object NativeNetworkSuppression {
         pendingObservationSource = null
         val group = activeGroup?.get()
         val previousCount = suppressedBindings.count { reference -> reference.get() != null }
-        val restoredVisualMasks = restoreMobileVisualMasksLocked()
+        val restoredVisualMasks = restoreMobileMasksLocked()
         clearSessionLocked(
             requestLayout = false,
             restoreVisualMasks = false,
@@ -492,7 +492,7 @@ internal object NativeNetworkSuppression {
                 val nativeVisible = chain.proceed() as? Boolean ?: false
                 synchronized(this) {
                     if (homeGroup === activeGroup?.get()) {
-                        refreshStatusPresentationLocked(
+                        refreshStatusUiLocked(
                             source = "visibility:no_sim",
                             observedNoSimView = view,
                             observedNoSimVisible = nativeVisible,
@@ -580,7 +580,7 @@ internal object NativeNetworkSuppression {
             ) {
                 synchronized(this) {
                     if (manager === activeManager) {
-                        refreshStatusPresentationLocked("iconAdded:" + slot)
+                        refreshStatusUiLocked("iconAdded:" + slot)
                         if (!observationOnly) {
                             val snapshot = refreshBindingsLocked("iconAdded:" + slot)
                             eventSink?.invoke(snapshot.logLine)
@@ -605,7 +605,7 @@ internal object NativeNetworkSuppression {
         }
 
     @Synchronized
-    fun currentTransitionTargetGeometry(): TransitionTargetGeometry? {
+    fun transitionTarget(): TransitionTargetGeometry? {
         val group = activeGroup?.get() ?: return null
         val children =
             (0 until group.childCount)
@@ -661,7 +661,7 @@ internal object NativeNetworkSuppression {
             ?: candidates.firstOrNull()
 
     @Synchronized
-    fun currentTransitionStateSnapshot(): TransitionStateSnapshot? {
+    fun transitionState(): TransitionStateSnapshot? {
         val group = activeGroup?.get() ?: return null
         val animatorController = readObjectField(group, "animatorController")
         val notificationPanelExpand =
@@ -735,7 +735,7 @@ internal object NativeNetworkSuppression {
         val accessor =
             transitionStateAccessorCache[groupClass]
                 ?: run {
-                    if (groupClass in transitionStateAccessorMissing) {
+                    if (groupClass in transitionStateMissing) {
                         return null
                     }
                     val companionClass =
@@ -754,7 +754,7 @@ internal object NativeNetworkSuppression {
                                     method.parameterTypes.contentEquals(arrayOf(View::class.java))
                             }
                     if (resolved == null) {
-                        transitionStateAccessorMissing += groupClass
+                        transitionStateMissing += groupClass
                         return null
                     }
                     resolved.isAccessible = true
@@ -923,7 +923,7 @@ internal object NativeNetworkSuppression {
                 ?.takeIf(::isTintAuthorityCandidate)
                 ?: group?.let(::resolveTintAnchorView)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            resolveLocalManagerTint(
                 manager = activeManager,
                 anchorView = resolvedAnchor,
             )
@@ -937,7 +937,7 @@ internal object NativeNetworkSuppression {
         )
     }
 
-    private fun refreshStatusPresentationLocked(
+    private fun refreshStatusUiLocked(
         source: String,
         observedNoSimView: View? = null,
         observedNoSimVisible: Boolean? = null,
@@ -962,7 +962,7 @@ internal object NativeNetworkSuppression {
         val peerTint = resolveAppliedStatusIconTint(group)
         val tintAnchor = resolveTintAnchorView(group)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            resolveLocalManagerTint(
                 manager = activeManager,
                 anchorView = tintAnchor,
             )
@@ -1080,7 +1080,7 @@ internal object NativeNetworkSuppression {
         )
     }
 
-    private fun resolveLocationAwareManagerTint(
+    private fun resolveLocalManagerTint(
         manager: Any?,
         anchorView: View?,
     ): Int? {
@@ -1330,7 +1330,7 @@ internal object NativeNetworkSuppression {
                 .toTypedArray()
 
         val visualMaskResult =
-            refreshMobileVisualMasksLocked(
+            refreshMobileMasksLocked(
                 targetViews = targetViews,
                 source = source,
             )
@@ -1357,7 +1357,7 @@ internal object NativeNetworkSuppression {
         )
     }
 
-    private fun refreshMobileVisualMasksLocked(
+    private fun refreshMobileMasksLocked(
         targetViews: List<Pair<String, View>>,
         source: String,
     ): VisualMaskSnapshot {
@@ -1539,7 +1539,7 @@ internal object NativeNetworkSuppression {
         return null
     }
 
-    private fun restoreMobileVisualMasksLocked(): Int {
+    private fun restoreMobileMasksLocked(): Int {
         val states = mobileVisualMasks
         mobileVisualMasks = emptyArray()
         var restored = 0
@@ -1652,7 +1652,7 @@ internal object NativeNetworkSuppression {
     ) {
         val group = activeGroup?.get()
         if (restoreVisualMasks) {
-            restoreMobileVisualMasksLocked()
+            restoreMobileMasksLocked()
         }
         activeManager = null
         activeGroup = null

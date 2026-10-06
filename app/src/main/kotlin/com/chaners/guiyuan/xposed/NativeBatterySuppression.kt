@@ -206,7 +206,7 @@ internal object NativeBatterySuppression {
                 preserveExistingNativeAlpha = sameSession,
             )
         if (mask.failureReason != null) {
-            restorePresentationMasksLocked()
+            restoreMasksLocked()
             clearOwnedStateLocked()
             return StateResult.Failure(mask.failureReason)
         }
@@ -232,7 +232,7 @@ internal object NativeBatterySuppression {
             container?.let(::readNativeHideLocked)
                 ?: latestNativeHideRequest
 
-        val restoredChildren = restorePresentationMasksLocked()
+        val restoredChildren = restoreMasksLocked()
         val wasActive = suppressionActive
         clearOwnedStateLocked()
         val result =
@@ -343,7 +343,7 @@ internal object NativeBatterySuppression {
 
     @Synchronized
     private fun restorePreviousLocked(): Boolean {
-        restorePresentationMasksLocked()
+        restoreMasksLocked()
         clearOwnedStateLocked()
         return true
     }
@@ -482,7 +482,7 @@ internal object NativeBatterySuppression {
         )
     }
 
-    private fun restorePresentationMasksLocked(): Int {
+    private fun restoreMasksLocked(): Int {
         val states = presentationMasks
         presentationMasks = emptyArray()
         var restored = 0

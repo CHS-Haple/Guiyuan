@@ -57,7 +57,7 @@ internal object ParticipantAccess {
         val group = manager.readField("mGroup") as? ViewGroup
             ?: return ResolveResult.Failure("status-icon-group-missing")
         val controllerResolution =
-            resolveStatusBarIconController(
+            resolveIconController(
                 classLoader = classLoader,
                 manager = manager,
             )
@@ -526,7 +526,7 @@ internal object ParticipantAccess {
         }.getOrNull()
     }
 
-    private fun resolveStatusBarIconController(
+    private fun resolveIconController(
         classLoader: ClassLoader,
         manager: Any,
     ): ControllerResolution {

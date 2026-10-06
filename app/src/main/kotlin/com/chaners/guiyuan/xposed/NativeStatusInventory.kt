@@ -4,7 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 
 internal object NativeStatusInventory {
-    const val MOBILE_NETWORK_VIEW_CLASS_NAME =
+    const val MOBILE_NETWORK_VIEW_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
     const val WIFI_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.view.ModernStatusBarWifiView"
@@ -245,7 +245,7 @@ internal object NativeStatusInventory {
     ): String? {
         val className = view.javaClass.name
         return when (className) {
-            MOBILE_NETWORK_VIEW_CLASS_NAME -> "mobileNetwork"
+            MOBILE_NETWORK_VIEW_CLASS -> "mobileNetwork"
             WIFI_VIEW_CLASS_NAME -> "wifi"
             BATTERY_VIEW_CLASS_NAME -> "battery"
             MIUI_STATUS_CONTAINER_CLASS -> "miuiStatusIcons"

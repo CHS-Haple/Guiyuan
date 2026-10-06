@@ -78,9 +78,9 @@ internal object NativePresentationResolver {
             }
 
         val networkTypeSubscriptionId =
-            selectNetworkTypeSubscriptionId(
+            selectNetworkTypeSubId(
                 effectiveDataSubscriptionId = effectiveDataSubscriptionId,
-                presentationRootSubscriptionId = target?.subscriptionId,
+                rootSubId = target?.subscriptionId,
                 boundSubscriptionIds =
                     activeBindings.map { binding -> binding.subscriptionId },
             )
@@ -110,21 +110,21 @@ internal object NativePresentationResolver {
                 } else {
                     "pipeline-semantic-fallback"
                 },
-            presentationRootSubscriptionId = target?.subscriptionId,
+            rootSubId = target?.subscriptionId,
             effectiveDataSubscriptionId = effectiveDataSubscriptionId,
             networkTypeSubscriptionId = networkTypeSubscriptionId,
             networkType = networkType,
         )
     }
 
-    internal fun selectNetworkTypeSubscriptionId(
+    internal fun selectNetworkTypeSubId(
         effectiveDataSubscriptionId: Int?,
-        presentationRootSubscriptionId: Int?,
+        rootSubId: Int?,
         boundSubscriptionIds: List<Int>,
     ): Int? =
         effectiveDataSubscriptionId
             ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
-            ?: presentationRootSubscriptionId
+            ?: rootSubId
                 ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
             ?: boundSubscriptionIds.firstOrNull()
 
@@ -296,7 +296,7 @@ internal object NativePresentationResolver {
         val visibleRoots: Int,
         val activeSubscriptionIds: List<Int>,
         val activeSubscriptionAuthority: String = "pipeline-semantic-fallback",
-        val presentationRootSubscriptionId: Int?,
+        val rootSubId: Int?,
         val effectiveDataSubscriptionId: Int?,
         val networkTypeSubscriptionId: Int?,
         val networkType: NetworkType?,
@@ -325,7 +325,7 @@ internal object NativePresentationResolver {
                     " visibleRoots=" + visibleRoots +
                     " activeSubAuthority=" + activeSubscriptionAuthority +
                     " activeSubIds=" + activeSubscriptionIds.joinToString(",", prefix = "[", postfix = "]") +
-                    " presentationRootSubId=" + (presentationRootSubscriptionId ?: -1) +
+                    " presentationRootSubId=" + (rootSubId ?: -1) +
                     " effectiveDataSubId=" + (effectiveDataSubscriptionId ?: -1) +
                     " networkTypeSubId=" + (networkTypeSubscriptionId ?: -1) +
                     " networkType=" + (networkType?.label ?: "unknown") +

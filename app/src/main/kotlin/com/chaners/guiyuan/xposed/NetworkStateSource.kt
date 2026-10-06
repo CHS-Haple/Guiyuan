@@ -42,7 +42,7 @@ internal object NetworkStateSource {
         "com.android.systemui.statusbar.pipeline.mobile.ui.MobileViewLogger"
     const val MOBILE_SIGNAL_EMITTER_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$4\$2"
-    const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
+    const val MOBILE_SIGNAL_EMIT_METHOD = "emit"
 
     const val HOOK_COUNT = 4
 
@@ -342,7 +342,7 @@ internal object NetworkStateSource {
                 atStage("mobile.resolve.signalEmitMethod") {
                     resolveEmitterMethod(
                         emitterClass = mobileSignalEmitterClass,
-                        methodName = MOBILE_SIGNAL_EMIT_METHOD_NAME,
+                        methodName = MOBILE_SIGNAL_EMIT_METHOD,
                     )
                 }
             val mobileImageField =
@@ -876,7 +876,7 @@ internal object NetworkStateSource {
                     lastWifiTaggedResources.put(image, taggedResId)
                 }
             val hotspotAppliedFallback =
-                shouldUseAppliedHotspotFallback(
+                useAppliedHotspotFallback(
                     semanticState = semantic.state,
                     taggedResId = taggedResId,
                     previousTaggedResId = previousTaggedResId,
@@ -937,7 +937,7 @@ internal object NetworkStateSource {
         result
     }
 
-    internal fun shouldUseAppliedHotspotFallback(
+    internal fun useAppliedHotspotFallback(
         semanticState: StatusStateStore.WifiState?,
         taggedResId: Int?,
         previousTaggedResId: Int?,

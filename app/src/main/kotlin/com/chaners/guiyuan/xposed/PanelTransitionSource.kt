@@ -29,7 +29,7 @@ internal object PanelTransitionSource {
         "com.android.systemui.controlcenter.shade.CombinedHeaderController"
     private const val CC_FAKE_STATUS_BAR_CLASS =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
-    private const val CC_FAKE_STATUS_BAR_ICONS_CLASS =
+    private const val CC_FAKE_ICONS_CLASS =
         "com.android.systemui.controlcenter.header.CcFakeStatusBarIcons"
     private const val DAGGER_LAZY_CLASS = "dagger.Lazy"
     private const val STATUS_BAR_ANCHOR_CLASS =
@@ -201,7 +201,7 @@ internal object PanelTransitionSource {
                                                     root.isAttachedToWindow +
                                                     " readOnly=true nativeGeometryWrites=0",
                                             )
-                                            describeFakeIslandContractOnce(root)?.let(onEvent)
+                                            describeIslandContractOnce(root)?.let(onEvent)
                                         },
                                     )
                                 }
@@ -228,7 +228,7 @@ internal object PanelTransitionSource {
                                 )
                             val transitionEndpoints =
                                 controlAnchorContract
-                                    ?.transitionEndpointsFromCallback(chain.thisObject)
+                                    ?.endpointsFromCallback(chain.thisObject)
                             val batteryIslandActive =
                                 controlAnchorContract
                                     ?.batteryIslandFromCallback(chain.thisObject)
@@ -276,7 +276,7 @@ internal object PanelTransitionSource {
                                     ccAppearanceAnimated = second,
                                     ccEndpoints =
                                         controlAnchorContract
-                                            ?.transitionEndpointsFromCallback(chain.thisObject),
+                                            ?.endpointsFromCallback(chain.thisObject),
                                     ccBatteryIslandActive =
                                         controlAnchorContract
                                             ?.batteryIslandFromCallback(chain.thisObject),
@@ -310,7 +310,7 @@ internal object PanelTransitionSource {
     }
 
     @Synchronized
-    private fun describeFakeIslandContractOnce(root: ViewGroup): String? {
+    private fun describeIslandContractOnce(root: ViewGroup): String? {
         if (fakeIslandContractRootRef.get() === root) return null
         fakeIslandContractRootRef = WeakReference(root)
 
@@ -690,7 +690,7 @@ internal object PanelTransitionSource {
         private val realSystemIconsField: Field,
         private val headerControllerField: Field,
         private val lazyGetMethod: Method,
-        private val controlCenterFakeStatusBarField: Field,
+        private val ccFakeStatusBarField: Field,
         private val controlCenterStatusBarField: Field,
         private val fakeDelegateField: Field,
         private val fakeStatusBarAreaField: Field,
@@ -730,7 +730,7 @@ internal object PanelTransitionSource {
             )
         }
 
-        fun transitionEndpointsFromCallback(
+        fun endpointsFromCallback(
             callback: Any?,
         ): CcTransitionEndpoints? {
             val header = headerFromCallback(callback) ?: return null
@@ -794,7 +794,7 @@ internal object PanelTransitionSource {
         private fun fakeStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
             return runCatching {
-                controlCenterFakeStatusBarField.get(combinedHeader) as? ViewGroup
+                ccFakeStatusBarField.get(combinedHeader) as? ViewGroup
             }.getOrNull()
         }
 
@@ -875,7 +875,7 @@ internal object PanelTransitionSource {
                         )
                     val fakeStatusBarIconsClass =
                         Class.forName(
-                            CC_FAKE_STATUS_BAR_ICONS_CLASS,
+                            CC_FAKE_ICONS_CLASS,
                             false,
                             classLoader,
                         )
@@ -923,7 +923,7 @@ internal object PanelTransitionSource {
                             lazyClass.getDeclaredMethod("get").apply {
                                 isAccessible = true
                             },
-                        controlCenterFakeStatusBarField =
+                        ccFakeStatusBarField =
                             combinedHeaderClass
                                 .getDeclaredField("controlCenterFakeStatusBar")
                                 .accessible(),
