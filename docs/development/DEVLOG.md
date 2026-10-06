@@ -1,3 +1,40 @@
+## 2026-10-06 — Pre-release consistency follow-up: pinned target contract coverage
+
+**Type:** repository / compatibility contract / CI audit  
+**Runtime baseline:** Guiyuan 0.2.0 / Build 744 (`20261006-744`)  
+**Runtime behavior:** unchanged
+
+### Audit finding
+
+The repository consistency pass found two current-state drifts after #221 merged:
+
+- `CURRENT.md` still described `dev` as Build 743 and PR #221 / Build 744 as an active candidate awaiting validation/merge;
+- the pinned HyperOS profile still covered the earlier hook surface even though current runtime source also consumes exact-target Keyguard/AOD and Control Center lifecycle callbacks.
+
+Build 744 has already passed its exact-head Runtime CI, signed Work-branch Canary, focused device validation, and integrated `dev` Runtime CI #2779. The previous Keyguard + active-island performance gap is therefore no longer carried as an open blocker; any further compositing work requires new reproducible evidence.
+
+### Exact-target contract coverage
+
+The follow-up keeps the existing SystemUI artifact identity `a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d` and adds only contracts already recorded against that exact artifact in SystemUI-Reference:
+
+- `MiuiBatteryMeterView.setIsAodAnimate(boolean): void`;
+- `MiuiBatteryMeterView.toggleAodMode(boolean): void` plus `mToAod`, `mIsAodAnimate`, and `mAnimToAod`;
+- `KeyguardStatusBarViewControllerInject.animateFullAod(boolean, boolean): void`;
+- `MiuiKeyguardStatusBarView.animateIconContainer(boolean): void`;
+- `ControlCenterHeaderExpandController$controlCenterCallback$1.onExpansionChanged(float): void`;
+- `ControlCenterHeaderExpandController$controlCenterCallback$1.onAppearanceChanged(boolean, boolean): void`.
+
+`tools/verify_target_profile.py` cross-checks these profile entries against the corresponding runtime source constants, including the already-pinned Control Center visibility callback. CI can therefore fail when those class/method identities drift instead of validating an obsolete profile surface.
+
+`ControlCenterFakeStatusIcons.onAttachedToWindow()` remains a uniquely runtime-resolved seam and is intentionally **not** promoted to the static profile until the exact-artifact reference index records that method explicitly. The audit records the gap rather than fabricating static verification.
+
+### Boundary
+
+Established internal `CombinedStatus*` preference names, Hook IDs, diagnostics identities and build-property keys remain compatibility identities, not branding defects. Low-value implementation-only leftovers are not sufficient reason to create a runtime checkpoint.
+
+No Xposed/SystemUI behavior, renderer, animation, geometry, alpha/visibility writer, fail-native path, dependency version, external version, internal Build identity, or Canary artifact changes in this follow-up. Repository-selected CI is sufficient; no device gate is introduced by this audit.
+
+
 ## 2026-10-06 — pre-release-grade repository consistency audit
 
 **Type:** repository/documentation consistency maintenance
