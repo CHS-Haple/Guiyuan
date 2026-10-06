@@ -8,7 +8,7 @@ import org.junit.Test
 
 class WifiOpticalPolicyTest {
     @Test
-    fun connectedResourceKeepsItsOwnLevelReference() {
+    fun connectedKeepsLevelRef() {
         assertEquals(
             "stat_sys_wifi_signal_3",
             WifiOpticalPolicy.connectedReferenceEntry(
@@ -18,7 +18,7 @@ class WifiOpticalPolicyTest {
     }
 
     @Test
-    fun unavailableResourceMapsToConnectedPeerAtSameLevel() {
+    fun unavailableMapsToConnectedPeer() {
         assertEquals(
             "stat_sys_wifi_signal_2",
             WifiOpticalPolicy.connectedReferenceEntry(
@@ -28,7 +28,7 @@ class WifiOpticalPolicyTest {
     }
 
     @Test
-    fun hotspotResourceMapsToConnectedPeerAtSameLevel() {
+    fun hotspotMapsToConnectedPeer() {
         assertEquals(
             "stat_sys_wifi_signal_1",
             WifiOpticalPolicy.connectedReferenceEntry(
@@ -38,7 +38,7 @@ class WifiOpticalPolicyTest {
     }
 
     @Test
-    fun qualifiedUnavailableResourceMapsToConnectedPeer() {
+    fun qualifiedUnavailableMapsToPeer() {
         assertEquals(
             "stat_sys_wifi_signal_3",
             WifiOpticalPolicy.connectedReferenceEntry(
@@ -48,7 +48,7 @@ class WifiOpticalPolicyTest {
     }
 
     @Test
-    fun tintLikeConnectedVariantMapsBackToBaseReference() {
+    fun tintVariantMapsToBaseRef() {
         assertEquals(
             "stat_sys_wifi_signal_2",
             WifiOpticalPolicy.connectedReferenceEntry(

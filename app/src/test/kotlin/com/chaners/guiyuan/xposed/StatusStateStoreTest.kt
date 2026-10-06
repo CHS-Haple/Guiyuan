@@ -8,7 +8,7 @@ import org.junit.Test
 
 class StatusStateStoreTest {
     @Test
-    fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
+    fun airplaneExitResetsMobileRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateMobile(
@@ -30,7 +30,7 @@ class StatusStateStoreTest {
     }
 
     @Test
-    fun unavailableSignalDoesNotFinishAirplaneRecovery() {
+    fun unavailableSignalKeepsRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)
@@ -55,7 +55,7 @@ class StatusStateStoreTest {
     }
 
     @Test
-    fun batterySnapshotRetainsNativeSemanticStateAndColor() {
+    fun batterySnapshotKeepsNativeState() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateBattery(
             StatusStateStore.BatteryState(
@@ -77,7 +77,7 @@ class StatusStateStoreTest {
     }
 
     @Test
-    fun freshSignalAndMobileTypeFinishAirplaneRecovery() {
+    fun freshMobileStateEndsRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)

@@ -17,7 +17,7 @@ class VisualIntensityTest {
     }
 
     @Test
-    fun semanticDimmingMultipliesSystemTintInsteadOfReplacingIt() {
+    fun semanticDimmingMultipliesTint() {
         assertEquals(
             35,
             VisualIntensity.resolveCanvasAlpha(
@@ -29,7 +29,7 @@ class VisualIntensityTest {
     }
 
     @Test
-    fun transitionOpacityIsIndependentFromSemanticIntensity() {
+    fun transitionOpacityIsIndependent() {
         assertEquals(
             95,
             VisualIntensity.resolveCanvasAlpha(

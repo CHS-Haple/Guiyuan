@@ -21,7 +21,7 @@ class TintAuthorityTest {
     }
 
     @Test
-    fun batteryAppliedTintIsFailNativeFallbackWhenLiveStatusTintIsUnavailable() {
+    fun batteryTintIsFailNativeFallback() {
         val resolved =
             TintAuthority.resolveBatteryEvent(
                 batteryState =
@@ -37,7 +37,7 @@ class TintAuthorityTest {
 
 
     @Test
-    fun batteryEventDoesNotReuseEmbeddedStaleStatusTintWhenLiveAuthorityIsMissing() {
+    fun batteryEventRejectsStaleStatusTint() {
         val resolved =
             TintAuthority.resolveBatteryEvent(
                 batteryState =
@@ -70,7 +70,7 @@ class TintAuthorityTest {
     }
 
     @Test
-    fun statusIconEventCanSeedTintWithoutBatteryState() {
+    fun statusIconCanSeedTint() {
         val resolved =
             TintAuthority.resolveStatusIconEvent(
                 previous = null,
@@ -82,7 +82,7 @@ class TintAuthorityTest {
     }
 
     @Test
-    fun hotReloadTransferIsRebasedToNewGenerationLiveStatusAuthority() {
+    fun reloadTintRebasesToLiveAuthority() {
         val transferred =
             TintState(
                 appliedTint = 0xbf000000.toInt(),
@@ -100,7 +100,7 @@ class TintAuthorityTest {
     }
 
     @Test
-    fun transferredStatusTintRemainsFallbackWhenLiveAuthorityIsUnavailable() {
+    fun transferredTintIsFallback() {
         val transferred =
             TintState(
                 appliedTint = 0xbf000000.toInt(),

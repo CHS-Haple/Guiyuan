@@ -7,7 +7,7 @@ import org.junit.Test
 
 class StatusSlotGeometryTest {
     @Test
-    fun capturedStableWidthWinsWhenChargingLayoutHasAlreadyCollapsed() {
+    fun stableWidthWinsAfterCollapse() {
         val resolvedWidth =
             StatusSlotGeometry.childWidth(
                 capturedWidth = 478,
@@ -32,7 +32,7 @@ class StatusSlotGeometryTest {
     }
 
     @Test
-    fun liveWidthRemainsFallbackWhenNoStableCaptureExists() {
+    fun liveWidthFallbackWithoutCapture() {
         assertEquals(
             448,
             StatusSlotGeometry.childWidth(
@@ -44,7 +44,7 @@ class StatusSlotGeometryTest {
     }
 
     @Test
-    fun laidOutStatusIconWidthWinsOverTransientChargingMeasurement() {
+    fun laidOutWidthBeatsChargingMeasure() {
         val stableWidth =
             StatusSlotGeometry.resolveStableChildWidth(
                 layoutWidth = 478,
@@ -85,7 +85,7 @@ class StatusSlotGeometryTest {
     }
 
     @Test
-    fun stableHomeMeasurementResolvesNativeBatteryOccupancy() {
+    fun stableHomeResolvesBatterySlot() {
         val resolved =
             StatusSlotGeometry.resolve(
                 containerWidth = 587,
@@ -102,7 +102,7 @@ class StatusSlotGeometryTest {
     }
 
     @Test
-    fun transientBatteryViewExpansionDoesNotParticipateInSlotWidth() {
+    fun transientBatteryExpansionIgnored() {
         val resolved =
             StatusSlotGeometry.resolve(
                 containerWidth = 587,
@@ -117,7 +117,7 @@ class StatusSlotGeometryTest {
     }
 
     @Test
-    fun visiblePrivacyOccupancyIsExcludedFromBatterySlot() {
+    fun privacyOccupancyExcluded() {
         val resolved =
             StatusSlotGeometry.resolve(
                 containerWidth = 587,

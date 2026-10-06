@@ -55,7 +55,7 @@ class SignalParserTest {
     }
 
     @Test
-    fun hotspotWifiFamilyPreservesNativeSignalLevelAndInternetVariant() {
+    fun hotspotWifiKeepsNativeSemantics() {
         assertEquals(
             SignalStrength.Level(2),
             SignalParser.wifi(
@@ -71,7 +71,7 @@ class SignalParserTest {
     }
 
     @Test
-    fun wifiInternetHintComesFromSystemUiResourceVariant() {
+    fun wifiInternetHintUsesSysUiVariant() {
         assertEquals(
             true,
             SignalParser.wifiInternetValidated(
@@ -115,7 +115,7 @@ class SignalParserTest {
         assertEquals(SignalStrength.Unknown, SignalParser.wifi(null))
     }
     @Test
-    fun hotspotResourceFamilyIsDistinguishedFromRegularWifi() {
+    fun hotspotFamilyDiffersFromWifi() {
         assertEquals(
             true,
             SignalParser.isHotspotWifiResource(
@@ -131,7 +131,7 @@ class SignalParserTest {
     }
 
     @Test
-    fun noInternetWifiVariantRemainsInsideNativeWifiFamily() {
+    fun noInternetVariantStaysWifi() {
         val resource =
             "com.android.systemui:drawable/stat_sys_wifi_signal_2_no_internet"
 
@@ -141,7 +141,7 @@ class SignalParserTest {
     }
 
     @Test
-    fun hotspotNoInternetVariantRetainsSignalAndInternetSemantics() {
+    fun hotspotNoInternetKeepsSemantics() {
         val resource =
             "com.android.systemui:drawable/stat_sys_hotspot_signal_3_unavailable"
 
@@ -152,7 +152,7 @@ class SignalParserTest {
     }
 
     @Test
-    fun appliedHotspotFallbackRequiresANewHotspotTag() {
+    fun hotspotFallbackNeedsNewTag() {
         val hidden = StatusStateStore.WifiState.Hidden
 
         assertEquals(

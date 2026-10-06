@@ -7,7 +7,7 @@ import org.junit.Test
 
 class VisualSnapshotTest {
     @Test
-    fun alphaWeightedCenterTracksInkMassInsteadOfEnvelopeMidpoint() {
+    fun weightedCenterTracksInkMass() {
         val center =
             VisualSnapshot.resolveAlphaWeightedCenter(
                 pixels =
@@ -27,7 +27,7 @@ class VisualSnapshotTest {
     }
 
     @Test
-    fun alphaWeightedCenterRejectsFullyTransparentInput() {
+    fun weightedCenterRejectsTransparent() {
         val center =
             VisualSnapshot.resolveAlphaWeightedCenter(
                 pixels = IntArray(4),

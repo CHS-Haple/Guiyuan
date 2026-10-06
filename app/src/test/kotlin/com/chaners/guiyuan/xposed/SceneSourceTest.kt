@@ -5,7 +5,7 @@ import org.junit.Test
 
 class SceneSourceTest {
     @Test
-    fun batteryStatusStatesRemainReadOnlyClassifications() {
+    fun batteryStatesStayReadOnly() {
         assertEquals(
             SceneSource.Surface.UNLOCKED_STATUS_BAR,
             SceneSource.classifyRawState(0),
@@ -25,7 +25,7 @@ class SceneSourceTest {
     }
 
     @Test
-    fun steadySourceAuthorityRequiresMatchingStructuralHost() {
+    fun steadySourceNeedsMatchingHost() {
         assertEquals(
             SourceScene.HOME,
             SceneSource.classifySteadySourceAncestors(
