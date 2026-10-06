@@ -28,16 +28,16 @@ internal object NativeParticipantRuntimeOwner {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
-    ): InstallResult {
+    ): String? {
         if (controllerHook != null) {
-            return InstallResult.AlreadyInstalled
+            return null
         }
 
         val controllerClass =
             runCatching {
                 Class.forName(CONTROLLER_IMPL, false, classLoader)
             }.getOrElse {
-                return InstallResult.Failure("controller-class-missing")
+                return "controller-class-missing"
             }
 
         val method =
@@ -51,7 +51,7 @@ internal object NativeParticipantRuntimeOwner {
                     candidate.parameterTypes[0].name
                 }
                 .firstOrNull()
-                ?: return InstallResult.Failure("add-icon-group-method-missing")
+                ?: return "add-icon-group-method-missing"
 
         method.isAccessible = true
         val handle =
@@ -74,21 +74,19 @@ internal object NativeParticipantRuntimeOwner {
                                     "nativeParticipantController observed " +
                                         "controller=" + controller.javaClass.name +
                                         " manager=" + manager.javaClass.name +
-                                        " source=addIconGroup geometryWrites=0",
+                                        " source=addIconGroup",
                                 )
                             }
                             result
                         },
                     )
             }.getOrElse { error ->
-                return InstallResult.Failure(
-                    "controller-observer-hook-" +
-                        (error.message ?: error.javaClass.simpleName),
-                )
+                return "controller-observer-hook-" +
+                        (error.message ?: error.javaClass.simpleName)
             }
 
         controllerHook = handle
-        return InstallResult.Installed
+        return null
     }
 
     @Synchronized
@@ -133,12 +131,12 @@ internal object NativeParticipantRuntimeOwner {
         host: Any,
         onReady: (Any) -> Unit,
         onFailure: (String) -> Unit,
-    ): ScheduleResult {
+    ): String? {
         cancelPendingLocked()
 
         val hostView =
             host as? View
-                ?: return ScheduleResult.Failure("host-not-view")
+                ?: return "host-not-view"
 
         val activation =
             PendingActivation(
@@ -149,10 +147,10 @@ internal object NativeParticipantRuntimeOwner {
         pending = activation
 
         return if (activation.start()) {
-            ScheduleResult.Scheduled
+            null
         } else {
             pending = null
-            ScheduleResult.Failure("native-controller-readiness-rejected")
+            "native-controller-readiness-rejected"
         }
     }
 
@@ -263,20 +261,4 @@ internal object NativeParticipantRuntimeOwner {
         }
     }
 
-    internal sealed interface InstallResult {
-        data object Installed : InstallResult
-        data object AlreadyInstalled : InstallResult
-
-        data class Failure(
-            val reason: String,
-        ) : InstallResult
-    }
-
-    internal sealed interface ScheduleResult {
-        data object Scheduled : ScheduleResult
-
-        data class Failure(
-            val reason: String,
-        ) : ScheduleResult
-    }
 }

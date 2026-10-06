@@ -5101,3 +5101,40 @@ Build 746 changes version/release metadata only. Its runtime code is the accepte
 - keep Build 744 device evidence applicable because no APK/runtime behavior changes are introduced by this checkpoint;
 - require the normal dev-to-main Full stable-promotion validation before merge.
 
+## 2026-10-07 — Build 746: runtime plumbing maintainability pass
+
+**Type:** behavior-neutral maintainability / runtime plumbing
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746` unchanged
+**Branch:** `refactor/runtime-plumbing`
+
+### Why this batch exists
+
+The previous cleanup reduced several long names and extracted some rules, but a second review still found concrete maintenance problems in SystemUI glue code: multiple booleans describing one lifecycle, one-line Policy wrappers around obvious expressions, duplicated sealed result hierarchies, success/failure wrappers with no useful success payload, very long plumbing names, and diagnostic fields that were hard-coded rather than observed.
+
+This batch fixes those specific problems. It is not a general rewrite and does not continue splitting files just to make them smaller.
+
+### Structural cleanup
+
+- fold the full-AOD transition window and Keyguard boundary handoff into explicit local state instead of independent Pending/Active/Ready booleans;
+- keep Home→AOD fallback flags separate where they are genuinely independent across different native callbacks;
+- remove trivial presentation policies and inline obvious one-line conditions;
+- simplify internal install/attach APIs to `String?` where callers only need success or a failure reason;
+- merge the duplicate Control Center presentation result hierarchy into the existing shared presentation state result;
+- remove the unused native combined-participant detach API and its unused result type;
+- consolidate owned-list bookkeeping under one `OwnedEntries` helper;
+- shorten probe/source/runtime names where the surrounding scope already provides the domain context, without keeping compatibility aliases for dead internal names.
+
+### Diagnostics rule
+
+Synthetic metrics are now explicitly forbidden by CONTRIBUTING. A diagnostic field presented as a metric, readiness input, health signal or observed value must come from a real runtime read or calculation.
+
+The branch removes hard-coded self-proof fields such as `nativeGeometryWrites=0`, `suppressionWriters=0`, `hookDelta=0`, fixed `eventDriven/readOnly/stable/mainThread` tags, and similar detached/installed claims that were not backed by a measurement. Real geometry, hook counts, runtime state, failure reasons and protocol control fields remain.
+
+### Review boundary
+
+No display-version or Build bump is made. The accepted ownership model, native geometry authority, fail-native boundaries, transition timing and stable Build 746 identity remain the target behavior.
+
+The full-AOD state refactor received a direct old-vs-new lifecycle review. One subtle missing-host difference was found during review and corrected before CI: when the Keyguard host cannot be resolved, the cached Home-at-start ownership snapshot is invalidated just as in the previous implementation.
+
+Next gate: complete the full branch diff review and run exact-head CI once at the coherent checkpoint. Device evidence is only requested if the final diff leaves a runtime question that static review and CI cannot settle.

@@ -86,8 +86,7 @@ internal object SysUiAirplaneSource {
         onAirplaneMode?.invoke(enabled)
         onEvent?.invoke(
             "airplaneState setting enabled=" + enabled +
-                " source=" + source +
-                " eventDriven=true",
+                " source=" + source,
         )
     }
 }

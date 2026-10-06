@@ -354,7 +354,7 @@ internal object HomeRenderSession {
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SysUiPresentationOwner.currentHomeRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.homeSlots(),
             )
         }
 
@@ -394,8 +394,7 @@ internal object HomeRenderSession {
                     " source=" + source +
                     detail +
                     " homeEligible=" + controlCenterAllowsHome +
-                    " visible=" + visible +
-                    " nativeGeometryWrites=0"
+                    " visible=" + visible
             }
             dispatchPresentationReadiness("control-center:" + source)
         }
@@ -415,8 +414,7 @@ internal object HomeRenderSession {
             emitEvent {
                 "homeRenderFeature enabled=" + featureEnabled +
                     " overlayVisible=" + visible +
-                    " nativeHandoffActive=" + nativeHandoffActive +
-                    " nativeGeometryWrites=0"
+                    " nativeHandoffActive=" + nativeHandoffActive
             }
             dispatchPresentationReadiness("feature")
         }
@@ -429,8 +427,7 @@ internal object HomeRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderHandoff nativeActive=" + nativeHandoffActive +
-                    " overlayVisible=" + visible +
-                    " nativeGeometryWrites=0"
+                    " overlayVisible=" + visible
             }
         }
 
@@ -490,7 +487,7 @@ internal object HomeRenderSession {
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +
-                            " eventDriven=true stable=true"
+                            ""
                     }
                 }
             }
@@ -588,9 +585,7 @@ internal object HomeRenderSession {
                         " logicalSize=" + anchorRect.width() + "x" + anchorRect.height() +
                         " physicalSize=" + probeView.width + "x" + probeView.height +
                         " topOverflowPx=" + probeView.currentLogicalViewportTopInsetPx() +
-                        " opacity=" + RENDER_OPACITY +
-                        " nativeVisibilityInherited=true nativeAlphaInherited=true " +
-                        "originalsHidden=false nativeGeometryWrites=0"
+                        " opacity=" + RENDER_OPACITY
                 }
             }
             dispatchPresentationReadiness("layout")
@@ -634,8 +629,7 @@ internal object HomeRenderSession {
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
                     " controlCenterHomeEligible=" + controlCenterAllowsHome +
-                    " featureEnabled=" + featureEnabled +
-                    " nativeGeometryWrites=0"
+                    " featureEnabled=" + featureEnabled
             }
             onPresentationReadinessChanged?.invoke(ownerReady)
         }

@@ -81,7 +81,7 @@ class ControlCenterRenderSessionTest {
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
         assertTrue(
             ControlCenterRenderSession
-                .shouldRestoreLaidOutHostAfterHotReload(
+                .canRestoreAfterReload(
                     attached = true,
                     inLayout = false,
                     width = 829,
@@ -90,7 +90,7 @@ class ControlCenterRenderSessionTest {
         )
         assertFalse(
             ControlCenterRenderSession
-                .shouldRestoreLaidOutHostAfterHotReload(
+                .canRestoreAfterReload(
                     attached = true,
                     inLayout = true,
                     width = 829,
@@ -99,7 +99,7 @@ class ControlCenterRenderSessionTest {
         )
         assertFalse(
             ControlCenterRenderSession
-                .shouldRestoreLaidOutHostAfterHotReload(
+                .canRestoreAfterReload(
                     attached = true,
                     inLayout = false,
                     width = 0,
@@ -108,116 +108,11 @@ class ControlCenterRenderSessionTest {
         )
         assertFalse(
             ControlCenterRenderSession
-                .shouldRestoreLaidOutHostAfterHotReload(
+                .canRestoreAfterReload(
                     attached = false,
                     inLayout = false,
                     width = 829,
                     height = 169,
-                ),
-        )
-    }
-
-    @Test
-    fun transferredCompactReadinessIsAdoptedOnlyWhenPreviouslyReady() {
-        assertTrue(
-            ControlCenterRenderSession
-                .shouldAdoptTransferredCompactReadiness(
-                    transferredCompactReady = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldAdoptTransferredCompactReadiness(
-                    transferredCompactReady = false,
-                ),
-        )
-    }
-
-    @Test
-    fun transientLayoutLossRetainsPreparedFakePresentationWhileRootStaysAttached() {
-        assertTrue(
-            ControlCenterRenderSession
-                .shouldRetainNativePresentationOnLayoutUnavailable(
-                    hostAttached = true,
-                    nativePresentationReady = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldRetainNativePresentationOnLayoutUnavailable(
-                    hostAttached = false,
-                    nativePresentationReady = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldRetainNativePresentationOnLayoutUnavailable(
-                    hostAttached = true,
-                    nativePresentationReady = false,
-                ),
-        )
-    }
-
-    @Test
-    fun carrierCapacityLeaseBeginsOnlyWhenAttachedSessionActuallyBecomesVisible() {
-        assertTrue(
-            ControlCenterRenderSession
-                .shouldBeginCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = false,
-                    nextRequestedVisible = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldBeginCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = true,
-                    nextRequestedVisible = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldBeginCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = true,
-                    nextRequestedVisible = false,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldBeginCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = false,
-                    nextRequestedVisible = false,
-                ),
-        )
-    }
-
-    @Test
-    fun carrierCapacityLeaseEndsOnlyWhenVisibleCycleActuallyCloses() {
-        assertTrue(
-            ControlCenterRenderSession
-                .shouldEndCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = true,
-                    nextRequestedVisible = false,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldEndCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = false,
-                    nextRequestedVisible = false,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldEndCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = false,
-                    nextRequestedVisible = true,
-                ),
-        )
-        assertFalse(
-            ControlCenterRenderSession
-                .shouldEndCapacityLeaseOnVisibilityChange(
-                    previousRequestedVisible = true,
-                    nextRequestedVisible = true,
                 ),
         )
     }

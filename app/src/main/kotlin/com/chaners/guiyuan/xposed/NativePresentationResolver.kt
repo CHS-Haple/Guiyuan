@@ -34,7 +34,7 @@ internal object NativePresentationResolver {
                 ?.context
                 ?.let(SystemActiveSubscriptionSource::current)
         val resolvedActive =
-            resolveActiveBindingSubscriptionIds(
+            resolveActiveSubIds(
                 boundSubscriptionIds =
                     bindings.map { binding -> binding.subscriptionId },
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
@@ -128,7 +128,7 @@ internal object NativePresentationResolver {
                 ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
             ?: boundSubscriptionIds.firstOrNull()
 
-    internal fun resolveActiveBindingSubscriptionIds(
+    internal fun resolveActiveSubIds(
         boundSubscriptionIds: List<Int>,
         semanticActiveSubscriptionIds: Set<Int>,
         authoritativeActiveSubscriptionIds: Set<Int>?,
@@ -331,8 +331,7 @@ internal object NativePresentationResolver {
                     " networkType=" + (networkType?.label ?: "unknown") +
                     " enhanced=" + (networkType?.enhanced ?: false) +
                     " typeSource=" + (networkType?.source?.name ?: "none") +
-                    " nativeMobileReplacementReady=" + nativeMobileReplacementReady +
-                    " geometryWrites=0"
+                    " nativeMobileReplacementReady=" + nativeMobileReplacementReady
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"

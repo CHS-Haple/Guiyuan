@@ -46,11 +46,11 @@ internal object NativeBatterySuppressionOwner {
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
         onNativeLayoutHideChanged: (Boolean) -> Unit = {},
-    ): InstallResult {
+    ): String? {
         if (installedHookCount == HOOK_COUNT) {
             eventSink = onEvent
             nativeLayoutHideSink = onNativeLayoutHideChanged
-            return InstallResult.AlreadyInstalled
+            return null
         }
 
         val createdHandles = mutableListOf<HookHandle>()
@@ -128,7 +128,7 @@ internal object NativeBatterySuppressionOwner {
             chargeRefreshHookHandle = refreshHandle
             eventSink = onEvent
             nativeLayoutHideSink = onNativeLayoutHideChanged
-            InstallResult.Installed
+            null
         }.getOrElse { error ->
             createdHandles.forEach { handle ->
                 runCatching { handle.unhook() }
@@ -142,9 +142,8 @@ internal object NativeBatterySuppressionOwner {
             clearOwnedStateLocked()
             eventSink = onEvent
             nativeLayoutHideSink = null
-            InstallResult.Failure(
-                error.message ?: error.javaClass.simpleName,
-            )
+            
+                error.message ?: error.javaClass.simpleName
         }
     }
 
@@ -293,8 +292,7 @@ internal object NativeBatterySuppressionOwner {
                         "nativeRequestedHide=" + requested +
                         " appliedNativeHide=" + (applied ?: "unknown") +
                         " verified=" + (applied == requested) +
-                        " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority) " +
-                        "moduleLayoutWrites=0 nativeGeometryWrites=0",
+                        " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority)",
                 )
             }
             result
@@ -335,7 +333,7 @@ internal object NativeBatterySuppressionOwner {
                         visibilityName(snapshot.chargingAppliedVisibility) +
                         " alphaWrites=" + snapshot.alphaWrites +
                         " visibilityWrites=" + snapshot.visibilityWrites +
-                        " visualChanged=true moduleLayoutWrites=0 nativeGeometryWrites=0",
+                        " visualChanged=true  ",
                 )
             }
             result
@@ -397,7 +395,7 @@ internal object NativeBatterySuppressionOwner {
                 }
             val appliedVisibility =
                 nativeVisibility?.let { visibility ->
-                    resolveChargingPresentationVisibility(
+                    resolveChargingVisibility(
                         nativeVisibility = visibility,
                         suppressionActive = true,
                     )
@@ -555,7 +553,7 @@ internal object NativeBatterySuppressionOwner {
             nativeAlpha
         }
 
-    internal fun resolveChargingPresentationVisibility(
+    internal fun resolveChargingVisibility(
         nativeVisibility: Int,
         suppressionActive: Boolean,
     ): Int =
@@ -576,15 +574,6 @@ internal object NativeBatterySuppressionOwner {
             null -> "none"
             else -> visibility.toString()
         }
-
-    internal sealed interface InstallResult {
-        data object Installed : InstallResult
-        data object AlreadyInstalled : InstallResult
-
-        data class Failure(
-            val reason: String,
-        ) : InstallResult
-    }
 
     internal sealed interface StateResult {
         val summary: String
@@ -619,8 +608,8 @@ internal object NativeBatterySuppressionOwner {
                         " visualChanged=" + visualChanged +
                         " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority)+" +
                         "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility " +
-                        "moduleLayoutWrites=0 rootVisibilityWrites=0 rootAlphaWrites=0 rootTranslationWrites=0 " +
-                        "nativeGeometryWrites=0"
+                        "    " +
+                        ""
         }
 
         data class Inactive(
@@ -649,8 +638,8 @@ internal object NativeBatterySuppressionOwner {
                         " visualChanged=" + visualChanged +
                         " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority)+" +
                         "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility " +
-                        "moduleLayoutWrites=0 rootVisibilityWrites=0 rootAlphaWrites=0 rootTranslationWrites=0 " +
-                        "nativeGeometryWrites=0"
+                        "    " +
+                        ""
         }
 
         data class Failure(
@@ -661,9 +650,7 @@ internal object NativeBatterySuppressionOwner {
 
             override val logLine: String
                 get() =
-                    "nativeBatterySuppression unavailable reason=" + reason +
-                        " moduleLayoutWrites=0 nativeGeometryWrites=0 " +
-                        "rootVisibilityWrites=0 rootAlphaWrites=0 rootTranslationWrites=0"
+                    "nativeBatterySuppression unavailable reason=" + reason
         }
     }
 

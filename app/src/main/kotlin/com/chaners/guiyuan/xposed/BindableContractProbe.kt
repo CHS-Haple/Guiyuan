@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.view.View
 import java.lang.reflect.Method
 
-internal object NativeBindableParticipantContractProbe {
+internal object BindableContractProbe {
     private const val BINDABLE_ICON =
         "com.android.systemui.statusbar.pipeline.icons.shared.model.BindableIcon"
     private const val MODERN_VIEW_CREATOR =
@@ -329,8 +329,7 @@ internal object NativeBindableParticipantContractProbe {
                     " groupClipToPadding=" + groupClipToPadding +
                     " groupHeight=" + groupHeight +
                     " staticContractReady=" + staticContractReady +
-                    " dynamicRegistrationObserved=" + dynamicRegistrationObserved +
-                    " geometryWrites=0"
+                    " dynamicRegistrationObserved=" + dynamicRegistrationObserved
 
         companion object {
             fun unavailable(reason: String): Snapshot =

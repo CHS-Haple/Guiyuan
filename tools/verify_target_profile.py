@@ -13,8 +13,8 @@ NETWORK_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaner
 SCENE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiSceneSource.kt"
 BATTERY_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiBatterySource.kt"
 KEYGUARD_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardAodSource.kt"
-KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardFullAodTransitionSource.kt"
-KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardStatusIconTransitionSource.kt"
+FULL_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "FullAodTransitionSource.kt"
+KEYGUARD_ICON_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardIconTransitionSource.kt"
 CC_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiCcSource.kt"
 
 HEX_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64}
@@ -258,14 +258,14 @@ lifecycle_hook_specs = (
     ),
     (
         "keyguardFullAodTransition",
-        KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH,
+        FULL_AOD_SOURCE_PATH,
         "CONTROLLER_CLASS",
         "ANIMATE_FULL_AOD_METHOD",
         "(ZZ)V",
     ),
     (
         "keyguardStatusIconTransition",
-        KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH,
+        KEYGUARD_ICON_SOURCE_PATH,
         "KEYGUARD_VIEW_CLASS",
         "ANIMATE_ICON_CONTAINER_METHOD",
         "(Z)V",

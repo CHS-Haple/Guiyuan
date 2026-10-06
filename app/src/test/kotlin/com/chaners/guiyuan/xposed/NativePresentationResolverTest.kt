@@ -236,7 +236,7 @@ class NativePresentationResolverTest {
     @Test
     fun authoritativeActiveSubscriptionDropsDisabledStaleRoot() {
         val resolved =
-            NativePresentationResolver.resolveActiveBindingSubscriptionIds(
+            NativePresentationResolver.resolveActiveSubIds(
                 boundSubscriptionIds = listOf(1, 4),
                 semanticActiveSubscriptionIds = setOf(1, 4),
                 authoritativeActiveSubscriptionIds = setOf(4),
@@ -257,7 +257,7 @@ class NativePresentationResolverTest {
     @Test
     fun semanticActiveSubscriptionsRemainFallbackWhenPlatformAuthorityUnavailable() {
         val resolved =
-            NativePresentationResolver.resolveActiveBindingSubscriptionIds(
+            NativePresentationResolver.resolveActiveSubIds(
                 boundSubscriptionIds = listOf(1, 4),
                 semanticActiveSubscriptionIds = setOf(4),
                 authoritativeActiveSubscriptionIds = null,

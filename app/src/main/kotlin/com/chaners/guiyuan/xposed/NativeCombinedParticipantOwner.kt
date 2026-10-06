@@ -119,45 +119,45 @@ internal object NativeCombinedParticipantOwner {
         onEvent: ((String) -> Unit)? = null,
         onSlotOrderResult: ((NativeStatusBarSlotReservation.Result) -> Unit)? = null,
         isTransitionProbeEnabled: () -> Boolean = { false },
-    ): InstallResult {
+    ): String? {
         if (installedHookCount == HOOK_COUNT) {
             eventSink = onEvent
             transitionProbeEnabled = isTransitionProbeEnabled
-            return InstallResult.AlreadyInstalled
+            return null
         }
         if (installedHookCount != 0) {
-            return InstallResult.Failure("partial-hook-state")
+            return "partial-hook-state"
         }
         eventSink = onEvent
         transitionProbeEnabled = isTransitionProbeEnabled
 
         val controllerClass =
             classOrNull(CONTROLLER_IMPL, classLoader)
-                ?: return InstallResult.Failure("controller-class-missing")
+                ?: return "controller-class-missing"
         val registryClass =
             classOrNull(REGISTRY_IMPL, classLoader)
-                ?: return InstallResult.Failure("registry-class-missing")
+                ?: return "registry-class-missing"
         val bindableIconClass =
             classOrNull(BINDABLE_ICON, classLoader)
-                ?: return InstallResult.Failure("bindable-icon-class-missing")
+                ?: return "bindable-icon-class-missing"
         val creatorClass =
             classOrNull(CREATOR, classLoader)
-                ?: return InstallResult.Failure("creator-class-missing")
+                ?: return "creator-class-missing"
         val modernViewClass =
             classOrNull(MODERN_VIEW, classLoader)
-                ?: return InstallResult.Failure("modern-view-class-missing")
+                ?: return "modern-view-class-missing"
         val bindingClass =
             classOrNull(BINDING, classLoader)
-                ?: return InstallResult.Failure("binding-class-missing")
+                ?: return "binding-class-missing"
         val statusBarIconViewClass =
             classOrNull(STATUS_BAR_ICON_VIEW, classLoader)
-                ?: return InstallResult.Failure("status-bar-icon-view-class-missing")
+                ?: return "status-bar-icon-view-class-missing"
         val function0Class =
             classOrNull(FUNCTION0, classLoader)
-                ?: return InstallResult.Failure("function0-class-missing")
+                ?: return "function0-class-missing"
         val statusIconContainerClass =
             classOrNull(STATUS_ICON_CONTAINER, classLoader)
-                ?: return InstallResult.Failure("status-icon-container-class-missing")
+                ?: return "status-icon-container-class-missing"
         val statusIconContainerOnLayout =
             statusIconContainerClass.declaredMethods
                 .firstOrNull { method ->
@@ -174,13 +174,13 @@ internal object NativeCombinedParticipantOwner {
                         method.returnType == Void.TYPE
                 }
                 ?.apply { isAccessible = true }
-                ?: return InstallResult.Failure("status-icon-container-on-layout-missing")
+                ?: return "status-icon-container-on-layout-missing"
         val folmeViewStateClass =
             classOrNull(FOLME_VIEW_STATE, classLoader)
-                ?: return InstallResult.Failure("folme-view-state-class-missing")
+                ?: return "folme-view-state-class-missing"
         val newStatusIconStateClass =
             classOrNull(NEW_STATUS_ICON_STATE, classLoader)
-                ?: return InstallResult.Failure("new-status-icon-state-class-missing")
+                ?: return "new-status-icon-state-class-missing"
         val applyToViewMethod =
             folmeViewStateClass.declaredMethods
                 .firstOrNull { method ->
@@ -194,7 +194,7 @@ internal object NativeCombinedParticipantOwner {
                         method.returnType == Void.TYPE
                 }
                 ?.apply { isAccessible = true }
-                ?: return InstallResult.Failure("folme-apply-to-view-missing")
+                ?: return "folme-apply-to-view-missing"
         val translationXField =
             runCatching {
                 folmeViewStateClass.getDeclaredField("translationX").apply {
@@ -204,7 +204,7 @@ internal object NativeCombinedParticipantOwner {
                     isAccessible = true
                 }
             }.getOrNull()
-                ?: return InstallResult.Failure("folme-translation-x-field-missing")
+                ?: return "folme-translation-x-field-missing"
         val layoutTranslationXField =
             runCatching {
                 newStatusIconStateClass.getDeclaredField("layoutTranslationX").apply {
@@ -214,7 +214,7 @@ internal object NativeCombinedParticipantOwner {
                     isAccessible = true
                 }
             }.getOrNull()
-                ?: return InstallResult.Failure("layout-translation-x-field-missing")
+                ?: return "layout-translation-x-field-missing"
 
         if (
             !bindableIconClass.isInterface ||
@@ -222,7 +222,7 @@ internal object NativeCombinedParticipantOwner {
             !bindingClass.isInterface ||
             !function0Class.isInterface
         ) {
-            return InstallResult.Failure("proxy-contract-mismatch")
+            return "proxy-contract-mismatch"
         }
 
         val visibilityStateMethod =
@@ -233,14 +233,10 @@ internal object NativeCombinedParticipantOwner {
                         method.parameterTypes[0] == Int::class.javaPrimitiveType &&
                         method.returnType == Void.TYPE
                 }
-                ?: return InstallResult.Failure(
-                    "binding-visibility-state-contract-missing",
-                )
+                ?: return "binding-visibility-state-contract-missing"
         val resolvedVisibilityStates =
             resolveNativeVisibilityStates(statusBarIconViewClass)
-                ?: return InstallResult.Failure(
-                    "status-bar-visible-state-contract-missing",
-                )
+                ?: return "status-bar-visible-state-contract-missing"
         val setRemoveMethod =
             modernViewClass.methods
                 .firstOrNull { method ->
@@ -251,9 +247,7 @@ internal object NativeCombinedParticipantOwner {
                         method.returnType == Void.TYPE
                 }
                 ?.apply { isAccessible = true }
-                ?: return InstallResult.Failure(
-                    "modern-view-set-remove-contract-missing",
-                )
+                ?: return "modern-view-set-remove-contract-missing"
         val getRemoveFlagMethod =
             modernViewClass.methods
                 .firstOrNull { method ->
@@ -262,9 +256,7 @@ internal object NativeCombinedParticipantOwner {
                         method.returnType == Boolean::class.javaPrimitiveType
                 }
                 ?.apply { isAccessible = true }
-                ?: return InstallResult.Failure(
-                    "modern-view-get-remove-flag-contract-missing",
-                )
+                ?: return "modern-view-get-remove-flag-contract-missing"
         nativeSetRemoveMethod = setRemoveMethod
         nativeGetRemoveFlagMethod = getRemoveFlagMethod
 
@@ -282,24 +274,24 @@ internal object NativeCombinedParticipantOwner {
                 " dotState=" + resolvedStateDot +
                 " hiddenState=" + resolvedStateHidden +
                 " removeLifecycle=setRemove(boolean)+getRemoveFlag() " +
-                "nativeGeometryWrites=0",
+                "",
         )
 
         val constructor =
             controllerClass.declaredConstructors
                 .firstOrNull { it.parameterTypes.lastOrNull() == registryClass }
-                ?: return InstallResult.Failure("controller-registry-constructor-missing")
+                ?: return "controller-registry-constructor-missing"
         val iconListParameterIndex =
             constructor.parameterTypes.indexOfFirst { type ->
                 type.name == NativeStatusBarSlotReservation.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
-            return InstallResult.Failure("controller-icon-list-parameter-missing")
+            return "controller-icon-list-parameter-missing"
         }
         val registryField =
             registryClass.declaredFields
                 .firstOrNull { it.name == "bindableIcons" }
-                ?: return InstallResult.Failure("registry-list-field-missing")
+                ?: return "registry-list-field-missing"
         registryField.isAccessible = true
 
         val viewConstructor =
@@ -308,7 +300,7 @@ internal object NativeCombinedParticipantOwner {
                     it.parameterTypes.map { type -> type.name } ==
                         listOf("android.content.Context", "android.util.AttributeSet")
                 }
-                ?: return InstallResult.Failure("modern-view-constructor-missing")
+                ?: return "modern-view-constructor-missing"
         viewConstructor.isAccessible = true
 
         val initView =
@@ -318,7 +310,7 @@ internal object NativeCombinedParticipantOwner {
                         it.parameterTypes.map { type -> type.name } ==
                         listOf("java.lang.String", FUNCTION0)
                 }
-                ?: return InstallResult.Failure("modern-view-init-missing")
+                ?: return "modern-view-init-missing"
         initView.isAccessible = true
         constructor.isAccessible = true
 
@@ -337,10 +329,8 @@ internal object NativeCombinedParticipantOwner {
                         },
                     )
             }.getOrElse { error ->
-                return InstallResult.Failure(
-                    "visual-bounds-hook-" +
-                        (error.message ?: error.javaClass.simpleName),
-                )
+                return "visual-bounds-hook-" +
+                        (error.message ?: error.javaClass.simpleName)
             }
 
         val slotTranslationHandle =
@@ -401,8 +391,7 @@ internal object NativeCombinedParticipantOwner {
                                         " batteryLeft=" + (battery?.left ?: Int.MIN_VALUE) +
                                         " batteryWidth=" + (battery?.width ?: Int.MIN_VALUE) +
                                         " batteryMotionTranslationX=" + (battery?.translationX ?: Float.NaN) +
-                                        " nativeTranslationWriter=HyperOS " +
-                                        "moduleViewTranslationWrites=0 peerNativeGeometryWrites=0",
+                                        " nativeTranslationWriter=HyperOS",
                                 )
                             }
                             chain.proceed()
@@ -410,10 +399,8 @@ internal object NativeCombinedParticipantOwner {
                     )
             }.getOrElse { error ->
                 runCatching { visualBoundsHandle.unhook() }
-                return InstallResult.Failure(
-                    "slot-translation-hook-" +
-                        (error.message ?: error.javaClass.simpleName),
-                )
+                return "slot-translation-hook-" +
+                        (error.message ?: error.javaClass.simpleName)
             }
 
         val handle =
@@ -563,7 +550,7 @@ internal object NativeCombinedParticipantOwner {
                                     "nativeCombinedParticipant injected slot=" + SLOT +
                                         " registryOriginal=" + original.size +
                                         " registryExtended=" + extended.size +
-                                        " visible=false nativeGeometryWrites=0",
+                                        " visible=false ",
                                 )
                                 result
                             } finally {
@@ -597,8 +584,7 @@ internal object NativeCombinedParticipantOwner {
                                 onEvent?.invoke(
                                     "nativeCombinedParticipant constructorComplete slot=" + SLOT +
                                         " registryRestored=" + registryRestored +
-                                        " slotReserved=" + controllerCreated +
-                                        " nativeGeometryWrites=0",
+                                        " slotReserved=" + controllerCreated,
                                 )
                             }
                         },
@@ -606,15 +592,13 @@ internal object NativeCombinedParticipantOwner {
             }.getOrElse {
                 runCatching { slotTranslationHandle.unhook() }
                 runCatching { visualBoundsHandle.unhook() }
-                return InstallResult.Failure(
-                    "constructor-hook-" + (it.message ?: it.javaClass.simpleName),
-                )
+                return "constructor-hook-" + (it.message ?: it.javaClass.simpleName)
             }
 
         visualBoundsHook = visualBoundsHandle
         slotTranslationHook = slotTranslationHandle
         constructorHook = handle
-        return InstallResult.Installed
+        return null
     }
 
     @Synchronized
@@ -789,7 +773,7 @@ internal object NativeCombinedParticipantOwner {
             "nativeCombinedParticipant hotReloadAdopt slot=" + SLOT +
                 " viewReady=true managerEntriesRefreshed=true " +
                 "clearedManagerEntries=" + cleared +
-                " mainThread=true nativeGeometryWrites=0",
+                "",
         )
         return HotReloadAdoptResult.Ready(
             clearedManagerEntries = cleared,
@@ -892,8 +876,7 @@ internal object NativeCombinedParticipantOwner {
                 " resolvedPrivacyWidth=" + slotGeometry.privacyMeasuredWidth +
                 " batteryView=" + battery.width + "x" + battery.height +
                 " resolvedSlot=" + slotGeometry.slotWidth + "x" + slotGeometry.slotHeight +
-                " slotTranslationX=" + activeSlotTranslationX +
-                " readOnly=true nativeGeometryWrites=0",
+                " slotTranslationX=" + activeSlotTranslationX,
         )
 
         val rootLayoutParams =
@@ -932,8 +915,7 @@ internal object NativeCombinedParticipantOwner {
                 " originalHeight=" + originalShellHeight +
                 " targetHeight=" + activeSlotHeight +
                 " moduleOwnedSlotWidthWrite=" + (originalShellWidth != targetShellWidth) +
-                " customShellHeightWrite=" + (originalShellHeight != activeSlotHeight) +
-                " peerNativeGeometryWrites=0",
+                " customShellHeightWrite=" + (originalShellHeight != activeSlotHeight),
         )
 
         root.clipChildren = false
@@ -1023,8 +1005,7 @@ internal object NativeCombinedParticipantOwner {
                     } +
                     " nativeTint=" + colorHex(bindingState.iconTint) +
                     " batteryFallback=" +
-                    colorHex(batteryTintState?.appliedTint) +
-                    " nativeGeometryWrites=0",
+                    colorHex(batteryTintState?.appliedTint),
             )
         }
 
@@ -1088,8 +1069,7 @@ internal object NativeCombinedParticipantOwner {
                     (root?.let { visibilityName(it.visibility) } ?: "none") +
                     " iconVisible=" +
                     (root?.let { NativeParticipantRuntimeAccess.iconVisible(it) } ?: "none") +
-                    " visible=" + handoffCommitted +
-                    " nativeGeometryWrites=0",
+                    " visible=" + handoffCommitted,
             )
         }
         reconcileVisibleHandoff("state")
@@ -1130,7 +1110,7 @@ internal object NativeCombinedParticipantOwner {
                 " adjacentGap=" + (battery.left - statusIcons.right) +
                 " rootVisibility=" +
                 (rootRef?.get()?.let { visibilityName(it.visibility) } ?: "none") +
-                " visible=false nativeGeometryWrites=0",
+                " visible=false ",
         )
     }
 
@@ -1235,7 +1215,7 @@ internal object NativeCombinedParticipantOwner {
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
                         "source=feature-enabled reason=suppression-transaction-failed " +
-                        "failNative=true nativeGeometryWrites=0",
+                        "failNative=true ",
                 )
                 return false
             }
@@ -1248,7 +1228,7 @@ internal object NativeCombinedParticipantOwner {
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
                         "source=feature-enabled reason=set-remove-failed " +
-                        "failNative=true nativeGeometryWrites=0",
+                        "failNative=true ",
                 )
                 return false
             }
@@ -1265,8 +1245,7 @@ internal object NativeCombinedParticipantOwner {
                     "source=feature-enabled validated=true " +
                     "mode=native-remove-lifecycle rootShown=" + root.isShown +
                     " visibilityAuthority=binding+removeFlag" +
-                    " nativeRemoveFlag=" + readNativeRemoveFlag(root) +
-                    " nativeGeometryWrites=0",
+                    " nativeRemoveFlag=" + readNativeRemoveFlag(root),
             )
             return true
         } finally {
@@ -1306,7 +1285,7 @@ internal object NativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    private fun onNativeBindingVisibilityStateChanged(
+    private fun onBindingVisibilityChanged(
         bindingState: BindingState,
         state: Int,
         parameterCount: Int,
@@ -1369,8 +1348,7 @@ internal object NativeCombinedParticipantOwner {
                     " renderVisibility=" +
                     (render?.let { visibilityName(it.visibility) } ?: "none") +
                     " dotVisibility=" +
-                    (dot?.let { visibilityName(it.visibility) } ?: "none") +
-                    " nativeGeometryWrites=0",
+                    (dot?.let { visibilityName(it.visibility) } ?: "none"),
             )
             root?.postOnAnimation {
                 eventSink?.invoke(
@@ -1379,8 +1357,7 @@ internal object NativeCombinedParticipantOwner {
                         " rootAlpha=" + root.alpha +
                         " rootScale=" + root.scaleX + "x" + root.scaleY +
                         " rootTranslation=" +
-                        root.translationX + "," + root.translationY +
-                        " nativeGeometryWrites=0",
+                        root.translationX + "," + root.translationY,
                 )
             }
         }
@@ -1426,8 +1403,7 @@ internal object NativeCombinedParticipantOwner {
                 "nativeCombinedParticipant tint " +
                     "authority=ModernStatusBarViewBinding.onIconTintChanged " +
                     "tint=#" + tint.toUInt().toString(16).padStart(8, '0') +
-                    " parameterCount=" + parameterCount +
-                    " nativeGeometryWrites=0",
+                    " parameterCount=" + parameterCount,
             )
         }
         if (previous == tint || targetBindingState !== bindingState) {
@@ -1492,7 +1468,7 @@ internal object NativeCombinedParticipantOwner {
                 eventSink?.invoke(
                     "nativeCombinedParticipant featureGateFail source=" + source +
                         " reason=native-restore-transaction-failed " +
-                        "failNative=true nativeGeometryWrites=0",
+                        "failNative=true ",
                 )
                 return
             }
@@ -1574,8 +1550,7 @@ internal object NativeCombinedParticipantOwner {
                         " nativeRemoveFlag=" +
                         (root?.let(::readNativeRemoveFlag) ?: "none") +
                         " shellLayoutWidth=" +
-                        (root?.layoutParams?.width ?: Int.MIN_VALUE) +
-                        " nativeGeometryWrites=0 peerNativeGeometryWrites=0",
+                        (root?.layoutParams?.width ?: Int.MIN_VALUE),
                 )
             }
         } finally {
@@ -1639,7 +1614,7 @@ internal object NativeCombinedParticipantOwner {
                 " scene=" + currentSurface.name +
                 " mode=" + handoffMode.name +
                 " rootShownBefore=" + root.isShown +
-                " bootstrapVisibilityRelease=true nativeGeometryWrites=0",
+                " bootstrapVisibilityRelease=true ",
         )
 
         val listener =
@@ -1718,7 +1693,7 @@ internal object NativeCombinedParticipantOwner {
                                 eventSink?.invoke(
                                     "nativeCombinedParticipant handoffRollback " +
                                         "reason=suppression-transaction-failed " +
-                                        "failNative=true nativeGeometryWrites=0",
+                                        "failNative=true ",
                                 )
                                 return@synchronized
                             }
@@ -1749,7 +1724,7 @@ internal object NativeCombinedParticipantOwner {
                                     "shellLayoutWidth=" +
                                     (root.layoutParams?.width ?: Int.MIN_VALUE) + " " +
                                     "iconVisible=true overlayActive=false " +
-                                    "peerNativeGeometryWrites=0",
+                                    "",
                             )
                         } else {
                             bindingState.visible = false
@@ -1777,7 +1752,7 @@ internal object NativeCombinedParticipantOwner {
                                     " parentClipChildren=" +
                                     (parent?.clipChildren ?: true) +
                                     " bridgeReady=" + bridgeReady +
-                                    " overlayActive=true nativeGeometryWrites=0",
+                                    " overlayActive=true ",
                             )
                         }
                         } finally {
@@ -1886,7 +1861,7 @@ internal object NativeCombinedParticipantOwner {
                 " previousLayoutWidth=" + previousWidth +
                 " targetLayoutWidth=" + targetWidth +
                 " visualWidth=" + visualWidth +
-                " moduleOwnedRootWidthWrite=true peerNativeGeometryWrites=0",
+                " rootWidthOwner=module ",
         )
         return root.layoutParams?.width == targetWidth
     }
@@ -1959,7 +1934,7 @@ internal object NativeCombinedParticipantOwner {
                     " actualWidth=" + root.width +
                     " actualHeight=" + root.height +
                     " translationX=" + root.translationX +
-                    " moduleVisualBoundsWrites=1 peerNativeGeometryWrites=0",
+                    " visualBoundsOwner=module ",
             )
         }
         return applied
@@ -2016,46 +1991,14 @@ internal object NativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun detach(): DetachResult {
-        val handles =
-            resolveCurrentHandles()
-                ?: return reset(DetachResult.NotAttached)
-        val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
-                ?: return reset(DetachResult.Failure("removal-contract-missing"))
-
-        val result =
-            runCatching {
-                renderViewRef?.get()?.let { render ->
-                    (render.parent as? ViewGroup)?.removeView(render)
-                }
-                NativeParticipantRuntimeAccess.invokeRemoval(
-                    handles = handles,
-                    removal = removal,
-                    slot = SLOT,
-                )
-                NativeParticipantRuntimeAccess.clearBindableEntries(
-                    handles = handles,
-                    slot = SLOT,
-                )
-                DetachResult.Ready
-            }.getOrElse {
-                DetachResult.Failure(
-                    "remove-" + (it.message ?: it.javaClass.simpleName),
-                )
-            }
-        return reset(result)
-    }
-
-    @Synchronized
     fun resetRuntimeState() {
         constructorHook = null
         visualBoundsHook = null
         slotTranslationHook = null
-        reset(Unit)
+        reset()
     }
 
-    private fun <T> reset(result: T): T {
+    private fun reset() {
         removePendingPreDraw()
         TransitionDiagnosticProbe.stop()
         if (handoffCommitted) {
@@ -2097,7 +2040,6 @@ internal object NativeCombinedParticipantOwner {
         injected = false
         registryRestored = false
         failureReason = null
-        return result
     }
 
     private fun createRuntimeCreator(classLoader: ClassLoader): Any {
@@ -2223,7 +2165,7 @@ internal object NativeCombinedParticipantOwner {
                         (args?.firstOrNull() as? Number)
                             ?.toInt()
                             ?.let { state ->
-                                onNativeBindingVisibilityStateChanged(
+                                onBindingVisibilityChanged(
                                     bindingState = bindingState,
                                     state = state,
                                     parameterCount = method.parameterCount,
@@ -2361,12 +2303,6 @@ internal object NativeCombinedParticipantOwner {
         ) : HotReloadAdoptResult
     }
 
-    internal sealed interface InstallResult {
-        data object Installed : InstallResult
-        data object AlreadyInstalled : InstallResult
-        data class Failure(val reason: String) : InstallResult
-    }
-
     private object TransitionDiagnosticProbe {
         private var generation = 0
         private var activeRoot = WeakReference<View>(null)
@@ -2417,7 +2353,7 @@ internal object NativeCombinedParticipantOwner {
                                 (SystemClock.uptimeMillis() - startedAt) +
                                 " " + snapshot +
                                 " sample=" + samples + "/" + MAX_SAMPLES +
-                                " geometryWrites=0",
+                                "",
                         )
                     }
                     if (
@@ -2580,9 +2516,4 @@ internal object NativeCombinedParticipantOwner {
         data class Failure(val reason: String) : AttachResult
     }
 
-    internal sealed interface DetachResult {
-        data object Ready : DetachResult
-        data object NotAttached : DetachResult
-        data class Failure(val reason: String) : DetachResult
-    }
 }

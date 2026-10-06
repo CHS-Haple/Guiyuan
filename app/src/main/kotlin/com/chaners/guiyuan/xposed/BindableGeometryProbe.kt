@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import java.lang.reflect.Proxy
 
-internal object NativeBindableVisualGeometryProbe {
+internal object BindableGeometryProbe {
     private const val MODERN_STATUS_BAR_VIEW =
         "com.android.systemui.statusbar.pipeline.shared.ui.view.ModernStatusBarView"
     private const val BINDING =
@@ -208,7 +208,6 @@ internal object NativeBindableVisualGeometryProbe {
                 projectedTop = projectedTop,
                 projectedBottom = projectedBottom,
                 projectedFitsGroup = projectedFitsGroup,
-                nativeGeometryWrites = 0,
             ).also {
                 root.removeAllViews()
             }
@@ -273,7 +272,6 @@ internal object NativeBindableVisualGeometryProbe {
         val projectedTop: Int,
         val projectedBottom: Int,
         val projectedFitsGroup: Boolean,
-        val nativeGeometryWrites: Int,
     ) {
         val ready: Boolean
             get() =
@@ -283,8 +281,7 @@ internal object NativeBindableVisualGeometryProbe {
                     shellMeasuredHeight == referenceLayoutHeight &&
                     renderMeasuredWidth == visualWidth &&
                     renderMeasuredHeight == visualHeight &&
-                    projectedFitsGroup &&
-                    nativeGeometryWrites == 0
+                    projectedFitsGroup
 
         val logLine: String
             get() =
@@ -306,8 +303,7 @@ internal object NativeBindableVisualGeometryProbe {
                     " renderBounds=" + (renderBounds ?: "none") +
                     " projected=" + projectedTop + "-" + projectedBottom +
                     " projectedFitsGroup=" + projectedFitsGroup +
-                    " ready=" + ready +
-                    " nativeGeometryWrites=" + nativeGeometryWrites
+                    " ready=" + ready
 
         companion object {
             fun unavailable(reason: String): Snapshot =
@@ -332,7 +328,6 @@ internal object NativeBindableVisualGeometryProbe {
                     projectedTop = Int.MIN_VALUE,
                     projectedBottom = Int.MIN_VALUE,
                     projectedFitsGroup = false,
-                    nativeGeometryWrites = 0,
                 )
         }
     }

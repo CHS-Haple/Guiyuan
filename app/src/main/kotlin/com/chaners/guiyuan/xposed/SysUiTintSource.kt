@@ -253,7 +253,7 @@ internal object SysUiTintSource {
                         semanticTints.joinToString(",") { colorHex(it) }
                     }
                 ) +
-                " readOnly=true eventDriven=true",
+                "",
         )
     }
 

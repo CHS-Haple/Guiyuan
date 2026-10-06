@@ -526,7 +526,7 @@ internal object SysUiNetworkSource {
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
             }
             mobileRoots.forEach { (root, subscriptionId) ->
@@ -536,7 +536,7 @@ internal object SysUiNetworkSource {
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
             }
         }
@@ -592,7 +592,7 @@ internal object SysUiNetworkSource {
                         " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
                 readWifiSeed(
                     root = root,
@@ -981,7 +981,7 @@ internal object SysUiNetworkSource {
                         " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0"
+                        ""
             }
         }
 
@@ -1016,7 +1016,7 @@ internal object SysUiNetworkSource {
                 onEvent?.invoke(
                     "networkPipeline mobile preMask failed " +
                         "error=" + error.javaClass.simpleName +
-                        " failNative=true geometryWrites=0",
+                        " failNative=true",
                 )
             }
         }

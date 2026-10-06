@@ -107,12 +107,12 @@ internal object NativeNetworkSuppressionOwner {
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
-    ): InstallResult {
+    ): String? {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            return InstallResult.AlreadyInstalled
+            return null
         }
 
         val created = mutableListOf<HookHandle>()
@@ -240,7 +240,7 @@ internal object NativeNetworkSuppressionOwner {
             eventSink = onEvent
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            InstallResult.Installed
+            null
         }.getOrElse { error ->
             created.forEach { handle ->
                 runCatching { handle.unhook() }
@@ -259,9 +259,8 @@ internal object NativeNetworkSuppressionOwner {
             eventSink = onEvent
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            InstallResult.Failure(
-                error.message ?: error.javaClass.simpleName,
-            )
+            
+                error.message ?: error.javaClass.simpleName
         }
     }
 
@@ -318,8 +317,7 @@ internal object NativeNetworkSuppressionOwner {
         eventSink?.invoke(
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
-                " group=" + group.javaClass.name +
-                " suppressionWriters=0 nativeGeometryWrites=0",
+                " group=" + group.javaClass.name,
         )
         return StateResult.Active(
             bindings = 0,
@@ -437,8 +435,7 @@ internal object NativeNetworkSuppressionOwner {
             eventSink?.invoke(
                 "nativeNetworkSuppression inactive source=" + source +
                     " restoredBindings=" + previousCount +
-                    " restoredMobileVisualMasks=" + restoredVisualMasks +
-                    " nativeGeometryWrites=0",
+                    " restoredMobileVisualMasks=" + restoredVisualMasks,
             )
         }
         return StateResult.Inactive(previousCount)
@@ -547,8 +544,7 @@ internal object NativeNetworkSuppressionOwner {
                                 eventSink?.invoke(
                                     "statusIconObservation ready source=" +
                                         (pendingSource ?: "homeManagerRegistered") +
-                                        " trigger=homeManagerRegistered " +
-                                        "suppressionWriters=0 nativeGeometryWrites=0",
+                                        " trigger=homeManagerRegistered",
                                 )
                             }
                             is StateResult.Failure ->
@@ -588,8 +584,7 @@ internal object NativeNetworkSuppressionOwner {
                                 clearSessionLocked(requestLayout = true)
                                 eventSink?.invoke(
                                     "nativeNetworkSuppression failNative source=iconAdded:" + slot +
-                                        " reason=" + snapshot.failureReason +
-                                        " nativeGeometryWrites=0",
+                                        " reason=" + snapshot.failureReason,
                                 )
                             }
                         }
@@ -1034,8 +1029,7 @@ internal object NativeNetworkSuppressionOwner {
                             ":" +
                             presentation.noSimIcon?.resourceId
                     ) +
-                    " noSimSuppressed=" + noSimSuppressionEnabled +
-                    " nativeGeometryWrites=0",
+                    " noSimSuppressed=" + noSimSuppressionEnabled,
             )
         }
 
@@ -1226,7 +1220,7 @@ internal object NativeNetworkSuppressionOwner {
     }
 
     @Synchronized
-    internal fun currentAppliedStatusIconTintForGroup(group: ViewGroup): Int? =
+    internal fun currentStatusIconTint(group: ViewGroup): Int? =
         resolveAppliedStatusIconTint(group)
 
     private fun resolveAppliedStatusIconTint(group: ViewGroup): Int? {
@@ -1476,7 +1470,7 @@ internal object NativeNetworkSuppressionOwner {
                     " nativeAlpha=" + state.nativeAlpha +
                     " appliedAlpha=" + container.alpha +
                     " source=mobile-signal-beforeProceed " +
-                    "nativeGeometryWrites=0",
+                    "",
             )
         }
         return container.alpha == 0f
@@ -1635,15 +1629,6 @@ internal object NativeNetworkSuppressionOwner {
         }
     }
 
-    internal sealed interface InstallResult {
-        data object Installed : InstallResult
-        data object AlreadyInstalled : InstallResult
-
-        data class Failure(
-            val reason: String,
-        ) : InstallResult
-    }
-
     internal sealed interface StateResult {
         val summary: String
 
@@ -1711,8 +1696,7 @@ internal object NativeNetworkSuppressionOwner {
                     " mobileSuppressed=" + mobileSuppressed +
                     " mobileVisualMasks=" + mobileVisualMaskCount +
                     " visualMask=mobile_signal_container.alpha " +
-                    " reason=" + (failureReason ?: "none") +
-                    " nativeGeometryWrites=0"
+                    " reason=" + (failureReason ?: "none")
 
         companion object {
             fun ready(
