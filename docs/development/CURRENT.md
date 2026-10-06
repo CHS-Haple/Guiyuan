@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#236 (`485837f`). Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#237. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,20 +24,20 @@
 
 ## Active objective
 
-The active work is `refactor/maintainability-sysui-transition-sources`, continuing the behavior-neutral maintainability pass from the updated `dev` baseline after PR #236. This slice aligns the Keyguard transition sources with the established `SysUi` prefix and replaces the generic panel-transition concept with the actual CC source responsibility. Common project abbreviations are used only where they stay immediately readable. Source ownership, hook contracts, target-profile validation, diagnostics, and runtime behavior remain unchanged. Build identity stays at 746; device evidence is not required unless a later change can plausibly affect runtime behavior.
+The active work is `refactor/maintainability-runtime-names`, a behavior-neutral maintainability batch from the latest `dev`. It removes misleading `Owner` suffixes from five SystemUI runtime coordinators that install, aggregate, reset, or transfer state but do not own the final mutable presentation/session authority. The established `SysUi` abbreviation is used where the call site remains immediate; real ownership types keep `Owner`.
 
-The recent Keyguard / Control Center performance line is **closed at Build 744**. Guiyuan 0.2.1 / Build 746 is the promoted maintenance checkpoint and does not reopen that runtime line.
+The same batch closes two maintenance-process gaps exposed by PRs #228–#237: adjacent cleanup with one review/validation boundary should normally stay in one coherent PR, and CURRENT must not keep a merged/deleted branch described as active.
 
-Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
+Runtime strings, persisted keys, reflection/resource targets, Hook IDs, diagnostics schema, lifecycle, ownership, writers, and behavior remain unchanged. Build identity stays at 746; device evidence is not required unless a later edit can plausibly affect runtime behavior.
 
-Normal development may continue from the current `dev` state. Performance work should reopen only for a concrete regression, reproducible hotspot, or new evidence that identifies a bounded root cause.
+The recent Keyguard / Control Center performance line remains **closed at Build 744**. Build 745 is a rejected experiment and must not be restored without new reproducible evidence.
 
 Current priorities:
 
-1. finish the current SysUi transition-source naming slice with complete base→HEAD review and automated validation before integration;
-2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
-3. preserve persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities while allowing behavior-neutral internal Kotlin symbol shortening;
-4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
+1. complete this runtime-coordinator naming/governance batch with full base→HEAD review and automated validation before integration;
+2. keep subsequent behavior-neutral cleanup coherent instead of serializing it into micro-PRs;
+3. preserve persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities;
+4. reopen performance work only for a concrete regression, reproducible hotspot, or new root-cause evidence.
 
 ## Non-negotiable bounds
 
@@ -53,6 +53,6 @@ Current priorities:
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
 - Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
-- Complete `refactor/maintainability-sysui-transition-sources` review and automated validation before integrating it into `dev`; request device evidence only if runtime-affecting behavior enters the diff.
-- Start subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
+- Finish `refactor/maintainability-runtime-names` review and automated validation, then integrate it into `dev`; no Canary/device gate is needed while the diff stays behavior-neutral.
+- Start subsequent work from the live synchronized `dev` branch and resolve current GitHub refs instead of persisting branch SHAs here.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
