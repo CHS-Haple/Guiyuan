@@ -100,6 +100,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 - Remove repeated product or domain wording when the package, file, receiver, or owner already establishes it. Use `Gy` only where Guiyuan identity is actually useful.
 - Keep a platform, domain, or responsibility term when it carries real distinguishing information. For example, `SysUiBatterySource` is preferable to both the redundant `SystemUiBatteryStateSource` and the overly generic `BatterySource`.
 - Keep words such as `Owner`, `Source`, `Policy`, `Session`, `Contract`, and `Probe` only when they carry real responsibility, lifecycle, authority, or compatibility meaning. Do not keep them merely to make a name sound formal.
+- Use `Owner` only when a type actually owns or arbitrates a lifetime, mutable surface/session, or exclusive authority. Installation/wiring coordinators should use the clearest domain noun instead, such as `Runtime`, `Registry`, or `Binder`.
 - File names should normally match the primary type. Cohesive helper files may keep a broader domain name when splitting them would make navigation worse.
 - Persisted preference keys, protocol/event names, log schema fields, reflection/class/member targets, resource identities, Xposed-facing identifiers, and other externally consumed names are compatibility surfaces. Do not rename them as cleanup without an explicit migration reason.
 - Do not keep obsolete aliases solely to preserve old internal names. Retain an alias only when a real compatibility or migration boundary requires it.
@@ -118,6 +119,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 ### Refactor discipline
 - Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
+- Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
 - Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
 - Prefer deleting proven dead code and redundant indirection over renaming it.
 - Do not run CI for every micro-edit. Validate at meaningful checkpoints; request device evidence only when the refactor can plausibly change runtime behavior.
@@ -264,6 +266,8 @@ Repository state is authoritative over remembered chat context.
 
 ### CURRENT
 The single day-to-day recovery point. Keep only accepted baseline, active objective/PR, current confirmed conclusions, current validation/blocker state, non-negotiable boundaries, and immediate next step. Do not copy CI history or Build chronology.
+
+If CURRENT names an active branch or PR, close or replace that reference as part of the merge/closeout that ends it. Do not leave a merged, closed, deleted, or otherwise non-existent route described as active.
 
 ### DEVLOG
 A decision/evidence history, not a required record for every APK checkpoint. Add an entry when a meaningful root cause is established, important reasoning is rejected/superseded, architecture/ownership/lifecycle/compatibility/fallback changes, device evidence materially changes a decision, or a durable lesson is likely to prevent regression.
