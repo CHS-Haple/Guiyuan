@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 with PR #248 runtime-plumbing maintainability cleanup merged after exact-head Full validation. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `50f5aa2`, with PR #248 runtime-plumbing cleanup and #249 documentation closeout merged. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,24 +24,26 @@
 
 ## Active objective
 
-PR #248 is merged to `dev` after full base→HEAD review and exact-head Full CI #2879. The runtime-plumbing maintenance batch is closed.
+The maintainability coverage-gap audit is active on `refactor/maintainability-gap-audit`, based on accepted `dev@50f5aa2`. This is not another broad cleanup pass.
 
-The accepted cleanup now includes:
+Coverage was rebuilt from the changed-files of #217 and #228-#248, then checked against the merged functional work between those maintenance batches. That left 15 production Kotlin files and 11 test/tooling/workflow entries that had not received equivalent maintenance coverage.
 
-- synthetic diagnostic metrics and fixed self-proof tags removed from the touched runtime paths;
-- full-AOD and Keyguard boundary handoff state consolidated where the fields described one lifecycle;
-- thin Policy/Result wrappers, duplicate result hierarchies and a dead detach path removed;
-- internal plumbing names shortened only where scope already carries the context;
-- CONTRIBUTING updated to prohibit synthetic metrics and low-value abstraction wrappers.
+Confirmed gaps are intentionally small:
 
-No device validation is required for this batch: static lifecycle comparison, compile/tests, target-profile validation and exact-head Full CI resolved the engineering questions without leaving a device-only uncertainty.
+- collapse the unused `SystemActiveSubscriptionSource.Snapshot/Authority/reason` shell to the nullable active-subscription set already consumed by the resolver;
+- remove the unconditional `ready` claim from the plain compatibility summary while keeping the separately observed compatibility state unchanged;
+- remove one duplicate geometry test whose name claimed a battery-expansion fact that its inputs did not model.
+
+Several tempting candidates are retained after caller-level review: `RootShell.Result` carries real process outcomes; `CenterTransitionPolicy` and the Wi-Fi optical-reference policy protect real transition/geometry contracts; render-latency and native-status inventory fields are runtime observations; navigation/resource/protocol constants retain compatibility meaning.
+
+No ownership, geometry, transition timing, fail-native behavior, external version or Build identity is intentionally changed.
 
 Current priorities:
 
-1. start the next coherent task from current `dev`;
-2. preserve accepted ownership/lifecycle/fail-native contracts and Build 746 identity;
-3. do not reopen this cleanup just to chase shorter names, fewer lines or zero compiler warnings;
-4. keep `main` unchanged until a separate dev-to-main promotion is explicitly chosen.
+1. finish exact base→HEAD review for this bounded gap batch;
+2. run one exact-head Runtime CI checkpoint rather than per-edit CI;
+3. merge to `dev` only if compile/tests and repository validation pass;
+4. require device evidence only if automated validation exposes a runtime-only question.
 
 ## Non-negotiable bounds
 
@@ -56,7 +58,7 @@ Current priorities:
 ## Immediate next
 
 - Treat Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Begin future work from current `dev` at PR #248 merge commit `6f7c3a1`.
+- Use accepted `dev@50f5aa2` as the integration base; #249 is documentation-only but is still part of the current branch head.
 - Do not reopen the rejected alpha-layer experiment or continue runtime-plumbing cleanup without a concrete maintenance or compatibility problem.
 - Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
