@@ -4556,8 +4556,8 @@ class GyModule : XposedModule() {
                 "layout" to settings.layout.persistedValue,
                 "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
-                "batteryNumber" to settings.batteryTopReadoutEnabled,
-                "chargingIcon" to settings.batteryTopChargingIconEnabled,
+                "batteryNumber" to settings.showTopReadout,
+                "chargingIcon" to settings.showTopChargingIcon,
                 "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     settings.batteryTopChargingIconFollowsBatteryColor,
@@ -4621,8 +4621,8 @@ class GyModule : XposedModule() {
                 "mobileTypeSizeScale" to visual.mobileTypeScale,
                 "mobileFollowsBattery" to visual.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
-                "batteryNumber" to visual.batteryTopReadoutEnabled,
-                "chargingIcon" to visual.batteryTopChargingIconEnabled,
+                "batteryNumber" to visual.showTopReadout,
+                "chargingIcon" to visual.showTopChargingIcon,
                 "batteryNumberFollowsBattery" to visual.batteryTopTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     visual.batteryTopChargingIconFollowsBatteryColor,

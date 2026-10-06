@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.batteryTopVerticalOffsetRaw
+import com.chaners.guiyuan.settings.topOffsetYRaw
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -208,7 +208,7 @@ class CenterGeometryTest {
 
     @Test
     fun topInfoOffsetTargetsReadoutOnlyInNetworkCenter() {
-        val raw = batteryTopVerticalOffsetRaw(5f)
+        val raw = topOffsetYRaw(5f)
 
         assertEquals(
             raw,
@@ -230,7 +230,7 @@ class CenterGeometryTest {
 
     @Test
     fun topInfoOffsetTargetsNetworkOnlyInBatteryCenter() {
-        val raw = batteryTopVerticalOffsetRaw(5f)
+        val raw = topOffsetYRaw(5f)
 
         assertEquals(
             BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,

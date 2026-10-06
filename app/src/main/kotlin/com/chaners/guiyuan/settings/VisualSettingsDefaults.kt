@@ -200,7 +200,7 @@ internal fun migrateBatteryTopChargingScaleReferenceIfNeeded(
         .apply()
 }
 
-internal fun batteryTopTextUiScaleDefault(
+internal fun topTextUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
@@ -216,7 +216,7 @@ internal fun mobileTypeScaleDefault(
         ContentLayout.BATTERY_CENTER -> 0.8f
     }
 
-internal fun batteryTopChargingIconUiScaleDefault(
+internal fun topChargingIconUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
@@ -224,36 +224,36 @@ internal fun batteryTopChargingIconUiScaleDefault(
         ContentLayout.BATTERY_CENTER -> 1.2f
     }
 
-internal fun batteryTopTextScaleDefault(
+internal fun topTextScaleDefault(
     layout: ContentLayout,
 ): Float =
     (
         BATTERY_TOP_TEXT_UI_SCALE_REFERENCE *
-            batteryTopTextUiScaleDefault(layout)
+            topTextUiScaleDefault(layout)
     ).coerceIn(
         BATTERY_TOP_TEXT_SCALE_MIN,
         BATTERY_TOP_TEXT_SCALE_MAX,
     )
 
-internal fun batteryTopChargingIconScaleDefault(
+internal fun topChargingIconScaleDefault(
     layout: ContentLayout,
 ): Float =
     (
         BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE *
-            batteryTopChargingIconUiScaleDefault(layout)
+            topChargingIconUiScaleDefault(layout)
     ).coerceIn(
         BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
         BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
     )
 
-internal fun batteryTopTextUiScale(rawScale: Float): Float =
+internal fun topTextUiScale(rawScale: Float): Float =
     (rawScale / BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
         .coerceIn(
             BATTERY_TOP_TEXT_UI_SCALE_MIN,
             BATTERY_TOP_TEXT_UI_SCALE_MAX,
         )
 
-internal fun batteryTopChargingIconUiScale(rawScale: Float): Float =
+internal fun topChargingIconUiScale(rawScale: Float): Float =
     (rawScale / BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
         .coerceIn(
             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
@@ -261,14 +261,14 @@ internal fun batteryTopChargingIconUiScale(rawScale: Float): Float =
         )
 
 
-internal fun batteryTopVerticalOffsetUi(rawOffset: Float): Float =
+internal fun topOffsetYUi(rawOffset: Float): Float =
     (rawOffset - BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE)
         .coerceIn(
             BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
             BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
         )
 
-internal fun batteryTopVerticalOffsetRaw(uiOffset: Float): Float =
+internal fun topOffsetYRaw(uiOffset: Float): Float =
     (
         uiOffset.coerceIn(
             BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,

@@ -174,17 +174,17 @@ internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
-    val batteryTopReadoutEnabled: Boolean = false,
+    val showTopReadout: Boolean = false,
     val batteryTopTextFollowsBatteryColor: Boolean = true,
-    val batteryTopChargingIconEnabled: Boolean = true,
+    val showTopChargingIcon: Boolean = true,
     val batteryTopChargingIconFollowsBatteryColor: Boolean = true,
     val batteryFillFollowsRetractEndpoint: Boolean = false,
     val controlCenterTintTransitionEnabled: Boolean = true,
-    val batteryTopTextScale: Float = batteryTopTextScaleDefault(layout),
-    val batteryTopTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
-    val batteryTopVerticalOffset: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
-    val batteryTopChargingIconScale: Float =
-        batteryTopChargingIconScaleDefault(layout),
+    val topTextScale: Float = topTextScaleDefault(layout),
+    val topTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
+    val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+    val topChargingIconScale: Float =
+        topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
     val wifiScale: Float = WIFI_SIZE_SCALE_DEFAULT,
@@ -202,23 +202,23 @@ internal data class VisualCfg(
 
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
-        batteryTopTextScale =
-            batteryTopTextScale.coerceIn(
+        topTextScale =
+            topTextScale.coerceIn(
                 BATTERY_TOP_TEXT_SCALE_MIN,
                 BATTERY_TOP_TEXT_SCALE_MAX,
             ),
-        batteryTopTextWeight =
-            batteryTopTextWeight.coerceIn(
+        topTextWeight =
+            topTextWeight.coerceIn(
                 BATTERY_TOP_TEXT_WEIGHT_MIN,
                 BATTERY_TOP_TEXT_WEIGHT_MAX,
             ),
-        batteryTopVerticalOffset =
-            batteryTopVerticalOffset.coerceIn(
+        topOffsetY =
+            topOffsetY.coerceIn(
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
             ),
-        batteryTopChargingIconScale =
-            batteryTopChargingIconScale.coerceIn(
+        topChargingIconScale =
+            topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
                 BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
             ),
