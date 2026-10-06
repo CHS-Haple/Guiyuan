@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ControlCenterTransitionIslandTest {
     @Test
-    fun batteryIslandRingExitUsesLogicalStartWhileNativeTargetRowReflows() {
+    fun islandRingExitUsesLogicalStart() {
         val direction =
             CcTransition
                 .batteryRingExitDirection(
@@ -35,7 +35,7 @@ class ControlCenterTransitionIslandTest {
     }
 
     @Test
-    fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
+    fun nonBatteryIslandKeepsDirection() {
         BatteryRingTransition.ExitDirection.entries.forEach { live ->
             assertEquals(
                 live,
@@ -50,7 +50,7 @@ class ControlCenterTransitionIslandTest {
     }
 
     @Test
-    fun islandScenesKeepSemanticReservationForGuiyuanExpansion() {
+    fun islandKeepsSemanticReservation() {
         assertTrue(
             CcTransition
                 .usesSemanticTransitionReservation(
@@ -86,7 +86,7 @@ class ControlCenterTransitionIslandTest {
     }
 
     @Test
-    fun nativeIslandCollisionDoesNotDisableGuiyuanPaddingReflow() {
+    fun islandCollisionKeepsPaddingReflow() {
         assertTrue(
             CcTransition
                 .allowsNativeTransitionPaddingExpansion(
@@ -125,7 +125,7 @@ class ControlCenterTransitionIslandTest {
     }
 
     @Test
-    fun verifiedSourceScenesKeepSemanticReservationThroughProjection() {
+    fun verifiedSceneKeepsReservation() {
         assertTrue(
             CcTransition
                 .usesSemanticTransitionReservation(SourceScene.HOME),
@@ -141,7 +141,7 @@ class ControlCenterTransitionIslandTest {
     }
 
     @Test
-    fun nativeFinalAppearanceConsumesOnlyRemainingOutwardDistance() {
+    fun finalAppearanceUsesRemainingDistance() {
         assertEquals(
             0.696f,
             CcTransition.handoffMotionProgress(

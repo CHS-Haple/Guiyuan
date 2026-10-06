@@ -5,7 +5,7 @@ import org.junit.Test
 
 class BatteryTopLayoutTest {
     @Test
-    fun opticalDefaultKeepsDesignPlacementIndependentFromClipping() {
+    fun opticalDefaultIgnoresClipping() {
         val base =
             BatteryTopLayout.resolveOpticalBaseCenterY(
                 preferredCenterY = 16f,
@@ -27,7 +27,7 @@ class BatteryTopLayoutTest {
     }
 
     @Test
-    fun positiveOffsetRemainsLiteralInsteadOfFlatteningAtOldSafeTop() {
+    fun positiveOffsetStaysLiteral() {
         val center =
             BatteryTopLayout.resolveCenterY(
                 baseCenterY = 14.5f,
@@ -38,7 +38,7 @@ class BatteryTopLayoutTest {
     }
 
     @Test
-    fun negativeOffsetRemainsLiteralDownwardTravel() {
+    fun negativeOffsetStaysLiteral() {
         val center =
             BatteryTopLayout.resolveCenterY(
                 baseCenterY = 14.5f,
@@ -49,7 +49,7 @@ class BatteryTopLayoutTest {
     }
 
     @Test
-    fun overflowIsZeroWhenVisibleInkStaysInsideLogicalViewport() {
+    fun insideViewportNeedsNoOverflow() {
         val overflow =
             BatteryTopLayout.resolveRequiredTopOverflowPx(
                 transformScale = 0.875f,
@@ -61,7 +61,7 @@ class BatteryTopLayoutTest {
     }
 
     @Test
-    fun overflowExpandsPhysicalSurfaceInsteadOfClampingRequestedY() {
+    fun overflowExpandsSurface() {
         val overflow =
             BatteryTopLayout.resolveRequiredTopOverflowPx(
                 transformScale = 0.875f,
@@ -73,7 +73,7 @@ class BatteryTopLayoutTest {
     }
 
     @Test
-    fun nonFiniteManualOffsetFallsBackToOpticalBase() {
+    fun invalidOffsetUsesOpticalBase() {
         val center =
             BatteryTopLayout.resolveCenterY(
                 baseCenterY = 14.5f,

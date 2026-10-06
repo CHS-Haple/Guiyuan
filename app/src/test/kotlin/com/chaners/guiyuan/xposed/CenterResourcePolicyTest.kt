@@ -35,7 +35,7 @@ class CenterResourcePolicyTest {
     }
 
     @Test
-    fun alreadyDarkModeInputStillResolvesOpaqueTintMask() {
+    fun darkInputStillResolvesTintMask() {
         assertEquals(
             "stat_sys_wifi_signal_1_tint",
             CenterResourcePolicy.tintEntryName(
@@ -45,7 +45,7 @@ class CenterResourcePolicyTest {
     }
 
     @Test
-    fun hotspotFamilyUsesSamePresentationSuffixContract() {
+    fun hotspotUsesSameSuffixContract() {
         assertEquals(
             "stat_sys_hotspot_signal_3_tint",
             CenterResourcePolicy.tintEntryName(

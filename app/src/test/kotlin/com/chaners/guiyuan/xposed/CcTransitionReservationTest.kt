@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ControlCenterTransitionReservationTest {
     @Test
-    fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
+    fun reservationInterpolatesWidth() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -48,7 +48,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun totalWidthInterpolationAvoidsOverlappingSpanDeadZone() {
+    fun widthInterpolationAvoidsDeadZone() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -79,7 +79,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
+    fun islandReservationSkipsLatentGap() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -110,7 +110,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun batteryIslandNativePeerReservationProjectsTargetIntoCurrentFakeEndFrame() {
+    fun islandReservationProjectsIntoFakeFrame() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -144,7 +144,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun batteryIslandNativePeerReservationIgnoresEndSideProjection() {
+    fun islandReservationIgnoresEndSide() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -169,7 +169,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
+    fun islandReservationConverges() {
         val spans =
             listOf(
                 CcTransition.ReservationSpan(
@@ -221,7 +221,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun latentRevealRequiresRealVisualReservationAndTargetProximity() {
+    fun latentRevealNeedsSpaceAndProximity() {
         val target = transitionGeometry(centerX = 100f, centerY = 100f, width = 20f, height = 20f)
 
         assertEquals(
@@ -277,7 +277,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun latentRevealAcceleratesAfterOccupancyUnlockWithoutChangingTheGate() {
+    fun latentRevealAcceleratesAfterUnlock() {
         assertEquals(
             0f,
             CcTransition
@@ -303,7 +303,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun latentReservationProgressTracksVisibleEnvelopeCoverage() {
+    fun latentReservationTracksCoverage() {
         assertEquals(
             0f,
             CcTransition.latentReservationProgress(
@@ -337,7 +337,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun exactBarTargetCompensatesInsideSimilarityBasis() {
+    fun exactBarsCompensateWithinBasis() {
         val outerScale =
             StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
                 targetWidthRatio = 1.5f,
@@ -363,7 +363,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun exactBarTargetPreservesUniformOuterShrinkAndCompensatesAxes() {
+    fun exactBarsKeepOuterShrink() {
         val outerScale =
             StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
                 targetWidthRatio = 0.75f,
@@ -389,7 +389,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun unmatchedComponentsClipOutFastWithoutChangingTheirScale() {
+    fun unmatchedComponentsClipWithoutScale() {
         assertEquals(
             1f,
             CcTransition.unmatchedExitVisibleFraction(0f),
@@ -408,7 +408,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun horizontalClipKeepsPixelsOpaqueAndAnchorsTowardChosenEdge() {
+    fun horizontalClipKeepsOpaqueEdge() {
         val policy = CcTransition
         val rightAnchored =
             policy.horizontalClipBounds(
@@ -449,7 +449,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun latentMobileClipEnvelopeCoversExactTargetAxisExpansion() {
+    fun latentMobileClipCoversTargetAxes() {
         val source =
             StatusPainter.TransitionBounds(
                 left = 10f,
@@ -479,7 +479,7 @@ class ControlCenterTransitionReservationTest {
     }
 
     @Test
-    fun nativePeerTintNeverFallsBackToBatteryTintAuthority() {
+    fun peerTintNeverUsesBatteryTint() {
         val policy = CcTransition
         val peer = 0xffe0e0e0.toInt()
         val cached = 0xffdddddd.toInt()

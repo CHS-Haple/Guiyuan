@@ -10,7 +10,7 @@ import org.junit.Test
 
 class CenterGeometryTest {
     @Test
-    fun wifiSizeChangesWithoutResizingMobileTypeOrNativePeers() {
+    fun wifiSizeDoesNotResizePeers() {
         val base =
             CenterGeometry.resolve(
                 wifiSizeScale = 1f,
@@ -56,7 +56,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileTypeSizeChangesWithoutResizingWifiOrNativePeers() {
+    fun mobileTypeSizeDoesNotResizePeers() {
         val base =
             CenterGeometry.resolve(
                 wifiSizeScale = 1f,
@@ -79,7 +79,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileTypeWeightChangesIndependentlyFromAllDrawableSizes() {
+    fun mobileTypeWeightIsIndependent() {
         val light =
             CenterGeometry.resolve(
                 wifiSizeScale = 1f,
@@ -100,7 +100,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun invalidAndOutOfRangeValuesAreClampedSafely() {
+    fun invalidValuesClampSafely() {
         val fallback =
             CenterGeometry.resolve(
                 wifiSizeScale = Float.NaN,
@@ -145,7 +145,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun rendererRangeClampsMatchPersistedVisualRanges() {
+    fun rendererRangesMatchPrefs() {
         assertEquals(0.40f, CenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
         assertEquals(0.40f, CenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
         assertEquals(1.25f, CenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
@@ -171,7 +171,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileTypeKeepsHostCompensationButFollowsCombinedScale() {
+    fun mobileTypeKeepsHostCompensation() {
         val base = 39f
         val hostScale = 1.5f
 
@@ -192,7 +192,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun previewCanvasScalingKeepsExistingDirectScalePath() {
+    fun previewScalingKeepsDirectPath() {
         val base = 39f
         assertEquals(
             base,
@@ -207,7 +207,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun topInfoOffsetTargetsReadoutOnlyInNetworkCenter() {
+    fun topOffsetMovesReadoutInNetworkMode() {
         val raw = batteryTopVerticalOffsetRaw(5f)
 
         assertEquals(
@@ -229,7 +229,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun topInfoOffsetTargetsNetworkOnlyInBatteryCenter() {
+    fun topOffsetMovesNetworkInBatteryMode() {
         val raw = batteryTopVerticalOffsetRaw(5f)
 
         assertEquals(
@@ -251,7 +251,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun fiveGaAccessSuffixUsesLowerRightVerticalDirection() {
+    fun fiveGaSuffixUsesLowerRight() {
         assertEquals(
             8f,
             MobileTypeSuffixPolicy.verticalOffset(
@@ -271,7 +271,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun nativePeerDefaultsRemainOpticallyMatchedButDoNotFollowWifiScaling() {
+    fun nativePeersIgnoreWifiScale() {
         val base =
             CenterGeometry.resolve(
                 wifiSizeScale = 1f,

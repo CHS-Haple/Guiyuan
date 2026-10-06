@@ -16,7 +16,7 @@ class DiagPrefsOwnerTest {
     }
 
     @Test
-    fun bindOwnsListenerAndPropagatesDetailedChanges() {
+    fun bindOwnsListenerAndUpdatesDetail() {
         val preferences = FakePreferences()
         val observed = mutableListOf<Boolean>()
 
@@ -127,7 +127,7 @@ class DiagPrefsOwnerTest {
             }
         }
 
-        override fun unregisterOnSharedPreferenceChangeListener(
+        override fun unregistersPrefListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
             if (listener != null) {

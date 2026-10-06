@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ControlCenterTransitionTest {
     @Test
-    fun targetTypographyStyleConvergesBeforeNativeHandoff() {
+    fun typeStyleConvergesBeforeHandoff() {
         assertEquals(
             0f,
             StatusPainter.TransitionTypographyPolicy.styleProgress(0.42f),
@@ -28,7 +28,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun exactTextGeometryReachesNativeBasisInsteadOfSimilarityEnvelope() {
+    fun exactTextReachesNativeBasis() {
         val source = transitionGeometry(centerX = 10f, centerY = 20f, width = 10f, height = 20f)
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
@@ -45,7 +45,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun chargingGlyphUsesOpaqueClipHideAndAcceleratedLateReveal() {
+    fun chargingGlyphUsesClipAndLateReveal() {
         val policy = StatusPainter.BatteryNumberFollowerPolicy
         val (hideStart, hideEnd) = policy.sourceHideWindow()
         val (revealStart, revealEnd) = policy.targetRevealWindow()
@@ -115,7 +115,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun chargingGlyphNeverUsesItsOwnTargetMotionWhileSourceClipRemains() {
+    fun chargingGlyphFollowsSourceWhileClipped() {
         val policy = StatusPainter.BatteryNumberFollowerPolicy
         val (_, hideEnd) = policy.sourceHideWindow()
         var observedPartialClip = false
@@ -141,7 +141,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun chargingGlyphFollowerPreservesItsRelativeGeometryToBatteryNumber() {
+    fun chargingGlyphKeepsRelativeGeometry() {
         val numberSource =
             transitionGeometry(
                 centerX = 100f,
@@ -181,7 +181,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
+    fun transitionTintChangesOnlyMidway() {
         val policy = CcTransition
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
@@ -219,7 +219,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
+    fun followSystemUsesLiveTintCustomMayTransition() {
         val policy = CcTransition
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
@@ -267,7 +267,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun mobileTypeWeightInterpolatesToNativeTarget() {
+    fun mobileTypeWeightConverges() {
         assertEquals(
             800,
             StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
@@ -295,7 +295,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun mobileTypeWeightFailsNativeWhenTargetTypographyIsUnavailable() {
+    fun missingTargetTypographyFailsNative() {
         assertEquals(
             800,
             StatusPainter.MobileTypeTransitionPolicy.resolveWeight(
@@ -307,7 +307,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun shrinkOnlyScalePolicyNeverEnlargesSemanticGlyphs() {
+    fun shrinkOnlyNeverEnlargesGlyphs() {
         val source = transitionGeometry(width = 10f, height = 10f)
         val target = transitionGeometry(width = 30f, height = 20f)
 
@@ -324,7 +324,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun targetScalePolicyStillAllowsWifiOpticalConvergence() {
+    fun targetScaleAllowsWifiConvergence() {
         val source = transitionGeometry(width = 10f, height = 10f)
         val target = transitionGeometry(width = 20f, height = 20f)
 
@@ -341,7 +341,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun fourBarSnapshotTargetsRemainOrderedAndBounded() {
+    fun fourBarTargetsStayOrdered() {
         val snapshot =
             VisualSnapshot.Snapshot(
                 envelope =
@@ -370,7 +370,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun roundedCapsAreIncludedInsideTheNativeOpticalHeightBudget() {
+    fun roundedCapsStayInOpticalBudget() {
         assertEquals(
             45f,
             StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(

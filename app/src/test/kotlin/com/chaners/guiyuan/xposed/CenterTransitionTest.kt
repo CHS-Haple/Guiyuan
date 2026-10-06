@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CenterTransitionTest {
     @Test
-    fun mobileTypeChangesStayInTheSamePresentationFamily() {
+    fun mobileTypeChangeKeepsFamily() {
         val fourG =
             CenterIndicator.MobileType(
                 label = "4G",
@@ -32,7 +32,7 @@ class CenterTransitionTest {
     }
 
     @Test
-    fun wifiDetailChangesStayInTheSamePresentationFamily() {
+    fun wifiDetailChangeKeepsFamily() {
         val weak =
             CenterIndicator.Wifi(
                 segments = 1,
@@ -67,7 +67,7 @@ class CenterTransitionTest {
     }
 
     @Test
-    fun sameTargetFamilyUpdateKeepsRunningTransition() {
+    fun sameFamilyKeepsTransition() {
         val source =
             CenterIndicator.MobileType(
                 label = "5G",
@@ -97,7 +97,7 @@ class CenterTransitionTest {
     }
 
     @Test
-    fun reversalToActiveSourceSnapsInsteadOfStartingAnotherAnimation() {
+    fun reversalSnapsToSource() {
         val source =
             CenterIndicator.MobileType(
                 label = "5G",
@@ -122,7 +122,7 @@ class CenterTransitionTest {
     }
 
     @Test
-    fun thirdFamilyInterruptionSnapsToLatestPresentation() {
+    fun thirdFamilySnapsToLatest() {
         val source =
             CenterIndicator.MobileType(
                 label = "5G",

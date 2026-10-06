@@ -6,7 +6,7 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
-    fun halfBatteryFillsFirstVisibleShoulderBeforeGap() {
+    fun halfBatteryFillsFirstShoulder() {
         val result =
             BatteryTopArcPolicy.resolve(
                 batteryPercent = 50,
@@ -27,7 +27,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun widerVisibleReadoutRequestsOnlyTheExtraWidthItNeeds() {
+    fun widerReadoutRequestsExtraWidth() {
         val narrow =
             gapFor(
                 left = 51f,
@@ -49,7 +49,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun movingReadoutUpShrinksGapAndCanRemoveItEntirely() {
+    fun movingReadoutUpShrinksGap() {
         val low =
             gapFor(
                 left = 20f,
@@ -77,7 +77,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun extraVisibleHeightOrLowerPositionWidensGapUntilWidthBecomesLimit() {
+    fun heightOrPositionCanWidenGap() {
         val compact =
             gapFor(
                 left = 25f,
@@ -97,7 +97,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun componentAwareWifiGapDoesNotReserveEmptyEnvelopeCorners() {
+    fun wifiGapSkipsEmptyCorners() {
         val envelope =
             gapFor(
                 left = 30f,
@@ -134,7 +134,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun rightSideBadgeRequestsItsOwnRightShoulderGap() {
+    fun rightBadgeUsesRightShoulder() {
         val badge =
             gapFor(
                 left = 70f,
@@ -148,7 +148,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun leftSideBadgeRequestsItsOwnLeftShoulderGap() {
+    fun leftBadgeUsesLeftShoulder() {
         val badge =
             gapFor(
                 left = 28f,
@@ -162,7 +162,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun wifiBadgeExtendsOnlyTheShoulderItActuallyOccupies() {
+    fun wifiBadgeExtendsUsedShoulder() {
         val center =
             gapFor(
                 left = 42f,
@@ -192,7 +192,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun singleComponentGapMergePreservesExistingGeometry() {
+    fun singleGapMergeKeepsGeometry() {
         val original =
             gapFor(
                 left = 42f,
@@ -210,7 +210,7 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
-    fun asymmetricVisibleEnvelopeMovesGapCenterInsteadOfAddingDeadPadding() {
+    fun asymmetricEnvelopeMovesGapCenter() {
         val result =
             gapFor(
                 left = 42f,

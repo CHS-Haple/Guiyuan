@@ -8,7 +8,7 @@ import org.junit.Test
 
 class ColorPolicyTest {
     @Test
-    fun normalUsesResolvedStatusIconTintAcrossLayers() {
+    fun normalUsesResolvedStatusTint() {
         val colors =
             ColorPolicy.resolve(
                 model = model(),
@@ -26,7 +26,7 @@ class ColorPolicyTest {
     }
 
     @Test
-    fun hyperosPresetUsesPinnedTemplateColorInsteadOfRuntimeSemanticInput() {
+    fun hyperOsPresetUsesPinnedTemplate() {
         val semanticColor = 0xff123456.toInt()
         val colors =
             ColorPolicy.resolve(
@@ -113,7 +113,7 @@ class ColorPolicyTest {
 
 
     @Test
-    fun batteryTextAndChargingIconCanUseStatusTintIndependently() {
+    fun batteryTextAndIconUseStatusTint() {
         val semanticColor = 0xff1dcd3a.toInt()
         val statusTint = 0xff445566.toInt()
         val colors =
@@ -142,7 +142,7 @@ class ColorPolicyTest {
     }
 
     @Test
-    fun invalidStatusIconTintFallsBackToBatteryAnchorTint() {
+    fun invalidStatusTintUsesBatteryTint() {
         val colors =
             ColorPolicy.resolve(
                 model = model(),

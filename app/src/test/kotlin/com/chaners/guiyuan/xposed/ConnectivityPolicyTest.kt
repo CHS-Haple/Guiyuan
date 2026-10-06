@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ConnectivityPolicyTest {
     @Test
-    fun systemUiWifiNoInternetWinsEvenWhenCellularIsDefault() {
+    fun sysUiNoInternetWins() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
@@ -44,7 +44,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun systemUiWifiLevelRemainsAuthoritativeAcrossDefaultTransportChanges() {
+    fun sysUiWifiLevelStaysAuthoritative() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
@@ -76,7 +76,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun connectivityOnlyFillsUnknownWifiInternetSemantics() {
+    fun connectivityFillsUnknownWifiOnly() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
@@ -108,7 +108,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun otherTransportDoesNotRenderWifiWhenSystemUiInternetSemanticsAreUnknown() {
+    fun otherTransportDoesNotInventWifi() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = 1,
@@ -154,7 +154,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun airplaneModeUsesNativeAirplaneCenterWhenWifiIsAbsent() {
+    fun airplaneUsesNativeCenter() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
@@ -174,7 +174,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun airplaneModeUsesAirplaneCenterBeforeConnectivityIsKnown() {
+    fun airplaneCenterBeforeConnectivity() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
@@ -187,7 +187,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun visibleWifiRemainsCenterPriorityDuringAirplaneMode() {
+    fun wifiKeepsCenterInAirplane() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi =
@@ -273,7 +273,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun vpnDefaultNetworkDoesNotSuppressAuthoritativeMobileTypeAtBootstrap() {
+    fun vpnDoesNotHideAuthoritativeMobileType() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
@@ -306,7 +306,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun vpnOnlyTransportWaitsForAuthoritativeWifiAbsence() {
+    fun vpnWaitsForWifiAbsence() {
         val mobileType =
             NativePresentationResolver.NetworkType(
                 label = "5G",
@@ -347,7 +347,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun genericOtherTransportKeepsExistingMobileDataGate() {
+    fun otherTransportKeepsMobileGate() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
@@ -373,7 +373,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun unknownConnectivityDoesNotRenderWifiWhenSystemUiInternetSemanticsAreUnknown() {
+    fun unknownConnectivityDoesNotInventWifi() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = 1,
@@ -400,7 +400,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun systemUiWifiLevelsRemainFourDistinctVisualStates() {
+    fun sysUiWifiKeepsFourLevels() {
         val connectivity =
             ConnectivitySource.State(
                 known = true,
@@ -431,7 +431,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun unavailableWifiSignalWithoutNativeResourceDoesNotMasqueradeAsLevelZero() {
+    fun missingWifiResourceIsNotLevelZero() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = null,
@@ -471,7 +471,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun nativeWifiReplacementIsReadyWhenSystemUiProvidesInternetSemantics() {
+    fun wifiReplacementReadyWithSysUiState() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = 1,
@@ -496,7 +496,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun nativeWifiReplacementUsesConnectivityOnlyWhenWifiIsDefault() {
+    fun wifiReplacementUsesDefaultConnectivity() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = 1,
@@ -533,7 +533,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun unknownWifiSignalWithoutNativeResourceNeverClaimsReplacement() {
+    fun unknownWifiNeverClaimsReplacement() {
         val ready =
             ConnectivityPolicy.wifiReplacementReady(
                 wifi =
@@ -555,7 +555,7 @@ class ConnectivityPolicyTest {
         assertEquals(false, ready)
     }
     @Test
-    fun nativeWifiVariantCanRenderWithoutParsedSignalLevel() {
+    fun nativeWifiRendersWithoutParsedLevel() {
         val wifi =
             StatusStateStore.WifiState.Visible(
                 iconResId = 99,

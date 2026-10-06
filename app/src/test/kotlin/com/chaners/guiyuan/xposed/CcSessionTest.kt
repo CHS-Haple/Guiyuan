@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ControlCenterSessionTest {
     @Test
-    fun projectionReadinessRequiresPreparedFakeRootAndCompactPresentation() {
+    fun projectionNeedsPreparedCompactRoot() {
         assertTrue(
             CcSession.resolveProjectionReady(
                 featureEnabled = true,
@@ -53,7 +53,7 @@ class ControlCenterSessionTest {
         )
     }
     @Test
-    fun firstLayoutRetryOnlyCoversEarlyGeometryReadinessFailures() {
+    fun firstLayoutRetryIsGeometryOnly() {
         assertTrue(
             CcSession.isFirstLayoutRetryable(
                 "battery-core-width-unavailable",
@@ -78,7 +78,7 @@ class ControlCenterSessionTest {
 
 
     @Test
-    fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
+    fun reloadRestoreNeedsLaidOutHost() {
         assertTrue(
             CcSession
                 .shouldRestoreLaidOutHost(
@@ -118,7 +118,7 @@ class ControlCenterSessionTest {
     }
 
     @Test
-    fun transferredCompactReadinessIsAdoptedOnlyWhenPreviouslyReady() {
+    fun compactReadyTransfersOnlyIfReady() {
         assertTrue(
             CcSession
                 .shouldAdoptCompactReady(
@@ -134,7 +134,7 @@ class ControlCenterSessionTest {
     }
 
     @Test
-    fun transientLayoutLossRetainsPreparedFakePresentationWhileRootStaysAttached() {
+    fun layoutLossKeepsPreparedRoot() {
         assertTrue(
             CcSession
                 .keepNativeWhenLayoutMissing(
@@ -159,7 +159,7 @@ class ControlCenterSessionTest {
     }
 
     @Test
-    fun carrierCapacityLeaseBeginsOnlyWhenAttachedSessionActuallyBecomesVisible() {
+    fun capacityLeaseStartsWhenVisible() {
         assertTrue(
             CcSession
                 .shouldBeginCapacityLease(
@@ -191,7 +191,7 @@ class ControlCenterSessionTest {
     }
 
     @Test
-    fun carrierCapacityLeaseEndsOnlyWhenVisibleCycleActuallyCloses() {
+    fun capacityLeaseEndsWithVisibleCycle() {
         assertTrue(
             CcSession
                 .shouldEndCapacityLease(

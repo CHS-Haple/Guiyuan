@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ControlCenterTransitionGeometryTest {
     @Test
-    fun fakeCapacityLeaseDoesNotChangeEndAnchoredMotionCarrierCenter() {
+    fun capacityLeaseKeepsCarrierCenter() {
         val expandedCarrier =
             floatArrayOf(
                 872f,
@@ -44,7 +44,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun fakeCapacityLeaseKeepsRtlMotionCarrierStartAnchored() {
+    fun rtlCapacityLeaseKeepsStart() {
         val expandedCarrier =
             floatArrayOf(
                 872f,
@@ -69,7 +69,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun carriedSourceUsesNativeCarrierMotionBeforeRootTargetInterpolation() {
+    fun carriedSourceUsesNativeMotionFirst() {
         val source =
             floatArrayOf(75f, 70f, 10f, 0f, 0f, 10f)
         val target =
@@ -97,7 +97,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun carriedSourceDoesNotRescaleSourceOffsetAtGestureStart() {
+    fun carriedSourceKeepsStartOffset() {
         val source =
             floatArrayOf(75f, 70f, 10f, 0f, 0f, 10f)
         val target =
@@ -125,7 +125,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun carriedSourceFollowsLiveFakeCarrierAtStart() {
+    fun carriedSourceFollowsFakeAtStart() {
         val source =
             floatArrayOf(75f, 50f, 10f, 0f, 0f, 10f)
         val target =
@@ -153,7 +153,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun carriedSourceLandsOnAbsoluteRootTargetEvenWhenCarriersDoNotConverge() {
+    fun carriedSourceLandsOnRootTarget() {
         val source =
             floatArrayOf(75f, 50f, 10f, 0f, 0f, 10f)
         val target =
@@ -181,7 +181,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun latentSingleIconCanLandOnRootTargetWithoutGrowingToLargeSlotBox() {
+    fun latentIconAvoidsLargeSlotBox() {
         val source =
             floatArrayOf(75f, 50f, 20f, 0f, 0f, 20f)
         val target =
@@ -209,7 +209,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun latentAdditionalMobileKeepsShrinkOnlyPathBasis() {
+    fun latentMobileKeepsShrinkOnlyBasis() {
         val source = transitionGeometry(width = 20f, height = 20f)
         val target = transitionGeometry(width = 75f, height = 75f)
 
@@ -227,7 +227,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun nativeTargetHeightCanBoundLocalShapeWithoutOwningItsExactScale() {
+    fun nativeHeightBoundsLocalShape() {
         val ratio =
             CcTransition.relativeGeometryHeight(
                 target = transitionGeometry(width = 20f, height = 50f),
@@ -239,7 +239,7 @@ class ControlCenterTransitionGeometryTest {
 
 
     @Test
-    fun steadyTransitionSourceUsesHostEndSlotInsteadOfInnerBatteryCenter() {
+    fun steadySourceUsesHostEndSlot() {
         val host = floatArrayOf(300f, 54f, 600f, 0f, 0f, 108f)
 
         val ltr =
@@ -269,7 +269,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun sourceGeometryKeepsNativePositionButUsesStableRenderBasis() {
+    fun sourceGeometryUsesStableBasis() {
         val nativePosition = floatArrayOf(100f, 200f, 60f, 0f, 0f, 40f)
         val stableRenderBasis = floatArrayOf(900f, 900f, 105f, 0f, 0f, 169f)
 
@@ -286,7 +286,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun semanticFallbackSeparatesMobileTypeAndSignalInsteadOfSharingSlotCenter() {
+    fun fallbackSeparatesTypeAndSignal() {
         val type =
             CcTransition.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
@@ -318,7 +318,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun tinySecondaryComponentsRemainVisibleToTopologyClassifier() {
+    fun tinyComponentsStayInTopology() {
         val fourBars =
             listOf(
                 VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
@@ -348,7 +348,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun dualRowCompositeCannotExposeExactFourBarCapability() {
+    fun dualRowIsNotExactFourBar() {
         val components =
             listOf(
                 VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
@@ -382,7 +382,7 @@ class ControlCenterTransitionGeometryTest {
     }
 
     @Test
-    fun participantVisualTopologyDistinguishesFourBarsFromComposite() {
+    fun topologyDistinguishesFourBars() {
         val fourBars =
             listOf(
                 VisualSnapshot.NormalizedRect(0.05f, 0.60f, 0.15f, 0.95f),
