@@ -3,7 +3,7 @@ package com.chaners.guiyuan.ui.components
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.NavStyle
 import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -15,16 +15,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal const val FloatingNavigationBlurRadius = 25f
 internal const val FloatingNavigationBlendAlpha = 0.6f
 
-internal val FloatingNavigationStyle.requiresTextureBackdrop: Boolean
-    get() = this != FloatingNavigationStyle.Standard
+internal val NavStyle.requiresTextureBackdrop: Boolean
+    get() = this != NavStyle.Standard
 
 @Composable
 internal fun Modifier.floatingNavigationMaterial(
     backdrop: Backdrop,
     darkMode: Boolean,
-    style: FloatingNavigationStyle,
+    style: NavStyle,
 ): Modifier {
-    if (style == FloatingNavigationStyle.Standard) return this
+    if (style == NavStyle.Standard) return this
 
     return textureBlur(
         backdrop = backdrop,
@@ -43,7 +43,7 @@ internal fun Modifier.floatingNavigationMaterial(
                     ),
             ),
         highlight =
-            if (style == FloatingNavigationStyle.Glass) {
+            if (style == NavStyle.Glass) {
                 if (darkMode) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
             } else {
                 null

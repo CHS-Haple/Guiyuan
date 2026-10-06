@@ -13,75 +13,75 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
-internal enum class AppThemeMode {
+internal enum class ThemeMode {
     System,
     Light,
     Dark,
 }
 
-internal enum class FloatingNavigationStyle {
+internal enum class NavStyle {
     Standard,
     Blur,
     Glass,
 }
 
-internal enum class FloatingNavigationContent {
+internal enum class NavContent {
     IconOnly,
     IconAndText,
 }
 
-internal data class AppearanceSettings(
-    val themeMode: AppThemeMode = AppThemeMode.System,
+internal data class Appearance(
+    val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColorEnabled: Boolean = false,
     val floatingNavigationBarEnabled: Boolean = true,
-    val floatingNavigationStyle: FloatingNavigationStyle = FloatingNavigationStyle.Glass,
-    val floatingNavigationContent: FloatingNavigationContent = FloatingNavigationContent.IconOnly,
+    val floatingNavigationStyle: NavStyle = NavStyle.Glass,
+    val floatingNavigationContent: NavContent = NavContent.IconOnly,
     val swipeBackEnabled: Boolean = true,
 )
 
-internal data class ThemeSelection(
-    val mode: AppThemeMode,
+internal data class ThemeChoice(
+    val mode: ThemeMode,
     val dynamicColorEnabled: Boolean,
 )
 
-internal fun decodeFloatingNavigationStyle(
+internal fun decodeNavStyle(
     storedStyle: String?,
     storedFloatingBlurEnabled: Boolean?,
     legacyBlurEnabled: Boolean?,
     legacyGlassEnabled: Boolean?,
-): FloatingNavigationStyle {
-    FloatingNavigationStyle.entries
+): NavStyle {
+    NavStyle.entries
         .firstOrNull { it.name == storedStyle }
         ?.let { return it }
 
     storedFloatingBlurEnabled?.let { enabled ->
-        return if (enabled) FloatingNavigationStyle.Glass else FloatingNavigationStyle.Standard
+        return if (enabled) NavStyle.Glass else NavStyle.Standard
     }
 
     val blurEnabled = legacyBlurEnabled ?: true
-    if (!blurEnabled) return FloatingNavigationStyle.Standard
+    if (!blurEnabled) return NavStyle.Standard
 
     return if (legacyGlassEnabled ?: true) {
-        FloatingNavigationStyle.Glass
+        NavStyle.Glass
     } else {
-        FloatingNavigationStyle.Blur
+        NavStyle.Blur
     }
 }
 
-internal fun decodeFloatingNavigationContent(storedContent: String?): FloatingNavigationContent =
-    FloatingNavigationContent.entries
+internal fun decodeNavContent(storedContent: String?): NavContent =
+    NavContent.entries
         .firstOrNull { it.name == storedContent }
-        ?: FloatingNavigationContent.IconOnly
+        ?: NavContent.IconOnly
 
-internal fun decodeThemeSelection(
+internal fun decodeTheme(
     storedMode: String?,
     storedDynamicColorEnabled: Boolean?,
-): ThemeSelection {
+): ThemeChoice {
     val legacyDynamic = storedMode == LEGACY_DYNAMIC_THEME_MODE
     val mode =
-        AppThemeMode.entries.firstOrNull { it.name == storedMode }
-            ?: AppThemeMode.System
-    return ThemeSelection(
+        ThemeMode.entries.firstOrNull { it.name == storedMode }
+            ?: ThemeMode.System
+    return ThemeChoice(
         mode = mode,
         dynamicColorEnabled = storedDynamicColorEnabled ?: legacyDynamic,
     )
@@ -91,10 +91,10 @@ private val Context.appearanceDataStore: DataStore<Preferences> by preferencesDa
     name = "appearance",
 )
 
-internal class AppearanceSettingsRepository(context: Context) {
+internal class AppearanceRepo(context: Context) {
     private val dataStore = context.applicationContext.appearanceDataStore
 
-    val settings: Flow<AppearanceSettings> = dataStore.data
+    val settings: Flow<Appearance> = dataStore.data
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
@@ -104,32 +104,32 @@ internal class AppearanceSettingsRepository(context: Context) {
         }
         .map { preferences ->
             val themeSelection =
-                decodeThemeSelection(
+                decodeTheme(
                     storedMode = preferences[ThemeModeKey],
                     storedDynamicColorEnabled = preferences[DynamicColorEnabledKey],
                 )
-            AppearanceSettings(
+            Appearance(
                 themeMode = themeSelection.mode,
                 dynamicColorEnabled = themeSelection.dynamicColorEnabled,
                 floatingNavigationBarEnabled =
                     preferences[FloatingNavigationBarEnabledKey] ?: true,
                 floatingNavigationStyle =
-                    decodeFloatingNavigationStyle(
-                        storedStyle = preferences[FloatingNavigationStyleKey],
+                    decodeNavStyle(
+                        storedStyle = preferences[NavStyleKey],
                         storedFloatingBlurEnabled =
                             preferences[LegacyFloatingNavigationBlurEnabledKey],
                         legacyBlurEnabled = preferences[LegacyBlurEnabledKey],
                         legacyGlassEnabled = preferences[LegacyGlassBottomBarEnabledKey],
                     ),
                 floatingNavigationContent =
-                    decodeFloatingNavigationContent(
-                        preferences[FloatingNavigationContentKey],
+                    decodeNavContent(
+                        preferences[NavContentKey],
                     ),
                 swipeBackEnabled = preferences[SwipeBackEnabledKey] ?: true,
             )
         }
 
-    suspend fun setThemeMode(mode: AppThemeMode) {
+    suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences ->
             preferences[ThemeModeKey] = mode.name
         }
@@ -138,7 +138,7 @@ internal class AppearanceSettingsRepository(context: Context) {
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             if (preferences[ThemeModeKey] == LEGACY_DYNAMIC_THEME_MODE) {
-                preferences[ThemeModeKey] = AppThemeMode.System.name
+                preferences[ThemeModeKey] = ThemeMode.System.name
             }
             preferences[DynamicColorEnabledKey] = enabled
         }
@@ -150,18 +150,18 @@ internal class AppearanceSettingsRepository(context: Context) {
         }
     }
 
-    suspend fun setFloatingNavigationStyle(style: FloatingNavigationStyle) {
+    suspend fun setNavStyle(style: NavStyle) {
         dataStore.edit { preferences ->
-            preferences[FloatingNavigationStyleKey] = style.name
+            preferences[NavStyleKey] = style.name
             preferences.remove(LegacyFloatingNavigationBlurEnabledKey)
             preferences.remove(LegacyGlassBottomBarEnabledKey)
             preferences.remove(LegacyBlurEnabledKey)
         }
     }
 
-    suspend fun setFloatingNavigationContent(content: FloatingNavigationContent) {
+    suspend fun setNavContent(content: NavContent) {
         dataStore.edit { preferences ->
-            preferences[FloatingNavigationContentKey] = content.name
+            preferences[NavContentKey] = content.name
         }
     }
 
@@ -178,9 +178,9 @@ internal class AppearanceSettingsRepository(context: Context) {
         val LegacyGlassBottomBarEnabledKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val FloatingNavigationBarEnabledKey =
             booleanPreferencesKey("floating_navigation_bar_enabled")
-        val FloatingNavigationStyleKey =
+        val NavStyleKey =
             stringPreferencesKey("floating_navigation_style")
-        val FloatingNavigationContentKey =
+        val NavContentKey =
             stringPreferencesKey("floating_navigation_content")
         val LegacyFloatingNavigationBlurEnabledKey =
             booleanPreferencesKey("floating_navigation_blur_enabled")

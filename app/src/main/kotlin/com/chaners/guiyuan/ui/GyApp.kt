@@ -8,11 +8,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.chaners.guiyuan.settings.AppLanguage
-import com.chaners.guiyuan.settings.AppThemeMode
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
@@ -36,18 +36,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GyApp(
-    settings: AppearanceSettings,
+    settings: Appearance,
     darkMode: Boolean,
-    appLanguage: AppLanguage,
+    appLanguage: AppLang,
     launcherIconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
-    onThemeModeChange: (AppThemeMode) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorEnabledChange: (Boolean) -> Unit,
     onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
+    onNavStyleChange: (NavStyle) -> Unit,
+    onNavContentChange: (NavContent) -> Unit,
     onSwipeBackEnabledChange: (Boolean) -> Unit,
-    onAppLanguageChange: (AppLanguage) -> Unit,
+    onAppLangChange: (AppLang) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
 ) {
     GyTheme(
@@ -153,7 +153,7 @@ internal fun GyApp(
                     appLanguage = appLanguage,
                     launcherIconHidden = launcherIconHidden,
                     onHotReload = onHotReload,
-                    onAppLanguageChange = onAppLanguageChange,
+                    onAppLangChange = onAppLangChange,
                     onLauncherIconHiddenChange = onLauncherIconHiddenChange,
                     onSwipeBackEnabledChange = onSwipeBackEnabledChange,
                     previewState = previewState,
@@ -168,10 +168,10 @@ internal fun GyApp(
                     onDynamicColorEnabledChange = onDynamicColorEnabledChange,
                     onFloatingNavigationBarEnabledChange =
                         onFloatingNavigationBarEnabledChange,
-                    onFloatingNavigationStyleChange =
-                        onFloatingNavigationStyleChange,
-                    onFloatingNavigationContentChange =
-                        onFloatingNavigationContentChange,
+                    onNavStyleChange =
+                        onNavStyleChange,
+                    onNavContentChange =
+                        onNavContentChange,
                     onBack = ::navigateBack,
                 )
             }

@@ -16,7 +16,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.settings.FloatingNavigationContent
+import com.chaners.guiyuan.settings.NavContent
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -25,15 +25,15 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun FloatingNavigationContentItem(
-    content: FloatingNavigationContent,
+internal fun NavContentItem(
+    content: NavContent,
     selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    if (content == FloatingNavigationContent.IconOnly) {
+    if (content == NavContent.IconOnly) {
         FloatingNavigationBarItem(
             selected = selected,
             onClick = onClick,

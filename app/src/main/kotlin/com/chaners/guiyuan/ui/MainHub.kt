@@ -23,9 +23,9 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLanguage
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.ui.components.FloatingNavigationContentItem
+import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -61,12 +61,12 @@ private data class WeightedNavigationItem(
 
 @Composable
 internal fun MainHub(
-    settings: AppearanceSettings,
+    settings: Appearance,
     darkMode: Boolean,
-    appLanguage: AppLanguage,
+    appLanguage: AppLang,
     launcherIconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
-    onAppLanguageChange: (AppLanguage) -> Unit,
+    onAppLangChange: (AppLang) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     previewState: PreviewSandboxUiState,
@@ -146,7 +146,7 @@ internal fun MainHub(
                 ) {
                     items.forEachIndexed { index, item ->
                         val selected = pagerState.currentPage == index
-                        FloatingNavigationContentItem(
+                        NavContentItem(
                             content = settings.floatingNavigationContent,
                             selected = selected,
                             onClick = { selectPage(index) },
@@ -200,7 +200,7 @@ internal fun MainHub(
                         }
                     }
                 },
-                onAppLanguageChange = onAppLanguageChange,
+                onAppLangChange = onAppLangChange,
                 onLauncherIconHiddenChange = onLauncherIconHiddenChange,
                 onSwipeBackEnabledChange = onSwipeBackEnabledChange,
                 previewState = previewState,
@@ -231,12 +231,12 @@ private fun TopLevelBackHandler(
 private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
-    appLanguage: AppLanguage,
+    appLanguage: AppLang,
     launcherIconHidden: Boolean,
     swipeBackEnabled: Boolean,
     hotReloadInProgress: Boolean,
     onHotReload: () -> Unit,
-    onAppLanguageChange: (AppLanguage) -> Unit,
+    onAppLangChange: (AppLang) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     previewState: PreviewSandboxUiState,
@@ -279,7 +279,7 @@ private fun TopLevelPager(
                 appLanguage = appLanguage,
                 launcherIconHidden = launcherIconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                onAppLanguageChange = onAppLanguageChange,
+                onAppLangChange = onAppLangChange,
                 onLauncherIconHiddenChange = onLauncherIconHiddenChange,
                 onSwipeBackEnabledChange = onSwipeBackEnabledChange,
                 onNavigate = onNavigate,

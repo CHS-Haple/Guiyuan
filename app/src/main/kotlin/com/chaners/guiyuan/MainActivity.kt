@@ -16,12 +16,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.chaners.guiyuan.settings.AppPlatformSettings
-import com.chaners.guiyuan.settings.AppThemeMode
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.AppearanceSettingsRepository
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.AppPlatform
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.AppearanceRepo
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.GyApp
 import kotlinx.coroutines.launch
 
@@ -49,19 +49,19 @@ class MainActivity : ComponentActivity() {
         )
         window.isNavigationBarContrastEnforced = false
 
-        val repo = AppearanceSettingsRepository(applicationContext)
-        val initialLanguage = AppPlatformSettings.currentLanguage(this)
-        val initialIconHidden = AppPlatformSettings.isLauncherIconHidden(this)
+        val repo = AppearanceRepo(applicationContext)
+        val initialLanguage = AppPlatform.currentLanguage(this)
+        val initialIconHidden = AppPlatform.isLauncherIconHidden(this)
 
         setContent {
-            val settings by repo.settings.collectAsState(initial = AppearanceSettings())
+            val settings by repo.settings.collectAsState(initial = Appearance())
             val scope = rememberCoroutineScope()
             val systemDark = isSystemInDarkTheme()
             val darkMode =
                 when (settings.themeMode) {
-                    AppThemeMode.Light -> false
-                    AppThemeMode.Dark -> true
-                    AppThemeMode.System -> systemDark
+                    ThemeMode.Light -> false
+                    ThemeMode.Dark -> true
+                    ThemeMode.System -> systemDark
                 }
             var appLanguage by remember {
                 mutableStateOf(initialLanguage)
@@ -92,23 +92,23 @@ class MainActivity : ComponentActivity() {
                 onFloatingNavigationBarEnabledChange = { enabled ->
                     scope.launch { repo.setFloatingNavigationBarEnabled(enabled) }
                 },
-                onFloatingNavigationStyleChange = { style: FloatingNavigationStyle ->
-                    scope.launch { repo.setFloatingNavigationStyle(style) }
+                onNavStyleChange = { style: NavStyle ->
+                    scope.launch { repo.setNavStyle(style) }
                 },
-                onFloatingNavigationContentChange = { content: FloatingNavigationContent ->
-                    scope.launch { repo.setFloatingNavigationContent(content) }
+                onNavContentChange = { content: NavContent ->
+                    scope.launch { repo.setNavContent(content) }
                 },
                 onSwipeBackEnabledChange = { enabled ->
                     scope.launch { repo.setSwipeBackEnabled(enabled) }
                 },
-                onAppLanguageChange = { language ->
+                onAppLangChange = { language ->
                     if (language != appLanguage) {
                         appLanguage = language
-                        AppPlatformSettings.setLanguage(this, language)
+                        AppPlatform.setLanguage(this, language)
                     }
                 },
                 onLauncherIconHiddenChange = { hidden ->
-                    AppPlatformSettings.setLauncherIconHidden(this, hidden)
+                    AppPlatform.setLauncherIconHidden(this, hidden)
                     launcherIconHidden = hidden
                 },
             )

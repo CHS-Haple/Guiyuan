@@ -5,34 +5,34 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class AppearanceSettingsTest {
+class AppearanceTest {
     @Test
-    fun defaultsPreserveExistingFloatingNavigationStyle() {
-        val settings = AppearanceSettings()
+    fun defaultsPreserveExistingNavStyle() {
+        val settings = Appearance()
 
         assertTrue(settings.floatingNavigationBarEnabled)
-        assertEquals(FloatingNavigationStyle.Glass, settings.floatingNavigationStyle)
-        assertEquals(FloatingNavigationContent.IconOnly, settings.floatingNavigationContent)
+        assertEquals(NavStyle.Glass, settings.floatingNavigationStyle)
+        assertEquals(NavContent.IconOnly, settings.floatingNavigationContent)
     }
 
     @Test
     fun storedFloatingStyleWinsOverLegacyFlags() {
         val result =
-            decodeFloatingNavigationStyle(
+            decodeNavStyle(
                 storedStyle = "Blur",
                 storedFloatingBlurEnabled = false,
                 legacyBlurEnabled = false,
                 legacyGlassEnabled = false,
             )
 
-        assertEquals(FloatingNavigationStyle.Blur, result)
+        assertEquals(NavStyle.Blur, result)
     }
 
     @Test
     fun currentBlurBooleanMigratesToPreviousGlassAppearance() {
         assertEquals(
-            FloatingNavigationStyle.Glass,
-            decodeFloatingNavigationStyle(
+            NavStyle.Glass,
+            decodeNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = true,
                 legacyBlurEnabled = null,
@@ -40,8 +40,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Standard,
-            decodeFloatingNavigationStyle(
+            NavStyle.Standard,
+            decodeNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = false,
                 legacyBlurEnabled = null,
@@ -53,8 +53,8 @@ class AppearanceSettingsTest {
     @Test
     fun oldSeparateBlurAndGlassFlagsPreserveThreeStyles() {
         assertEquals(
-            FloatingNavigationStyle.Blur,
-            decodeFloatingNavigationStyle(
+            NavStyle.Blur,
+            decodeNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = true,
@@ -62,8 +62,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Glass,
-            decodeFloatingNavigationStyle(
+            NavStyle.Glass,
+            decodeNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = true,
@@ -71,8 +71,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Standard,
-            decodeFloatingNavigationStyle(
+            NavStyle.Standard,
+            decodeNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = false,
@@ -84,64 +84,64 @@ class AppearanceSettingsTest {
     @Test
     fun floatingNavigationContentDefaultsToIconsOnly() {
         assertEquals(
-            FloatingNavigationContent.IconOnly,
-            decodeFloatingNavigationContent(null),
+            NavContent.IconOnly,
+            decodeNavContent(null),
         )
         assertEquals(
-            FloatingNavigationContent.IconOnly,
-            decodeFloatingNavigationContent("Unknown"),
+            NavContent.IconOnly,
+            decodeNavContent("Unknown"),
         )
         assertEquals(
-            FloatingNavigationContent.IconAndText,
-            decodeFloatingNavigationContent("IconAndText"),
+            NavContent.IconAndText,
+            decodeNavContent("IconAndText"),
         )
     }
 
     @Test
     fun legacyDynamicModeMigratesToSystemWithDynamicColor() {
         val result =
-            decodeThemeSelection(
+            decodeTheme(
                 storedMode = "Dynamic",
                 storedDynamicColorEnabled = null,
             )
 
-        assertEquals(AppThemeMode.System, result.mode)
+        assertEquals(ThemeMode.System, result.mode)
         assertTrue(result.dynamicColorEnabled)
     }
 
     @Test
     fun explicitDynamicPreferenceOverridesLegacyFallback() {
         val result =
-            decodeThemeSelection(
+            decodeTheme(
                 storedMode = "Dynamic",
                 storedDynamicColorEnabled = false,
             )
 
-        assertEquals(AppThemeMode.System, result.mode)
+        assertEquals(ThemeMode.System, result.mode)
         assertFalse(result.dynamicColorEnabled)
     }
 
     @Test
     fun lightModeRemainsIndependentFromDynamicColor() {
         val result =
-            decodeThemeSelection(
+            decodeTheme(
                 storedMode = "Light",
                 storedDynamicColorEnabled = true,
             )
 
-        assertEquals(AppThemeMode.Light, result.mode)
+        assertEquals(ThemeMode.Light, result.mode)
         assertTrue(result.dynamicColorEnabled)
     }
 
     @Test
     fun unknownStoredModeFallsBackToSystem() {
         val result =
-            decodeThemeSelection(
+            decodeTheme(
                 storedMode = "Unknown",
                 storedDynamicColorEnabled = null,
             )
 
-        assertEquals(AppThemeMode.System, result.mode)
+        assertEquals(ThemeMode.System, result.mode)
         assertFalse(result.dynamicColorEnabled)
     }
 }

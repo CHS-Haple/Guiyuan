@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.LocaleList
 
-internal enum class AppLanguage(
+internal enum class AppLang(
     val languageTag: String?,
 ) {
     System(null),
@@ -14,28 +14,28 @@ internal enum class AppLanguage(
     SimplifiedChinese("zh-CN"),
 }
 
-internal object AppPlatformSettings {
-    private const val LauncherAliasSuffix = ".LauncherAlias"
+internal object AppPlatform {
+    private const val ALIAS_SUFFIX = ".LauncherAlias"
 
-    fun currentLanguage(context: Context): AppLanguage {
+    fun currentLanguage(context: Context): AppLang {
         val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
         if (locales.isEmpty) {
-            return AppLanguage.System
+            return AppLang.System
         }
 
         val tag = locales[0].toLanguageTag()
-        return AppLanguage.entries.firstOrNull { language ->
+        return AppLang.entries.firstOrNull { language ->
             language.languageTag?.equals(tag, ignoreCase = true) == true
         } ?: when (locales[0].language) {
-            "zh" -> AppLanguage.SimplifiedChinese
-            "en" -> AppLanguage.English
-            else -> AppLanguage.System
+            "zh" -> AppLang.SimplifiedChinese
+            "en" -> AppLang.English
+            else -> AppLang.System
         }
     }
 
     fun setLanguage(
         context: Context,
-        language: AppLanguage,
+        language: AppLang,
     ) {
         val localeManager = context.getSystemService(LocaleManager::class.java)
         localeManager.applicationLocales = language.languageTag
@@ -62,7 +62,7 @@ internal object AppPlatformSettings {
         context: Context,
         hidden: Boolean,
     ) {
-        // 这里只切桌面入口，不重启进程，设置页可以原地更新状态。
+        // Toggle only the launcher alias; keep this process alive so the UI updates in place.
         context.packageManager.setComponentEnabledSetting(
             launcherComponent(context),
             if (hidden) {
@@ -77,6 +77,6 @@ internal object AppPlatformSettings {
     private fun launcherComponent(context: Context): ComponentName =
         ComponentName(
             context.packageName,
-            context.packageName + LauncherAliasSuffix,
+            context.packageName + ALIAS_SUFFIX,
         )
 }

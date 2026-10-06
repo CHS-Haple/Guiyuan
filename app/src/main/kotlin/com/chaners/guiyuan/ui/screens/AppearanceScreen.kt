@@ -27,11 +27,11 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppThemeMode
-import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
-import com.chaners.guiyuan.ui.components.FloatingNavigationContentItem
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
@@ -58,13 +58,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun AppearanceScreen(
-    settings: AppearanceSettings,
+    settings: Appearance,
     darkMode: Boolean,
-    onThemeModeChange: (AppThemeMode) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorEnabledChange: (Boolean) -> Unit,
     onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
+    onNavStyleChange: (NavStyle) -> Unit,
+    onNavContentChange: (NavContent) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -106,7 +106,7 @@ internal fun AppearanceScreen(
                 },
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    AppThemeMode.entries.getOrNull(index)?.let { mode ->
+                    ThemeMode.entries.getOrNull(index)?.let { mode ->
                         if (mode != settings.themeMode) {
                             onThemeModeChange(mode)
                         }
@@ -151,9 +151,9 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationStyle.entries.getOrNull(index)?.let { style ->
+                        NavStyle.entries.getOrNull(index)?.let { style ->
                             if (style != settings.floatingNavigationStyle) {
-                                onFloatingNavigationStyleChange(style)
+                                onNavStyleChange(style)
                             }
                         }
                     },
@@ -170,9 +170,9 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationContent.entries.getOrNull(index)?.let { content ->
+                        NavContent.entries.getOrNull(index)?.let { content ->
                             if (content != settings.floatingNavigationContent) {
-                                onFloatingNavigationContentChange(content)
+                                onNavContentChange(content)
                             }
                         }
                     },
@@ -184,7 +184,7 @@ internal fun AppearanceScreen(
 
 @Composable
 private fun AppearanceThemePreview(
-    settings: AppearanceSettings,
+    settings: Appearance,
     darkMode: Boolean,
 ) {
     Card(
@@ -218,7 +218,7 @@ private fun AppearanceThemePreview(
 
 @Composable
 private fun AppearanceMiniPreview(
-    settings: AppearanceSettings,
+    settings: Appearance,
     darkMode: Boolean,
 ) {
     Surface(
@@ -442,8 +442,8 @@ private fun ScaledPreviewContent(
 @Composable
 private fun MiniNavigationPreview(
     floating: Boolean,
-    style: FloatingNavigationStyle,
-    content: FloatingNavigationContent,
+    style: NavStyle,
+    content: NavContent,
     darkMode: Boolean,
 ) {
     val materialActive =
@@ -518,21 +518,21 @@ private fun MiniNavigationPreview(
                         },
                     defaultWindowInsetsPadding = false,
                 ) {
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Home,
                         label = stringResource(R.string.nav_home),
                     )
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Tune,
                         label = stringResource(R.string.nav_features),
                     )
-                    FloatingNavigationContentItem(
+                    NavContentItem(
                         content = content,
                         selected = true,
                         onClick = {},

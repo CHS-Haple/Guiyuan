@@ -31,7 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLanguage
+import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
@@ -509,10 +509,10 @@ internal fun FeaturesScreen(
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
-    appLanguage: AppLanguage,
+    appLanguage: AppLang,
     launcherIconHidden: Boolean,
     swipeBackEnabled: Boolean,
-    onAppLanguageChange: (AppLanguage) -> Unit,
+    onAppLangChange: (AppLang) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
@@ -541,7 +541,7 @@ internal fun SettingsHubScreen(
                 summary = stringResource(R.string.language_summary),
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    AppLanguage.entries.getOrNull(index)?.let(onAppLanguageChange)
+                    AppLang.entries.getOrNull(index)?.let(onAppLangChange)
                 },
             )
             SwitchPreference(
