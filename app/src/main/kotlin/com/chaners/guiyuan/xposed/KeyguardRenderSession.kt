@@ -604,7 +604,7 @@ internal object KeyguardRenderSession {
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
                 SysUiCarrierMetrics
-                    .resolveCarrierWidthPx(carrier)
+                    .resolveWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false
             if (
