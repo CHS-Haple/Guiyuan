@@ -111,14 +111,14 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryFillFollowsRetractEndpoint(enabled: Boolean) {
+    fun setFillFollowsRetract(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, enabled)
             .apply()
     }
 
-    fun setControlCenterTintTransitionEnabled(enabled: Boolean) {
+    fun setCcTintTransition(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, enabled)
@@ -390,12 +390,12 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
                 baseKey = BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
                 defaultValue = true,
             ),
-        batteryFillFollowsRetractEndpoint =
+        fillFollowsRetract =
             getBoolean(
                 BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
                 false,
             ),
-        controlCenterTintTransitionEnabled =
+        ccTintTransition =
             getBoolean(
                 CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
                 true,
@@ -525,10 +525,10 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-        normalized.batteryFillFollowsRetractEndpoint,
+        normalized.fillFollowsRetract,
     ).putBoolean(
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-        normalized.controlCenterTintTransitionEnabled,
+        normalized.ccTintTransition,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
         normalized.topTextScale,

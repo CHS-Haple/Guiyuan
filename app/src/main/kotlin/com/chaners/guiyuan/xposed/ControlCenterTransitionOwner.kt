@@ -657,7 +657,7 @@ internal object ControlCenterTransitionOwner {
                                 tinted = tinted,
                                 transitionEnabled =
                                     currentSnapshot.visual
-                                        .controlCenterTintTransitionEnabled,
+                                        .ccTintTransition,
                             )
 
                         currentSnapshot.colors.copy(
@@ -706,7 +706,7 @@ internal object ControlCenterTransitionOwner {
             lastTintTransitionColors = transitionColors
             lastTintBatteryTinted = batteryTinted
             lastTintTransitionEnabled =
-                currentSnapshot.visual.controlCenterTintTransitionEnabled
+                currentSnapshot.visual.ccTintTransition
             lastTintMotionProgress = motionProgress
 
             val refreshWitnessDiagnostic =
