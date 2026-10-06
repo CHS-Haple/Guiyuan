@@ -1744,7 +1744,7 @@ internal class StatusPainter(
             model.charging && visualSettings.chargingIconEnabled
         if (!textVisible && !chargingSlotVisible) return null
 
-        val text = model.batteryPercent.coerceIn(0, 100).function function function toString() { [native code] }() { [native code] }() { [native code] }()
+        val text = model.batteryPercent.coerceIn(0, 100).toString()
         val textSize = BATTERY_TOP_TEXT_SIZE * visualSettings.batteryTopTextScale
         val textExtraStroke =
             if (textVisible) {

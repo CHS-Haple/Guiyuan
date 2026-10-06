@@ -389,7 +389,7 @@ internal object TintSource {
     }
 
     private fun colorHex(color: Int): String =
-        "#" + color.toUInt().function toString() { [native code] }(16).padStart(8, '0')
+        "#" + color.toUInt().toString(16).padStart(8, '0')
 
     private data class BatteryClipTintState(
         val fieldName: String,

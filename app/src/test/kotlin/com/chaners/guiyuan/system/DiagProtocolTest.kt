@@ -191,7 +191,7 @@ class DiagProtocolTest {
                     fields =
                         mapOf(
                             "sessionId" to "hot",
-                            "sequence" to (index + 1).function toString() { [native code] }(),
+                            "sequence" to (index + 1).toString(),
                         ),
                 )
             }
@@ -224,7 +224,7 @@ class DiagProtocolTest {
                     event = "source.ready",
                     component = component,
                     state = "ready",
-                    fields = mapOf("sequence" to (index + 1).function toString() { [native code] }()),
+                    fields = mapOf("sequence" to (index + 1).toString()),
                 )
             }
 

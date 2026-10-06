@@ -207,7 +207,7 @@ internal object StatusStateStore {
                     semanticState =
                         bundle.getString(KEY_BATTERY_SEMANTIC)?.let { name ->
                             runCatching {
-                                BatterySemanticState.function valueOf() { [native code] }(name)
+                                BatterySemanticState.valueOf(name)
                             }.getOrNull()
                         },
                     systemSemanticColor =
@@ -299,7 +299,7 @@ internal object StatusStateStore {
         val logLine: String
             get() {
                 val batteryText = battery?.let { state ->
-                    state.percent.function toString() { [native code] }() + ":" +
+                    state.percent.toString() + ":" +
                         (if (state.charging) "charging" else "discharging")
                 } ?: "unknown"
 
@@ -324,14 +324,14 @@ internal object StatusStateStore {
                     postfix = "]",
                     separator = ";",
                 ) { (subscriptionId, state) ->
-                    subscriptionId.function toString() { [native code] }() +
+                    subscriptionId.toString() +
                         ":signal=" + state.signal.logToken + ":res=" + (state.signalResId ?: 0) +
                         ",volte=" + (state.volteResId ?: 0) +
                         ",vowifi=" + (state.vowifiResId ?: 0)
                 }
 
                 return "battery=$batteryText wifi=$wifiText mobile=$mobileText " +
-                    "airplane=" + (airplaneMode?.function toString() { [native code] }() ?: "unknown") +
+                    "airplane=" + (airplaneMode?.toString() ?: "unknown") +
                     " mobileRecovery=" +
                     (if (mobileRecoveryPending) "searching" else "ready")
             }
