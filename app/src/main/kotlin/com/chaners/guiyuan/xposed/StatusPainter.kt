@@ -200,7 +200,7 @@ internal class StatusPainter(
                     nativeTransform = nativeTransform,
                 )?.groupOpticalBounds
             } ?: return 0
-        return BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+        return BatteryTopLayout.resolveRequiredTopOverflowPx(
             transformScale = scale,
             transformOffsetY = offsetY,
             contentTopY = topBounds.top,
@@ -226,8 +226,8 @@ internal class StatusPainter(
         batteryNumberTargetStyle: TransitionTextStyle? = null,
         centerTargetTextWeight: Int? = null,
         centerTargetTextStyle: TransitionTextStyle? = null,
-        batteryRingExitDirection: BatteryRingTransitionPolicy.ExitDirection =
-            BatteryRingTransitionPolicy.ExitDirection.NONE,
+        batteryRingExitDirection: BatteryRingTransition.ExitDirection =
+            BatteryRingTransition.ExitDirection.NONE,
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
 
@@ -271,7 +271,7 @@ internal class StatusPainter(
                     drawReadoutChargingIcon = false,
                     ringRetractProgress =
                         if (shapePolicy == TransitionShapePolicy.BATTERY_RETRACT) {
-                            BatteryRingTransitionPolicy.transitionProgress(shape)
+                            BatteryRingTransition.transitionProgress(shape)
                         } else {
                             null
                         },
@@ -450,10 +450,10 @@ internal class StatusPainter(
         }
 
         internal fun chargingRingLifetimeProgress(progress: Float): Float =
-            BatteryRingTransitionPolicy.transitionProgress(progress)
+            BatteryRingTransition.transitionProgress(progress)
 
         internal fun chargingRingRemaining(progress: Float): Float =
-            BatteryRingTransitionPolicy.remainingFraction(
+            BatteryRingTransition.remainingFraction(
                 chargingRingLifetimeProgress(progress),
             )
 
@@ -1115,7 +1115,7 @@ internal class StatusPainter(
                     nativeCenterAsset(presentationReference)
                 }
                 ?.takeIf { reference ->
-                    NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+                    WifiOpticalPolicy.canShareReferenceViewport(
                         currentWidth = asset.intrinsicWidth,
                         currentHeight = asset.intrinsicHeight,
                         referenceWidth = reference.intrinsicWidth,
@@ -1547,8 +1547,8 @@ internal class StatusPainter(
         drawReadoutText: Boolean = true,
         drawReadoutChargingIcon: Boolean = true,
         ringRetractProgress: Float? = null,
-        ringRetractExitDirection: BatteryRingTransitionPolicy.ExitDirection =
-            BatteryRingTransitionPolicy.ExitDirection.NONE,
+        ringRetractExitDirection: BatteryRingTransition.ExitDirection =
+            BatteryRingTransition.ExitDirection.NONE,
     ) {
         val readout =
             resolveBatteryTopReadoutLayout(
@@ -1596,7 +1596,7 @@ internal class StatusPainter(
                     )
                 }
             val segments =
-                BatteryRingTransitionPolicy.resolve(
+                BatteryRingTransition.resolve(
                     drawableArcs = drawableArcs,
                     batteryPercent = model.batteryPercent,
                     progress = ringRetractProgress,
@@ -1609,7 +1609,7 @@ internal class StatusPainter(
                     .sumOf { arc -> arc.sweepDegrees.coerceAtLeast(0f).toDouble() }
                     .toFloat()
             val terminalCapDominated =
-                BatteryRingTransitionPolicy.isTerminalCapDominated(
+                BatteryRingTransition.isTerminalCapDominated(
                     remainingFraction = segments.remainingFraction,
                     totalSweepDegrees = totalSweepDegrees,
                     radiusPx = OuterGeometry.RING_RADIUS,
@@ -1862,12 +1862,12 @@ internal class StatusPainter(
             )
 
         val groupBaseCenterY =
-            BatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
+            BatteryTopLayout.resolveOpticalBaseCenterY(
                 preferredCenterY = batteryReadoutPreferredCenterY(visualSettings),
                 defaultOpticalRise = BATTERY_TOP_DEFAULT_OPTICAL_RISE,
             )
         val groupCenterY =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            BatteryTopLayout.resolveCenterY(
                 baseCenterY = groupBaseCenterY,
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
@@ -2582,7 +2582,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val referenceEntry =
-                        NativeWifiOpticalReferencePolicy.connectedReferenceEntry(entryName)
+                        WifiOpticalPolicy.connectedReferenceEntry(entryName)
                             ?: return@runCatching 0
                     drawableContext.resources.getIdentifier(
                         referenceEntry,
@@ -2612,7 +2612,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val tintEntryName =
-                        NativeCenterResourceVariantPolicy.tintEntryName(entryName)
+                        CenterResourcePolicy.tintEntryName(entryName)
                     drawableContext.resources.getIdentifier(
                         tintEntryName,
                         "drawable",
@@ -2675,7 +2675,7 @@ internal class StatusPainter(
         resources: android.content.res.Resources,
     ): NativeVisualProbe? {
         val visual =
-            ParticipantVisualSnapshot.resolveDrawable(
+            VisualSnapshot.resolveDrawable(
                 drawable = drawable,
                 resources = resources,
             ) ?: return null
@@ -2762,7 +2762,7 @@ internal class StatusPainter(
                     nativeCenterAsset(presentationReference)
                 }
                 ?.takeIf { reference ->
-                    NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+                    WifiOpticalPolicy.canShareReferenceViewport(
                         currentWidth = asset.intrinsicWidth,
                         currentHeight = asset.intrinsicHeight,
                         referenceWidth = reference.intrinsicWidth,

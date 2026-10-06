@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeStatusBarSlotReservation {
+internal object StatusSlotReservation {
     const val STATUS_BAR_ICON_LIST =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconList"
 
@@ -318,7 +318,7 @@ internal object NativeStatusBarSlotReservation {
             override val logLine: String
                 get() =
                     "nativeSlotOrder reserved slot=" +
-                        SystemUiNativeCombinedParticipantOwner.SLOT +
+                        NativeParticipantPresentation.SLOT +
                         " created=" + created +
                         " nativeIndex=" + nativeIndex +
                         " from=" + fromIndex +
@@ -335,7 +335,7 @@ internal object NativeStatusBarSlotReservation {
             override val logLine: String
                 get() =
                     "nativeSlotOrder unchanged slot=" +
-                        SystemUiNativeCombinedParticipantOwner.SLOT +
+                        NativeParticipantPresentation.SLOT +
                         " reason=" + reason +
                         " mode=controller-pre-init nativeGeometryWrites=0"
         }

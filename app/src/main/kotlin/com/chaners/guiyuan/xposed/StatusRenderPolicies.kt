@@ -74,7 +74,7 @@ internal object MobileTypeSuffixPolicy {
         }
 }
 
-internal object NativeCenterResourceVariantPolicy {
+internal object CenterResourcePolicy {
     fun tintEntryName(entryName: String): String {
         val base =
             entryName

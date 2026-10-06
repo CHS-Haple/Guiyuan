@@ -247,7 +247,7 @@ internal object ScenePolicy {
             )
         }
         if (
-            SystemUiKeyguardAodStateSource.isStableAod(
+            KeyguardAodSource.isStableAod(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
             )
@@ -259,7 +259,7 @@ internal object ScenePolicy {
             }
         }
         if (
-            SystemUiKeyguardAodStateSource.blocksKeyguardProjection(
+            KeyguardAodSource.blocksKeyguardProjection(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
                 animToAod = null,
@@ -382,7 +382,7 @@ internal object ScenePolicy {
         return if (pendingTargetToLockScreen) {
             !toAod
         } else {
-            SystemUiKeyguardAodStateSource.isStableAod(
+            KeyguardAodSource.isStableAod(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
             )

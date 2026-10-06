@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
  * The snapshot is deliberately module-agnostic. It describes what is actually
  * visible, not which package or compatibility implementation produced it.
  */
-internal object ParticipantVisualSnapshot {
+internal object VisualSnapshot {
     private const val PROBE_MAX = 96f
     private const val ALPHA_THRESHOLD = 8
     private const val MIN_COMPONENT_PIXELS = 2f

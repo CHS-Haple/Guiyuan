@@ -17,7 +17,7 @@ internal class RenderView(
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
-        sample: RuntimeRenderLatencySample?,
+        sample: RenderLatencySample?,
     ) -> Unit = { _, _, _ -> },
 ) : View(context) {
     private val painter = StatusPainter(context)
@@ -100,14 +100,14 @@ internal class RenderView(
         val previousCenter = previousModel?.centerIndicator
         val nextCenter = model?.centerIndicator
         if (Looper.myLooper() === Looper.getMainLooper()) {
-            applyCenterTransitionPolicy(
+            applyCenterTransition(
                 previous = previousCenter,
                 current = nextCenter,
             )
         } else {
             post {
                 if (this.model?.centerIndicator == nextCenter) {
-                    applyCenterTransitionPolicy(
+                    applyCenterTransition(
                         previous = previousCenter,
                         current = nextCenter,
                     )
@@ -196,28 +196,28 @@ internal class RenderView(
         pendingModelCommittedNanos = 0L
     }
 
-    private fun applyCenterTransitionPolicy(
+    private fun applyCenterTransition(
         previous: CenterIndicator?,
         current: CenterIndicator?,
     ) {
         when (
-            CenterTransitionPolicy.decide(
+            CenterTransition.decide(
                 previous = previous,
                 current = current,
                 activeSource = previousCenterIndicator,
                 transitionRunning = centerTransitionAnimator != null,
             )
         ) {
-            CenterTransitionPolicy.Decision.START ->
+            CenterTransition.Decision.START ->
                 startCenterTransition(
                     previous = checkNotNull(previous),
                     current = checkNotNull(current),
                 )
 
-            CenterTransitionPolicy.Decision.KEEP ->
+            CenterTransition.Decision.KEEP ->
                 invalidate()
 
-            CenterTransitionPolicy.Decision.SNAP ->
+            CenterTransition.Decision.SNAP ->
                 cancelCenterTransition()
         }
     }
@@ -324,7 +324,7 @@ internal class RenderView(
             pendingModelCommittedNanos = 0L
             val sample =
                 if (trace != null && modelCommittedNanos != 0L) {
-                    RuntimeRenderLatencySample.from(
+                    RenderLatencySample.from(
                         trace = trace,
                         modelCommittedNanos = modelCommittedNanos,
                         drawNanos = SystemClock.elapsedRealtimeNanos(),

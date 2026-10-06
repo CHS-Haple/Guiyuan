@@ -4,7 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import java.lang.ref.WeakReference
 
-internal object StatusBarStableSession {
+internal object StatusBarSession {
     private const val BATTERY_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS_NAME =

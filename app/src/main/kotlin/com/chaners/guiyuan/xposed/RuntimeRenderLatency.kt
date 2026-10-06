@@ -22,7 +22,7 @@ internal data class RuntimeRenderTrace(
         }
 }
 
-internal data class RuntimeRenderLatencySample(
+internal data class RenderLatencySample(
     val traceId: Long,
     val source: String,
     val sourceToStateUs: Long?,
@@ -40,8 +40,8 @@ internal data class RuntimeRenderLatencySample(
             modelCommittedNanos: Long,
             drawNanos: Long,
             committedOnMainThread: Boolean,
-        ): RuntimeRenderLatencySample =
-            RuntimeRenderLatencySample(
+        ): RenderLatencySample =
+            RenderLatencySample(
                 traceId = trace.id,
                 source = trace.source,
                 sourceToStateUs =

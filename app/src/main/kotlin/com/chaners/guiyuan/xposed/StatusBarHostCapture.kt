@@ -13,7 +13,7 @@ internal object StatusBarHostCapture {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): HookHandle {
         val hostClass = Class.forName(HOST_CLASS_NAME, false, classLoader)
         val hostReadyMethod = hostClass.getDeclaredMethod(HOST_READY_METHOD_NAME)
@@ -26,7 +26,7 @@ internal object StatusBarHostCapture {
 
     fun replace(
         handle: HookHandle,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): HookHandle = handle.replaceHook(hooker(onCaptured))
 
     fun matches(handle: HookHandle): Boolean {
@@ -41,12 +41,12 @@ internal object StatusBarHostCapture {
     }
 
     private fun hooker(
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): Hooker = Hooker { chain ->
         val result = chain.proceed()
 
         chain.thisObject?.let { host ->
-            SystemUiHostRegistry.captureStatusHost(host)?.let(onCaptured)
+            HostRegistry.captureStatusHost(host)?.let(onCaptured)
         }
 
         result
