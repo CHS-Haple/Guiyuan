@@ -1299,7 +1299,7 @@ class GyModule : XposedModule() {
                 ?: true
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
-        return ScenePolicy.shouldRetainKeyguardCcLease(
+        return ScenePolicy.shouldRetainKeyguardControlCenterLease(
             leaseActive = keyguardCcLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -1639,9 +1639,9 @@ class GyModule : XposedModule() {
                 onTintState = ::onTintStateUpdate,
                 onSceneState = ::onSceneStateUpdate,
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
-                onFullAodStarted = ::onFullAodStarted,
-                onFullAodCommitted = ::onFullAodCommitted,
-                onKeyguardIconTransition = ::onKeyguardIconTransition,
+                onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
+                onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
+                onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(
                         trace = beginRenderTrace("mobileType"),
@@ -1996,7 +1996,7 @@ class GyModule : XposedModule() {
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
-                homeAodFallbackCandidate =
+                homeNativeAodFallbackCandidate =
                     homeAodFallbackCandidate,
                 homePresentationOwnedAtFullAodStart = homeOwnedAtStart,
                 nativeToLockScreenTarget = target,
@@ -2166,7 +2166,7 @@ class GyModule : XposedModule() {
                 aodEnabled = settings.aod,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget = nativeToLockScreenTarget,
-                homeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = homeAodFallbackActive,
             )
         if (!eligible) return false
 
@@ -2199,7 +2199,7 @@ class GyModule : XposedModule() {
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
-                homeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = homeAodFallbackActive,
             )
         boundaryHandoff =
             BoundaryHandoff(
@@ -2778,7 +2778,7 @@ class GyModule : XposedModule() {
             fullAodVisualBoundary = fullAodVisualBoundary,
             homeAodTransitionOrigin = homeAodOriginPending,
             homeAodTargetPrearm = homeAodTargetPrearmPending,
-            homeAodFallbackActive = homeAodFallbackActive,
+            homeNativeAodFallbackActive = homeAodFallbackActive,
         )
     }
 
