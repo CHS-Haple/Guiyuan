@@ -9,7 +9,7 @@ import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
-internal object ControlCenterRenderSession {
+internal object ControlCenterSession {
     private const val FAKE_ROOT_CLASS_NAME =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val BATTERY_CONTAINER_CLASS_NAME =
@@ -82,7 +82,7 @@ internal object ControlCenterRenderSession {
             statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
                 ?: return AttachResult.Failure("battery-view-missing")
         val carrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(battery)
+            HomeCarrierMetrics.resolveCarrierView(battery)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
         val existing = current
         if (
@@ -100,7 +100,7 @@ internal object ControlCenterRenderSession {
         }
 
         if (existing != null) {
-            SystemUiHomePresentationOwner.deactivateControlCenter("host-replaced")
+            HomePresentation.deactivateControlCenter("host-replaced")
             existing.stop("host-replaced")
         }
 
@@ -123,7 +123,7 @@ internal object ControlCenterRenderSession {
 
     @Synchronized
     fun beginVisibleCycle(): Boolean =
-        SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+        HomePresentation.onControlCenterVisibilityChanged(true)
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -135,7 +135,7 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setSceneEligible(eligible)
         if (!eligible) {
-            SystemUiHomePresentationOwner.deactivateControlCenter("scene-ineligible")
+            HomePresentation.deactivateControlCenter("scene-ineligible")
         } else {
             session?.prepareNativePresentation(reused = true)
         }
@@ -185,8 +185,8 @@ internal object ControlCenterRenderSession {
             result == AttachResult.Ready &&
             shouldAdoptTransferredCompactReadiness(transferredCompactReady)
         ) {
-            when (SystemUiHomePresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Active -> {
+            when (HomePresentation.adoptControlCenterLayoutCutoverFromHotReload()) {
+                is HomePresentation.ControlCenterStateResult.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
@@ -235,7 +235,7 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: TintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -252,7 +252,7 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setFeatureEnabled(settings.enabled)
         if (!settings.enabled || !sceneEligible) {
-            SystemUiHomePresentationOwner.deactivateControlCenter(
+            HomePresentation.deactivateControlCenter(
                 if (!settings.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
@@ -273,7 +273,7 @@ internal object ControlCenterRenderSession {
         pendingPrearm?.cancel()
         pendingPrearm = null
         if (releaseNativePresentation) {
-            SystemUiHomePresentationOwner.deactivateControlCenter(source)
+            HomePresentation.deactivateControlCenter(source)
         }
         current?.stop(source)
         current = null
@@ -416,13 +416,13 @@ internal object ControlCenterRenderSession {
             oldRight: Int,
             oldBottom: Int,
         ) {
-            ControlCenterRenderSession.onPendingPrearmLayout(this)
+            ControlCenterSession.onPendingPrearmLayout(this)
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
 
         override fun onViewDetachedFromWindow(view: View) {
-            ControlCenterRenderSession.onPendingPrearmDetached(this)
+            ControlCenterSession.onPendingPrearmDetached(this)
         }
     }
 
@@ -621,7 +621,7 @@ internal object ControlCenterRenderSession {
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
                 ) &&
-                !SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+                !HomePresentation.onControlCenterVisibilityChanged(true)
             ) {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
@@ -632,7 +632,7 @@ internal object ControlCenterRenderSession {
                     nextRequestedVisible = visible,
                 )
             ) {
-                SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(false)
+                HomePresentation.onControlCenterVisibilityChanged(false)
             }
             requestedVisible = visible
             syncPresentation("visibility")
@@ -662,7 +662,7 @@ internal object ControlCenterRenderSession {
 
             return when (
                 val result =
-                    SystemUiHomePresentationOwner.activateControlCenter(
+                    HomePresentation.activateControlCenter(
                         host = statusArea,
                         statusIcons = statusIconGroup,
                         batteryContainer = statusArea,
@@ -686,7 +686,7 @@ internal object ControlCenterRenderSession {
                         },
                     )
             ) {
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Active -> {
+                is HomePresentation.ControlCenterStateResult.Active -> {
                     setNativePresentationReady(
                         ready = true,
                         maskedViews = result.maskedViews,
@@ -695,7 +695,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Ready
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Prepared -> {
+                is HomePresentation.ControlCenterStateResult.Prepared -> {
                     emitEvent {
                         "controlCenterProjection prearm state=prepared " +
                             "reused=" + reused +
@@ -705,7 +705,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Ready
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Failure -> {
+                is HomePresentation.ControlCenterStateResult.Failure -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -714,7 +714,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Failure(result.reason)
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Inactive -> {
+                is HomePresentation.ControlCenterStateResult.Inactive -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -758,7 +758,7 @@ internal object ControlCenterRenderSession {
         fun refresh() =
             update(StatusStateStore.snapshot())
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: TintSource.TintUpdate) {
             val batteryView = battery.get() ?: return
             if (update.sourceView !== batteryView) return
             applyTint(update.state, "battery")
@@ -790,7 +790,7 @@ internal object ControlCenterRenderSession {
 
         private fun refreshTint() {
             val batteryView = battery.get() ?: return
-            val state = SystemUiTintStateSource.currentState(batteryView) ?: return
+            val state = TintSource.currentState(batteryView) ?: return
             applyTint(state, "surface")
         }
 
@@ -800,7 +800,7 @@ internal object ControlCenterRenderSession {
         ) {
             val peerTint =
                 statusIcons.get()?.let(
-                    SystemUiNativeNetworkSuppressionOwner::currentAppliedStatusIconTintForGroup,
+                    NativeNetworkSuppression::currentAppliedStatusIconTintForGroup,
                 )
             val resolved =
                 TintAuthority.resolveBatteryEvent(
@@ -821,7 +821,7 @@ internal object ControlCenterRenderSession {
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
             val carrierWidth =
-                SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(carrierView)
+                HomeCarrierMetrics.resolveCarrierWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
             val resolved =
                 HomeLayoutResolver.resolve(
@@ -895,7 +895,7 @@ internal object ControlCenterRenderSession {
                 )
             if (!retainNativePresentation) {
                 nativePresentationReady = false
-                SystemUiHomePresentationOwner.deactivateControlCenter(
+                HomePresentation.deactivateControlCenter(
                     "projection-layout-unavailable-detached",
                 )
             }
@@ -963,7 +963,7 @@ internal object ControlCenterRenderSession {
             layoutReady = false
             nativePresentationReady = false
             renderView.visibility = View.GONE
-            SystemUiHomePresentationOwner.deactivateControlCenter(
+            HomePresentation.deactivateControlCenter(
                 "fake-root-detached",
             )
             dispatchReadiness("detach")

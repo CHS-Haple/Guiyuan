@@ -9,7 +9,7 @@ internal enum class BatterySemanticState {
     LOW,
 }
 
-internal object SystemUiBatterySemanticPolicy {
+internal object BatterySemanticPolicy {
     fun fromNativeProgressStatus(
         statusName: String?,
     ): BatterySemanticState? {

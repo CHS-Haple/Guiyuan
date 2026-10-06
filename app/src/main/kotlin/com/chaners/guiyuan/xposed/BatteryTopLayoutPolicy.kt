@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import kotlin.math.ceil
 
-internal object BatteryTopLayoutPolicy {
+internal object BatteryTopLayout {
     fun resolveOpticalBaseCenterY(
         preferredCenterY: Float,
         defaultOpticalRise: Float,

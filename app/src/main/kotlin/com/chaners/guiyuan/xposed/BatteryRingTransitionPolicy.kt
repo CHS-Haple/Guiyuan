@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import kotlin.math.max
 import kotlin.math.min
 
-internal object BatteryRingTransitionPolicy {
+internal object BatteryRingTransition {
     private const val TRANSITION_COMPLETE_PROGRESS = 0.45f
     private const val FRONT_LOAD = 0.92f
 

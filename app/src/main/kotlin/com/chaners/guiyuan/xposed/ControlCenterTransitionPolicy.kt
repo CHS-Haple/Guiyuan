@@ -4,7 +4,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-internal object ControlCenterTransitionPolicy {
+internal object ControlCenterTransition {
     private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
@@ -35,29 +35,29 @@ internal object ControlCenterTransitionPolicy {
     fun horizontalExitDirection(
         source: FloatArray,
         target: FloatArray,
-    ): BatteryRingTransitionPolicy.ExitDirection {
+    ): BatteryRingTransition.ExitDirection {
         if (source.size != 6 || target.size != 6) {
-            return BatteryRingTransitionPolicy.ExitDirection.NONE
+            return BatteryRingTransition.ExitDirection.NONE
         }
         val sourceCenterX = source[0] + (source[2] + source[4]) * 0.5f
         val targetCenterX = target[0] + (target[2] + target[4]) * 0.5f
         if (!sourceCenterX.isFinite() || !targetCenterX.isFinite()) {
-            return BatteryRingTransitionPolicy.ExitDirection.NONE
+            return BatteryRingTransition.ExitDirection.NONE
         }
         return when {
             targetCenterX - sourceCenterX < -0.5f ->
-                BatteryRingTransitionPolicy.ExitDirection.LEFT
+                BatteryRingTransition.ExitDirection.LEFT
             targetCenterX - sourceCenterX > 0.5f ->
-                BatteryRingTransitionPolicy.ExitDirection.RIGHT
-            else -> BatteryRingTransitionPolicy.ExitDirection.NONE
+                BatteryRingTransition.ExitDirection.RIGHT
+            else -> BatteryRingTransition.ExitDirection.NONE
         }
     }
 
     fun batteryRingExitDirection(
-        liveCenterDirection: BatteryRingTransitionPolicy.ExitDirection,
+        liveCenterDirection: BatteryRingTransition.ExitDirection,
         nativeBatteryIslandActive: Boolean,
         targetRowRtl: Boolean,
-    ): BatteryRingTransitionPolicy.ExitDirection {
+    ): BatteryRingTransition.ExitDirection {
         if (!nativeBatteryIslandActive) return liveCenterDirection
 
         // During HyperOS Battery-Island expansion the final status row is
@@ -65,9 +65,9 @@ internal object ControlCenterTransitionPolicy {
         // direction authority for the ring's first frames. The structural
         // destination is still toward the status-row logical start.
         return if (targetRowRtl) {
-            BatteryRingTransitionPolicy.ExitDirection.RIGHT
+            BatteryRingTransition.ExitDirection.RIGHT
         } else {
-            BatteryRingTransitionPolicy.ExitDirection.LEFT
+            BatteryRingTransition.ExitDirection.LEFT
         }
     }
 
@@ -261,7 +261,7 @@ internal object ControlCenterTransitionPolicy {
 
     fun transitionTintProgress(progress: Float): Float {
         val ringPhase =
-            BatteryRingTransitionPolicy
+            BatteryRingTransition
                 .transitionProgress(progress)
                 .coerceIn(0f, 1f)
         return ringPhase * ringPhase * (3f - 2f * ringPhase)

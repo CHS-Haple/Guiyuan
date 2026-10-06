@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object CenterTransitionPolicy {
+internal object CenterTransition {
     internal enum class Family {
         WIFI,
         MOBILE_TYPE,
