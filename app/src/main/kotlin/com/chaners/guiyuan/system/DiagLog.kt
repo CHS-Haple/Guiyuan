@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.system
 
-internal enum class DiagnosticLogLevel {
+internal enum class LogLevel {
     Verbose,
     Debug,
     Info,
@@ -10,7 +10,7 @@ internal enum class DiagnosticLogLevel {
     Unknown,
 }
 
-internal enum class DiagnosticLogCategory {
+internal enum class LogCategory {
     Module,
     Network,
     Display,
@@ -21,39 +21,39 @@ internal enum class DiagnosticLogCategory {
     Other,
 }
 
-internal data class DiagnosticLogEntry(
-    val rawLine: String,
+internal data class LogEntry(
+    val raw: String,
     val timestamp: String?,
-    val timeText: String?,
-    val level: DiagnosticLogLevel,
+    val time: String?,
+    val level: LogLevel,
     val uid: String?,
     val pid: String?,
     val tid: String?,
     val framework: String?,
-    val hostPackage: String?,
-    val modulePackage: String?,
+    val hostPkg: String?,
+    val modulePkg: String?,
     val tag: String?,
     val message: String,
     val event: String?,
     val component: String?,
     val state: String?,
     val fields: Map<String, String>,
-    val category: DiagnosticLogCategory,
+    val category: LogCategory,
     val structured: Boolean,
 ) {
-    val stableKey: String
+    val key: String
         get() =
             buildString {
                 append(timestamp.orEmpty())
                 append(':')
                 append(fields["sequence"].orEmpty())
                 append(':')
-                append(rawLine.hashCode())
+                append(raw.hashCode())
             }
 
-    fun searchableText(): String =
+    fun searchText(): String =
         buildString {
-            append(rawLine)
+            append(raw)
             append(' ')
             append(event.orEmpty())
             append(' ')
@@ -69,15 +69,15 @@ internal data class DiagnosticLogEntry(
         }
 }
 
-internal object DiagnosticsLogParser {
-    fun parse(line: String): DiagnosticLogEntry {
+internal object DiagLogParser {
+    fun parse(line: String): LogEntry {
         val envelope = parseEnvelope(line)
         val structured =
             RuntimeDiagnosticsProtocol.parse(envelope.message)
                 ?: RuntimeDiagnosticsProtocol.parse(line)
         val legacy =
             if (structured == null) {
-                parseLegacyMessage(envelope.message)
+                parseLegacy(envelope.message)
             } else {
                 null
             }
@@ -87,17 +87,17 @@ internal object DiagnosticsLogParser {
         val state = structured?.state
         val fields = structured?.fields ?: legacy?.fields.orEmpty()
 
-        return DiagnosticLogEntry(
-            rawLine = line,
+        return LogEntry(
+            raw = line,
             timestamp = envelope.timestamp,
-            timeText = displayTime(envelope.timestamp),
+            time = displayTime(envelope.timestamp),
             level = envelope.level,
             uid = envelope.uid,
             pid = envelope.pid,
             tid = envelope.tid,
             framework = envelope.framework,
-            hostPackage = envelope.hostPackage,
-            modulePackage = envelope.modulePackage,
+            hostPkg = envelope.hostPkg,
+            modulePkg = envelope.modulePkg,
             tag = envelope.tag,
             message = envelope.message,
             event = event,
@@ -110,7 +110,7 @@ internal object DiagnosticsLogParser {
     }
 
     private fun parseEnvelope(line: String): Envelope {
-        LsposedEnvelopeRegex.matchEntire(line)?.let { match ->
+        lspEnvelopeRe.matchEntire(line)?.let { match ->
             val moduleParts =
                 match.groupValues[8]
                     .split(',')
@@ -121,25 +121,25 @@ internal object DiagnosticsLogParser {
                 uid = match.groupValues[2],
                 pid = match.groupValues[3],
                 tid = match.groupValues[4],
-                level = levelFromToken(match.groupValues[5]),
+                level = levelOf(match.groupValues[5]),
                 framework = match.groupValues[6].ifBlank { null },
-                hostPackage = match.groupValues[7].ifBlank { null },
-                modulePackage = moduleParts.getOrNull(0),
+                hostPkg = match.groupValues[7].ifBlank { null },
+                modulePkg = moduleParts.getOrNull(0),
                 tag = moduleParts.getOrNull(1),
                 message = match.groupValues[9].trim(),
             )
         }
 
-        LogcatEnvelopeRegex.matchEntire(line)?.let { match ->
+        logcatEnvelopeRe.matchEntire(line)?.let { match ->
             return Envelope(
                 timestamp = match.groupValues[1],
                 uid = null,
                 pid = match.groupValues[2],
                 tid = match.groupValues[3],
-                level = levelFromToken(match.groupValues[4]),
+                level = levelOf(match.groupValues[4]),
                 framework = "logcat",
-                hostPackage = null,
-                modulePackage = null,
+                hostPkg = null,
+                modulePkg = null,
                 tag = match.groupValues[5].trim(),
                 message = match.groupValues[6].trim(),
             )
@@ -150,17 +150,17 @@ internal object DiagnosticsLogParser {
             uid = null,
             pid = null,
             tid = null,
-            level = DiagnosticLogLevel.Unknown,
+            level = LogLevel.Unknown,
             framework = null,
-            hostPackage = null,
-            modulePackage = null,
+            hostPkg = null,
+            modulePkg = null,
             tag = null,
             message = line.trim(),
         )
     }
 
-    private fun parseLegacyMessage(message: String): LegacyMessage {
-        val matches = LegacyFieldRegex.findAll(message).toList()
+    private fun parseLegacy(message: String): LegacyMessage {
+        val matches = legacyFieldRe.findAll(message).toList()
         val firstFieldStart = matches.firstOrNull()?.range?.first ?: message.length
         val prefix =
             message
@@ -182,45 +182,45 @@ internal object DiagnosticsLogParser {
     private fun classify(
         event: String?,
         component: String?,
-    ): DiagnosticLogCategory {
+    ): LogCategory {
         val token = (component.orEmpty() + " " + event.orEmpty()).lowercase()
         return when {
             token.contains("latency") || token.contains("performance") ->
-                DiagnosticLogCategory.Performance
+                LogCategory.Performance
             token.contains("network") ||
                 token.contains("connectivity") ||
                 token.contains("wifi") ||
                 token.contains("mobile") ||
                 token.contains("subscription") ->
-                DiagnosticLogCategory.Network
+                LogCategory.Network
             token.contains("native") ||
                 token.contains("suppression") ||
                 token.contains("failnative") ->
-                DiagnosticLogCategory.Native
+                LogCategory.Native
             token.contains("island") ||
                 token.contains("paneltransition") ||
                 token.contains("projection") ||
                 token.contains("handoff") ||
                 token.contains("controlcenter") ->
-                DiagnosticLogCategory.Transition
+                LogCategory.Transition
             token.contains("renderer") ||
                 token.contains("presentation") ||
                 token.contains("keyguard") ||
                 token.contains("aod") ||
                 token.contains("statusicons") ||
                 token.contains("tint") ->
-                DiagnosticLogCategory.Display
+                LogCategory.Display
             token.contains("diagnostics") ||
                 token.contains("settings") ||
                 token.contains("hotreload") ->
-                DiagnosticLogCategory.Settings
+                LogCategory.Settings
             token.contains("module") ||
                 token.contains("compatibility") ||
                 token.contains("hook") ||
                 token.contains("runtime") ||
                 token.contains("host") ->
-                DiagnosticLogCategory.Module
-            else -> DiagnosticLogCategory.Other
+                LogCategory.Module
+            else -> LogCategory.Other
         }
     }
 
@@ -246,15 +246,15 @@ internal object DiagnosticsLogParser {
         }
     }
 
-    private fun levelFromToken(token: String): DiagnosticLogLevel =
+    private fun levelOf(token: String): LogLevel =
         when (token.uppercase()) {
-            "V" -> DiagnosticLogLevel.Verbose
-            "D" -> DiagnosticLogLevel.Debug
-            "I" -> DiagnosticLogLevel.Info
-            "W" -> DiagnosticLogLevel.Warning
-            "E" -> DiagnosticLogLevel.Error
-            "F", "A" -> DiagnosticLogLevel.Fatal
-            else -> DiagnosticLogLevel.Unknown
+            "V" -> LogLevel.Verbose
+            "D" -> LogLevel.Debug
+            "I" -> LogLevel.Info
+            "W" -> LogLevel.Warning
+            "E" -> LogLevel.Error
+            "F", "A" -> LogLevel.Fatal
+            else -> LogLevel.Unknown
         }
 
     private data class Envelope(
@@ -262,10 +262,10 @@ internal object DiagnosticsLogParser {
         val uid: String?,
         val pid: String?,
         val tid: String?,
-        val level: DiagnosticLogLevel,
+        val level: LogLevel,
         val framework: String?,
-        val hostPackage: String?,
-        val modulePackage: String?,
+        val hostPkg: String?,
+        val modulePkg: String?,
         val tag: String?,
         val message: String,
     )
@@ -275,19 +275,19 @@ internal object DiagnosticsLogParser {
         val fields: Map<String, String>,
     )
 
-    private val LsposedEnvelopeRegex =
+    private val lspEnvelopeRe =
         Regex(
             """^\[\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)\s+""" +
                 """(\d+):\s*(\d+):\s*(\d+)\s+([VDIWEAF])/([^\]]+)\s*\]\s*""" +
                 """(?:\(([^)]+)\))?\s*(?:\[([^\]]+)\])?\s*(.*)$""",
         )
 
-    private val LogcatEnvelopeRegex =
+    private val logcatEnvelopeRe =
         Regex(
             """^(\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+""" +
                 """(\d+)\s+(\d+)\s+([VDIWEAF])\s+([^:]+):\s*(.*)$""",
         )
 
-    private val LegacyFieldRegex =
+    private val legacyFieldRe =
         Regex("""(?<!\S)([A-Za-z][A-Za-z0-9_.-]*)=([^\s]+)""")
 }

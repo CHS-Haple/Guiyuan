@@ -94,6 +94,7 @@ The pinned SystemUI profile is evidence for the current target, not proof for ev
 Optimize for the next human maintainer. Prefer the shortest name or structure that stays obvious in its actual scope; do not optimize for maximum verbosity or for clever brevity.
 
 ### Naming
+- Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`; internal shortening must not change public or compatibility identity.
 - Name to the scope. Local variables and private members may be short when nearby context already carries the meaning; cross-file and architecture-boundary names must retain enough context to stay searchable and unambiguous.
 - When the original meaning stays obvious, shorten aggressively with familiar project/platform forms such as `SysUi`, `Diag`, `Env`, `Repo`, `Prefs`, `Ctx`, `Cfg`, `AOD`, `QS`, and `CC`. Use natural Kotlin casing such as `SysUi` for a type segment and `sysUi` for a value.
 - Remove repeated product or domain wording when the package, file, receiver, or owner already establishes it. Use `Gy` only where Guiyuan identity is actually useful.

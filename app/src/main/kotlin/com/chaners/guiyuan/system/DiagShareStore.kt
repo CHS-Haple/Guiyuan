@@ -4,10 +4,10 @@ import android.content.Context
 import com.chaners.guiyuan.BuildConfig
 import java.time.OffsetDateTime
 
-internal object ShareDiagnosticsStore {
-    private const val PreferencesName = "share-diagnostics"
-    private const val EventsKey = "events"
-    private const val MaxLines = 64
+internal object DiagShareStore {
+    private const val PREFS = "share-diagnostics"
+    private const val EVENTS = "events"
+    private const val MAX_LINES = 64
 
     @Synchronized
     fun append(
@@ -18,22 +18,22 @@ internal object ShareDiagnosticsStore {
             return
         }
 
-        val preferences =
+        val prefs =
             context.applicationContext.getSharedPreferences(
-                PreferencesName,
+                PREFS,
                 Context.MODE_PRIVATE,
             )
-        val current = preferences.getString(EventsKey, null)
+        val current = prefs.getString(EVENTS, null)
             .orEmpty()
             .lineSequence()
             .filter(String::isNotBlank)
             .toList()
         val updated = (current + "${OffsetDateTime.now()} $message")
-            .takeLast(MaxLines)
+            .takeLast(MAX_LINES)
             .joinToString("\n")
 
-        preferences.edit()
-            .putString(EventsKey, updated)
+        prefs.edit()
+            .putString(EVENTS, updated)
             .apply()
     }
 
@@ -43,8 +43,8 @@ internal object ShareDiagnosticsStore {
         }
 
         return context.applicationContext
-            .getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
-            .getString(EventsKey, null)
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(EVENTS, null)
             .orEmpty()
             .lineSequence()
             .filter(String::isNotBlank)
