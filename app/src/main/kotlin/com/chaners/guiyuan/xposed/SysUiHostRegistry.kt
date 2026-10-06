@@ -7,10 +7,10 @@ internal object SysUiHostRegistry {
     private var statusHost = WeakReference<Any>(null)
 
     @Synchronized
-    fun currentStatusHost(): Any? = statusHost.get()
+    fun current(): Any? = statusHost.get()
 
     @Synchronized
-    fun restoreStatusHost(host: Any): Capture {
+    fun restore(host: Any): Capture {
         statusHost = WeakReference(host)
         return Capture(
             host = host,
@@ -21,7 +21,7 @@ internal object SysUiHostRegistry {
     }
 
     @Synchronized
-    fun captureStatusHost(host: Any): Capture? {
+    fun capture(host: Any): Capture? {
         val previous = statusHost.get()
         if (previous === host) {
             return null
