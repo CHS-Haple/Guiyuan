@@ -22,7 +22,7 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.WeakHashMap
 
-internal object SystemUiNativeCombinedParticipantOwner {
+internal object NativeParticipantPresentation {
     const val SLOT = "combined_status"
     private const val ZERO_SLOT_WIDTH = 0
     private const val MAX_NATIVE_VISIBLE_STATE_PROBE = 8
@@ -92,7 +92,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     private var pendingPreDrawListener: ViewTreeObserver.OnPreDrawListener? = null
     private var modelReady = false
     private var tintReady = false
-    private var currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+    private var currentSurface = SceneSource.Surface.UNKNOWN
     private var handoffPending = false
     private var handoffCommitted = false
     private var handoffValidated = false
@@ -119,7 +119,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
-        onSlotOrderResult: ((NativeStatusBarSlotReservation.Result) -> Unit)? = null,
+        onSlotOrderResult: ((StatusSlotReservation.Result) -> Unit)? = null,
         isTransitionProbeEnabled: () -> Boolean = { false },
     ): InstallResult {
         if (installedHookCount == HOOK_COUNT) {
@@ -293,7 +293,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                 ?: return InstallResult.Failure("controller-registry-constructor-missing")
         val iconListParameterIndex =
             constructor.parameterTypes.indexOfFirst { type ->
-                type.name == NativeStatusBarSlotReservation.STATUS_BAR_ICON_LIST
+                type.name == StatusSlotReservation.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
             return InstallResult.Failure("controller-icon-list-parameter-missing")
@@ -509,15 +509,15 @@ internal object SystemUiNativeCombinedParticipantOwner {
                             val slotPreparation =
                                 when (
                                     val result =
-                                        NativeStatusBarSlotReservation.reserveTail(
+                                        StatusSlotReservation.reserveTail(
                                             iconList = iconList,
                                             slot = SLOT,
                                         )
                                 ) {
-                                    is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                                    is StatusSlotReservation.ReservationResult.Ready ->
                                         result
 
-                                    is NativeStatusBarSlotReservation.ReservationResult.Failure -> {
+                                    is StatusSlotReservation.ReservationResult.Failure -> {
                                         onSlotOrderResult?.invoke(result.result)
                                         onEvent?.invoke(result.result.logLine)
                                         recordFailure("slot-predeclare-" + result.result.reason)
@@ -540,7 +540,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                             if (!replaced) {
                                 val slotRolledBack = slotReservation.rollback()
                                 val slotFailure =
-                                    NativeStatusBarSlotReservation.Result.Failure(
+                                    StatusSlotReservation.Result.Failure(
                                         if (slotRolledBack) {
                                             "transaction-aborted-registry-replacement"
                                         } else {
@@ -577,7 +577,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                                 if (!controllerCreated) {
                                     val slotRolledBack = slotReservation.rollback()
                                     val slotFailure =
-                                        NativeStatusBarSlotReservation.Result.Failure(
+                                        StatusSlotReservation.Result.Failure(
                                             if (slotRolledBack) {
                                                 "transaction-aborted-controller-construction"
                                             } else {
@@ -641,7 +641,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         bindingStates.clear()
         modelReady = false
         tintReady = false
-        currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+        currentSurface = SceneSource.Surface.UNKNOWN
         handoffPending = false
         handoffCommitted = false
         modelReadyLogged = false
@@ -662,14 +662,14 @@ internal object SystemUiNativeCombinedParticipantOwner {
         }
 
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = ParticipantAccess.resolve(host)) {
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return HotReloadAdoptResult.Failure(resolution.reason)
             }
         val holder =
-            NativeParticipantRuntimeAccess.iconHolder(
+            ParticipantAccess.iconHolder(
                 handles = handles,
                 slot = SLOT,
             ) ?: return HotReloadAdoptResult.NotPresent
@@ -687,7 +687,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             fieldOrNull(holder, "isVisible")
                 ?: return HotReloadAdoptResult.Failure("native-visible-field-missing")
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            ParticipantAccess.removal(handles.controller.javaClass)
                 ?: return HotReloadAdoptResult.Failure("removal-contract-missing")
         val iconList =
             readField(handles.controller, "mStatusBarIconList")
@@ -703,7 +703,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
 
         val removed =
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                ParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
@@ -715,14 +715,14 @@ internal object SystemUiNativeCombinedParticipantOwner {
         }
 
         val cleared =
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            ParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
             )
         if (
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null ||
-            NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) != null
+            ParticipantAccess.findSlotView(handles.group, SLOT) != null ||
+            ParticipantAccess.iconHolder(handles, SLOT) != null
         ) {
             return HotReloadAdoptResult.Failure("native-removal-verification-failed")
         }
@@ -739,14 +739,14 @@ internal object SystemUiNativeCombinedParticipantOwner {
         val slotPreparation =
             when (
                 val result =
-                    NativeStatusBarSlotReservation.reserveTail(
+                    StatusSlotReservation.reserveTail(
                         iconList = iconList,
                         slot = SLOT,
                     )
             ) {
-                is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                is StatusSlotReservation.ReservationResult.Ready ->
                     result
-                is NativeStatusBarSlotReservation.ReservationResult.Failure ->
+                is StatusSlotReservation.ReservationResult.Failure ->
                     return HotReloadAdoptResult.Failure(
                         "slot-reservation-" + result.result.reason,
                     )
@@ -757,23 +757,23 @@ internal object SystemUiNativeCombinedParticipantOwner {
                 initializerField.set(holder, creator)
                 slotField.set(holder, SLOT)
                 visibleField.setBoolean(holder, true)
-                NativeParticipantRuntimeAccess.invokeSetIconHolder(
+                ParticipantAccess.invokeSetIconHolder(
                     handles = handles,
                     slot = SLOT,
                     holder = holder,
                 )
-                NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) === holder &&
-                    NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null
+                ParticipantAccess.iconHolder(handles, SLOT) === holder &&
+                    ParticipantAccess.findSlotView(handles.group, SLOT) != null
             }.getOrDefault(false)
         if (!rebound) {
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                ParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
                 )
             }
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            ParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
@@ -806,17 +806,17 @@ internal object SystemUiNativeCombinedParticipantOwner {
         if (!injected) {
             return AttachResult.Failure(failureReason ?: "participant-not-injected")
         }
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = ParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return AttachResult.Failure(resolution.reason)
             }
 
         val root =
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) as? FrameLayout
+            ParticipantAccess.findSlotView(handles.group, SLOT) as? FrameLayout
                 ?: return AttachResult.Failure("native-root-missing")
         val bindingState =
             bindingStates[root]
@@ -836,9 +836,9 @@ internal object SystemUiNativeCombinedParticipantOwner {
         val privacy =
             readField(batteryContainer, "mHomePrivacyContainer") as? View
         val stableSlotMetrics =
-            StatusBarStableSession.currentSlotMetrics(host)
+            StatusBarSession.currentSlotMetrics(host)
         val stableStatusIconsWidth =
-            NativeStatusBarSlotGeometry.resolveCapturedOrLiveChildWidth(
+            StatusSlotGeometry.resolveCapturedOrLiveChildWidth(
                 capturedWidth = stableSlotMetrics?.statusIconsWidth,
                 layoutWidth = statusIcons.width,
                 measuredWidth = statusIcons.measuredWidth,
@@ -847,14 +847,14 @@ internal object SystemUiNativeCombinedParticipantOwner {
             privacy
                 ?.takeIf { view -> view.visibility == View.VISIBLE }
                 ?.let { view ->
-                    NativeStatusBarSlotGeometry.resolveStableChildWidth(
+                    StatusSlotGeometry.resolveStableChildWidth(
                         layoutWidth = view.width,
                         measuredWidth = view.measuredWidth,
                     )
                 }
                 ?: 0
         val slotGeometry =
-            NativeStatusBarSlotGeometry.resolve(
+            StatusSlotGeometry.resolve(
                 containerWidth =
                     batteryContainer.width
                         .takeIf { width -> width > 0 }
@@ -1004,7 +1004,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         val modelUpdate =
             renderController?.update(StatusStateStore.snapshot())
         val batteryTintState =
-            SystemUiTintStateSource.currentState(battery)
+            TintSource.currentState(battery)
         val tintUpdate =
             batteryTintState?.let { batteryTint ->
                 renderController?.updateTint(
@@ -1040,15 +1040,15 @@ internal object SystemUiNativeCombinedParticipantOwner {
                 modelUpdate.candidateComplete
         tintReady = tintUpdate?.resolved != null
         currentSurface =
-            SystemUiSceneStateSource.currentState(battery)?.surface
-                ?: SystemUiSceneStateSource.Surface.UNKNOWN
+            SceneSource.currentState(battery)?.surface
+                ?: SceneSource.Surface.UNKNOWN
         reconcileVisibleHandoff("attach")
 
         return AttachResult.Ready(
             registryRestored = registryRestored,
             rootClass = root.javaClass.name,
             rootVisibility = visibilityName(root.visibility),
-            iconVisible = NativeParticipantRuntimeAccess.iconVisible(root),
+            iconVisible = ParticipantAccess.iconVisible(root),
             layoutWidth = root.layoutParams?.width ?: Int.MIN_VALUE,
             layoutHeight = root.layoutParams?.height ?: Int.MIN_VALUE,
             renderWidth = render.measuredWidth,
@@ -1089,7 +1089,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                     " rootVisibility=" +
                     (root?.let { visibilityName(it.visibility) } ?: "none") +
                     " iconVisible=" +
-                    (root?.let { NativeParticipantRuntimeAccess.iconVisible(it) } ?: "none") +
+                    (root?.let { ParticipantAccess.iconVisible(it) } ?: "none") +
                     " visible=" + handoffCommitted +
                     " nativeGeometryWrites=0",
             )
@@ -1098,7 +1098,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onSceneUpdate(update: SystemUiSceneStateSource.SceneUpdate) {
+    fun onSceneUpdate(update: SceneSource.SceneUpdate) {
         val sourceBattery = batteryRef?.get()
         if (sourceBattery != null && update.sourceView !== sourceBattery) {
             return
@@ -1106,7 +1106,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         currentSurface = update.surface
         reconcileVisibleHandoff("scene-" + update.surface.name)
         if (
-            update.surface != SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR ||
+            update.surface != SceneSource.Surface.UNLOCKED_STATUS_BAR ||
             unlockedGeometryLogged
         ) {
             return
@@ -1282,7 +1282,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: TintSource.TintUpdate) {
         val battery = batteryRef?.get() ?: return
         if (update.sourceView !== battery) {
             return
@@ -1523,7 +1523,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             if (child === root) {
                 continue
             }
-            val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+            val slot = ParticipantAccess.slotOf(child) ?: continue
             if (slot == "wifi" || slot == "mobile" || slot == "stacked_mobile") {
                 tracked += TransitionDiagnosticProbe.TrackedView.create(slot, child)
             }
@@ -1725,7 +1725,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     removePendingPreDraw()
-                    synchronized(this@SystemUiNativeCombinedParticipantOwner) {
+                    synchronized(this@NativeParticipantPresentation) {
                         try {
                             if (
                             rootRef?.get() !== root ||
@@ -1735,7 +1735,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
                         }
 
                         val iconVisible =
-                            NativeParticipantRuntimeAccess.iconVisible(root) == true
+                            ParticipantAccess.iconVisible(root) == true
                         val render = renderViewRef?.get()
                         val battery = batteryRef?.get()
                         val parent = root.parent as? ViewGroup
@@ -1984,13 +1984,13 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     internal fun resolveHandoffMode(
-        surface: SystemUiSceneStateSource.Surface,
+        surface: SceneSource.Surface,
         rootShown: Boolean,
     ): HandoffMode =
         when {
-            surface == SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR ->
+            surface == SceneSource.Surface.UNLOCKED_STATUS_BAR ->
                 HandoffMode.VISIBLE_HOME
-            surface == SystemUiSceneStateSource.Surface.KEYGUARD && !rootShown ->
+            surface == SceneSource.Surface.KEYGUARD && !rootShown ->
                 HandoffMode.PREARMED_KEYGUARD
             else ->
                 HandoffMode.BLOCKED
@@ -2197,12 +2197,12 @@ internal object SystemUiNativeCombinedParticipantOwner {
             null
         }
 
-    private fun resolveCurrentHandles(): NativeParticipantRuntimeAccess.Handles? {
+    private fun resolveCurrentHandles(): ParticipantAccess.Handles? {
         val host = hostRef?.get() ?: return null
-        return when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-            is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+        return when (val resolution = ParticipantAccess.resolve(host)) {
+            is ParticipantAccess.ResolveResult.Ready ->
                 resolution.handles
-            is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+            is ParticipantAccess.ResolveResult.Failure ->
                 null
         }
     }
@@ -2226,7 +2226,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
             resolveCurrentHandles()
                 ?: return reset(DetachResult.NotAttached)
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            ParticipantAccess.removal(handles.controller.javaClass)
                 ?: return reset(DetachResult.Failure("removal-contract-missing"))
 
         val result =
@@ -2234,12 +2234,12 @@ internal object SystemUiNativeCombinedParticipantOwner {
                 renderViewRef?.get()?.let { render ->
                     (render.parent as? ViewGroup)?.removeView(render)
                 }
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                ParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
                 )
-                NativeParticipantRuntimeAccess.clearBindableEntries(
+                ParticipantAccess.clearBindableEntries(
                     handles = handles,
                     slot = SLOT,
                 )
@@ -2284,7 +2284,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         targetBindingState = null
         modelReady = false
         tintReady = false
-        currentSurface = SystemUiSceneStateSource.Surface.UNKNOWN
+        currentSurface = SceneSource.Surface.UNKNOWN
         handoffPending = false
         handoffCommitted = false
         eventSink = null

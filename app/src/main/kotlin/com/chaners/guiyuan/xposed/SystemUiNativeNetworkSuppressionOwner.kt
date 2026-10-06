@@ -12,7 +12,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object SystemUiNativeNetworkSuppressionOwner {
+internal object NativeNetworkSuppression {
     private const val WIFI_BINDING_CLASS =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
     private const val MOBILE_BINDING_CLASS =
@@ -274,7 +274,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             host as? View
                 ?: return StateResult.Failure("host-not-view")
         val manager =
-            NativeParticipantRuntimeAccess.managerFor(hostView)
+            ParticipantAccess.managerFor(hostView)
                 ?: run {
                     // MiuiNotificationStatusContainer finishes inflation before the parent
                     // MiuiPhoneStatusBarView necessarily owns its Home DarkIconManager.
@@ -287,7 +287,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         pendingObservationHost = null
         pendingObservationSource = null
         val group =
-            NativeParticipantRuntimeAccess.groupFor(hostView)
+            ParticipantAccess.groupFor(hostView)
                 ?: return StateResult.Failure("status-icon-group-missing")
         if (manager.javaClass.name != HOME_MANAGER_CLASS) {
             return StateResult.Failure("home-manager-mismatch")
@@ -348,10 +348,10 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         }
 
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = ParticipantAccess.resolve(host)) {
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return StateResult.Failure(resolution.reason)
             }
 
@@ -531,7 +531,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                     val pendingSource = pendingObservationSource
                     if (
                         pendingHost != null &&
-                        NativeParticipantRuntimeAccess.managerFor(pendingHost) === manager
+                        ParticipantAccess.managerFor(pendingHost) === manager
                     ) {
                         when (
                             val state =
@@ -613,19 +613,19 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         val mobile =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "mobile"
+                    ParticipantAccess.slotOf(child) == "mobile"
                 },
             )
         val wifi =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "wifi"
+                    ParticipantAccess.slotOf(child) == "wifi"
                 },
             )
         val combined =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "combined_status"
+                    ParticipantAccess.slotOf(child) == "combined_status"
                 },
             )
         val battery =
@@ -680,7 +680,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             val view =
                 selectTransitionTarget(
                     children.filter { child ->
-                        NativeParticipantRuntimeAccess.slotOf(child) == slot
+                        ParticipantAccess.slotOf(child) == slot
                     },
                 ) ?: return null
             return readTransitionIconState(group, view)
@@ -948,7 +948,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                 ?: (0 until group.childCount)
                     .map(group::getChildAt)
                     .firstOrNull { child ->
-                        NativeParticipantRuntimeAccess.slotOf(child) == NO_SIM_SLOT
+                        ParticipantAccess.slotOf(child) == NO_SIM_SLOT
                     }
         val noSimVisible =
             observedNoSimVisible
@@ -1024,7 +1024,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAnchorSlot=" +
-                    (tintAnchor?.let(NativeParticipantRuntimeAccess::slotOf) ?: "none") +
+                    (tintAnchor?.let(ParticipantAccess::slotOf) ?: "none") +
                     " tintAnchorClass=" +
                     (tintAnchor?.javaClass?.simpleName ?: "none") +
                     " noSimVisible=" + presentation.noSimVisible +
@@ -1141,7 +1141,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
             val child = group.getChildAt(index)
             if (
                 isTintAuthorityCandidate(
-                    slot = NativeParticipantRuntimeAccess.slotOf(child),
+                    slot = ParticipantAccess.slotOf(child),
                     visible = child.visibility == View.VISIBLE,
                     width = child.width,
                     height = child.height,
@@ -1155,7 +1155,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
 
     private fun isTintAuthorityCandidate(view: View): Boolean =
         isTintAuthorityCandidate(
-            slot = NativeParticipantRuntimeAccess.slotOf(view),
+            slot = ParticipantAccess.slotOf(view),
             visible = view.visibility == View.VISIBLE,
             width = view.width,
             height = view.height,
@@ -1297,7 +1297,7 @@ internal object SystemUiNativeNetworkSuppressionOwner {
         val targetViews = mutableListOf<Pair<String, View>>()
         for (index in 0 until group.childCount) {
             val child = group.getChildAt(index)
-            val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+            val slot = ParticipantAccess.slotOf(child) ?: continue
             if (slot in targetSlots) {
                 targetViews += slot to child
             }

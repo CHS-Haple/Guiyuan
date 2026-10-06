@@ -11,7 +11,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.WeakHashMap
 
-internal object SystemUiNetworkStateSource {
+internal object NetworkStateSource {
     const val WIFI_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder"
     const val WIFI_BIND_METHOD_NAME = "bind"
@@ -814,9 +814,9 @@ internal object SystemUiNetworkStateSource {
             state =
                 StatusStateStore.WifiState.Visible(
                     iconResId = modelResId,
-                    signal = SystemUiSignalParser.wifi(modelResourceName),
+                    signal = SignalParser.wifi(modelResourceName),
                     internetValidated =
-                        SystemUiSignalParser.wifiInternetValidated(
+                        SignalParser.wifiInternetValidated(
                             modelResourceName,
                         ),
                 ),
@@ -888,9 +888,9 @@ internal object SystemUiNetworkStateSource {
                         state =
                             StatusStateStore.WifiState.Visible(
                                 iconResId = taggedResId,
-                                signal = SystemUiSignalParser.wifi(taggedResource),
+                                signal = SignalParser.wifi(taggedResource),
                                 internetValidated =
-                                    SystemUiSignalParser.wifiInternetValidated(
+                                    SignalParser.wifiInternetValidated(
                                         taggedResource,
                                     ),
                             ),
@@ -946,7 +946,7 @@ internal object SystemUiNetworkStateSource {
         semanticState == StatusStateStore.WifiState.Hidden &&
             taggedResId != null &&
             taggedResId != previousTaggedResId &&
-            SystemUiSignalParser.isHotspotWifiResource(taggedResource)
+            SignalParser.isHotspotWifiResource(taggedResource)
 
     private fun mobileBindHooker(
         subscriptionIdMethod: Method,
@@ -1055,7 +1055,7 @@ internal object SystemUiNetworkStateSource {
                                 signal = if (
                                     kind == StatusStateStore.MobileIconKind.SIGNAL
                                 ) {
-                                    SystemUiSignalParser.mobile(resourceName)
+                                    SignalParser.mobile(resourceName)
                                 } else {
                                     null
                                 },

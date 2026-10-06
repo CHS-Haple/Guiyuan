@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiIslandMotionSource {
+internal object IslandMotionSource {
     const val HOOK_COUNT = 1
 
 

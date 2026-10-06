@@ -15,14 +15,14 @@ import java.lang.reflect.Field
  * realSystemIcons selector is recorded as context only: steady Keyguard host
  * readiness must not wait for that transition router to select the same carrier.
  */
-internal object SystemUiKeyguardHostProbe {
+internal object KeyguardHostProbe {
     private const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
 
     private var confirmedHost = WeakReference<ViewGroup>(null)
 
     @Synchronized
-    fun capture(update: SystemUiSceneStateSource.SceneUpdate): Snapshot? {
+    fun capture(update: SceneSource.SceneUpdate): Snapshot? {
         if (!shouldProbe(update.surface)) return null
 
         val host =
@@ -34,7 +34,7 @@ internal object SystemUiKeyguardHostProbe {
         val statusIcons = readView(host, "mStatusIconContainer")
         val battery = readView(host, "mBatteryView")
         val batteryCarrier =
-            battery?.let(SystemUiHomeCarrierMetrics::resolveCarrierView)
+            battery?.let(HomeCarrierMetrics::resolveCarrierView)
 
         val dependency = readValue(host, "mDep")
         val ccFake = dependency?.let { readValue(it, "ccFake") }
@@ -49,7 +49,7 @@ internal object SystemUiKeyguardHostProbe {
                 selectedRealSystemIcons === systemIcons
             }
         val batteryCarrierWidthPx =
-            batteryCarrier?.let(SystemUiHomeCarrierMetrics::resolveCarrierWidthPx)
+            batteryCarrier?.let(HomeCarrierMetrics::resolveCarrierWidthPx)
         val complete =
             shouldFreezeSample(
                 hostAttached = host.isAttachedToWindow,
@@ -79,8 +79,8 @@ internal object SystemUiKeyguardHostProbe {
         )
     }
 
-    internal fun shouldProbe(surface: SystemUiSceneStateSource.Surface): Boolean =
-        surface == SystemUiSceneStateSource.Surface.KEYGUARD
+    internal fun shouldProbe(surface: SceneSource.Surface): Boolean =
+        surface == SceneSource.Surface.KEYGUARD
 
     internal fun isKeyguardHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS

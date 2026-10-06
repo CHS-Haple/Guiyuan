@@ -8,7 +8,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
-internal object SystemUiNativeBatterySuppressionOwner {
+internal object NativeBatterySuppression {
     const val HOOK_COUNT = 2
 
     private const val BATTERY_CONTAINER_CLASS_NAME =

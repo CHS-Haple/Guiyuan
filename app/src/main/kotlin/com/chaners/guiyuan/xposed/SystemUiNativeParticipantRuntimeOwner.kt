@@ -7,7 +7,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
-internal object SystemUiNativeParticipantRuntimeOwner {
+internal object NativeParticipantRuntime {
     private const val CONTROLLER_IMPL =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val ADD_ICON_GROUP = "addIconGroup"
@@ -97,13 +97,13 @@ internal object SystemUiNativeParticipantRuntimeOwner {
     @Synchronized
     fun restoreExistingController(host: Any): Boolean {
         val manager =
-            NativeParticipantRuntimeAccess.managerFor(host)
+            ParticipantAccess.managerFor(host)
                 ?: return false
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = ParticipantAccess.resolve(host)) {
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return false
             }
         if (handles.manager !== manager) {
@@ -225,7 +225,7 @@ internal object SystemUiNativeParticipantRuntimeOwner {
                 return
             }
             val targetManager =
-                NativeParticipantRuntimeAccess.managerFor(hostView)
+                ParticipantAccess.managerFor(hostView)
                     ?: return
             if (targetManager !== manager) {
                 return
@@ -235,7 +235,7 @@ internal object SystemUiNativeParticipantRuntimeOwner {
 
         private fun armForController(): Boolean {
             val manager =
-                NativeParticipantRuntimeAccess.managerFor(hostView)
+                ParticipantAccess.managerFor(hostView)
             if (
                 manager != null &&
                 controllerFor(manager) != null
