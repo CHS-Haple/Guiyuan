@@ -42,7 +42,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun unknownNativeWifiInternetWithCellularDefaultUsesMobilePresentation() {
+    fun unknownWifiUsesMobile() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -78,7 +78,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun defaultDataFallbackSelectsMatchingMobileSignal() {
+    fun dataFallbackSelectsSignal() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -146,7 +146,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun wifiConnectedWithoutInternetKeepsWifiWithNoInternetState() {
+    fun wifiNoInternetKeepsWifi() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -180,7 +180,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun wifiDisconnectedFallsBackToValidatedCellularType() {
+    fun wifiDisconnectUsesCellular() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -210,7 +210,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun otherTransportWithUnknownWifiInternetFallsBackToMobileType() {
+    fun otherTransportUsesMobile() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -246,7 +246,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun otherTransportFallsBackToMobileTypeWhenWifiIsHidden() {
+    fun hiddenWifiUsesMobile() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -278,7 +278,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun mobileDataEnabledWithoutActiveTransportLeavesCenterEmpty() {
+    fun noTransportLeavesCenterEmpty() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -308,7 +308,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun mobileDataDisabledWithSignalLeavesCenterEmptyAndKeepsSignalLevel() {
+    fun disabledDataKeepsSignal() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -340,7 +340,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun completeNoNetworkLeavesCenterEmptyAndUsesSignalAreaForStatus() {
+    fun noNetworkUsesSignalStatus() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -393,7 +393,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
+    fun noSimOverridesStaleMobile() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
@@ -445,7 +445,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun nativeNoSimWithWifiSuppressesStaleMobileButKeepsWifiCenter() {
+    fun noSimWifiKeepsWifiCenter() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
@@ -502,7 +502,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun noSimWithoutWifiKeepsUnavailableMarkAlongsideNativeNoSimCenter() {
+    fun noSimWithoutWifiShowsUnavailable() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
@@ -538,7 +538,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun noSimWithWifiKeepsUnavailableMarkWhileWifiOwnsCenter() {
+    fun noSimWifiKeepsUnavailableMark() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
                 packageName = "com.android.systemui",
@@ -579,7 +579,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun airplaneModeUsesAirplaneCenterAndUnavailableMobileSignal() {
+    fun airplaneShowsUnavailableMobile() {
         val model =
             RenderModel.from(
                 snapshot =
@@ -612,7 +612,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun airplaneExitRecoveryShowsEmptyCenterAndDimDotsWithoutCross() {
+    fun airplaneExitShowsDimDots() {
         val model =
             RenderModel.from(
                 snapshot =

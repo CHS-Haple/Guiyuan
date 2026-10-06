@@ -18,7 +18,7 @@ class ScenePolicyTest {
     }
 
     @Test
-    fun homeStableUsesProjectedOverlayWithoutNativeSlotMutation() {
+    fun homeStableUsesProjectedOverlay() {
         val home = ScenePolicy.capability(StatusScene.HOME_STABLE)
 
         assertEquals(RenderMode.PROJECTED, home.renderMode)
@@ -27,7 +27,7 @@ class ScenePolicyTest {
     }
 
     @Test
-    fun systemUiOwnedTransitionsDoNotRequestCombinedSlotMutation() {
+    fun sysUiTransitionsKeepNativeSlot() {
         val systemUiOwned =
             ScenePolicy.all()
                 .filter { it.motionOwnership == MotionOwnership.SYSTEM_UI }
@@ -48,7 +48,7 @@ class ScenePolicyTest {
     }
 
     @Test
-    fun retainedTransitionSourceWitnessSurvivesPresentationHandoff() {
+    fun sourceWitnessSurvivesHandoff() {
         assertTrue(
             ScenePolicy.hasRetainedSourceWitness(
                 widthPx = 105,

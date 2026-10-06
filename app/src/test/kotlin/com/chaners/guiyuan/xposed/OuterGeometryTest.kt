@@ -9,7 +9,7 @@ import org.junit.Test
 
 class OuterGeometryTest {
     @Test
-    fun defaultOpticalBaselineRestoresPreferred825Ring() {
+    fun defaultOpticsRestoreRing() {
         val geometry =
             OuterGeometry.resolve(
                 OuterGeometry.DEFAULT_WEIGHT_SCALE,
@@ -38,7 +38,7 @@ class OuterGeometryTest {
     }
 
     @Test
-    fun outerWeightScalesRingDotsAndUnavailableMarkAsOneVisualFamily() {
+    fun outerWeightScalesVisualFamily() {
         val base =
             OuterGeometry.resolve(
                 OuterGeometry.DEFAULT_WEIGHT_SCALE,
@@ -78,7 +78,7 @@ class OuterGeometryTest {
     }
 
     @Test
-    fun unavailableMarkScalesWithOuterWeightWithoutChangingItsIndependentProportions() {
+    fun unavailableMarkKeepsProportions() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
 
@@ -96,7 +96,7 @@ class OuterGeometryTest {
     }
 
     @Test
-    fun fourDotsRemainMirrorSymmetricAcrossSupportedScales() {
+    fun fourDotsStaySymmetric() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             val angles =
@@ -120,7 +120,7 @@ class OuterGeometryTest {
     }
 
     @Test
-    fun fiveVisualEdgeGapsStayBalancedAcrossSupportedScales() {
+    fun edgeGapsStayBalanced() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             val ascendingAngles =
@@ -165,7 +165,7 @@ class OuterGeometryTest {
     }
 
     @Test
-    fun invalidOrOutOfRangeWeightScaleFallsBackOrClampsSafely() {
+    fun badWeightScaleClampsSafely() {
         assertEquals(
             OuterGeometry.DEFAULT_WEIGHT_SCALE,
             OuterGeometry.normalizeWeightScale(Float.NaN),

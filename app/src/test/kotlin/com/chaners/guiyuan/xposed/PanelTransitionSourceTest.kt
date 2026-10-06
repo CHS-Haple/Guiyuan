@@ -8,7 +8,7 @@ import org.junit.Test
 
 class PanelTransitionSourceTest {
     @Test
-    fun runtimeCallbackFailureIsContainedAndReported() {
+    fun callbackFailureIsContained() {
         var reported: Throwable? = null
         val completed =
             PanelTransitionSource.dispatchRuntimeCallback(
@@ -21,7 +21,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun runtimeCallbackFailureHandlerCannotEscapeTheHookBoundary() {
+    fun failureHandlerStaysInHook() {
         val completed =
             PanelTransitionSource.dispatchRuntimeCallback(
                 callback = { error("callback-failure") },
@@ -32,7 +32,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun nativeFractionPreservesFiniteHyperOsPayload() {
+    fun nativeFractionKeepsPayload() {
         assertEquals(-0.2f, PanelTransitionSource.nativeFraction(-0.2f))
         assertEquals(0.5f, PanelTransitionSource.nativeFraction(0.5f))
         assertEquals(1.4f, PanelTransitionSource.nativeFraction(1.4f))
@@ -41,14 +41,14 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun controlCenterHomeEligibilityRequiresNativeInvisibleSemantics() {
+    fun ccHomeNeedsNativeInvisible() {
         assertEquals(true, PanelTransitionSource.controlCenterAllowsHome(false))
         assertEquals(false, PanelTransitionSource.controlCenterAllowsHome(true))
         assertEquals(false, PanelTransitionSource.controlCenterAllowsHome(null))
     }
 
     @Test
-    fun controlCenterEligibilitySnapshotCanSeedHotReloadGeneration() {
+    fun ccEligibilitySeedsReload() {
         PanelTransitionSource.resetRuntimeState()
         assertNull(PanelTransitionSource.currentControlCenterHomeEligibility())
 
@@ -65,13 +65,13 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun runtimeHookCountIncludesOnlyNativeReadAndFakeLifecycleHooks() {
+    fun hookCountCoversRuntimeHooks() {
         assertEquals(4, PanelTransitionSource.expectedHookCount(false))
         assertEquals(4, PanelTransitionSource.expectedHookCount(true))
     }
 
     @Test
-    fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
+    fun diagPolicyKeepsSemanticEdges() {
         assertTrue(
             PanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
                 expandedChanged = false,
@@ -93,7 +93,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionMatrixUsesRawNativeExpansionProgress() {
+    fun matrixUsesNativeProgress() {
         assertEquals(0f, ControlCenterTransition.geometryProgress(0f))
         assertEquals(
             0.41f,
@@ -111,7 +111,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionComponentGeometryFollowsLocalBoundsWithoutAnimationCoordinateConstants() {
+    fun componentGeometryUsesLocalBounds() {
         val parent = floatArrayOf(100f, 200f, 120f, 0f, 0f, 120f)
         val bounds =
             StatusPainter.TransitionBounds(
@@ -138,7 +138,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionMotionAndMobileMorphUseNativeExpansion() {
+    fun motionUsesNativeExpansion() {
         assertEquals(0f, ControlCenterTransition.motionProgress(0f))
         assertEquals(
             0.41f,
@@ -170,7 +170,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
+    fun reservationExpandsPastCompact() {
         val spans =
             listOf(
                 ControlCenterTransition.ReservationSpan(
@@ -214,7 +214,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun mobileSignalMorphRowsDotsBeforeGrowingBars() {
+    fun mobileMorphRowsDotsFirst() {
         assertEquals(
             0f,
             StatusPainter.MobileSignalMorphPolicy.rowProgress(0f),
@@ -238,7 +238,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun mobileSignalMorphKeepsBarGrowthOutUntilRowPhaseCompletes() {
+    fun mobileMorphDelaysBarGrowth() {
         assertEquals(
             0f,
             StatusPainter.MobileSignalMorphPolicy.barProgress(0.25f),
@@ -257,7 +257,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun mobileSignalMorphExpandsBothWaysWhileKeepingOneSharedBottom() {
+    fun mobileMorphKeepsSharedBottom() {
         val maxBarHeight = 54f
         val diameter = 6f
         val half =
@@ -279,7 +279,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun mobileSignalMorphUsesNativeHeightOnlyAsACap() {
+    fun mobileMorphUsesNativeHeightCap() {
         val maxBarHeight =
             StatusPainter.MobileSignalMorphPolicy.targetMaxBarHeight(
                 sourceBoundsHeight = 24f,
@@ -306,7 +306,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionDoesNotOwnANativeReleaseTimeline() {
+    fun transitionDoesNotOwnReleaseTime() {
         assertEquals(
             0.92f,
             ControlCenterTransition.geometryProgress(0.92f),
@@ -320,7 +320,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionSimilarityGeometryPreservesSourceAspectRatio() {
+    fun similarityKeepsAspectRatio() {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
@@ -340,7 +340,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun transitionMatrixInterpolatesAffineGeometryDeterministically() {
+    fun matrixInterpolationIsDeterministic() {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
@@ -358,7 +358,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
+    fun ccSourcePrefersHomeIdentity() {
         assertEquals(
             SourceScene.HOME,
             PanelTransitionSource.classifyControlCenterSourceScene(
@@ -383,7 +383,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun controlCenterUpdateCarriesNativeAppearanceState() {
+    fun ccUpdateCarriesAppearance() {
         val update =
             PanelTransitionSource.Update(
                 source = PanelTransitionSource.Source.CONTROL_CENTER,
@@ -400,7 +400,7 @@ class PanelTransitionSourceTest {
 
 
     @Test
-    fun controlCenterUpdateCarriesExactNativeBatteryIslandState() {
+    fun ccUpdateCarriesIslandState() {
         val active =
             PanelTransitionSource.Update(
                 source = PanelTransitionSource.Source.CONTROL_CENTER,
@@ -418,7 +418,7 @@ class PanelTransitionSourceTest {
     }
 
     @Test
-    fun controlCenterUpdateCarriesNativeSelectedSourceScene() {
+    fun ccUpdateCarriesSourceScene() {
         val update =
             PanelTransitionSource.Update(
                 source = PanelTransitionSource.Source.CONTROL_CENTER,

@@ -6,7 +6,7 @@ import org.junit.Test
 
 class NativeNetworkSuppressionPolicyTest {
     @Test
-    fun duplicateRootDualSeparateWindowRetainsExistingSuppression() {
+    fun duplicateRootKeepsSuppression() {
         val presentation =
             snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
@@ -46,7 +46,7 @@ class NativeNetworkSuppressionPolicyTest {
     }
 
     @Test
-    fun duplicateRootWindowDoesNotCreateSuppressionFromNativeState() {
+    fun duplicateRootDoesNotCreateSuppression() {
         val presentation =
             snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_SEPARATE,

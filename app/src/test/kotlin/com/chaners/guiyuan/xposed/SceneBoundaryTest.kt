@@ -7,7 +7,7 @@ import org.junit.Test
 
 class SceneBoundaryTest {
     @Test
-    fun singleChildNativeTargetPreservesOutgoingVisualLifetime() {
+    fun singleChildKeepsOutgoingVisual() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -96,7 +96,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun fullAodTargetPendingRetainsOutgoingSingleChildThroughFadeLifetime() {
+    fun pendingAodKeepsOutgoingChild() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -186,7 +186,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun fullAodTargetDoesNotOverrideUnknownOriginOrDualEnabledFamily() {
+    fun aodTargetRespectsUnknownOrigin() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -224,7 +224,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun latchedHomeOriginSurvivesMutableSceneAndOwnershipChanges() {
+    fun latchedHomeSurvivesSceneChanges() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -260,7 +260,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun keyguardBoundaryVisualHandoffIsOnlyForIncomingEnabledKeyguard() {
+    fun keyguardHandoffNeedsIncomingEnabled() {
         assertTrue(
             ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
@@ -325,7 +325,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun armedKeyguardVisualHandoffCanPrecedeAodAnimateStateChange() {
+    fun armedHandoffCanPrecedeAodState() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -361,7 +361,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun keyguardBoundaryLayoutPrecommitRequiresHiddenNativeStatusIcons() {
+    fun keyguardPrecommitNeedsHiddenNative() {
         assertTrue(
             ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = true,
@@ -410,7 +410,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun disabledAodHomeFallbackArmsOnlyFromVisibleNativeHomeCarrier() {
+    fun aodOffFallbackNeedsVisibleHome() {
         assertTrue(
             ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = true,
@@ -450,7 +450,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun disabledAodHomeFallbackConsumesOnNativeAodAnimationNotTransientKeyguard() {
+    fun aodOffFallbackConsumesOnAodAnimation() {
         assertTrue(
             ScenePolicy.shouldConsumeHomeAodFallback(
                 candidateActive = true,
@@ -484,7 +484,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun disabledAodDirectTargetReleasesOnlyArmedHomeFallback() {
+    fun aodOffTargetReleasesArmedFallback() {
         assertTrue(
             ScenePolicy.shouldReleaseHomeForAodOff(
                 featureEnabled = true,
@@ -518,7 +518,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun activeHomeNativeAodFallbackOverridesStaleKeyguardFamilyEvidence() {
+    fun homeAodFallbackBeatsStaleKeyguard() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -537,7 +537,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun pendingFullAodTargetClosesOnlyAtItsMatchingStableEndpoint() {
+    fun pendingAodClosesAtMatchingEndpoint() {
         assertFalse(
             ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = true,

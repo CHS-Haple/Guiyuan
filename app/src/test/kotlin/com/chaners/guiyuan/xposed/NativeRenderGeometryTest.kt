@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 
 class NativeRenderGeometryTest {
     @Test
-    fun steadyNativeBoundsResolveDirectlyInFinalPixelSpace() {
+    fun steadyBoundsUseFinalPixels() {
         val transform =
             NativeRenderTransform(
                 scale = 0.875f,
@@ -37,7 +37,7 @@ class NativeRenderGeometryTest {
     }
 
     @Test
-    fun pixelBoundsNeverCollapseAtSmallSupportedScale() {
+    fun smallScaleKeepsPixelBounds() {
         val bounds =
             NativeRenderGeometry.resolvePixelBounds(
                 centerX = 60f,

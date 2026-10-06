@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ParticipantAccessTest {
     @Test
-    fun classifiesHyperOsContentSlotResourceSetter() {
+    fun classifiesHyperOsSlotSetter() {
         val method =
             Fixture::class.java.getDeclaredMethod(
                 "setIcon",
@@ -38,7 +38,7 @@ class ParticipantAccessTest {
     }
 
     @Test
-    fun classifiesHyperOsRemoveAllWithPipelineFlag() {
+    fun classifiesRemoveAllPipelineFlag() {
         val method =
             Fixture::class.java.getDeclaredMethod(
                 "removeAllIconsForSlot",

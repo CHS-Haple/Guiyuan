@@ -6,7 +6,7 @@ import org.junit.Test
 
 class SceneControlCenterTest {
     @Test
-    fun controlCenterProjectionInheritsVerifiedSourceSceneCapability() {
+    fun projectionInheritsSourceCapability() {
         assertTrue(
             ScenePolicy.ccProjectionEligible(
                 featureEnabled = true,
@@ -52,7 +52,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun keyguardControlCenterLeaseRejectsEveryIndependentInvalidBoundary() {
+    fun keyguardLeaseRejectsInvalidBoundary() {
         val base =
             ScenePolicy.shouldKeepKeyguardCcLease(
                 leaseActive = true,
@@ -112,7 +112,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun hiddenControlCenterIgnoresKeyguardLifecycleChurnUntilItActuallyOpens() {
+    fun hiddenCcIgnoresKeyguardChurn() {
         assertFalse(
             ScenePolicy.shouldReconcileKeyguardControlCenter(
                 controlCenterVisible = false,
@@ -144,7 +144,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun incomingKeyguardBoundaryPresentationCanBridgeStableReadiness() {
+    fun incomingKeyguardBridgesReadiness() {
         assertTrue(
             ScenePolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
@@ -202,7 +202,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun keyguardControlCenterLeaseMaySpanIncomingBoundaryBeforeStableFamily() {
+    fun keyguardLeaseCanSpanBoundary() {
         assertTrue(
             ScenePolicy.shouldKeepKeyguardCcLease(
                 leaseActive = true,
@@ -230,7 +230,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun keyguardControlCenterLeaseExistsOnlyInsideVerifiedNativeTransitionLifetime() {
+    fun keyguardLeaseMatchesNativeLifetime() {
         assertTrue(
             ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,

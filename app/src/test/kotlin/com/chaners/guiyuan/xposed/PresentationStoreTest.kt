@@ -6,7 +6,7 @@ import org.junit.Test
 
 class PresentationStoreTest {
     @Test
-    fun repeatedConnectivityObservationIsDeduplicatedByValue() {
+    fun connectivityDeduplicatesByValue() {
         PresentationStore.reset()
         val state =
             ConnectivitySource.State(

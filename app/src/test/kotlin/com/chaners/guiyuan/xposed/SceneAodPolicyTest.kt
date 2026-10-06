@@ -7,7 +7,7 @@ import org.junit.Test
 
 class SceneAodPolicyTest {
     @Test
-    fun keyguardAndStableAodAreIndependentProjectedCandidates() {
+    fun keyguardAndAodStayIndependent() {
         val keyguard = ScenePolicy.capability(StatusScene.KEYGUARD)
         assertEquals(RenderMode.PROJECTED, keyguard.renderMode)
         assertEquals(MotionOwnership.SYSTEM_UI, keyguard.motionOwnership)
@@ -49,7 +49,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun keyguardAndAodProjectionMatrixKeepsChildPreferencesIndependent() {
+    fun projectionKeepsChildPrefs() {
         fun resolveStable(
             feature: Boolean,
             keyguard: Boolean,
@@ -93,7 +93,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun aodAnimationRoutesFromLatchedStableFamilySceneNotMutableOwnership() {
+    fun aodRouteUsesStableScene() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -149,7 +149,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun directAodToHomeUnlockCannotReversePrearmAod() {
+    fun aodToHomeDoesNotReversePrearm() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -182,7 +182,7 @@ class SceneAodPolicyTest {
 
 
     @Test
-    fun nativeAodTargetCanPrearmHomeBeforeAnimationFlagCatchesUp() {
+    fun aodTargetCanPrearmHome() {
         assertTrue(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
@@ -214,7 +214,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun homeAodTargetPrearmRejectsReverseOrKnownFamilyOrigin() {
+    fun homePrearmRejectsReverseOrigin() {
         assertFalse(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
@@ -240,7 +240,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun singleEnabledFamilyUsesNativeKeyguardStatusIconsBoundary() {
+    fun singleFamilyUsesNativeBoundary() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -314,7 +314,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun singleEnabledIncomingChildWaitsForNativeStatusIconsTakeover() {
+    fun incomingChildWaitsForNative() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -375,7 +375,7 @@ class SceneAodPolicyTest {
 
 
     @Test
-    fun aodOnlyHomePrearmBeatsTransientKeyguardStatusIconsBoundary() {
+    fun aodPrearmBeatsTransientKeyguard() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -394,7 +394,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun controlCenterSourceConflictUsesStableFamilyHistoryAsDirectionEvidence() {
+    fun ccConflictUsesStableHistory() {
         assertEquals(
             SourceScene.HOME,
             ScenePolicy.resolveControlCenterSourceScene(
@@ -461,7 +461,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun singleEnabledFamilyFallsBackConservativelyWhenVisualEvidenceIsUnavailable() {
+    fun singleFamilyFallsBackConservatively() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -503,7 +503,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun latchedAodOriginBeatsStaleHomeOwnershipDuringAodToKeyguard() {
+    fun latchedAodBeatsStaleHome() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -521,7 +521,7 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun aodOnlyPrearmRequiresAnActualAnimationSignal() {
+    fun aodPrearmNeedsAnimation() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -552,7 +552,7 @@ class SceneAodPolicyTest {
         )
     }
     @Test
-    fun aodPrearmRequiresAodFeatureAndVisibleHomeOwnership() {
+    fun aodPrearmNeedsVisibleHome() {
         assertTrue(
             ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,

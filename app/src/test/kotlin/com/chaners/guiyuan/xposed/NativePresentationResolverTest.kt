@@ -5,7 +5,7 @@ import org.junit.Test
 
 class NativePresentationResolverTest {
     @Test
-    fun presentationAndDataSubscriptionIdentitiesCanDiffer() {
+    fun presentationAndDataSubCanDiffer() {
         val snapshot =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
@@ -24,7 +24,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
+    fun aggregatedTypeFollowsDataSub() {
         assertEquals(
             4,
             NativePresentationResolver.selectNetworkTypeSubscriptionId(
@@ -36,7 +36,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun networkTypeFallsBackToPresentationRootWhenDefaultDataBindingIsMissing() {
+    fun networkTypeFallsBackToRoot() {
         assertEquals(
             1,
             NativePresentationResolver.selectNetworkTypeSubscriptionId(
@@ -72,7 +72,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun aggregatedDualPresentationRequiresTwoActiveSubscriptions() {
+    fun aggregatedDualNeedsTwoSubs() {
         assertEquals(
             NativePresentationResolver.Mode.DUAL_AGGREGATED,
             NativePresentationResolver.classify(
@@ -84,7 +84,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun singleActiveSubscriptionCanOwnNativeMobileReplacement() {
+    fun singleSubCanOwnReplacement() {
         val snapshot =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.SINGLE,
@@ -101,7 +101,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun aggregatedDualPresentationCanOwnSingleVisibleMobileRootReplacement() {
+    fun aggregatedDualCanOwnSingleRoot() {
         val snapshot =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
@@ -118,7 +118,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun separateDualPresentationMustPreserveNativeMobileParticipant() {
+    fun separateDualKeepsNativeMobile() {
         val snapshot =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
@@ -152,7 +152,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun singleModeWithoutActiveSubscriptionFailsNativeReplacementReadiness() {
+    fun singleModeWithoutSubFailsNative() {
         val snapshot =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.SINGLE,
@@ -169,7 +169,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun preMeasureDoublePlusMatchesNativeNormalization() {
+    fun doublePlusMatchesNativeNormalization() {
         val networkType =
             NativePresentationResolver.normalizeDrawableNetworkType(
                 rawLabel = "5G++",
@@ -182,7 +182,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun preMeasureRegularTypeDoesNotReuseStaleDoublePlusFlag() {
+    fun regularTypeClearsDoublePlus() {
         val networkType =
             NativePresentationResolver.normalizeDrawableNetworkType(
                 rawLabel = "4G",
@@ -195,7 +195,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun commonLegacyAndLteLabelsPassThroughNativeNormalization() {
+    fun legacyAndLteLabelsNormalize() {
         listOf("2G", "E", "3G", "H+", "4G", "LTE").forEach { label ->
             val networkType =
                 NativePresentationResolver.normalizeDrawableNetworkType(
@@ -223,7 +223,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun oneActiveSubscriptionDoesNotPretendToBeAggregatedDual() {
+    fun oneSubIsNotAggregatedDual() {
         assertEquals(
             NativePresentationResolver.Mode.SINGLE,
             NativePresentationResolver.classify(
@@ -234,7 +234,7 @@ class NativePresentationResolverTest {
         )
     }
     @Test
-    fun authoritativeActiveSubscriptionDropsDisabledStaleRoot() {
+    fun activeSubDropsStaleRoot() {
         val resolved =
             NativePresentationResolver.resolveActiveBindingSubscriptionIds(
                 boundSubscriptionIds = listOf(1, 4),
@@ -255,7 +255,7 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun semanticActiveSubscriptionsRemainFallbackWhenPlatformAuthorityUnavailable() {
+    fun semanticSubsFallbackWithoutPlatform() {
         val resolved =
             NativePresentationResolver.resolveActiveBindingSubscriptionIds(
                 boundSubscriptionIds = listOf(1, 4),

@@ -21,7 +21,7 @@ class PresentationPolicyTest {
     }
 
     @Test
-    fun explicitHiddenOrUnavailableModelStillCommits() {
+    fun hiddenOrUnavailableStillCommits() {
         val previous = model(centerIndicator = wifi(), mobileLevel = 4)
         val candidate = model(centerIndicator = CenterIndicator.Empty, mobileLevel = null)
 
@@ -35,7 +35,7 @@ class PresentationPolicyTest {
     }
 
     @Test
-    fun initialIncompleteStateRemainsNotRenderable() {
+    fun incompleteStateIsNotRenderable() {
         assertNull(
             PresentationPolicy.resolveModel(
                 previous = null,
@@ -45,7 +45,7 @@ class PresentationPolicyTest {
     }
 
     @Test
-    fun transparentTintDoesNotReplaceLastStableTint() {
+    fun transparentTintKeepsStableTint() {
         val previous = TintState(0xe6ffffff.toInt())
         val transparent = TintState(0x00000000)
 
