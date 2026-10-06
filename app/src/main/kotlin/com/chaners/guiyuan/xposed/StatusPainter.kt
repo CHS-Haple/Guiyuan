@@ -116,7 +116,7 @@ internal class StatusPainter(
             centerExitAmount = centerExitAmount,
             centerEnterAmount = centerEnterAmount,
         )
-        if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
             resolveBatteryTopReadoutLayout(
                 model = model,
                 visualSettings = visualSettings,
@@ -133,7 +133,7 @@ internal class StatusPainter(
             }
         }
         val centerSave = canvas.save()
-        if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
             canvas.translate(0f, networkTopTranslationY(visualSettings))
         }
         drawCenterTransition(
@@ -180,7 +180,7 @@ internal class StatusPainter(
         val scale = nativeTransform.scale
         val offsetY = nativeTransform.offsetY
         val topBounds =
-            if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                 val geometry =
                     resolveCenterGeometry(visualSettings)
                 resolveNetworkTopSlotAvoidance(
@@ -302,7 +302,7 @@ internal class StatusPainter(
                 )
 
             TransitionComponent.CENTER -> {
-                if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+                if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                     canvas.translate(0f, networkTopTranslationY(visualSettings))
                 }
                 val baseGeometry =
@@ -867,7 +867,7 @@ internal class StatusPainter(
             }
         centerSpec?.let { spec ->
             specs +=
-                if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+                if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                     spec.copy(
                         sourceBounds =
                             shiftBoundsY(
@@ -944,7 +944,7 @@ internal class StatusPainter(
                 height = metrics?.sourceOpticalHeight ?: geometry.airplaneMaxSize,
             )
         val local =
-            if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                 shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
             } else {
                 baseLocal
@@ -980,7 +980,7 @@ internal class StatusPainter(
         val save = canvas.save()
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
-        if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
             canvas.translate(0f, networkTopTranslationY(visualSettings))
         }
         drawNativeAirplane(
@@ -1026,7 +1026,7 @@ internal class StatusPainter(
                 height = metrics?.sourceOpticalHeight ?: geometry.noSimMaxSize,
             )
         val local =
-            if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                 shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
             } else {
                 baseLocal
@@ -1063,7 +1063,7 @@ internal class StatusPainter(
         val save = canvas.save()
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
-        if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
             canvas.translate(0f, networkTopTranslationY(visualSettings))
         }
         drawNativeCenterResource(
@@ -1196,10 +1196,10 @@ internal class StatusPainter(
         visualSettings: VisualCfg,
     ): CenterGeometry.Resolved =
         CenterGeometry.resolve(
-            wifiSizeScale = visualSettings.wifiSizeScale,
-            mobileTypeSizeScale = visualSettings.mobileTypeSizeScale,
-            airplaneSizeScale = visualSettings.airplaneSizeScale,
-            noSimSizeScale = visualSettings.noSimSizeScale,
+            wifiScale = visualSettings.wifiScale,
+            mobileTypeScale = visualSettings.mobileTypeScale,
+            airplaneScale = visualSettings.airplaneScale,
+            noSimScale = visualSettings.noSimScale,
             mobileTypeWeight = visualSettings.mobileTypeWeight,
             combinedScale = visualSettings.combinedScale,
         )
@@ -1220,7 +1220,7 @@ internal class StatusPainter(
         TOP_SLOT_CENTER_Y -
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
-                layout = visualSettings.contentLayout,
+                layout = visualSettings.layout,
                 rawOffset = visualSettings.batteryTopVerticalOffset,
             )
 
@@ -1463,7 +1463,7 @@ internal class StatusPainter(
     private fun resolveWifiFallbackAvoidance(
         geometry: CenterGeometry.Resolved,
     ): TopSlotAvoidance {
-        val scale = 3f * geometry.wifiSizeScale
+        val scale = 3f * geometry.wifiScale
 
         fun map(bounds: RectF): TransitionBounds =
             TransitionBounds(
@@ -1520,7 +1520,7 @@ internal class StatusPainter(
     private fun batteryReadoutPreferredCenterY(
         visualSettings: VisualCfg,
     ): Float =
-        if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+        if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
             BATTERY_COMPONENT_CENTER_Y +
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE +
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
@@ -1557,7 +1557,7 @@ internal class StatusPainter(
                 nativeTransform = nativeTransform,
             )
         val topContentAvoidance =
-            if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                 resolveNetworkTopSlotAvoidance(
                     visualSettings = visualSettings,
                     current = model.centerIndicator,
@@ -1712,7 +1712,7 @@ internal class StatusPainter(
         }
 
         if (
-            visualSettings.contentLayout == ContentLayout.NETWORK_CENTER &&
+            visualSettings.layout == ContentLayout.NETWORK_CENTER &&
             readout != null
         ) {
             drawBatteryTopReadout(
@@ -1871,7 +1871,7 @@ internal class StatusPainter(
                 baseCenterY = groupBaseCenterY,
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
-                        layout = visualSettings.contentLayout,
+                        layout = visualSettings.layout,
                         rawOffset = visualSettings.batteryTopVerticalOffset,
                     ),
             )
@@ -2102,7 +2102,7 @@ internal class StatusPainter(
                 transitionProgress = progress,
             ).bounds
         val local =
-            if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
+            if (visualSettings.layout == ContentLayout.BATTERY_CENTER) {
                 shiftBoundsY(baseLocal, networkTopTranslationY(visualSettings))
             } else {
                 baseLocal
@@ -2548,7 +2548,7 @@ internal class StatusPainter(
 
         val save = canvas.save()
         canvas.translate(WIFI_CENTER_X, WIFI_CENTER_Y)
-        canvas.scale(3f * geometry.wifiSizeScale, 3f * geometry.wifiSizeScale)
+        canvas.scale(3f * geometry.wifiScale, 3f * geometry.wifiScale)
         canvas.translate(-WIFI_FALLBACK_CENTER_X, -WIFI_FALLBACK_CENTER_Y)
 
         wifiPaths.forEachIndexed { index, path ->

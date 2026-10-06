@@ -69,7 +69,7 @@ import com.chaners.guiyuan.settings.batteryTopChargingIconUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopTextUiScale
 import com.chaners.guiyuan.settings.batteryTopTextUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
-import com.chaners.guiyuan.settings.mobileTypeSizeScaleDefault
+import com.chaners.guiyuan.settings.mobileTypeScaleDefault
 import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -137,13 +137,13 @@ internal fun FeaturesScreen(
         secondarySectionTitle = stringResource(R.string.section_network),
         secondaryContent = {
             SliderPreference(
-                value = visualSettings.wifiSizeScale,
-                onValueChange = visualRepository::setWifiSizeScale,
+                value = visualSettings.wifiScale,
+                onValueChange = visualRepository::setWifiScale,
                 title = stringResource(R.string.wifi_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.wifiSizeScale * 100f).roundToInt(),
+                        (visualSettings.wifiScale * 100f).roundToInt(),
                     ),
                 valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
                 steps = 16,
@@ -153,13 +153,13 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.airplaneSizeScale,
-                onValueChange = visualRepository::setAirplaneSizeScale,
+                value = visualSettings.airplaneScale,
+                onValueChange = visualRepository::setAirplaneScale,
                 title = stringResource(R.string.airplane_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.airplaneSizeScale * 100f).roundToInt(),
+                        (visualSettings.airplaneScale * 100f).roundToInt(),
                     ),
                 valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
                 steps = 16,
@@ -169,13 +169,13 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.noSimSizeScale,
-                onValueChange = visualRepository::setNoSimSizeScale,
+                value = visualSettings.noSimScale,
+                onValueChange = visualRepository::setNoSimScale,
                 title = stringResource(R.string.no_sim_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.noSimSizeScale * 100f).roundToInt(),
+                        (visualSettings.noSimScale * 100f).roundToInt(),
                     ),
                 valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
                 steps = 16,
@@ -185,21 +185,21 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visualSettings.mobileTypeSizeScale,
-                onValueChange = visualRepository::setMobileTypeSizeScale,
+                value = visualSettings.mobileTypeScale,
+                onValueChange = visualRepository::setMobileTypeScale,
                 title = stringResource(R.string.mobile_type_size),
                 valueText =
                     stringResource(
                         R.string.percent_value,
-                        (visualSettings.mobileTypeSizeScale * 100f).roundToInt(),
+                        (visualSettings.mobileTypeScale * 100f).roundToInt(),
                     ),
                 valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
                 keyPoints =
                     listOf(
-                        mobileTypeSizeScaleDefault(
-                            visualSettings.contentLayout,
+                        mobileTypeScaleDefault(
+                            visualSettings.layout,
                         ),
                     ),
                 magnetThreshold = 0.035f,
@@ -286,7 +286,7 @@ internal fun FeaturesScreen(
                     keyPoints =
                         listOf(
                             batteryTopTextUiScaleDefault(
-                                visualSettings.contentLayout,
+                                visualSettings.layout,
                             ),
                         ),
                     magnetThreshold = 0.035f,
@@ -350,7 +350,7 @@ internal fun FeaturesScreen(
                     keyPoints =
                         listOf(
                             batteryTopChargingIconUiScaleDefault(
-                                visualSettings.contentLayout,
+                                visualSettings.layout,
                             ),
                         ),
                     magnetThreshold = 0.035f,
@@ -430,7 +430,7 @@ internal fun FeaturesScreen(
         )
         OverlayDropdownPreference(
             items = layoutOptions,
-            selectedIndex = visualSettings.contentLayout.ordinal,
+            selectedIndex = visualSettings.layout.ordinal,
             title = stringResource(R.string.content_layout_title),
             summary = stringResource(R.string.content_layout_summary),
             showValue = true,
@@ -438,7 +438,7 @@ internal fun FeaturesScreen(
             onSelectedIndexChange = { index ->
                 ContentLayout.entries
                     .getOrNull(index)
-                    ?.let(visualRepository::setContentLayout)
+                    ?.let(visualRepository::setLayout)
             },
         )
         val topInfoVerticalOffsetUi =

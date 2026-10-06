@@ -9,10 +9,10 @@ class VisualCfgTest {
         val settings = VisualCfg()
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
-        assertEquals(1f, settings.wifiSizeScale, 0.0001f)
-        assertEquals(1f, settings.airplaneSizeScale, 0.0001f)
-        assertEquals(1f, settings.noSimSizeScale, 0.0001f)
-        assertEquals(1f, settings.mobileTypeSizeScale, 0.0001f)
+        assertEquals(1f, settings.wifiScale, 0.0001f)
+        assertEquals(1f, settings.airplaneScale, 0.0001f)
+        assertEquals(1f, settings.noSimScale, 0.0001f)
+        assertEquals(1f, settings.mobileTypeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
         assertEquals(true, settings.controlCenterTintTransitionEnabled)
 
@@ -20,10 +20,10 @@ class VisualCfgTest {
             settings.copy(
                 combinedScale = 9f,
                 outerWeightScale = 9f,
-                wifiSizeScale = 9f,
-                airplaneSizeScale = 9f,
-                noSimSizeScale = 9f,
-                mobileTypeSizeScale = 9f,
+                wifiScale = 9f,
+                airplaneScale = 9f,
+                noSimScale = 9f,
+                mobileTypeScale = 9f,
                 mobileTypeWeight = 5000,
             ).normalized()
         assertEquals(COMBINED_SCALE_DEFAULT, COMBINED_SCALE_MAX, 0.0001f)
@@ -34,10 +34,10 @@ class VisualCfgTest {
             0.0001f,
         )
         assertEquals(OUTER_WEIGHT_SCALE_MAX, normalized.outerWeightScale, 0.0001f)
-        assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiSizeScale, 0.0001f)
-        assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneSizeScale, 0.0001f)
-        assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimSizeScale, 0.0001f)
-        assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeSizeScale, 0.0001f)
+        assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
+        assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
+        assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
+        assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
         assertEquals(400, MOBILE_TYPE_WEIGHT_MIN)
         assertEquals(900, MOBILE_TYPE_WEIGHT_DEFAULT)
@@ -340,7 +340,7 @@ class VisualCfgTest {
     fun newBatteryVisualControlsKeepRequestedDefaults() {
         val settings = VisualCfg()
 
-        assertEquals(ContentLayout.NETWORK_CENTER, settings.contentLayout)
+        assertEquals(ContentLayout.NETWORK_CENTER, settings.layout)
         assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
         assertEquals(true, settings.batteryTopChargingIconEnabled)
         assertEquals(true, settings.batteryTopChargingIconFollowsBatteryColor)
@@ -387,7 +387,7 @@ class VisualCfgTest {
         )
         assertEquals(
             0.8f,
-            mobileTypeSizeScaleDefault(ContentLayout.BATTERY_CENTER),
+            mobileTypeScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
     }
@@ -397,7 +397,7 @@ class VisualCfgTest {
     fun directBatteryCenteredSettingsConstructionUsesProfileDefaults() {
         val settings =
             VisualCfg(
-                contentLayout = ContentLayout.BATTERY_CENTER,
+                layout = ContentLayout.BATTERY_CENTER,
             )
 
         assertEquals(
@@ -410,7 +410,7 @@ class VisualCfgTest {
             batteryTopChargingIconUiScale(settings.batteryTopChargingIconScale),
             0.0001f,
         )
-        assertEquals(0.8f, settings.mobileTypeSizeScale, 0.0001f)
+        assertEquals(0.8f, settings.mobileTypeScale, 0.0001f)
     }
 
     @Test
@@ -427,7 +427,7 @@ class VisualCfgTest {
         )
         assertEquals(
             1f,
-            mobileTypeSizeScaleDefault(ContentLayout.NETWORK_CENTER),
+            mobileTypeScaleDefault(ContentLayout.NETWORK_CENTER),
             0.0001f,
         )
     }
