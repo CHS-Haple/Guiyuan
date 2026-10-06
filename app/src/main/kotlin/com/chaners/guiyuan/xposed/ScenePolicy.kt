@@ -430,11 +430,9 @@ internal object ScenePolicy {
             return KeyguardAodProjection.AOD
         }
 
-        // Build 655 proved that mToLockScreen is direction evidence but
-        // its animateFullAod commit is earlier than the visible status-icon
-        // handoff. While that target is pending, retain the enabled outgoing
-        // child (or Native when the outgoing child is disabled). Only the
-        // native animateIconContainer lifecycle event may consume the target.
+        // mToLockScreen gives direction, but animateFullAod commits before the
+        // visible status-icon handoff. Keep the outgoing child while the target
+        // is pending; only animateIconContainer may consume that target.
         if (
             fullAodTargetSourceReady &&
             nativeToLockScreenTarget != null &&
@@ -539,12 +537,9 @@ internal object ScenePolicy {
             }
         }
 
-        // Do not derive AOD animation direction from current presentation
-        // ownership. Attach/cleanup mutates ownership itself and Build 645
-        // proved that doing so creates KEYGUARD -> NATIVE -> KEYGUARD
-        // oscillation on repeated callbacks. Direction is instead derived from
-        // the last non-animating, runtime-observed family scene and remains
-        // frozen for the whole animation.
+        // Presentation ownership changes during attach/cleanup, so it cannot define
+        // AOD direction. Freeze direction from the last stable runtime scene
+        // for the whole animation to avoid callback-driven scene oscillation.
         return when (lastStableFamilyScene) {
             StableKeyguardAodScene.KEYGUARD ->
                 when {

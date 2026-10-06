@@ -1783,9 +1783,8 @@ internal object NativeParticipantUi {
                                 bridgeReady
 
                         if (ready) {
-                            // The native battery slot remains the single end-side occupancy
-                            // owner. Keep the Combined Status shell zero-width and render the
-                            // verified visual geometry into that preserved native slot.
+                            // The native battery slot is the single end-side occupancy owner.
+                            // Keep the replacement shell zero-width and draw into that slot.
                             bindingState.visible = false
                             root.visibility = View.GONE
                             val suppressionCommitted = handoffSink?.invoke(true) == true

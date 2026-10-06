@@ -1994,9 +1994,9 @@ internal object CcTransition {
                 }
             }
 
-            // Latent occupancy may move native peers through the existing
-            // reservation writer, but it never becomes geometry authority.
-            // Build 504 keeps every projected endpoint in absolute root space.
+            // Latent occupancy may move native peers through the reservation writer,
+            // but it never becomes geometry authority. Keep every endpoint in
+            // root space so reservation and rendering compare one coordinate frame.
             return result.takeIf { it.isNotEmpty() }
         }
 

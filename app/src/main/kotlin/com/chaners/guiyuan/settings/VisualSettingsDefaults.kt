@@ -109,9 +109,8 @@ internal const val BATTERY_TOP_VERTICAL_OFFSET_MIN =
 internal const val BATTERY_TOP_VERTICAL_OFFSET_MAX =
     TOP_OFFSET_UI_REF + TOP_OFFSET_UI_MAX
 
-// Runtime/persisted charging scale remains a physical multiplier.
-// Build 522's user-facing 110% (1.5 × 1.10 = 1.65 physical) becomes
-// Build 523's user-facing/default 100% reference.
+// Stored charging scale is a physical multiplier. Keep the old and current
+// UI references so existing values migrate without changing rendered size.
 private const val LEGACY_CHARGING_ICON_UI_REF = 1.5f
 internal const val CHARGING_ICON_UI_REF = 1.65f
 internal const val CHARGING_ICON_UI_MIN = 0.4f
