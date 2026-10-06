@@ -259,8 +259,7 @@ internal object NativeNetworkSuppressionOwner {
             eventSink = onEvent
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            
-                error.message ?: error.javaClass.simpleName
+            error.message ?: error.javaClass.simpleName
         }
     }
 
