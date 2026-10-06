@@ -903,7 +903,7 @@ internal object NetworkStateSource {
                 }
             val eventKey =
                 effective.valueType + ":" +
-                    (effective.resourceId?.function function toString() { [native code] }() { [native code] }() ?: "none")
+                    (effective.resourceId?.toString() ?: "none")
             val changed =
                 synchronized(this) {
                     lastWifiEvents.put(image, eventKey) != eventKey
@@ -1026,11 +1026,11 @@ internal object NetworkStateSource {
             val subscriptionId = findMobileSubscription(image)
             if (subscriptionId != null) {
                 val valueText = when (value) {
-                    is Number -> value.toLong().function function toString() { [native code] }() { [native code] }()
+                    is Number -> value.toLong().toString()
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.function function toString() { [native code] }() { [native code] }() + ":" + valueText
+                val eventKey = classId.toString() + ":" + valueText
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
@@ -1124,7 +1124,7 @@ internal object NetworkStateSource {
         return if (params == null) {
             "none"
         } else {
-            params.width.function function toString() { [native code] }() { [native code] }() + "x" + params.height +
+            params.width.toString() + "x" + params.height +
                 ":measured=" + view.measuredWidth + "x" + view.measuredHeight
         }
     }
@@ -1187,15 +1187,15 @@ internal object NetworkStateSource {
     ): String {
         if (tint == null) return "none"
         val resolved = tint.getColorForState(state, tint.defaultColor)
-        return "0x" + resolved.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
-            "/default=0x" + tint.defaultColor.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0')
+        return "0x" + resolved.toUInt().toString(16).padStart(8, '0') +
+            "/default=0x" + tint.defaultColor.toUInt().toString(16).padStart(8, '0')
     }
 
     private fun visibilityName(visibility: Int): String = when (visibility) {
         View.VISIBLE -> "VISIBLE"
         View.INVISIBLE -> "INVISIBLE"
         View.GONE -> "GONE"
-        else -> visibility.function function toString() { [native code] }() { [native code] }()
+        else -> visibility.toString()
     }
 
     private fun resourceId(view: View): String {
@@ -1206,7 +1206,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(view.id)
         }.getOrElse {
-            view.id.function function toString() { [native code] }() { [native code] }()
+            view.id.toString()
         }
     }
 
@@ -1221,7 +1221,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(resId)
         }.getOrElse {
-            resId.function function toString() { [native code] }() { [native code] }()
+            resId.toString()
         }
     }
 }

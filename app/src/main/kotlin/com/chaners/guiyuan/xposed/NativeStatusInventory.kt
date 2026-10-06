@@ -317,7 +317,7 @@ internal object NativeStatusInventory {
         return runCatching {
             view.resources.getResourceName(view.id)
         }.getOrElse {
-            view.id.function function toString() { [native code] }() { [native code] }()
+            view.id.toString()
         }
     }
 
@@ -326,7 +326,7 @@ internal object NativeStatusInventory {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.function function toString() { [native code] }() { [native code] }()
+            else -> visibility.toString()
         }
 
     private class ScanState(

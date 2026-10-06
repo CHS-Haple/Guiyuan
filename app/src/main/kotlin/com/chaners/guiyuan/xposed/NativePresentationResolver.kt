@@ -181,7 +181,7 @@ internal object NativePresentationResolver {
 
         findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_ENTRY)
             ?.let { view ->
-                val text = (view as? TextView)?.text?.function function toString() { [native code] }() { [native code] }()?.trim().orEmpty()
+                val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
                     return NetworkType(
                         label = text,

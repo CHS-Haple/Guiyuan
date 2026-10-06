@@ -289,12 +289,12 @@ internal object NativeParticipantUi {
                 "nativeGeometryWrites=0",
         )
 
-        val function Object() { [native code] } =
+        val constructor =
             controllerClass.declaredConstructors
                 .firstOrNull { it.parameterTypes.lastOrNull() == registryClass }
                 ?: return InstallResult.Failure("controller-registry-constructor-missing")
         val iconListParameterIndex =
-            function Object() { [native code] }.parameterTypes.indexOfFirst { type ->
+            constructor.parameterTypes.indexOfFirst { type ->
                 type.name == StatusSlotReservation.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
@@ -324,7 +324,7 @@ internal object NativeParticipantUi {
                 }
                 ?: return InstallResult.Failure("modern-view-init-missing")
         initView.isAccessible = true
-        function Object() { [native code] }.isAccessible = true
+        constructor.isAccessible = true
 
         val visualBoundsHandle =
             runCatching {
@@ -423,12 +423,12 @@ internal object NativeParticipantUi {
         val handle =
             runCatching {
                 module
-                    .hook(function Object() { [native code] })
+                    .hook(constructor)
                     .setId(CONSTRUCTOR_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val registry =
-                                chain.getArg(function Object() { [native code] }.parameterCount - 1)
+                                chain.getArg(constructor.parameterCount - 1)
                             val iconList = chain.getArg(iconListParameterIndex)
                             val context = chain.getArg(0) as? Context
                             if (
@@ -1487,7 +1487,7 @@ internal object NativeParticipantUi {
             sink.invoke(
                 "nativeCombinedParticipant tint " +
                     "authority=ModernStatusBarViewBinding.onIconTintChanged " +
-                    "tint=#" + tint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    "tint=#" + tint.toUInt().toString(16).padStart(8, '0') +
                     " parameterCount=" + parameterCount +
                     " nativeGeometryWrites=0",
             )
@@ -1654,7 +1654,7 @@ internal object NativeParticipantUi {
     private fun colorHex(color: Int?): String =
         color
             ?.let { value ->
-                "#" + value.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
+                "#" + value.toUInt().toString(16).padStart(8, '0')
             }
             ?: "none"
 
@@ -2554,7 +2554,7 @@ internal object NativeParticipantUi {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.function function function toString() { [native code] }() { [native code] }() { [native code] }()
+            else -> visibility.toString()
         }
 
     internal sealed interface HotReloadAdoptResult {
@@ -2668,7 +2668,7 @@ internal object NativeParticipantUi {
             activeRoot = WeakReference(null)
         }
 
-        class TrackedView private function Object() { [native code] }(
+        class TrackedView private constructor(
             val slot: String,
             val view: WeakReference<View>,
             private val visibleStateGetter: Method?,
