@@ -153,6 +153,6 @@ internal object SysUiPresentationRuntime {
         SysUiTintSource.resetRuntimeState()
         SysUiSceneSource.resetRuntimeState()
         SysUiKeyguardAodSource.resetRuntimeState()
-        SystemUiKeyguardHostProbe.resetRuntimeState()
+        SysUiKeyguardHostProbe.resetRuntimeState()
     }
 }
