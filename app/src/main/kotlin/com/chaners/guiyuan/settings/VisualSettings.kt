@@ -181,7 +181,7 @@ internal data class VisualSettings(
     val fillFollowsRetract: Boolean = false,
     val ccTintTransitionEnabled: Boolean = true,
     val batteryTopTextScale: Float = topTextScaleDefault(contentLayout),
-    val batteryTopTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
+    val batteryTopTextWeight: Int = TOP_TEXT_WEIGHT_DEFAULT,
     val topOffset: Float = TOP_OFFSET_DEFAULT,
     val chargingIconScale: Float =
         chargingIconScaleDefault(contentLayout),
@@ -214,8 +214,8 @@ internal fun VisualSettings.normalized(): VisualSettings =
             ),
         topOffset =
             topOffset.coerceIn(
-                BATTERY_TOP_VERTICAL_OFFSET_MIN,
-                BATTERY_TOP_VERTICAL_OFFSET_MAX,
+                TOP_OFFSET_MIN,
+                TOP_OFFSET_MAX,
             ),
         chargingIconScale =
             chargingIconScale.coerceIn(

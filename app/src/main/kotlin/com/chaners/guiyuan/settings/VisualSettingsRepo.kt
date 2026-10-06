@@ -107,7 +107,7 @@ internal class VisualSettingsRepo(context: Context) {
     fun setChargingIconFollowsBattery(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(CHARGE_ICON_FOLLOWS_BATTERY_KEY), enabled)
+            .putBoolean(activeProfileKey(CHARGE_ICON_FOLLOWS_KEY), enabled)
             .apply()
     }
 
@@ -387,7 +387,7 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
         chargingIconFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = CHARGE_ICON_FOLLOWS_BATTERY_KEY,
+                baseKey = CHARGE_ICON_FOLLOWS_KEY,
                 defaultValue = true,
             ),
         fillFollowsRetract =
@@ -410,7 +410,7 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
             profileInt(
                 layout = layout,
                 baseKey = TOP_TEXT_WEIGHT_KEY,
-                defaultValue = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
+                defaultValue = TOP_TEXT_WEIGHT_DEFAULT,
             ),
         topOffset =
             profileFloat(
@@ -446,7 +446,7 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
             BatteryColorPreset.fromPersisted(
                 getString(
                     BATTERY_COLOR_PRESET_KEY,
-                    batteryColorPresetForMissingKey(
+                    presetForMissingColorKey(
                         hadPreviousVisualSchema =
                             contains(CHARGING_SCALE_SCHEMA_KEY),
                     ).persistedValue,
@@ -521,7 +521,7 @@ internal fun SharedPreferences.Editor.putVisualSettings(
         visualProfileKey(layout, CHARGING_ICON_ENABLED_KEY),
         normalized.chargingIconEnabled,
     ).putBoolean(
-        visualProfileKey(layout, CHARGE_ICON_FOLLOWS_BATTERY_KEY),
+        visualProfileKey(layout, CHARGE_ICON_FOLLOWS_KEY),
         normalized.chargingIconFollowsBattery,
     ).putBoolean(
         FILL_FOLLOWS_RETRACT_KEY,

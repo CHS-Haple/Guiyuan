@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
+import com.chaners.guiyuan.settings.BATTERY_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BuiltInBatteryScheme
 import com.chaners.guiyuan.settings.BatterySchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
@@ -116,7 +116,7 @@ internal fun BatteryColorBottomSheet(
     var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var pendingCreateSourceKey by remember {
-        mutableStateOf(BATTERY_COLOR_SCHEME_HYPEROS_KEY)
+        mutableStateOf(BATTERY_SCHEME_HYPEROS_KEY)
     }
     var pendingCreateSlot by remember {
         mutableStateOf<BatteryColorSlot?>(null)
@@ -185,7 +185,7 @@ internal fun BatteryColorBottomSheet(
                 showDetail = true
             },
             onAdd = {
-                pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
+                pendingCreateSourceKey = BATTERY_SCHEME_HYPEROS_KEY
                 pendingCreateSlot = null
                 showCreateDialog = true
             },
@@ -254,14 +254,14 @@ internal fun BatteryColorBottomSheet(
         nextId = nextCustomId,
         onDismiss = {
             showCreateDialog = false
-            pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
+            pendingCreateSourceKey = BATTERY_SCHEME_HYPEROS_KEY
             pendingCreateSlot = null
         },
         onCreate = { name ->
             val sourceKey = pendingCreateSourceKey
             val targetSlot = pendingCreateSlot
             showCreateDialog = false
-            pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
+            pendingCreateSourceKey = BATTERY_SCHEME_HYPEROS_KEY
             pendingCreateSlot = null
             repository.createCustom(
                 name = name,
