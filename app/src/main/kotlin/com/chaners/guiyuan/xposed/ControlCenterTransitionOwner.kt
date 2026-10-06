@@ -926,11 +926,14 @@ internal object ControlCenterTransitionOwner {
                     ) ?: return@forEach
 
                 val save =
-                    canvas.saveLayerAlpha(
-                        null,
-                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                    saveSourceAlphaLayer(
+                        canvas = canvas,
+                        matrix = matrix,
+                        bounds = matrixBounds,
+                        sourceWidth = sourceWidth,
+                        sourceHeight = sourceHeight,
+                        opacity = opacity,
                     )
-                canvas.concat(matrix)
                 if (componentVisibleFraction < 1f) {
                     val clipAnchorRight =
                         if (
@@ -1118,6 +1121,29 @@ internal object ControlCenterTransitionOwner {
             }
         }
 
+        private fun saveSourceAlphaLayer(
+            canvas: Canvas,
+            matrix: Matrix,
+            bounds: StatusPainter.TransitionBounds,
+            sourceWidth: Int,
+            sourceHeight: Int,
+            opacity: Float,
+        ): Int {
+            val save = canvas.save()
+            canvas.concat(matrix)
+            // Some transition bounds are optical. Keep the full source viewport and
+            // only extend it for real component overflow, so this optimization does
+            // not become a new clipping policy.
+            canvas.saveLayerAlpha(
+                minOf(0f, bounds.left),
+                minOf(0f, bounds.top),
+                maxOf(sourceWidth.toFloat(), bounds.right),
+                maxOf(sourceHeight.toFloat(), bounds.bottom),
+                (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+            )
+            return save
+        }
+
         private fun drawAdditionalMobileLatent(
             canvas: Canvas,
             rootView: View,
@@ -1228,11 +1254,14 @@ internal object ControlCenterTransitionOwner {
                     )
                 if (revealVisibleFraction <= 0f || opacity <= 0f) return@forEach
                 val save =
-                    canvas.saveLayerAlpha(
-                        null,
-                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                    saveSourceAlphaLayer(
+                        canvas = canvas,
+                        matrix = matrix,
+                        bounds = clipBounds,
+                        sourceWidth = sourceWidth,
+                        sourceHeight = sourceHeight,
+                        opacity = opacity,
                     )
-                canvas.concat(matrix)
                 val clip =
                     ControlCenterTransitionPolicy.horizontalClipBounds(
                         left = clipBounds.left,
@@ -1337,11 +1366,14 @@ internal object ControlCenterTransitionOwner {
                     bounds = bounds,
                 ) ?: return null
             val save =
-                canvas.saveLayerAlpha(
-                    null,
-                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                saveSourceAlphaLayer(
+                    canvas = canvas,
+                    matrix = matrix,
+                    bounds = bounds,
+                    sourceWidth = sourceWidth,
+                    sourceHeight = sourceHeight,
+                    opacity = opacity,
                 )
-            canvas.concat(matrix)
             val clip =
                 ControlCenterTransitionPolicy.horizontalClipBounds(
                     left = bounds.left,
@@ -1437,11 +1469,14 @@ internal object ControlCenterTransitionOwner {
                     bounds = bounds,
                 ) ?: return null
             val save =
-                canvas.saveLayerAlpha(
-                    null,
-                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                saveSourceAlphaLayer(
+                    canvas = canvas,
+                    matrix = matrix,
+                    bounds = bounds,
+                    sourceWidth = sourceWidth,
+                    sourceHeight = sourceHeight,
+                    opacity = opacity,
                 )
-            canvas.concat(matrix)
             val clip =
                 ControlCenterTransitionPolicy.horizontalClipBounds(
                     left = bounds.left,

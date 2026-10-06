@@ -4992,3 +4992,38 @@ No transition geometry, reservation/capacity, tint, progress, draw layer, alpha/
 
 A/B Build 744 against Build 743 with Keyguard + active island and repeated complete pull-down / swipe-up cycles. Verify Home + island remains unchanged. If a meaningful gap remains, continue to residual TransitionDrawable/compositing audit rather than adding more mirror logic.
 
+
+## 2026-10-06 — Build 745: bound Control Center transition alpha layers
+
+**Type:** rendering performance / compositing bounds
+**Display version:** 0.2.0
+**Build:** 745 / `20261006-745`
+**Branch:** `fix/control-center-alpha-layer-bounds`
+
+### Evidence
+
+After Build 744 removed the proven Keyguard -> Home steady-peer-mirror ownership leak, the remaining audit moved to TransitionDrawable/compositing cost.
+
+`ControlCenterTransitionOwner.Session.draw()` still created a separate `Canvas.saveLayerAlpha(null, ...)` for every transition component and latent reveal. Android's Canvas contract describes `saveLayerAlpha` as an expensive offscreen rendering operation and explicitly warns against large bounds. Passing `null` lets each component layer use the broad current clip even though Guiyuan renders from a compact transition source.
+
+### Change
+
+- Preserve `saveLayerAlpha` group compositing rather than converting to per-primitive alpha.
+- Apply the existing component matrix first.
+- Bound the offscreen target to the full local source viewport, extending only when the existing transition/clip bounds describe real overflow.
+- Use the expanded mobile clip envelope for latent mobile morphs and the existing airplane/no-SIM bounds as overflow evidence.
+- Centralize the save/concat/layer contract in one small helper; no new state, cache, timer, hook or writer is introduced.
+
+### Review correction
+
+The first pre-commit draft bounded layers directly to each component's transition bounds. Review rejected that as too aggressive because some component bounds are optical. Build 745 instead includes the whole source viewport and uses component bounds only to extend it, preventing the performance change from becoming a new clipping policy. No magic padding or guessed margin is added.
+
+### Safety boundary
+
+No transition endpoint, interpolation, component order, paint alpha policy, reservation/capacity, clip calculation, target resolution, native appearance/tint authority, source-scene ownership, alpha/translation/visibility writer or SystemUI geometry changes.
+
+If device evidence shows clipping, edge-alpha change or any visual mismatch, revert this checkpoint rather than compensating with padding/margins.
+
+### Validation
+
+Pending final diff review, Runtime CI and focused Work-branch Canary device validation.
