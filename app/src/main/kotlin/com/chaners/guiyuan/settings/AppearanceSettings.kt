@@ -91,7 +91,7 @@ private val Context.appearanceDataStore: DataStore<Preferences> by preferencesDa
     name = "appearance",
 )
 
-internal class AppearanceSettingsRepository(context: Context) {
+internal class AppearanceRepo(context: Context) {
     private val dataStore = context.applicationContext.appearanceDataStore
 
     val settings: Flow<AppearanceSettings> = dataStore.data
