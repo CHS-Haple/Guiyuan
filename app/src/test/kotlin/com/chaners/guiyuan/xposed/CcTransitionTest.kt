@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ControlCenterTransitionTest {
+class CcTransitionTest {
     @Test
     fun typeStyleConvergesBeforeHandoff() {
         assertEquals(
