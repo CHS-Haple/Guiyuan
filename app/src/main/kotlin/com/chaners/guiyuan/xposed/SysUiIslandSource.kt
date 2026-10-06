@@ -71,7 +71,7 @@ internal object SysUiIslandSource {
 
     // Observation only; SystemUI still owns island motion.
     @Synchronized
-    fun currentIslandShowing(): Boolean? = islandShowing
+    fun currentShowing(): Boolean? = islandShowing
 
     fun resetRuntimeState() {
         synchronized(this) {
@@ -79,5 +79,4 @@ internal object SysUiIslandSource {
             lastDiagnosticShowing = null
         }
     }
-
 }
