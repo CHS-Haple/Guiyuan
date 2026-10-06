@@ -113,7 +113,7 @@ internal object HomeRenderSession {
 
     @Synchronized
     fun onControlCenterAuthorityChanged(homeEligible: Boolean) {
-        current?.updateControlCenterHomeEligibility(
+        current?.updateCcHomeEligibility(
             homeEligible = homeEligible,
             source = "source-availability",
         )
@@ -354,7 +354,7 @@ internal object HomeRenderSession {
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    HomePresentation.currentHomeRepresentedSlotOwnership(),
+                    HomePresentation.homeOwnedSlots(),
             )
         }
 
@@ -369,14 +369,14 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateControlCenterHomeEligibility(
+        fun updateCcHomeEligibility(
             homeEligible: Boolean,
             source: String,
             detail: String = "",
         ) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
                 host.get()?.post {
-                    updateControlCenterHomeEligibility(
+                    updateCcHomeEligibility(
                         homeEligible = homeEligible,
                         source = source,
                         detail = detail,
@@ -470,7 +470,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                        state.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -481,12 +481,12 @@ internal object HomeRenderSession {
                     emitEvent {
                         "homeRenderTint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                             " statusIcon=#" +
                             (
                                 resolved.statusIconTint
                                     ?.toUInt()
-                                    ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
+                                    ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +

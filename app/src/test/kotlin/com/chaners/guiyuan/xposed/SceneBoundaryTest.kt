@@ -491,7 +491,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homeNativeAodFallbackCandidate = true,
-                homePresentationOwnedAtFullAodStart = true,
+                homeOwnedAtAodStart = true,
                 nativeToLockScreenTarget = false,
             ),
         )
@@ -501,7 +501,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homeNativeAodFallbackCandidate = true,
-                homePresentationOwnedAtFullAodStart = true,
+                homeOwnedAtAodStart = true,
                 nativeToLockScreenTarget = true,
             ),
         )
@@ -511,7 +511,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homeNativeAodFallbackCandidate = false,
-                homePresentationOwnedAtFullAodStart = true,
+                homeOwnedAtAodStart = true,
                 nativeToLockScreenTarget = false,
             ),
         )

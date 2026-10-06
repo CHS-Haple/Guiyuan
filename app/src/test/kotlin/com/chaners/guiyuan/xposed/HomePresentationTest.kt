@@ -207,13 +207,13 @@ class HomePresentationTest {
     fun deferredControlCenterCutoverPreservesNativeVisualsUntilCompactLayout() {
         assertTrue(
             HomePresentation.VisualMaskPolicy
-                .shouldPreserveNativeBeforeCompactCutover(
+                .shouldKeepNativeBeforeCutover(
                     deferVisualMaskUntilLayout = true,
                 ),
         )
         assertFalse(
             HomePresentation.VisualMaskPolicy
-                .shouldPreserveNativeBeforeCompactCutover(
+                .shouldKeepNativeBeforeCutover(
                     deferVisualMaskUntilLayout = false,
                 ),
         )
@@ -361,21 +361,21 @@ class HomePresentationTest {
     fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
         assertTrue(
             HomePresentation.EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
+                .shouldDeferMissingBatteryWidth(
                     retainOnTransientLoss = true,
                     compactLayoutReady = true,
                 ),
         )
         assertFalse(
             HomePresentation.EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
+                .shouldDeferMissingBatteryWidth(
                     retainOnTransientLoss = true,
                     compactLayoutReady = false,
                 ),
         )
         assertFalse(
             HomePresentation.EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
+                .shouldDeferMissingBatteryWidth(
                     retainOnTransientLoss = false,
                     compactLayoutReady = true,
                 ),
@@ -401,7 +401,7 @@ class HomePresentationTest {
         assertEquals(
             0,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
+                .capacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
                     reservationDeltaPx = 105,
@@ -410,7 +410,7 @@ class HomePresentationTest {
         assertEquals(
             144,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
+                .capacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
                     reservationDeltaPx = 249,
@@ -419,7 +419,7 @@ class HomePresentationTest {
         assertEquals(
             249,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
+                .capacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
                     reservationDeltaPx = 354,
@@ -428,7 +428,7 @@ class HomePresentationTest {
         assertEquals(
             249,
             HomePresentation.EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
+                .capacityRequirement(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
                     reservationDeltaPx = 249,
@@ -441,7 +441,7 @@ class HomePresentationTest {
         assertEquals(
             354,
             HomePresentation.EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
+                .boundedReservationDelta(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
                     requestedReservationDeltaPx = 354,
@@ -451,7 +451,7 @@ class HomePresentationTest {
         assertEquals(
             354,
             HomePresentation.EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
+                .boundedReservationDelta(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
                     requestedReservationDeltaPx = 382,
@@ -461,7 +461,7 @@ class HomePresentationTest {
         assertEquals(
             200,
             HomePresentation.EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
+                .boundedReservationDelta(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
                     requestedReservationDeltaPx = 200,
@@ -471,7 +471,7 @@ class HomePresentationTest {
         assertEquals(
             249,
             HomePresentation.EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
+                .boundedReservationDelta(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
                     requestedReservationDeltaPx = 382,
@@ -559,21 +559,21 @@ class HomePresentationTest {
     fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
         assertFalse(
             HomePresentation.HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
+                .shouldReportCcLayout(
                     detailedDiagnosticsEnabled = false,
                     transitionReservationActive = false,
                 ),
         )
         assertFalse(
             HomePresentation.HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
+                .shouldReportCcLayout(
                     detailedDiagnosticsEnabled = true,
                     transitionReservationActive = true,
                 ),
         )
         assertTrue(
             HomePresentation.HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
+                .shouldReportCcLayout(
                     detailedDiagnosticsEnabled = true,
                     transitionReservationActive = false,
                 ),

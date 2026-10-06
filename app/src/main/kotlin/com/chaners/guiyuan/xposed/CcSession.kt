@@ -185,7 +185,7 @@ internal object CcSession {
             result == AttachResult.Ready &&
             shouldAdoptCompactReady(transferredCompactReady)
         ) {
-            when (HomePresentation.adoptControlCenterLayoutCutoverFromHotReload()) {
+            when (HomePresentation.adoptCcCutoverAfterReload()) {
                 is HomePresentation.CcStateResult.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(

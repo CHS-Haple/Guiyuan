@@ -392,7 +392,7 @@ internal object PanelTransitionSource {
                         val value =
                             runCatching { resolved.get(view) }
                                 .getOrNull()
-                                ?.function function toString() { [native code] }() { [native code] }()
+                                ?.function function function toString() { [native code] }() { [native code] }() { [native code] }()
                                 ?: "unavailable"
                         name + "=" + value
                     }

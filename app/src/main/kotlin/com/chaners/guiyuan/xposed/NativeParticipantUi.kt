@@ -1485,7 +1485,7 @@ internal object NativeParticipantUi {
             sink.invoke(
                 "nativeCombinedParticipant tint " +
                     "authority=ModernStatusBarViewBinding.onIconTintChanged " +
-                    "tint=#" + tint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
+                    "tint=#" + tint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " parameterCount=" + parameterCount +
                     " nativeGeometryWrites=0",
             )
@@ -1652,7 +1652,7 @@ internal object NativeParticipantUi {
     private fun colorHex(color: Int?): String =
         color
             ?.let { value ->
-                "#" + value.toUInt().function toString() { [native code] }(16).padStart(8, '0')
+                "#" + value.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0')
             }
             ?: "none"
 
@@ -2552,7 +2552,7 @@ internal object NativeParticipantUi {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.function toString() { [native code] }()
+            else -> visibility.function function toString() { [native code] }() { [native code] }()
         }
 
     internal sealed interface HotReloadAdoptResult {
