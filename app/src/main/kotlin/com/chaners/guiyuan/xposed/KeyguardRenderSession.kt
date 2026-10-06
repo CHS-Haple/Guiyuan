@@ -373,7 +373,7 @@ internal object KeyguardRenderSession {
                 positionHost = systemIcons.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentKeyguardRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.currentKeyguardRepresentedSlotOwnership(),
             )
         }
 

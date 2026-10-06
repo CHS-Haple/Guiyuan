@@ -2189,7 +2189,7 @@ The Build-562 diagnostic confirms `compactSlotWidth=105` remained unchanged whil
 - Mobile Type weight: 400-1400, 50-weight slider intervals, default/key point 900.
 - Add one centered-scale reservation rule: because painter shrink is centered in the stable Battery carrier, peer reservation ends at the scaled visual's leading edge while retaining the transparent end-side inset.
 - Reuse that rule for Home/Keyguard/Control Center native padding and the transition reservation/latent-reveal compact baseline.
-- Visual preference changes ask the existing `SystemUiHomePresentationOwner` to resync its reservation; no second padding/translation writer is added.
+- Visual preference changes ask the existing `SysUiPresentationOwner` to resync its reservation; no second padding/translation writer is added.
 
 ### Review
 
@@ -5038,7 +5038,7 @@ Historical Build 690 diagnostics captured `sourceScene=KEYGUARD` while the funct
 ### Correction
 
 - reuse the existing `GyModule.controlCenterSourceScene` authority rather than adding a second detector;
-- propagate source-scene changes to `SystemUiHomePresentationOwner`;
+- propagate source-scene changes to `SysUiPresentationOwner`;
 - sample and consume the Home steady-peer mirror only for `SourceScene.HOME`;
 - clear the Home-derived mirror for `KEYGUARD` and `UNKNOWN`, leaving native QS_FAKE island authority in force;
 - immediately seed the existing mirror from the current Home session when source authority returns to Home;

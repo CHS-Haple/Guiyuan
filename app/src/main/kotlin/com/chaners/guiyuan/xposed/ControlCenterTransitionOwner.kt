@@ -498,7 +498,7 @@ internal object ControlCenterTransitionOwner {
         }
 
         fun stop(source: String) {
-            SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+            SysUiPresentationOwner.clearControlCenterTransitionReservation(
                 "transition-" + source,
             )
             genericIslandShowing = null
@@ -1703,7 +1703,7 @@ internal object ControlCenterTransitionOwner {
         private fun syncTransitionReservation() {
             if (!transitionReservationEnabled) {
                 if (lastNativeReservationWidthPx != null) {
-                    SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
                         "transition-source-native-peer-motion",
                     )
                 }
@@ -1749,7 +1749,7 @@ internal object ControlCenterTransitionOwner {
                             ?: run {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
-                                    SystemUiHomePresentationOwner
+                                    SysUiPresentationOwner
                                         .failControlCenterPresentation(
                                             "battery-island-peer-end-frame-unavailable",
                                         )
@@ -1775,7 +1775,7 @@ internal object ControlCenterTransitionOwner {
 
             if (!nativePaddingExpansionAllowed) {
                 if (lastNativeReservationWidthPx != null) {
-                    SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
                         "transition-island-native-padding-guard",
                     )
                     lastNativeReservationWidthPx = null
@@ -1785,7 +1785,7 @@ internal object ControlCenterTransitionOwner {
 
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
-                    SystemUiHomePresentationOwner
+                    SysUiPresentationOwner
                         .updateControlCenterTransitionReservation(
                             requestedSlotWidthPx = nativeRequestedWidth,
                         )

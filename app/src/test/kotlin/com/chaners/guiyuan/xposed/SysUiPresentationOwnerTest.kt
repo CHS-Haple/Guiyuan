@@ -3,11 +3,11 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-class SystemUiHomePresentationOwnerTest {
+class SysUiPresentationOwnerTest {
     @Test
     fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
         assertFalse(
-            SystemUiHomePresentationOwner.failControlCenterPresentation(
+            SysUiPresentationOwner.failControlCenterPresentation(
                 "unit-test-no-session",
             ),
         )

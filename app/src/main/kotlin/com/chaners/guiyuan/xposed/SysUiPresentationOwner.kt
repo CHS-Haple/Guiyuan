@@ -10,7 +10,8 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
-internal object SystemUiHomePresentationOwner {
+// Owns mutable native presentation; SysUiPresentationRuntime only wires source hooks.
+internal object SysUiPresentationOwner {
     private const val HOME_HOST =
         "com.android.systemui.statusbar.views.MiuiNotificationStatusContainer"
     private const val STATUS_ICON_CONTAINER =
