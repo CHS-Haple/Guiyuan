@@ -51,13 +51,13 @@ internal object SysUiKeyguardHostResolver {
         )
     }
 
-    internal fun isSteadyKeyguardSurface(
+    internal fun isSteadySurface(
         surface: SysUiSceneSource.Surface,
     ): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD ||
             surface == SysUiSceneSource.Surface.SHADE_LOCKED
 
-    internal fun isKeyguardHostClassName(className: String): Boolean =
+    internal fun isHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
 
     internal fun nativeToLockScreenTarget(
@@ -101,7 +101,7 @@ internal object SysUiKeyguardHostResolver {
         surface: SysUiSceneSource.Surface,
         rawState: Int,
     ): ResolveResult {
-        if (!isSteadyKeyguardSurface(surface)) {
+        if (!isSteadySurface(surface)) {
             return ResolveResult.Inactive(surface)
         }
 
