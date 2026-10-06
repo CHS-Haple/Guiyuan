@@ -1,14 +1,14 @@
 package com.chaners.guiyuan.system
 
-internal sealed interface XposedRuntimeStatus {
-    data object Checking : XposedRuntimeStatus
+internal sealed interface XposedStatus {
+    data object Checking : XposedStatus
 
-    data object FrameworkUnavailable : XposedRuntimeStatus
+    data object FrameworkUnavailable : XposedStatus
 
-    data object QueryUnavailable : XposedRuntimeStatus
+    data object QueryUnavailable : XposedStatus
 
     data class Connected(
         val systemUiInScope: Boolean,
         val systemUiRunning: Boolean,
-    ) : XposedRuntimeStatus
+    ) : XposedStatus
 }

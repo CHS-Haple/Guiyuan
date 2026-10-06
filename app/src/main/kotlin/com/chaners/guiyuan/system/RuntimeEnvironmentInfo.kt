@@ -6,7 +6,7 @@ import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal data class RuntimeEnvironmentInfo(
+internal data class RuntimeEnv(
     val manufacturer: String,
     val deviceName: String,
     val model: String,
@@ -40,8 +40,8 @@ internal data class RuntimeEnvironmentInfo(
         private const val SystemUiPackageName = "com.android.systemui"
         private val SoftwareRevisionPattern = Regex("^[A-Za-z][0-9]{1,3}$")
 
-        fun basic(): RuntimeEnvironmentInfo =
-            RuntimeEnvironmentInfo(
+        fun basic(): RuntimeEnv =
+            RuntimeEnv(
                 manufacturer = Build.MANUFACTURER.orEmpty(),
                 deviceName = Build.MODEL.orEmpty(),
                 model = Build.MODEL.orEmpty(),
@@ -53,7 +53,7 @@ internal data class RuntimeEnvironmentInfo(
                 systemUiVersionCode = null,
             )
 
-        suspend fun resolve(context: Context): RuntimeEnvironmentInfo =
+        suspend fun resolve(context: Context): RuntimeEnv =
             withContext(Dispatchers.IO) {
                 val marketName =
                     readSystemProperty("ro.product.marketname")
@@ -78,7 +78,7 @@ internal data class RuntimeEnvironmentInfo(
                         )
                     }.getOrNull()
 
-                RuntimeEnvironmentInfo(
+                RuntimeEnv(
                     manufacturer = Build.MANUFACTURER.orEmpty(),
                     deviceName = marketName,
                     model = Build.MODEL.orEmpty(),

@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.system
 
-internal data class RuntimeDiagnosticEvent(
+internal data class DiagnosticEvent(
     val schemaVersion: Int,
     val event: String,
     val component: String,
@@ -8,7 +8,7 @@ internal data class RuntimeDiagnosticEvent(
     val fields: Map<String, String>,
 )
 
-internal data class RuntimeHealthComponent(
+internal data class HealthComponent(
     val component: String,
     val state: String,
     val event: String,
@@ -19,9 +19,9 @@ internal data class RuntimeHealthSnapshot(
     val overall: String,
     val schemaVersion: Int,
     val sessionId: String?,
-    val components: List<RuntimeHealthComponent>,
+    val components: List<HealthComponent>,
 ) {
-    fun component(name: String): RuntimeHealthComponent? =
+    fun component(name: String): HealthComponent? =
         components.firstOrNull { component -> component.component == name }
 
     fun reportLines(): List<String> =
@@ -44,7 +44,7 @@ internal data class RuntimeHealthSnapshot(
                                 append(' ')
                                 append(key)
                                 append('=')
-                                append(RuntimeDiagnosticsProtocol.encode(value))
+                                append(DiagnosticsProtocol.encode(value))
                             }
                     },
                 )
@@ -103,7 +103,7 @@ internal data class RuntimeHealthSnapshot(
 
         fun fromLines(lines: List<String>): RuntimeHealthSnapshot {
             val parsedEvents =
-                lines.mapNotNull(RuntimeDiagnosticsProtocol::parse)
+                lines.mapNotNull(DiagnosticsProtocol::parse)
             val latestSessionId =
                 parsedEvents
                     .asReversed()
@@ -117,7 +117,7 @@ internal data class RuntimeHealthSnapshot(
                     }
                 }
 
-            val latest = linkedMapOf<String, RuntimeDiagnosticEvent>()
+            val latest = linkedMapOf<String, DiagnosticEvent>()
             scopedEvents
                 .filterNot { event ->
                     event.fields[HealthSnapshotField].equals("false", ignoreCase = true)
@@ -131,7 +131,7 @@ internal data class RuntimeHealthSnapshot(
                     expectedComponents.forEach { component ->
                         val event = latest[component]
                         add(
-                            RuntimeHealthComponent(
+                            HealthComponent(
                                 component = component,
                                 state = event?.state ?: "unknown",
                                 event = event?.event ?: "not-observed",
@@ -146,7 +146,7 @@ internal data class RuntimeHealthSnapshot(
                         .forEach { component ->
                             val event = latest.getValue(component)
                             add(
-                                RuntimeHealthComponent(
+                                HealthComponent(
                                     component = component,
                                     state = event.state,
                                     event = event.event,
@@ -156,7 +156,7 @@ internal data class RuntimeHealthSnapshot(
                         }
                 }
 
-            val byName = components.associateBy(RuntimeHealthComponent::component)
+            val byName = components.associateBy(HealthComponent::component)
             val moduleState = byName["module"]?.state
             val healthy =
                 coreComponents.all { component ->
@@ -179,7 +179,7 @@ internal data class RuntimeHealthSnapshot(
     }
 }
 
-internal object RuntimeDiagnosticsProtocol {
+internal object DiagnosticsProtocol {
     const val SchemaVersion = 1
 
     private const val Marker = "diag "
@@ -210,7 +210,7 @@ internal object RuntimeDiagnosticsProtocol {
                 }
         }
 
-    fun parse(line: String): RuntimeDiagnosticEvent? {
+    fun parse(line: String): DiagnosticEvent? {
         val markerIndex = line.indexOf(Marker)
         if (markerIndex < 0) {
             return null
@@ -235,7 +235,7 @@ internal object RuntimeDiagnosticsProtocol {
         val component = values["component"] ?: return null
         val state = values["state"] ?: return null
 
-        return RuntimeDiagnosticEvent(
+        return DiagnosticEvent(
             schemaVersion = values["schema"]?.toIntOrNull() ?: 0,
             event = event,
             component = component,

@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.AppLanguage
 import com.chaners.guiyuan.settings.AppThemeMode
 import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.FloatingNavContent
+import com.chaners.guiyuan.settings.FloatingNavStyle
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
@@ -44,8 +44,8 @@ internal fun GyApp(
     onThemeModeChange: (AppThemeMode) -> Unit,
     onDynamicColorEnabledChange: (Boolean) -> Unit,
     onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
+    onFloatingNavStyleChange: (FloatingNavStyle) -> Unit,
+    onFloatingNavContentChange: (FloatingNavContent) -> Unit,
     onSwipeBackEnabledChange: (Boolean) -> Unit,
     onAppLanguageChange: (AppLanguage) -> Unit,
     onLauncherIconHiddenChange: (Boolean) -> Unit,
@@ -168,10 +168,10 @@ internal fun GyApp(
                     onDynamicColorEnabledChange = onDynamicColorEnabledChange,
                     onFloatingNavigationBarEnabledChange =
                         onFloatingNavigationBarEnabledChange,
-                    onFloatingNavigationStyleChange =
-                        onFloatingNavigationStyleChange,
-                    onFloatingNavigationContentChange =
-                        onFloatingNavigationContentChange,
+                    onFloatingNavStyleChange =
+                        onFloatingNavStyleChange,
+                    onFloatingNavContentChange =
+                        onFloatingNavContentChange,
                     onBack = ::navigateBack,
                 )
             }

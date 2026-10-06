@@ -25,7 +25,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLanguage
 import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.ui.components.FloatingNavigationContentItem
+import com.chaners.guiyuan.ui.components.FloatingNavItem
 import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -53,7 +53,7 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
 
-private data class WeightedNavigationItem(
+private data class WeightedNavItem(
     val label: String,
     val icon: ImageVector,
     val selectedIcon: ImageVector,
@@ -91,17 +91,17 @@ internal fun MainHub(
         }
 
     val items = listOf(
-        WeightedNavigationItem(
+        WeightedNavItem(
             label = stringResource(R.string.nav_home),
             icon = MiuixIcons.Normal.Home,
             selectedIcon = MiuixIcons.Medium.Home,
         ),
-        WeightedNavigationItem(
+        WeightedNavItem(
             label = stringResource(R.string.nav_features),
             icon = MiuixIcons.Normal.Tune,
             selectedIcon = MiuixIcons.Medium.Tune,
         ),
-        WeightedNavigationItem(
+        WeightedNavItem(
             label = stringResource(R.string.nav_settings),
             icon = MiuixIcons.Normal.Settings,
             selectedIcon = MiuixIcons.Medium.Settings,
@@ -146,7 +146,7 @@ internal fun MainHub(
                 ) {
                     items.forEachIndexed { index, item ->
                         val selected = pagerState.currentPage == index
-                        FloatingNavigationContentItem(
+                        FloatingNavItem(
                             content = settings.floatingNavigationContent,
                             selected = selected,
                             onClick = { selectPage(index) },
