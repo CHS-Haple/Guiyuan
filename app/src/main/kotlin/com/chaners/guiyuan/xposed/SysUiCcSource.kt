@@ -9,7 +9,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
-internal object SystemUiPanelTransitionSource {
+internal object SysUiCcSource {
     const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
     const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
     const val HOOK_COUNT =
@@ -210,8 +210,8 @@ internal object SystemUiPanelTransitionSource {
                         },
                     )
 
-            // Control Center visibility is the only panel runtime authority.
-            // Notification Shade inherits the native Home carrier lifecycle.
+            // Native visibility is the CC runtime authority.
+            // Notification Shade keeps the native Home carrier lifecycle.
             if (controlCenterHomeEligible == null) {
                 controlCenterHomeEligible = true
             }
@@ -562,7 +562,7 @@ internal object SystemUiPanelTransitionSource {
         }
 
         if (
-            !DiagnosticPolicy.shouldReportPanelEvent(
+            !DiagnosticPolicy.shouldReport(
                 expandedChanged = expandedChanged,
                 trackingChanged = trackingChanged,
                 visibleChanged = visibleChanged,
@@ -958,7 +958,7 @@ internal object SystemUiPanelTransitionSource {
         apply { isAccessible = true }
 
     internal object DiagnosticPolicy {
-        fun shouldReportPanelEvent(
+        fun shouldReport(
             expandedChanged: Boolean,
             trackingChanged: Boolean,
             visibleChanged: Boolean,

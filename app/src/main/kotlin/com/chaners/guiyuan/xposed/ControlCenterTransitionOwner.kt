@@ -46,12 +46,12 @@ internal object ControlCenterTransitionOwner {
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
     private var sourceScene = SourceScene.UNKNOWN
-    private var endpoints: SystemUiPanelTransitionSource.ControlCenterTransitionEndpoints? = null
+    private var endpoints: SysUiCcSource.ControlCenterTransitionEndpoints? = null
     private var current: Session? = null
     private var latestBatteryNumberProbeSummary: String? = null
 
     @Synchronized
-    fun onPanelUpdate(update: SystemUiPanelTransitionSource.Update) {
+    fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
             visible = nextVisible
             if (!nextVisible) {

@@ -13,9 +13,9 @@ NETWORK_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaner
 SCENE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiSceneSource.kt"
 BATTERY_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiBatterySource.kt"
 KEYGUARD_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardAodSource.kt"
-KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardFullAodTransitionSource.kt"
-KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardStatusIconTransitionSource.kt"
-PANEL_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiPanelTransitionSource.kt"
+KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardFullAodTransitionSource.kt"
+KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardStatusIconTransitionSource.kt"
+CC_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiCcSource.kt"
 
 HEX_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64}
 
@@ -272,21 +272,21 @@ lifecycle_hook_specs = (
     ),
     (
         "controlCenterVisibility",
-        PANEL_TRANSITION_SOURCE_PATH,
+        CC_SOURCE_PATH,
         "CONTROL_CENTER_CLASS",
         "CONTROL_CENTER_VISIBLE_METHOD",
         "(Z)V",
     ),
     (
         "controlCenterExpansion",
-        PANEL_TRANSITION_SOURCE_PATH,
+        CC_SOURCE_PATH,
         "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
         "CONTROL_CENTER_EXPANSION_METHOD",
         "(F)V",
     ),
     (
         "controlCenterAppearance",
-        PANEL_TRANSITION_SOURCE_PATH,
+        CC_SOURCE_PATH,
         "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
         "CONTROL_CENTER_APPEARANCE_METHOD",
         "(ZZ)V",
