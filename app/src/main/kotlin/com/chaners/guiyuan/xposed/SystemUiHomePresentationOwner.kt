@@ -374,7 +374,7 @@ internal object SystemUiHomePresentationOwner {
             batteryContainer.directChild(BATTERY_VIEW)
                 ?: return StateResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(battery)
+            SysUiCarrierMetrics.resolveCarrierView(battery)
                 ?: return StateResult.Failure("battery-core-carrier-missing")
         val field =
             ignoredSlotsField
@@ -383,7 +383,7 @@ internal object SystemUiHomePresentationOwner {
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
         val baseSlotWidthPx =
-            SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+            SysUiCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
                 ?: return StateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -453,7 +453,7 @@ internal object SystemUiHomePresentationOwner {
 
     @Synchronized
     fun activateKeyguard(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         deferNativeLayoutOwnershipUntilCommit: Boolean = false,
         onEvent: (String) -> Unit,
         onFailNative: (String) -> Unit,
@@ -517,7 +517,7 @@ internal object SystemUiHomePresentationOwner {
 
     @Synchronized
     fun activateAod(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean = false,
         onEvent: (String) -> Unit,
         onFailNative: (String) -> Unit,
@@ -542,7 +542,7 @@ internal object SystemUiHomePresentationOwner {
 
     private fun activateKeyguardFamily(
         surface: KeyguardFamilySurface,
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean,
         deferNativeLayoutOwnershipUntilCommit: Boolean,
         onEvent: (String) -> Unit,
@@ -568,7 +568,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
-        SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(resolved.batteryCarrier)
+        SysUiCarrierMetrics.resolveCarrierWidthPx(resolved.batteryCarrier)
             ?: return StateResult.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -759,7 +759,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return ControlCenterStateResult.Failure("battery-hide-field-unavailable")
-        SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+        SysUiCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
             ?: return ControlCenterStateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -1992,7 +1992,7 @@ internal object SystemUiHomePresentationOwner {
                 batteryCarrier.get()
                     ?: run { onFailNative("battery-core-carrier-released"); return false }
             val stableCarrierWidthPx =
-                SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(carrier)
+                SysUiCarrierMetrics.resolveCarrierWidthPx(carrier)
                     ?: run { onFailNative("battery-core-width-unavailable"); return false }
             if (actualBatteryWidthPx < stableCarrierWidthPx) {
                 onFailNative("battery-presentation-narrower-than-core")
@@ -2482,7 +2482,7 @@ internal object SystemUiHomePresentationOwner {
             if (!active || surfaceName != HOME_SURFACE) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
-            val islandShowing = SystemUiIslandMotionSource.currentIslandShowing() == true
+            val islandShowing = SysUiIslandSource.currentIslandShowing() == true
             if (!islandShowing) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
