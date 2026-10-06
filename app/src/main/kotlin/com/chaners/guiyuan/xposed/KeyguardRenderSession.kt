@@ -5,7 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
@@ -117,8 +117,8 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        current?.updateVisualCfg(settings)
     }
 
     @Synchronized
@@ -391,8 +391,8 @@ internal object KeyguardRenderSession {
                 renderView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+            renderController.updateVisualCfg(
+                VisualPrefsOwner.current(),
             )
             SystemUiTintStateSource.currentState(battery)?.let { state ->
                 applyTintState(
@@ -454,8 +454,8 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(settings: VisualCfg) {
+            renderController.updateVisualCfg(settings)
             layoutProbe()
         }
 

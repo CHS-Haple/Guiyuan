@@ -5,7 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 
 internal object HomeRenderSession {
@@ -107,8 +107,8 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(settings: VisualCfg) {
+        current?.updateVisualCfg(settings)
     }
 
     @Synchronized
@@ -307,8 +307,8 @@ internal object HomeRenderSession {
                 probeView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+            renderController.updateVisualCfg(
+                VisualPrefsOwner.current(),
             )
             resolveInitialTintSeed(
                 transferred = initialTintState,
@@ -434,8 +434,8 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(settings: VisualCfg) {
+            renderController.updateVisualCfg(settings)
             layoutProbe()
         }
 

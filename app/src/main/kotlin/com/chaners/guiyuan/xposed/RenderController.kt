@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 
 internal class RenderController(
     private val view: RenderView,
@@ -41,8 +41,8 @@ internal class RenderController(
         )
     }
 
-    fun updateVisualSettings(state: VisualSettings) {
-        view.setVisualSettings(state)
+    fun updateVisualCfg(state: VisualCfg) {
+        view.setVisualCfg(state)
     }
 
     fun currentTintState(): TintState? = stableTint
