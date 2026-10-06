@@ -219,7 +219,7 @@ class ControlCenterTransitionTest {
     }
 
     @Test
-    fun followSystemUsesLiveTintCustomMayTransition() {
+    fun followSystemUsesLiveTint() {
         val policy = CcTransition
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
