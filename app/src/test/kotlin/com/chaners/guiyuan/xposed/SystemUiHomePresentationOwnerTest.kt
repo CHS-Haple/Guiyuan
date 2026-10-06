@@ -437,7 +437,7 @@ class SystemUiHomePresentationOwnerTest {
     }
 
     @Test
-    fun chargingIslandNativeReservationStopsAtPhysicalCarrierCapacity() {
+    fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
         assertEquals(
             354,
             SystemUiHomePresentationOwner.EndReservationPolicy
@@ -459,7 +459,17 @@ class SystemUiHomePresentationOwnerTest {
                 ),
         )
         assertEquals(
-            382,
+            200,
+            SystemUiHomePresentationOwner.EndReservationPolicy
+                .resolveCapacityBoundedReservationDelta(
+                    nativeHide = false,
+                    compactSlotWidthPx = 105,
+                    requestedReservationDeltaPx = 200,
+                    capacityDeltaPx = 249,
+                ),
+        )
+        assertEquals(
+            249,
             SystemUiHomePresentationOwner.EndReservationPolicy
                 .resolveCapacityBoundedReservationDelta(
                     nativeHide = false,

@@ -2838,10 +2838,14 @@ internal object SystemUiHomePresentationOwner {
             requestedReservationDeltaPx: Int,
             capacityDeltaPx: Int,
         ): Int {
-            if (!nativeHide) return requestedReservationDeltaPx
             val compact = compactSlotWidthPx.coerceAtLeast(0)
             val capacity = capacityDeltaPx.coerceAtLeast(0)
-            val maxNativeReservation = compact + capacity
+            val maxNativeReservation =
+                if (nativeHide) {
+                    compact + capacity
+                } else {
+                    capacity
+                }
             return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
         }
 

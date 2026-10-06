@@ -3,18 +3,13 @@
 ## Repository / build
 
 - Product: Guiyuan 0.2.0.
-- Stable baseline: `main` and `dev` are synchronized at Guiyuan 0.2.0 / Build 742 (`20261006-742`).
-- Active baseline: `dev` contains no post-0.2.0 work. Any open work branch or PR must be revalidated against the synchronized `dev` baseline before it is treated as the active development line.
-- Build 740 device evidence accepted the Diagnostics title, Preview status-label spacing, Features copy and About separator/copy fixes, but exposed follow-up issues in compact battery labels, battery-color detail Back, log-item interaction and Home status-icon observation startup timing.
-- Battery-color mode editing now uses a real second MIUIX `OverlayBottomSheet` above the overview instead of a `HorizontalPager` plus a second predictive-Back owner. Returning from detail dismisses only the top sheet and leaves the overview in place.
-- Preview Sandbox uses compact segmented-control-only labels (`Saver / Perf. / Ultra`, `Super fast`) while keeping full natural names in the Live preview summary.
-- Each parsed diagnostics event card supports MIUIX Card long-press copy of the original raw log line and shows localized clipboard feedback.
-- Home status-icon observation no longer treats a temporarily absent `MiuiPhoneStatusBarView.mDarkIconManager` at child-host inflation as a warning. It records a bounded pending host and completes from the exact-target `StatusBarIconControllerImpl.addIconGroup(...)` registration of that same Home manager, with a structured pending -> ready diagnostic lifecycle. No delay, polling, suppression writer or geometry writer was added.
-- Existing Build 740 Diagnostics title, Preview Network/Battery intrinsic label sizing, top-information offset copy and About formatting remain in this branch.
-- Build 741 exact-head Runtime CI #2755 and Work-branch Canary #783 passed; Build 742 changed only version/release metadata and documentation. PR #218 was squash-merged into `dev`, and integrated dev Runtime CI #2757 passed with signed Canary validation.
-- Known residual wording is now explicit: steady Home itself is not observed to fall back to native. The intermittent native exposure occurs on the **Home pull-down -> swipe-up/collapse return path**, where the returning status presentation can briefly become native during the handoff back to Home.
-- PR #219 promoted the accepted 0.2.0 checkpoint to `main`; the long-lived `dev` branch was automatically deleted by GitHub and recreated at the promoted main commit as required by CONTRIBUTING.md.
-- Next: keep the residual return-path issue attributed to Control Center collapse/handoff ownership rather than steady Home acquisition. Any new implementation work must branch from the synchronized `dev` baseline.
+- Stable baseline: `main` and `dev` are synchronized at `f3103a996224c08a9cd1dd8a2e1ade03ed16a00e`, Guiyuan 0.2.0 / Build 742.
+- Active work: PR #220 / `fix/control-center-capacity-overflow`, Build 743 / `20261006-743`, branched from the synchronized post-promotion `dev` baseline.
+- Build 741 device diagnostics captured a rare Home pull-down -> swipe-up/collapse return fallback while Control Center was still visible: QS_FAKE emitted `fake-carrier-capacity-insufficient` and restored native presentation with `charging=false` and `batteryIsland=false`.
+- Steady Home itself is not observed to fall back to native; this defect belongs to the Control Center reverse-transition presentation lifetime.
+- Build 743 keeps Guiyuan semantic transition width, targets, progress, motion carrier and renderer geometry unchanged. It bounds only the QS_FAKE native peer reservation to the verified live fake-carrier capacity for both hidden- and visible-Battery layouts.
+- Stable 0.2.0 promotion is complete; Build 743 is a post-promotion runtime correction and must not merge until exact-head Runtime CI and the focused reverse-pull device gate pass.
+- Next: Runtime CI -> one Work-branch Canary -> repeated Home non-charging/no-island pull-down/full swipe-up stress, then charging/island and Keyguard reverse-pull smoke tests.
 
 ## Accepted runtime facts carried into Build 685
 

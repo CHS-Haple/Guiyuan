@@ -4900,3 +4900,37 @@ Future diagnosis must preserve that distinction. A shorthand such as “Home/des
 
 This entry is documentation-only and changes no APK/runtime behavior. Build 742 device/runtime acceptance remains the Build 741 implementation checkpoint plus release metadata, with integrated dev Runtime CI #2757 passed.
 
+## 2026-10-06 — Build 743: bound ordinary QS_FAKE reservation before fail-native
+
+**Type:** runtime blocker / Control Center reverse-transition ownership
+**Display version:** 0.2.0
+**Build:** 743 / `20261006-743`
+**Branch / PR:** `fix/control-center-capacity-overflow` / #220
+
+### Evidence
+
+Build 741 Detailed diagnostics captured the maintainer's rare Home-origin pull-down / swipe-up symptom. During a still-visible Control Center cycle, QS_FAKE had a verified native width of 587px, a leased parent-content width of 836px, and therefore 249px of additional physical carrier capacity. The session later emitted `failNative reason=fake-carrier-capacity-insufficient restoredNative=true` while Control Center was still visible.
+
+The same session was non-charging and reported `batteryIsland=false`, so this is not the charging-island path and not a steady-Home owner loss.
+
+### Root cause
+
+`resolveCapacityBoundedReservationDelta()` bounded physical QS_FAKE reservation only when HyperOS marked the native Battery hidden. With the Battery visible, the function returned the full requested transition delta unchanged, but the following capacity guard still required that delta to fit the verified fake-carrier lease.
+
+A valid transition frame could therefore request more native `statusIcons.paddingEnd` than the verified carrier can physically expose and tear down the whole QS_FAKE presentation even though Guiyuan's semantic transition remained valid.
+
+### Correction
+
+- keep Guiyuan semantic transition width, targets, progress, motion carrier and drawable geometry unchanged;
+- keep one native peer-layout writer: `statusIcons.paddingEnd`;
+- for Battery-visible QS_FAKE, cap only the native reservation delta at the live verified fake-carrier capacity;
+- retain the existing Battery-hidden rule, where the compact slot plus leased capacity is the physical reservation limit;
+- retain fail-native for real carrier-contract, writer-conflict, host, layout, or restoration failures;
+- add focused unit coverage showing an in-capacity visible-Battery request is unchanged and an overflow request saturates at the verified capacity.
+
+### Safety / device gate
+
+No fixed device pixels, delay, retry, polling, translation, alpha, visibility writer, target rewrite or gesture timeline is added. The cap is derived from the same verified parent-content lease already owned by the QS_FAKE presentation session.
+
+Required device gate: Home, non-charging, no island; repeatedly pull Control Center down and swipe it fully back up, including fast reversals. Confirm the projected transition never drops to native mid-return. Then smoke-test charging/island and Keyguard reverse pulls.
+
