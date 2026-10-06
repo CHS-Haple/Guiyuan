@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -1277,7 +1277,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualCfg) {
         renderController?.updateVisualSettings(settings)
     }
 

@@ -5,7 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 
 internal object HomeRenderSession {
@@ -107,7 +107,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualCfg) {
         current?.updateVisualSettings(settings)
     }
 
@@ -434,7 +434,7 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
+        fun updateVisualSettings(settings: VisualCfg) {
             renderController.updateVisualSettings(settings)
             layoutProbe()
         }

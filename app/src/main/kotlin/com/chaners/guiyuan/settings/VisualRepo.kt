@@ -33,7 +33,7 @@ internal class VisualRepo(context: Context) {
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
     }
 
-    val settings: Flow<VisualSettings> =
+    val settings: Flow<VisualCfg> =
         callbackFlow {
             fun emitCurrent() {
                 trySend(current())
@@ -53,8 +53,8 @@ internal class VisualRepo(context: Context) {
             }
         }.distinctUntilChanged()
 
-    fun current(): VisualSettings =
-        preferences.readVisualSettings()
+    fun current(): VisualCfg =
+        preferences.readVisualCfg()
 
     private fun activeProfileKey(baseKey: String): String =
         visualProfileKey(
@@ -350,9 +350,9 @@ private fun SharedPreferences.profileInt(
     }
 }
 
-internal fun SharedPreferences.readVisualSettings(): VisualSettings {
+internal fun SharedPreferences.readVisualCfg(): VisualCfg {
     val layout = readContentLayout()
-    return VisualSettings(
+    return VisualCfg(
         contentLayout = layout,
         mobileFollowsBatteryColor =
             profileBoolean(
@@ -497,8 +497,8 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
     ).normalized()
 }
 
-internal fun SharedPreferences.Editor.putVisualSettings(
-    settings: VisualSettings,
+internal fun SharedPreferences.Editor.putVisualCfg(
+    settings: VisualCfg,
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
     val layout = normalized.contentLayout

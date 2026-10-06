@@ -6,7 +6,7 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.HyperOsBatteryPalette
 import com.chaners.guiyuan.settings.IosStyleBatteryPalette
 import com.chaners.guiyuan.settings.RecommendedBatteryPalette
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 
 internal sealed interface BatteryColorSource {
     data object SystemDefault : BatteryColorSource
@@ -38,7 +38,7 @@ internal data class BatteryColorPrefs(
 
 internal object BatteryColorPolicy {
     fun preferencesFor(
-        settings: VisualSettings,
+        settings: VisualCfg,
     ): BatteryColorPrefs {
         fun presetSource(slot: BatteryColorSlot): BatteryColorSource =
             when (settings.batteryColorPreset) {
@@ -79,7 +79,7 @@ internal object BatteryColorPolicy {
 
     fun isTinted(
         state: BatterySemanticState,
-        settings: VisualSettings,
+        settings: VisualCfg,
     ): Boolean =
         preferencesFor(settings).sourceFor(state) is BatteryColorSource.Custom
 

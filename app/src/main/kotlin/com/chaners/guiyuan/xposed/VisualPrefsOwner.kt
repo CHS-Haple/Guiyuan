@@ -1,25 +1,25 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
-import com.chaners.guiyuan.settings.readVisualSettings
+import com.chaners.guiyuan.settings.readVisualCfg
 
 internal object VisualPrefsOwner {
     @Volatile
-    private var cfg = VisualSettings()
+    private var cfg = VisualCfg()
 
     private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun current(): VisualSettings = cfg
+    fun current(): VisualCfg = cfg
 
     @Synchronized
     fun bind(
         source: SharedPreferences,
-        onChanged: (VisualSettings) -> Unit,
-    ): VisualSettings {
+        onChanged: (VisualCfg) -> Unit,
+    ): VisualCfg {
         unbindLocked()
 
         val token = Any()
@@ -51,7 +51,7 @@ internal object VisualPrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        cfg = VisualSettings()
+        cfg = VisualCfg()
     }
 
     private fun unbindLocked() {
@@ -74,6 +74,6 @@ internal object VisualPrefsOwner {
         prefs === source &&
             bindToken === token
 
-    private fun resolve(source: SharedPreferences): VisualSettings =
-        source.readVisualSettings()
+    private fun resolve(source: SharedPreferences): VisualCfg =
+        source.readVisualCfg()
 }

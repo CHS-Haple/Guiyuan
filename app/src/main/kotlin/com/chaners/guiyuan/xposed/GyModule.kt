@@ -4575,7 +4575,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onRuntimeVisualSettingsChanged(
-        settings: com.chaners.guiyuan.settings.VisualSettings,
+        settings: com.chaners.guiyuan.settings.VisualCfg,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =

@@ -3,10 +3,10 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class VisualSettingsTest {
+class VisualCfgTest {
     @Test
     fun newGeometryControlsUseBoundedDefaults() {
-        val settings = VisualSettings()
+        val settings = VisualCfg()
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiSizeScale, 0.0001f)
@@ -55,7 +55,7 @@ class VisualSettingsTest {
     fun hyperosIsTheDefaultPreset() {
         assertEquals(
             BatteryColorPreset.HYPEROS,
-            VisualSettings().batteryColorPreset,
+            VisualCfg().batteryColorPreset,
         )
         assertEquals(
             BatteryColorPreset.HYPEROS,
@@ -198,11 +198,11 @@ class VisualSettingsTest {
     @Test
     fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
         val high =
-            VisualSettings(
+            VisualCfg(
                 batteryTopVerticalOffset = 30f,
             ).normalized()
         val low =
-            VisualSettings(
+            VisualCfg(
                 batteryTopVerticalOffset = -30f,
             ).normalized()
 
@@ -338,7 +338,7 @@ class VisualSettingsTest {
 
     @Test
     fun newBatteryVisualControlsKeepRequestedDefaults() {
-        val settings = VisualSettings()
+        val settings = VisualCfg()
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.contentLayout)
         assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
@@ -396,7 +396,7 @@ class VisualSettingsTest {
     @Test
     fun directBatteryCenteredSettingsConstructionUsesProfileDefaults() {
         val settings =
-            VisualSettings(
+            VisualCfg(
                 contentLayout = ContentLayout.BATTERY_CENTER,
             )
 

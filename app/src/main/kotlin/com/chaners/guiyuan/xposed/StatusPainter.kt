@@ -15,7 +15,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -73,7 +73,7 @@ internal class StatusPainter(
         model: RenderModel,
         colors: RenderColors,
         opacity: Float,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
         previousCenterIndicator: CenterIndicator? = null,
         centerExitAmount: Float = 0f,
         centerEnterAmount: Float = 1f,
@@ -164,7 +164,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         previousCenterIndicator: CenterIndicator? = null,
         centerExitAmount: Float = 0f,
         centerEnterAmount: Float = 1f,
@@ -216,7 +216,7 @@ internal class StatusPainter(
         component: TransitionComponent,
         shapePolicy: TransitionShapePolicy,
         opacity: Float = 1f,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
         motionProgress: Float = 0f,
         shapeProgress: Float = 0f,
         mobileTargetWidthRatio: Float? = null,
@@ -663,7 +663,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ): List<TransitionComponentSpec> {
         if (width <= 0 || height <= 0) return emptyList()
 
@@ -909,7 +909,7 @@ internal class StatusPainter(
     fun transitionAirplaneSourceBounds(
         width: Int,
         height: Int,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
@@ -963,7 +963,7 @@ internal class StatusPainter(
         height: Int,
         tint: Int,
         opacity: Float,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val nativeTransform =
@@ -998,7 +998,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         resource: PresentationStore.NativeIconResource,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
@@ -1046,7 +1046,7 @@ internal class StatusPainter(
         resource: PresentationStore.NativeIconResource,
         tint: Int,
         opacity: Float,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val nativeTransform =
@@ -1171,7 +1171,7 @@ internal class StatusPainter(
     private fun resolveCanvasTransform(
         width: Int,
         height: Int,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
     ): NativeRenderTransform? {
         if (width <= 0 || height <= 0) return null
         val combinedScale =
@@ -1193,7 +1193,7 @@ internal class StatusPainter(
     }
 
     private fun resolveCenterGeometry(
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
     ): CenterGeometry.Resolved =
         CenterGeometry.resolve(
             wifiSizeScale = visualSettings.wifiSizeScale,
@@ -1215,7 +1215,7 @@ internal class StatusPainter(
     }
 
     private fun networkTopTranslationY(
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
     ): Float =
         TOP_SLOT_CENTER_Y -
             CENTER_TRANSITION_PIVOT_Y +
@@ -1234,7 +1234,7 @@ internal class StatusPainter(
         )
 
     private fun resolveNetworkTopSlotAvoidance(
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         current: CenterIndicator,
         previous: CenterIndicator?,
         scale: Float,
@@ -1518,7 +1518,7 @@ internal class StatusPainter(
     }
 
     private fun batteryReadoutPreferredCenterY(
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
     ): Float =
         if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
             BATTERY_COMPONENT_CENTER_Y +
@@ -1537,7 +1537,7 @@ internal class StatusPainter(
         opacity: Float,
         geometry: OuterGeometry.Resolved,
         centerGeometry: CenterGeometry.Resolved,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         nativeTransform: NativeRenderTransform,
         scale: Float,
         scaleMobileTypeWithCanvas: Boolean,
@@ -1730,7 +1730,7 @@ internal class StatusPainter(
 
     private fun resolveBatteryTopReadoutLayout(
         model: RenderModel,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ): BatteryTopReadoutLayout? {
         val textVisible = visualSettings.batteryTopReadoutEnabled
@@ -2001,7 +2001,7 @@ internal class StatusPainter(
         model: RenderModel,
         textTint: Int,
         opacity: Float,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         motionProgress: Float,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
@@ -2038,7 +2038,7 @@ internal class StatusPainter(
         model: RenderModel,
         chargingIconTint: Int,
         opacity: Float,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ) {
         val layout =
@@ -2073,7 +2073,7 @@ internal class StatusPainter(
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,
-        visualSettings: VisualSettings = VisualSettings(),
+        visualSettings: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
@@ -2119,7 +2119,7 @@ internal class StatusPainter(
         width: Int,
         height: Int,
         model: RenderModel,
-        visualSettings: VisualSettings,
+        visualSettings: VisualCfg,
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,

@@ -360,7 +360,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
                 BATTERY_COLOR_SCHEME_SCHEMA_CURRENT
         ) return
 
-        val visual = preferences.readVisualSettings()
+        val visual = preferences.readVisualCfg()
         val allPreset =
             BatteryColorSlot.entries.all { slot ->
                 visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET
@@ -537,7 +537,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
     }
 
     private fun entriesFromLegacyVisual(
-        visual: VisualSettings,
+        visual: VisualCfg,
     ): BatteryColorSchemeEntries {
         val preset =
             BatteryColorSchemeSource.fromBuiltIn(

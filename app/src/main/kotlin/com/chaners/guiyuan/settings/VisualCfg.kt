@@ -170,7 +170,7 @@ internal object IosStyleBatteryPalette {
         }
 }
 
-internal data class VisualSettings(
+internal data class VisualCfg(
     val contentLayout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
@@ -200,7 +200,7 @@ internal data class VisualSettings(
         BatteryColorOverrides(),
 )
 
-internal fun VisualSettings.normalized(): VisualSettings =
+internal fun VisualCfg.normalized(): VisualCfg =
     copy(
         batteryTopTextScale =
             batteryTopTextScale.coerceIn(

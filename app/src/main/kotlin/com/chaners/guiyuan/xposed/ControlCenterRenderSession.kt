@@ -5,7 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
@@ -261,7 +261,7 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
+    fun onVisualSettingsChanged(settings: VisualCfg) {
         current?.updateVisualSettings(settings)
     }
 
@@ -780,7 +780,7 @@ internal object ControlCenterRenderSession {
             syncPresentation("feature")
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
+        fun updateVisualSettings(settings: VisualCfg) {
             if (currentVisualSettings != settings) {
                 currentVisualSettings = settings
                 transitionStateVersion += 1
@@ -1019,7 +1019,7 @@ internal object ControlCenterRenderSession {
         val anchorView: View,
         val model: RenderModel,
         val colors: RenderColors,
-        val visualSettings: VisualSettings,
+        val visualSettings: VisualCfg,
         val stateVersion: Long,
     )
 

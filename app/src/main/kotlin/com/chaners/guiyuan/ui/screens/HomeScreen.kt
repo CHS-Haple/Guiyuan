@@ -35,7 +35,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureRepo
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
@@ -306,7 +306,7 @@ private fun HomeRuntimeStatusCard(
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSystemUiResourceResolver,
-    visualSettings: VisualSettings,
+    visualSettings: VisualCfg,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

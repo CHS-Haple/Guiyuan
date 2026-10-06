@@ -18,8 +18,8 @@ import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
-import com.chaners.guiyuan.settings.putVisualSettings
-import com.chaners.guiyuan.settings.readVisualSettings
+import com.chaners.guiyuan.settings.putVisualCfg
+import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -210,7 +210,7 @@ class GyApplication :
                 0L,
             )
         val visual =
-            visualPrefs.readVisualSettings()
+            visualPrefs.readVisualCfg()
 
         runCatching {
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
@@ -233,7 +233,7 @@ class GyApplication :
                     FEATURE_CHANGED_AT_NS_KEY,
                     featureChangedAtNs,
                 )
-                .putVisualSettings(visual)
+                .putVisualCfg(visual)
             check(editor.commit()) { "remote preference commit failed" }
         }.onFailure { throwable ->
             Log.w(
