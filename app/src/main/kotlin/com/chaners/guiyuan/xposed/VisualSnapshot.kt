@@ -56,7 +56,7 @@ internal object VisualSnapshot {
         val inkCenterX: Float? = null,
         val inkCenterY: Float? = null,
     ) {
-        fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
+        fun fourBarsInEnvelope(): List<NormalizedRect>? {
             if (topology != Topology.FOUR_VERTICAL_BARS || components.size != 4) {
                 return null
             }
