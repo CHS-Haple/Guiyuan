@@ -1513,7 +1513,7 @@ internal class StatusPainter(
                         ringCenterY = batteryRing.centerY(),
                         ringRadius = batteryRing.width() / 2f,
                         ringStroke = ringStroke,
-                        visualClearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+                        visualClearance = TOP_RING_CLEARANCE,
                         startDegrees = BATTERY_START_DEGREES,
                         maxSweep = BATTERY_MAX_SWEEP,
                     )
@@ -1526,7 +1526,7 @@ internal class StatusPainter(
     ): Float =
         if (visualSettings.contentLayout == ContentLayout.BATTERY_CENTER) {
             BATTERY_COMPONENT_CENTER_Y +
-                BATTERY_TOP_DEFAULT_OPTICAL_RISE +
+                TOP_OPTICAL_RISE +
                 TOP_OFFSET_DEFAULT
         } else {
             BATTERY_TOP_CONTENT_CENTER_Y
@@ -1744,7 +1744,7 @@ internal class StatusPainter(
             model.charging && visualSettings.chargingIconEnabled
         if (!textVisible && !chargingSlotVisible) return null
 
-        val text = model.batteryPercent.coerceIn(0, 100).function function toString() { [native code] }() { [native code] }()
+        val text = model.batteryPercent.coerceIn(0, 100).function function function toString() { [native code] }() { [native code] }() { [native code] }()
         val textSize = BATTERY_TOP_TEXT_SIZE * visualSettings.batteryTopTextScale
         val textExtraStroke =
             if (textVisible) {
@@ -1870,7 +1870,7 @@ internal class StatusPainter(
         val groupBaseCenterY =
             BatteryTopLayout.resolveOpticalBaseCenterY(
                 preferredCenterY = batteryReadoutPreferredCenterY(visualSettings),
-                defaultOpticalRise = BATTERY_TOP_DEFAULT_OPTICAL_RISE,
+                defaultOpticalRise = TOP_OPTICAL_RISE,
             )
         val groupCenterY =
             BatteryTopLayout.resolveCenterY(
@@ -2022,7 +2022,7 @@ internal class StatusPainter(
         if (!layout.textVisible) return
         val sourceWeight = layout.textWeight
         val resolvedTargetWeight =
-            targetWeight?.coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_WEIGHT_TRANSITION_MAX)
+            targetWeight?.coerceIn(TOP_WEIGHT_TRANSITION_MIN, TOP_WEIGHT_TRANSITION_MAX)
                 ?: sourceWeight
         val progress = motionProgress.coerceIn(0f, 1f)
         val weight =
@@ -2072,7 +2072,7 @@ internal class StatusPainter(
         )
     }
 
-    fun transitionMobileTypeCurrentBounds(
+    fun mobileTypeTransitionBounds(
         width: Int,
         height: Int,
         indicator: CenterIndicator.MobileType,
@@ -2148,8 +2148,8 @@ internal class StatusPainter(
         val resolvedTargetWeight =
             targetWeight
                 ?.coerceIn(
-                    BATTERY_TOP_WEIGHT_TRANSITION_MIN,
-                    BATTERY_TOP_WEIGHT_TRANSITION_MAX,
+                    TOP_WEIGHT_TRANSITION_MIN,
+                    TOP_WEIGHT_TRANSITION_MAX,
                 )
                 ?: sourceWeight
         val currentWeight =
@@ -3622,18 +3622,18 @@ internal class StatusPainter(
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
-        const val BATTERY_TOP_RING_VISUAL_CLEARANCE = 2f
-        const val BATTERY_TOP_DEFAULT_OPTICAL_RISE = 1.5f
+        const val TOP_RING_CLEARANCE = 2f
+        const val TOP_OPTICAL_RISE = 1.5f
         const val BATTERY_TOP_CONTENT_CENTER_Y = 16f
         const val TOP_SLOT_CENTER_Y =
             BATTERY_TOP_CONTENT_CENTER_Y -
-                BATTERY_TOP_DEFAULT_OPTICAL_RISE -
+                TOP_OPTICAL_RISE -
                 TOP_OFFSET_DEFAULT
         const val BATTERY_TOP_NATIVE_WEIGHT_MAX = 1000
         const val TOP_SYNTH_WEIGHT_RANGE = 400
         const val TOP_SYNTH_STROKE_RATIO = 0.07f
-        const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
-        const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400
+        const val TOP_WEIGHT_TRANSITION_MIN = 100
+        const val TOP_WEIGHT_TRANSITION_MAX = 1400
 
     }
 

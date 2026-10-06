@@ -9,7 +9,7 @@ internal object StatusBarSession {
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
-    private const val STATUS_ICON_CONTAINER_CLASS_NAME =
+    private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
 
     private var current: Session? = null
@@ -179,7 +179,7 @@ internal object StatusBarSession {
                 ).logLine,
             )
 
-            val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+            val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS)
             val layoutParams = view.layoutParams
             val margins = layoutParams as? ViewGroup.MarginLayoutParams
             val slotMetrics =

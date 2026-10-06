@@ -123,7 +123,7 @@ internal object ScenePolicy {
             (!aodBlocked || incomingBoundaryPresentationReady) &&
             nativeFraction > 0f
 
-    fun incomingKeyguardPresentationReady(
+    fun incomingKeyguardReady(
         visualHandoffActive: Boolean,
         layoutPrecommitActive: Boolean,
         compactLayoutReady: Boolean,
@@ -574,10 +574,10 @@ internal object ScenePolicy {
         panelSourceScene: SourceScene,
         steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
-        incomingKeyguardPresentationReady: Boolean = false,
+        incomingKeyguardReady: Boolean = false,
     ): SourceScene {
         if (
-            incomingKeyguardPresentationReady &&
+            incomingKeyguardReady &&
             (
                 panelSourceScene == SourceScene.KEYGUARD ||
                     steadySourceScene == SourceScene.KEYGUARD

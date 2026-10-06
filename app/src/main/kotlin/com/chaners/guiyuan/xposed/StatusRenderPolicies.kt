@@ -304,7 +304,7 @@ internal object OuterGeometry {
     const val MOBILE_ORBIT_RADIUS = 51f
     const val BASE_MOBILE_DOT_RADIUS = 4.9f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_STROKE = 3.2f * PREVIOUS_DEFAULT_WEIGHT_SCALE
-    const val BASE_UNAVAILABLE_MARK_HALF_EXTENT = 3.7f * PREVIOUS_DEFAULT_WEIGHT_SCALE
+    const val UNAVAILABLE_MARK_HALF_EXTENT = 3.7f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val DEFAULT_WEIGHT_SCALE = 1.00f
     const val MIN_WEIGHT_SCALE = 0.60f
     const val MAX_WEIGHT_SCALE = 2.00f
@@ -348,7 +348,7 @@ internal object OuterGeometry {
         val ringStroke = BASE_RING_STROKE * normalized
         val dotRadius = BASE_MOBILE_DOT_RADIUS * normalized
         val unavailableMarkStroke = BASE_UNAVAILABLE_MARK_STROKE * normalized
-        val unavailableMarkHalfExtent = BASE_UNAVAILABLE_MARK_HALF_EXTENT * normalized
+        val unavailableMarkHalfExtent = UNAVAILABLE_MARK_HALF_EXTENT * normalized
 
         var lowerStep = 1f
         var upperStep = 39.5f

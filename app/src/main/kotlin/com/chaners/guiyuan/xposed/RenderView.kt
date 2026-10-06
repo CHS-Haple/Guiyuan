@@ -61,7 +61,7 @@ internal class RenderView(
     private var pendingStateUptimeMs: Long = 0
 
     @Volatile
-    private var pendingStateCommittedOnMainThread: Boolean = false
+    private var pendingStateOnMain: Boolean = false
 
     @Volatile
     private var pendingTrace: RuntimeRenderTrace? = null
@@ -87,7 +87,7 @@ internal class RenderView(
         val previousModel = this.model
         this.model = model
         pendingStateUptimeMs = SystemClock.uptimeMillis()
-        pendingStateCommittedOnMainThread =
+        pendingStateOnMain =
             Looper.myLooper() === Looper.getMainLooper()
         pendingTrace = trace
         pendingModelCommittedNanos =
@@ -169,7 +169,7 @@ internal class RenderView(
     fun currentLogicalViewportHeightPx(): Int =
         logicalViewportHeightPx.takeIf { it > 0 } ?: height
 
-    fun currentLogicalViewportTopInsetPx(): Int =
+    fun currentViewportTopInsetPx(): Int =
         logicalViewportTopInsetPx.coerceAtLeast(0)
 
     fun requiredTopOverflowPx(
@@ -285,7 +285,7 @@ internal class RenderView(
             centerTransitionFraction.coerceIn(0f, 1f)
         val logicalWidth = currentLogicalViewportWidthPx()
         val logicalHeight = currentLogicalViewportHeightPx()
-        val logicalTopInset = currentLogicalViewportTopInsetPx()
+        val logicalTopInset = currentViewportTopInsetPx()
         val viewportSave = canvas.save()
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
@@ -328,14 +328,14 @@ internal class RenderView(
                         trace = trace,
                         modelCommittedNanos = modelCommittedNanos,
                         drawNanos = SystemClock.elapsedRealtimeNanos(),
-                        committedOnMainThread = pendingStateCommittedOnMainThread,
+                        committedOnMainThread = pendingStateOnMain,
                     )
                 } else {
                     null
                 }
             onStateRendered(
                 (SystemClock.uptimeMillis() - committedAt).coerceAtLeast(0L),
-                pendingStateCommittedOnMainThread,
+                pendingStateOnMain,
                 sample,
             )
         }

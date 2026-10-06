@@ -143,10 +143,10 @@ internal object StatusStateStore {
                 putBoolean(KEY_BATTERY_PRESENT, true)
                 putInt(KEY_BATTERY_PERCENT, battery.percent)
                 putBoolean(KEY_BATTERY_CHARGING, battery.charging)
-                putInt(KEY_BATTERY_CHARGING_ICON_RES_ID, battery.chargingIconResId ?: 0)
+                putInt(KEY_CHARGING_ICON_RES, battery.chargingIconResId ?: 0)
                 battery.semanticState?.let { putString(KEY_BATTERY_SEMANTIC, it.name) }
                 battery.systemSemanticColor?.let { color ->
-                    putBoolean(KEY_BATTERY_SYSTEM_COLOR_PRESENT, true)
+                    putBoolean(KEY_SYSTEM_COLOR_PRESENT, true)
                     putInt(KEY_BATTERY_SYSTEM_COLOR, color)
                 }
             }
@@ -202,16 +202,16 @@ internal object StatusStateStore {
                     percent = bundle.getInt(KEY_BATTERY_PERCENT),
                     charging = bundle.getBoolean(KEY_BATTERY_CHARGING),
                     chargingIconResId =
-                        bundle.getInt(KEY_BATTERY_CHARGING_ICON_RES_ID)
+                        bundle.getInt(KEY_CHARGING_ICON_RES)
                             .takeIf { it != 0 },
                     semanticState =
                         bundle.getString(KEY_BATTERY_SEMANTIC)?.let { name ->
                             runCatching {
-                                BatterySemanticState.valueOf(name)
+                                BatterySemanticState.function valueOf() { [native code] }(name)
                             }.getOrNull()
                         },
                     systemSemanticColor =
-                        if (bundle.getBoolean(KEY_BATTERY_SYSTEM_COLOR_PRESENT, false)) {
+                        if (bundle.getBoolean(KEY_SYSTEM_COLOR_PRESENT, false)) {
                             bundle.getInt(KEY_BATTERY_SYSTEM_COLOR)
                         } else null,
                 )
@@ -299,7 +299,7 @@ internal object StatusStateStore {
         val logLine: String
             get() {
                 val batteryText = battery?.let { state ->
-                    state.percent.toString() + ":" +
+                    state.percent.function toString() { [native code] }() + ":" +
                         (if (state.charging) "charging" else "discharging")
                 } ?: "unknown"
 
@@ -324,14 +324,14 @@ internal object StatusStateStore {
                     postfix = "]",
                     separator = ";",
                 ) { (subscriptionId, state) ->
-                    subscriptionId.toString() +
+                    subscriptionId.function toString() { [native code] }() +
                         ":signal=" + state.signal.logToken + ":res=" + (state.signalResId ?: 0) +
                         ",volte=" + (state.volteResId ?: 0) +
                         ",vowifi=" + (state.vowifiResId ?: 0)
                 }
 
                 return "battery=$batteryText wifi=$wifiText mobile=$mobileText " +
-                    "airplane=" + (airplaneMode?.toString() ?: "unknown") +
+                    "airplane=" + (airplaneMode?.function toString() { [native code] }() ?: "unknown") +
                     " mobileRecovery=" +
                     (if (mobileRecoveryPending) "searching" else "ready")
             }
@@ -379,9 +379,9 @@ internal object StatusStateStore {
     private const val KEY_BATTERY_PRESENT = "batteryPresent"
     private const val KEY_BATTERY_PERCENT = "batteryPercent"
     private const val KEY_BATTERY_CHARGING = "batteryCharging"
-    private const val KEY_BATTERY_CHARGING_ICON_RES_ID = "batteryChargingIconResId"
+    private const val KEY_CHARGING_ICON_RES = "batteryChargingIconResId"
     private const val KEY_BATTERY_SEMANTIC = "batterySemantic"
-    private const val KEY_BATTERY_SYSTEM_COLOR_PRESENT = "batterySystemColorPresent"
+    private const val KEY_SYSTEM_COLOR_PRESENT = "batterySystemColorPresent"
     private const val KEY_BATTERY_SYSTEM_COLOR = "batterySystemColor"
     private const val KEY_WIFI_KIND = "wifiKind"
     private const val KEY_WIFI_RES_ID = "wifiResId"

@@ -320,7 +320,7 @@ internal object CcTransition {
                 ",appearanceAnimated=" + nativeAppearanceAnimated +
                 ",nativePeers=systemui" +
                 ",nativeTint=" +
-                (cachedNativePeerTint?.toUInt()?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)?.padStart(8, '0') ?: "none") +
+                (cachedNativePeerTint?.toUInt()?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)?.padStart(8, '0') ?: "none") +
                 ",nativeTintAuthority=" + cachedNativePeerTintAuthority +
                 ",sourceAnchor=" + (sourceAnchorRef.get()?.javaClass?.simpleName ?: "none") +
                 ",sourceOrigin=" + (frozenSource?.source ?: "qs-fake-live") +
@@ -334,7 +334,7 @@ internal object CcTransition {
                 ",reservation=" + (lastReservationWidthPx ?: -1) +
                 ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
                 ",nativePeerTargetEndOffset=" +
-                (lastNativePeerTargetEndOffsetPx?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() ?: "none") +
+                (lastNativePeerTargetEndOffsetPx?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() ?: "none") +
                 ",batteryIsland=" + nativeBatteryIslandActive +
                 ",iconCapacity=" + statusIconCapacitySummary() +
                 ",nativeRows=" + nativeStatusRowSummary() +
@@ -390,7 +390,7 @@ internal object CcTransition {
                                     "(state=" +
                                     (ParticipantAccess.visibleState(child) ?: -1) +
                                     ",icon=" +
-                                    (ParticipantAccess.iconVisible(child)?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                                    (ParticipantAccess.iconVisible(child)?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
                                         ?: "unknown") +
                                     ",v=" + child.visibility +
                                     ",a=" + child.alpha +
@@ -899,7 +899,7 @@ internal object CcTransition {
                         spec.component ==
                                 StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType ->
-                            painter.transitionMobileTypeCurrentBounds(
+                            painter.mobileTypeTransitionBounds(
                                 width = sourceWidth,
                                 height = sourceHeight,
                                 indicator = model.centerIndicator,
@@ -1658,7 +1658,7 @@ internal object CcTransition {
             val motionProgress = lastTintMotionProgress ?: return "pending"
 
             fun tintHex(color: Int): String =
-                color.toUInt().function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
+                color.toUInt().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
 
             return "{batteryTinted=" + batteryTinted +
                 ",enabled=" + transitionEnabled +
@@ -2519,7 +2519,7 @@ internal object CcTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                    .function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
 
             val textView =
                 digitalView
@@ -2637,7 +2637,7 @@ internal object CcTransition {
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
-                    .function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
+                    .function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
             data class Candidate(
                 val view: TextView,
                 val score: Int,
@@ -2646,7 +2646,7 @@ internal object CcTransition {
             fun collect(view: View, depth: Int) {
                 if (depth > BATTERY_NUMBER_PROBE_MAX_DEPTH) return
                 if (view is TextView && view.visibility == View.VISIBLE) {
-                    val value = view.text?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
+                    val value = view.text?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
                     val digits = value.filter(Char::isDigit)
                     val entry =
                         ParticipantAccess.resourceEntryName(view)
@@ -2684,7 +2684,7 @@ internal object CcTransition {
         ): StatusPainter.TransitionNormalizedBounds? {
             val layout = view.layout ?: return null
             if (layout.lineCount <= 0 || view.width <= 0 || view.height <= 0) return null
-            val text = view.text?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
+            val text = view.text?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().orEmpty()
             if (text.isEmpty()) return null
             val rect = Rect()
             view.paint.getTextBounds(text, 0, text.length, rect)
@@ -2872,7 +2872,7 @@ internal object CcTransition {
                             .getOrNull()
                             ?: -1
                     base +
-                        ":text=" + view.text.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().replace("|", "/") +
+                        ":text=" + view.text.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }().replace("|", "/") +
                         ":textSize=" + view.textSize +
                         ":weight=" + weight +
                         ":style=" + (view.typeface?.style ?: -1)
