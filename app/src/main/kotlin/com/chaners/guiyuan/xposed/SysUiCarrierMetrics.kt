@@ -4,11 +4,11 @@ import android.view.View
 import android.view.ViewGroup
 
 internal object SysUiCarrierMetrics {
-    // The same native battery carrier is reused across Home, Keyguard and QS fake.
+    // The same native battery carrier is reused across Home, Keyguard and QS_FAKE.
     private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
     private const val CARRIER_ID_NAME = "battery_icon_container"
 
-    fun resolveCarrierView(anchor: View): View? {
+    fun resolveView(anchor: View): View? {
         val group = anchor as? ViewGroup ?: return null
         val resourceId =
             anchor.resources.getIdentifier(
@@ -24,7 +24,7 @@ internal object SysUiCarrierMetrics {
     }
 
     // Native width can be mid-layout during transitions, so use the stable child width.
-    fun resolveCarrierWidthPx(carrier: View): Int? =
+    fun resolveWidthPx(carrier: View): Int? =
         NativeStatusBarSlotGeometry.resolveStableChildWidth(
             layoutWidth = carrier.width,
             measuredWidth = carrier.measuredWidth,
