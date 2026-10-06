@@ -7,16 +7,16 @@ import org.junit.Test
 class SysUiKeyguardHostResolverTest {
     @Test
     fun steadyKeyguardAcceptsKeyguardAndShadeLockedOnly() {
-        assertTrue(SysUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.KEYGUARD))
-        assertTrue(SysUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.SHADE_LOCKED))
-        assertFalse(SysUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
-        assertFalse(SysUiKeyguardHostResolver.isSteadyKeyguardSurface(SysUiSceneSource.Surface.UNKNOWN))
+        assertTrue(SysUiKeyguardHostResolver.isSteadySurface(SysUiSceneSource.Surface.KEYGUARD))
+        assertTrue(SysUiKeyguardHostResolver.isSteadySurface(SysUiSceneSource.Surface.SHADE_LOCKED))
+        assertFalse(SysUiKeyguardHostResolver.isSteadySurface(SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertFalse(SysUiKeyguardHostResolver.isSteadySurface(SysUiSceneSource.Surface.UNKNOWN))
     }
 
     @Test
     fun resolverAcceptsOnlyPinnedKeyguardHostClass() {
-        assertTrue(SysUiKeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
-        assertFalse(SysUiKeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
+        assertTrue(SysUiKeyguardHostResolver.isHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
+        assertFalse(SysUiKeyguardHostResolver.isHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
     }
     @Test
     fun keyguardStatusIconsAlphaUsesOnlyLocalNativeStatusIconLayer() {
