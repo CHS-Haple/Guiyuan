@@ -82,7 +82,7 @@ internal object ControlCenterRenderSession {
             statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
                 ?: return AttachResult.Failure("battery-view-missing")
         val carrier =
-            SysUiCarrierMetrics.resolveCarrierView(battery)
+            SysUiCarrierMetrics.resolveView(battery)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
         val existing = current
         if (
@@ -821,7 +821,7 @@ internal object ControlCenterRenderSession {
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
             val carrierWidth =
-                SysUiCarrierMetrics.resolveCarrierWidthPx(carrierView)
+                SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
             val resolved =
                 HomeLayoutResolver.resolve(
