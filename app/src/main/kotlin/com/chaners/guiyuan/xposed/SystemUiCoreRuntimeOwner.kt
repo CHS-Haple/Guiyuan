@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.content.Context
 
-internal object SystemUiCoreRuntimeOwner {
+internal object CoreRuntime {
     internal data class AttachResult(
         val airplaneReady: Boolean,
         val defaultDataSubscriptionReady: Boolean,
@@ -14,23 +14,23 @@ internal object SystemUiCoreRuntimeOwner {
         context: Context,
         onAirplaneMode: (Boolean) -> Unit,
         onDefaultDataSubscriptionChanged: (Int) -> Unit,
-        onConnectivityState: (SystemUiConnectivityStateSource.State) -> Unit,
+        onConnectivityState: (ConnectivitySource.State) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): AttachResult {
         val airplaneReady =
-            SystemUiAirplaneStateSource.attach(
+            AirplaneSource.attach(
                 context = context,
                 onAirplaneMode = onAirplaneMode,
                 onEvent = onEvent,
             )
         val defaultDataSubscriptionReady =
-            SystemUiDefaultDataSubscriptionSource.attach(
+            DataSubSource.attach(
                 context = context,
                 onChanged = onDefaultDataSubscriptionChanged,
                 onEvent = onEvent,
             )
         val connectivityReady =
-            SystemUiConnectivityStateSource.attach(
+            ConnectivitySource.attach(
                 context = context,
                 onState = onConnectivityState,
                 onEvent = onEvent,
@@ -44,8 +44,8 @@ internal object SystemUiCoreRuntimeOwner {
 
     @Synchronized
     fun detach() {
-        SystemUiConnectivityStateSource.detach()
-        SystemUiDefaultDataSubscriptionSource.detach()
-        SystemUiAirplaneStateSource.detach()
+        ConnectivitySource.detach()
+        DataSubSource.detach()
+        AirplaneSource.detach()
     }
 }

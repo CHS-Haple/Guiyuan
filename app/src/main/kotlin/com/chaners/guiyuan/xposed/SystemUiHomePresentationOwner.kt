@@ -10,7 +10,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
-internal object SystemUiHomePresentationOwner {
+internal object HomePresentation {
     private const val HOME_HOST =
         "com.android.systemui.statusbar.views.MiuiNotificationStatusContainer"
     private const val STATUS_ICON_CONTAINER =
@@ -362,7 +362,7 @@ internal object SystemUiHomePresentationOwner {
             return StateResult.Failure("home-host-mismatch")
         }
         val statusIcons =
-            NativeParticipantRuntimeAccess.groupFor(host)
+            ParticipantAccess.groupFor(host)
                 ?: return StateResult.Failure("status-icon-group-missing")
         if (statusIcons.javaClass.name != STATUS_ICON_CONTAINER) {
             return StateResult.Failure("status-icon-group-type-mismatch")
@@ -374,7 +374,7 @@ internal object SystemUiHomePresentationOwner {
             batteryContainer.directChild(BATTERY_VIEW)
                 ?: return StateResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(battery)
+            HomeCarrierMetrics.resolveCarrierView(battery)
                 ?: return StateResult.Failure("battery-core-carrier-missing")
         val field =
             ignoredSlotsField
@@ -383,7 +383,7 @@ internal object SystemUiHomePresentationOwner {
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
         val baseSlotWidthPx =
-            SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+            HomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
                 ?: return StateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -453,7 +453,7 @@ internal object SystemUiHomePresentationOwner {
 
     @Synchronized
     fun activateKeyguard(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         deferNativeLayoutOwnershipUntilCommit: Boolean = false,
         onEvent: (String) -> Unit,
         onFailNative: (String) -> Unit,
@@ -517,7 +517,7 @@ internal object SystemUiHomePresentationOwner {
 
     @Synchronized
     fun activateAod(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean = false,
         onEvent: (String) -> Unit,
         onFailNative: (String) -> Unit,
@@ -542,7 +542,7 @@ internal object SystemUiHomePresentationOwner {
 
     private fun activateKeyguardFamily(
         surface: KeyguardFamilySurface,
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean,
         deferNativeLayoutOwnershipUntilCommit: Boolean,
         onEvent: (String) -> Unit,
@@ -568,7 +568,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
-        SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(resolved.batteryCarrier)
+        HomeCarrierMetrics.resolveCarrierWidthPx(resolved.batteryCarrier)
             ?: return StateResult.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -759,7 +759,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return ControlCenterStateResult.Failure("battery-hide-field-unavailable")
-        SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+        HomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
             ?: return ControlCenterStateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -1015,13 +1015,13 @@ internal object SystemUiHomePresentationOwner {
     @Synchronized
     fun cleanupLegacyParticipant(host: Any): LegacyCleanupResult {
         val group =
-            NativeParticipantRuntimeAccess.groupFor(host)
+            ParticipantAccess.groupFor(host)
                 ?: return LegacyCleanupResult.Failure("status-icon-group-missing")
-        val legacyView = NativeParticipantRuntimeAccess.findSlotView(group, LEGACY_SLOT)
+        val legacyView = ParticipantAccess.findSlotView(group, LEGACY_SLOT)
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready -> resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure -> {
+            when (val resolution = ParticipantAccess.resolve(host)) {
+                is ParticipantAccess.ResolveResult.Ready -> resolution.handles
+                is ParticipantAccess.ResolveResult.Failure -> {
                     return if (legacyView == null) {
                         LegacyCleanupResult.NotPresent
                     } else {
@@ -1029,19 +1029,19 @@ internal object SystemUiHomePresentationOwner {
                     }
                 }
             }
-        val holder = NativeParticipantRuntimeAccess.iconHolder(handles, LEGACY_SLOT)
+        val holder = ParticipantAccess.iconHolder(handles, LEGACY_SLOT)
         if (legacyView == null && holder == null) {
             return LegacyCleanupResult.NotPresent
         }
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            ParticipantAccess.removal(handles.controller.javaClass)
                 ?: return LegacyCleanupResult.Failure("legacy-removal-contract-missing")
         val removed =
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(handles, removal, LEGACY_SLOT)
-                NativeParticipantRuntimeAccess.clearBindableEntries(handles, LEGACY_SLOT)
-                NativeParticipantRuntimeAccess.findSlotView(group, LEGACY_SLOT) == null &&
-                    NativeParticipantRuntimeAccess.iconHolder(handles, LEGACY_SLOT) == null
+                ParticipantAccess.invokeRemoval(handles, removal, LEGACY_SLOT)
+                ParticipantAccess.clearBindableEntries(handles, LEGACY_SLOT)
+                ParticipantAccess.findSlotView(group, LEGACY_SLOT) == null &&
+                    ParticipantAccess.iconHolder(handles, LEGACY_SLOT) == null
             }.getOrDefault(false)
         return if (removed) {
             LegacyCleanupResult.Removed
@@ -1449,7 +1449,7 @@ internal object SystemUiHomePresentationOwner {
             return clipStates
                 .mapNotNull { state ->
                     state.view.get()
-                        ?.let(NativeParticipantRuntimeAccess::slotOf)
+                        ?.let(ParticipantAccess::slotOf)
                         ?.takeIf(representedSlots::contains)
                 }
                 .toSet()
@@ -1992,7 +1992,7 @@ internal object SystemUiHomePresentationOwner {
                 batteryCarrier.get()
                     ?: run { onFailNative("battery-core-carrier-released"); return false }
             val stableCarrierWidthPx =
-                SystemUiHomeCarrierMetrics.resolveCarrierWidthPx(carrier)
+                HomeCarrierMetrics.resolveCarrierWidthPx(carrier)
                     ?: run { onFailNative("battery-core-width-unavailable"); return false }
             if (actualBatteryWidthPx < stableCarrierWidthPx) {
                 onFailNative("battery-presentation-narrower-than-core")
@@ -2482,7 +2482,7 @@ internal object SystemUiHomePresentationOwner {
             if (!active || surfaceName != HOME_SURFACE) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
-            val islandShowing = SystemUiIslandMotionSource.currentIslandShowing() == true
+            val islandShowing = IslandMotionSource.currentIslandShowing() == true
             if (!islandShowing) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
@@ -2492,10 +2492,10 @@ internal object SystemUiHomePresentationOwner {
                 buildSet {
                     for (index in 0 until group.childCount) {
                         val child = group.getChildAt(index)
-                        val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+                        val slot = ParticipantAccess.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
-                            SystemUiNativeNetworkSuppressionOwner
+                            NativeNetworkSuppression
                                 .readIslandVisibilityState(group, child)
                                 ?: continue
                         if (
@@ -2554,7 +2554,7 @@ internal object SystemUiHomePresentationOwner {
             if (steadyPeerMirrorActive) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+                    val slot = ParticipantAccess.slotOf(child) ?: continue
                     if (slot !in representedSlots && slot in steadyPeerMirrorHiddenSlots) {
                         targets += child
                     }
@@ -2602,7 +2602,7 @@ internal object SystemUiHomePresentationOwner {
             targets += batteryView
             for (index in 0 until group.childCount) {
                 val child = group.getChildAt(index)
-                if (NativeParticipantRuntimeAccess.slotOf(child) in representedSlots) {
+                if (ParticipantAccess.slotOf(child) in representedSlots) {
                     targets += child
                 }
             }

@@ -7,7 +7,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
-internal object SystemUiBatteryStateSource {
+internal object BatterySource {
     const val BATTERY_ICON_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView"
     const val BATTERY_METER_VIEW_CLASS_NAME =
@@ -83,7 +83,7 @@ internal object SystemUiBatteryStateSource {
                     (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
                 }.getOrNull()
             val semanticState =
-                SystemUiBatterySemanticPolicy.fromNativeProgressStatus(
+                BatterySemanticPolicy.fromNativeProgressStatus(
                     nativeStatusName,
                 )
             val miuiOptimizationEnabled =

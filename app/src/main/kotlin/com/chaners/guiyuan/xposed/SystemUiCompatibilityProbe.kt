@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object SystemUiCompatibilityProbe {
+internal object CompatibilityProbe {
     private val markerClasses = linkedMapOf(
         "statusHost" to "com.android.systemui.statusbar.views.MiuiNotificationStatusContainer",
         "controlCenterHeader" to "com.android.systemui.controlcenter.shade.ControlCenterHeaderView",

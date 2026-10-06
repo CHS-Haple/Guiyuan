@@ -7,7 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 
-internal object SystemUiAirplaneStateSource {
+internal object AirplaneSource {
     private val uri = Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON)
 
     private var resolver: ContentResolver? = null

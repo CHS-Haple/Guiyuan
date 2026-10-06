@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
 
-internal object SystemUiHotReloadRuntimeOwner {
+internal object HotReloadRuntime {
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,
@@ -31,16 +31,16 @@ internal object SystemUiHotReloadRuntimeOwner {
         param: HotReloadingParam,
         generationHandoff: Runnable,
     ): PrepareResult {
-        if (!SystemUiHostRuntimeOwner.isReady) {
+        if (!HostRuntime.isReady) {
             return PrepareResult.Unavailable("status-host-hook-not-ready")
         }
 
         val host =
-            SystemUiHostRegistry.currentStatusHost()
+            HostRegistry.currentStatusHost()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
-        val bindingCounts = SystemUiNetworkStateSource.hotReloadBindingCounts()
+        val bindingCounts = NetworkStateSource.hotReloadBindingCounts()
         val bindingStateReady =
             (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
                 (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
@@ -53,23 +53,23 @@ internal object SystemUiHotReloadRuntimeOwner {
         }
 
         val controlCenterCompactReady =
-            ControlCenterRenderSession
+            ControlCenterSession
                 .currentNativePresentationReadyForHotReload()
 
         val transfer =
             HotReloadTransfer.capture(
                 host = host,
                 state = StatusStateStore.exportHotReloadState(),
-                bindings = SystemUiNetworkStateSource.exportHotReloadBindings(),
+                bindings = NetworkStateSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
                 notificationShadeHomeEligible = null,
                 controlCenterHomeEligible =
-                    SystemUiPanelTransitionSource.currentControlCenterHomeEligibility(),
+                    PanelTransitionSource.currentControlCenterHomeEligibility(),
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    ControlCenterRenderSession.currentAttachedHostForHotReload(),
+                    ControlCenterSession.currentAttachedHostForHotReload(),
                 controlCenterCompactReady = controlCenterCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
@@ -99,16 +99,16 @@ internal object SystemUiHotReloadRuntimeOwner {
 
     fun takeOverHooks(
         param: HotReloadedParam,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): HookTakeover? {
         val oldHandles = param.oldHookHandles
-        val hostHandle = SystemUiHostRuntimeOwner.findOwnedHandle(oldHandles)
+        val hostHandle = HostRuntime.findOwnedHandle(oldHandles)
             ?: run {
                 oldHandles.forEach { handle -> runCatching { handle.unhook() } }
                 return null
             }
 
-        SystemUiHostRuntimeOwner.replace(
+        HostRuntime.replace(
             handle = hostHandle,
             onCaptured = onCaptured,
         )

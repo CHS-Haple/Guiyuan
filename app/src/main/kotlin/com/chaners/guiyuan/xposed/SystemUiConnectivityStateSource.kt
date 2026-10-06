@@ -8,7 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyManager
 
-internal object SystemUiConnectivityStateSource {
+internal object ConnectivitySource {
     private var manager: ConnectivityManager? = null
     private var callback: ConnectivityManager.NetworkCallback? = null
 
@@ -113,7 +113,7 @@ internal object SystemUiConnectivityStateSource {
 
     private fun mobileDataEnabled(context: Context): Boolean? {
         val subscriptionId =
-            SystemUiDefaultDataSubscriptionSource.currentSubscriptionId()
+            DataSubSource.currentSubscriptionId()
         if (subscriptionId < 0) {
             return null
         }

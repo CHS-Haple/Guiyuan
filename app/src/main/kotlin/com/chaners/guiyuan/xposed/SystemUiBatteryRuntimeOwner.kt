@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiBatteryRuntimeOwner {
+internal object BatteryRuntime {
     private var current: AttachResult? = null
 
     val installedHookCount: Int
@@ -12,7 +12,7 @@ internal object SystemUiBatteryRuntimeOwner {
         val hooks: Int,
     ) {
         val ready: Boolean
-            get() = hooks == SystemUiBatteryStateSource.HOOK_COUNT
+            get() = hooks == BatterySource.HOOK_COUNT
     }
 
     @Synchronized
@@ -25,7 +25,7 @@ internal object SystemUiBatteryRuntimeOwner {
     ): AttachResult =
         AttachResult(
             hooks =
-                SystemUiBatteryStateSource.install(
+                BatterySource.install(
                     module = module,
                     classLoader = classLoader,
                     onBatteryState = onBatteryState,
@@ -37,6 +37,6 @@ internal object SystemUiBatteryRuntimeOwner {
     @Synchronized
     fun resetRuntimeState() {
         current = null
-        SystemUiBatteryStateSource.resetRuntimeState()
+        BatterySource.resetRuntimeState()
     }
 }

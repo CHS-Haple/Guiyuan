@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.view.View
 import android.view.ViewGroup
 
-internal object SystemUiHomeCarrierMetrics {
+internal object HomeCarrierMetrics {
     private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
     private const val CARRIER_ID_NAME = "battery_icon_container"
 
@@ -23,7 +23,7 @@ internal object SystemUiHomeCarrierMetrics {
     }
 
     fun resolveCarrierWidthPx(carrier: View): Int? =
-        NativeStatusBarSlotGeometry.resolveStableChildWidth(
+        StatusSlotGeometry.resolveStableChildWidth(
             layoutWidth = carrier.width,
             measuredWidth = carrier.measuredWidth,
         )

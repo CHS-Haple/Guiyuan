@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiHostRuntimeOwner {
+internal object HostRuntime {
     @Volatile
     private var ready = false
 
@@ -13,7 +13,7 @@ internal object SystemUiHostRuntimeOwner {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): HookHandle =
         StatusBarHostCapture.install(
             module = module,
@@ -26,7 +26,7 @@ internal object SystemUiHostRuntimeOwner {
 
     fun replace(
         handle: HookHandle,
-        onCaptured: (SystemUiHostRegistry.Capture) -> Unit,
+        onCaptured: (HostRegistry.Capture) -> Unit,
     ): HookHandle =
         StatusBarHostCapture.replace(
             handle = handle,

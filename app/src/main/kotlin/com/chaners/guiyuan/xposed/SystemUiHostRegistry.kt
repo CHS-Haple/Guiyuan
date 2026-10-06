@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import java.lang.ref.WeakReference
 
-internal object SystemUiHostRegistry {
+internal object HostRegistry {
     private var statusHost = WeakReference<Any>(null)
 
     @Synchronized
