@@ -100,7 +100,7 @@ internal object ControlCenterRenderSession {
         }
 
         if (existing != null) {
-            SystemUiHomePresentationOwner.deactivateControlCenter("host-replaced")
+            SysUiPresentationOwner.deactivateControlCenter("host-replaced")
             existing.stop("host-replaced")
         }
 
@@ -123,7 +123,7 @@ internal object ControlCenterRenderSession {
 
     @Synchronized
     fun beginVisibleCycle(): Boolean =
-        SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+        SysUiPresentationOwner.onControlCenterVisibilityChanged(true)
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -135,7 +135,7 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setSceneEligible(eligible)
         if (!eligible) {
-            SystemUiHomePresentationOwner.deactivateControlCenter("scene-ineligible")
+            SysUiPresentationOwner.deactivateControlCenter("scene-ineligible")
         } else {
             session?.prepareNativePresentation(reused = true)
         }
@@ -185,8 +185,8 @@ internal object ControlCenterRenderSession {
             result == AttachResult.Ready &&
             shouldAdoptTransferredCompactReadiness(transferredCompactReady)
         ) {
-            when (SystemUiHomePresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Active -> {
+            when (SysUiPresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
+                is SysUiPresentationOwner.ControlCenterStateResult.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
@@ -252,7 +252,7 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setFeatureEnabled(cfg.enabled)
         if (!cfg.enabled || !sceneEligible) {
-            SystemUiHomePresentationOwner.deactivateControlCenter(
+            SysUiPresentationOwner.deactivateControlCenter(
                 if (!cfg.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
@@ -273,7 +273,7 @@ internal object ControlCenterRenderSession {
         pendingPrearm?.cancel()
         pendingPrearm = null
         if (releaseNativePresentation) {
-            SystemUiHomePresentationOwner.deactivateControlCenter(source)
+            SysUiPresentationOwner.deactivateControlCenter(source)
         }
         current?.stop(source)
         current = null
@@ -621,7 +621,7 @@ internal object ControlCenterRenderSession {
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
                 ) &&
-                !SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(true)
+                !SysUiPresentationOwner.onControlCenterVisibilityChanged(true)
             ) {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
@@ -632,7 +632,7 @@ internal object ControlCenterRenderSession {
                     nextRequestedVisible = visible,
                 )
             ) {
-                SystemUiHomePresentationOwner.onControlCenterVisibilityChanged(false)
+                SysUiPresentationOwner.onControlCenterVisibilityChanged(false)
             }
             requestedVisible = visible
             syncPresentation("visibility")
@@ -662,7 +662,7 @@ internal object ControlCenterRenderSession {
 
             return when (
                 val result =
-                    SystemUiHomePresentationOwner.activateControlCenter(
+                    SysUiPresentationOwner.activateControlCenter(
                         host = statusArea,
                         statusIcons = statusIconGroup,
                         batteryContainer = statusArea,
@@ -686,7 +686,7 @@ internal object ControlCenterRenderSession {
                         },
                     )
             ) {
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Active -> {
+                is SysUiPresentationOwner.ControlCenterStateResult.Active -> {
                     setNativePresentationReady(
                         ready = true,
                         maskedViews = result.maskedViews,
@@ -695,7 +695,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Ready
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Prepared -> {
+                is SysUiPresentationOwner.ControlCenterStateResult.Prepared -> {
                     emitEvent {
                         "controlCenterProjection prearm state=prepared " +
                             "reused=" + reused +
@@ -705,7 +705,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Ready
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Failure -> {
+                is SysUiPresentationOwner.ControlCenterStateResult.Failure -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -714,7 +714,7 @@ internal object ControlCenterRenderSession {
                     AttachResult.Failure(result.reason)
                 }
 
-                is SystemUiHomePresentationOwner.ControlCenterStateResult.Inactive -> {
+                is SysUiPresentationOwner.ControlCenterStateResult.Inactive -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -895,7 +895,7 @@ internal object ControlCenterRenderSession {
                 )
             if (!retainNativePresentation) {
                 nativePresentationReady = false
-                SystemUiHomePresentationOwner.deactivateControlCenter(
+                SysUiPresentationOwner.deactivateControlCenter(
                     "projection-layout-unavailable-detached",
                 )
             }
@@ -963,7 +963,7 @@ internal object ControlCenterRenderSession {
             layoutReady = false
             nativePresentationReady = false
             renderView.visibility = View.GONE
-            SystemUiHomePresentationOwner.deactivateControlCenter(
+            SysUiPresentationOwner.deactivateControlCenter(
                 "fake-root-detached",
             )
             dispatchReadiness("detach")

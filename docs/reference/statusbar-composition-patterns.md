@@ -801,7 +801,7 @@ Use the existing native axes rather than a project-owned scene machine:
 
 1. **Source capability**
    - HyperOS selects `ControlCenterFakeViewController.realSystemIcons`.
-   - For the current implementation, compact transition is eligible only when that object is the Home `MiuiStatusBatteryContainer` already structurally owned by `SystemUiHomePresentationOwner`.
+   - For the current implementation, compact transition is eligible only when that object is the Home `MiuiStatusBatteryContainer` already structurally owned by `SysUiPresentationOwner`.
    - Do not add a generalized source registry before a second compact source (Keyguard) actually exists.
 
 2. **Transition surface activation**

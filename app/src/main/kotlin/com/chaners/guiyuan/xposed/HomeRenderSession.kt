@@ -354,7 +354,7 @@ internal object HomeRenderSession {
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentHomeRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.currentHomeRepresentedSlotOwnership(),
             )
         }
 

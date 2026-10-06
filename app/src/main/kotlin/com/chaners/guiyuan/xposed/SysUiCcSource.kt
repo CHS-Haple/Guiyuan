@@ -512,7 +512,7 @@ internal object SysUiCcSource {
                 ?: return SourceScene.UNKNOWN
         return classifySourceScene(
             homeIdentityMatches =
-                SystemUiHomePresentationOwner.ownsBatteryContainer(realSystemIcons),
+                SysUiPresentationOwner.ownsBatteryContainer(realSystemIcons),
             structuralScene =
                 SysUiSceneSource.steadySourceScene(realSystemIcons),
         )
