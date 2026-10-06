@@ -13,7 +13,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attach(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -30,7 +30,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attachAod(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -46,7 +46,7 @@ internal object KeyguardRenderSession {
         )
 
     private fun attachFamily(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         scene: Scene,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
@@ -275,7 +275,7 @@ internal object KeyguardRenderSession {
     }
 
     private class Session(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private var scene: Scene,
@@ -312,7 +312,7 @@ internal object KeyguardRenderSession {
                 layoutProbe()
             }
 
-        fun matches(resolved: SystemUiKeyguardHostResolver.ResolvedHost): Boolean =
+        fun matches(resolved: SysUiKeyguardHostResolver.ResolvedHost): Boolean =
             host.get() === resolved.host &&
                 systemIcons.get() === resolved.systemIcons &&
                 statusIcons.get() === resolved.statusIcons &&
@@ -603,7 +603,7 @@ internal object KeyguardRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
+                SysUiCarrierMetrics
                     .resolveCarrierWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false
