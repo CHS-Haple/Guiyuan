@@ -367,9 +367,9 @@ internal object KeyguardRenderSession {
             return TransitionSourceWitness(
                 renderView = render,
                 logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
+                logicalTopPx = render.currentViewportTopInsetPx(),
                 logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
+                logicalHeightPx = render.logicalViewportHeightPx(),
                 positionHost = systemIcons.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
@@ -589,7 +589,7 @@ internal object KeyguardRenderSession {
                         anchorRect.right + "," + anchorRect.bottom +
                         " logicalSize=" + anchorRect.width() + "x" + anchorRect.height() +
                         " physicalSize=" + renderView.width + "x" + renderView.height +
-                        " topOverflowPx=" + renderView.currentLogicalViewportTopInsetPx() +
+                        " topOverflowPx=" + renderView.currentViewportTopInsetPx() +
                         " nativeVisibilityInherited=true nativeAlphaInherited=true " +
                         "nativeTranslationInherited=true nativeGeometryWrites=0"
                 }

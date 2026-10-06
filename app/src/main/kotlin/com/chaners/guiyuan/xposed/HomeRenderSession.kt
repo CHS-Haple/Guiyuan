@@ -348,9 +348,9 @@ internal object HomeRenderSession {
             return TransitionSourceWitness(
                 renderView = render,
                 logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
+                logicalTopPx = render.currentViewportTopInsetPx(),
                 logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
+                logicalHeightPx = render.logicalViewportHeightPx(),
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
@@ -587,7 +587,7 @@ internal object HomeRenderSession {
                         anchorRect.right + "," + anchorRect.bottom +
                         " logicalSize=" + anchorRect.width() + "x" + anchorRect.height() +
                         " physicalSize=" + probeView.width + "x" + probeView.height +
-                        " topOverflowPx=" + probeView.currentLogicalViewportTopInsetPx() +
+                        " topOverflowPx=" + probeView.currentViewportTopInsetPx() +
                         " opacity=" + RENDER_OPACITY +
                         " nativeVisibilityInherited=true nativeAlphaInherited=true " +
                         "originalsHidden=false nativeGeometryWrites=0"

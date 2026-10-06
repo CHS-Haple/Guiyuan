@@ -507,13 +507,13 @@ class GyModule : XposedModule() {
             )
 
             PanelTransitionSource.restoreCcHomeEligibility(
-                restored.ccHomeEligible,
+                restored.controlCenterHomeEligible,
             )
             val controlCenterFakeRestore =
                 restored.controlCenterFakeHost?.let { fakeHost ->
                     restoreCcAfterReload(
                         host = fakeHost,
-                        transferredCompactReady = restored.ccCompactReady,
+                        transferredCompactReady = restored.controlCenterCompactReady,
                     )
                 } ?: "late-fallback"
             val transferredTint =
@@ -542,7 +542,7 @@ class GyModule : XposedModule() {
                 "state" to restoredSnapshot.logLine,
                 "homePresentation" to "native-carrier-lifecycle",
                 "controlCenterHomeEligible" to
-                    (restored.ccHomeEligible ?: "unknown"),
+                    (restored.controlCenterHomeEligible ?: "unknown"),
                 "controlCenterFakePrearm" to controlCenterFakeRestore,
                 "tintTransfer" to if (transferredTint != null) "restored" else "native-fallback",
                 "mainThread" to true,
@@ -1105,7 +1105,7 @@ class GyModule : XposedModule() {
             lastBatteryProbeSummary == null
         ) {
             val batteryNumberProbe =
-                CcTransition.latestBatteryNumberProbeDiagnostic()
+                CcTransition.latestBatteryProbe()
             if (batteryNumberProbe != null) {
                 lastBatteryProbeSummary = batteryNumberProbe
                 logDiagnostic(
@@ -1803,7 +1803,7 @@ class GyModule : XposedModule() {
                     "boundRoots" to presentation.boundRoots,
                     "visibleRoots" to presentation.visibleRoots,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
-                    "presentationRootSubId" to presentation.presentationRootSubscriptionId,
+                    "presentationRootSubId" to presentation.rootSubId,
                     "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
                     "networkTypeSubId" to presentation.networkTypeSubscriptionId,
                     "networkType" to presentation.networkType?.label,
