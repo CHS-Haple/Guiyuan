@@ -38,7 +38,7 @@ internal object HomeRenderSession {
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
             ?: return AttachResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(batteryView)
+            SysUiCarrierMetrics.resolveView(batteryView)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
 
         val existing = current
@@ -652,8 +652,8 @@ internal object HomeRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
-                    .resolveCarrierWidthPx(carrier)
+                SysUiCarrierMetrics
+                    .resolveWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false
             if (

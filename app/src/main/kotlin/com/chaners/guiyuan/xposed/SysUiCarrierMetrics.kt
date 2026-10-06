@@ -3,11 +3,12 @@ package com.chaners.guiyuan.xposed
 import android.view.View
 import android.view.ViewGroup
 
-internal object SystemUiHomeCarrierMetrics {
+internal object SysUiCarrierMetrics {
+    // This battery-carrier contract is shared by Home, Keyguard and QS_FAKE.
     private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
     private const val CARRIER_ID_NAME = "battery_icon_container"
 
-    fun resolveCarrierView(anchor: View): View? {
+    fun resolveView(anchor: View): View? {
         val group = anchor as? ViewGroup ?: return null
         val resourceId =
             anchor.resources.getIdentifier(
@@ -22,7 +23,8 @@ internal object SystemUiHomeCarrierMetrics {
             ?.takeIf { candidate -> candidate !== anchor }
     }
 
-    fun resolveCarrierWidthPx(carrier: View): Int? =
+    // Width can be transient mid-layout, so use the stable native child width.
+    fun resolveWidthPx(carrier: View): Int? =
         NativeStatusBarSlotGeometry.resolveStableChildWidth(
             layoutWidth = carrier.width,
             measuredWidth = carrier.measuredWidth,

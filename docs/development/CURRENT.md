@@ -24,16 +24,18 @@
 
 ## Active objective
 
-PR #238 is integrated and its work branch is closed. The current objective is a broader maintainability review from live `dev`: continue only where a name, comment, structure, or dead indirection has a clear maintenance benefit, and group adjacent behavior-neutral cleanup under one review/validation boundary instead of opening serial micro-PRs.
+The active work is `refactor/maintainability-sysui-helpers`, a behavior-neutral cleanup of the small SystemUI integration helpers around host capture, native carrier geometry, island observation, and Keyguard host resolution.
 
-The recent Keyguard / Control Center performance line remains **closed at Build 744**. Build 745 is a rejected experiment and must not be restored without new reproducible evidence.
+This batch fixes names where responsibility or scope was misleading: the host hook is not a runtime owner, the carrier helper is shared across Home / Keyguard / QS fake rather than Home-only, and the remaining helper types use the established `SysUi` form. It also replaces stale or overly formal source comments with short maintenance notes that explain real ownership, lifecycle, and platform constraints.
+
+Runtime strings, persisted keys, Hook IDs, reflection/resource targets, diagnostics schema, source ownership, mutable writers, and behavior remain unchanged. Build identity stays at 746; no device evidence is required while the diff remains behavior-neutral.
 
 Current priorities:
 
-1. audit the remaining runtime integration layer for misleading responsibility names, unnecessary indirection, stale comments, and avoidable verbosity before choosing the next coherent batch;
-2. preserve real ownership/lifecycle terms and all persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities;
-3. keep Build identity at 746 for behavior-neutral maintenance;
-4. reopen performance work only for a concrete regression, reproducible hotspot, or new root-cause evidence.
+1. complete the helper rename/comment pass with full base→HEAD review and automated validation;
+2. keep comments concise, natural, and useful to the next maintainer rather than documenting obvious code or old Build history;
+3. preserve real `Owner` / `Source` / `Probe` / `Resolver` responsibility terms where they still carry meaning;
+4. keep the closed performance line closed unless new reproducible evidence appears.
 
 ## Non-negotiable bounds
 
@@ -48,7 +50,7 @@ Current priorities:
 ## Immediate next
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
-- Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
-- Audit from the live `dev` tree first; start one coherent work branch only after the next maintenance boundary is clear.
-- Request device evidence only if a later diff can plausibly affect runtime behavior.
+- Finish `refactor/maintainability-sysui-helpers` with stale-name/comment review and automated validation before integration.
+- Do not request Canary/device testing unless a later edit crosses into runtime behavior.
+- After integration, close the active branch reference in CURRENT before starting another maintenance batch.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

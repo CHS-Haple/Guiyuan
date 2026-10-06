@@ -4,21 +4,21 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiKeyguardHostProbeTest {
+class SysUiKeyguardHostProbeTest {
     @Test
     fun probeRunsOnlyForKeyguardSurface() {
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldProbe(
+            SysUiKeyguardHostProbe.shouldProbe(
                 SysUiSceneSource.Surface.KEYGUARD,
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldProbe(
+            SysUiKeyguardHostProbe.shouldProbe(
                 SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR,
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldProbe(
+            SysUiKeyguardHostProbe.shouldProbe(
                 SysUiSceneSource.Surface.SHADE_LOCKED,
             ),
         )
@@ -27,12 +27,12 @@ class SystemUiKeyguardHostProbeTest {
     @Test
     fun hostGuardAcceptsOnlyPinnedMiuiKeyguardHost() {
         assertTrue(
-            SystemUiKeyguardHostProbe.isKeyguardHostClassName(
+            SysUiKeyguardHostProbe.isHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.isKeyguardHostClassName(
+            SysUiKeyguardHostProbe.isHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
             ),
         )
@@ -41,7 +41,7 @@ class SystemUiKeyguardHostProbeTest {
     @Test
     fun sampleFreezesOnlyAfterPositiveReadyTopology() {
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            SysUiKeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -50,7 +50,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            SysUiKeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -59,7 +59,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            SysUiKeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 0,
@@ -68,7 +68,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            SysUiKeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -77,7 +77,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            SysUiKeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,

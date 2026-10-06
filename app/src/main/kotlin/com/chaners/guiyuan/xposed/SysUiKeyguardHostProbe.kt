@@ -6,16 +6,11 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
 /**
- * Build-442 bounded diagnostic probe for the steady Keyguard source host.
- *
- * No Hook/listener/observer is installed here. The probe only consumes the
- * existing MiuiBatteryMeterView.updateState() scene event. A positive-ready
- * topology freezes one concrete host; partial/negative samples remain retryable
- * on later native Keyguard scene transitions. The Control Center
- * realSystemIcons selector is recorded as context only: steady Keyguard host
- * readiness must not wait for that transition router to select the same carrier.
+ * Diagnostic only. It reuses the scene callback; no extra hook.
+ * Once a host is complete, don't resample the same instance on every callback.
+ * CC `realSystemIcons` is context only; it doesn't decide Keyguard readiness.
  */
-internal object SystemUiKeyguardHostProbe {
+internal object SysUiKeyguardHostProbe {
     private const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
 
@@ -34,7 +29,7 @@ internal object SystemUiKeyguardHostProbe {
         val statusIcons = readView(host, "mStatusIconContainer")
         val battery = readView(host, "mBatteryView")
         val batteryCarrier =
-            battery?.let(SystemUiHomeCarrierMetrics::resolveCarrierView)
+            battery?.let(SysUiCarrierMetrics::resolveView)
 
         val dependency = readValue(host, "mDep")
         val ccFake = dependency?.let { readValue(it, "ccFake") }
@@ -49,7 +44,7 @@ internal object SystemUiKeyguardHostProbe {
                 selectedRealSystemIcons === systemIcons
             }
         val batteryCarrierWidthPx =
-            batteryCarrier?.let(SystemUiHomeCarrierMetrics::resolveCarrierWidthPx)
+            batteryCarrier?.let(SysUiCarrierMetrics::resolveWidthPx)
         val complete =
             shouldFreezeSample(
                 hostAttached = host.isAttachedToWindow,
@@ -82,7 +77,7 @@ internal object SystemUiKeyguardHostProbe {
     internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD
 
-    internal fun isKeyguardHostClassName(className: String): Boolean =
+    internal fun isHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
 
     internal fun shouldFreezeSample(

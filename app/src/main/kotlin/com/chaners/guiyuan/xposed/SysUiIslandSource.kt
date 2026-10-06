@@ -4,9 +4,8 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiIslandMotionSource {
+internal object SysUiIslandSource {
     const val HOOK_COUNT = 1
-
 
     private const val LISTENER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.shared.ui.binder.HomeStatusBarViewBinderInjector\$islandListener\$1"
@@ -70,8 +69,9 @@ internal object SystemUiIslandMotionSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id == HOOK_ID
 
+    // Observation only; SystemUI still owns island motion.
     @Synchronized
-    fun currentIslandShowing(): Boolean? = islandShowing
+    fun currentShowing(): Boolean? = islandShowing
 
     fun resetRuntimeState() {
         synchronized(this) {
@@ -79,7 +79,4 @@ internal object SystemUiIslandMotionSource {
             lastDiagnosticShowing = null
         }
     }
-
-
-
 }

@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
-internal object SystemUiKeyguardHostResolver {
+internal object SysUiKeyguardHostResolver {
     private const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
     private const val STATUS_ICON_CONTAINER_CLASS =
@@ -16,6 +16,7 @@ internal object SystemUiKeyguardHostResolver {
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     private const val TO_LOCK_SCREEN_FIELD = "mToLockScreen"
 
+    // SystemUI may replace the Keyguard host; don't keep the old source alive.
     private var lastSourceView: WeakReference<View>? = null
     private var lastSurface = SysUiSceneSource.Surface.UNKNOWN
     private var lastRawState = Int.MIN_VALUE
@@ -50,13 +51,13 @@ internal object SystemUiKeyguardHostResolver {
         )
     }
 
-    internal fun isSteadyKeyguardSurface(
+    internal fun isSteadySurface(
         surface: SysUiSceneSource.Surface,
     ): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD ||
             surface == SysUiSceneSource.Surface.SHADE_LOCKED
 
-    internal fun isKeyguardHostClassName(className: String): Boolean =
+    internal fun isHostClassName(className: String): Boolean =
         className == KEYGUARD_HOST_CLASS
 
     internal fun nativeToLockScreenTarget(
@@ -100,7 +101,7 @@ internal object SystemUiKeyguardHostResolver {
         surface: SysUiSceneSource.Surface,
         rawState: Int,
     ): ResolveResult {
-        if (!isSteadyKeyguardSurface(surface)) {
+        if (!isSteadySurface(surface)) {
             return ResolveResult.Inactive(surface)
         }
 
@@ -131,12 +132,13 @@ internal object SystemUiKeyguardHostResolver {
         if (battery.javaClass.name != BATTERY_VIEW_CLASS) {
             return ResolveResult.Failure("keyguard-battery-type-mismatch")
         }
+        // The scene callback's battery is the anchor. Don't borrow one from another host.
         if (battery !== sourceView) {
             return ResolveResult.Failure("keyguard-battery-source-mismatch")
         }
 
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(battery)
+            SysUiCarrierMetrics.resolveView(battery)
                 ?: return ResolveResult.Failure("keyguard-battery-core-carrier-missing")
 
         return ResolveResult.Ready(
