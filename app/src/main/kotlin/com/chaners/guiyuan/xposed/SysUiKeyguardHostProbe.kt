@@ -29,7 +29,7 @@ internal object SysUiKeyguardHostProbe {
         val statusIcons = readView(host, "mStatusIconContainer")
         val battery = readView(host, "mBatteryView")
         val batteryCarrier =
-            battery?.let(SysUiCarrierMetrics::resolveCarrierView)
+            battery?.let(SysUiCarrierMetrics::resolveView)
 
         val dependency = readValue(host, "mDep")
         val ccFake = dependency?.let { readValue(it, "ccFake") }
@@ -44,7 +44,7 @@ internal object SysUiKeyguardHostProbe {
                 selectedRealSystemIcons === systemIcons
             }
         val batteryCarrierWidthPx =
-            batteryCarrier?.let(SysUiCarrierMetrics::resolveCarrierWidthPx)
+            batteryCarrier?.let(SysUiCarrierMetrics::resolveWidthPx)
         val complete =
             shouldFreezeSample(
                 hostAttached = host.isAttachedToWindow,
