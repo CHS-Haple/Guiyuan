@@ -21,7 +21,7 @@ internal val NavStyle.requiresTextureBackdrop: Boolean
 @Composable
 internal fun Modifier.floatingNavMaterial(
     backdrop: Backdrop,
-    darkMode: Boolean,
+    dark: Boolean,
     style: NavStyle,
 ): Modifier {
     if (style == NavStyle.Standard) return this
@@ -44,7 +44,7 @@ internal fun Modifier.floatingNavMaterial(
             ),
         highlight =
             if (style == NavStyle.Glass) {
-                if (darkMode) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
+                if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
             } else {
                 null
             },

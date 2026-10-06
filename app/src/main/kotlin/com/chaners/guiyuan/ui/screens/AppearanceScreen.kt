@@ -27,10 +27,10 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.appearance.ThemeMode
-import com.chaners.guiyuan.appearance.Appearance
-import com.chaners.guiyuan.appearance.NavContent
-import com.chaners.guiyuan.appearance.NavStyle
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
@@ -88,7 +88,7 @@ internal fun AppearanceScreen(
     SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
         item {
             AppearanceThemePreview(
-                settings = settings,
+                appearance = appearance,
                 dark = dark,
             )
         }
@@ -209,7 +209,7 @@ private fun AppearanceThemePreview(
             )
 
             AppearanceMiniPreview(
-                settings = settings,
+                appearance = appearance,
                 dark = dark,
             )
         }

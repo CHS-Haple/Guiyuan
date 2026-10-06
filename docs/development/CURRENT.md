@@ -24,6 +24,8 @@
 
 ## Active objective
 
+The active work is `refactor/maintainability`, a behavior-neutral maintainability pass from the synchronized `dev` baseline. It shortens internal Kotlin names, removes proven dead helpers or indirection, and adds sparse maintenance comments. Persisted preference keys, protocol/log schema strings, reflection/resource/Xposed identities, runtime ownership/lifecycle, and user-visible behavior remain unchanged. Build identity stays at 746; device evidence is not required unless a later change can plausibly affect runtime behavior.
+
 The recent Keyguard / Control Center performance line is **closed at Build 744**. Guiyuan 0.2.1 / Build 746 is the promoted maintenance checkpoint and does not reopen that runtime line.
 
 Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
@@ -32,9 +34,9 @@ Normal development may continue from the current `dev` state. Performance work s
 
 Current priorities:
 
-1. continue normal product, UI, compatibility and maintenance work from the synchronized 0.2.1 stable/integration baseline;
+1. finish the current behavior-neutral maintainability pass with complete base→HEAD review and automated validation before integration;
 2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
-3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
+3. preserve persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities while allowing behavior-neutral internal Kotlin symbol shortening;
 4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
 
 ## Non-negotiable bounds
@@ -51,5 +53,6 @@ Current priorities:
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
 - Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
+- Complete `refactor/maintainability` review and automated validation before integrating it into `dev`; request device evidence only if runtime-affecting behavior enters the diff.
 - Start subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

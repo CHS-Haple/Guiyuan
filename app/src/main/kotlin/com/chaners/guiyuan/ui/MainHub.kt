@@ -23,8 +23,8 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.appearance.AppLang
-import com.chaners.guiyuan.appearance.Appearance
+import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop

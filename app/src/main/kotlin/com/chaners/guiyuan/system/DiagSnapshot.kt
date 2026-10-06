@@ -19,17 +19,20 @@ internal data class DiagSnapshot(
         // Capture once so the screen and exported report describe the same runtime session.
         suspend fun capture(context: Context): DiagSnapshot {
             val appCtx = context.applicationContext
+            val env = RuntimeEnv.resolve(appCtx)
+            val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read()
             val entries =
                 withContext(Dispatchers.Default) {
                     log.sessionLines.map(DiagLogParser::parse)
                 }
+            val health = RuntimeHealthSnapshot.fromLines(log.sessionLines)
 
             return DiagSnapshot(
-                env = RuntimeEnv.resolve(appCtx),
-                level = DiagRepo(appCtx).current(),
+                env = env,
+                level = level,
                 log = log,
-                health = RuntimeHealthSnapshot.fromLines(log.sessionLines),
+                health = health,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
             )
