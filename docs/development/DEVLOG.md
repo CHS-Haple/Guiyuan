@@ -5137,4 +5137,10 @@ No display-version or Build bump is made. The accepted ownership model, native g
 
 The full-AOD state refactor received a direct old-vs-new lifecycle review. One subtle missing-host difference was found during review and corrected before CI: when the Keyguard host cannot be resolved, the cached Home-at-start ownership snapshot is invalidated just as in the previous implementation.
 
-Next gate: complete the full branch diff review and run exact-head CI once at the coherent checkpoint. Device evidence is only requested if the final diff leaves a runtime question that static review and CI cannot settle.
+### Closeout
+
+- PR #248 passed exact-head Full CI #2879 at head `c5fe296`: target-profile verification, Kotlin compilation, unit tests, required APK variants, Modern Xposed metadata and non-debuggable validation all passed.
+- Compiler warnings match the existing Build 746 baseline; this batch did not introduce a new warning class.
+- PR #248 was squash-merged to `dev` as `6f7c3a1`.
+- No Canary/device gate is required because the remaining questions were resolved by source-level lifecycle comparison and automated validation.
+- `main` remains unchanged; version 0.2.1 and Build 746 are not bumped by this maintenance batch.
