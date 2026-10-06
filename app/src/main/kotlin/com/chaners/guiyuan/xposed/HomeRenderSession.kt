@@ -38,7 +38,7 @@ internal object HomeRenderSession {
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
             ?: return AttachResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SysUiCarrierMetrics.resolveCarrierView(batteryView)
+            SysUiCarrierMetrics.resolveView(batteryView)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
 
         val existing = current
