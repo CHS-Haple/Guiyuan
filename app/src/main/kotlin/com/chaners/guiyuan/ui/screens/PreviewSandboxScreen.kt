@@ -66,7 +66,7 @@ internal fun PreviewSandboxScreen(
     val context = LocalContext.current
     val resourceResolver =
         remember(context.applicationContext) {
-            PreviewSystemUiResourceResolver(context.applicationContext)
+            PreviewResourceResolver(context.applicationContext)
         }
     val visualRepository =
         remember(context.applicationContext) {

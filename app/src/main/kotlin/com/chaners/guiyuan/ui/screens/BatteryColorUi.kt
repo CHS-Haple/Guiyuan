@@ -17,11 +17,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
-import com.chaners.guiyuan.settings.BatteryColorSchemeEntry
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeSource
-import com.chaners.guiyuan.settings.BatteryCustomColorScheme
+import com.chaners.guiyuan.settings.BuiltInBatteryScheme
+import com.chaners.guiyuan.settings.BatterySchemeEntry
+import com.chaners.guiyuan.settings.BatterySchemeLibrary
+import com.chaners.guiyuan.settings.BatterySchemeSource
+import com.chaners.guiyuan.settings.CustomBatteryScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
@@ -189,48 +189,48 @@ internal fun BatteryColorMosaic(
 
 @Composable
 internal fun batterySchemeDisplayName(
-    library: BatteryColorSchemeLibrary,
+    library: BatterySchemeLibrary,
     key: String,
 ): String =
-    BatteryBuiltInColorScheme.fromKey(key)?.let { batteryBuiltInName(it) }
+    BuiltInBatteryScheme.fromKey(key)?.let { batteryBuiltInName(it) }
         ?: library.customByKey(key)?.let { customSchemeName(it) }
-        ?: batteryBuiltInName(BatteryBuiltInColorScheme.HYPEROS)
+        ?: batteryBuiltInName(BuiltInBatteryScheme.HYPEROS)
 
 @Composable
-internal fun batteryBuiltInName(scheme: BatteryBuiltInColorScheme): String =
+internal fun batteryBuiltInName(scheme: BuiltInBatteryScheme): String =
     when (scheme) {
-        BatteryBuiltInColorScheme.HYPEROS ->
+        BuiltInBatteryScheme.HYPEROS ->
             stringResource(R.string.battery_color_preset_hyperos)
-        BatteryBuiltInColorScheme.IOS ->
+        BuiltInBatteryScheme.IOS ->
             stringResource(R.string.battery_color_preset_ios)
-        BatteryBuiltInColorScheme.LOW_SATURATION ->
+        BuiltInBatteryScheme.LOW_SATURATION ->
             stringResource(R.string.battery_color_preset_recommended)
     }
 
 @Composable
-internal fun customSchemeName(scheme: BatteryCustomColorScheme): String =
+internal fun customSchemeName(scheme: CustomBatteryScheme): String =
     scheme.name.ifBlank {
         stringResource(R.string.battery_custom_scheme_default_name, scheme.id)
     }
 
 @Composable
-internal fun batterySourceLabel(source: BatteryColorSchemeSource): String =
+internal fun batterySourceLabel(source: BatterySchemeSource): String =
     when (source) {
-        BatteryColorSchemeSource.HYPEROS ->
+        BatterySchemeSource.HYPEROS ->
             stringResource(R.string.battery_color_preset_hyperos)
-        BatteryColorSchemeSource.IOS ->
+        BatterySchemeSource.IOS ->
             stringResource(R.string.battery_color_preset_ios)
-        BatteryColorSchemeSource.LOW_SATURATION ->
+        BatterySchemeSource.LOW_SATURATION ->
             stringResource(R.string.battery_color_preset_recommended)
-        BatteryColorSchemeSource.FOLLOW_SYSTEM ->
+        BatterySchemeSource.FOLLOW_SYSTEM ->
             stringResource(R.string.battery_color_follow_inversion)
-        BatteryColorSchemeSource.CUSTOM ->
+        BatterySchemeSource.CUSTOM ->
             stringResource(R.string.battery_color_source_custom)
     }
 
 @Composable
 private fun batterySourceValue(
-    entry: BatteryColorSchemeEntry,
+    entry: BatterySchemeEntry,
     slot: BatteryColorSlot,
 ): String =
     batterySchemeEntryColor(entry, slot)?.let(::batteryColorHex)
@@ -248,14 +248,14 @@ internal fun batteryColorSlotLabel(slot: BatteryColorSlot): Int =
     }
 
 internal fun schemePageForKey(
-    library: BatteryColorSchemeLibrary,
+    library: BatterySchemeLibrary,
     key: String,
 ): BatterySchemePage? =
-    BatteryBuiltInColorScheme.fromKey(key)?.let { BatterySchemePage.BuiltIn(it) }
+    BuiltInBatteryScheme.fromKey(key)?.let { BatterySchemePage.BuiltIn(it) }
         ?: library.customByKey(key)?.let { BatterySchemePage.Custom(it) }
 
 internal fun batteryColorEditorSeed(
-    entry: BatteryColorSchemeEntry,
+    entry: BatterySchemeEntry,
     slot: BatteryColorSlot,
 ): Int? =
     batterySchemeEntryColor(entry, slot)

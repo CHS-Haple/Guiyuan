@@ -75,7 +75,7 @@ internal data class PreviewSandboxUiState(
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
 }
 
-internal class PreviewSystemUiResourceResolver(
+internal class PreviewResourceResolver(
     context: Context,
 ) {
     private val resources: Resources? =
@@ -137,7 +137,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
     }
 
 internal fun PreviewSandboxUiState.toRenderModel(
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewResourceResolver,
 ): RenderModel {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
@@ -244,7 +244,7 @@ internal fun previewWifiResourceNames(
     }
 
 private fun previewWifiResourceId(
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewResourceResolver,
     state: PreviewWifiState,
     level: Int,
 ): Int? =
@@ -273,7 +273,7 @@ internal fun previewChargingResourceNames(
     }
 
 private fun previewChargingResourceId(
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewResourceResolver,
     state: PreviewChargingState,
 ): Int? {
     val names = previewChargingResourceNames(state)
@@ -282,7 +282,7 @@ private fun previewChargingResourceId(
 }
 
 private fun previewBatterySemanticColor(
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewResourceResolver,
     batteryMode: PreviewBatteryMode,
     chargingState: PreviewChargingState,
     semanticState: BatterySemanticState,

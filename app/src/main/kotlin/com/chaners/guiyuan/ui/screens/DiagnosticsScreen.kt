@@ -54,7 +54,7 @@ import com.chaners.guiyuan.system.DiagnosticLogCategory
 import com.chaners.guiyuan.system.DiagnosticLogEntry
 import com.chaners.guiyuan.system.DiagnosticLogLevel
 import com.chaners.guiyuan.system.DiagnosticsSnapshot
-import com.chaners.guiyuan.system.DiagnosticsSnapshotProvider
+import com.chaners.guiyuan.system.DiagnosticsCapture
 import com.chaners.guiyuan.system.DiagnosticsReportBuilder
 import com.chaners.guiyuan.system.DiagnosticsReportFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
@@ -170,7 +170,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     LaunchedEffect(refreshGeneration) {
         loading = true
         try {
-            snapshot = DiagnosticsSnapshotProvider.capture(context.applicationContext)
+            snapshot = DiagnosticsCapture.capture(context.applicationContext)
             expandedKey = null
             viewCleared = false
         } finally {

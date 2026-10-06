@@ -37,7 +37,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureSettingsRepo
 import com.chaners.guiyuan.settings.VisualSettings
 import com.chaners.guiyuan.settings.VisualSettingsRepo
-import com.chaners.guiyuan.system.XposedRuntimeStatus
+import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -113,7 +113,7 @@ internal fun HomeScreen(
         application.xposedRuntimeStatus.collectAsState()
     val previewResources =
         remember(context.applicationContext) {
-            PreviewSystemUiResourceResolver(context.applicationContext)
+            PreviewResourceResolver(context.applicationContext)
         }
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -192,7 +192,7 @@ internal fun HomeScreen(
 @Composable
 private fun HomeRuntimeStatusCard(
     enabled: Boolean,
-    runtimeStatus: XposedRuntimeStatus,
+    runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -305,7 +305,7 @@ private fun HomeRuntimeStatusCard(
 @Composable
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewResourceResolver,
     visualSettings: VisualSettings,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
@@ -451,7 +451,7 @@ private fun RuntimeStatusMark(
 
 private fun resolveHomeRuntimeCardState(
     enabled: Boolean,
-    runtimeStatus: XposedRuntimeStatus,
+    runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
 ): HomeRuntimeCardState {
     if (!enabled) {
@@ -473,7 +473,7 @@ private fun resolveHomeRuntimeCardState(
     }
 
     return when (runtimeStatus) {
-        XposedRuntimeStatus.Checking ->
+        XposedStatus.Checking ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_checking,
                 summaryRes = R.string.home_runtime_checking_summary,
@@ -481,7 +481,7 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        XposedRuntimeStatus.FrameworkUnavailable ->
+        XposedStatus.FrameworkUnavailable ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_framework_unavailable,
                 summaryRes = R.string.home_runtime_framework_unavailable_summary,
@@ -489,7 +489,7 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        XposedRuntimeStatus.QueryUnavailable ->
+        XposedStatus.QueryUnavailable ->
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_unknown,
                 summaryRes = R.string.home_runtime_unknown_summary,
@@ -497,7 +497,7 @@ private fun resolveHomeRuntimeCardState(
                 mark = RuntimeStatusMarkKind.Alert,
             )
 
-        is XposedRuntimeStatus.Connected ->
+        is XposedStatus.Connected ->
             when {
                 !runtimeStatus.systemUiInScope ->
                     HomeRuntimeCardState(

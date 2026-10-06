@@ -60,7 +60,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
+import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.FeatureSettingsRepo
 import com.chaners.guiyuan.settings.VisualSettingsRepo
@@ -70,7 +70,7 @@ import com.chaners.guiyuan.settings.batteryTopTextUiScale
 import com.chaners.guiyuan.settings.batteryTopTextUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
 import com.chaners.guiyuan.settings.mobileTypeSizeScaleDefault
-import com.chaners.guiyuan.system.SystemUiScopeController
+import com.chaners.guiyuan.system.SystemUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -116,7 +116,7 @@ internal fun FeaturesScreen(
         )
     val batteryColorSchemeRepository =
         remember(context.applicationContext) {
-            BatteryColorSchemeLibraryRepository(context.applicationContext)
+            BatterySchemeRepo(context.applicationContext)
         }
     val batteryColorSchemeLibrary by
         batteryColorSchemeRepository.library.collectAsState(
@@ -584,7 +584,7 @@ internal fun SettingsHubScreen(
                         restartAfterDialogDismiss = false
                         restartInProgress = true
                         scope.launch {
-                            val success = SystemUiScopeController.restart()
+                            val success = SystemUiScope.restart()
                             restartInProgress = false
                             if (!success) {
                                 showRestartFailure = true

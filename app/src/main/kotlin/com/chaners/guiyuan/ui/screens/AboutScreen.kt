@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.system.RuntimeEnvironmentInfo
+import com.chaners.guiyuan.system.RuntimeEnv
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -54,10 +54,10 @@ internal fun AboutScreen(
     val uriHandler = LocalUriHandler.current
     val environment by
         produceState(
-            initialValue = RuntimeEnvironmentInfo.basic(),
+            initialValue = RuntimeEnv.basic(),
             key1 = context.applicationContext,
         ) {
-            value = RuntimeEnvironmentInfo.resolve(context.applicationContext)
+            value = RuntimeEnv.resolve(context.applicationContext)
         }
 
     SettingsPage(

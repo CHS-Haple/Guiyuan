@@ -25,8 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BatteryColorSchemeSource
-import com.chaners.guiyuan.settings.BatteryCustomColorScheme
+import com.chaners.guiyuan.settings.BatterySchemeSource
+import com.chaners.guiyuan.settings.CustomBatteryScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitBatteryCustomSchemeNameInput
@@ -49,25 +49,25 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun BatteryCustomModeEditor(
-    custom: BatteryCustomColorScheme,
+    custom: CustomBatteryScheme,
     slot: BatteryColorSlot,
-    onSourceChange: (BatteryColorSchemeSource) -> Unit,
+    onSourceChange: (BatterySchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {
     val entry = custom.entries.entryFor(slot)
     val resolved = batterySchemeEntryColor(entry, slot)
-    val sourceOptions = BatteryColorSchemeSource.entries
+    val sourceOptions = BatterySchemeSource.entries
     val sourceLabels =
         listOf(
-            batterySourceLabel(BatteryColorSchemeSource.HYPEROS),
-            batterySourceLabel(BatteryColorSchemeSource.IOS),
-            batterySourceLabel(BatteryColorSchemeSource.LOW_SATURATION),
-            batterySourceLabel(BatteryColorSchemeSource.FOLLOW_SYSTEM),
-            batterySourceLabel(BatteryColorSchemeSource.CUSTOM),
+            batterySourceLabel(BatterySchemeSource.HYPEROS),
+            batterySourceLabel(BatterySchemeSource.IOS),
+            batterySourceLabel(BatterySchemeSource.LOW_SATURATION),
+            batterySourceLabel(BatterySchemeSource.FOLLOW_SYSTEM),
+            batterySourceLabel(BatterySchemeSource.CUSTOM),
         )
     val selectedSourceIndex = sourceOptions.indexOf(entry.source).coerceAtLeast(0)
     val seed = batteryColorEditorSeed(entry, slot)
-    val visuallyInactive = entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM
+    val visuallyInactive = entry.source == BatterySchemeSource.FOLLOW_SYSTEM
 
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
@@ -108,7 +108,7 @@ internal fun BatteryCustomModeEditor(
     val currentValueText =
         when {
             resolved != null -> batteryColorHex(resolved)
-            entry.source == BatteryColorSchemeSource.CUSTOM ->
+            entry.source == BatterySchemeSource.CUSTOM ->
                 stringResource(R.string.battery_color_custom_unset)
             else -> stringResource(R.string.battery_color_follow_inversion)
         }
@@ -190,7 +190,7 @@ internal fun BatteryCustomModeEditor(
                         BatteryCommonColorButton(
                             color = color,
                             selected =
-                                entry.source == BatteryColorSchemeSource.CUSTOM &&
+                                entry.source == BatterySchemeSource.CUSTOM &&
                                     editingColor == color,
                             visuallyInactive = visuallyInactive,
                             onClick = { applyColor(color) },
@@ -427,7 +427,7 @@ internal fun BatteryCreateSchemeDialog(
 
 @Composable
 internal fun BatteryRenameSchemeDialog(
-    scheme: BatteryCustomColorScheme?,
+    scheme: CustomBatteryScheme?,
     onDismiss: () -> Unit,
     onRename: (Int, String) -> Unit,
 ) {

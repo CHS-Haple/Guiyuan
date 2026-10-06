@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
-import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
-import com.chaners.guiyuan.settings.BatteryCustomColorScheme
+import com.chaners.guiyuan.settings.BuiltInBatteryScheme
+import com.chaners.guiyuan.settings.BatterySchemeLibrary
+import com.chaners.guiyuan.settings.BatterySchemeRepo
+import com.chaners.guiyuan.settings.CustomBatteryScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -62,13 +62,13 @@ internal sealed interface BatterySchemePage {
     val key: String
 
     data class BuiltIn(
-        val scheme: BatteryBuiltInColorScheme,
+        val scheme: BuiltInBatteryScheme,
     ) : BatterySchemePage {
         override val key: String = scheme.key
     }
 
     data class Custom(
-        val scheme: BatteryCustomColorScheme,
+        val scheme: CustomBatteryScheme,
     ) : BatterySchemePage {
         override val key: String = scheme.key
     }
@@ -80,7 +80,7 @@ internal sealed interface BatterySchemePage {
 
 @Composable
 internal fun BatteryColorPreference(
-    library: BatteryColorSchemeLibrary,
+    library: BatterySchemeLibrary,
     enabled: Boolean,
     holdDownState: Boolean,
     onClick: () -> Unit,
@@ -106,8 +106,8 @@ internal fun BatteryColorPreference(
 @Composable
 internal fun BatteryColorBottomSheet(
     show: Boolean,
-    library: BatteryColorSchemeLibrary,
-    repository: BatteryColorSchemeLibraryRepository,
+    library: BatterySchemeLibrary,
+    repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
     var selectedCustomId by remember { mutableStateOf<Int?>(null) }

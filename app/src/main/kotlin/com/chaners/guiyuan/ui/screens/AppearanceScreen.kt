@@ -29,9 +29,9 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppThemeMode
 import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
-import com.chaners.guiyuan.ui.components.FloatingNavigationContentItem
+import com.chaners.guiyuan.settings.FloatingNavContent
+import com.chaners.guiyuan.settings.FloatingNavStyle
+import com.chaners.guiyuan.ui.components.FloatingNavItem
 import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
@@ -63,8 +63,8 @@ internal fun AppearanceScreen(
     onThemeModeChange: (AppThemeMode) -> Unit,
     onDynamicColorEnabledChange: (Boolean) -> Unit,
     onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationStyleChange: (FloatingNavigationStyle) -> Unit,
-    onFloatingNavigationContentChange: (FloatingNavigationContent) -> Unit,
+    onFloatingNavStyleChange: (FloatingNavStyle) -> Unit,
+    onFloatingNavContentChange: (FloatingNavContent) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -151,9 +151,9 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationStyle.entries.getOrNull(index)?.let { style ->
+                        FloatingNavStyle.entries.getOrNull(index)?.let { style ->
                             if (style != settings.floatingNavigationStyle) {
-                                onFloatingNavigationStyleChange(style)
+                                onFloatingNavStyleChange(style)
                             }
                         }
                     },
@@ -170,9 +170,9 @@ internal fun AppearanceScreen(
                     },
                     showValue = true,
                     onSelectedIndexChange = { index ->
-                        FloatingNavigationContent.entries.getOrNull(index)?.let { content ->
+                        FloatingNavContent.entries.getOrNull(index)?.let { content ->
                             if (content != settings.floatingNavigationContent) {
-                                onFloatingNavigationContentChange(content)
+                                onFloatingNavContentChange(content)
                             }
                         }
                     },
@@ -442,8 +442,8 @@ private fun ScaledPreviewContent(
 @Composable
 private fun MiniNavigationPreview(
     floating: Boolean,
-    style: FloatingNavigationStyle,
-    content: FloatingNavigationContent,
+    style: FloatingNavStyle,
+    content: FloatingNavContent,
     darkMode: Boolean,
 ) {
     val materialActive =
@@ -518,21 +518,21 @@ private fun MiniNavigationPreview(
                         },
                     defaultWindowInsetsPadding = false,
                 ) {
-                    FloatingNavigationContentItem(
+                    FloatingNavItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Home,
                         label = stringResource(R.string.nav_home),
                     )
-                    FloatingNavigationContentItem(
+                    FloatingNavItem(
                         content = content,
                         selected = false,
                         onClick = {},
                         icon = MiuixIcons.Normal.Tune,
                         label = stringResource(R.string.nav_features),
                     )
-                    FloatingNavigationContentItem(
+                    FloatingNavItem(
                         content = content,
                         selected = true,
                         onClick = {},

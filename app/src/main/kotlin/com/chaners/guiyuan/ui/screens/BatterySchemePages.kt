@@ -39,10 +39,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeSource
-import com.chaners.guiyuan.settings.BatteryCustomColorScheme
+import com.chaners.guiyuan.settings.BuiltInBatteryScheme
+import com.chaners.guiyuan.settings.BatterySchemeLibrary
+import com.chaners.guiyuan.settings.BatterySchemeSource
+import com.chaners.guiyuan.settings.CustomBatteryScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
@@ -75,24 +75,24 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 @Composable
 internal fun BatterySchemeOverview(
-    library: BatteryColorSchemeLibrary,
+    library: BatterySchemeLibrary,
     requestedSchemeKey: String?,
     onRequestedSchemeHandled: () -> Unit,
     canCreateCustom: Boolean,
     nextCustomName: String?,
     onApplyScheme: (String) -> Unit,
-    onOpenBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
+    onOpenBuiltInSlot: (BuiltInBatteryScheme, BatteryColorSlot) -> Unit,
     onOpenCustomSlot: (Int, BatteryColorSlot) -> Unit,
     onAdd: () -> Unit,
     onRenameCustom: (Int) -> Unit,
-    onCopyCustom: (BatteryCustomColorScheme) -> Unit,
+    onCopyCustom: (CustomBatteryScheme) -> Unit,
     onDeleteCustom: (Int) -> Unit,
 ) {
     val pages =
         buildList {
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
+            add(BatterySchemePage.BuiltIn(BuiltInBatteryScheme.HYPEROS))
+            add(BatterySchemePage.BuiltIn(BuiltInBatteryScheme.IOS))
+            add(BatterySchemePage.BuiltIn(BuiltInBatteryScheme.LOW_SATURATION))
             library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
             add(BatterySchemePage.Add)
         }
@@ -213,8 +213,8 @@ internal fun BatterySchemeOverview(
 @Composable
 private fun BatterySchemePageContent(
     name: String,
-    builtIn: BatteryBuiltInColorScheme?,
-    custom: BatteryCustomColorScheme?,
+    builtIn: BuiltInBatteryScheme?,
+    custom: CustomBatteryScheme?,
     isActive: Boolean,
     canCreateCustom: Boolean,
     onApply: () -> Unit,
@@ -302,7 +302,7 @@ private fun BatterySchemePageContent(
                             builtIn != null -> color == null
                             custom != null ->
                                 custom.entries.entryFor(slot).source ==
-                                    BatteryColorSchemeSource.FOLLOW_SYSTEM ||
+                                    BatterySchemeSource.FOLLOW_SYSTEM ||
                                     color == null
                             else -> true
                         }
@@ -432,7 +432,7 @@ private fun BatteryAddSchemePage(
         ) {
             BatterySchemeHeader(
                 name = name,
-                previewPage = BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS),
+                previewPage = BatterySchemePage.BuiltIn(BuiltInBatteryScheme.HYPEROS),
             )
             BatterySchemeActionArea {
                 TextButton(
