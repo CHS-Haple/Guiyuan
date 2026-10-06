@@ -507,7 +507,7 @@ class GyModule : XposedModule() {
                 "intermediateRequestLayout" to false,
             )
 
-            SysUiCcSource.restoreControlCenterHomeEligibility(
+            SysUiCcSource.restoreHomeEligibility(
                 restored.controlCenterHomeEligible,
             )
             val controlCenterFakeRestore =
@@ -1043,7 +1043,7 @@ class GyModule : XposedModule() {
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
-                includeControlCenterDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
+                includeDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
             )
         }.onSuccess { handles ->
             val expectedHooks =
@@ -1090,7 +1090,7 @@ class GyModule : XposedModule() {
         val effectiveSourceScene = handleCcUpdate(update)
         val transitionUpdate =
             if (effectiveSourceScene != null) {
-                update.copy(controlCenterSourceScene = effectiveSourceScene)
+                update.copy(sourceScene = effectiveSourceScene)
             } else {
                 update
             }
@@ -1146,10 +1146,10 @@ class GyModule : XposedModule() {
                 "reason" to "visible-cycle-rearm-failed",
                 "fallback" to "native-control-center-until-next-native-event",
             )
-            return update.controlCenterSourceScene
+            return update.sourceScene
         }
         val reportedSourceScene =
-            update.controlCenterSourceScene
+            update.sourceScene
                 ?: SourceScene.UNKNOWN
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
@@ -1172,7 +1172,7 @@ class GyModule : XposedModule() {
                     else -> "steady-source-view-override"
                 },
         )
-        val carrier = update.controlCenterPresentationHost
+        val carrier = update.presentationHost
         if (carrier == null) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(

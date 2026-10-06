@@ -42,26 +42,26 @@ class SysUiCcSourceTest {
 
     @Test
     fun controlCenterHomeEligibilityRequiresNativeInvisibleSemantics() {
-        assertEquals(true, SysUiCcSource.controlCenterAllowsHome(false))
-        assertEquals(false, SysUiCcSource.controlCenterAllowsHome(true))
-        assertEquals(false, SysUiCcSource.controlCenterAllowsHome(null))
+        assertEquals(true, SysUiCcSource.allowsHome(false))
+        assertEquals(false, SysUiCcSource.allowsHome(true))
+        assertEquals(false, SysUiCcSource.allowsHome(null))
     }
 
     @Test
     fun controlCenterEligibilitySnapshotCanSeedHotReloadGeneration() {
         SysUiCcSource.resetRuntimeState()
-        assertNull(SysUiCcSource.currentControlCenterHomeEligibility())
+        assertNull(SysUiCcSource.currentHomeEligibility())
 
-        SysUiCcSource.restoreControlCenterHomeEligibility(false)
-        assertEquals(false, SysUiCcSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(false)
+        assertEquals(false, SysUiCcSource.currentHomeEligibility())
 
-        SysUiCcSource.restoreControlCenterHomeEligibility(true)
-        assertEquals(true, SysUiCcSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(true)
+        assertEquals(true, SysUiCcSource.currentHomeEligibility())
 
         // A v5 or older payload has no Control Center field; do not erase the
         // successfully installed generation's current/bootstrap eligibility.
-        SysUiCcSource.restoreControlCenterHomeEligibility(null)
-        assertEquals(true, SysUiCcSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(null)
+        assertEquals(true, SysUiCcSource.currentHomeEligibility())
     }
 
     @Test
@@ -361,21 +361,21 @@ class SysUiCcSourceTest {
     fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
         assertEquals(
             SourceScene.HOME,
-            SysUiCcSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = true,
                 structuralScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            SysUiCcSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.KEYGUARD,
             ),
         )
         assertEquals(
             SourceScene.UNKNOWN,
-            SysUiCcSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.UNKNOWN,
             ),
@@ -391,11 +391,11 @@ class SysUiCcSourceTest {
                 expanded = null,
                 tracking = null,
                 visible = null,
-                controlCenterAppearance = true,
-                controlCenterAppearanceAnimated = true,
+                appearance = true,
+                appearanceAnimated = true,
             )
-        assertEquals(true, update.controlCenterAppearance)
-        assertEquals(true, update.controlCenterAppearanceAnimated)
+        assertEquals(true, update.appearance)
+        assertEquals(true, update.appearanceAnimated)
     }
 
 
@@ -408,13 +408,13 @@ class SysUiCcSourceTest {
                 expanded = null,
                 tracking = null,
                 visible = null,
-                controlCenterBatteryIslandActive = true,
+                batteryIslandActive = true,
             )
         val ordinary =
-            active.copy(controlCenterBatteryIslandActive = false)
+            active.copy(batteryIslandActive = false)
 
-        assertEquals(true, active.controlCenterBatteryIslandActive)
-        assertEquals(false, ordinary.controlCenterBatteryIslandActive)
+        assertEquals(true, active.batteryIslandActive)
+        assertEquals(false, ordinary.batteryIslandActive)
     }
 
     @Test
@@ -426,8 +426,8 @@ class SysUiCcSourceTest {
                 expanded = null,
                 tracking = null,
                 visible = true,
-                controlCenterSourceScene = SourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
             )
-        assertEquals(SourceScene.KEYGUARD, update.controlCenterSourceScene)
+        assertEquals(SourceScene.KEYGUARD, update.sourceScene)
     }
 }

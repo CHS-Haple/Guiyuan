@@ -65,7 +65,7 @@ internal object SystemUiHotReloadRuntimeOwner {
                 // Shade now follows the native system_icons carrier lifecycle.
                 notificationShadeHomeEligible = null,
                 controlCenterHomeEligible =
-                    SysUiCcSource.currentControlCenterHomeEligibility(),
+                    SysUiCcSource.currentHomeEligibility(),
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
