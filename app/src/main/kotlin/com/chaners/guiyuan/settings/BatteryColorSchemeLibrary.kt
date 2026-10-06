@@ -19,7 +19,7 @@ private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
 private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
-internal enum class BatteryBuiltInColorScheme(
+internal enum class BuiltInBatteryScheme(
     val key: String,
     val preset: BatteryColorPreset,
 ) {
@@ -37,10 +37,10 @@ internal enum class BatteryBuiltInColorScheme(
     );
 
     companion object {
-        fun fromKey(key: String?): BatteryBuiltInColorScheme? =
+        fun fromKey(key: String?): BuiltInBatteryScheme? =
             entries.firstOrNull { it.key == key }
 
-        fun fromPreset(preset: BatteryColorPreset): BatteryBuiltInColorScheme =
+        fun fromPreset(preset: BatteryColorPreset): BuiltInBatteryScheme =
             when (preset) {
                 BatteryColorPreset.HYPEROS -> HYPEROS
                 BatteryColorPreset.IOS_STYLE -> IOS
@@ -49,7 +49,7 @@ internal enum class BatteryBuiltInColorScheme(
     }
 }
 
-internal enum class BatteryColorSchemeSource(
+internal enum class BatterySchemeSource(
     val persistedValue: String,
 ) {
     HYPEROS("hyperos"),
@@ -59,35 +59,35 @@ internal enum class BatteryColorSchemeSource(
     CUSTOM("custom");
 
     companion object {
-        fun fromPersisted(value: String?): BatteryColorSchemeSource =
+        fun fromPersisted(value: String?): BatterySchemeSource =
             entries.firstOrNull { it.persistedValue == value } ?: HYPEROS
 
-        fun fromBuiltIn(scheme: BatteryBuiltInColorScheme): BatteryColorSchemeSource =
+        fun fromBuiltIn(scheme: BuiltInBatteryScheme): BatterySchemeSource =
             when (scheme) {
-                BatteryBuiltInColorScheme.HYPEROS -> HYPEROS
-                BatteryBuiltInColorScheme.IOS -> IOS
-                BatteryBuiltInColorScheme.LOW_SATURATION -> LOW_SATURATION
+                BuiltInBatteryScheme.HYPEROS -> HYPEROS
+                BuiltInBatteryScheme.IOS -> IOS
+                BuiltInBatteryScheme.LOW_SATURATION -> LOW_SATURATION
             }
     }
 }
 
-internal data class BatteryColorSchemeEntry(
-    val source: BatteryColorSchemeSource = BatteryColorSchemeSource.HYPEROS,
+internal data class BatterySchemeEntry(
+    val source: BatterySchemeSource = BatterySchemeSource.HYPEROS,
     val customColor: Int? = null,
 ) {
-    fun normalized(): BatteryColorSchemeEntry =
+    fun normalized(): BatterySchemeEntry =
         copy(customColor = customColor?.or(0xFF000000.toInt()))
 }
 
-internal data class BatteryColorSchemeEntries(
-    val normal: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
-    val powerSave: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
-    val performance: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
-    val superPowerSave: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
-    val charging: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
-    val low: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
+internal data class BatterySchemeEntries(
+    val normal: BatterySchemeEntry = BatterySchemeEntry(),
+    val powerSave: BatterySchemeEntry = BatterySchemeEntry(),
+    val performance: BatterySchemeEntry = BatterySchemeEntry(),
+    val superPowerSave: BatterySchemeEntry = BatterySchemeEntry(),
+    val charging: BatterySchemeEntry = BatterySchemeEntry(),
+    val low: BatterySchemeEntry = BatterySchemeEntry(),
 ) {
-    fun entryFor(slot: BatteryColorSlot): BatteryColorSchemeEntry =
+    fun entryFor(slot: BatteryColorSlot): BatterySchemeEntry =
         when (slot) {
             BatteryColorSlot.NORMAL -> normal
             BatteryColorSlot.POWER_SAVE -> powerSave
@@ -99,8 +99,8 @@ internal data class BatteryColorSchemeEntries(
 
     fun withEntry(
         slot: BatteryColorSlot,
-        entry: BatteryColorSchemeEntry,
-    ): BatteryColorSchemeEntries =
+        entry: BatterySchemeEntry,
+    ): BatterySchemeEntries =
         when (slot) {
             BatteryColorSlot.NORMAL -> copy(normal = entry.normalized())
             BatteryColorSlot.POWER_SAVE -> copy(powerSave = entry.normalized())
@@ -112,59 +112,59 @@ internal data class BatteryColorSchemeEntries(
         }
 }
 
-internal data class BatteryCustomColorScheme(
+internal data class CustomBatteryScheme(
     val id: Int,
     val name: String,
-    val baseTemplate: BatteryBuiltInColorScheme,
-    val entries: BatteryColorSchemeEntries,
+    val baseTemplate: BuiltInBatteryScheme,
+    val entries: BatterySchemeEntries,
 ) {
     val key: String
         get() = customSchemeKey(id)
 }
 
-internal data class BatteryColorSchemeLibrary(
+internal data class BatterySchemeLibrary(
     val activeSchemeKey: String = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-    val customSchemes: List<BatteryCustomColorScheme> = emptyList(),
+    val customSchemes: List<CustomBatteryScheme> = emptyList(),
 ) {
-    fun customById(id: Int): BatteryCustomColorScheme? =
+    fun customById(id: Int): CustomBatteryScheme? =
         customSchemes.firstOrNull { it.id == id }
 
-    fun customByKey(key: String): BatteryCustomColorScheme? =
+    fun customByKey(key: String): CustomBatteryScheme? =
         customSchemeId(key)?.let(::customById)
 
     fun containsKey(key: String): Boolean =
-        BatteryBuiltInColorScheme.fromKey(key) != null || customByKey(key) != null
+        BuiltInBatteryScheme.fromKey(key) != null || customByKey(key) != null
 }
 
 internal fun batteryBuiltInColor(
-    scheme: BatteryBuiltInColorScheme,
+    scheme: BuiltInBatteryScheme,
     slot: BatteryColorSlot,
 ): Int? =
     when (scheme) {
-        BatteryBuiltInColorScheme.HYPEROS ->
+        BuiltInBatteryScheme.HYPEROS ->
             HyperOsBatteryPalette.colorFor(slot)
-        BatteryBuiltInColorScheme.IOS ->
+        BuiltInBatteryScheme.IOS ->
             IosStyleBatteryPalette.colorFor(slot)
-        BatteryBuiltInColorScheme.LOW_SATURATION ->
+        BuiltInBatteryScheme.LOW_SATURATION ->
             RecommendedBatteryPalette.colorFor(slot)
     }
 
 internal fun batterySchemeEntryColor(
-    entry: BatteryColorSchemeEntry,
+    entry: BatterySchemeEntry,
     slot: BatteryColorSlot,
 ): Int? =
     when (entry.source) {
-        BatteryColorSchemeSource.HYPEROS ->
-            batteryBuiltInColor(BatteryBuiltInColorScheme.HYPEROS, slot)
-        BatteryColorSchemeSource.IOS ->
-            batteryBuiltInColor(BatteryBuiltInColorScheme.IOS, slot)
-        BatteryColorSchemeSource.LOW_SATURATION ->
-            batteryBuiltInColor(BatteryBuiltInColorScheme.LOW_SATURATION, slot)
-        BatteryColorSchemeSource.FOLLOW_SYSTEM -> null
-        BatteryColorSchemeSource.CUSTOM -> entry.customColor
+        BatterySchemeSource.HYPEROS ->
+            batteryBuiltInColor(BuiltInBatteryScheme.HYPEROS, slot)
+        BatterySchemeSource.IOS ->
+            batteryBuiltInColor(BuiltInBatteryScheme.IOS, slot)
+        BatterySchemeSource.LOW_SATURATION ->
+            batteryBuiltInColor(BuiltInBatteryScheme.LOW_SATURATION, slot)
+        BatterySchemeSource.FOLLOW_SYSTEM -> null
+        BatterySchemeSource.CUSTOM -> entry.customColor
     }
 
-internal class BatteryColorSchemeLibraryRepository(context: Context) {
+internal class BatterySchemeRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
@@ -175,7 +175,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         migrateIfNeeded()
     }
 
-    val library: Flow<BatteryColorSchemeLibrary> =
+    val library: Flow<BatterySchemeLibrary> =
         callbackFlow {
             fun emitCurrent() {
                 trySend(current())
@@ -194,7 +194,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
             }
         }.distinctUntilChanged()
 
-    fun current(): BatteryColorSchemeLibrary =
+    fun current(): BatterySchemeLibrary =
         readLibrary()
 
     fun nextAvailableCustomId(): Int? {
@@ -221,14 +221,14 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         if (library.customSchemes.size >= BATTERY_COLOR_SCHEME_CUSTOM_MAX) return null
         val id = nextAvailableCustomId() ?: return null
         val sourceBuiltIn =
-            BatteryBuiltInColorScheme.fromKey(fromSchemeKey)
+            BuiltInBatteryScheme.fromKey(fromSchemeKey)
         val sourceCustom = library.customByKey(fromSchemeKey)
         val baseTemplate =
-            sourceBuiltIn ?: sourceCustom?.baseTemplate ?: BatteryBuiltInColorScheme.HYPEROS
+            sourceBuiltIn ?: sourceCustom?.baseTemplate ?: BuiltInBatteryScheme.HYPEROS
         val entries =
             sourceCustom?.entries ?: entriesFromBuiltIn(baseTemplate)
         val custom =
-            BatteryCustomColorScheme(
+            CustomBatteryScheme(
                 id = id,
                 name = normalizeBatteryCustomSchemeName(name),
                 baseTemplate = baseTemplate,
@@ -280,7 +280,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
     fun setCustomSource(
         id: Int,
         slot: BatteryColorSlot,
-        source: BatteryColorSchemeSource,
+        source: BatterySchemeSource,
     ) {
         updateCustom(id) { scheme ->
             val current = scheme.entries.entryFor(slot)
@@ -304,8 +304,8 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
                 entries =
                     scheme.entries.withEntry(
                         slot,
-                        BatteryColorSchemeEntry(
-                            source = BatteryColorSchemeSource.CUSTOM,
+                        BatterySchemeEntry(
+                            source = BatterySchemeSource.CUSTOM,
                             customColor = color or 0xFF000000.toInt(),
                         ),
                     ),
@@ -318,12 +318,12 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         slot: BatteryColorSlot,
     ) {
         updateCustom(id) { scheme ->
-            val source = BatteryColorSchemeSource.fromBuiltIn(scheme.baseTemplate)
+            val source = BatterySchemeSource.fromBuiltIn(scheme.baseTemplate)
             scheme.copy(
                 entries =
                     scheme.entries.withEntry(
                         slot,
-                        BatteryColorSchemeEntry(
+                        BatterySchemeEntry(
                             source = source,
                             customColor = batteryBuiltInColor(scheme.baseTemplate, slot),
                         ),
@@ -334,7 +334,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
 
     private fun updateCustom(
         id: Int,
-        transform: (BatteryCustomColorScheme) -> BatteryCustomColorScheme,
+        transform: (CustomBatteryScheme) -> CustomBatteryScheme,
     ) {
         val library = current()
         val current = library.customById(id) ?: return
@@ -369,10 +369,10 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
             BatteryColorSlot.entries.any { slot ->
                 visual.batteryColorOverrides.colorFor(slot) != null
             }
-        val base = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
+        val base = BuiltInBatteryScheme.fromPreset(visual.batteryColorPreset)
         val legacyCustom =
             if (!allPreset || hasStoredCustomMemory) {
-                BatteryCustomColorScheme(
+                CustomBatteryScheme(
                     id = 1,
                     name = "",
                     baseTemplate = base,
@@ -382,7 +382,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
                 null
             }
         val initial =
-            BatteryColorSchemeLibrary(
+            BatterySchemeLibrary(
                 activeSchemeKey =
                     if (allPreset) {
                         base.key
@@ -398,7 +398,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         editor.apply()
     }
 
-    private fun readLibrary(): BatteryColorSchemeLibrary {
+    private fun readLibrary(): BatterySchemeLibrary {
         val order =
             preferences.getString(BATTERY_COLOR_SCHEME_ORDER_KEY, null)
                 ?.split(',')
@@ -414,7 +414,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
                 BATTERY_COLOR_SCHEME_HYPEROS_KEY,
             ) ?: BATTERY_COLOR_SCHEME_HYPEROS_KEY
         val provisional =
-            BatteryColorSchemeLibrary(
+            BatterySchemeLibrary(
                 activeSchemeKey = rawActive,
                 customSchemes = customs,
             )
@@ -425,17 +425,17 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         }
     }
 
-    private fun readCustom(id: Int): BatteryCustomColorScheme? {
+    private fun readCustom(id: Int): CustomBatteryScheme? {
         val prefix = customPrefix(id)
         if (!preferences.contains(prefix + "base")) return null
         val base =
-            BatteryBuiltInColorScheme.entries.firstOrNull {
+            BuiltInBatteryScheme.entries.firstOrNull {
                 it.key == preferences.getString(prefix + "base", null)
-            } ?: BatteryBuiltInColorScheme.HYPEROS
+            } ?: BuiltInBatteryScheme.HYPEROS
         var entries = entriesFromBuiltIn(base)
         BatteryColorSlot.entries.forEach { slot ->
             val source =
-                BatteryColorSchemeSource.fromPersisted(
+                BatterySchemeSource.fromPersisted(
                     preferences.getString(customSourceKey(id, slot), null),
                 )
             val color =
@@ -448,10 +448,10 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
             entries =
                 entries.withEntry(
                     slot,
-                    BatteryColorSchemeEntry(source, color),
+                    BatterySchemeEntry(source, color),
                 )
         }
-        return BatteryCustomColorScheme(
+        return CustomBatteryScheme(
             id = id,
             name = preferences.getString(prefix + "name", "") ?: "",
             baseTemplate = base,
@@ -461,7 +461,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
 
     private fun writeLibrary(
         editor: SharedPreferences.Editor,
-        library: BatteryColorSchemeLibrary,
+        library: BatterySchemeLibrary,
     ) {
         editor
             .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
@@ -490,10 +490,10 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
 
     private fun applyProjection(
         editor: SharedPreferences.Editor,
-        library: BatteryColorSchemeLibrary,
+        library: BatterySchemeLibrary,
         key: String,
     ) {
-        val builtIn = BatteryBuiltInColorScheme.fromKey(key)
+        val builtIn = BuiltInBatteryScheme.fromKey(key)
         if (builtIn != null) {
             editor.putString(BATTERY_COLOR_PRESET_KEY, builtIn.preset.persistedValue)
             BatteryColorSlot.entries.forEach { slot ->
@@ -519,7 +519,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
             val resolvedColor = batterySchemeEntryColor(entry, slot)
             val mode =
                 when {
-                    entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM ->
+                    entry.source == BatterySchemeSource.FOLLOW_SYSTEM ->
                         BatteryColorMode.FOLLOW_SYSTEM
                     resolvedColor != null ->
                         BatteryColorMode.CUSTOM
@@ -538,12 +538,12 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
 
     private fun entriesFromLegacyVisual(
         visual: VisualSettings,
-    ): BatteryColorSchemeEntries {
+    ): BatterySchemeEntries {
         val preset =
-            BatteryColorSchemeSource.fromBuiltIn(
-                BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset),
+            BatterySchemeSource.fromBuiltIn(
+                BuiltInBatteryScheme.fromPreset(visual.batteryColorPreset),
             )
-        var entries = BatteryColorSchemeEntries()
+        var entries = BatterySchemeEntries()
         BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
             val source =
@@ -555,13 +555,13 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
             val color =
                 storedCustom
                     ?: batteryBuiltInColor(
-                        BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset),
+                        BuiltInBatteryScheme.fromPreset(visual.batteryColorPreset),
                         slot,
                     )
             entries =
                 entries.withEntry(
                     slot,
-                    BatteryColorSchemeEntry(source, color),
+                    BatterySchemeEntry(source, color),
                 )
         }
         return entries
@@ -569,15 +569,15 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
 }
 
 internal fun entriesFromBuiltIn(
-    scheme: BatteryBuiltInColorScheme,
-): BatteryColorSchemeEntries {
-    val source = BatteryColorSchemeSource.fromBuiltIn(scheme)
-    var entries = BatteryColorSchemeEntries()
+    scheme: BuiltInBatteryScheme,
+): BatterySchemeEntries {
+    val source = BatterySchemeSource.fromBuiltIn(scheme)
+    var entries = BatterySchemeEntries()
     BatteryColorSlot.entries.forEach { slot ->
         entries =
             entries.withEntry(
                 slot,
-                BatteryColorSchemeEntry(
+                BatterySchemeEntry(
                     source = source,
                     customColor = batteryBuiltInColor(scheme, slot),
                 ),
@@ -628,15 +628,15 @@ internal fun normalizeBatteryCustomSchemeName(value: String): String =
 internal fun batteryColorSchemeSourceFromLegacy(
     mode: BatteryColorMode,
     hasStoredCustom: Boolean,
-    presetSource: BatteryColorSchemeSource,
-): BatteryColorSchemeSource =
+    presetSource: BatterySchemeSource,
+): BatterySchemeSource =
     when (mode) {
         BatteryColorMode.PRESET -> presetSource
         BatteryColorMode.FOLLOW_SYSTEM ->
-            BatteryColorSchemeSource.FOLLOW_SYSTEM
+            BatterySchemeSource.FOLLOW_SYSTEM
         BatteryColorMode.CUSTOM ->
             if (hasStoredCustom) {
-                BatteryColorSchemeSource.CUSTOM
+                BatterySchemeSource.CUSTOM
             } else {
                 presetSource
             }

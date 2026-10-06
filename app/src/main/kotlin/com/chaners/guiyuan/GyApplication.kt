@@ -20,7 +20,7 @@ import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
 import com.chaners.guiyuan.settings.putVisualSettings
 import com.chaners.guiyuan.settings.readVisualSettings
-import com.chaners.guiyuan.system.XposedRuntimeStatus
+import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,17 +48,17 @@ class GyApplication :
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val _xposedRuntimeStatus =
-        MutableStateFlow<XposedRuntimeStatus>(XposedRuntimeStatus.Checking)
-    internal val xposedRuntimeStatus: StateFlow<XposedRuntimeStatus> =
+        MutableStateFlow<XposedStatus>(XposedStatus.Checking)
+    internal val xposedRuntimeStatus: StateFlow<XposedStatus> =
         _xposedRuntimeStatus.asStateFlow()
 
     private val xposedServiceBindTimeout =
         Runnable {
             if (
                 xposedService == null &&
-                _xposedRuntimeStatus.value == XposedRuntimeStatus.Checking
+                _xposedRuntimeStatus.value == XposedStatus.Checking
             ) {
-                _xposedRuntimeStatus.value = XposedRuntimeStatus.FrameworkUnavailable
+                _xposedRuntimeStatus.value = XposedStatus.FrameworkUnavailable
             }
         }
 
@@ -104,13 +104,13 @@ class GyApplication :
         mainHandler.removeCallbacks(xposedServiceBindTimeout)
         xposedService = service
         syncRuntimeConfig(service)
-        refreshXposedRuntimeStatus(service)
+        refreshXposedStatus(service)
     }
 
     override fun onServiceDied(service: XposedService) {
         if (xposedService === service) {
             xposedService = null
-            _xposedRuntimeStatus.value = XposedRuntimeStatus.FrameworkUnavailable
+            _xposedRuntimeStatus.value = XposedStatus.FrameworkUnavailable
         }
     }
 
@@ -123,8 +123,8 @@ class GyApplication :
         super.onTerminate()
     }
 
-    internal fun refreshXposedRuntimeStatus() {
-        xposedService?.let(::refreshXposedRuntimeStatus)
+    internal fun refreshXposedStatus() {
+        xposedService?.let(::refreshXposedStatus)
     }
 
     fun hotReloadSystemUi(onComplete: () -> Unit = {}): Boolean {
@@ -146,7 +146,7 @@ class GyApplication :
                     "Hot reload completed process=" + process.processName + " result=" + result,
                 )
                 mainExecutor.execute {
-                    refreshXposedRuntimeStatus()
+                    refreshXposedStatus()
                     onComplete()
                 }
             }
@@ -157,7 +157,7 @@ class GyApplication :
         }
     }
 
-    private fun refreshXposedRuntimeStatus(service: XposedService) {
+    private fun refreshXposedStatus(service: XposedService) {
         _xposedRuntimeStatus.value =
             runCatching {
                 val running =
@@ -169,7 +169,7 @@ class GyApplication :
                         packageName == SYSTEM_UI_PROCESS
                     }
 
-                XposedRuntimeStatus.Connected(
+                XposedStatus.Connected(
                     systemUiInScope = inScope,
                     systemUiRunning = running,
                 )
@@ -178,7 +178,7 @@ class GyApplication :
                     TAG,
                     "Unable to query Xposed runtime status: " + throwable.message,
                 )
-                XposedRuntimeStatus.QueryUnavailable
+                XposedStatus.QueryUnavailable
             }
     }
 

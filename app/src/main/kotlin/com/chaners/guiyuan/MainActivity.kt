@@ -19,16 +19,16 @@ import androidx.compose.runtime.setValue
 import com.chaners.guiyuan.settings.AppPlatformSettings
 import com.chaners.guiyuan.settings.AppThemeMode
 import com.chaners.guiyuan.settings.AppearanceSettings
-import com.chaners.guiyuan.settings.AppearanceSettingsRepository
-import com.chaners.guiyuan.settings.FloatingNavigationContent
-import com.chaners.guiyuan.settings.FloatingNavigationStyle
+import com.chaners.guiyuan.settings.AppearanceRepo
+import com.chaners.guiyuan.settings.FloatingNavContent
+import com.chaners.guiyuan.settings.FloatingNavStyle
 import com.chaners.guiyuan.ui.GyApp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        (application as GyApplication).refreshXposedRuntimeStatus()
+        (application as GyApplication).refreshXposedStatus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         )
         window.isNavigationBarContrastEnforced = false
 
-        val repository = AppearanceSettingsRepository(applicationContext)
+        val repository = AppearanceRepo(applicationContext)
         val initialAppLanguage = AppPlatformSettings.currentLanguage(this)
         val initialLauncherIconHidden = AppPlatformSettings.isLauncherIconHidden(this)
 
@@ -92,11 +92,11 @@ class MainActivity : ComponentActivity() {
                 onFloatingNavigationBarEnabledChange = { enabled ->
                     scope.launch { repository.setFloatingNavigationBarEnabled(enabled) }
                 },
-                onFloatingNavigationStyleChange = { style: FloatingNavigationStyle ->
-                    scope.launch { repository.setFloatingNavigationStyle(style) }
+                onFloatingNavStyleChange = { style: FloatingNavStyle ->
+                    scope.launch { repository.setFloatingNavStyle(style) }
                 },
-                onFloatingNavigationContentChange = { content: FloatingNavigationContent ->
-                    scope.launch { repository.setFloatingNavigationContent(content) }
+                onFloatingNavContentChange = { content: FloatingNavContent ->
+                    scope.launch { repository.setFloatingNavContent(content) }
                 },
                 onSwipeBackEnabledChange = { enabled ->
                     scope.launch { repository.setSwipeBackEnabled(enabled) }

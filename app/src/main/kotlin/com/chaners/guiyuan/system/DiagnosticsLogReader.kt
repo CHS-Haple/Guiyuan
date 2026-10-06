@@ -75,7 +75,7 @@ internal object DiagnosticsLogReader {
 
         val structuredEvents =
             lines.mapIndexedNotNull { index, line ->
-                RuntimeDiagnosticsProtocol.parse(line)
+                DiagnosticsProtocol.parse(line)
                     ?.fields
                     ?.get("sessionId")
                     ?.let { sessionId -> index to sessionId }

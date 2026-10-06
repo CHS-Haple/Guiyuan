@@ -19,13 +19,13 @@ internal enum class AppThemeMode {
     Dark,
 }
 
-internal enum class FloatingNavigationStyle {
+internal enum class FloatingNavStyle {
     Standard,
     Blur,
     Glass,
 }
 
-internal enum class FloatingNavigationContent {
+internal enum class FloatingNavContent {
     IconOnly,
     IconAndText,
 }
@@ -34,8 +34,8 @@ internal data class AppearanceSettings(
     val themeMode: AppThemeMode = AppThemeMode.System,
     val dynamicColorEnabled: Boolean = false,
     val floatingNavigationBarEnabled: Boolean = true,
-    val floatingNavigationStyle: FloatingNavigationStyle = FloatingNavigationStyle.Glass,
-    val floatingNavigationContent: FloatingNavigationContent = FloatingNavigationContent.IconOnly,
+    val floatingNavigationStyle: FloatingNavStyle = FloatingNavStyle.Glass,
+    val floatingNavigationContent: FloatingNavContent = FloatingNavContent.IconOnly,
     val swipeBackEnabled: Boolean = true,
 )
 
@@ -44,34 +44,34 @@ internal data class ThemeSelection(
     val dynamicColorEnabled: Boolean,
 )
 
-internal fun decodeFloatingNavigationStyle(
+internal fun decodeFloatingNavStyle(
     storedStyle: String?,
     storedFloatingBlurEnabled: Boolean?,
     legacyBlurEnabled: Boolean?,
     legacyGlassEnabled: Boolean?,
-): FloatingNavigationStyle {
-    FloatingNavigationStyle.entries
+): FloatingNavStyle {
+    FloatingNavStyle.entries
         .firstOrNull { it.name == storedStyle }
         ?.let { return it }
 
     storedFloatingBlurEnabled?.let { enabled ->
-        return if (enabled) FloatingNavigationStyle.Glass else FloatingNavigationStyle.Standard
+        return if (enabled) FloatingNavStyle.Glass else FloatingNavStyle.Standard
     }
 
     val blurEnabled = legacyBlurEnabled ?: true
-    if (!blurEnabled) return FloatingNavigationStyle.Standard
+    if (!blurEnabled) return FloatingNavStyle.Standard
 
     return if (legacyGlassEnabled ?: true) {
-        FloatingNavigationStyle.Glass
+        FloatingNavStyle.Glass
     } else {
-        FloatingNavigationStyle.Blur
+        FloatingNavStyle.Blur
     }
 }
 
-internal fun decodeFloatingNavigationContent(storedContent: String?): FloatingNavigationContent =
-    FloatingNavigationContent.entries
+internal fun decodeFloatingNavContent(storedContent: String?): FloatingNavContent =
+    FloatingNavContent.entries
         .firstOrNull { it.name == storedContent }
-        ?: FloatingNavigationContent.IconOnly
+        ?: FloatingNavContent.IconOnly
 
 internal fun decodeThemeSelection(
     storedMode: String?,
@@ -114,16 +114,16 @@ internal class AppearanceRepo(context: Context) {
                 floatingNavigationBarEnabled =
                     preferences[FloatingNavigationBarEnabledKey] ?: true,
                 floatingNavigationStyle =
-                    decodeFloatingNavigationStyle(
-                        storedStyle = preferences[FloatingNavigationStyleKey],
+                    decodeFloatingNavStyle(
+                        storedStyle = preferences[FloatingNavStyleKey],
                         storedFloatingBlurEnabled =
                             preferences[LegacyFloatingNavigationBlurEnabledKey],
                         legacyBlurEnabled = preferences[LegacyBlurEnabledKey],
                         legacyGlassEnabled = preferences[LegacyGlassBottomBarEnabledKey],
                     ),
                 floatingNavigationContent =
-                    decodeFloatingNavigationContent(
-                        preferences[FloatingNavigationContentKey],
+                    decodeFloatingNavContent(
+                        preferences[FloatingNavContentKey],
                     ),
                 swipeBackEnabled = preferences[SwipeBackEnabledKey] ?: true,
             )
@@ -150,18 +150,18 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
-    suspend fun setFloatingNavigationStyle(style: FloatingNavigationStyle) {
+    suspend fun setFloatingNavStyle(style: FloatingNavStyle) {
         dataStore.edit { preferences ->
-            preferences[FloatingNavigationStyleKey] = style.name
+            preferences[FloatingNavStyleKey] = style.name
             preferences.remove(LegacyFloatingNavigationBlurEnabledKey)
             preferences.remove(LegacyGlassBottomBarEnabledKey)
             preferences.remove(LegacyBlurEnabledKey)
         }
     }
 
-    suspend fun setFloatingNavigationContent(content: FloatingNavigationContent) {
+    suspend fun setFloatingNavContent(content: FloatingNavContent) {
         dataStore.edit { preferences ->
-            preferences[FloatingNavigationContentKey] = content.name
+            preferences[FloatingNavContentKey] = content.name
         }
     }
 
@@ -178,9 +178,9 @@ internal class AppearanceRepo(context: Context) {
         val LegacyGlassBottomBarEnabledKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val FloatingNavigationBarEnabledKey =
             booleanPreferencesKey("floating_navigation_bar_enabled")
-        val FloatingNavigationStyleKey =
+        val FloatingNavStyleKey =
             stringPreferencesKey("floating_navigation_style")
-        val FloatingNavigationContentKey =
+        val FloatingNavContentKey =
             stringPreferencesKey("floating_navigation_content")
         val LegacyFloatingNavigationBlurEnabledKey =
             booleanPreferencesKey("floating_navigation_blur_enabled")

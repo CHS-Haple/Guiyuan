@@ -8,7 +8,7 @@ internal object DiagnosticsReportBuilder {
     private const val ReleaseLogLineLimit = 120
 
     suspend fun build(context: Context): String =
-        build(DiagnosticsSnapshotProvider.capture(context.applicationContext))
+        build(DiagnosticsCapture.capture(context.applicationContext))
 
     internal fun build(snapshot: DiagnosticsSnapshot): String {
         val env = snapshot.environment
