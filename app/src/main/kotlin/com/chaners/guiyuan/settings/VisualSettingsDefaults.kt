@@ -84,7 +84,7 @@ internal val GLOBAL_VISUAL_KEYS =
         BATTERY_COLOR_LOW_KEY,
     )
 
-// Persisted text scale remains in the pre-521 physical scale.
+// Persisted text scale is physical; UI percentages use the 1.3x reference.
 internal const val BATTERY_TOP_TEXT_UI_SCALE_REFERENCE = 1.3f
 internal const val BATTERY_TOP_TEXT_UI_SCALE_MIN = 0.4f
 internal const val BATTERY_TOP_TEXT_UI_SCALE_MAX = 1.6f
@@ -97,8 +97,7 @@ internal const val BATTERY_TOP_TEXT_SCALE_MAX =
 internal const val BATTERY_TOP_TEXT_WEIGHT_DEFAULT = 900
 internal const val BATTERY_TOP_TEXT_WEIGHT_MIN = 400
 internal const val BATTERY_TOP_TEXT_WEIGHT_MAX = 1400
-// Runtime/persisted offset is physical canonical displacement. Device review
-// established that the previous +3 position is the intended user-facing zero.
+// Persisted offset stays physical; UI zero maps to the +3 reference.
 internal const val BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE = 3f
 internal const val BATTERY_TOP_VERTICAL_OFFSET_UI_MIN = -10f
 internal const val BATTERY_TOP_VERTICAL_OFFSET_UI_MAX = 10f
@@ -109,9 +108,8 @@ internal const val BATTERY_TOP_VERTICAL_OFFSET_MIN =
 internal const val BATTERY_TOP_VERTICAL_OFFSET_MAX =
     BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE + BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
 
-// Runtime/persisted charging scale remains a physical multiplier.
-// Build 522's user-facing 110% (1.5 × 1.10 = 1.65 physical) becomes
-// Build 523's user-facing/default 100% reference.
+// Persisted charging scale is physical. UI 100% maps to 1.65x so migrated
+// 1.5x × 110% values keep the same visual size.
 private const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE_LEGACY = 1.5f
 internal const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE = 1.65f
 internal const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN = 0.4f
@@ -200,7 +198,7 @@ internal fun migrateBatteryTopChargingScaleReferenceIfNeeded(
         .apply()
 }
 
-internal fun batteryTopTextUiScaleDefault(
+internal fun topTextUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
@@ -208,7 +206,7 @@ internal fun batteryTopTextUiScaleDefault(
         ContentLayout.BATTERY_CENTER -> 1.4f
     }
 
-internal fun mobileTypeSizeScaleDefault(
+internal fun mobileTypeScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
@@ -216,7 +214,7 @@ internal fun mobileTypeSizeScaleDefault(
         ContentLayout.BATTERY_CENTER -> 0.8f
     }
 
-internal fun batteryTopChargingIconUiScaleDefault(
+internal fun topChargingIconUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
@@ -224,36 +222,36 @@ internal fun batteryTopChargingIconUiScaleDefault(
         ContentLayout.BATTERY_CENTER -> 1.2f
     }
 
-internal fun batteryTopTextScaleDefault(
+internal fun topTextScaleDefault(
     layout: ContentLayout,
 ): Float =
     (
         BATTERY_TOP_TEXT_UI_SCALE_REFERENCE *
-            batteryTopTextUiScaleDefault(layout)
+            topTextUiScaleDefault(layout)
     ).coerceIn(
         BATTERY_TOP_TEXT_SCALE_MIN,
         BATTERY_TOP_TEXT_SCALE_MAX,
     )
 
-internal fun batteryTopChargingIconScaleDefault(
+internal fun topChargingIconScaleDefault(
     layout: ContentLayout,
 ): Float =
     (
         BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE *
-            batteryTopChargingIconUiScaleDefault(layout)
+            topChargingIconUiScaleDefault(layout)
     ).coerceIn(
         BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
         BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
     )
 
-internal fun batteryTopTextUiScale(rawScale: Float): Float =
+internal fun topTextUiScale(rawScale: Float): Float =
     (rawScale / BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
         .coerceIn(
             BATTERY_TOP_TEXT_UI_SCALE_MIN,
             BATTERY_TOP_TEXT_UI_SCALE_MAX,
         )
 
-internal fun batteryTopChargingIconUiScale(rawScale: Float): Float =
+internal fun topChargingIconUiScale(rawScale: Float): Float =
     (rawScale / BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
         .coerceIn(
             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
@@ -261,14 +259,14 @@ internal fun batteryTopChargingIconUiScale(rawScale: Float): Float =
         )
 
 
-internal fun batteryTopVerticalOffsetUi(rawOffset: Float): Float =
+internal fun topOffsetYUi(rawOffset: Float): Float =
     (rawOffset - BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE)
         .coerceIn(
             BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
             BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
         )
 
-internal fun batteryTopVerticalOffsetRaw(uiOffset: Float): Float =
+internal fun topOffsetYRaw(uiOffset: Float): Float =
     (
         uiOffset.coerceIn(
             BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,

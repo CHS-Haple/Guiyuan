@@ -247,7 +247,7 @@ internal object ScenePolicy {
             )
         }
         if (
-            SystemUiKeyguardAodStateSource.isStableAod(
+            SysUiKeyguardAodSource.isStableAod(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
             )
@@ -259,7 +259,7 @@ internal object ScenePolicy {
             }
         }
         if (
-            SystemUiKeyguardAodStateSource.blocksKeyguardProjection(
+            SysUiKeyguardAodSource.blocksKeyguardProjection(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
                 animToAod = null,
@@ -382,7 +382,7 @@ internal object ScenePolicy {
         return if (pendingTargetToLockScreen) {
             !toAod
         } else {
-            SystemUiKeyguardAodStateSource.isStableAod(
+            SysUiKeyguardAodSource.isStableAod(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
             )
@@ -430,11 +430,9 @@ internal object ScenePolicy {
             return KeyguardAodProjection.AOD
         }
 
-        // Build 655 proved that mToLockScreen is direction evidence but
-        // its animateFullAod commit is earlier than the visible status-icon
-        // handoff. While that target is pending, retain the enabled outgoing
-        // child (or Native when the outgoing child is disabled). Only the
-        // native animateIconContainer lifecycle event may consume the target.
+        // mToLockScreen tells us the direction, not that the visible handoff is done.
+        // While the target is pending, keep the enabled outgoing child (otherwise Native);
+        // only animateIconContainer may consume the target.
         if (
             fullAodTargetSourceReady &&
             nativeToLockScreenTarget != null &&
@@ -539,12 +537,9 @@ internal object ScenePolicy {
             }
         }
 
-        // Do not derive AOD animation direction from current presentation
-        // ownership. Attach/cleanup mutates ownership itself and Build 645
-        // proved that doing so creates KEYGUARD -> NATIVE -> KEYGUARD
-        // oscillation on repeated callbacks. Direction is instead derived from
-        // the last non-animating, runtime-observed family scene and remains
-        // frozen for the whole animation.
+        // Don't infer AOD direction from presentation ownership; attach/cleanup changes
+        // that ownership and can bounce KEYGUARD -> NATIVE -> KEYGUARD. Freeze the
+        // direction from the last stable family scene for the whole animation.
         return when (lastStableFamilyScene) {
             StableKeyguardAodScene.KEYGUARD ->
                 when {
@@ -576,7 +571,7 @@ internal object ScenePolicy {
     }
 
     fun resolveControlCenterSourceScene(
-        panelSourceScene: SourceScene,
+        reportedSourceScene: SourceScene,
         steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
         incomingKeyguardPresentationReady: Boolean = false,
@@ -584,15 +579,15 @@ internal object ScenePolicy {
         if (
             incomingKeyguardPresentationReady &&
             (
-                panelSourceScene == SourceScene.KEYGUARD ||
+                reportedSourceScene == SourceScene.KEYGUARD ||
                     steadySourceScene == SourceScene.KEYGUARD
             )
         ) {
             return SourceScene.KEYGUARD
         }
-        if (panelSourceScene == steadySourceScene) return panelSourceScene
-        if (panelSourceScene == SourceScene.UNKNOWN) return steadySourceScene
-        if (steadySourceScene == SourceScene.UNKNOWN) return panelSourceScene
+        if (reportedSourceScene == steadySourceScene) return reportedSourceScene
+        if (reportedSourceScene == SourceScene.UNKNOWN) return steadySourceScene
+        if (steadySourceScene == SourceScene.UNKNOWN) return reportedSourceScene
 
         // A HOME/KEYGUARD disagreement is a lifecycle-boundary race between two
         // native witnesses. Family history provides direction without borrowing

@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
-- Integration `dev`: synchronized to the same Guiyuan 0.2.1 / Build 746 checkpoint after promotion. Build 746 changes only version/release metadata over the accepted Build 744 runtime.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#246. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,18 +24,16 @@
 
 ## Active objective
 
-The recent Keyguard / Control Center performance line is **closed at Build 744**. Guiyuan 0.2.1 / Build 746 is the promoted maintenance checkpoint and does not reopen that runtime line.
+The behavior-neutral maintainability review is complete through PR #246. The remaining large runtime files are ownership/lifecycle-dense, tooling-bound, or have no clear tested stateless boundary; further cosmetic splitting/renaming would add churn without a clear maintenance gain.
 
-Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
-
-Normal development may continue from the current `dev` state. Performance work should reopen only for a concrete regression, reproducible hotspot, or new evidence that identifies a bounded root cause.
+The current objective is stable promotion of the existing Guiyuan 0.2.1 / Build 746 source from `dev` to `main`. Runtime behavior, Build identity, persisted keys, hooks, diagnostics protocol, native ownership, and fail-native boundaries are unchanged from the accepted checkpoint. No new device gate is required unless promotion review or Full validation finds evidence of a runtime-affecting change.
 
 Current priorities:
 
-1. continue normal product, UI, compatibility and maintenance work from the synchronized 0.2.1 stable/integration baseline;
-2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
-3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
-4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
+1. review the complete `main` → `dev` promotion diff for accidental compatibility/runtime drift;
+2. run the required dev-to-main Full validation on the exact promotion head;
+3. merge only if Full is green and no runtime blocker appears;
+4. after merge, verify the long-lived `dev` branch still exists and matches promoted `main`.
 
 ## Non-negotiable bounds
 
@@ -49,7 +47,8 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
-- Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
-- Start subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
+- Treat Build 744 as the accepted runtime baseline; Build 746 remains the promoted 0.2.1 build identity.
+- Open the dev-to-main stable-promotion PR from the current `dev` tree and require Full validation.
+- Do not request Canary/device testing unless review or Full uncovers a plausible runtime-affecting delta.
+- After promotion, verify/recreate `dev` at the promoted `main` SHA before new development.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

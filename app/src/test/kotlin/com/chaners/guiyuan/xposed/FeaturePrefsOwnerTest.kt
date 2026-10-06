@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.isFeaturePreferenceKey
+import com.chaners.guiyuan.settings.isFeatureKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -8,78 +8,78 @@ import org.junit.Test
 class FeaturePrefsOwnerTest {
     @Test
     fun clearNotificationParticipatesInFeatureRuntimeSync() {
-        assertEquals(true, isFeaturePreferenceKey(null))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_enabled"))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_keyguard_enabled"))
-        assertEquals(true, isFeaturePreferenceKey("combined_status_aod_enabled"))
-        assertEquals(false, isFeaturePreferenceKey("unrelated"))
+        assertEquals(true, isFeatureKey(null))
+        assertEquals(true, isFeatureKey("combined_status_enabled"))
+        assertEquals(true, isFeatureKey("combined_status_keyguard_enabled"))
+        assertEquals(true, isFeatureKey("combined_status_aod_enabled"))
+        assertEquals(false, isFeatureKey("unrelated"))
     }
 
     @Test
-    fun keyguardFeatureDefaultsFailNative() {
-        val settings = com.chaners.guiyuan.settings.FeatureSettings()
-        assertEquals(true, settings.enabled)
-        assertEquals(false, settings.keyguardEnabled)
-        assertEquals(false, settings.aodEnabled)
+    fun defaultsFailNative() {
+        val cfg = com.chaners.guiyuan.settings.FeatureCfg()
+        assertEquals(true, cfg.enabled)
+        assertEquals(false, cfg.keyguard)
+        assertEquals(false, cfg.aod)
     }
 
     @Test
-    fun keyguardAndAodPreferencesRemainIndependentOfEachOtherAndMasterGate() {
-        val keyguardOnly =
-            com.chaners.guiyuan.settings.FeatureSettings(
+    fun keyguardAndAodStayIndependent() {
+        val keyguard =
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                keyguard = true,
+                aod = false,
             )
-        val aodOnly =
-            com.chaners.guiyuan.settings.FeatureSettings(
+        val aod =
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
+                keyguard = false,
+                aod = true,
             )
-        val masterDisabledWithChildrenPreserved =
-            com.chaners.guiyuan.settings.FeatureSettings(
+        val masterOff =
+            com.chaners.guiyuan.settings.FeatureCfg(
                 enabled = false,
-                keyguardEnabled = true,
-                aodEnabled = true,
+                keyguard = true,
+                aod = true,
             )
 
-        assertEquals(true, keyguardOnly.keyguardEnabled)
-        assertEquals(false, keyguardOnly.aodEnabled)
-        assertEquals(false, aodOnly.keyguardEnabled)
-        assertEquals(true, aodOnly.aodEnabled)
-        assertEquals(false, masterDisabledWithChildrenPreserved.enabled)
-        assertEquals(true, masterDisabledWithChildrenPreserved.keyguardEnabled)
-        assertEquals(true, masterDisabledWithChildrenPreserved.aodEnabled)
+        assertEquals(true, keyguard.keyguard)
+        assertEquals(false, keyguard.aod)
+        assertEquals(false, aod.keyguard)
+        assertEquals(true, aod.aod)
+        assertEquals(false, masterOff.enabled)
+        assertEquals(true, masterOff.keyguard)
+        assertEquals(true, masterOff.aod)
     }
 
     @Test
-    fun validCrossProcessTimestampProducesTransportLatency() {
+    fun validTimestampProducesLatency() {
         assertEquals(
             6_000_000L,
-            FeaturePrefsOwner.resolveTransportLatencyNanos(
-                changedAtElapsedRealtimeNanos = 1_000_000_000L,
-                receivedAtElapsedRealtimeNanos = 1_006_000_000L,
+            FeaturePrefsOwner.transportLatencyNs(
+                changedAtNs = 1_000_000_000L,
+                receivedAtNs = 1_006_000_000L,
             ),
         )
     }
 
     @Test
-    fun missingTimestampDoesNotInventLatency() {
+    fun missingTimestampHasNoLatency() {
         assertNull(
-            FeaturePrefsOwner.resolveTransportLatencyNanos(
-                changedAtElapsedRealtimeNanos = 0L,
-                receivedAtElapsedRealtimeNanos = 1_006_000_000L,
+            FeaturePrefsOwner.transportLatencyNs(
+                changedAtNs = 0L,
+                receivedAtNs = 1_006_000_000L,
             ),
         )
     }
 
     @Test
-    fun invalidFutureTimestampDoesNotInventLatency() {
+    fun futureTimestampHasNoLatency() {
         assertNull(
-            FeaturePrefsOwner.resolveTransportLatencyNanos(
-                changedAtElapsedRealtimeNanos = 2_000_000_000L,
-                receivedAtElapsedRealtimeNanos = 1_000_000_000L,
+            FeaturePrefsOwner.transportLatencyNs(
+                changedAtNs = 2_000_000_000L,
+                receivedAtNs = 1_000_000_000L,
             ),
         )
     }

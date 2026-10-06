@@ -46,12 +46,12 @@ internal object ControlCenterTransitionOwner {
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
     private var sourceScene = SourceScene.UNKNOWN
-    private var endpoints: SystemUiPanelTransitionSource.ControlCenterTransitionEndpoints? = null
+    private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
     private var latestBatteryNumberProbeSummary: String? = null
 
     @Synchronized
-    fun onPanelUpdate(update: SystemUiPanelTransitionSource.Update) {
+    fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
             visible = nextVisible
             if (!nextVisible) {
@@ -62,7 +62,7 @@ internal object ControlCenterTransitionOwner {
                 sourceScene = SourceScene.UNKNOWN
                 endpoints = null
             } else {
-                nativeBatteryIslandActive = update.controlCenterBatteryIslandActive
+                nativeBatteryIslandActive = update.batteryIslandActive
             }
         }
         update.fraction?.let {
@@ -70,13 +70,13 @@ internal object ControlCenterTransitionOwner {
             // Expansion is the per-sample authority for the native Battery-Island
             // contract. A failed read clears a stale prior value instead of
             // pretending the previous island mode still applies.
-            nativeBatteryIslandActive = update.controlCenterBatteryIslandActive
+            nativeBatteryIslandActive = update.batteryIslandActive
         }
-        update.controlCenterAppearance?.let { nativeAppearance = it }
-        update.controlCenterAppearanceAnimated?.let { nativeAppearanceAnimated = it }
-        update.controlCenterBatteryIslandActive?.let { nativeBatteryIslandActive = it }
-        update.controlCenterSourceScene?.let { sourceScene = it }
-        update.controlCenterTransitionEndpoints?.let { endpoints = it }
+        update.appearance?.let { nativeAppearance = it }
+        update.appearanceAnimated?.let { nativeAppearanceAnimated = it }
+        update.batteryIslandActive?.let { nativeBatteryIslandActive = it }
+        update.sourceScene?.let { sourceScene = it }
+        update.transitionEndpoints?.let { endpoints = it }
         sync("panel-update")
     }
 
@@ -204,7 +204,7 @@ internal object ControlCenterTransitionOwner {
                     nativeBatteryIslandActive = nativeBatteryIslandActive,
                 ),
             sourceScene = sourceScene,
-            genericIslandShowing = SystemUiIslandMotionSource.currentIslandShowing(),
+            genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -498,7 +498,7 @@ internal object ControlCenterTransitionOwner {
         }
 
         fun stop(source: String) {
-            SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+            SysUiPresentationOwner.clearControlCenterTransitionReservation(
                 "transition-" + source,
             )
             genericIslandShowing = null
@@ -585,7 +585,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 )
             if (specs.isEmpty()) return
 
@@ -641,7 +641,7 @@ internal object ControlCenterTransitionOwner {
             val batteryTinted =
                 BatteryColorPolicy.isTinted(
                     state = model.batterySemanticState,
-                    settings = currentSnapshot.visualSettings,
+                    settings = currentSnapshot.visual,
                 )
             val transitionColors =
                 cachedNativePeerTint
@@ -656,8 +656,8 @@ internal object ControlCenterTransitionOwner {
                                 progress = motionProgress,
                                 tinted = tinted,
                                 transitionEnabled =
-                                    currentSnapshot.visualSettings
-                                        .controlCenterTintTransitionEnabled,
+                                    currentSnapshot.visual
+                                        .ccTintTransition,
                             )
 
                         currentSnapshot.colors.copy(
@@ -666,7 +666,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.centerTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .centerFollowsBatteryColor,
                                 ),
                             mobileTint =
@@ -674,7 +674,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.mobileTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .mobileFollowsBatteryColor,
                                 ),
                             batteryTint =
@@ -687,16 +687,16 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.batteryTextTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
-                                                .batteryTopTextFollowsBatteryColor,
+                                            currentSnapshot.visual
+                                                .topTextFollowsBatteryColor,
                                 ),
                             chargingIconTint =
                                 resolveTint(
                                     source = currentSnapshot.colors.chargingIconTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
-                                                .batteryTopChargingIconFollowsBatteryColor,
+                                            currentSnapshot.visual
+                                                .topChargingIconFollowsBatteryColor,
                                 ),
                         )
                     }
@@ -706,7 +706,7 @@ internal object ControlCenterTransitionOwner {
             lastTintTransitionColors = transitionColors
             lastTintBatteryTinted = batteryTinted
             lastTintTransitionEnabled =
-                currentSnapshot.visualSettings.controlCenterTintTransitionEnabled
+                currentSnapshot.visual.ccTintTransition
             lastTintMotionProgress = motionProgress
 
             val refreshWitnessDiagnostic =
@@ -813,7 +813,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingSourceVisibleFraction(motionProgress)
                     } else {
                         0f
@@ -827,7 +827,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingMotionProgress(motionProgress)
                     } else {
                         motionProgress
@@ -879,7 +879,7 @@ internal object ControlCenterTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        StatusPainter.BatteryNumberFollowerPolicy
+                        BatteryNumberFollowerPolicy
                             .chargingVisibleFraction(
                                 progress = motionProgress,
                                 targetAvailable = targetGeometry != null,
@@ -902,7 +902,7 @@ internal object ControlCenterTransitionOwner {
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
-                                visualSettings = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 
                         spec.component ==
@@ -911,7 +911,7 @@ internal object ControlCenterTransitionOwner {
                                 width = sourceWidth,
                                 height = sourceHeight,
                                 model = model,
-                                visualSettings = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visual,
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
@@ -965,7 +965,7 @@ internal object ControlCenterTransitionOwner {
                     component = spec.component,
                     shapePolicy = spec.shapePolicy,
                     opacity = 1f,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
                         when (spec.shapePolicy) {
@@ -1186,7 +1186,7 @@ internal object ControlCenterTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    StatusPainter.MobileSignalMorphPolicy.outerSimilarityScale(
+                    MobileSignalMorphPolicy.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )
@@ -1194,13 +1194,13 @@ internal object ControlCenterTransitionOwner {
                     ControlCenterTransitionPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            StatusPainter.MobileSignalMorphPolicy
+                            MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            StatusPainter.MobileSignalMorphPolicy
+                            MobileSignalMorphPolicy
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,
@@ -1298,7 +1298,7 @@ internal object ControlCenterTransitionOwner {
                 painter.transitionAirplaneSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1364,7 +1364,7 @@ internal object ControlCenterTransitionOwner {
                 height = sourceHeight,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visualSettings = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
             return "airplane-reveal:" + witness.summary
@@ -1398,7 +1398,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     resource = resource,
-                    visualSettings = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1465,7 +1465,7 @@ internal object ControlCenterTransitionOwner {
                 resource = resource,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visualSettings = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
             return "no-sim-reveal:" + witness.summary
@@ -1535,7 +1535,7 @@ internal object ControlCenterTransitionOwner {
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = (frozenSource?.width ?: source.width).coerceAtLeast(0),
-                    userScale = currentSnapshot.visualSettings.combinedScale,
+                    userScale = currentSnapshot.visual.combinedScale,
                 )
             val currentReservation =
                 lastReservationWidthPx ?: compactWidth
@@ -1682,7 +1682,7 @@ internal object ControlCenterTransitionOwner {
 
         private fun refreshNativePeerTint() {
             val peerTint =
-                SystemUiNativeNetworkSuppressionOwner
+                NativeNetworkSuppressionOwner
                     .currentAppliedStatusIconTintForGroup(fakeStatusIcons)
             val resolved =
                 ControlCenterTransitionPolicy.selectNativeTransitionTint(
@@ -1703,7 +1703,7 @@ internal object ControlCenterTransitionOwner {
         private fun syncTransitionReservation() {
             if (!transitionReservationEnabled) {
                 if (lastNativeReservationWidthPx != null) {
-                    SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
                         "transition-source-native-peer-motion",
                     )
                 }
@@ -1724,7 +1724,7 @@ internal object ControlCenterTransitionOwner {
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
-                    userScale = currentSnapshot.visualSettings.combinedScale,
+                    userScale = currentSnapshot.visual.combinedScale,
                 )
             val requestedWidth =
                 ControlCenterTransitionPolicy.resolveTransitionReservationWidth(
@@ -1749,7 +1749,7 @@ internal object ControlCenterTransitionOwner {
                             ?: run {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
-                                    SystemUiHomePresentationOwner
+                                    SysUiPresentationOwner
                                         .failControlCenterPresentation(
                                             "battery-island-peer-end-frame-unavailable",
                                         )
@@ -1775,7 +1775,7 @@ internal object ControlCenterTransitionOwner {
 
             if (!nativePaddingExpansionAllowed) {
                 if (lastNativeReservationWidthPx != null) {
-                    SystemUiHomePresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
                         "transition-island-native-padding-guard",
                     )
                     lastNativeReservationWidthPx = null
@@ -1785,7 +1785,7 @@ internal object ControlCenterTransitionOwner {
 
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
-                    SystemUiHomePresentationOwner
+                    SysUiPresentationOwner
                         .updateControlCenterTransitionReservation(
                             requestedSlotWidthPx = nativeRequestedWidth,
                         )
@@ -1994,9 +1994,9 @@ internal object ControlCenterTransitionOwner {
                 }
             }
 
-            // Latent occupancy may move native peers through the existing
-            // reservation writer, but it never becomes geometry authority.
-            // Build 504 keeps every projected endpoint in absolute root space.
+            // Latent occupancy may move native peers through the reservation writer,
+            // but it never becomes geometry authority. Projected endpoints stay in
+            // absolute root space.
             return result.takeIf { it.isNotEmpty() }
         }
 

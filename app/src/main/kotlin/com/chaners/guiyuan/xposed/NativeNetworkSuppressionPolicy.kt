@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 internal object NativeNetworkSuppressionPolicy {
+    // Pure suppression/tint decisions stay here; the owner keeps slot identity and View lifecycle.
     fun suppressMobile(
         airplaneMode: Boolean?,
         presentation: NativePresentationResolver.Snapshot?,
@@ -38,4 +39,39 @@ internal object NativeNetworkSuppressionPolicy {
         return presentation.boundRoots > activeSubscriptions ||
             presentation.activeBoundRoots > activeSubscriptions
     }
+
+    internal fun mobileVisualMaskAlpha(
+        nativeAlpha: Float,
+        suppressionActive: Boolean,
+    ): Float =
+        if (suppressionActive) {
+            0f
+        } else {
+            nativeAlpha
+        }
+
+    internal fun statusIconTint(
+        locationAwareTint: Int?,
+        peerAppliedTint: Int?,
+        managerFallbackTint: Int?,
+        fallbackTint: Int?,
+    ): Int? =
+        locationAwareTint
+            ?.takeIf(::isVisibleTint)
+            ?: peerAppliedTint
+                ?.takeIf(::isVisibleTint)
+            ?: managerFallbackTint
+                ?.takeIf(::isVisibleTint)
+            ?: fallbackTint
+                ?.takeIf(::isVisibleTint)
+
+    internal fun isVisibleTint(color: Int): Boolean =
+        color ushr 24 != 0
+
+    internal fun shouldPreMaskMobileSignal(
+        suppressionActive: Boolean,
+        belongsToActiveHomeGroup: Boolean,
+    ): Boolean =
+        suppressionActive && belongsToActiveHomeGroup
+
 }

@@ -4,8 +4,8 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
@@ -13,7 +13,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attach(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -30,7 +30,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attachAod(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -46,14 +46,14 @@ internal object KeyguardRenderSession {
         )
 
     private fun attachFamily(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         scene: Scene,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ): AttachResult {
-        val settings = FeaturePrefsOwner.currentSettings()
+        val settings = FeaturePrefsOwner.current()
         if (!sceneEligible) {
             return AttachResult.Failure(
                 if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
@@ -62,8 +62,8 @@ internal object KeyguardRenderSession {
         val featureEnabled =
             resolveFamilyFeatureEnabled(
                 featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguardEnabled,
-                aodEnabled = settings.aodEnabled,
+                keyguardEnabled = settings.keyguard,
+                aodEnabled = settings.aod,
                 sceneIsAod = scene == Scene.AOD,
             )
 
@@ -107,22 +107,22 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
-        current?.setFeatureSettings(settings)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureCfg(cfg)
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        current?.updateVisualCfg(visual)
     }
 
     @Synchronized
-    fun onAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+    fun onAodState(update: SysUiKeyguardAodSource.AodUpdate) {
         current?.updateAodState(update)
     }
 
@@ -275,7 +275,7 @@ internal object KeyguardRenderSession {
     }
 
     private class Session(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private var scene: Scene,
@@ -312,7 +312,7 @@ internal object KeyguardRenderSession {
                 layoutProbe()
             }
 
-        fun matches(resolved: SystemUiKeyguardHostResolver.ResolvedHost): Boolean =
+        fun matches(resolved: SysUiKeyguardHostResolver.ResolvedHost): Boolean =
             host.get() === resolved.host &&
                 systemIcons.get() === resolved.systemIcons &&
                 statusIcons.get() === resolved.statusIcons &&
@@ -373,7 +373,7 @@ internal object KeyguardRenderSession {
                 positionHost = systemIcons.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentKeyguardRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.currentKeyguardRepresentedSlotOwnership(),
             )
         }
 
@@ -391,10 +391,10 @@ internal object KeyguardRenderSession {
                 renderView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+            renderController.updateVisualCfg(
+                VisualPrefsOwner.current(),
             )
-            SystemUiTintStateSource.currentState(battery)?.let { state ->
+            SysUiTintSource.currentState(battery)?.let { state ->
                 applyTintState(
                     TintAuthority.resolveBatteryEvent(
                         batteryState = state,
@@ -415,12 +415,12 @@ internal object KeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureSettings(settings: FeatureSettings) {
+        fun setFeatureCfg(cfg: FeatureCfg) {
             val enabled =
                 resolveFamilyFeatureEnabled(
-                    featureEnabled = settings.enabled,
-                    keyguardEnabled = settings.keyguardEnabled,
-                    aodEnabled = settings.aodEnabled,
+                    featureEnabled = cfg.enabled,
+                    keyguardEnabled = cfg.keyguard,
+                    aodEnabled = cfg.aod,
                     sceneIsAod = scene == Scene.AOD,
                 )
             setFeatureState(enabled)
@@ -454,12 +454,12 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(visual: VisualCfg) {
+            renderController.updateVisualCfg(visual)
             layoutProbe()
         }
 
-        fun updateAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+        fun updateAodState(update: SysUiKeyguardAodSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             val visible = applyResolvedVisibility()
@@ -487,7 +487,7 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: SysUiTintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(
@@ -603,8 +603,8 @@ internal object KeyguardRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
-                    .resolveCarrierWidthPx(carrier)
+                SysUiCarrierMetrics
+                    .resolveWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false
             if (

@@ -318,7 +318,7 @@ internal object NativeStatusBarSlotReservation {
             override val logLine: String
                 get() =
                     "nativeSlotOrder reserved slot=" +
-                        SystemUiNativeCombinedParticipantOwner.SLOT +
+                        NativeCombinedParticipantOwner.SLOT +
                         " created=" + created +
                         " nativeIndex=" + nativeIndex +
                         " from=" + fromIndex +
@@ -335,7 +335,7 @@ internal object NativeStatusBarSlotReservation {
             override val logLine: String
                 get() =
                     "nativeSlotOrder unchanged slot=" +
-                        SystemUiNativeCombinedParticipantOwner.SLOT +
+                        NativeCombinedParticipantOwner.SLOT +
                         " reason=" + reason +
                         " mode=controller-pre-init nativeGeometryWrites=0"
         }

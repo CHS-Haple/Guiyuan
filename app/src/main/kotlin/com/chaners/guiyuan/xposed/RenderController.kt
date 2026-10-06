@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 
 internal class RenderController(
     private val view: RenderView,
@@ -13,7 +13,7 @@ internal class RenderController(
         trace: RuntimeRenderTrace? = null,
     ): ModelUpdate {
         val defaultDataSubscriptionId =
-            SystemUiDefaultDataSubscriptionSource.currentSubscriptionId()
+            SysUiDefaultDataSubSource.currentSubscriptionId()
         val candidate =
             RenderModel.from(
                 snapshot = snapshot,
@@ -41,8 +41,8 @@ internal class RenderController(
         )
     }
 
-    fun updateVisualSettings(state: VisualSettings) {
-        view.setVisualSettings(state)
+    fun updateVisualCfg(visual: VisualCfg) {
+        view.setVisualCfg(visual)
     }
 
     fun currentTintState(): TintState? = stableTint

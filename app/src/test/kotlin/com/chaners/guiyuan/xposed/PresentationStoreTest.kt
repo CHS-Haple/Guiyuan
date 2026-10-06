@@ -9,9 +9,9 @@ class PresentationStoreTest {
     fun repeatedConnectivityObservationIsDeduplicatedByValue() {
         PresentationStore.reset()
         val state =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                transport = SysUiConnectivitySource.Transport.WIFI,
                 validated = true,
                 hasInternetCapability = true,
                 mobileDataEnabled = true,

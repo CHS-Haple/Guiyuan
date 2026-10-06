@@ -4,8 +4,8 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FeatureSettings
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 
 internal object HomeRenderSession {
@@ -38,7 +38,7 @@ internal object HomeRenderSession {
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
             ?: return AttachResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(batteryView)
+            SysUiCarrierMetrics.resolveView(batteryView)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
 
         val existing = current
@@ -69,7 +69,7 @@ internal object HomeRenderSession {
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
-                FeaturePrefsOwner.currentSettings().enabled,
+                FeaturePrefsOwner.current().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
         )
         current = session
@@ -92,7 +92,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -102,13 +102,13 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureSettings) {
-        current?.setFeatureEnabled(settings.enabled)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureEnabled(cfg.enabled)
     }
 
     @Synchronized
-    fun onVisualSettingsChanged(settings: VisualSettings) {
-        current?.updateVisualSettings(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        current?.updateVisualCfg(visual)
     }
 
     @Synchronized
@@ -307,14 +307,14 @@ internal object HomeRenderSession {
                 probeView,
                 ViewGroup.LayoutParams(0, 0),
             )
-            renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+            renderController.updateVisualCfg(
+                VisualPrefsOwner.current(),
             )
             resolveInitialTintSeed(
                 transferred = initialTintState,
                 allowLiveSeed = allowLiveTintSeed,
                 liveState = {
-                    SystemUiTintStateSource.currentState(battery)
+                    SysUiTintSource.currentState(battery)
                 },
             )?.let { seed ->
                 applyTintState(seed.state, seed.source)
@@ -354,7 +354,7 @@ internal object HomeRenderSession {
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentHomeRepresentedSlotOwnership(),
+                    SysUiPresentationOwner.currentHomeRepresentedSlotOwnership(),
             )
         }
 
@@ -434,12 +434,12 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateVisualSettings(settings: VisualSettings) {
-            renderController.updateVisualSettings(settings)
+        fun updateVisualCfg(visual: VisualCfg) {
+            renderController.updateVisualCfg(visual)
             layoutProbe()
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: SysUiTintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) {
                 return
@@ -652,8 +652,8 @@ internal object HomeRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
-                    .resolveCarrierWidthPx(carrier)
+                SysUiCarrierMetrics
+                    .resolveWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false
             if (

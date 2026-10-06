@@ -1,47 +1,47 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
-import com.chaners.guiyuan.settings.readVisualSettings
+import com.chaners.guiyuan.settings.readVisualCfg
 
 internal object VisualPrefsOwner {
     @Volatile
-    private var current = VisualSettings()
+    private var cfg = VisualCfg()
 
     private var prefs: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var bindToken: Any? = null
 
-    fun currentSettings(): VisualSettings = current
+    fun current(): VisualCfg = cfg
 
     @Synchronized
     fun bind(
-        preferences: SharedPreferences,
-        onChanged: (VisualSettings) -> Unit,
-    ): VisualSettings {
+        source: SharedPreferences,
+        onChanged: (VisualCfg) -> Unit,
+    ): VisualCfg {
         unbindLocked()
 
         val token = Any()
-        val initial = resolve(preferences)
-        current = initial
+        val initial = resolve(source)
+        cfg = initial
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
                     isVisualPreferenceKey(key) &&
-                    isCurrentBinding(changed, token)
+                    isCurrent(changed, token)
                 ) {
                     val next = resolve(changed)
-                    if (next != current) {
-                        current = next
+                    if (next != cfg) {
+                        cfg = next
                         onChanged(next)
                     }
                 }
             }
 
-        preferences.registerOnSharedPreferenceChangeListener(listener)
-        this.prefs = preferences
+        source.registerOnSharedPreferenceChangeListener(listener)
+        prefs = source
         this.listener = listener
         bindToken = token
         onChanged(initial)
@@ -51,7 +51,7 @@ internal object VisualPrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        current = VisualSettings()
+        cfg = VisualCfg()
     }
 
     private fun unbindLocked() {
@@ -60,20 +60,20 @@ internal object VisualPrefsOwner {
         prefs = null
         listener = null
         bindToken = null
-        // 解绑时先让旧 token 失效，避免已经重置的样式又被写回来。
+        // Drop ownership first so callbacks from the previous binding fail the token check.
         if (oldPrefs != null && oldListener != null) {
             oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
 
     @Synchronized
-    private fun isCurrentBinding(
-        preferences: SharedPreferences,
+    private fun isCurrent(
+        source: SharedPreferences,
         token: Any,
     ): Boolean =
-        prefs === preferences &&
+        prefs === source &&
             bindToken === token
 
-    private fun resolve(preferences: SharedPreferences): VisualSettings =
-        preferences.readVisualSettings()
+    private fun resolve(source: SharedPreferences): VisualCfg =
+        source.readVisualCfg()
 }

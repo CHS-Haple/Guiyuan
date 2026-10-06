@@ -28,7 +28,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                                transport = SysUiConnectivitySource.Transport.WIFI,
                                 validated = true,
                             ),
                         networkType = mobileType("5G"),
@@ -64,7 +64,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                                transport = SysUiConnectivitySource.Transport.CELLULAR,
                                 validated = true,
                             ),
                         networkType = mobileType("5G"),
@@ -102,7 +102,7 @@ class RenderModelTest {
                     PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                                transport = SysUiConnectivitySource.Transport.WIFI,
                                 validated = true,
                             ),
                     ),
@@ -131,7 +131,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                                transport = SysUiConnectivitySource.Transport.CELLULAR,
                                 validated = true,
                             ),
                         networkType = mobileType("5G-A"),
@@ -167,7 +167,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                                transport = SysUiConnectivitySource.Transport.WIFI,
                                 validated = false,
                             ),
                         networkType = mobileType("5G"),
@@ -197,7 +197,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                                transport = SysUiConnectivitySource.Transport.CELLULAR,
                                 validated = true,
                             ),
                         networkType = mobileType("4G"),
@@ -231,7 +231,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.OTHER,
+                                transport = SysUiConnectivitySource.Transport.OTHER,
                                 validated = true,
                                 mobileDataEnabled = true,
                             ),
@@ -263,7 +263,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.OTHER,
+                                transport = SysUiConnectivitySource.Transport.OTHER,
                                 validated = true,
                                 mobileDataEnabled = true,
                             ),
@@ -295,7 +295,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.NONE,
+                                transport = SysUiConnectivitySource.Transport.NONE,
                                 validated = false,
                                 mobileDataEnabled = true,
                             ),
@@ -325,7 +325,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.NONE,
+                                transport = SysUiConnectivitySource.Transport.NONE,
                                 validated = false,
                                 mobileDataEnabled = false,
                             ),
@@ -357,7 +357,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.NONE,
+                                transport = SysUiConnectivitySource.Transport.NONE,
                                 validated = false,
                                 mobileDataEnabled = false,
                             ),
@@ -415,7 +415,7 @@ class RenderModelTest {
                     PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                                transport = SysUiConnectivitySource.Transport.CELLULAR,
                                 validated = true,
                             ),
                         mobilePresentation =
@@ -472,7 +472,7 @@ class RenderModelTest {
                     PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                                transport = SysUiConnectivitySource.Transport.WIFI,
                                 validated = true,
                             ),
                         mobilePresentation =
@@ -519,7 +519,7 @@ class RenderModelTest {
                     PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.NONE,
+                                transport = SysUiConnectivitySource.Transport.NONE,
                                 validated = false,
                                 mobileDataEnabled = false,
                             ),
@@ -560,7 +560,7 @@ class RenderModelTest {
                     PresentationStore.Snapshot(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                                transport = SysUiConnectivitySource.Transport.WIFI,
                                 validated = true,
                                 mobileDataEnabled = false,
                             ),
@@ -597,7 +597,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.NONE,
+                                transport = SysUiConnectivitySource.Transport.NONE,
                                 validated = false,
                                 mobileDataEnabled = false,
                             ),
@@ -632,7 +632,7 @@ class RenderModelTest {
                     presentation(
                         connectivity =
                             connectivity(
-                                transport = SystemUiConnectivityStateSource.Transport.VPN,
+                                transport = SysUiConnectivitySource.Transport.VPN,
                                 validated = true,
                             ),
                         networkType = mobileType("5G"),
@@ -662,11 +662,11 @@ class RenderModelTest {
         )
 
     private fun connectivity(
-        transport: SystemUiConnectivityStateSource.Transport,
+        transport: SysUiConnectivitySource.Transport,
         validated: Boolean,
         mobileDataEnabled: Boolean? = true,
     ) =
-        SystemUiConnectivityStateSource.State(
+        SysUiConnectivitySource.State(
             known = true,
             transport = transport,
             validated = validated,
@@ -675,7 +675,7 @@ class RenderModelTest {
         )
 
     private fun presentation(
-        connectivity: SystemUiConnectivityStateSource.State,
+        connectivity: SysUiConnectivitySource.State,
         networkType: NativePresentationResolver.NetworkType?,
     ) =
         PresentationStore.Snapshot(

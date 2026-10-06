@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.VisualSettingsRepo
+import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -68,13 +68,13 @@ internal fun PreviewSandboxScreen(
         remember(context.applicationContext) {
             PreviewSystemUiResourceResolver(context.applicationContext)
         }
-    val visualRepository =
+    val visualRepo =
         remember(context.applicationContext) {
-            VisualSettingsRepo(context.applicationContext)
+            VisualRepo(context.applicationContext)
         }
-    val visualSettings by
-        visualRepository.settings.collectAsState(
-            initial = visualRepository.current(),
+    val visual by
+        visualRepo.settings.collectAsState(
+            initial = visualRepo.current(),
         )
     val renderModel = state.toRenderModel(resourceResolver)
 
@@ -201,7 +201,7 @@ internal fun PreviewSandboxScreen(
                         ) {
                             StatusPreview(
                                 model = renderModel,
-                                visualSettings = visualSettings,
+                                visual = visual,
                                 modifier =
                                     Modifier
                                         .width(120.dp)

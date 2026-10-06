@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.batteryTopVerticalOffsetRaw
+import com.chaners.guiyuan.settings.topOffsetYRaw
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,14 +13,14 @@ class CenterGeometryTest {
     fun wifiSizeChangesWithoutResizingMobileTypeOrNativePeers() {
         val base =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlarged =
             CenterGeometry.resolve(
-                wifiSizeScale = 1.2f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1.2f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
 
@@ -36,17 +36,17 @@ class CenterGeometryTest {
     fun airplaneAndNoSimSizesChangeIndependently() {
         val base =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val adjusted =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
-                airplaneSizeScale = 1.2f,
-                noSimSizeScale = 0.8f,
+                airplaneScale = 1.2f,
+                noSimScale = 0.8f,
             )
 
         assertEquals(base.airplaneMaxSize * 1.2f, adjusted.airplaneMaxSize, 0.0001f)
@@ -59,14 +59,14 @@ class CenterGeometryTest {
     fun mobileTypeSizeChangesWithoutResizingWifiOrNativePeers() {
         val base =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlarged =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1.2f,
+                wifiScale = 1f,
+                mobileTypeScale = 1.2f,
                 mobileTypeWeight = 800,
             )
 
@@ -82,14 +82,14 @@ class CenterGeometryTest {
     fun mobileTypeWeightChangesIndependentlyFromAllDrawableSizes() {
         val light =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 600,
             )
         val heavy =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 900,
             )
 
@@ -103,18 +103,18 @@ class CenterGeometryTest {
     fun invalidAndOutOfRangeValuesAreClampedSafely() {
         val fallback =
             CenterGeometry.resolve(
-                wifiSizeScale = Float.NaN,
-                mobileTypeSizeScale = Float.NaN,
+                wifiScale = Float.NaN,
+                mobileTypeScale = Float.NaN,
                 mobileTypeWeight = Int.MIN_VALUE,
             )
         assertEquals(
             CenterGeometry.DEFAULT_WIFI_SIZE_SCALE,
-            fallback.wifiSizeScale,
+            fallback.wifiScale,
             0f,
         )
         assertEquals(
             CenterGeometry.DEFAULT_MOBILE_TYPE_SIZE_SCALE,
-            fallback.mobileTypeSizeScale,
+            fallback.mobileTypeScale,
             0f,
         )
         assertEquals(
@@ -124,18 +124,18 @@ class CenterGeometryTest {
 
         val clamped =
             CenterGeometry.resolve(
-                wifiSizeScale = 5f,
-                mobileTypeSizeScale = 5f,
+                wifiScale = 5f,
+                mobileTypeScale = 5f,
                 mobileTypeWeight = 5000,
             )
         assertEquals(
             CenterGeometry.MAX_WIFI_SIZE_SCALE,
-            clamped.wifiSizeScale,
+            clamped.wifiScale,
             0f,
         )
         assertEquals(
             CenterGeometry.MAX_MOBILE_TYPE_SIZE_SCALE,
-            clamped.mobileTypeSizeScale,
+            clamped.mobileTypeScale,
             0f,
         )
         assertEquals(
@@ -155,18 +155,18 @@ class CenterGeometryTest {
 
         val clamped =
             CenterGeometry.resolve(
-                wifiSizeScale = -1f,
-                mobileTypeSizeScale = -1f,
+                wifiScale = -1f,
+                mobileTypeScale = -1f,
                 mobileTypeWeight = 800,
-                airplaneSizeScale = -1f,
-                noSimSizeScale = -1f,
+                airplaneScale = -1f,
+                noSimScale = -1f,
                 combinedScale = -1f,
             )
 
-        assertEquals(0.40f, clamped.wifiSizeScale, 0f)
-        assertEquals(0.40f, clamped.airplaneSizeScale, 0f)
-        assertEquals(0.40f, clamped.noSimSizeScale, 0f)
-        assertEquals(0.40f, clamped.mobileTypeSizeScale, 0f)
+        assertEquals(0.40f, clamped.wifiScale, 0f)
+        assertEquals(0.40f, clamped.airplaneScale, 0f)
+        assertEquals(0.40f, clamped.noSimScale, 0f)
+        assertEquals(0.40f, clamped.mobileTypeScale, 0f)
         assertEquals(COMBINED_SCALE_MIN, clamped.combinedScale, 0f)
     }
 
@@ -208,7 +208,7 @@ class CenterGeometryTest {
 
     @Test
     fun topInfoOffsetTargetsReadoutOnlyInNetworkCenter() {
-        val raw = batteryTopVerticalOffsetRaw(5f)
+        val raw = topOffsetYRaw(5f)
 
         assertEquals(
             raw,
@@ -230,7 +230,7 @@ class CenterGeometryTest {
 
     @Test
     fun topInfoOffsetTargetsNetworkOnlyInBatteryCenter() {
-        val raw = batteryTopVerticalOffsetRaw(5f)
+        val raw = topOffsetYRaw(5f)
 
         assertEquals(
             BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
@@ -274,14 +274,14 @@ class CenterGeometryTest {
     fun nativePeerDefaultsRemainOpticallyMatchedButDoNotFollowWifiScaling() {
         val base =
             CenterGeometry.resolve(
-                wifiSizeScale = 1f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
         val enlargedWifi =
             CenterGeometry.resolve(
-                wifiSizeScale = 1.2f,
-                mobileTypeSizeScale = 1f,
+                wifiScale = 1.2f,
+                mobileTypeScale = 1f,
                 mobileTypeWeight = 800,
             )
 

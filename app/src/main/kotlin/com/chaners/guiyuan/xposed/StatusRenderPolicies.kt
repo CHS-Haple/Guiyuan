@@ -13,7 +13,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
+import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -37,7 +37,7 @@ internal object TopInfoOffsetPolicy {
         rawOffset: Float,
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
-            -batteryTopVerticalOffsetUi(rawOffset)
+            -topOffsetYUi(rawOffset)
         } else {
             0f
         }
@@ -233,10 +233,10 @@ internal object CenterGeometry {
     private const val BASE_MOBILE_TYPE_SUFFIX_RISE = 8f
 
     data class Resolved(
-        val wifiSizeScale: Float,
-        val airplaneSizeScale: Float,
-        val noSimSizeScale: Float,
-        val mobileTypeSizeScale: Float,
+        val wifiScale: Float,
+        val airplaneScale: Float,
+        val noSimScale: Float,
+        val mobileTypeScale: Float,
         val wifiMaxWidth: Float,
         val wifiMaxHeight: Float,
         val airplaneMaxSize: Float,
@@ -249,49 +249,49 @@ internal object CenterGeometry {
     )
 
     fun resolve(
-        wifiSizeScale: Float,
-        mobileTypeSizeScale: Float,
+        wifiScale: Float,
+        mobileTypeScale: Float,
         mobileTypeWeight: Int,
-        airplaneSizeScale: Float = DEFAULT_AIRPLANE_SIZE_SCALE,
-        noSimSizeScale: Float = DEFAULT_NO_SIM_SIZE_SCALE,
+        airplaneScale: Float = DEFAULT_AIRPLANE_SIZE_SCALE,
+        noSimScale: Float = DEFAULT_NO_SIM_SIZE_SCALE,
         combinedScale: Float = COMBINED_SCALE_DEFAULT,
     ): Resolved {
-        val normalizedWifi =
-            wifiSizeScale.takeIf(Float::isFinite)?.coerceIn(MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE)
+        val wifi =
+            wifiScale.takeIf(Float::isFinite)?.coerceIn(MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE)
                 ?: DEFAULT_WIFI_SIZE_SCALE
-        val normalizedAirplane =
-            airplaneSizeScale.takeIf(Float::isFinite)
+        val airplane =
+            airplaneScale.takeIf(Float::isFinite)
                 ?.coerceIn(MIN_AIRPLANE_SIZE_SCALE, MAX_AIRPLANE_SIZE_SCALE)
                 ?: DEFAULT_AIRPLANE_SIZE_SCALE
-        val normalizedNoSim =
-            noSimSizeScale.takeIf(Float::isFinite)
+        val noSim =
+            noSimScale.takeIf(Float::isFinite)
                 ?.coerceIn(MIN_NO_SIM_SIZE_SCALE, MAX_NO_SIM_SIZE_SCALE)
                 ?: DEFAULT_NO_SIM_SIZE_SCALE
-        val normalizedMobile =
-            mobileTypeSizeScale.takeIf(Float::isFinite)
+        val mobile =
+            mobileTypeScale.takeIf(Float::isFinite)
                 ?.coerceIn(MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE)
                 ?: DEFAULT_MOBILE_TYPE_SIZE_SCALE
-        val normalizedWeight =
+        val weight =
             mobileTypeWeight.coerceIn(MIN_MOBILE_TYPE_WEIGHT, MAX_MOBILE_TYPE_WEIGHT)
-        val normalizedCombined =
+        val combined =
             combinedScale
                 .takeIf(Float::isFinite)
                 ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
                 ?: COMBINED_SCALE_DEFAULT
         return Resolved(
-            wifiSizeScale = normalizedWifi,
-            airplaneSizeScale = normalizedAirplane,
-            noSimSizeScale = normalizedNoSim,
-            mobileTypeSizeScale = normalizedMobile,
-            wifiMaxWidth = BASE_WIFI_MAX_WIDTH * normalizedWifi,
-            wifiMaxHeight = BASE_WIFI_MAX_HEIGHT * normalizedWifi,
-            airplaneMaxSize = BASE_AIRPLANE_MAX_SIZE * normalizedAirplane,
-            noSimMaxSize = BASE_NO_SIM_MAX_SIZE * normalizedNoSim,
-            mobileTypeTextSize = BASE_MOBILE_TYPE_TEXT_SIZE * normalizedMobile,
-            mobileTypeSuffixSize = BASE_MOBILE_TYPE_SUFFIX_SIZE * normalizedMobile,
-            mobileTypeSuffixRise = BASE_MOBILE_TYPE_SUFFIX_RISE * normalizedMobile,
-            mobileTypeWeight = normalizedWeight,
-            combinedScale = normalizedCombined,
+            wifiScale = wifi,
+            airplaneScale = airplane,
+            noSimScale = noSim,
+            mobileTypeScale = mobile,
+            wifiMaxWidth = BASE_WIFI_MAX_WIDTH * wifi,
+            wifiMaxHeight = BASE_WIFI_MAX_HEIGHT * wifi,
+            airplaneMaxSize = BASE_AIRPLANE_MAX_SIZE * airplane,
+            noSimMaxSize = BASE_NO_SIM_MAX_SIZE * noSim,
+            mobileTypeTextSize = BASE_MOBILE_TYPE_TEXT_SIZE * mobile,
+            mobileTypeSuffixSize = BASE_MOBILE_TYPE_SUFFIX_SIZE * mobile,
+            mobileTypeSuffixRise = BASE_MOBILE_TYPE_SUFFIX_RISE * mobile,
+            mobileTypeWeight = weight,
+            combinedScale = combined,
         )
     }
 }

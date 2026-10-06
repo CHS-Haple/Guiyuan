@@ -2189,7 +2189,7 @@ The Build-562 diagnostic confirms `compactSlotWidth=105` remained unchanged whil
 - Mobile Type weight: 400-1400, 50-weight slider intervals, default/key point 900.
 - Add one centered-scale reservation rule: because painter shrink is centered in the stable Battery carrier, peer reservation ends at the scaled visual's leading edge while retaining the transparent end-side inset.
 - Reuse that rule for Home/Keyguard/Control Center native padding and the transition reservation/latent-reveal compact baseline.
-- Visual preference changes ask the existing `SystemUiHomePresentationOwner` to resync its reservation; no second padding/translation writer is added.
+- Visual preference changes ask the existing `SysUiPresentationOwner` to resync its reservation; no second padding/translation writer is added.
 
 ### Review
 
@@ -3795,7 +3795,7 @@ No visual behavior or ownership semantics are changed.
 
 - `FOLLOW_SYSTEM` classification was already correct: only resolved `Custom` semantic color sources are considered colorized.
 - Tint authority was wrong. Build 638 sampled `finalStatusIcons`, the fully-expanded QS destination, rather than `QS_FAKE / fakeStatusIcons`, the native transition carrier visible beside Guiyuan during the gesture. The final destination can legitimately already be white.
-- The temporary review attempt to use `SystemUiNativeNetworkSuppressionOwner.activeManager` for an arbitrary final group was rejected because that manager belongs to the Home status-bar host, not the independent QS/QS_FAKE icon group.
+- The temporary review attempt to use `NativeNetworkSuppressionOwner.activeManager` for an arbitrary final group was rejected because that manager belongs to the Home status-bar host, not the independent QS/QS_FAKE icon group.
 - Supplemental Airplane / No-SIM already resolve a native single-icon optical target, but Build 638 projected them with `SHRINK_ONLY`; therefore a larger native target could never be reached.
 - Charging Clip at retained ring 26% -> 20% starts too late.
 
@@ -5038,7 +5038,7 @@ Historical Build 690 diagnostics captured `sourceScene=KEYGUARD` while the funct
 ### Correction
 
 - reuse the existing `GyModule.controlCenterSourceScene` authority rather than adding a second detector;
-- propagate source-scene changes to `SystemUiHomePresentationOwner`;
+- propagate source-scene changes to `SysUiPresentationOwner`;
 - sample and consume the Home steady-peer mirror only for `SourceScene.HOME`;
 - clear the Home-derived mirror for `KEYGUARD` and `UNKNOWN`, leaving native QS_FAKE island authority in force;
 - immediately seed the existing mirror from the current Home session when source authority returns to Home;

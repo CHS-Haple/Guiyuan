@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.BatteryColorPreset
 import com.chaners.guiyuan.settings.HyperOsBatteryPalette
-import com.chaners.guiyuan.settings.VisualSettings
+import com.chaners.guiyuan.settings.VisualCfg
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -41,7 +41,7 @@ class ColorPolicyTest {
                         statusIconTint = 0xff556677.toInt(),
                     ),
                 visualSettings =
-                    VisualSettings(
+                    VisualCfg(
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
@@ -100,7 +100,7 @@ class ColorPolicyTest {
                         statusIconTint = 0xff445566.toInt(),
                     ),
                 visualSettings =
-                    VisualSettings(
+                    VisualCfg(
                         mobileFollowsBatteryColor = true,
                         centerFollowsBatteryColor = true,
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
@@ -129,9 +129,9 @@ class ColorPolicyTest {
                         statusIconTint = statusTint,
                     ),
                 visualSettings =
-                    VisualSettings(
-                        batteryTopTextFollowsBatteryColor = false,
-                        batteryTopChargingIconFollowsBatteryColor = false,
+                    VisualCfg(
+                        topTextFollowsBatteryColor = false,
+                        topChargingIconFollowsBatteryColor = false,
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )

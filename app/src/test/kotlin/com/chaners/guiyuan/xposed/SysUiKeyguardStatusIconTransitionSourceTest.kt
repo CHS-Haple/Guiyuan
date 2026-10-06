@@ -1,0 +1,29 @@
+package com.chaners.guiyuan.xposed
+
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class SysUiKeyguardStatusIconTransitionSourceTest {
+    @Test
+    fun pinnedAnimateIconContainerContractRequiresOneBoolean() {
+        assertTrue(
+            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+                arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
+                Void.TYPE,
+            ),
+        )
+        assertFalse(
+            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+                emptyArray(),
+                Void.TYPE,
+            ),
+        )
+        assertFalse(
+            SysUiKeyguardStatusIconTransitionSource.matchesAnimateIconContainerSignature(
+                arrayOf<Class<*>>(Int::class.javaPrimitiveType!!),
+                Void.TYPE,
+            ),
+        )
+    }
+}

@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -89,4 +90,155 @@ class NativeNetworkSuppressionPolicyTest {
                     source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
                 ),
         )
+
+    @Test
+    fun activeMobileVisualMaskMakesNativeSignalContainerTransparent() {
+        assertEquals(
+            0f,
+            NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+                nativeAlpha = 1f,
+                suppressionActive = true,
+            ),
+        )
+    }
+
+    @Test
+    fun inactiveMobileVisualMaskPreservesNativeAlpha() {
+        assertEquals(
+            0.65f,
+            NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+                nativeAlpha = 0.65f,
+                suppressionActive = false,
+            ),
+        )
+    }
+
+    @Test
+    fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
+        assertEquals(
+            true,
+            NativeNetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = true,
+                presentation = null,
+                wasSuppressed = false,
+            ),
+        )
+    }
+
+    @Test
+    fun airplaneExitKeepsPreviousSuppressionThroughUnknownPresentationGap() {
+        val unknown =
+            NativePresentationResolver.Snapshot(
+                mode = NativePresentationResolver.Mode.UNKNOWN,
+                boundRoots = 2,
+                visibleRoots = 0,
+                activeSubscriptionIds = listOf(1, 4),
+                presentationRootSubscriptionId = null,
+                effectiveDataSubscriptionId = 4,
+                networkTypeSubscriptionId = 4,
+                networkType = null,
+            )
+
+        assertEquals(
+            true,
+            NativeNetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = unknown,
+                wasSuppressed = true,
+            ),
+        )
+        assertEquals(
+            false,
+            NativeNetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = unknown,
+                wasSuppressed = false,
+            ),
+        )
+    }
+
+    @Test
+    fun knownNonReplaceableMobilePresentationReleasesStickySuppression() {
+        val dualSeparate =
+            NativePresentationResolver.Snapshot(
+                mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+                boundRoots = 2,
+                visibleRoots = 2,
+                activeSubscriptionIds = listOf(1, 4),
+                presentationRootSubscriptionId = 4,
+                effectiveDataSubscriptionId = 4,
+                networkTypeSubscriptionId = 4,
+                networkType = null,
+            )
+
+        assertEquals(
+            false,
+            NativeNetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = dualSeparate,
+                wasSuppressed = true,
+            ),
+        )
+    }
+
+    @Test
+    fun locationAwareTintWinsOverPeerManagerAndCachedFallback() {
+        assertEquals(
+            0xe6ffffff.toInt(),
+            NativeNetworkSuppressionPolicy.statusIconTint(
+                locationAwareTint = 0xe6ffffff.toInt(),
+                peerAppliedTint = 0xbf000000.toInt(),
+                managerFallbackTint = 0xbf000000.toInt(),
+                fallbackTint = 0xbf000000.toInt(),
+            ),
+        )
+    }
+
+    @Test
+    fun peerTintWinsWhenLocationAwareTintIsUnavailable() {
+        assertEquals(
+            0xfff2f2f2.toInt(),
+            NativeNetworkSuppressionPolicy.statusIconTint(
+                locationAwareTint = null,
+                peerAppliedTint = 0xfff2f2f2.toInt(),
+                managerFallbackTint = 0xdee5e5e5.toInt(),
+                fallbackTint = 0xe6ffffff.toInt(),
+            ),
+        )
+        assertEquals(
+            0xdee5e5e5.toInt(),
+            NativeNetworkSuppressionPolicy.statusIconTint(
+                locationAwareTint = null,
+                peerAppliedTint = 0x00ffffff,
+                managerFallbackTint = 0xdee5e5e5.toInt(),
+                fallbackTint = 0xe6ffffff.toInt(),
+            ),
+        )
+    }
+
+    @Test
+    fun mobilePreMaskRequiresActiveHomeOwnership() {
+        assertEquals(
+            true,
+            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+                suppressionActive = true,
+                belongsToActiveHomeGroup = true,
+            ),
+        )
+        assertEquals(
+            false,
+            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+                suppressionActive = true,
+                belongsToActiveHomeGroup = false,
+            ),
+        )
+        assertEquals(
+            false,
+            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+                suppressionActive = false,
+                belongsToActiveHomeGroup = true,
+            ),
+        )
+    }
+
 }
