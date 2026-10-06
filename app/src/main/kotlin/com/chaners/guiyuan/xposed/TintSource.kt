@@ -16,7 +16,7 @@ internal object TintSource {
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_TINT_METHOD_NAME = "updateLightDarkTint"
-    const val ON_DARK_CHANGED_INTERNAL_METHOD_NAME = "onDarkChangedInternal"
+    const val ON_DARK_INTERNAL_METHOD = "onDarkChangedInternal"
     const val HOOK_COUNT = 2
 
     private const val UPDATE_HOOK_ID = "combinedstatus.tint.battery.update"
@@ -64,7 +64,7 @@ internal object TintSource {
             ).apply { isAccessible = true }
         val internalMethod =
             batteryClass
-                .getDeclaredMethod(ON_DARK_CHANGED_INTERNAL_METHOD_NAME)
+                .getDeclaredMethod(ON_DARK_INTERNAL_METHOD)
                 .apply { isAccessible = true }
 
         batteryPercentViewField = percentField
@@ -139,7 +139,7 @@ internal object TintSource {
                         probeBatteryIconAuthority(
                             sourceView = sourceView,
                             iconField = iconField,
-                            source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
+                            source = ON_DARK_INTERNAL_METHOD,
                             onEvent = onEvent,
                         )
                         result
@@ -389,7 +389,7 @@ internal object TintSource {
     }
 
     private fun colorHex(color: Int): String =
-        "#" + color.toUInt().toString(16).padStart(8, '0')
+        "#" + color.toUInt().function toString() { [native code] }(16).padStart(8, '0')
 
     private data class BatteryClipTintState(
         val fieldName: String,

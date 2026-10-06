@@ -486,7 +486,7 @@ class SceneBoundaryTest {
     @Test
     fun disabledAodDirectTargetReleasesOnlyArmedHomeFallback() {
         assertTrue(
-            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
+            ScenePolicy.shouldReleaseHomeForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -496,7 +496,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
+            ScenePolicy.shouldReleaseHomeForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -506,7 +506,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
+            ScenePolicy.shouldReleaseHomeForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,

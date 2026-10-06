@@ -96,7 +96,7 @@ internal object ScenePolicy {
             keyguardPresentationReady &&
             nativeFraction > 0f
 
-    fun shouldReconcileKeyguardControlCenter(
+    fun shouldReconcileKeyguardCc(
         controlCenterVisible: Boolean,
         nativeFraction: Float,
         leaseActive: Boolean,
@@ -358,7 +358,7 @@ internal object ScenePolicy {
             toAod &&
             isAodAnimate
 
-    fun shouldReleaseHomeKeyguardForAodOff(
+    fun shouldReleaseHomeForAodOff(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,

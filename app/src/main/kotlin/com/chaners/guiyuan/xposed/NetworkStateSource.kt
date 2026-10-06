@@ -18,7 +18,7 @@ internal object NetworkStateSource {
     const val WIFI_ICON_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$1\$1\$2\$1"
     const val WIFI_ICON_EMIT_METHOD_NAME = "emit"
-    const val WIFI_LOCATION_VIEW_MODEL_CLASS_NAME =
+    const val WIFI_LOCATION_VM_CLASS =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.LocationBasedWifiViewModel"
     private const val WIFI_ICON_VISIBLE_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.model.WifiIcon\$Visible"
@@ -26,17 +26,17 @@ internal object NetworkStateSource {
         "com.android.systemui.common.shared.model.Icon\$Resource"
     private const val WIFI_ICON_HIDDEN_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.model.WifiIcon\$Hidden"
-    const val HOME_WIFI_VIEW_MODEL_CLASS_NAME =
+    const val HOME_WIFI_VM_CLASS =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.HomeWifiViewModel"
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
     const val MOBILE_BIND_METHOD_NAME = "bind"
-    const val MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME =
+    const val MOBILE_LOCATION_VM_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.LocationBasedMobileViewModel"
-    const val HOME_MOBILE_VIEW_MODEL_CLASS_NAME =
+    const val HOME_MOBILE_VM_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.HomeMobileIconViewModel"
-    const val MOBILE_ICON_VIEW_MODEL_CLASS_NAME =
+    const val MOBILE_ICON_VM_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.MiuiMobileIconViewModel"
     const val MOBILE_VIEW_LOGGER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.MobileViewLogger"
@@ -185,7 +185,7 @@ internal object NetworkStateSource {
                 }
             val wifiLocationVmClass =
                 atStage("wifi.resolve.locationViewModelClass") {
-                    Class.forName(WIFI_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+                    Class.forName(WIFI_LOCATION_VM_CLASS, false, classLoader)
                 }
             val wifiBindMethod =
                 atStage("wifi.resolve.bindMethod") {
@@ -314,11 +314,11 @@ internal object NetworkStateSource {
                 }
             val mobileLocationVmClass =
                 atStage("mobile.resolve.locationViewModelClass") {
-                    Class.forName(MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+                    Class.forName(MOBILE_LOCATION_VM_CLASS, false, classLoader)
                 }
             val mobileIconVmClass =
                 atStage("mobile.resolve.iconViewModelClass") {
-                    Class.forName(MOBILE_ICON_VIEW_MODEL_CLASS_NAME, false, classLoader)
+                    Class.forName(MOBILE_ICON_VM_CLASS, false, classLoader)
                 }
             val mobileLoggerClass =
                 atStage("mobile.resolve.loggerClass") {
@@ -480,7 +480,7 @@ internal object NetworkStateSource {
                 pair
                     ?.getOrNull(1)
                     ?.takeIf { candidate ->
-                        candidate.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                        candidate.javaClass.name == HOME_WIFI_VM_CLASS
                     }
             if (root.isAttachedToWindow) {
                 wifiRoots[root] = viewModel
@@ -576,7 +576,7 @@ internal object NetworkStateSource {
 
         if (
             root != null &&
-            viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+            viewModel?.javaClass?.name == HOME_WIFI_VM_CLASS
         ) {
             val previous = synchronized(this) {
                 wifiRoots.put(root, viewModel)
@@ -615,7 +615,7 @@ internal object NetworkStateSource {
         val binding =
             wifiRoots.entries.firstOrNull { (root, viewModel) ->
                 root.isAttachedToWindow &&
-                    viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                    viewModel?.javaClass?.name == HOME_WIFI_VM_CLASS
             } ?: run {
                 onEvent?.invoke(
                     "networkPipeline wifi seed source=hotReloadRestore " +
@@ -903,7 +903,7 @@ internal object NetworkStateSource {
                 }
             val eventKey =
                 effective.valueType + ":" +
-                    (effective.resourceId?.toString() ?: "none")
+                    (effective.resourceId?.function toString() { [native code] }() ?: "none")
             val changed =
                 synchronized(this) {
                     lastWifiEvents.put(image, eventKey) != eventKey
@@ -960,7 +960,7 @@ internal object NetworkStateSource {
 
         if (
             root != null &&
-            locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
+            locationViewModel?.javaClass?.name == HOME_MOBILE_VM_CLASS
         ) {
             val subscriptionId = runCatching {
                 (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
@@ -1026,11 +1026,11 @@ internal object NetworkStateSource {
             val subscriptionId = findMobileSubscription(image)
             if (subscriptionId != null) {
                 val valueText = when (value) {
-                    is Number -> value.toLong().toString()
+                    is Number -> value.toLong().function toString() { [native code] }()
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.toString() + ":" + valueText
+                val eventKey = classId.function toString() { [native code] }() + ":" + valueText
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
@@ -1124,7 +1124,7 @@ internal object NetworkStateSource {
         return if (params == null) {
             "none"
         } else {
-            params.width.toString() + "x" + params.height +
+            params.width.function toString() { [native code] }() + "x" + params.height +
                 ":measured=" + view.measuredWidth + "x" + view.measuredHeight
         }
     }
@@ -1187,15 +1187,15 @@ internal object NetworkStateSource {
     ): String {
         if (tint == null) return "none"
         val resolved = tint.getColorForState(state, tint.defaultColor)
-        return "0x" + resolved.toUInt().toString(16).padStart(8, '0') +
-            "/default=0x" + tint.defaultColor.toUInt().toString(16).padStart(8, '0')
+        return "0x" + resolved.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
+            "/default=0x" + tint.defaultColor.toUInt().function toString() { [native code] }(16).padStart(8, '0')
     }
 
     private fun visibilityName(visibility: Int): String = when (visibility) {
         View.VISIBLE -> "VISIBLE"
         View.INVISIBLE -> "INVISIBLE"
         View.GONE -> "GONE"
-        else -> visibility.toString()
+        else -> visibility.function toString() { [native code] }()
     }
 
     private fun resourceId(view: View): String {
@@ -1206,7 +1206,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(view.id)
         }.getOrElse {
-            view.id.toString()
+            view.id.function toString() { [native code] }()
         }
     }
 
@@ -1221,7 +1221,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(resId)
         }.getOrElse {
-            resId.toString()
+            resId.function toString() { [native code] }()
         }
     }
 }

@@ -17,7 +17,7 @@ internal object ParticipantAccess {
         "com.android.systemui.statusbar.StatusIconDisplayable"
     private const val DEPENDENCY =
         "com.android.systemui.Dependency"
-    private val STATUS_BAR_ICON_CONTROLLER_CANDIDATES =
+    private val STATUS_ICON_CTRL_CANDIDATES =
         listOf(
             "com.android.systemui.statusbar.phone.ui.StatusBarIconController",
             "com.android.systemui.statusbar.phone.StatusBarIconController",
@@ -553,7 +553,7 @@ internal object ParticipantAccess {
                     }
 
             if (getMethod != null) {
-                STATUS_BAR_ICON_CONTROLLER_CANDIDATES.forEach { className ->
+                STATUS_ICON_CTRL_CANDIDATES.forEach { className ->
                     val controllerType =
                         classOrNull(className, classLoader)
                             ?: return@forEach

@@ -10,24 +10,24 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 
 internal object PanelTransitionSource {
-    const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
-    const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
+    const val CC_RUNTIME_HOOK_COUNT = 4
+    const val CC_DIAG_HOOK_COUNT = 0
     const val HOOK_COUNT =
-        CONTROL_CENTER_RUNTIME_HOOK_COUNT +
-            CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT
+        CC_RUNTIME_HOOK_COUNT +
+            CC_DIAG_HOOK_COUNT
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
-    private const val CONTROL_CENTER_EXPANSION_METHOD = "onExpansionChanged"
-    private const val CONTROL_CENTER_APPEARANCE_METHOD = "onAppearanceChanged"
-    private const val CONTROL_CENTER_VISIBLE_METHOD = "onVisibleChanged"
-    private const val CONTROL_CENTER_HEADER_CALLBACK_CLASS =
+    private const val CC_EXPANSION_METHOD = "onExpansionChanged"
+    private const val CC_APPEARANCE_METHOD = "onAppearanceChanged"
+    private const val CC_VISIBLE_METHOD = "onVisibleChanged"
+    private const val CC_HEADER_CALLBACK_CLASS =
         "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController\$controlCenterCallback\$1"
-    private const val CONTROL_CENTER_HEADER_CLASS =
+    private const val CC_HEADER_CLASS =
         "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController"
     private const val COMBINED_HEADER_CLASS =
         "com.android.systemui.controlcenter.shade.CombinedHeaderController"
-    private const val CONTROL_CENTER_FAKE_STATUS_BAR_CLASS =
+    private const val CC_FAKE_STATUS_BAR_CLASS =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val CC_FAKE_STATUS_BAR_ICONS_CLASS =
         "com.android.systemui.controlcenter.header.CcFakeStatusBarIcons"
@@ -35,13 +35,13 @@ internal object PanelTransitionSource {
     private const val STATUS_BAR_ANCHOR_CLASS =
         "com.android.systemui.controlcenter.shade.StatusBarAnchorBounds"
 
-    private const val CONTROL_CENTER_EXPANSION_HOOK_ID =
+    private const val CC_EXPANSION_HOOK_ID =
         "combinedstatus.panel.control-center.expansion"
-    private const val CONTROL_CENTER_APPEARANCE_HOOK_ID =
+    private const val CC_APPEARANCE_HOOK_ID =
         "combinedstatus.panel.control-center.appearance"
-    private const val CONTROL_CENTER_VISIBLE_HOOK_ID =
+    private const val CC_VISIBLE_HOOK_ID =
         "combinedstatus.panel.control-center.visible"
-    private const val CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID =
+    private const val CC_FAKE_ATTACHED_HOOK_ID =
         "combinedstatus.panel.control-center.fake-attached"
 
     private var controlProbe = ProbeState()
@@ -66,13 +66,13 @@ internal object PanelTransitionSource {
         val controlVisibleMethod =
             controlClass
                 .getDeclaredMethod(
-                    CONTROL_CENTER_VISIBLE_METHOD,
+                    CC_VISIBLE_METHOD,
                     Boolean::class.javaPrimitiveType,
                 )
                 .apply { isAccessible = true }
         val fakeStatusBarClass =
             Class.forName(
-                CONTROL_CENTER_FAKE_STATUS_BAR_CLASS,
+                CC_FAKE_STATUS_BAR_CLASS,
                 false,
                 classLoader,
             )
@@ -86,21 +86,21 @@ internal object PanelTransitionSource {
                 ?: error("control-center-fake-attached-method-missing")
         val headerCallbackClass =
             Class.forName(
-                CONTROL_CENTER_HEADER_CALLBACK_CLASS,
+                CC_HEADER_CALLBACK_CLASS,
                 false,
                 classLoader,
             )
         val controlExpansionMethod =
             headerCallbackClass
                 .getDeclaredMethod(
-                    CONTROL_CENTER_EXPANSION_METHOD,
+                    CC_EXPANSION_METHOD,
                     Float::class.javaPrimitiveType,
                 )
                 .apply { isAccessible = true }
         val controlAppearanceMethod =
             headerCallbackClass
                 .getDeclaredMethod(
-                    CONTROL_CENTER_APPEARANCE_METHOD,
+                    CC_APPEARANCE_METHOD,
                     Boolean::class.javaPrimitiveType,
                     Boolean::class.javaPrimitiveType,
                 )
@@ -120,7 +120,7 @@ internal object PanelTransitionSource {
             handles +=
                 module
                     .hook(controlVisibleMethod)
-                    .setId(CONTROL_CENTER_VISIBLE_HOOK_ID)
+                    .setId(CC_VISIBLE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val visible = chain.getArg(0) as? Boolean
@@ -178,7 +178,7 @@ internal object PanelTransitionSource {
             handles +=
                 module
                     .hook(fakeAttachedMethod)
-                    .setId(CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID)
+                    .setId(CC_FAKE_ATTACHED_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
@@ -219,7 +219,7 @@ internal object PanelTransitionSource {
             handles +=
                 module
                     .hook(controlExpansionMethod)
-                    .setId(CONTROL_CENTER_EXPANSION_HOOK_ID)
+                    .setId(CC_EXPANSION_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val fraction =
@@ -259,7 +259,7 @@ internal object PanelTransitionSource {
             handles +=
                 module
                     .hook(controlAppearanceMethod)
-                    .setId(CONTROL_CENTER_APPEARANCE_HOOK_ID)
+                    .setId(CC_APPEARANCE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val first = chain.getArg(0) as? Boolean
@@ -392,7 +392,7 @@ internal object PanelTransitionSource {
                         val value =
                             runCatching { resolved.get(view) }
                                 .getOrNull()
-                                ?.function function function toString() { [native code] }() { [native code] }() { [native code] }()
+                                ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }()
                                 ?: "unavailable"
                         name + "=" + value
                     }
@@ -443,8 +443,8 @@ internal object PanelTransitionSource {
         value?.takeIf { it.isFinite() }
 
     internal fun expectedHookCount(includeControlCenterDiagnostics: Boolean): Int =
-        CONTROL_CENTER_RUNTIME_HOOK_COUNT +
-            if (includeControlCenterDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
+        CC_RUNTIME_HOOK_COUNT +
+            if (includeControlCenterDiagnostics) CC_DIAG_HOOK_COUNT else 0
 
     fun currentCcHomeEligibility(): Boolean? =
         ccHomeEligible
@@ -654,8 +654,8 @@ internal object PanelTransitionSource {
         val statusIconsWidth: Int?,
         val batteryWidth: Int?,
         val realSystemIconsWidth: Int?,
-        val normalStatusBarTranslationX: Int?,
-        val normalStatusIconsTranslationX: Int?,
+        val statusBarTx: Int?,
+        val statusIconsTx: Int?,
         val batteryWidthDiff: Int?,
         val addBatteryIsland: Boolean?,
         val ccExpanding: Boolean?,
@@ -669,8 +669,8 @@ internal object PanelTransitionSource {
                     ",statusIconsWidth=" + (statusIconsWidth ?: "unknown") +
                     ",batteryWidth=" + (batteryWidth ?: "unknown") +
                     ",realSystemIconsWidth=" + (realSystemIconsWidth ?: "unknown") +
-                    ",normalStatusBarTx=" + (normalStatusBarTranslationX ?: "unknown") +
-                    ",normalStatusIconsTx=" + (normalStatusIconsTranslationX ?: "unknown") +
+                    ",normalStatusBarTx=" + (statusBarTx ?: "unknown") +
+                    ",normalStatusIconsTx=" + (statusIconsTx ?: "unknown") +
                     ",batteryWidthDiff=" + (batteryWidthDiff ?: "unknown") +
                     ",addBatteryIsland=" + (addBatteryIsland ?: "unknown") +
                     ",expanding=" + (ccExpanding ?: "unknown") +
@@ -682,8 +682,8 @@ internal object PanelTransitionSource {
         private val callbacksField: Field,
         private val callbackOuterField: Field,
         private val statusBarAnchorField: Field,
-        private val normalStatusBarTranslationXField: Field,
-        private val normalStatusIconsTranslationXField: Field,
+        private val statusBarTxField: Field,
+        private val statusIconsTxField: Field,
         private val batteryWidthDiffField: Field,
         private val addBatteryIslandField: Field,
         private val controlCenterExpandingField: Field,
@@ -826,10 +826,10 @@ internal object PanelTransitionSource {
                 statusIconsWidth = readInt(statusIconsWidthField, anchor),
                 batteryWidth = readInt(batteryWidthField, anchor),
                 realSystemIconsWidth = realSystemIcons?.width,
-                normalStatusBarTranslationX =
-                    readInt(normalStatusBarTranslationXField, header),
-                normalStatusIconsTranslationX =
-                    readInt(normalStatusIconsTranslationXField, header),
+                statusBarTx =
+                    readInt(statusBarTxField, header),
+                statusIconsTx =
+                    readInt(statusIconsTxField, header),
                 batteryWidthDiff = readInt(batteryWidthDiffField, header),
                 addBatteryIsland = readBoolean(addBatteryIslandField, header),
                 ccExpanding =
@@ -851,13 +851,13 @@ internal object PanelTransitionSource {
                 runCatching {
                     val callbackClass =
                         Class.forName(
-                            CONTROL_CENTER_HEADER_CALLBACK_CLASS,
+                            CC_HEADER_CALLBACK_CLASS,
                             false,
                             classLoader,
                         )
                     val headerClass =
                         Class.forName(
-                            CONTROL_CENTER_HEADER_CLASS,
+                            CC_HEADER_CLASS,
                             false,
                             classLoader,
                         )
@@ -869,7 +869,7 @@ internal object PanelTransitionSource {
                         )
                     val fakeStatusBarClass =
                         Class.forName(
-                            CONTROL_CENTER_FAKE_STATUS_BAR_CLASS,
+                            CC_FAKE_STATUS_BAR_CLASS,
                             false,
                             classLoader,
                         )
@@ -899,11 +899,11 @@ internal object PanelTransitionSource {
                             callbackClass.getDeclaredField("this\$0").accessible(),
                         statusBarAnchorField =
                             headerClass.getDeclaredField("statusBarAnchor").accessible(),
-                        normalStatusBarTranslationXField =
+                        statusBarTxField =
                             headerClass
                                 .getDeclaredField("normalControlStatusBarTranslationX")
                                 .accessible(),
-                        normalStatusIconsTranslationXField =
+                        statusIconsTxField =
                             headerClass
                                 .getDeclaredField("normalControlStatusIconsTranslationX")
                                 .accessible(),

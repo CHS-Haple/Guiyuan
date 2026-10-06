@@ -292,7 +292,7 @@ internal class StatusPainter(
                 )
 
             TransitionComponent.CHARGING_ICON ->
-                drawBatteryTopChargingIconTransition(
+                drawChargingIconTransition(
                     canvas = canvas,
                     model = model,
                     chargingIconTint = colors.chargingIconTint,
@@ -399,14 +399,14 @@ internal class StatusPainter(
     }
 
     internal object BatteryNumberFollowerPolicy {
-        private const val CHARGING_HIDE_COMPLETE_RING_LIFETIME = 0.40f
+        private const val CHARGING_HIDE_END = 0.40f
         private const val CHARGING_TARGET_TRAVEL_COMPLETE = 0.80f
         private const val CHARGING_TARGET_REVEAL_START = 0.85f
         private const val CHARGING_TARGET_REVEAL_COMPLETE = 0.90f
 
         private const val chargingHideStartProgress = 0f
         private val chargingHideEndProgress =
-            firstProgressAtOrAboveRingLifetime(CHARGING_HIDE_COMPLETE_RING_LIFETIME)
+            progressAtRingLifetime(CHARGING_HIDE_END)
         private val chargingTargetRevealComplete =
             CHARGING_TARGET_REVEAL_COMPLETE
 
@@ -430,7 +430,7 @@ internal class StatusPainter(
             return (
                 1f -
                     ringLifetime /
-                        CHARGING_HIDE_COMPLETE_RING_LIFETIME
+                        CHARGING_HIDE_END
             ).coerceIn(0f, 1f)
         }
 
@@ -463,7 +463,7 @@ internal class StatusPainter(
         internal fun targetRevealWindow(): Pair<Float, Float> =
             Pair(CHARGING_TARGET_REVEAL_START, chargingTargetRevealComplete)
 
-        private fun firstProgressAtOrAboveRingLifetime(threshold: Float): Float {
+        private fun progressAtRingLifetime(threshold: Float): Float {
             var low = 0f
             var high = 1f
             repeat(12) {
@@ -881,7 +881,7 @@ internal class StatusPainter(
         }
 
         val mobileLayout =
-            resolveMobileSignalTransitionLayout(
+            mobileSignalTransitionLayout(
                 geometry = outerGeometry,
                 model = model,
             )
@@ -1738,7 +1738,7 @@ internal class StatusPainter(
             model.charging && visualSettings.chargingIconEnabled
         if (!textVisible && !chargingSlotVisible) return null
 
-        val text = model.batteryPercent.coerceIn(0, 100).function toString() { [native code] }()
+        val text = model.batteryPercent.coerceIn(0, 100).function function toString() { [native code] }() { [native code] }()
         val textSize = BATTERY_TOP_TEXT_SIZE * visualSettings.batteryTopTextScale
         val textExtraStroke =
             if (textVisible) {
@@ -2033,7 +2033,7 @@ internal class StatusPainter(
         )
     }
 
-    private fun drawBatteryTopChargingIconTransition(
+    private fun drawChargingIconTransition(
         canvas: Canvas,
         model: RenderModel,
         chargingIconTint: Int,
@@ -2115,7 +2115,7 @@ internal class StatusPainter(
         )
     }
 
-    fun transitionBatteryNumberCurrentBounds(
+    fun batteryNumberTransitionBounds(
         width: Int,
         height: Int,
         model: RenderModel,
@@ -2369,12 +2369,12 @@ internal class StatusPainter(
     ): Float {
         val extraWeight =
             (weight - BATTERY_TOP_NATIVE_WEIGHT_MAX)
-                .coerceIn(0, BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE)
+                .coerceIn(0, TOP_SYNTH_WEIGHT_RANGE)
         if (extraWeight == 0 || textSize <= 0f) return 0f
         return textSize *
-            BATTERY_TOP_SYNTHETIC_STROKE_RATIO *
+            TOP_SYNTH_STROKE_RATIO *
             extraWeight.toFloat() /
-            BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE.toFloat()
+            TOP_SYNTH_WEIGHT_RANGE.toFloat()
     }
     private fun drawCenterTransition(
         canvas: Canvas,
@@ -3193,7 +3193,7 @@ internal class StatusPainter(
         return cachedMobileTypeTypeface
     }
 
-    private fun resolveMobileSignalTransitionLayout(
+    private fun mobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
     ): MobileSignalTransitionLayout {
@@ -3260,7 +3260,7 @@ internal class StatusPainter(
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>?,
     ) {
-        val layout = resolveMobileSignalTransitionLayout(geometry, model)
+        val layout = mobileSignalTransitionLayout(geometry, model)
         @Suppress("UNUSED_VARIABLE")
         val motion = motionProgress.coerceIn(0f, 1f)
         val shape = shapeProgress.coerceIn(0f, 1f)
@@ -3272,7 +3272,7 @@ internal class StatusPainter(
                 ?.takeIf { bars -> bars.size == MOBILE_DOT_COUNT }
                 ?.sortedBy { bar -> (bar.left + bar.right) / 2f }
         if (exactBars != null) {
-            drawMobileSignalTransitionToExactBars(
+            drawMobileToExactBars(
                 canvas = canvas,
                 model = model,
                 tint = tint,
@@ -3334,7 +3334,7 @@ internal class StatusPainter(
         }
     }
 
-    private fun drawMobileSignalTransitionToExactBars(
+    private fun drawMobileToExactBars(
         canvas: Canvas,
         model: RenderModel,
         tint: Int,
@@ -3620,8 +3620,8 @@ internal class StatusPainter(
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
                 TOP_OFFSET_DEFAULT
         const val BATTERY_TOP_NATIVE_WEIGHT_MAX = 1000
-        const val BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE = 400
-        const val BATTERY_TOP_SYNTHETIC_STROKE_RATIO = 0.07f
+        const val TOP_SYNTH_WEIGHT_RANGE = 400
+        const val TOP_SYNTH_STROKE_RATIO = 0.07f
         const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
         const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400
 
