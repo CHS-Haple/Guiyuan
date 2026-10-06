@@ -111,7 +111,7 @@ internal object SysUiPresentationOwner {
 
         // The steady-peer mirror samples Home native island state, so it is valid
         // only while Home is the authoritative Control Center source.
-        if (!sourceScene == SourceScene.HOME) {
+        if (sourceScene != SourceScene.HOME) {
             steadyPeerMirrorActive = false
             steadyPeerMirrorHiddenSlots = emptySet()
             controlCenterCurrent?.updateSteadyPeerMirror(
@@ -323,7 +323,7 @@ internal object SysUiPresentationOwner {
                 runCatching { third.unhook() }
                 clearInstallState()
                 return "island-showing-hook-" +
-                        (error.message ?: error.javaClass.simpleName)
+                    (error.message ?: error.javaClass.simpleName)
             }
 
         measureHook = first
