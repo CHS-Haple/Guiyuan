@@ -4,49 +4,17 @@ import android.content.Context
 import android.telephony.SubscriptionManager
 
 internal object SystemActiveSubscriptionSource {
-    fun current(context: Context): Snapshot {
+    fun current(context: Context): Set<Int>? {
         val manager =
             context.getSystemService(SubscriptionManager::class.java)
-                ?: return Snapshot(
-                    subscriptionIds = null,
-                    authority = Authority.UNAVAILABLE,
-                    reason = "subscription-manager-missing",
-                )
+                ?: return null
 
+        // null means the platform source is unavailable; an empty set is still authoritative.
         return runCatching {
-            val infos =
-                manager.activeSubscriptionInfoList
-                    ?: return Snapshot(
-                        subscriptionIds = null,
-                        authority = Authority.UNAVAILABLE,
-                        reason = "active-subscription-list-null",
-                    )
-            Snapshot(
-                subscriptionIds =
-                    infos
-                        .map { info -> info.subscriptionId }
-                        .filter { subscriptionId -> subscriptionId >= 0 }
-                        .toSet(),
-                authority = Authority.SUBSCRIPTION_MANAGER,
-                reason = null,
-            )
-        }.getOrElse { error ->
-            Snapshot(
-                subscriptionIds = null,
-                authority = Authority.UNAVAILABLE,
-                reason = error.javaClass.simpleName,
-            )
-        }
-    }
-
-    internal data class Snapshot(
-        val subscriptionIds: Set<Int>?,
-        val authority: Authority,
-        val reason: String?,
-    )
-
-    internal enum class Authority {
-        SUBSCRIPTION_MANAGER,
-        UNAVAILABLE,
+            manager.activeSubscriptionInfoList
+                ?.map { info -> info.subscriptionId }
+                ?.filter { subscriptionId -> subscriptionId >= 0 }
+                ?.toSet()
+        }.getOrNull()
     }
 }

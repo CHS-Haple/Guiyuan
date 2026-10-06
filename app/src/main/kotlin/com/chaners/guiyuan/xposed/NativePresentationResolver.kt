@@ -39,7 +39,7 @@ internal object NativePresentationResolver {
                     bindings.map { binding -> binding.subscriptionId },
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
                 authoritativeActiveSubscriptionIds =
-                    platformActive?.subscriptionIds,
+                    platformActive,
             )
         val activeBindingSubIds = resolvedActive.subscriptionIds
         val activeBindings =

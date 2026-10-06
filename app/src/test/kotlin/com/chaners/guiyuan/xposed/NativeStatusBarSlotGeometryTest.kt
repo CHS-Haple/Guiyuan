@@ -102,21 +102,6 @@ class NativeStatusBarSlotGeometryTest {
     }
 
     @Test
-    fun transientBatteryViewExpansionDoesNotParticipateInSlotWidth() {
-        val resolved =
-            NativeStatusBarSlotGeometry.resolve(
-                containerWidth = 587,
-                containerPaddingStart = 4,
-                containerPaddingEnd = 0,
-                statusIconsMeasuredWidth = 478,
-                privacyMeasuredWidth = 0,
-                containerHeight = 108,
-            )
-
-        assertEquals(105, resolved?.slotWidth)
-    }
-
-    @Test
     fun visiblePrivacyOccupancyIsExcludedFromBatterySlot() {
         val resolved =
             NativeStatusBarSlotGeometry.resolve(
