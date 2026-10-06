@@ -13,7 +13,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attach(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -30,7 +30,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun attachAod(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
@@ -46,7 +46,7 @@ internal object KeyguardRenderSession {
         )
 
     private fun attachFamily(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         scene: Scene,
         sceneEligible: Boolean,
         onEvent: (String) -> Unit,
@@ -107,7 +107,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: TintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -122,7 +122,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+    fun onAodState(update: KeyguardAodSource.AodUpdate) {
         current?.updateAodState(update)
     }
 
@@ -275,7 +275,7 @@ internal object KeyguardRenderSession {
     }
 
     private class Session(
-        resolved: SystemUiKeyguardHostResolver.ResolvedHost,
+        resolved: KeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private var scene: Scene,
@@ -312,7 +312,7 @@ internal object KeyguardRenderSession {
                 layoutProbe()
             }
 
-        fun matches(resolved: SystemUiKeyguardHostResolver.ResolvedHost): Boolean =
+        fun matches(resolved: KeyguardHostResolver.ResolvedHost): Boolean =
             host.get() === resolved.host &&
                 systemIcons.get() === resolved.systemIcons &&
                 statusIcons.get() === resolved.statusIcons &&
@@ -373,7 +373,7 @@ internal object KeyguardRenderSession {
                 positionHost = systemIcons.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentKeyguardRepresentedSlotOwnership(),
+                    HomePresentation.currentKeyguardRepresentedSlotOwnership(),
             )
         }
 
@@ -394,7 +394,7 @@ internal object KeyguardRenderSession {
             renderController.updateVisualSettings(
                 VisualPrefsOwner.currentSettings(),
             )
-            SystemUiTintStateSource.currentState(battery)?.let { state ->
+            TintSource.currentState(battery)?.let { state ->
                 applyTintState(
                     TintAuthority.resolveBatteryEvent(
                         batteryState = state,
@@ -459,7 +459,7 @@ internal object KeyguardRenderSession {
             layoutProbe()
         }
 
-        fun updateAodState(update: SystemUiKeyguardAodStateSource.AodUpdate) {
+        fun updateAodState(update: KeyguardAodSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             val visible = applyResolvedVisibility()
@@ -487,7 +487,7 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: TintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(
@@ -603,7 +603,7 @@ internal object KeyguardRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
+                HomeCarrierMetrics
                     .resolveCarrierWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false

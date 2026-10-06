@@ -10,11 +10,11 @@ internal object NativePresentationResolver {
     fun resolve(
         state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
-            SystemUiDefaultDataSubscriptionSource.currentSubscriptionId(),
+            DataSubSource.currentSubscriptionId(),
         pendingMobileTypeDrawable: Drawable? = null,
     ): Snapshot {
         val bindings =
-            SystemUiNetworkStateSource.mobilePresentationBindings()
+            NetworkStateSource.mobilePresentationBindings()
                 .filter { binding -> binding.root.isAttachedToWindow }
         val semanticActiveSubIds =
             bindings
@@ -32,7 +32,7 @@ internal object NativePresentationResolver {
                 .firstOrNull()
                 ?.root
                 ?.context
-                ?.let(SystemActiveSubscriptionSource::current)
+                ?.let(ActiveSubSource::current)
         val resolvedActive =
             resolveActiveBindingSubscriptionIds(
                 boundSubscriptionIds =
@@ -158,7 +158,7 @@ internal object NativePresentationResolver {
         }
 
     private fun resolveNetworkType(
-        binding: SystemUiNetworkStateSource.MobilePresentationBinding,
+        binding: NetworkStateSource.MobilePresentationBinding,
         pendingMobileTypeDrawable: Drawable?,
     ): NetworkType? {
         val root = binding.root

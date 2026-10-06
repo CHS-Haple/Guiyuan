@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object NativeParticipantRuntimeAccess {
+internal object ParticipantAccess {
     const val PHONE_STATUS_BAR_VIEW =
         "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"
     const val ICON_HOLDER =
@@ -531,7 +531,7 @@ internal object NativeParticipantRuntimeAccess {
         manager: Any,
     ): ControllerResolution {
         val observedController =
-            SystemUiNativeParticipantRuntimeOwner.controllerFor(manager)
+            NativeParticipantRuntime.controllerFor(manager)
         if (observedController != null) {
             return ControllerResolution.Ready(
                 controller = observedController,

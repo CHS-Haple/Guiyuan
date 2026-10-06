@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import java.lang.reflect.Proxy
 
-internal object NativeBindableVisualGeometryProbe {
+internal object BindableGeometryProbe {
     private const val MODERN_STATUS_BAR_VIEW =
         "com.android.systemui.statusbar.pipeline.shared.ui.view.ModernStatusBarView"
     private const val BINDING =
@@ -33,13 +33,13 @@ internal object NativeBindableVisualGeometryProbe {
             return Snapshot.unavailable("battery-geometry-not-ready")
         }
 
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = ParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
 
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return Snapshot.unavailable(resolution.reason)
             }
 

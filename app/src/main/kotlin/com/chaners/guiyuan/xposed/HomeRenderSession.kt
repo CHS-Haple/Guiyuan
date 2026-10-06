@@ -22,7 +22,7 @@ internal object HomeRenderSession {
     fun attach(
         host: Any,
         onEvent: (String) -> Unit,
-        onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
+        onLatencySample: ((RenderLatencySample) -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
@@ -38,7 +38,7 @@ internal object HomeRenderSession {
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
             ?: return AttachResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SystemUiHomeCarrierMetrics.resolveCarrierView(batteryView)
+            HomeCarrierMetrics.resolveCarrierView(batteryView)
                 ?: return AttachResult.Failure("battery-core-carrier-missing")
 
         val existing = current
@@ -92,7 +92,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: TintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -208,7 +208,7 @@ internal object HomeRenderSession {
         batteryView: ViewGroup,
         batteryCarrier: View,
         private val onEvent: (String) -> Unit,
-        private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
+        private val onLatencySample: ((RenderLatencySample) -> Unit)?,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         initialNativeHandoffActive: Boolean,
         private val initialTintState: TintState?,
@@ -314,7 +314,7 @@ internal object HomeRenderSession {
                 transferred = initialTintState,
                 allowLiveSeed = allowLiveTintSeed,
                 liveState = {
-                    SystemUiTintStateSource.currentState(battery)
+                    TintSource.currentState(battery)
                 },
             )?.let { seed ->
                 applyTintState(seed.state, seed.source)
@@ -354,7 +354,7 @@ internal object HomeRenderSession {
                 positionHost = batteryContainer.get() ?: return null,
                 motionCarrier = motion,
                 representedSlots =
-                    SystemUiHomePresentationOwner.currentHomeRepresentedSlotOwnership(),
+                    HomePresentation.currentHomeRepresentedSlotOwnership(),
             )
         }
 
@@ -439,7 +439,7 @@ internal object HomeRenderSession {
             layoutProbe()
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: TintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) {
                 return
@@ -652,7 +652,7 @@ internal object HomeRenderSession {
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
-                SystemUiHomeCarrierMetrics
+                HomeCarrierMetrics
                     .resolveCarrierWidthPx(carrier)
                     ?.coerceAtMost(hostWidth)
                     ?: return false

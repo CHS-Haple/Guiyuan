@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeStatusBarSlotGeometry {
+internal object StatusSlotGeometry {
     internal fun resolveStableChildWidth(
         layoutWidth: Int,
         measuredWidth: Int,

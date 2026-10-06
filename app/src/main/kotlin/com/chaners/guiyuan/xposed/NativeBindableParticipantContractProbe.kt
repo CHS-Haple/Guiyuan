@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.view.View
 import java.lang.reflect.Method
 
-internal object NativeBindableParticipantContractProbe {
+internal object BindableContractProbe {
     private const val BINDABLE_ICON =
         "com.android.systemui.statusbar.pipeline.icons.shared.model.BindableIcon"
     private const val MODERN_VIEW_CREATOR =
@@ -20,13 +20,13 @@ internal object NativeBindableParticipantContractProbe {
     private const val MAX_SLOT_ORDER_ENTRIES = 40
 
     fun inspect(host: Any): Snapshot {
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = ParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is ParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
 
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is ParticipantAccess.ResolveResult.Failure ->
                     return Snapshot.unavailable(resolution.reason)
             }
 
@@ -159,7 +159,7 @@ internal object NativeBindableParticipantContractProbe {
                             ",class=" + child.javaClass.name +
                             ",visibility=" + visibilityName(child.visibility) +
                             ",iconVisible=" +
-                            (NativeParticipantRuntimeAccess.iconVisible(child)
+                            (ParticipantAccess.iconVisible(child)
                                 ?.toString() ?: "unknown") +
                             ",bounds=" +
                             child.left + "," + child.top + "-" +
