@@ -20,7 +20,7 @@ import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.util.concurrent.atomic.AtomicLong
 
 class GyModule : XposedModule() {
-    private var islandMotionSourceInstalled = false
+    private var islandSourceInstalled = false
     private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
@@ -149,7 +149,7 @@ class GyModule : XposedModule() {
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
-            installIslandMotionSource(
+            installIslandSource(
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
@@ -190,7 +190,7 @@ class GyModule : XposedModule() {
                 SysUiPresentationRuntime.installedHookCount +
                 SystemUiHomePresentationOwner.installedHookCount +
                 SystemUiNativeNetworkSuppressionOwner.installedHookCount +
-                if (islandMotionSourceInstalled) {
+                if (islandSourceInstalled) {
                     SysUiIslandSource.HOOK_COUNT
                 } else {
                     0
@@ -269,7 +269,7 @@ class GyModule : XposedModule() {
 
             SysUiBatteryRuntime.resetRuntimeState()
             SysUiNetworkRuntime.resetRuntimeState()
-            islandMotionSourceInstalled = false
+            islandSourceInstalled = false
             ccSourceInstalled = false
             controlCenterSceneVisible = false
             controlCenterSceneEligible = false
@@ -348,7 +348,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installIslandMotionSource(
+            installIslandSource(
                 classLoader = classLoader,
                 source = "hotReload",
             )
@@ -967,7 +967,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installIslandMotionSource(
+    private fun installIslandSource(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -986,13 +986,13 @@ class GyModule : XposedModule() {
                 },
             )
         }.onSuccess { handles ->
-            islandMotionSourceInstalled =
+            islandSourceInstalled =
                 handles.size == SysUiIslandSource.HOOK_COUNT
             logDiagnostic(
-                level = if (islandMotionSourceInstalled) Log.INFO else Log.WARN,
+                level = if (islandSourceInstalled) Log.INFO else Log.WARN,
                 event = "source.install",
                 component = "islandMotion",
-                state = if (islandMotionSourceInstalled) "ready" else "partial",
+                state = if (islandSourceInstalled) "ready" else "partial",
                 "hooks" to handles.size,
                 "expectedHooks" to SysUiIslandSource.HOOK_COUNT,
                 "source" to source,
@@ -1008,7 +1008,7 @@ class GyModule : XposedModule() {
                     " nativeGeometryWrites=0",
             )
         }.onFailure { error ->
-            islandMotionSourceInstalled = false
+            islandSourceInstalled = false
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
