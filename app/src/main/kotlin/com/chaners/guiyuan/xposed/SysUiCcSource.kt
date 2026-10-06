@@ -9,7 +9,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
-internal object SystemUiPanelTransitionSource {
+internal object SysUiCcSource {
     const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
     const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
     const val HOOK_COUNT =
@@ -44,11 +44,11 @@ internal object SystemUiPanelTransitionSource {
     private const val CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID =
         "combinedstatus.panel.control-center.fake-attached"
 
-    private var controlProbe = ProbeState()
+    private var probe = ProbeState()
     @Volatile
-    private var controlCenterHomeEligible: Boolean? = null
-    private var controlAnchorContract: ControlCenterAnchorContract? = null
-    private var controlHeaderRef = WeakReference<Any>(null)
+    private var homeEligible: Boolean? = null
+    private var anchorContract: AnchorContract? = null
+    private var headerRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
 
     fun install(
@@ -59,12 +59,12 @@ internal object SystemUiPanelTransitionSource {
         onRuntimeFailure: ((Throwable) -> Unit)? = null,
         onEvent: ((String) -> Unit)? = null,
         isProbeEnabled: () -> Boolean = { false },
-        includeControlCenterDiagnostics: Boolean = true,
+        includeDiagnostics: Boolean = true,
     ): List<HookHandle> {
-        val controlClass =
+        val ccClass =
             Class.forName(CONTROL_CENTER_CLASS, false, classLoader)
-        val controlVisibleMethod =
-            controlClass
+        val visibleMethod =
+            ccClass
                 .getDeclaredMethod(
                     CONTROL_CENTER_VISIBLE_METHOD,
                     Boolean::class.javaPrimitiveType,
@@ -90,14 +90,14 @@ internal object SystemUiPanelTransitionSource {
                 false,
                 classLoader,
             )
-        val controlExpansionMethod =
+        val expansionMethod =
             headerCallbackClass
                 .getDeclaredMethod(
                     CONTROL_CENTER_EXPANSION_METHOD,
                     Float::class.javaPrimitiveType,
                 )
                 .apply { isAccessible = true }
-        val controlAppearanceMethod =
+        val appearanceMethod =
             headerCallbackClass
                 .getDeclaredMethod(
                     CONTROL_CENTER_APPEARANCE_METHOD,
@@ -106,42 +106,42 @@ internal object SystemUiPanelTransitionSource {
                 )
                 .apply { isAccessible = true }
 
-        controlAnchorContract =
-            ControlCenterAnchorContract.resolve(
+        anchorContract =
+            AnchorContract.resolve(
                 classLoader = classLoader,
-                delegateClass = controlClass,
+                delegateClass = ccClass,
             )
 
         val handles =
             ArrayList<HookHandle>(
-                expectedHookCount(includeControlCenterDiagnostics),
+                expectedHookCount(includeDiagnostics),
             )
         try {
             handles +=
                 module
-                    .hook(controlVisibleMethod)
+                    .hook(visibleMethod)
                     .setId(CONTROL_CENTER_VISIBLE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
                             val visible = chain.getArg(0) as? Boolean
                             val result = chain.proceed()
-                            controlCenterHomeEligible =
-                                controlCenterAllowsHome(visible)
-                            val controlCenterPresentationHost =
+                            homeEligible =
+                                allowsHome(visible)
+                            val presentationHost =
                                 if (visible == true) {
-                                    resolveControlCenterFakePresentationHost(chain.thisObject)
+                                    resolveFakePresentationHost(chain.thisObject)
                                 } else {
                                     null
                                 }
-                            val controlCenterSourceScene =
+                            val sourceScene =
                                 if (visible == true) {
-                                    resolveControlCenterSourceScene(chain.thisObject)
+                                    resolveSourceScene(chain.thisObject)
                                 } else {
                                     null
                                 }
                             val transitionEndpoints =
                                 if (visible == true) {
-                                    resolveControlCenterTransitionEndpoints(chain.thisObject)
+                                    resolveTransitionEndpoints(chain.thisObject)
                                 } else {
                                     null
                                 }
@@ -152,12 +152,12 @@ internal object SystemUiPanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = visible,
-                                    controlCenterPresentationHost = controlCenterPresentationHost,
-                                    controlCenterSourceScene = controlCenterSourceScene,
-                                    controlCenterTransitionEndpoints = transitionEndpoints,
-                                    controlCenterBatteryIslandActive =
+                                    presentationHost = presentationHost,
+                                    sourceScene = sourceScene,
+                                    transitionEndpoints = transitionEndpoints,
+                                    batteryIslandActive =
                                         if (visible == true) {
-                                            resolveControlCenterBatteryIslandActive(chain.thisObject)
+                                            resolveBatteryIslandActive(chain.thisObject)
                                         } else {
                                             null
                                         },
@@ -210,15 +210,15 @@ internal object SystemUiPanelTransitionSource {
                         },
                     )
 
-            // Control Center visibility is the only panel runtime authority.
-            // Notification Shade inherits the native Home carrier lifecycle.
-            if (controlCenterHomeEligible == null) {
-                controlCenterHomeEligible = true
+            // Native visibility is the CC runtime authority.
+            // Notification Shade keeps the native Home carrier lifecycle.
+            if (homeEligible == null) {
+                homeEligible = true
             }
 
             handles +=
                 module
-                    .hook(controlExpansionMethod)
+                    .hook(expansionMethod)
                     .setId(CONTROL_CENTER_EXPANSION_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
@@ -227,10 +227,10 @@ internal object SystemUiPanelTransitionSource {
                                     (chain.getArg(0) as? Number)?.toFloat(),
                                 )
                             val transitionEndpoints =
-                                controlAnchorContract
+                                anchorContract
                                     ?.transitionEndpointsFromCallback(chain.thisObject)
                             val batteryIslandActive =
-                                controlAnchorContract
+                                anchorContract
                                     ?.batteryIslandFromCallback(chain.thisObject)
                             val preNativeUpdate =
                                 Update(
@@ -239,8 +239,8 @@ internal object SystemUiPanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = null,
-                                    controlCenterTransitionEndpoints = transitionEndpoints,
-                                    controlCenterBatteryIslandActive = batteryIslandActive,
+                                    transitionEndpoints = transitionEndpoints,
+                                    batteryIslandActive = batteryIslandActive,
                                 )
                             // Reservation/source projection must be committed before
                             // HyperOS consumes this expansion sample. Drawing still
@@ -258,7 +258,7 @@ internal object SystemUiPanelTransitionSource {
 
             handles +=
                 module
-                    .hook(controlAppearanceMethod)
+                    .hook(appearanceMethod)
                     .setId(CONTROL_CENTER_APPEARANCE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
@@ -272,13 +272,13 @@ internal object SystemUiPanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = null,
-                                    controlCenterAppearance = first,
-                                    controlCenterAppearanceAnimated = second,
-                                    controlCenterTransitionEndpoints =
-                                        controlAnchorContract
+                                    appearance = first,
+                                    appearanceAnimated = second,
+                                    transitionEndpoints =
+                                        anchorContract
                                             ?.transitionEndpointsFromCallback(chain.thisObject),
-                                    controlCenterBatteryIslandActive =
-                                        controlAnchorContract
+                                    batteryIslandActive =
+                                        anchorContract
                                             ?.batteryIslandFromCallback(chain.thisObject),
                                 )
                             dispatchRuntimeCallback(
@@ -294,17 +294,17 @@ internal object SystemUiPanelTransitionSource {
             handles.asReversed().forEach { handle ->
                 runCatching { handle.unhook() }
             }
-            controlCenterHomeEligible = false
+            homeEligible = false
             throw error
         }
     }
 
     fun resetRuntimeState() {
         synchronized(this) {
-            controlProbe = ProbeState()
-            controlCenterHomeEligible = null
-            controlAnchorContract = null
-            controlHeaderRef = WeakReference(null)
+            probe = ProbeState()
+            homeEligible = null
+            anchorContract = null
+            headerRef = WeakReference(null)
             fakeIslandContractRootRef = WeakReference(null)
         }
     }
@@ -442,75 +442,75 @@ internal object SystemUiPanelTransitionSource {
     internal fun nativeFraction(value: Float?): Float? =
         value?.takeIf { it.isFinite() }
 
-    internal fun expectedHookCount(includeControlCenterDiagnostics: Boolean): Int =
+    internal fun expectedHookCount(includeDiagnostics: Boolean): Int =
         CONTROL_CENTER_RUNTIME_HOOK_COUNT +
-            if (includeControlCenterDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
+            if (includeDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
 
-    fun currentControlCenterHomeEligibility(): Boolean? =
-        controlCenterHomeEligible
+    fun currentHomeEligibility(): Boolean? =
+        homeEligible
 
     @Synchronized
-    fun restoreControlCenterHomeEligibility(eligible: Boolean?) {
+    fun restoreHomeEligibility(eligible: Boolean?) {
         if (eligible != null) {
-            controlCenterHomeEligible = eligible
+            homeEligible = eligible
         }
     }
 
-    internal fun controlCenterAllowsHome(visible: Boolean?): Boolean =
+    internal fun allowsHome(visible: Boolean?): Boolean =
         visible == false
 
-    private fun resolveControlCenterHeader(delegate: Any?): Any? {
+    private fun resolveHeader(delegate: Any?): Any? {
         delegate ?: return null
-        val contract = controlAnchorContract ?: return null
-        return controlHeaderRef.get()
+        val contract = anchorContract ?: return null
+        return headerRef.get()
             ?: contract.resolveHeader(delegate)?.also { resolved ->
-                controlHeaderRef = WeakReference(resolved)
+                headerRef = WeakReference(resolved)
             }
     }
 
-    private fun resolveControlCenterFakePresentationHost(
+    private fun resolveFakePresentationHost(
         delegate: Any?,
     ): ViewGroup? {
-        val contract = controlAnchorContract ?: return null
-        val header = resolveControlCenterHeader(delegate) ?: return null
+        val contract = anchorContract ?: return null
+        val header = resolveHeader(delegate) ?: return null
         return contract.fakePresentationRoot(header)
     }
 
-    private fun captureControlCenterAnchor(delegate: Any?): ControlCenterAnchorSnapshot? {
-        val contract = controlAnchorContract ?: return null
-        val header = resolveControlCenterHeader(delegate) ?: return null
+    private fun captureAnchor(delegate: Any?): AnchorSnapshot? {
+        val contract = anchorContract ?: return null
+        val header = resolveHeader(delegate) ?: return null
         return contract.snapshot(header)
     }
 
-    private fun resolveControlCenterTransitionEndpoints(
+    private fun resolveTransitionEndpoints(
         delegate: Any?,
-    ): ControlCenterTransitionEndpoints? {
-        val contract = controlAnchorContract ?: return null
+    ): TransitionEndpoints? {
+        val contract = anchorContract ?: return null
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveHeader(delegate)
                 ?: return null
         return contract.transitionEndpoints(header)
     }
 
-    private fun resolveControlCenterBatteryIslandActive(
+    private fun resolveBatteryIslandActive(
         delegate: Any?,
     ): Boolean? {
-        val contract = controlAnchorContract ?: return null
+        val contract = anchorContract ?: return null
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveHeader(delegate)
                 ?: return null
         return contract.batteryIslandActive(header)
     }
 
-    private fun resolveControlCenterSourceScene(delegate: Any?): SourceScene {
-        val contract = controlAnchorContract ?: return SourceScene.UNKNOWN
+    private fun resolveSourceScene(delegate: Any?): SourceScene {
+        val contract = anchorContract ?: return SourceScene.UNKNOWN
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveHeader(delegate)
                 ?: return SourceScene.UNKNOWN
         val realSystemIcons =
             contract.realSystemIcons(header)
                 ?: return SourceScene.UNKNOWN
-        return classifyControlCenterSourceScene(
+        return classifySourceScene(
             homeIdentityMatches =
                 SystemUiHomePresentationOwner.ownsBatteryContainer(realSystemIcons),
             structuralScene =
@@ -518,7 +518,7 @@ internal object SystemUiPanelTransitionSource {
         )
     }
 
-    internal fun classifyControlCenterSourceScene(
+    internal fun classifySourceScene(
         homeIdentityMatches: Boolean,
         structuralScene: SourceScene,
     ): SourceScene =
@@ -537,7 +537,7 @@ internal object SystemUiPanelTransitionSource {
         if (onEvent == null || !isProbeEnabled()) {
             return
         }
-        val probe = controlProbe
+        val probe = probe
         val expandedChanged =
             update.expanded != null && update.expanded != probe.expanded
         val trackingChanged =
@@ -545,24 +545,24 @@ internal object SystemUiPanelTransitionSource {
         val visibleChanged =
             update.visible != null && update.visible != probe.visible
         val sourceSceneChanged =
-            update.controlCenterSourceScene != null &&
-                update.controlCenterSourceScene != probe.sourceScene
+            update.sourceScene != null &&
+                update.sourceScene != probe.sourceScene
         val batteryIslandChanged =
-            update.controlCenterBatteryIslandActive != null &&
-                update.controlCenterBatteryIslandActive != probe.batteryIsland
+            update.batteryIslandActive != null &&
+                update.batteryIslandActive != probe.batteryIsland
 
         if (update.expanded != null) probe.expanded = update.expanded
         if (update.tracking != null) probe.tracking = update.tracking
         if (update.visible != null) probe.visible = update.visible
-        if (update.controlCenterSourceScene != null) {
-            probe.sourceScene = update.controlCenterSourceScene
+        if (update.sourceScene != null) {
+            probe.sourceScene = update.sourceScene
         }
-        if (update.controlCenterBatteryIslandActive != null) {
-            probe.batteryIsland = update.controlCenterBatteryIslandActive
+        if (update.batteryIslandActive != null) {
+            probe.batteryIsland = update.batteryIslandActive
         }
 
         if (
-            !DiagnosticPolicy.shouldReportPanelEvent(
+            !DiagnosticPolicy.shouldReport(
                 expandedChanged = expandedChanged,
                 trackingChanged = trackingChanged,
                 visibleChanged = visibleChanged,
@@ -574,9 +574,9 @@ internal object SystemUiPanelTransitionSource {
         }
 
         val sourceSceneSummary =
-            update.controlCenterSourceScene?.let { " sourceScene=" + it.name }.orEmpty()
+            update.sourceScene?.let { " sourceScene=" + it.name }.orEmpty()
         val batteryIslandSummary =
-            update.controlCenterBatteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
+            update.batteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
         dispatchRuntimeCallback(
             callback = {
                 onEvent(
@@ -600,13 +600,13 @@ internal object SystemUiPanelTransitionSource {
         val expanded: Boolean?,
         val tracking: Boolean?,
         val visible: Boolean?,
-        val controlCenterPresentationHost: ViewGroup? = null,
-        val controlCenterSourceScene: SourceScene? = null,
-        val controlCenterAppearance: Boolean? = null,
-        val controlCenterAppearanceAnimated: Boolean? = null,
-        val controlCenterTransitionEndpoints: ControlCenterTransitionEndpoints? = null,
-        val controlCenterBatteryIslandActive: Boolean? = null,
-        val controlCenterAnchor: ControlCenterAnchorSnapshot? = null,
+        val presentationHost: ViewGroup? = null,
+        val sourceScene: SourceScene? = null,
+        val appearance: Boolean? = null,
+        val appearanceAnimated: Boolean? = null,
+        val transitionEndpoints: TransitionEndpoints? = null,
+        val batteryIslandActive: Boolean? = null,
+        val anchor: AnchorSnapshot? = null,
     )
 
     internal enum class Source(
@@ -615,12 +615,12 @@ internal object SystemUiPanelTransitionSource {
         CONTROL_CENTER("control-center"),
     }
 
-    internal data class ControlCenterTransitionEndpoints(
+    internal data class TransitionEndpoints(
         val fakeRoot: ViewGroup,
         val finalRoot: ViewGroup,
     )
 
-    internal data class ControlCenterFakePresentationSnapshot(
+    internal data class FakePresentationSnapshot(
         val rootClassName: String?,
         val rootVisibility: Int?,
         val rootAlpha: Float?,
@@ -647,7 +647,7 @@ internal object SystemUiPanelTransitionSource {
                     ")}"
     }
 
-    internal data class ControlCenterAnchorSnapshot(
+    internal data class AnchorSnapshot(
         val systemIconsX: Int?,
         val systemIconsWidth: Int?,
         val statusIconsX: Int?,
@@ -658,7 +658,7 @@ internal object SystemUiPanelTransitionSource {
         val normalStatusIconsTranslationX: Int?,
         val batteryWidthDiff: Int?,
         val addBatteryIsland: Boolean?,
-        val controlCenterExpanding: Boolean?,
+        val expanding: Boolean?,
     ) {
         val summary: String
             get() =
@@ -673,11 +673,11 @@ internal object SystemUiPanelTransitionSource {
                     ",normalStatusIconsTx=" + (normalStatusIconsTranslationX ?: "unknown") +
                     ",batteryWidthDiff=" + (batteryWidthDiff ?: "unknown") +
                     ",addBatteryIsland=" + (addBatteryIsland ?: "unknown") +
-                    ",expanding=" + (controlCenterExpanding ?: "unknown") +
+                    ",expanding=" + (expanding ?: "unknown") +
                     "}"
     }
 
-    private class ControlCenterAnchorContract(
+    private class AnchorContract(
         private val callbackClass: Class<*>,
         private val callbacksField: Field,
         private val callbackOuterField: Field,
@@ -686,12 +686,12 @@ internal object SystemUiPanelTransitionSource {
         private val normalStatusIconsTranslationXField: Field,
         private val batteryWidthDiffField: Field,
         private val addBatteryIslandField: Field,
-        private val controlCenterExpandingField: Field,
+        private val expandingField: Field,
         private val realSystemIconsField: Field,
         private val headerControllerField: Field,
         private val lazyGetMethod: Method,
-        private val controlCenterFakeStatusBarField: Field,
-        private val controlCenterStatusBarField: Field,
+        private val fakeStatusBarField: Field,
+        private val statusBarField: Field,
         private val fakeDelegateField: Field,
         private val fakeStatusBarAreaField: Field,
         private val systemIconsLocationField: Field,
@@ -721,10 +721,10 @@ internal object SystemUiPanelTransitionSource {
 
         fun transitionEndpoints(
             header: Any,
-        ): ControlCenterTransitionEndpoints? {
+        ): TransitionEndpoints? {
             val fakeRoot = fakeStatusBar(header) ?: return null
             val finalRoot = finalStatusBar(header) ?: return null
-            return ControlCenterTransitionEndpoints(
+            return TransitionEndpoints(
                 fakeRoot = fakeRoot,
                 finalRoot = finalRoot,
             )
@@ -732,7 +732,7 @@ internal object SystemUiPanelTransitionSource {
 
         fun transitionEndpointsFromCallback(
             callback: Any?,
-        ): ControlCenterTransitionEndpoints? {
+        ): TransitionEndpoints? {
             val header = headerFromCallback(callback) ?: return null
             return transitionEndpoints(header)
         }
@@ -745,14 +745,14 @@ internal object SystemUiPanelTransitionSource {
         fun batteryIslandActive(header: Any): Boolean? =
             readBoolean(addBatteryIslandField, header)
 
-        fun snapshotFromCallback(callback: Any?): ControlCenterAnchorSnapshot? {
+        fun snapshotFromCallback(callback: Any?): AnchorSnapshot? {
             val header = headerFromCallback(callback) ?: return null
             return snapshot(header)
         }
 
         fun fakePresentationFromCallback(
             callback: Any?,
-        ): ControlCenterFakePresentationSnapshot? {
+        ): FakePresentationSnapshot? {
             val header = headerFromCallback(callback) ?: return null
             val fakeRoot = fakeStatusBar(header) ?: return null
             val delegate =
@@ -762,7 +762,7 @@ internal object SystemUiPanelTransitionSource {
             val statusBarArea =
                 runCatching { fakeStatusBarAreaField.get(delegate) as? View }
                     .getOrNull()
-            return ControlCenterFakePresentationSnapshot(
+            return FakePresentationSnapshot(
                 rootClassName = fakeRoot.javaClass.name,
                 rootVisibility = fakeRoot.visibility,
                 rootAlpha = fakeRoot.alpha,
@@ -794,18 +794,18 @@ internal object SystemUiPanelTransitionSource {
         private fun fakeStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
             return runCatching {
-                controlCenterFakeStatusBarField.get(combinedHeader) as? ViewGroup
+                fakeStatusBarField.get(combinedHeader) as? ViewGroup
             }.getOrNull()
         }
 
         private fun finalStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
             return runCatching {
-                controlCenterStatusBarField.get(combinedHeader) as? ViewGroup
+                statusBarField.get(combinedHeader) as? ViewGroup
             }.getOrNull()
         }
 
-        fun snapshot(header: Any): ControlCenterAnchorSnapshot? {
+        fun snapshot(header: Any): AnchorSnapshot? {
             val anchor =
                 runCatching { statusBarAnchorField.get(header) }
                     .getOrNull()
@@ -819,7 +819,7 @@ internal object SystemUiPanelTransitionSource {
             val statusLocation =
                 runCatching { statusIconsLocationField.get(anchor) as? IntArray }
                     .getOrNull()
-            return ControlCenterAnchorSnapshot(
+            return AnchorSnapshot(
                 systemIconsX = systemLocation?.getOrNull(0),
                 systemIconsWidth = readInt(systemIconsWidthField, anchor),
                 statusIconsX = statusLocation?.getOrNull(0),
@@ -832,8 +832,8 @@ internal object SystemUiPanelTransitionSource {
                     readInt(normalStatusIconsTranslationXField, header),
                 batteryWidthDiff = readInt(batteryWidthDiffField, header),
                 addBatteryIsland = readBoolean(addBatteryIslandField, header),
-                controlCenterExpanding =
-                    readBoolean(controlCenterExpandingField, header),
+                expanding =
+                    readBoolean(expandingField, header),
             )
         }
 
@@ -847,7 +847,7 @@ internal object SystemUiPanelTransitionSource {
             fun resolve(
                 classLoader: ClassLoader,
                 delegateClass: Class<*>,
-            ): ControlCenterAnchorContract? =
+            ): AnchorContract? =
                 runCatching {
                     val callbackClass =
                         Class.forName(
@@ -891,7 +891,7 @@ internal object SystemUiPanelTransitionSource {
                             false,
                             classLoader,
                         )
-                    ControlCenterAnchorContract(
+                    AnchorContract(
                         callbackClass = callbackClass,
                         callbacksField =
                             delegateClass.getDeclaredField("callbacks").accessible(),
@@ -911,7 +911,7 @@ internal object SystemUiPanelTransitionSource {
                             headerClass.getDeclaredField("batteryWidthDiff").accessible(),
                         addBatteryIslandField =
                             headerClass.getDeclaredField("isAddBatteryIsland").accessible(),
-                        controlCenterExpandingField =
+                        expandingField =
                             headerClass
                                 .getDeclaredField("isControlCenterExpanding")
                                 .accessible(),
@@ -923,11 +923,11 @@ internal object SystemUiPanelTransitionSource {
                             lazyClass.getDeclaredMethod("get").apply {
                                 isAccessible = true
                             },
-                        controlCenterFakeStatusBarField =
+                        fakeStatusBarField =
                             combinedHeaderClass
                                 .getDeclaredField("controlCenterFakeStatusBar")
                                 .accessible(),
-                        controlCenterStatusBarField =
+                        statusBarField =
                             combinedHeaderClass
                                 .getDeclaredField("controlCenterStatusBar")
                                 .accessible(),
@@ -958,7 +958,7 @@ internal object SystemUiPanelTransitionSource {
         apply { isAccessible = true }
 
     internal object DiagnosticPolicy {
-        fun shouldReportPanelEvent(
+        fun shouldReport(
             expandedChanged: Boolean,
             trackingChanged: Boolean,
             visibleChanged: Boolean,

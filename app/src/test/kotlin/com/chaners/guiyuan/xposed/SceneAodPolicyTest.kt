@@ -398,7 +398,7 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.HOME,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.HOME,
+                reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
@@ -407,7 +407,7 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.HOME,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.KEYGUARD,
+                reportedSourceScene = SourceScene.KEYGUARD,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
@@ -416,7 +416,7 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.KEYGUARD,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.KEYGUARD,
+                reportedSourceScene = SourceScene.KEYGUARD,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
@@ -425,7 +425,7 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.KEYGUARD,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.HOME,
+                reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
@@ -434,14 +434,14 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.HOME,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.HOME,
+                reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             SourceScene.KEYGUARD,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.HOME,
+                reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
@@ -451,7 +451,7 @@ class SceneAodPolicyTest {
         assertEquals(
             SourceScene.HOME,
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = SourceScene.HOME,
+                reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,

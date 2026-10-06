@@ -46,12 +46,12 @@ internal object ControlCenterTransitionOwner {
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
     private var sourceScene = SourceScene.UNKNOWN
-    private var endpoints: SystemUiPanelTransitionSource.ControlCenterTransitionEndpoints? = null
+    private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
     private var latestBatteryNumberProbeSummary: String? = null
 
     @Synchronized
-    fun onPanelUpdate(update: SystemUiPanelTransitionSource.Update) {
+    fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
             visible = nextVisible
             if (!nextVisible) {
@@ -62,7 +62,7 @@ internal object ControlCenterTransitionOwner {
                 sourceScene = SourceScene.UNKNOWN
                 endpoints = null
             } else {
-                nativeBatteryIslandActive = update.controlCenterBatteryIslandActive
+                nativeBatteryIslandActive = update.batteryIslandActive
             }
         }
         update.fraction?.let {
@@ -70,13 +70,13 @@ internal object ControlCenterTransitionOwner {
             // Expansion is the per-sample authority for the native Battery-Island
             // contract. A failed read clears a stale prior value instead of
             // pretending the previous island mode still applies.
-            nativeBatteryIslandActive = update.controlCenterBatteryIslandActive
+            nativeBatteryIslandActive = update.batteryIslandActive
         }
-        update.controlCenterAppearance?.let { nativeAppearance = it }
-        update.controlCenterAppearanceAnimated?.let { nativeAppearanceAnimated = it }
-        update.controlCenterBatteryIslandActive?.let { nativeBatteryIslandActive = it }
-        update.controlCenterSourceScene?.let { sourceScene = it }
-        update.controlCenterTransitionEndpoints?.let { endpoints = it }
+        update.appearance?.let { nativeAppearance = it }
+        update.appearanceAnimated?.let { nativeAppearanceAnimated = it }
+        update.batteryIslandActive?.let { nativeBatteryIslandActive = it }
+        update.sourceScene?.let { sourceScene = it }
+        update.transitionEndpoints?.let { endpoints = it }
         sync("panel-update")
     }
 

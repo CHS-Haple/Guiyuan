@@ -45,11 +45,11 @@ internal object SystemUiPresentationRuntimeOwner {
         val keyguardFullAodReady: Boolean
             get() =
                 keyguardFullAodHooks ==
-                    SystemUiKeyguardFullAodTransitionSource.HOOK_COUNT
+                    SysUiKeyguardFullAodTransitionSource.HOOK_COUNT
         val keyguardStatusIconReady: Boolean
             get() =
                 keyguardStatusIconHooks ==
-                    SystemUiKeyguardStatusIconTransitionSource.HOOK_COUNT
+                    SysUiKeyguardStatusIconTransitionSource.HOOK_COUNT
     }
 
     @Synchronized
@@ -92,7 +92,7 @@ internal object SystemUiPresentationRuntimeOwner {
             }
         val keyguardFullAodHooks =
             runCatching {
-                SystemUiKeyguardFullAodTransitionSource.install(
+                SysUiKeyguardFullAodTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
@@ -109,7 +109,7 @@ internal object SystemUiPresentationRuntimeOwner {
             }
         val keyguardStatusIconHooks =
             runCatching {
-                SystemUiKeyguardStatusIconTransitionSource.install(
+                SysUiKeyguardStatusIconTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,

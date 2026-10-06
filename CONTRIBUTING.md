@@ -104,6 +104,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 - Persisted preference keys, protocol/event names, log schema fields, reflection/class/member targets, resource identities, Xposed-facing identifiers, and other externally consumed names are compatibility surfaces. Do not rename them as cleanup without an explicit migration reason.
 - Do not keep obsolete aliases solely to preserve old internal names. Retain an alias only when a real compatibility or migration boundary requires it.
 - Do not rename solely to save characters. Consider typing cost, scanability, searchability, call-site clarity, and diff churn; a rename should provide a net maintenance benefit.
+- Prefer semantic compression over mechanical shortening: rename around the clearest established domain concept, and use a common project/platform abbreviation directly when it remains obvious in context. Do not derive a new name by merely deleting words from the old one.
 - Do not use broad search/replace as the renaming method. Inspect each symbol, its call sites, and same-text uses first; edit the intended references explicitly, then search again for stale old names and accidental changes.
 - Remove dead helpers only after confirming they have no normal references and are not reached through reflection, serialization, resources, generated code, or another external contract.
 

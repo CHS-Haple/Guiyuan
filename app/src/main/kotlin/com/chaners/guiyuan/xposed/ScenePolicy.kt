@@ -576,7 +576,7 @@ internal object ScenePolicy {
     }
 
     fun resolveControlCenterSourceScene(
-        panelSourceScene: SourceScene,
+        reportedSourceScene: SourceScene,
         steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
         incomingKeyguardPresentationReady: Boolean = false,
@@ -584,15 +584,15 @@ internal object ScenePolicy {
         if (
             incomingKeyguardPresentationReady &&
             (
-                panelSourceScene == SourceScene.KEYGUARD ||
+                reportedSourceScene == SourceScene.KEYGUARD ||
                     steadySourceScene == SourceScene.KEYGUARD
             )
         ) {
             return SourceScene.KEYGUARD
         }
-        if (panelSourceScene == steadySourceScene) return panelSourceScene
-        if (panelSourceScene == SourceScene.UNKNOWN) return steadySourceScene
-        if (steadySourceScene == SourceScene.UNKNOWN) return panelSourceScene
+        if (reportedSourceScene == steadySourceScene) return reportedSourceScene
+        if (reportedSourceScene == SourceScene.UNKNOWN) return steadySourceScene
+        if (steadySourceScene == SourceScene.UNKNOWN) return reportedSourceScene
 
         // A HOME/KEYGUARD disagreement is a lifecycle-boundary race between two
         // native witnesses. Family history provides direction without borrowing

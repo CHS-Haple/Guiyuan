@@ -6,12 +6,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiPanelTransitionSourceTest {
+class SysUiCcSourceTest {
     @Test
     fun runtimeCallbackFailureIsContainedAndReported() {
         var reported: Throwable? = null
         val completed =
-            SystemUiPanelTransitionSource.dispatchRuntimeCallback(
+            SysUiCcSource.dispatchRuntimeCallback(
                 callback = { error("callback-failure") },
                 onFailure = { reported = it },
             )
@@ -23,7 +23,7 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun runtimeCallbackFailureHandlerCannotEscapeTheHookBoundary() {
         val completed =
-            SystemUiPanelTransitionSource.dispatchRuntimeCallback(
+            SysUiCcSource.dispatchRuntimeCallback(
                 callback = { error("callback-failure") },
                 onFailure = { error("failure-handler-failure") },
             )
@@ -33,47 +33,47 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun nativeFractionPreservesFiniteHyperOsPayload() {
-        assertEquals(-0.2f, SystemUiPanelTransitionSource.nativeFraction(-0.2f))
-        assertEquals(0.5f, SystemUiPanelTransitionSource.nativeFraction(0.5f))
-        assertEquals(1.4f, SystemUiPanelTransitionSource.nativeFraction(1.4f))
-        assertNull(SystemUiPanelTransitionSource.nativeFraction(Float.NaN))
-        assertNull(SystemUiPanelTransitionSource.nativeFraction(Float.POSITIVE_INFINITY))
+        assertEquals(-0.2f, SysUiCcSource.nativeFraction(-0.2f))
+        assertEquals(0.5f, SysUiCcSource.nativeFraction(0.5f))
+        assertEquals(1.4f, SysUiCcSource.nativeFraction(1.4f))
+        assertNull(SysUiCcSource.nativeFraction(Float.NaN))
+        assertNull(SysUiCcSource.nativeFraction(Float.POSITIVE_INFINITY))
     }
 
     @Test
     fun controlCenterHomeEligibilityRequiresNativeInvisibleSemantics() {
-        assertEquals(true, SystemUiPanelTransitionSource.controlCenterAllowsHome(false))
-        assertEquals(false, SystemUiPanelTransitionSource.controlCenterAllowsHome(true))
-        assertEquals(false, SystemUiPanelTransitionSource.controlCenterAllowsHome(null))
+        assertEquals(true, SysUiCcSource.allowsHome(false))
+        assertEquals(false, SysUiCcSource.allowsHome(true))
+        assertEquals(false, SysUiCcSource.allowsHome(null))
     }
 
     @Test
     fun controlCenterEligibilitySnapshotCanSeedHotReloadGeneration() {
-        SystemUiPanelTransitionSource.resetRuntimeState()
-        assertNull(SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.resetRuntimeState()
+        assertNull(SysUiCcSource.currentHomeEligibility())
 
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(false)
-        assertEquals(false, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(false)
+        assertEquals(false, SysUiCcSource.currentHomeEligibility())
 
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(true)
-        assertEquals(true, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(true)
+        assertEquals(true, SysUiCcSource.currentHomeEligibility())
 
         // A v5 or older payload has no Control Center field; do not erase the
         // successfully installed generation's current/bootstrap eligibility.
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(null)
-        assertEquals(true, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        SysUiCcSource.restoreHomeEligibility(null)
+        assertEquals(true, SysUiCcSource.currentHomeEligibility())
     }
 
     @Test
     fun runtimeHookCountIncludesOnlyNativeReadAndFakeLifecycleHooks() {
-        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(false))
-        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(true))
+        assertEquals(4, SysUiCcSource.expectedHookCount(false))
+        assertEquals(4, SysUiCcSource.expectedHookCount(true))
     }
 
     @Test
     fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
         assertTrue(
-            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+            SysUiCcSource.DiagnosticPolicy.shouldReport(
                 expandedChanged = false,
                 trackingChanged = false,
                 visibleChanged = true,
@@ -82,7 +82,7 @@ class SystemUiPanelTransitionSourceTest {
             ),
         )
         assertTrue(
-            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+            SysUiCcSource.DiagnosticPolicy.shouldReport(
                 expandedChanged = false,
                 trackingChanged = false,
                 visibleChanged = false,
@@ -361,21 +361,21 @@ class SystemUiPanelTransitionSourceTest {
     fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
         assertEquals(
             SourceScene.HOME,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = true,
                 structuralScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.KEYGUARD,
             ),
         )
         assertEquals(
             SourceScene.UNKNOWN,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            SysUiCcSource.classifySourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.UNKNOWN,
             ),
@@ -385,49 +385,49 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterUpdateCarriesNativeAppearanceState() {
         val update =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            SysUiCcSource.Update(
+                source = SysUiCcSource.Source.CONTROL_CENTER,
                 fraction = null,
                 expanded = null,
                 tracking = null,
                 visible = null,
-                controlCenterAppearance = true,
-                controlCenterAppearanceAnimated = true,
+                appearance = true,
+                appearanceAnimated = true,
             )
-        assertEquals(true, update.controlCenterAppearance)
-        assertEquals(true, update.controlCenterAppearanceAnimated)
+        assertEquals(true, update.appearance)
+        assertEquals(true, update.appearanceAnimated)
     }
 
 
     @Test
     fun controlCenterUpdateCarriesExactNativeBatteryIslandState() {
         val active =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            SysUiCcSource.Update(
+                source = SysUiCcSource.Source.CONTROL_CENTER,
                 fraction = 0.5f,
                 expanded = null,
                 tracking = null,
                 visible = null,
-                controlCenterBatteryIslandActive = true,
+                batteryIslandActive = true,
             )
         val ordinary =
-            active.copy(controlCenterBatteryIslandActive = false)
+            active.copy(batteryIslandActive = false)
 
-        assertEquals(true, active.controlCenterBatteryIslandActive)
-        assertEquals(false, ordinary.controlCenterBatteryIslandActive)
+        assertEquals(true, active.batteryIslandActive)
+        assertEquals(false, ordinary.batteryIslandActive)
     }
 
     @Test
     fun controlCenterUpdateCarriesNativeSelectedSourceScene() {
         val update =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            SysUiCcSource.Update(
+                source = SysUiCcSource.Source.CONTROL_CENTER,
                 fraction = null,
                 expanded = null,
                 tracking = null,
                 visible = true,
-                controlCenterSourceScene = SourceScene.KEYGUARD,
+                sourceScene = SourceScene.KEYGUARD,
             )
-        assertEquals(SourceScene.KEYGUARD, update.controlCenterSourceScene)
+        assertEquals(SourceScene.KEYGUARD, update.sourceScene)
     }
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class GyModule : XposedModule() {
     private var islandMotionSourceInstalled = false
-    private var panelTransitionSourceInstalled = false
+    private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
     private var controlCenterSourceScene = SourceScene.UNKNOWN
@@ -145,7 +145,7 @@ class GyModule : XposedModule() {
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
-            installPanelTransitionSource(
+            installCcSource(
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
@@ -195,8 +195,8 @@ class GyModule : XposedModule() {
                 } else {
                     0
                 } +
-                if (panelTransitionSourceInstalled) {
-                    SystemUiPanelTransitionSource.expectedHookCount(
+                if (ccSourceInstalled) {
+                    SysUiCcSource.expectedHookCount(
                         BuildConfig.RUNTIME_DIAGNOSTICS,
                     )
                 } else {
@@ -270,7 +270,7 @@ class GyModule : XposedModule() {
             SystemUiBatteryRuntimeOwner.resetRuntimeState()
             SystemUiNetworkRuntimeOwner.resetRuntimeState()
             islandMotionSourceInstalled = false
-            panelTransitionSourceInstalled = false
+            ccSourceInstalled = false
             controlCenterSceneVisible = false
             controlCenterSceneEligible = false
             controlCenterSourceScene = SourceScene.UNKNOWN
@@ -344,7 +344,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installPanelTransitionSource(
+            installCcSource(
                 classLoader = classLoader,
                 source = "hotReload",
             )
@@ -507,7 +507,7 @@ class GyModule : XposedModule() {
                 "intermediateRequestLayout" to false,
             )
 
-            SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(
+            SysUiCcSource.restoreHomeEligibility(
                 restored.controlCenterHomeEligible,
             )
             val controlCenterFakeRestore =
@@ -1028,37 +1028,37 @@ class GyModule : XposedModule() {
     }
 
 
-    private fun installPanelTransitionSource(
+    private fun installCcSource(
         classLoader: ClassLoader,
         source: String,
     ) {
         runCatching {
-            SystemUiPanelTransitionSource.install(
+            SysUiCcSource.install(
                 module = this,
                 classLoader = classLoader,
-                onUpdate = ::onPanelTransitionUpdate,
+                onUpdate = ::onCcUpdate,
                 onFakePresentationAttached = ::onControlCenterFakePresentationAttached,
-                onRuntimeFailure = ::onPanelTransitionRuntimeFailure,
-                onEvent = ::onPanelTransitionEvent,
+                onRuntimeFailure = ::onCcRuntimeFailure,
+                onEvent = ::onCcEvent,
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
-                includeControlCenterDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
+                includeDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
             )
         }.onSuccess { handles ->
             val expectedHooks =
-                SystemUiPanelTransitionSource.expectedHookCount(
+                SysUiCcSource.expectedHookCount(
                     BuildConfig.RUNTIME_DIAGNOSTICS,
                 )
-            panelTransitionSourceInstalled = handles.size == expectedHooks
+            ccSourceInstalled = handles.size == expectedHooks
             // Home yields Control Center only after the projected native
             // carrier is structurally ready.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
-                level = if (panelTransitionSourceInstalled) Log.INFO else Log.WARN,
+                level = if (ccSourceInstalled) Log.INFO else Log.WARN,
                 event = "source.install",
                 component = "panelTransition",
-                state = if (panelTransitionSourceInstalled) "ready" else "partial",
+                state = if (ccSourceInstalled) "ready" else "partial",
                 "hooks" to handles.size,
                 "expectedHooks" to expectedHooks,
                 "notificationRuntimeHook" to false,
@@ -1070,7 +1070,7 @@ class GyModule : XposedModule() {
                 "nativeGeometryWrites" to 0,
             )
         }.onFailure { error ->
-            panelTransitionSourceInstalled = false
+            ccSourceInstalled = false
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.ERROR,
@@ -1084,17 +1084,17 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onPanelTransitionUpdate(
-        update: SystemUiPanelTransitionSource.Update,
+    private fun onCcUpdate(
+        update: SysUiCcSource.Update,
     ) {
-        val effectiveSourceScene = handleControlCenterPanelUpdate(update)
+        val effectiveSourceScene = handleCcUpdate(update)
         val transitionUpdate =
             if (effectiveSourceScene != null) {
-                update.copy(controlCenterSourceScene = effectiveSourceScene)
+                update.copy(sourceScene = effectiveSourceScene)
             } else {
                 update
             }
-        ControlCenterTransitionOwner.onPanelUpdate(transitionUpdate)
+        ControlCenterTransitionOwner.onSourceUpdate(transitionUpdate)
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1119,8 +1119,8 @@ class GyModule : XposedModule() {
 
     }
 
-    private fun handleControlCenterPanelUpdate(
-        update: SystemUiPanelTransitionSource.Update,
+    private fun handleCcUpdate(
+        update: SysUiCcSource.Update,
     ): SourceScene? {
         update.fraction?.let(::onControlCenterExpansionFraction)
 
@@ -1146,16 +1146,16 @@ class GyModule : XposedModule() {
                 "reason" to "visible-cycle-rearm-failed",
                 "fallback" to "native-control-center-until-next-native-event",
             )
-            return update.controlCenterSourceScene
+            return update.sourceScene
         }
-        val panelSourceScene =
-            update.controlCenterSourceScene
+        val reportedSourceScene =
+            update.sourceScene
                 ?: SourceScene.UNKNOWN
         val incomingBoundaryReady =
             incomingKeyguardPresentationReadyForControlCenter()
         val effectiveSourceScene =
             ScenePolicy.resolveControlCenterSourceScene(
-                panelSourceScene = panelSourceScene,
+                reportedSourceScene = reportedSourceScene,
                 steadySourceScene = steadyStatusSourceScene,
                 lastStableFamilyScene = lastStableKeyguardAodScene,
                 incomingKeyguardPresentationReady = incomingBoundaryReady,
@@ -1164,7 +1164,7 @@ class GyModule : XposedModule() {
             sourceScene = effectiveSourceScene,
             authority =
                 when {
-                    effectiveSourceScene == panelSourceScene ->
+                    effectiveSourceScene == reportedSourceScene ->
                         "hyperos-realSystemIcons"
                     incomingBoundaryReady &&
                         effectiveSourceScene == SourceScene.KEYGUARD ->
@@ -1172,7 +1172,7 @@ class GyModule : XposedModule() {
                     else -> "steady-source-view-override"
                 },
         )
-        val carrier = update.controlCenterPresentationHost
+        val carrier = update.presentationHost
         if (carrier == null) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
@@ -1434,7 +1434,7 @@ class GyModule : XposedModule() {
             val result =
                 ControlCenterRenderSession.restoreLaidOutHostAfterHotReload(
                     host = host,
-                    onEvent = ::onPanelTransitionEvent,
+                    onEvent = ::onCcEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
                     transferredCompactReady = transferredCompactReady,
@@ -1489,7 +1489,7 @@ class GyModule : XposedModule() {
             val result =
                 ControlCenterRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    onEvent = ::onPanelTransitionEvent,
+                    onEvent = ::onCcEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
                 )
@@ -1529,7 +1529,7 @@ class GyModule : XposedModule() {
         val result =
             ControlCenterRenderSession.attach(
                 host = host,
-                onEvent = ::onPanelTransitionEvent,
+                onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onControlCenterProjectionReadinessChanged,
             )
@@ -1557,13 +1557,13 @@ class GyModule : XposedModule() {
         HomeRenderSession.onControlCenterAuthorityChanged(!ready)
     }
 
-    private fun onPanelTransitionEvent(event: String) {
+    private fun onCcEvent(event: String) {
         if (detailedDiagnosticsEnabled) {
             log(Log.INFO, TAG, event)
         }
     }
 
-    private fun onPanelTransitionRuntimeFailure(error: Throwable) {
+    private fun onCcRuntimeFailure(error: Throwable) {
         fun safely(block: () -> Unit) {
             try {
                 block()
@@ -3543,7 +3543,7 @@ class GyModule : XposedModule() {
         SystemUiKeyguardHostResolver.resetRuntimeState()
         PresentationStore.reset()
         SystemUiIslandMotionSource.resetRuntimeState()
-        SystemUiPanelTransitionSource.resetRuntimeState()
+        SysUiCcSource.resetRuntimeState()
 
         logDiagnostic(
             level = Log.INFO,
