@@ -4,7 +4,7 @@
 
 - Product: Guiyuan 0.2.0.
 - Stable `main`: Guiyuan 0.2.0 / Build 742 (`20261006-742`).
-- Integration `dev`: Guiyuan 0.2.0 / Build 743 (`20261006-743`), currently at `16f50dc0e23ddd8e6894fbe691fa18761f5955c8`.
+- Integration `dev`: Guiyuan 0.2.0 / Build 743 (`20261006-743`). Resolve the live `dev` ref from GitHub at startup rather than persisting a branch SHA here.
 - PR #220 is merged into `dev`. Exact-head Runtime CI #2770, Work-branch Canary #784, focused device validation, and integrated `dev` Runtime CI #2771 all passed.
 - Build 743 fixes the rare Home pull-down -> swipe-up/collapse native fallback by bounding only the QS_FAKE native peer reservation to verified live carrier capacity. Guiyuan semantic transition width, targets, progress, motion and renderer geometry remain unchanged.
 - No open PR remains. Historical PR #197 is closed as superseded and must not be restored as an active implementation route.
