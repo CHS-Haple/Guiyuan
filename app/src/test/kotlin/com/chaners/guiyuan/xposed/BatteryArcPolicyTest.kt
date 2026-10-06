@@ -14,7 +14,7 @@ class BatteryArcPolicyTest {
     }
 
     @Test
-    fun halfBatteryPartitionsTheRingWithoutOverlap() {
+    fun halfBatteryPartitionsRing() {
         val result = resolve(50)
 
         assertEquals(120f, result.activeSweep, 0.001f)

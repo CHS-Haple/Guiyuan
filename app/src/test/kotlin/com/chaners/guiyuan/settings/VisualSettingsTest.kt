@@ -101,7 +101,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun recommendedPaletteUsesMutedSemanticDefaults() {
+    fun recommendedPaletteUsesMutedDefaults() {
         assertEquals(0xFF3FA760.toInt(), RecommendedBatteryPalette.CHARGING)
         assertEquals(0xFFD5A623.toInt(), RecommendedBatteryPalette.POWER_SAVE)
         assertEquals(0xFF4A7FC1.toInt(), RecommendedBatteryPalette.PERFORMANCE)
@@ -116,7 +116,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun hyperosPaletteUsesPinnedSystemUiSemanticDefaults() {
+    fun hyperOsPaletteMatchesSysUi() {
         assertEquals(0xFF1DCD3A.toInt(), HyperOsBatteryPalette.CHARGING)
         assertEquals(0xFFFF9F05.toInt(), HyperOsBatteryPalette.POWER_SAVE)
         assertEquals(0xFF3482FF.toInt(), HyperOsBatteryPalette.PERFORMANCE)
@@ -129,7 +129,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun iosStylePaletteUsesExpectedSemanticDefaults() {
+    fun iosPaletteMatchesDefaults() {
         assertEquals(0xFF34C759.toInt(), IosStyleBatteryPalette.CHARGING)
         assertEquals(0xFFFFCC00.toInt(), IosStyleBatteryPalette.POWER_SAVE)
         assertEquals(0xFF007AFF.toInt(), IosStyleBatteryPalette.PERFORMANCE)
@@ -152,7 +152,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun previousPhysicalPlusThreeIsTheNewUserFacingZero() {
+    fun legacyOffsetMapsToZero() {
         assertEquals(
             0f,
             topOffsetUi(3f),
@@ -166,7 +166,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun userFacingOffsetRangeIsPlusMinusTenAroundPhysicalReference() {
+    fun visibleOffsetRangeIsPlusMinusTen() {
         assertEquals(-10f, TOP_OFFSET_UI_MIN, 0.0001f)
         assertEquals(10f, TOP_OFFSET_UI_MAX, 0.0001f)
         assertEquals(
@@ -182,7 +182,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun offsetMappingClampsOnlyAtVisibleSliderEnds() {
+    fun offsetClampsAtSliderEnds() {
         assertEquals(
             -10f,
             topOffsetUi(-30f),
@@ -196,7 +196,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
+    fun runtimeOffsetUsesPhysicalRange() {
         val high =
             VisualSettings(
                 topOffset = 30f,
@@ -212,7 +212,7 @@ class VisualSettingsTest {
 
 
     @Test
-    fun clearNotificationParticipatesInVisualRuntimeSync() {
+    fun clearNotificationSyncsVisuals() {
         assertEquals(true, isVisualPreferenceKey(null))
     }
 
@@ -252,7 +252,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun networkStateSizeControlsUseIndependentLayoutProfileKeys() {
+    fun networkSizesUseProfileKeys() {
         assertEquals(
             "network_center.airplane_size_scale",
             visualProfileKey(
@@ -316,7 +316,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun globalBatteryColorKeysParticipateInRuntimeSync() {
+    fun batteryColorKeysSyncRuntime() {
         listOf(
             BATTERY_COLOR_PRESET_KEY,
             BATTERY_COLOR_MODE_NORMAL_KEY,
@@ -337,7 +337,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun newBatteryVisualControlsKeepRequestedDefaults() {
+    fun batteryControlsKeepDefaults() {
         val settings = VisualSettings()
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.contentLayout)
@@ -360,7 +360,7 @@ class VisualSettingsTest {
 
 
     @Test
-    fun batteryCenteredProfileUsesRequestedTopDefaults() {
+    fun batteryProfileUsesTopDefaults() {
         assertEquals(
             1.4f,
             topTextUiDefault(ContentLayout.BATTERY_CENTER),
@@ -394,7 +394,7 @@ class VisualSettingsTest {
 
 
     @Test
-    fun directBatteryCenteredSettingsConstructionUsesProfileDefaults() {
+    fun batterySettingsUseProfileDefaults() {
         val settings =
             VisualSettings(
                 contentLayout = ContentLayout.BATTERY_CENTER,
@@ -414,7 +414,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun networkCenteredProfileUsesRequestedTopDefaults() {
+    fun networkProfileUsesTopDefaults() {
         assertEquals(
             1.2f,
             topTextUiDefault(ContentLayout.NETWORK_CENTER),
@@ -433,7 +433,7 @@ class VisualSettingsTest {
     }
 
     @Test
-    fun batteryTopScaleRangesAreFortyToOneHundredSixtyPercent() {
+    fun topScaleRangeIsFortyTo160() {
         assertEquals(0.4f, TOP_TEXT_UI_MIN, 0.0001f)
         assertEquals(1.6f, TOP_TEXT_UI_MAX, 0.0001f)
         assertEquals(0.4f, CHARGING_ICON_UI_MIN, 0.0001f)

@@ -6,7 +6,7 @@ import org.junit.Test
 
 class BatterySchemeLibraryTest {
     @Test
-    fun builtInOrderAndHyperosValuesMatchPinnedTarget() {
+    fun builtInsMatchPinnedHyperOs() {
         assertEquals(
             listOf(
                 BuiltInBatteryScheme.HYPEROS,
@@ -38,7 +38,7 @@ class BatterySchemeLibraryTest {
     }
 
     @Test
-    fun builtInEntriesKeepTemplateReferencesInsteadOfFlatteningColors() {
+    fun builtInsKeepTemplateRefs() {
         val entries = entriesFromBuiltIn(BuiltInBatteryScheme.IOS)
         assertEquals(
             BatterySchemeSource.IOS,
@@ -54,7 +54,7 @@ class BatterySchemeLibraryTest {
     }
 
     @Test
-    fun customEntryUsesFixedColorWhileFollowSystemHasNoFixedColor() {
+    fun customEntryUsesFixedColor() {
         assertEquals(
             0xFF2468AC.toInt(),
             batterySchemeEntryColor(
@@ -77,7 +77,7 @@ class BatterySchemeLibraryTest {
     }
 
     @Test
-    fun legacyCustomWithoutStoredValueFallsBackToItsPresetSource() {
+    fun legacyCustomFallsBackToPreset() {
         assertEquals(
             BatterySchemeSource.IOS,
             batteryColorSchemeSourceFromLegacy(
@@ -111,7 +111,7 @@ class BatterySchemeLibraryTest {
         assertNull(customSchemeId(BATTERY_COLOR_SCHEME_HYPEROS_KEY))
     }
     @Test
-    fun customSchemeNameLimitIsSharedAndUnicodeCodePointSafe() {
+    fun schemeNameLimitIsUnicodeSafe() {
         assertEquals(
             "123456789012345678901234",
             limitBatteryCustomSchemeNameInput("1234567890123456789012345"),

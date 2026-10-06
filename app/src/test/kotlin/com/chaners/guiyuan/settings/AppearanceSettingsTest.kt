@@ -29,7 +29,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun currentBlurBooleanMigratesToPreviousGlassAppearance() {
+    fun blurFlagMigratesToGlassStyle() {
         assertEquals(
             FloatingNavStyle.Glass,
             decodeFloatingNavStyle(
@@ -51,7 +51,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun oldSeparateBlurAndGlassFlagsPreserveThreeStyles() {
+    fun legacyBlurFlagsPreserveStyles() {
         assertEquals(
             FloatingNavStyle.Blur,
             decodeFloatingNavStyle(
@@ -82,7 +82,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun floatingNavigationContentDefaultsToIconsOnly() {
+    fun navContentDefaultsToIcons() {
         assertEquals(
             FloatingNavContent.IconOnly,
             decodeFloatingNavContent(null),
@@ -98,7 +98,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun legacyDynamicModeMigratesToSystemWithDynamicColor() {
+    fun dynamicModeMigratesToSystemTheme() {
         val result =
             decodeThemeSelection(
                 storedMode = "Dynamic",
@@ -110,7 +110,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun explicitDynamicPreferenceOverridesLegacyFallback() {
+    fun explicitDynamicPrefWins() {
         val result =
             decodeThemeSelection(
                 storedMode = "Dynamic",
@@ -122,7 +122,7 @@ class AppearanceSettingsTest {
     }
 
     @Test
-    fun lightModeRemainsIndependentFromDynamicColor() {
+    fun lightModeIgnoresDynamicColor() {
         val result =
             decodeThemeSelection(
                 storedMode = "Light",

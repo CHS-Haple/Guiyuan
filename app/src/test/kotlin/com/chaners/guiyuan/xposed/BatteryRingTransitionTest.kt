@@ -7,7 +7,7 @@ import org.junit.Test
 
 class BatteryRingTransitionTest {
     @Test
-    fun transitionProgressFinishesRingAtFortyFivePercentWithoutJump() {
+    fun ringEndsAt45WithoutJump() {
         assertEquals(
             0f,
             BatteryRingTransition.transitionProgress(0f),
@@ -36,7 +36,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun remainingFractionUsesContinuousFrontLoadedCurve() {
+    fun remainingFractionIsContinuous() {
         assertEquals(
             1f,
             BatteryRingTransition.remainingFraction(0f),
@@ -65,7 +65,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun globalCurveKeepsBuild550EarlyPaceAndExtendsTailContinuously() {
+    fun globalCurveKeepsEarlyPaceAndTail() {
         fun remainingAtGlobal(progress: Float): Float =
             BatteryRingTransition.remainingFraction(
                 BatteryRingTransition.transitionProgress(progress),
@@ -78,7 +78,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun terminalRoundCapTailEndsWhenArcLengthFallsBelowStrokeWidth() {
+    fun roundCapEndsBelowStrokeWidth() {
         assertFalse(
             BatteryRingTransition.isTerminalCapDominated(
                 remainingFraction = 0.05f,
@@ -98,7 +98,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun retractKeepsGrayPathAndBatteryFillOnSamePrefix() {
+    fun retractKeepsFillOnSamePrefix() {
         val result =
             BatteryRingTransition.resolve(
                 drawableArcs =
@@ -148,7 +148,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun nonePreservesBuild543ActiveLengthSemantics() {
+    fun nonePreservesActiveLength() {
         val result =
             BatteryRingTransition.resolve(
                 drawableArcs = listOf(
@@ -164,7 +164,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun rightExitPreservesBuild543ActiveLengthSemantics() {
+    fun rightExitPreservesActiveLength() {
         val result =
             BatteryRingTransition.resolve(
                 drawableArcs = listOf(
@@ -198,7 +198,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitDefaultsToOriginalBatteryFillIntersection() {
+    fun leftExitUsesOriginalFillPoint() {
         val progress = 0.12f
         val result =
             BatteryRingTransition.resolve(
@@ -226,7 +226,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitCarriesBatteryFillWithoutShrinkingWhileHollowRemains() {
+    fun leftExitCarriesFillWhileHollow() {
         val progress = 0.12f
         val result =
             BatteryRingTransition.resolve(
@@ -247,7 +247,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitCarriesFixedFillAcrossTopGapWhileHollowRemains() {
+    fun leftExitCarriesFillAcrossTopGap() {
         val progress = 0.12f
         val result =
             BatteryRingTransition.resolve(
@@ -269,7 +269,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitUsesLiveBatteryPercentWithoutMovingRetractEndpoint() {
+    fun leftExitUsesLiveBatteryPercent() {
         val progress = 0.12f
         val arcs =
             listOf(
@@ -307,7 +307,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitStartsShrinkingFillOnlyAfterHollowIsExhausted() {
+    fun leftExitShrinksAfterHollow() {
         val progress = 0.5f
         val result =
             BatteryRingTransition.resolve(
@@ -327,7 +327,7 @@ class BatteryRingTransitionTest {
     }
 
     @Test
-    fun leftExitBatteryFillAndBackgroundReachZeroTogether() {
+    fun leftExitFillAndBgEndTogether() {
         val completed =
             BatteryRingTransition.resolve(
                 drawableArcs = listOf(

@@ -28,7 +28,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun systemDefaultUsesNativeSemanticColorForEverySemanticState() {
+    fun systemDefaultUsesNativeColors() {
         listOf(
             BatterySemanticState.CHARGING,
             BatterySemanticState.POWER_SAVE,
@@ -87,7 +87,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun hyperosPresetUsesPinnedChargingAndMonochromeNormal() {
+    fun hyperOsPresetMatchesTarget() {
         val settings = VisualSettings()
         val preferences = BatteryColorPolicy.preferencesFor(settings)
 
@@ -112,7 +112,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun lowSaturationPresetUsesMutedChargingAndMonochromeNormal() {
+    fun lowSatPresetUsesMutedColors() {
         val settings =
             VisualSettings(
                 batteryColorPreset = BatteryColorPreset.RECOMMENDED,
@@ -131,7 +131,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun iosStylePresetUsesGreenChargingAndMonochromeNormal() {
+    fun iosPresetUsesGreenCharging() {
         val settings =
             VisualSettings(
                 batteryColorPreset = BatteryColorPreset.IOS_STYLE,
@@ -159,7 +159,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun followSystemModeOverridesSelectedPresetPerSlot() {
+    fun followSystemOverridesPreset() {
         val settings =
             VisualSettings(
                 batteryColorPreset = BatteryColorPreset.IOS_STYLE,
@@ -180,7 +180,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun storedCustomColorIsIgnoredWhileSlotUsesPresetMode() {
+    fun presetModeIgnoresStoredCustom() {
         val custom = 0xFF2468AC.toInt()
         val settings =
             VisualSettings(
@@ -200,7 +200,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun customOverrideWinsOverSelectedPresetWhenSlotUsesCustomMode() {
+    fun customModeOverridesPreset() {
         val custom = 0xFF2468AC.toInt()
         val settings =
             VisualSettings(
@@ -224,7 +224,7 @@ class BatteryColorPolicyTest {
     }
 
     @Test
-    fun missingNativeSemanticColorFallsBackToStatusTint() {
+    fun missingNativeColorUsesStatusTint() {
         assertEquals(
             statusTint,
             BatteryColorPolicy.resolve(
@@ -271,7 +271,7 @@ class BatteryColorPolicyTest {
         }
 
     @Test
-    fun tintedStateTracksActualCustomOrPresetColorSource() {
+    fun tintedStateTracksColorSource() {
         val defaultSettings = VisualSettings()
         assertTrue(
             BatteryColorPolicy.isTinted(

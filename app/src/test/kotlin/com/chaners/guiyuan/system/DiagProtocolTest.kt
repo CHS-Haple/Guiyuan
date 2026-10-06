@@ -43,7 +43,7 @@ class DiagProtocolTest {
     }
 
     @Test
-    fun healthSnapshotUsesLatestEventForEachComponent() {
+    fun healthUsesLatestComponentEvent() {
         val lines =
             listOf(
                 DiagProtocol.format(
@@ -70,7 +70,7 @@ class DiagProtocolTest {
     }
 
     @Test
-    fun healthSnapshotScopesToLatestRuntimeSession() {
+    fun healthUsesLatestSession() {
         val lines =
             listOf(
                 DiagProtocol.format(
@@ -203,7 +203,7 @@ class DiagProtocolTest {
     }
 
     @Test
-    fun unobservedTintAndSceneDoNotDegradeReadyPresentationOwner() {
+    fun unobservedStateKeepsReadyOwner() {
         val coreComponents =
             listOf(
                 "module",

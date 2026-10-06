@@ -18,7 +18,7 @@ class SysUiScopeTest {
     }
 
     @Test
-    fun restartDoesNotUseCrashForceStopSigkillOrBlindKillall() {
+    fun restartAvoidsDestructiveKill() {
         val command = SysUiScope.RestartCommand
 
         assertFalse(command.contains("am force-stop"))

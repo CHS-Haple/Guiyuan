@@ -5,7 +5,7 @@ import org.junit.Test
 
 class RuntimeEnvTest {
     @Test
-    fun appendsSoftwareUpdateRevisionToHyperOsVersion() {
+    fun appendsHyperOsRevision() {
         assertEquals(
             "4.0.0.14.XOBCNXM.D01",
             RuntimeEnv.composeOsVersion(

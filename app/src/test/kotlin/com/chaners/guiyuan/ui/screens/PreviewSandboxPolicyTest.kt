@@ -7,7 +7,7 @@ import org.junit.Test
 
 class PreviewSandboxPolicyTest {
     @Test
-    fun mobileNetworkSandboxCoversCommonNativeLabelsWithoutChangingLegacyOrdinals() {
+    fun mobileSandboxKeepsLegacyOrdinals() {
         assertEquals(0, PreviewMobileNetwork.NONE.ordinal)
         assertEquals(1, PreviewMobileNetwork.FOUR_G.ordinal)
         assertEquals(2, PreviewMobileNetwork.FIVE_G.ordinal)
@@ -25,7 +25,7 @@ class PreviewSandboxPolicyTest {
     }
 
     @Test
-    fun noInternetWifiUsesExactHyperOsUnavailableFamily() {
+    fun noInternetWifiUsesNativeFamily() {
         val names = previewWifiResourceNames(
             state = PreviewWifiState.NO_INTERNET,
             level = 3,
@@ -40,7 +40,7 @@ class PreviewSandboxPolicyTest {
 
 
     @Test
-    fun previewChargingUsesNativeHollowBatteryResourceFamilies() {
+    fun previewChargingUsesNativeBattery() {
         assertEquals(
             listOf(
                 "hollow_battery_meter_charging",
@@ -73,7 +73,7 @@ class PreviewSandboxPolicyTest {
     }
 
     @Test
-    fun wifiRemainsCenterAuthorityWhileAirplaneAndNoSimAreActive() {
+    fun wifiKeepsCenterAuthority() {
         val state =
             PreviewSandboxUiState(
                 simPresent = false,
@@ -109,7 +109,7 @@ class PreviewSandboxPolicyTest {
     }
 
     @Test
-    fun mobileSubordinateOptionsFoldWhenUnavailable() {
+    fun mobileOptionsFoldWhenUnavailable() {
         val ready =
             PreviewSandboxUiState(
                 simPresent = true,

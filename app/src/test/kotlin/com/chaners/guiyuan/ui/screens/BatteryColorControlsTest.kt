@@ -10,7 +10,7 @@ import org.junit.Test
 
 class BatteryColorControlsTest {
     @Test
-    fun hexParsingProducesOpaqueColorsAndRejectsInvalidInput() {
+    fun hexParserAcceptsOpaqueColor() {
         assertEquals(0xFF34C759.toInt(), batteryColorFromHex("#34C759"))
         assertEquals(0xFF34C759.toInt(), batteryColorFromHex("34c759"))
         assertNull(batteryColorFromHex("FF34C759"))
@@ -18,7 +18,7 @@ class BatteryColorControlsTest {
     }
 
     @Test
-    fun rgbParsingProducesOpaqueColorsAndRejectsInvalidInput() {
+    fun rgbParserAcceptsOpaqueColor() {
         assertEquals(
             0xFFFF0080.toInt(),
             batteryColorFromRgb("255", "0", "128"),
@@ -40,7 +40,7 @@ class BatteryColorControlsTest {
     }
 
     @Test
-    fun followSystemWithoutStoredCustomHasNoEditorSeed() {
+    fun followSystemWithoutCustomHasNoSeed() {
         assertNull(
             batteryColorEditorSeed(
                 BatterySchemeEntry(
@@ -53,7 +53,7 @@ class BatteryColorControlsTest {
     }
 
     @Test
-    fun followSystemKeepsRememberedCustomAsEditorSeedWithoutMakingItActive() {
+    fun followSystemKeepsCustomEditorSeed() {
         assertEquals(
             0xFF2468AC.toInt(),
             batteryColorEditorSeed(

@@ -6,7 +6,7 @@ import org.junit.Test
 
 class BatterySemanticPolicyTest {
     @Test
-    fun mapsNativeProgressStatusesWithoutReconstructingPriority() {
+    fun mapsNativeProgressDirectly() {
         assertEquals(
             BatterySemanticState.CHARGING,
             BatterySemanticPolicy.fromNativeProgressStatus("QUICK_CHARGING"),
