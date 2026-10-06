@@ -308,7 +308,7 @@ internal object HomeRenderSession {
                 ViewGroup.LayoutParams(0, 0),
             )
             renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+                VisualPrefsOwner.current(),
             )
             resolveInitialTintSeed(
                 transferred = initialTintState,

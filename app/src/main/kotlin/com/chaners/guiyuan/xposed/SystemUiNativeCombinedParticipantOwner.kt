@@ -980,7 +980,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         renderController =
             renderController ?: RenderController(render)
         renderController?.updateVisualSettings(
-            VisualPrefsOwner.currentSettings(),
+            VisualPrefsOwner.current(),
         )
         featureEnabled =
             FeaturePrefsOwner.current().enabled

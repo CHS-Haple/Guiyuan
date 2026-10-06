@@ -496,7 +496,7 @@ internal object ControlCenterRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
-        private var currentVisualSettings = VisualPrefsOwner.currentSettings()
+        private var currentVisualSettings = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
         private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE

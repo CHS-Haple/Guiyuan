@@ -63,7 +63,7 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.FeatureRepo
-import com.chaners.guiyuan.settings.VisualSettingsRepo
+import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScale
 import com.chaners.guiyuan.settings.batteryTopChargingIconUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopTextUiScale
@@ -108,7 +108,7 @@ internal fun FeaturesScreen(
         )
     val visualRepository =
         remember(context.applicationContext) {
-            VisualSettingsRepo(context.applicationContext)
+            VisualRepo(context.applicationContext)
         }
     val visualSettings by
         visualRepository.settings.collectAsState(

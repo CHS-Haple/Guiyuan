@@ -2008,7 +2008,7 @@ internal object SystemUiHomePresentationOwner {
             val compactSlotWidthPx =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = resolved.requestedSlotWidthPx.toInt(),
-                    userScale = VisualPrefsOwner.currentSettings().combinedScale,
+                    userScale = VisualPrefsOwner.current().combinedScale,
                 )
             val requestedSlotWidthPx =
                 EndReservationPolicy.resolveRequestedSlotWidth(
@@ -2077,7 +2077,7 @@ internal object SystemUiHomePresentationOwner {
                             " stableCarrierWidth=" + stableCarrierWidthPx +
                             " actualBatteryWidth=" + actualBatteryWidthPx +
                             " compactSlotWidth=" + compactSlotWidthPx +
-                            " visualScale=" + VisualPrefsOwner.currentSettings().combinedScale +
+                            " visualScale=" + VisualPrefsOwner.current().combinedScale +
                             " requestedSlotWidth=" + requestedSlotWidthPx +
                             " transitionRequestedSlotWidth=" +
                             (transitionRequestedSlotWidthPx ?: -1) +

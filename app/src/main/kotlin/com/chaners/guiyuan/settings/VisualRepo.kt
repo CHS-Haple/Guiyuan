@@ -21,7 +21,7 @@ internal fun isVisualPreferenceKey(key: String?): Boolean {
     }
 }
 
-internal class VisualSettingsRepo(context: Context) {
+internal class VisualRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,

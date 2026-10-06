@@ -392,7 +392,7 @@ internal object KeyguardRenderSession {
                 ViewGroup.LayoutParams(0, 0),
             )
             renderController.updateVisualSettings(
-                VisualPrefsOwner.currentSettings(),
+                VisualPrefsOwner.current(),
             )
             SystemUiTintStateSource.currentState(battery)?.let { state ->
                 applyTintState(
