@@ -28,6 +28,13 @@ Prefer Android, HyperOS, MIUIX, and Modern Xposed contracts over project-local r
 ### Lightweight
 Avoid duplicate hooks/listeners/state machines, polling, repeated View-tree traversal, hot-path reflection, resident Root work, per-frame diagnostics, and unnecessary caching.
 
+### Human-maintainable
+Write code for the next human maintainer, not for a naming generator. Prefer natural domain terms, familiar abbreviations, and names that use their package/class/file context instead of repeating it. Avoid sentence-shaped identifiers, redundant prefixes, one-word project shorthand that only this repository understands, and aliases kept only to preserve an obsolete internal name.
+
+Keep structure equally human: place constants/helpers near the code they serve, split a file only when the split creates a clear owner/cohesive responsibility, and do not create layers or one-line wrappers just to make code look organized.
+
+Comments are for non-obvious reasoning: ownership/lifecycle boundaries, upstream or compatibility seams, safety invariants, and decisions that would be easy to "simplify" incorrectly later. Keep them short, natural, adjacent to the relevant code, and current. Do not narrate obvious statements, repeat the identifier in prose, or preserve debugging/history as source comments.
+
 ### Modern
 Prefer maintained APIs and project-pinned dependencies when they satisfy the requirement. Newer is not automatically better; compatibility and lifecycle evidence still matter.
 
