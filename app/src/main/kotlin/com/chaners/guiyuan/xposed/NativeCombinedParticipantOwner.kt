@@ -24,8 +24,6 @@ import java.util.WeakHashMap
 
 internal object NativeCombinedParticipantOwner {
     const val SLOT = "combined_status"
-    private const val ZERO_SLOT_WIDTH = 0
-    private const val MAX_NATIVE_VISIBLE_STATE_PROBE = 8
 
     private const val CONTROLLER_IMPL =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
@@ -875,7 +873,7 @@ internal object NativeCombinedParticipantOwner {
         activeSlotWidth = slotGeometry.slotWidth
         activeSlotHeight = slotGeometry.slotHeight
         activeSlotTranslationX =
-            resolveNativeSlotTranslationX(
+            NativeCombinedPolicy.slotTranslationX(
                 statusIconsWidth = activeSlotBoundaryWidth,
                 rootLeft = root.left,
             ) ?: return AttachResult.Failure("native-slot-translation-anchor-not-ready")
@@ -902,7 +900,7 @@ internal object NativeCombinedParticipantOwner {
             root.layoutParams
                 ?: return AttachResult.Failure("native-root-layout-params-missing")
         val targetShellWidth =
-            resolveNativeSlotOccupancyWidth(
+            NativeCombinedPolicy.slotOccupancyWidth(
                 nativeBatteryHidden = nativeBatteryLayoutHidden,
                 visualWidth = activeSlotWidth,
             ) ?: return AttachResult.Failure("native-root-occupancy-width-invalid")
@@ -1008,7 +1006,7 @@ internal object NativeCombinedParticipantOwner {
         val tintUpdate =
             batteryTintState?.let { batteryTint ->
                 renderController?.updateTint(
-                    mergeNativeParticipantTint(
+                    NativeCombinedPolicy.mergeTint(
                         batteryTint = batteryTint,
                         nativeTint = bindingState.iconTint,
                     ),
@@ -1198,7 +1196,7 @@ internal object NativeCombinedParticipantOwner {
             resolveNativeSlotScreenX(root)
                 ?: return false
         if (
-            !isActiveSlotHandoffReady(
+            !NativeCombinedPolicy.activeSlotReady(
                 rootLayoutWidth = root.layoutParams?.width ?: Int.MIN_VALUE,
                 rootLayoutHeight = root.layoutParams?.height ?: Int.MIN_VALUE,
                 nativeBatteryHidden = nativeBatteryLayoutHidden,
@@ -1224,7 +1222,7 @@ internal object NativeCombinedParticipantOwner {
         handoffPending = true
         try {
             val removeFlag =
-                resolveNativeFeatureRemoveFlag(
+                NativeCombinedPolicy.featureRemoveFlag(
                     featureEnabled = true,
                     handoffValidated = handoffValidated,
                 ) ?: return false
@@ -1296,7 +1294,7 @@ internal object NativeCombinedParticipantOwner {
 
         val tintUpdate =
             renderController?.updateTint(
-                mergeNativeParticipantTint(
+                NativeCombinedPolicy.mergeTint(
                     batteryTint = update.state,
                     nativeTint = null,
                 ),
@@ -1342,7 +1340,7 @@ internal object NativeCombinedParticipantOwner {
             }
 
         val resolved =
-            resolveNativeContentVisibility(
+            NativeCombinedPolicy.contentVisibility(
                 state = state,
                 iconState = nativeStateIcon,
                 dotState = nativeStateDot,
@@ -1388,36 +1386,9 @@ internal object NativeCombinedParticipantOwner {
         }
     }
 
-    internal fun resolveNativeContentVisibility(
-        state: Int,
-        iconState: Int?,
-        dotState: Int?,
-        hiddenState: Int?,
-    ): NativeContentVisibility? {
-        if (iconState != null && state == iconState) {
-            return NativeContentVisibility(
-                renderVisibility = View.VISIBLE,
-                dotVisibility = View.GONE,
-            )
-        }
-        if (dotState != null && state == dotState) {
-            return NativeContentVisibility(
-                renderVisibility = View.INVISIBLE,
-                dotVisibility = View.VISIBLE,
-            )
-        }
-        if (hiddenState != null && state == hiddenState) {
-            return NativeContentVisibility(
-                renderVisibility = View.INVISIBLE,
-                dotVisibility = View.INVISIBLE,
-            )
-        }
-        return null
-    }
-
     private fun resolveNativeVisibilityStates(
         statusBarIconViewClass: Class<*>,
-    ): NativeVisibilityStates? {
+    ): NativeCombinedPolicy.VisibilityStates? {
         val stateNameMethod =
             statusBarIconViewClass.methods
                 .firstOrNull { method ->
@@ -1430,42 +1401,11 @@ internal object NativeCombinedParticipantOwner {
                 }
                 ?: return null
         stateNameMethod.isAccessible = true
-        return resolveNativeVisibilityStates { candidate ->
+        return NativeCombinedPolicy.visibilityStates { candidate ->
             runCatching {
                 stateNameMethod.invoke(null, candidate) as? String
             }.getOrNull()
         }
-    }
-
-    internal fun resolveNativeVisibilityStates(
-        stateName: (Int) -> String?,
-    ): NativeVisibilityStates? {
-        var icon: Int? = null
-        var dot: Int? = null
-        var hidden: Int? = null
-
-        for (candidate in 0..MAX_NATIVE_VISIBLE_STATE_PROBE) {
-            when (stateName(candidate)?.trim()?.uppercase()) {
-                "ICON" -> icon = candidate
-                "DOT" -> dot = candidate
-                "HIDDEN" -> hidden = candidate
-            }
-            if (icon != null && dot != null && hidden != null) {
-                break
-            }
-        }
-
-        val resolvedIcon = icon ?: return null
-        val resolvedDot = dot ?: return null
-        val resolvedHidden = hidden ?: return null
-        if (setOf(resolvedIcon, resolvedDot, resolvedHidden).size != 3) {
-            return null
-        }
-        return NativeVisibilityStates(
-            icon = resolvedIcon,
-            dot = resolvedDot,
-            hidden = resolvedHidden,
-        )
     }
 
     @Synchronized
@@ -1563,7 +1503,7 @@ internal object NativeCombinedParticipantOwner {
             }
 
             val nativeRemoveFlag =
-                resolveNativeFeatureRemoveFlag(
+                NativeCombinedPolicy.featureRemoveFlag(
                     featureEnabled = false,
                     handoffValidated = handoffValidated,
                 )
@@ -1656,25 +1596,6 @@ internal object NativeCombinedParticipantOwner {
             }
             ?: "none"
 
-    internal fun mergeNativeParticipantTint(
-        batteryTint: TintState,
-        nativeTint: Int?,
-    ): TintState {
-        val resolvedNativeTint =
-            nativeTint
-                ?.takeIf { color -> (color ushr 24) != 0 }
-        return if (resolvedNativeTint != null) {
-            TintState(
-                appliedTint = resolvedNativeTint,
-                statusIconTint = resolvedNativeTint,
-            )
-        } else {
-            TintState(
-                appliedTint = batteryTint.appliedTint,
-            )
-        }
-    }
-
     private fun reconcileVisibleHandoff(source: String) {
         if (!featureEnabled) {
             suspendVisibleHandoff(source)
@@ -1692,7 +1613,7 @@ internal object NativeCombinedParticipantOwner {
         }
 
         val handoffMode =
-            resolveHandoffMode(
+            NativeCombinedPolicy.handoffMode(
                 surface = currentSurface,
                 rootShown = root.isShown,
             )
@@ -1700,7 +1621,7 @@ internal object NativeCombinedParticipantOwner {
             handoffPending ||
             !modelReady ||
             !tintReady ||
-            handoffMode == HandoffMode.BLOCKED ||
+            handoffMode == NativeCombinedPolicy.HandoffMode.BLOCKED ||
             !root.isAttachedToWindow ||
             root.parent == null
         ) {
@@ -1754,7 +1675,7 @@ internal object NativeCombinedParticipantOwner {
                                 null
                             }
                         val bridgeReady =
-                            isZeroSlotHandoffReady(
+                            NativeCombinedPolicy.zeroSlotReady(
                                 rootMeasuredWidth = root.measuredWidth,
                                 rootMeasuredHeight = root.measuredHeight,
                                 nativeBatteryHidden = nativeBatteryLayoutHidden,
@@ -1769,14 +1690,14 @@ internal object NativeCombinedParticipantOwner {
                                 renderRight = render?.right ?: Int.MIN_VALUE,
                             )
                         val resolvedMode =
-                            resolveHandoffMode(
+                            NativeCombinedPolicy.handoffMode(
                                 surface = currentSurface,
                                 rootShown = root.isShown,
                             )
                         val ready =
                             modelReady &&
                                 tintReady &&
-                                resolvedMode != HandoffMode.BLOCKED &&
+                                resolvedMode != NativeCombinedPolicy.HandoffMode.BLOCKED &&
                                 bindingState.visible &&
                                 iconVisible &&
                                 root.isAttachedToWindow &&
@@ -1871,20 +1792,12 @@ internal object NativeCombinedParticipantOwner {
         root.viewTreeObserver.addOnPreDrawListener(listener)
     }
 
-    internal fun resolveNativeSlotTranslationX(
-        statusIconsWidth: Int,
-        rootLeft: Int,
-    ): Float? =
-        (statusIconsWidth - rootLeft)
-            .takeIf { translation -> translation >= 0 }
-            ?.toFloat()
-
     private fun currentNativeSlotTranslationX(root: View): Float? =
         activeSlotTranslationX
             ?: activeSlotBoundaryWidth
                 .takeIf { width -> width > 0 }
                 ?.let { boundaryWidth ->
-                    resolveNativeSlotTranslationX(
+                    NativeCombinedPolicy.slotTranslationX(
                         statusIconsWidth = boundaryWidth,
                         rootLeft = root.left,
                     )
@@ -1901,7 +1814,7 @@ internal object NativeCombinedParticipantOwner {
                     .takeIf { width -> width > 0 }
                 ?: return false
         val resolved =
-            resolveNativeSlotTranslationX(
+            NativeCombinedPolicy.slotTranslationX(
                 statusIconsWidth = boundaryWidth,
                 rootLeft = root.left,
             ) ?: return false
@@ -1918,83 +1831,6 @@ internal object NativeCombinedParticipantOwner {
             statusIconsLocation[0] + root.left + translation,
         ).toInt()
     }
-
-    internal fun isZeroSlotHandoffReady(
-        rootMeasuredWidth: Int,
-        rootMeasuredHeight: Int,
-        nativeBatteryHidden: Boolean = false,
-        renderMeasuredWidth: Int,
-        renderMeasuredHeight: Int,
-        expectedVisualWidth: Int,
-        expectedVisualHeight: Int,
-        parentClipsChildren: Boolean,
-        rootScreenX: Int,
-        slotAnchorScreenX: Int,
-        renderLeft: Int,
-        renderRight: Int,
-    ): Boolean =
-        rootMeasuredWidth ==
-            resolveNativeSlotOccupancyWidth(
-                nativeBatteryHidden = nativeBatteryHidden,
-                visualWidth = expectedVisualWidth,
-            ) &&
-            rootMeasuredHeight > 0 &&
-            renderMeasuredWidth == expectedVisualWidth &&
-            renderMeasuredHeight == expectedVisualHeight &&
-            expectedVisualWidth > 0 &&
-            expectedVisualHeight > 0 &&
-            !parentClipsChildren &&
-            rootScreenX == slotAnchorScreenX &&
-            renderLeft == 0 &&
-            renderRight == expectedVisualWidth
-
-    internal fun isActiveSlotHandoffReady(
-        rootLayoutWidth: Int,
-        rootLayoutHeight: Int,
-        nativeBatteryHidden: Boolean = false,
-        renderMeasuredWidth: Int,
-        renderMeasuredHeight: Int,
-        expectedVisualWidth: Int,
-        expectedVisualHeight: Int,
-        parentClipsChildren: Boolean,
-        rootScreenX: Int,
-        slotAnchorScreenX: Int,
-        renderLeft: Int,
-        renderRight: Int,
-    ): Boolean =
-        rootLayoutWidth ==
-            resolveNativeSlotOccupancyWidth(
-                nativeBatteryHidden = nativeBatteryHidden,
-                visualWidth = expectedVisualWidth,
-            ) &&
-            rootLayoutHeight == expectedVisualHeight &&
-            renderMeasuredWidth == expectedVisualWidth &&
-            renderMeasuredHeight == expectedVisualHeight &&
-            expectedVisualWidth > 0 &&
-            expectedVisualHeight > 0 &&
-            !parentClipsChildren &&
-            rootScreenX == slotAnchorScreenX &&
-            renderLeft == 0 &&
-            renderRight == expectedVisualWidth
-
-    internal enum class HandoffMode {
-        BLOCKED,
-        VISIBLE_HOME,
-        PREARMED_KEYGUARD,
-    }
-
-    internal fun resolveHandoffMode(
-        surface: SysUiSceneSource.Surface,
-        rootShown: Boolean,
-    ): HandoffMode =
-        when {
-            surface == SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR ->
-                HandoffMode.VISIBLE_HOME
-            surface == SysUiSceneSource.Surface.KEYGUARD && !rootShown ->
-                HandoffMode.PREARMED_KEYGUARD
-            else ->
-                HandoffMode.BLOCKED
-        }
 
     private fun firstHiddenAncestor(view: View): String {
         var current = view.parent as? View
@@ -2031,7 +1867,7 @@ internal object NativeCombinedParticipantOwner {
                 ?.takeIf { width -> width > 0 }
                 ?: activeSlotWidth
         val targetWidth =
-            resolveNativeSlotOccupancyWidth(
+            NativeCombinedPolicy.slotOccupancyWidth(
                 nativeBatteryHidden = hidden,
                 visualWidth = visualWidth,
             ) ?: return false
@@ -2053,37 +1889,6 @@ internal object NativeCombinedParticipantOwner {
                 " moduleOwnedRootWidthWrite=true peerNativeGeometryWrites=0",
         )
         return root.layoutParams?.width == targetWidth
-    }
-
-    internal fun resolveNativeSlotOccupancyWidth(
-        nativeBatteryHidden: Boolean,
-        visualWidth: Int,
-    ): Int? =
-        visualWidth
-            .takeIf { width -> width > 0 }
-            ?.let { width ->
-                if (nativeBatteryHidden) {
-                    width
-                } else {
-                    ZERO_SLOT_WIDTH
-                }
-            }
-
-    internal fun resolvePostLayoutVisualWidth(
-        layoutWidth: Int,
-        measuredWidth: Int,
-        visualWidth: Int,
-        nativeBatteryHidden: Boolean = false,
-    ): Int? {
-        val occupancyWidth =
-            resolveNativeSlotOccupancyWidth(
-                nativeBatteryHidden = nativeBatteryHidden,
-                visualWidth = visualWidth,
-            ) ?: return null
-        return visualWidth.takeIf {
-            layoutWidth == occupancyWidth &&
-                measuredWidth == occupancyWidth
-        }
     }
 
     private fun applyPostLayoutVisualBounds(container: Any): Boolean {
@@ -2112,7 +1917,7 @@ internal object NativeCombinedParticipantOwner {
                 ?.takeIf { height -> height > 0 }
                 ?: activeSlotHeight
         val resolvedWidth =
-            resolvePostLayoutVisualWidth(
+            NativeCombinedPolicy.postLayoutVisualWidth(
                 layoutWidth = root.layoutParams?.width ?: Int.MIN_VALUE,
                 measuredWidth = root.measuredWidth,
                 visualWidth = visualWidth,
@@ -2135,7 +1940,7 @@ internal object NativeCombinedParticipantOwner {
             root.layout(left, top, right, bottom)
         }
         val expectedOccupancyWidth =
-            resolveNativeSlotOccupancyWidth(
+            NativeCombinedPolicy.slotOccupancyWidth(
                 nativeBatteryHidden = nativeBatteryLayoutHidden,
                 visualWidth = resolvedWidth,
             ) ?: return false
@@ -2186,16 +1991,6 @@ internal object NativeCombinedParticipantOwner {
             method.invoke(root) as? Boolean
         }.getOrNull()
     }
-
-    internal fun resolveNativeFeatureRemoveFlag(
-        featureEnabled: Boolean,
-        handoffValidated: Boolean,
-    ): Boolean? =
-        if (handoffValidated) {
-            !featureEnabled
-        } else {
-            null
-        }
 
     private fun resolveCurrentHandles(): NativeParticipantRuntimeAccess.Handles? {
         val host = hostRef?.get() ?: return null
@@ -2764,17 +2559,6 @@ internal object NativeCombinedParticipantOwner {
         @Volatile var iconTint: Int? = null,
         @Volatile var visibleState: Int? = null,
         @Volatile var tintEventLogged: Boolean = false,
-    )
-
-    internal data class NativeContentVisibility(
-        val renderVisibility: Int,
-        val dotVisibility: Int,
-    )
-
-    internal data class NativeVisibilityStates(
-        val icon: Int,
-        val dot: Int,
-        val hidden: Int,
     )
 
     internal sealed interface AttachResult {
