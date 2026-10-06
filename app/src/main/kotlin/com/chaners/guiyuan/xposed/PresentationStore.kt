@@ -8,7 +8,7 @@ internal object PresentationStore {
 
     @Synchronized
     fun updateConnectivity(
-        state: SystemUiConnectivityStateSource.State,
+        state: SysUiConnectivitySource.State,
     ): Snapshot? {
         if (current.connectivity == state) {
             return null
@@ -56,8 +56,8 @@ internal object PresentationStore {
     )
 
     internal data class Snapshot(
-        val connectivity: SystemUiConnectivityStateSource.State =
-            SystemUiConnectivityStateSource.State.Unknown,
+        val connectivity: SysUiConnectivitySource.State =
+            SysUiConnectivitySource.State.Unknown,
         val mobilePresentation: NativePresentationResolver.Snapshot? = null,
         val statusIcons: StatusIconPresentation = StatusIconPresentation(),
     )

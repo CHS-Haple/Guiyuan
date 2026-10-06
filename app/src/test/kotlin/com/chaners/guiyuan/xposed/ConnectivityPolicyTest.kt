@@ -17,9 +17,9 @@ class ConnectivityPolicyTest {
                     ),
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                        transport = SysUiConnectivitySource.Transport.CELLULAR,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -55,9 +55,9 @@ class ConnectivityPolicyTest {
                     ),
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                        transport = SysUiConnectivitySource.Transport.CELLULAR,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -87,9 +87,9 @@ class ConnectivityPolicyTest {
                     ),
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                        transport = SysUiConnectivitySource.Transport.WIFI,
                         validated = false,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -116,9 +116,9 @@ class ConnectivityPolicyTest {
                 internetValidated = null,
             )
         val connectivity =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.OTHER,
+                transport = SysUiConnectivitySource.Transport.OTHER,
                 validated = true,
                 hasInternetCapability = true,
                 mobileDataEnabled = true,
@@ -160,9 +160,9 @@ class ConnectivityPolicyTest {
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.NONE,
+                        transport = SysUiConnectivitySource.Transport.NONE,
                         validated = false,
                         hasInternetCapability = false,
                         mobileDataEnabled = false,
@@ -179,7 +179,7 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
-                connectivity = SystemUiConnectivityStateSource.State.Unknown,
+                connectivity = SysUiConnectivitySource.State.Unknown,
                 mobileType = null,
             )
 
@@ -198,9 +198,9 @@ class ConnectivityPolicyTest {
                     ),
                 airplaneMode = true,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                        transport = SysUiConnectivitySource.Transport.WIFI,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = false,
@@ -231,9 +231,9 @@ class ConnectivityPolicyTest {
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.NONE,
+                        transport = SysUiConnectivitySource.Transport.NONE,
                         validated = false,
                         hasInternetCapability = false,
                         mobileDataEnabled = false,
@@ -258,9 +258,9 @@ class ConnectivityPolicyTest {
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = true,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.NONE,
+                        transport = SysUiConnectivitySource.Transport.NONE,
                         validated = false,
                         hasInternetCapability = false,
                         mobileDataEnabled = false,
@@ -279,9 +279,9 @@ class ConnectivityPolicyTest {
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.VPN,
+                        transport = SysUiConnectivitySource.Transport.VPN,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = false,
@@ -315,9 +315,9 @@ class ConnectivityPolicyTest {
                     NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
             )
         val connectivity =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.VPN,
+                transport = SysUiConnectivitySource.Transport.VPN,
                 validated = true,
                 hasInternetCapability = true,
                 mobileDataEnabled = false,
@@ -353,9 +353,9 @@ class ConnectivityPolicyTest {
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.OTHER,
+                        transport = SysUiConnectivitySource.Transport.OTHER,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = false,
@@ -380,7 +380,7 @@ class ConnectivityPolicyTest {
                 signal = SignalStrength.Level(2),
                 internetValidated = null,
             )
-        val connectivity = SystemUiConnectivityStateSource.State.Unknown
+        val connectivity = SysUiConnectivitySource.State.Unknown
 
         assertNull(
             ConnectivityPolicy.resolve(
@@ -402,9 +402,9 @@ class ConnectivityPolicyTest {
     @Test
     fun systemUiWifiLevelsRemainFourDistinctVisualStates() {
         val connectivity =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                transport = SysUiConnectivitySource.Transport.WIFI,
                 validated = true,
                 hasInternetCapability = true,
                 mobileDataEnabled = true,
@@ -443,9 +443,9 @@ class ConnectivityPolicyTest {
                 wifi = wifi,
                 airplaneMode = false,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                        transport = SysUiConnectivitySource.Transport.CELLULAR,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -459,9 +459,9 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                        transport = SysUiConnectivitySource.Transport.WIFI,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -483,9 +483,9 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.wifiReplacementReady(
                 wifi = wifi,
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                        transport = SysUiConnectivitySource.Transport.CELLULAR,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -504,16 +504,16 @@ class ConnectivityPolicyTest {
                 internetValidated = null,
             )
         val wifiDefault =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                transport = SysUiConnectivitySource.Transport.WIFI,
                 validated = true,
                 hasInternetCapability = true,
                 mobileDataEnabled = true,
             )
         val cellularDefault =
             wifiDefault.copy(
-                transport = SystemUiConnectivityStateSource.Transport.CELLULAR,
+                transport = SysUiConnectivitySource.Transport.CELLULAR,
             )
 
         assertEquals(
@@ -543,9 +543,9 @@ class ConnectivityPolicyTest {
                         internetValidated = true,
                     ),
                 connectivity =
-                    SystemUiConnectivityStateSource.State(
+                    SysUiConnectivitySource.State(
                         known = true,
-                        transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                        transport = SysUiConnectivitySource.Transport.WIFI,
                         validated = true,
                         hasInternetCapability = true,
                         mobileDataEnabled = true,
@@ -563,9 +563,9 @@ class ConnectivityPolicyTest {
                 internetValidated = false,
             )
         val connectivity =
-            SystemUiConnectivityStateSource.State(
+            SysUiConnectivitySource.State(
                 known = true,
-                transport = SystemUiConnectivityStateSource.Transport.WIFI,
+                transport = SysUiConnectivitySource.Transport.WIFI,
                 validated = false,
                 hasInternetCapability = true,
                 mobileDataEnabled = true,

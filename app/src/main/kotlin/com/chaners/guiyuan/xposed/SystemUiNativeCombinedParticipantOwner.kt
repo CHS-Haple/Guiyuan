@@ -1004,7 +1004,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
         val modelUpdate =
             renderController?.update(StatusStateStore.snapshot())
         val batteryTintState =
-            SystemUiTintStateSource.currentState(battery)
+            SysUiTintSource.currentState(battery)
         val tintUpdate =
             batteryTintState?.let { batteryTint ->
                 renderController?.updateTint(
@@ -1282,7 +1282,7 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         val battery = batteryRef?.get() ?: return
         if (update.sourceView !== battery) {
             return

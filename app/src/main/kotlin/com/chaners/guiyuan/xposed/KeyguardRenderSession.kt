@@ -107,7 +107,7 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -394,7 +394,7 @@ internal object KeyguardRenderSession {
             renderController.updateVisualCfg(
                 VisualPrefsOwner.current(),
             )
-            SystemUiTintStateSource.currentState(battery)?.let { state ->
+            SysUiTintSource.currentState(battery)?.let { state ->
                 applyTintState(
                     TintAuthority.resolveBatteryEvent(
                         batteryState = state,
@@ -487,7 +487,7 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: SysUiTintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(

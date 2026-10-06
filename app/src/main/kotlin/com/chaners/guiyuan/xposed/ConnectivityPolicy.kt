@@ -4,7 +4,7 @@ internal object ConnectivityPolicy {
     fun resolve(
         wifi: StatusStateStore.WifiState,
         airplaneMode: Boolean,
-        connectivity: SystemUiConnectivityStateSource.State,
+        connectivity: SysUiConnectivitySource.State,
         mobileType: NativePresentationResolver.NetworkType?,
         noSimIcon: PresentationStore.NativeIconResource? = null,
     ): CenterIndicator? {
@@ -58,7 +58,7 @@ internal object ConnectivityPolicy {
         }
 
         return when (connectivity.transport) {
-            SystemUiConnectivityStateSource.Transport.CELLULAR ->
+            SysUiConnectivitySource.Transport.CELLULAR ->
                 if (connectivity.mobileDataEnabled == false) {
                     CenterIndicator.Empty
                 } else {
@@ -71,7 +71,7 @@ internal object ConnectivityPolicy {
                     } ?: CenterIndicator.Empty
                 }
 
-            SystemUiConnectivityStateSource.Transport.VPN ->
+            SysUiConnectivitySource.Transport.VPN ->
                 if (wifi == StatusStateStore.WifiState.Hidden) {
                     mobileType?.let {
                         CenterIndicator.MobileType(
@@ -84,7 +84,7 @@ internal object ConnectivityPolicy {
                     null
                 }
 
-            SystemUiConnectivityStateSource.Transport.OTHER ->
+            SysUiConnectivitySource.Transport.OTHER ->
                 if (connectivity.mobileDataEnabled == true && mobileType != null) {
                     CenterIndicator.MobileType(
                         label = mobileType.label,
@@ -95,17 +95,17 @@ internal object ConnectivityPolicy {
                     CenterIndicator.Empty
                 }
 
-            SystemUiConnectivityStateSource.Transport.NONE ->
+            SysUiConnectivitySource.Transport.NONE ->
                 CenterIndicator.Empty
 
-            SystemUiConnectivityStateSource.Transport.WIFI ->
+            SysUiConnectivitySource.Transport.WIFI ->
                 null
         }
     }
 
     fun wifiReplacementReady(
         wifi: StatusStateStore.WifiState,
-        connectivity: SystemUiConnectivityStateSource.State,
+        connectivity: SysUiConnectivitySource.State,
     ): Boolean =
         when (wifi) {
             StatusStateStore.WifiState.Unknown -> false
@@ -123,7 +123,7 @@ internal object ConnectivityPolicy {
 
     private fun resolvedWifiInternet(
         wifi: StatusStateStore.WifiState.Visible,
-        connectivity: SystemUiConnectivityStateSource.State,
+        connectivity: SysUiConnectivitySource.State,
     ): InternetState? =
         when (wifi.internetValidated) {
             true -> InternetState.VALIDATED
@@ -132,7 +132,7 @@ internal object ConnectivityPolicy {
                 if (
                     connectivity.known &&
                     connectivity.transport ==
-                        SystemUiConnectivityStateSource.Transport.WIFI
+                        SysUiConnectivitySource.Transport.WIFI
                 ) {
                     connectivity.internetState()
                 } else {
@@ -140,7 +140,7 @@ internal object ConnectivityPolicy {
                 }
         }
 
-    private fun SystemUiConnectivityStateSource.State.internetState(): InternetState =
+    private fun SysUiConnectivitySource.State.internetState(): InternetState =
         if (validated && hasInternetCapability) {
             InternetState.VALIDATED
         } else {

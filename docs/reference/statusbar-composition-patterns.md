@@ -825,7 +825,7 @@ Use the existing native axes rather than a project-owned scene machine:
    - the real QS destination remains untouched/native.
 
 5. **Existing hook reuse**
-   - no new tint hook is needed: `SystemUiTintStateSource` already receives all `MiuiBatteryMeterView` tint events and the fake session can filter by its own Battery instance;
+   - no new tint hook is needed: `SysUiTintSource` already receives all `MiuiBatteryMeterView` tint events and the fake session can filter by its own Battery instance;
    - no second status-icon layout hook is needed: the existing `MiuiStatusIconContainer.onMeasure/onLayout` interception can route explicitly registered host-scoped presentation sessions by target identity;
    - prefer extracting the current Home presentation-layer slot-exclusion / clip-mask mechanism over reviving the older binding-level network suppression owner as the default transition implementation.
 
