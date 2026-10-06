@@ -158,7 +158,7 @@ class GyModule : XposedModule() {
 
     override fun onHotReloading(param: HotReloadingParam): Boolean {
         val prepared =
-            SystemUiHotReloadRuntimeOwner.prepare(
+            SysUiHotReload.prepare(
                 param = param,
                 generationHandoff =
                     Runnable {
@@ -167,7 +167,7 @@ class GyModule : XposedModule() {
                         )
                     },
             )
-        if (prepared is SystemUiHotReloadRuntimeOwner.PrepareResult.Unavailable) {
+        if (prepared is SysUiHotReload.PrepareResult.Unavailable) {
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.prepare",
@@ -182,12 +182,12 @@ class GyModule : XposedModule() {
             return false
         }
 
-        prepared as SystemUiHotReloadRuntimeOwner.PrepareResult.Ready
+        prepared as SysUiHotReload.PrepareResult.Ready
         val hookCount =
             1 +
-                SystemUiBatteryRuntimeOwner.installedHookCount +
-                SystemUiNetworkRuntimeOwner.installedHookCount +
-                SystemUiPresentationRuntimeOwner.installedHookCount +
+                SysUiBatteryRuntime.installedHookCount +
+                SysUiNetworkRuntime.installedHookCount +
+                SysUiPresentationRuntime.installedHookCount +
                 SystemUiHomePresentationOwner.installedHookCount +
                 SystemUiNativeNetworkSuppressionOwner.installedHookCount +
                 if (islandMotionSourceInstalled) {
@@ -239,7 +239,7 @@ class GyModule : XposedModule() {
     override fun onHotReloaded(param: HotReloadedParam) {
         rotateDiagnosticSession()
         val takeover =
-            SystemUiHotReloadRuntimeOwner.takeOverHooks(
+            SysUiHotReload.takeOverHooks(
                 param = param,
                 onCaptured = ::onStatusHostCaptured,
             )
@@ -267,8 +267,8 @@ class GyModule : XposedModule() {
         runCatching {
             val removed = takeover.removedHooks
 
-            SystemUiBatteryRuntimeOwner.resetRuntimeState()
-            SystemUiNetworkRuntimeOwner.resetRuntimeState()
+            SysUiBatteryRuntime.resetRuntimeState()
+            SysUiNetworkRuntime.resetRuntimeState()
             islandMotionSourceInstalled = false
             ccSourceInstalled = false
             controlCenterSceneVisible = false
@@ -291,7 +291,7 @@ class GyModule : XposedModule() {
             aodRendererAttached = false
             keyguardPresentationReadyObserved = false
             keyguardControlCenterLeaseActive = false
-            SystemUiPresentationRuntimeOwner.resetRuntimeState()
+            SysUiPresentationRuntime.resetRuntimeState()
             SystemUiKeyguardHostResolver.resetRuntimeState()
             SystemUiHomePresentationOwner.resetRuntimeState("hotReload")
             SystemUiNativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
@@ -353,7 +353,7 @@ class GyModule : XposedModule() {
                 source = "hotReload",
             )
 
-            val restored = SystemUiHotReloadRuntimeOwner.restoreTransfer(param)
+            val restored = SysUiHotReload.restoreTransfer(param)
             if (restored == null) {
                 StatusStateStore.restoreHotReloadState(null)
                 logDiagnostic(
@@ -852,7 +852,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         runCatching {
-            SystemUiNetworkRuntimeOwner.attach(
+            SysUiNetworkRuntime.attach(
                 module = this,
                 classLoader = classLoader,
                 onWifiState = { state ->
@@ -897,11 +897,11 @@ class GyModule : XposedModule() {
             val fullyReady =
                 result.wifiReady &&
                     result.mobileReady &&
-                    SystemUiNetworkRuntimeOwner.installedHookCount == SysUiNetworkSource.HOOK_COUNT
+                    SysUiNetworkRuntime.installedHookCount == SysUiNetworkSource.HOOK_COUNT
             val state =
                 when {
                     fullyReady -> "ready"
-                    SystemUiNetworkRuntimeOwner.installedHookCount > 0 -> "partial"
+                    SysUiNetworkRuntime.installedHookCount > 0 -> "partial"
                     else -> "error"
                 }
             logDiagnostic(
@@ -914,7 +914,7 @@ class GyModule : XposedModule() {
                 event = "source.install",
                 component = "network",
                 state = state,
-                "hooks" to SystemUiNetworkRuntimeOwner.installedHookCount,
+                "hooks" to SysUiNetworkRuntime.installedHookCount,
                 "expectedHooks" to SysUiNetworkSource.HOOK_COUNT,
                 "wifi" to if (result.wifiReady) "ready" else "error",
                 "mobile" to if (result.mobileReady) "ready" else "error",
@@ -945,7 +945,7 @@ class GyModule : XposedModule() {
                 if (fullyReady) Log.INFO else Log.WARN,
                 TAG,
                 "networkSource state=" + state +
-                    " hooks=" + SystemUiNetworkRuntimeOwner.installedHookCount +
+                    " hooks=" + SysUiNetworkRuntime.installedHookCount +
                     "/" + SysUiNetworkSource.HOOK_COUNT +
                     " wifi=" + result.wifiReady +
                     " mobile=" + result.mobileReady +
@@ -953,7 +953,7 @@ class GyModule : XposedModule() {
                     " rebindRequired=" + (source == "hotReload"),
             )
         }.onFailure { error ->
-            SystemUiNetworkRuntimeOwner.resetRuntimeState()
+            SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1620,7 +1620,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         runCatching {
-            SystemUiBatteryRuntimeOwner.attach(
+            SysUiBatteryRuntime.attach(
                 module = this,
                 classLoader = classLoader,
                 onBatteryState = { state ->
@@ -1668,7 +1668,7 @@ class GyModule : XposedModule() {
                 "eventDriven" to true,
             )
         }.onFailure { error ->
-            SystemUiBatteryRuntimeOwner.resetRuntimeState()
+            SysUiBatteryRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1686,7 +1686,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         runCatching {
-            SystemUiPresentationRuntimeOwner.attach(
+            SysUiPresentationRuntime.attach(
                 module = this,
                 classLoader = classLoader,
                 onTintState = ::onTintStateUpdate,
@@ -1974,7 +1974,7 @@ class GyModule : XposedModule() {
                 homeOwnedAtStart &&
                 (settings.keyguard || settings.aod)
         keyguardAodFullTargetPending =
-            SystemUiPresentationRuntimeOwner.keyguardStatusIconReady &&
+            SysUiPresentationRuntime.keyguardStatusIconReady &&
                 lastStableKeyguardAodScene !=
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
                 settings.keyguard != settings.aod
@@ -1986,7 +1986,7 @@ class GyModule : XposedModule() {
             state = if (keyguardAodFullTargetPending) "pending" else "observation-only",
             "source" to "animateFullAod:before",
             "visualBoundaryAuthority" to
-                if (SystemUiPresentationRuntimeOwner.keyguardStatusIconReady) {
+                if (SysUiPresentationRuntime.keyguardStatusIconReady) {
                     "native-animateIconContainer"
                 } else {
                     "status-icons-alpha-fallback"
@@ -2845,7 +2845,7 @@ class GyModule : XposedModule() {
                 SystemUiKeyguardHostResolver
                     .nativeToLockScreenTarget(resolved),
             fullAodTargetSourceReady =
-                SystemUiPresentationRuntimeOwner.keyguardFullAodReady,
+                SysUiPresentationRuntime.keyguardFullAodReady,
             fullAodTargetPending = keyguardAodFullTargetPending,
             fullAodVisualBoundary = fullAodVisualBoundary,
             homeAodTransitionOrigin = homeAodTransitionOriginPending,
@@ -2867,7 +2867,7 @@ class GyModule : XposedModule() {
                     deactivateKeyguardRuntime("feature-ineligible")
                     return
                 }
-                if (!SystemUiPresentationRuntimeOwner.keyguardAodReady) {
+                if (!SysUiPresentationRuntime.keyguardAodReady) {
                     deactivateAodRuntime("aod-authority-unavailable")
                     deactivateKeyguardRuntime("aod-authority-unavailable")
                     if (settings.keyguard || settings.aod) {
@@ -3538,8 +3538,8 @@ class GyModule : XposedModule() {
             )
         SystemUiNativeNetworkSuppressionOwner.deactivate("hotReload-oldGeneration")
         StatusBarStableSession.detach()
-        SystemUiCoreRuntimeOwner.detach()
-        SystemUiPresentationRuntimeOwner.resetRuntimeState()
+        SysUiCoreRuntime.detach()
+        SysUiPresentationRuntime.resetRuntimeState()
         SystemUiKeyguardHostResolver.resetRuntimeState()
         PresentationStore.reset()
         SystemUiIslandMotionSource.resetRuntimeState()
@@ -3577,7 +3577,7 @@ class GyModule : XposedModule() {
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
             hostContext?.let { context ->
-                SystemUiCoreRuntimeOwner.attach(
+                SysUiCoreRuntime.attach(
                     context = context,
                     onAirplaneMode = { enabled ->
                         val trace = beginRenderTrace("airplaneObserver")
@@ -4120,7 +4120,7 @@ class GyModule : XposedModule() {
                                     SystemUiNativeNetworkSuppressionOwner.activate(
                                         host = host,
                                         suppressWifi =
-                                            SystemUiNetworkRuntimeOwner.wifiReady &&
+                                            SysUiNetworkRuntime.wifiReady &&
                                                 ConnectivityPolicy
                                                     .wifiReplacementReady(
                                                         wifi = wifi,
