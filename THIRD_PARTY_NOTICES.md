@@ -32,7 +32,7 @@ The selected Material Symbols are stored as local Android vector drawables sourc
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper for Gradle 9.7.1. Gradle 9.7.1 is distributed under Apache-2.0.
+The repository includes the official Gradle Wrapper for Gradle 9.8.0. Gradle 9.8.0 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
 

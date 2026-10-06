@@ -13,7 +13,7 @@ body:
     attributes:
       label: Guiyuan version and build
       description: Include versionName, internal build ID, and channel (Debug/Canary/Release) when known.
-      placeholder: "0.0.3 / YYYYMMDD-NNN / Canary"
+      placeholder: "x.y.z / YYYYMMDD-NNN / Canary"
     validations:
       required: true
   - type: input

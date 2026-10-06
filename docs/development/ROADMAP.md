@@ -12,7 +12,7 @@ Established:
 - event-driven diagnostics and Hot Reload;
 - single/dual-SIM, hotspot, no-SIM, airplane and mobile-type semantics.
 
-## Phase 2 — Home carrier and Control Center ownership — ownership complete; transition polish in progress
+## Phase 2 — Home carrier and Control Center ownership — ownership complete; residual polish/performance audit in progress
 
 Stable contracts:
 - steady Home geometry remains SystemUI-hosted;
@@ -23,24 +23,26 @@ Stable contracts:
 - fully expanded Control Center remains native.
 
 Remaining:
-- make Guiyuan and relevant native-peer motion through the Control Center gesture visually coherent with HyperOS;
-- preserve accepted steady Home/Keyguard geometry and Build-473 Wi-Fi optical behavior;
-- avoid project-owned gesture timing, duplicate translation writers, endpoint snaps, or duplicate occupancy.
+- close the residual Keyguard + active-island smoothness gap under repeated full Control Center pull/down-up cycles without taking native animation ownership;
+- preserve accepted steady Home/Keyguard/AOD geometry, Build-473 Wi-Fi optical behavior, and the verified QS_FAKE capacity/reservation boundaries;
+- avoid project-owned gesture timing, duplicate translation writers, endpoint snaps, duplicate occupancy, or benchmark-only geometry changes.
 
-## Phase 3 — Keyguard / AOD ownership — Build 625 family-ownership candidate pending device validation
+## Phase 3 — Keyguard / AOD ownership — integrated and runtime-verified
 
 Established:
-- optional steady Keyguard Guiyuan with independent host/session;
+- optional steady Keyguard Guiyuan remains independent from Home ownership while Keyguard/AOD share one host-scoped family presentation owner;
+- optional AOD is an independently gated family scene and does not inherit Home or Keyguard ownership implicitly;
 - Keyguard-originated QS_FAKE uses the same verified transition boundary;
 - session-owned slot exclusions are reversible and fail native on ambiguity;
 - Build 620/621 adds a dedicated default-off AOD display preference while preserving the global Guiyuan enable as the parent runtime gate;
 - Keyguard and AOD child preferences persist independently; changing either one does not rewrite the other;
 - Build 623 device evidence rejects separate Keyguard/AOD presentation/render sessions because restore/reacquire exposes native represented icons between sessions; Build 625 instead keeps one Keyguard-family presentation owner and one RenderView across same-host Keyguard<->AOD retargeting, while Home->AOD uses bounded reversible pre-mask without declaring compact layout ready early;
-- unsupported or ambiguous AOD authority/topology fails native without affecting accepted Home behavior.
+- unsupported or ambiguous AOD authority/topology fails native without affecting accepted Home behavior;
+- AOD remains ineligible as a Control Center transition source.
 
 Remaining:
-- focused exact-target device validation of Build 625 Home/Keyguard/AOD continuity, transition visual coherence, master-switch cleanup, and Keyguard/AOD preference independence;
-- shared Control Center transition presentation from the Keyguard source scene; AOD remains ineligible as a Control Center transition source.
+- preserve family continuity and preference independence while completing residual cross-scene performance/compatibility qualification;
+- revalidate the family owner on any new SystemUI target instead of inferring compatibility from the pinned target.
 
 ## Phase 4 — Companion app and customization — product polish
 
@@ -63,7 +65,7 @@ Do not add controls merely because a renderer parameter exists.
 ## Phase 5 — Compatibility and 1.0.0 qualification
 
 Before 1.0.0:
-- close supported Home/Keyguard/Control Center transition acceptance;
+- close supported Home/Keyguard/AOD/Control Center transition acceptance;
 - verify fail-native behavior on unsupported/unknown conditions;
 - review target-profile compatibility and dependencies;
 - remove obsolete diagnostics/probes and stale branches with no remaining engineering value;
@@ -76,7 +78,7 @@ Before 1.0.0:
 Preserve:
 - authoritative native state -> domain state -> scene/presentation policy -> renderer;
 - independent Home ownership plus one host-scoped Keyguard-family presentation owner that retargets Keyguard/AOD scene semantics without duplicate mutable owners;
-- native final Control Center ownership; AOD remains native unless the dedicated AOD scene safely acquires its own bounded replacement contract;
+- native final Control Center ownership; opt-in AOD uses the bounded Keyguard-family replacement contract while HyperOS retains AOD timing/motion authority, and AOD never acts as a Control Center transition source;
 - native resource identity/tint authority where available;
 - custom colors/sizing as presentation policy, not duplicate platform state;
 - bounded diagnostics outside hot paths.

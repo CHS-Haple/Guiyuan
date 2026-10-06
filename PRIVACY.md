@@ -42,7 +42,7 @@ Users should still review a diagnostic report before posting it publicly because
 
 Export uses the Android system document flow selected by the user.
 
-When preparing a share attachment, Guiyuan creates a managed text report under `Download/CombinedStatus`. Managed share reports are bounded and older entries are pruned by the app.
+When preparing a share attachment, Guiyuan creates a managed text report under `Download/Guiyuan`. Managed share reports are bounded and older entries are pruned by the app.
 
 Guiyuan does not upload diagnostic reports to a project server. Sharing occurs only through the Android destination/application selected by the user.
 
@@ -92,7 +92,7 @@ Guiyuan 不会为了生成诊断报告而主动收集无关第三方应用的日
 
 导出使用用户选择的 Android 系统文档流程。
 
-准备分享附件时，Guiyuan 会在 `Download/CombinedStatus` 下创建受管理的文本报告；这类临时分享报告数量和保存时间均有边界，并由应用清理旧条目。
+准备分享附件时，Guiyuan 会在 `Download/Guiyuan` 下创建受管理的文本报告；这类临时分享报告数量和保存时间均有边界，并由应用清理旧条目。
 
 Guiyuan 不会将诊断报告上传至项目服务器。只有用户通过 Android 系统选择目标应用或位置后，报告才会被导出或分享。
 

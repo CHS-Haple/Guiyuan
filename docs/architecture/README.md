@@ -2,14 +2,14 @@
 
 This directory contains the current architecture policy and scene/layout capability boundaries for Guiyuan.
 
-## Current 0.0.3 status
+## Current architecture status
 
-The pinned-target Home carrier is device-accepted through Build 536.
+The pinned target uses the accepted native Home carrier, one host-scoped Keyguard/AOD family presentation owner, and the bounded QS_FAKE Control Center transition bridge. Build-specific milestones below remain evidence for those contracts; live execution state belongs in `docs/development/CURRENT.md`.
 
 - Builds 386-393 remain historical evidence for the superseded permanent extra-participant / occupancy-handoff route.
 - Builds 397-535 establish the native carrier, width, motion and transition contracts that remain historical evidence for the current path.
 - Build 536 device-validates the logical-slot / physical-overflow split: Guiyuan keeps the verified Home slot unchanged while one module-owned direct child of `MiuiStatusBatteryContainer` may extend only its transparent drawing surface upward.
-- Build 537 reuses that overflow policy for the opt-in Keyguard renderer; Keyguard validation remains a gate for this candidate.
+- Build 537 extended that overflow policy to the opt-in Keyguard renderer; later Keyguard/AOD family integration and device validation retain the same logical-viewport / transparent-overflow boundary.
 
 Current Home direction:
 
@@ -26,8 +26,8 @@ SystemUI retains native peer measurement/layout, Battery hide/presentation, tint
 
 - [scene-policy.md](scene-policy.md)
   - current scene capability map;
-  - Home and the opt-in Keyguard adapter are runtime-verified Guiyuan steady rendering surfaces on the pinned target; bounded QS_FAKE transition projection is also accepted while the fully expanded Control Center and AOD remain native;
-  - Notification Shade, fully expanded Control Center and AOD remain native-only; Home and the separately gated Keyguard adapter are PROJECTED surfaces.
+  - Home plus the opt-in Keyguard/AOD family are runtime-verified Guiyuan rendering surfaces on the pinned target; bounded QS_FAKE transition projection is also accepted while the fully expanded Control Center remains native;
+  - Notification Shade and the fully expanded Control Center remain native-only; Home, Keyguard, opt-in AOD, and the bounded QS_FAKE transition bridge are PROJECTED surfaces with SystemUI-owned native motion.
 
 - [../reference/README.md](../reference/README.md)
   - generalized reusable implementation evidence;

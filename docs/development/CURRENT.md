@@ -7,7 +7,8 @@
 - Integration `dev`: Guiyuan 0.2.0 / Build 743 (`20261006-743`). Resolve the live `dev` ref from GitHub at startup rather than persisting a branch SHA here.
 - PR #220 is merged into `dev`. Exact-head Runtime CI #2770, Work-branch Canary #784, focused device validation, and integrated `dev` Runtime CI #2771 all passed.
 - Build 743 fixes the rare Home pull-down -> swipe-up/collapse native fallback by bounding only the QS_FAKE native peer reservation to verified live carrier capacity. Guiyuan semantic transition width, targets, progress, motion and renderer geometry remain unchanged.
-- No open PR remains. Historical PR #197 is closed as superseded and must not be restored as an active implementation route.
+- Historical PR #197 is closed as superseded and must not be restored as an active implementation route.
+- Parallel repository maintenance: `fix/pre-release-consistency-audit` performs a pre-release-grade consistency audit while Guiyuan remains in active development. It is documentation/repository-only, does not change Build 743 runtime or version identity, and must not be interpreted as a release-candidate freeze or 1.0.0 qualification.
 
 ## Accepted runtime baseline
 

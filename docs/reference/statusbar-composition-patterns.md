@@ -13,7 +13,7 @@ The findings are useful because they address the same class of problems Guiyuan 
 - transitioning between compact and native representations;
 - supporting later size/spacing controls without coupling drawing size to platform slot geometry.
 
-These patterns are **reference evidence**, not yet the production contract for Guiyuan 0.0.2.
+These patterns are **reference evidence**. Items adopted by the production architecture are labeled explicitly; current runtime authority remains `docs/architecture/` plus `docs/development/CURRENT.md`.
 
 ---
 
@@ -41,9 +41,9 @@ This avoids creating two independent layout identities that must later exchange 
 
 **Adopted for the current Phase-2A Home path on the pinned target.**
 
-The earlier work-branch history showed repeated failure modes when a second permanent participant changed occupancy around native Battery-slot release. The current 0.0.2 Home path instead renders through the existing `MiuiNotificationStatusContainer / system_icon_area` host overlay.
+The earlier work-branch history showed repeated failure modes when a second permanent participant changed occupancy around native Battery-slot release. The accepted Home path instead renders through the existing native Home host/carrier hierarchy rooted at `MiuiNotificationStatusContainer / system_icon_area`.
 
-This adoption is Home-specific. It does **not** establish that the same host can be reused for shade / Control Center, keyguard or AOD.
+This adoption is Home-specific. Other scenes require their own verified hosts and ownership boundaries; Keyguard/AOD now use the accepted host-scoped family owner, and Control Center uses its bounded QS_FAKE transition bridge.
 
 ---
 
@@ -146,15 +146,15 @@ A host/session boundary should answer:
 
 **Directly compatible with project rules.**
 
-This should remain the lifecycle foundation for Home, future keyguard, and future AOD adapters even if their concrete hosts differ.
+This remains the lifecycle foundation for Home and the verified Keyguard/AOD family owner even though their concrete hosts differ.
 
-Multi-host awareness alone does **not** prove keyguard/AOD compatibility. Each target scene still needs explicit host mapping and device validation.
+Multi-host awareness alone never proves another scene compatible. Each newly supported target scene still requires explicit host mapping, ownership review, and device validation.
 
 ---
 
 ### Same-host scene retargeting and cross-host pre-mask
 
-**Candidate for Guiyuan; Build 625 device validation pending.**
+**Adopted for the current Keyguard/AOD family contract. Build 625 introduced the same-host retargeting boundary after Build 623 rejected separate family sessions; later lifecycle validation refined but retained this ownership model.**
 
 When two scene semantics resolve to the same verified native host and consume the same represented-slot suppression/layout contract, switching between two project Session objects can create an artificial native interval even though SystemUI never changed the underlying host. In that case, one host-scoped presentation owner may retarget scene semantics while retaining its exact owned ignored-slot delta, visual mask and reservation. The render layer should likewise retain one module child View and retarget scene-specific visibility/tint semantics rather than creating simultaneous writers.
 
