@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#244. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#245. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,7 +24,7 @@
 
 ## Active objective
 
-PRs #239–#244 are integrated and their work branches are closed. The latest passes extracted stateless presentation and transition policies from runtime owners/painters, shortened redundant native owner names, and renamed the multi-surface owner to `SysUiPresentationOwner`; runtime behavior and Build identity remain unchanged.
+PRs #239–#245 are integrated and their work branches are closed. The latest passes extracted stateless presentation, transition, and native combined policies from runtime owners/painters, shortened redundant native owner names, and renamed the multi-surface owner to `SysUiPresentationOwner`; runtime behavior and Build identity remain unchanged.
 
 Continue the maintainability review from live `dev`, but only where a name, comment, structure, or dead indirection has a clear maintenance benefit. Keep names concise at the call site, keep real ownership terms when they describe actual authority/lifecycle, and leave short natural comments only where they explain a non-obvious contract or “why”.
 
