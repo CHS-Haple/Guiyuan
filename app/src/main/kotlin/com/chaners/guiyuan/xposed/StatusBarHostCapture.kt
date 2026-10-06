@@ -46,7 +46,7 @@ internal object StatusBarHostCapture {
         val result = chain.proceed()
 
         chain.thisObject?.let { host ->
-            SysUiHostRegistry.captureStatusHost(host)?.let(onCaptured)
+            SysUiHostRegistry.capture(host)?.let(onCaptured)
         }
 
         result
