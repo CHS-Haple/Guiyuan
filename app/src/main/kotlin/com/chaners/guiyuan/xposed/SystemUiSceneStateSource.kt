@@ -7,7 +7,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.util.WeakHashMap
 
-internal object SystemUiSceneStateSource {
+internal object SceneSource {
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_STATE_METHOD_NAME = "updateState"

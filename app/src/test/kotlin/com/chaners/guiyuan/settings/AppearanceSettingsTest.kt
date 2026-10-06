@@ -7,32 +7,32 @@ import org.junit.Test
 
 class AppearanceSettingsTest {
     @Test
-    fun defaultsPreserveExistingFloatingNavigationStyle() {
+    fun defaultsPreserveExistingFloatingNavStyle() {
         val settings = AppearanceSettings()
 
         assertTrue(settings.floatingNavigationBarEnabled)
-        assertEquals(FloatingNavigationStyle.Glass, settings.floatingNavigationStyle)
-        assertEquals(FloatingNavigationContent.IconOnly, settings.floatingNavigationContent)
+        assertEquals(FloatingNavStyle.Glass, settings.floatingNavigationStyle)
+        assertEquals(FloatingNavContent.IconOnly, settings.floatingNavigationContent)
     }
 
     @Test
     fun storedFloatingStyleWinsOverLegacyFlags() {
         val result =
-            decodeFloatingNavigationStyle(
+            decodeFloatingNavStyle(
                 storedStyle = "Blur",
                 storedFloatingBlurEnabled = false,
                 legacyBlurEnabled = false,
                 legacyGlassEnabled = false,
             )
 
-        assertEquals(FloatingNavigationStyle.Blur, result)
+        assertEquals(FloatingNavStyle.Blur, result)
     }
 
     @Test
     fun currentBlurBooleanMigratesToPreviousGlassAppearance() {
         assertEquals(
-            FloatingNavigationStyle.Glass,
-            decodeFloatingNavigationStyle(
+            FloatingNavStyle.Glass,
+            decodeFloatingNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = true,
                 legacyBlurEnabled = null,
@@ -40,8 +40,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Standard,
-            decodeFloatingNavigationStyle(
+            FloatingNavStyle.Standard,
+            decodeFloatingNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = false,
                 legacyBlurEnabled = null,
@@ -53,8 +53,8 @@ class AppearanceSettingsTest {
     @Test
     fun oldSeparateBlurAndGlassFlagsPreserveThreeStyles() {
         assertEquals(
-            FloatingNavigationStyle.Blur,
-            decodeFloatingNavigationStyle(
+            FloatingNavStyle.Blur,
+            decodeFloatingNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = true,
@@ -62,8 +62,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Glass,
-            decodeFloatingNavigationStyle(
+            FloatingNavStyle.Glass,
+            decodeFloatingNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = true,
@@ -71,8 +71,8 @@ class AppearanceSettingsTest {
             ),
         )
         assertEquals(
-            FloatingNavigationStyle.Standard,
-            decodeFloatingNavigationStyle(
+            FloatingNavStyle.Standard,
+            decodeFloatingNavStyle(
                 storedStyle = null,
                 storedFloatingBlurEnabled = null,
                 legacyBlurEnabled = false,
@@ -84,16 +84,16 @@ class AppearanceSettingsTest {
     @Test
     fun floatingNavigationContentDefaultsToIconsOnly() {
         assertEquals(
-            FloatingNavigationContent.IconOnly,
-            decodeFloatingNavigationContent(null),
+            FloatingNavContent.IconOnly,
+            decodeFloatingNavContent(null),
         )
         assertEquals(
-            FloatingNavigationContent.IconOnly,
-            decodeFloatingNavigationContent("Unknown"),
+            FloatingNavContent.IconOnly,
+            decodeFloatingNavContent("Unknown"),
         )
         assertEquals(
-            FloatingNavigationContent.IconAndText,
-            decodeFloatingNavigationContent("IconAndText"),
+            FloatingNavContent.IconAndText,
+            decodeFloatingNavContent("IconAndText"),
         )
     }
 

@@ -4,34 +4,34 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class BatteryColorSchemeLibraryTest {
+class BatterySchemeLibraryTest {
     @Test
     fun builtInOrderAndHyperosValuesMatchPinnedTarget() {
         assertEquals(
             listOf(
-                BatteryBuiltInColorScheme.HYPEROS,
-                BatteryBuiltInColorScheme.IOS,
-                BatteryBuiltInColorScheme.LOW_SATURATION,
+                BuiltInBatteryScheme.HYPEROS,
+                BuiltInBatteryScheme.IOS,
+                BuiltInBatteryScheme.LOW_SATURATION,
             ),
-            BatteryBuiltInColorScheme.entries,
+            BuiltInBatteryScheme.entries,
         )
         assertEquals(
             0xFF1DCD3A.toInt(),
             batteryBuiltInColor(
-                BatteryBuiltInColorScheme.HYPEROS,
+                BuiltInBatteryScheme.HYPEROS,
                 BatteryColorSlot.CHARGING,
             ),
         )
         assertEquals(
             0xFFFF9F05.toInt(),
             batteryBuiltInColor(
-                BatteryBuiltInColorScheme.HYPEROS,
+                BuiltInBatteryScheme.HYPEROS,
                 BatteryColorSlot.SUPER_POWER_SAVE,
             ),
         )
         assertNull(
             batteryBuiltInColor(
-                BatteryBuiltInColorScheme.HYPEROS,
+                BuiltInBatteryScheme.HYPEROS,
                 BatteryColorSlot.NORMAL,
             ),
         )
@@ -39,9 +39,9 @@ class BatteryColorSchemeLibraryTest {
 
     @Test
     fun builtInEntriesKeepTemplateReferencesInsteadOfFlatteningColors() {
-        val entries = entriesFromBuiltIn(BatteryBuiltInColorScheme.IOS)
+        val entries = entriesFromBuiltIn(BuiltInBatteryScheme.IOS)
         assertEquals(
-            BatteryColorSchemeSource.IOS,
+            BatterySchemeSource.IOS,
             entries.charging.source,
         )
         assertEquals(
@@ -58,8 +58,8 @@ class BatteryColorSchemeLibraryTest {
         assertEquals(
             0xFF2468AC.toInt(),
             batterySchemeEntryColor(
-                BatteryColorSchemeEntry(
-                    source = BatteryColorSchemeSource.CUSTOM,
+                BatterySchemeEntry(
+                    source = BatterySchemeSource.CUSTOM,
                     customColor = 0x002468AC,
                 ).normalized(),
                 BatteryColorSlot.CHARGING,
@@ -67,8 +67,8 @@ class BatteryColorSchemeLibraryTest {
         )
         assertNull(
             batterySchemeEntryColor(
-                BatteryColorSchemeEntry(
-                    source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
+                BatterySchemeEntry(
+                    source = BatterySchemeSource.FOLLOW_SYSTEM,
                     customColor = 0xFF2468AC.toInt(),
                 ),
                 BatteryColorSlot.CHARGING,
@@ -79,27 +79,27 @@ class BatteryColorSchemeLibraryTest {
     @Test
     fun legacyCustomWithoutStoredValueFallsBackToItsPresetSource() {
         assertEquals(
-            BatteryColorSchemeSource.IOS,
+            BatterySchemeSource.IOS,
             batteryColorSchemeSourceFromLegacy(
                 mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = false,
-                presetSource = BatteryColorSchemeSource.IOS,
+                presetSource = BatterySchemeSource.IOS,
             ),
         )
         assertEquals(
-            BatteryColorSchemeSource.CUSTOM,
+            BatterySchemeSource.CUSTOM,
             batteryColorSchemeSourceFromLegacy(
                 mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = true,
-                presetSource = BatteryColorSchemeSource.IOS,
+                presetSource = BatterySchemeSource.IOS,
             ),
         )
         assertEquals(
-            BatteryColorSchemeSource.FOLLOW_SYSTEM,
+            BatterySchemeSource.FOLLOW_SYSTEM,
             batteryColorSchemeSourceFromLegacy(
                 mode = BatteryColorMode.FOLLOW_SYSTEM,
                 hasStoredCustom = true,
-                presetSource = BatteryColorSchemeSource.IOS,
+                presetSource = BatterySchemeSource.IOS,
             ),
         )
     }

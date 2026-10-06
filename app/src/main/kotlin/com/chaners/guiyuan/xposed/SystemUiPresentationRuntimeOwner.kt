@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.graphics.drawable.Drawable
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiPresentationRuntimeOwner {
+internal object PresentationRuntime {
     private var current: AttachResult? = null
 
     val installedHookCount: Int
@@ -35,30 +35,30 @@ internal object SystemUiPresentationRuntimeOwner {
         val keyguardStatusIconHooks: Int,
     ) {
         val tintReady: Boolean
-            get() = tintHooks == SystemUiTintStateSource.HOOK_COUNT
+            get() = tintHooks == TintSource.HOOK_COUNT
         val sceneReady: Boolean
-            get() = sceneHooks == SystemUiSceneStateSource.HOOK_COUNT
+            get() = sceneHooks == SceneSource.HOOK_COUNT
         val mobileTypeReady: Boolean
-            get() = mobileTypeHooks == SystemUiMobileTypeStateSource.HOOK_COUNT
+            get() = mobileTypeHooks == MobileTypeSource.HOOK_COUNT
         val keyguardAodReady: Boolean
-            get() = keyguardAodHooks == SystemUiKeyguardAodStateSource.HOOK_COUNT
+            get() = keyguardAodHooks == KeyguardAodSource.HOOK_COUNT
         val keyguardFullAodReady: Boolean
             get() =
                 keyguardFullAodHooks ==
-                    SystemUiKeyguardFullAodTransitionSource.HOOK_COUNT
+                    KeyguardAodTransitionSource.HOOK_COUNT
         val keyguardStatusIconReady: Boolean
             get() =
                 keyguardStatusIconHooks ==
-                    SystemUiKeyguardStatusIconTransitionSource.HOOK_COUNT
+                    KeyguardIconTransitionSource.HOOK_COUNT
     }
 
     @Synchronized
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onTintState: (SystemUiTintStateSource.TintUpdate) -> Unit,
-        onSceneState: (SystemUiSceneStateSource.SceneUpdate) -> Unit,
-        onKeyguardAodState: (SystemUiKeyguardAodStateSource.AodUpdate) -> Unit,
+        onTintState: (TintSource.TintUpdate) -> Unit,
+        onSceneState: (SceneSource.SceneUpdate) -> Unit,
+        onKeyguardAodState: (KeyguardAodSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
@@ -68,7 +68,7 @@ internal object SystemUiPresentationRuntimeOwner {
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
         val tintHooks =
-            SystemUiTintStateSource.install(
+            TintSource.install(
                 module = module,
                 classLoader = classLoader,
                 onTintState = onTintState,
@@ -76,7 +76,7 @@ internal object SystemUiPresentationRuntimeOwner {
             ).size
         val keyguardAodHooks =
             runCatching {
-                SystemUiKeyguardAodStateSource.install(
+                KeyguardAodSource.install(
                     module = module,
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
@@ -92,7 +92,7 @@ internal object SystemUiPresentationRuntimeOwner {
             }
         val keyguardFullAodHooks =
             runCatching {
-                SystemUiKeyguardFullAodTransitionSource.install(
+                KeyguardAodTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
@@ -109,7 +109,7 @@ internal object SystemUiPresentationRuntimeOwner {
             }
         val keyguardStatusIconHooks =
             runCatching {
-                SystemUiKeyguardStatusIconTransitionSource.install(
+                KeyguardIconTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
@@ -124,14 +124,14 @@ internal object SystemUiPresentationRuntimeOwner {
                 0
             }
         val sceneHooks =
-            SystemUiSceneStateSource.install(
+            SceneSource.install(
                 module = module,
                 classLoader = classLoader,
                 onSceneState = onSceneState,
                 onEvent = onSceneEvent,
             ).size
         val mobileTypeHooks =
-            SystemUiMobileTypeStateSource.install(
+            MobileTypeSource.install(
                 module = module,
                 classLoader = classLoader,
                 onChanged = onMobileTypeChanged,
@@ -150,9 +150,9 @@ internal object SystemUiPresentationRuntimeOwner {
     @Synchronized
     fun resetRuntimeState() {
         current = null
-        SystemUiTintStateSource.resetRuntimeState()
-        SystemUiSceneStateSource.resetRuntimeState()
-        SystemUiKeyguardAodStateSource.resetRuntimeState()
-        SystemUiKeyguardHostProbe.resetRuntimeState()
+        TintSource.resetRuntimeState()
+        SceneSource.resetRuntimeState()
+        KeyguardAodSource.resetRuntimeState()
+        KeyguardHostProbe.resetRuntimeState()
     }
 }

@@ -4,11 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-class RuntimeDiagnosticsProtocolTest {
+class DiagnosticsProtocolTest {
     @Test
     fun formattedEventRoundTripsStructuredFields() {
         val line =
-            RuntimeDiagnosticsProtocol.format(
+            DiagnosticsProtocol.format(
                 event = "source.install",
                 component = "network",
                 state = "ready",
@@ -19,9 +19,9 @@ class RuntimeDiagnosticsProtocolTest {
                     ),
             )
 
-        val parsed = requireNotNull(RuntimeDiagnosticsProtocol.parse(line))
+        val parsed = requireNotNull(DiagnosticsProtocol.parse(line))
 
-        assertEquals(RuntimeDiagnosticsProtocol.SchemaVersion, parsed.schemaVersion)
+        assertEquals(DiagnosticsProtocol.SchemaVersion, parsed.schemaVersion)
         assertEquals("source.install", parsed.event)
         assertEquals("network", parsed.component)
         assertEquals("ready", parsed.state)
@@ -33,7 +33,7 @@ class RuntimeDiagnosticsProtocolTest {
     fun legacyEventWithoutSchemaStillParses() {
         val parsed =
             requireNotNull(
-                RuntimeDiagnosticsProtocol.parse(
+                DiagnosticsProtocol.parse(
                     "diag event=module.loaded component=module state=ready",
                 ),
             )
@@ -46,12 +46,12 @@ class RuntimeDiagnosticsProtocolTest {
     fun healthSnapshotUsesLatestEventForEachComponent() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -73,7 +73,7 @@ class RuntimeDiagnosticsProtocolTest {
     fun healthSnapshotScopesToLatestRuntimeSession() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -84,7 +84,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "100",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
@@ -95,7 +95,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "110",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -106,7 +106,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "200",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -124,7 +124,7 @@ class RuntimeDiagnosticsProtocolTest {
         val network = requireNotNull(snapshot.component("network"))
 
         assertEquals("new", snapshot.sessionId)
-        assertEquals(RuntimeDiagnosticsProtocol.SchemaVersion, snapshot.schemaVersion)
+        assertEquals(DiagnosticsProtocol.SchemaVersion, snapshot.schemaVersion)
         assertEquals("ready", network.state)
         assertEquals("4", network.fields["hooks"])
         assertFalse(network.fields.containsKey("sessionId"))
@@ -136,13 +136,13 @@ class RuntimeDiagnosticsProtocolTest {
     fun metricEventsDoNotReplaceHealthState() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
                     fields = mapOf("hooks" to "4"),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "pipeline.latency",
                     component = "network",
                     state = "observed",
@@ -184,7 +184,7 @@ class RuntimeDiagnosticsProtocolTest {
             )
         val lines =
             coreComponents.mapIndexed { index, component ->
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "hotReload.test",
                     component = component,
                     state = "ready",
@@ -220,7 +220,7 @@ class RuntimeDiagnosticsProtocolTest {
             )
         val lines =
             coreComponents.mapIndexed { index, component ->
-                RuntimeDiagnosticsProtocol.format(
+                DiagnosticsProtocol.format(
                     event = "source.ready",
                     component = component,
                     state = "ready",
@@ -241,7 +241,7 @@ class RuntimeDiagnosticsProtocolTest {
         val snapshot =
             RuntimeHealthSnapshot.fromLines(
                 listOf(
-                    RuntimeDiagnosticsProtocol.format(
+                    DiagnosticsProtocol.format(
                         event = "module.loaded",
                         component = "module",
                         state = "ready",

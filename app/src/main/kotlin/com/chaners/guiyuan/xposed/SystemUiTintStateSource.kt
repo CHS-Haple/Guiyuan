@@ -12,7 +12,7 @@ import java.lang.reflect.Field
 import java.util.ArrayList
 import java.util.WeakHashMap
 
-internal object SystemUiTintStateSource {
+internal object TintSource {
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_TINT_METHOD_NAME = "updateLightDarkTint"

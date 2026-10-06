@@ -9,7 +9,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
-internal object SystemUiPanelTransitionSource {
+internal object PanelTransitionSource {
     const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
     const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
     const val HOOK_COUNT =
@@ -512,9 +512,9 @@ internal object SystemUiPanelTransitionSource {
                 ?: return SourceScene.UNKNOWN
         return classifyControlCenterSourceScene(
             homeIdentityMatches =
-                SystemUiHomePresentationOwner.ownsBatteryContainer(realSystemIcons),
+                HomePresentation.ownsBatteryContainer(realSystemIcons),
             structuralScene =
-                SystemUiSceneStateSource.steadySourceScene(realSystemIcons),
+                SceneSource.steadySourceScene(realSystemIcons),
         )
     }
 
