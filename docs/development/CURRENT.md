@@ -8,6 +8,7 @@
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
+- PR #227 (`refactor/natural-naming`) is the active maintainability checkpoint from synchronized Build 746. It changes source/test/tooling names and maintainability guidance without changing runtime behavior or Build identity; persisted keys, protocol fields, diagnostic schema, hook IDs, reflection targets, and other compatibility strings remain unchanged.
 - Historical PR #197 remains superseded and must not be restored as an active implementation route.
 
 ## Accepted runtime baseline
@@ -28,14 +29,15 @@ The recent Keyguard / Control Center performance line is **closed at Build 744**
 
 Focused device evidence no longer supports treating the former Keyguard + active island smoothness gap as a blocker, and the next compositing experiment introduced a real visual regression. Further optimization in this area is therefore not justified without new reproducible device evidence.
 
-Normal development may continue from the current `dev` state. Performance work should reopen only for a concrete regression, reproducible hotspot, or new evidence that identifies a bounded root cause.
+PR #227 is currently tightening human maintainability on top of the accepted Build 746 baseline. The checkpoint is intentionally behavior-neutral: natural names, familiar abbreviations, source/test/file alignment, concise contract comments, and removal of obsolete internal aliases. Performance work should reopen only for a concrete regression, reproducible hotspot, or new evidence that identifies a bounded root cause.
 
 Current priorities:
 
-1. continue normal product, UI, compatibility and maintenance work from the synchronized 0.2.1 stable/integration baseline;
-2. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
-3. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
-4. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
+1. finish PR #227 with complete definition/call-site/test/tooling closure and one green exact-head Full validation;
+2. keep runtime behavior, ownership/lifecycle, compatibility strings, persisted data, diagnostic schema, and target-profile contracts unchanged through the refactor;
+3. keep CURRENT / ROADMAP / public repository facts synchronized with merged code, CI and device evidence;
+4. preserve established internal `CombinedStatus*` preference, Hook, diagnostic and compatibility identities unless a concrete migration benefit justifies changing them;
+5. do not spend runtime complexity or visual correctness for marginal benchmark-only gains.
 
 ## Non-negotiable bounds
 
@@ -51,5 +53,7 @@ Current priorities:
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
 - Leave PR #224 closed and unmerged; Build 745 is a rejected experiment, not a fallback branch.
-- Start subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
+- Complete PR #227 from its live head, then run one exact-head Full validation. The latest failed Full attempt was blocked during external Kotlin Compose plugin resolution rather than by a repository compile/test result; do not change pinned dependencies solely to work around that transient resolver failure.
+- This refactor does not require a Work-branch Canary unless later changes become runtime-affecting; static/automated evidence is sufficient for the current naming/comment/tooling scope.
+- After #227 is accepted, continue subsequent work from the live synchronized `dev` branch; resolve current GitHub refs rather than persisting a branch SHA in this document.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
