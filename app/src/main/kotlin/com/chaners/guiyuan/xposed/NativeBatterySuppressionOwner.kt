@@ -606,9 +606,7 @@ internal object NativeBatterySuppressionOwner {
                         " layoutChanged=" + layoutChanged +
                         " visualChanged=" + visualChanged +
                         " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority)+" +
-                        "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility " +
-                        "    " +
-                        ""
+                        "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility"
         }
 
         data class Inactive(
@@ -636,9 +634,7 @@ internal object NativeBatterySuppressionOwner {
                         " layoutChanged=" + layoutChanged +
                         " visualChanged=" + visualChanged +
                         " contract=MiuiStatusBatteryContainer.setIsHideBattery(native-layout-authority)+" +
-                        "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility " +
-                        "    " +
-                        ""
+                        "MiuiBatteryMeterView.children.alpha+mBatteryChargingView.visibility"
         }
 
         data class Failure(
