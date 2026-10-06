@@ -12,7 +12,7 @@ Established:
 - event-driven diagnostics and Hot Reload;
 - single/dual-SIM, hotspot, no-SIM, airplane and mobile-type semantics.
 
-## Phase 2 — Home carrier and Control Center ownership — ownership complete; residual polish/performance audit in progress
+## Phase 2 — Home carrier and Control Center ownership — ownership complete; accepted on the pinned target
 
 Stable contracts:
 - steady Home geometry remains SystemUI-hosted;
@@ -22,9 +22,10 @@ Stable contracts:
 - QS_FAKE carrier-capacity expansion is scoped to each native Control Center visible cycle and must release at the hidden boundary;
 - fully expanded Control Center remains native.
 
-Remaining:
-- close the residual Keyguard + active-island smoothness gap under repeated full Control Center pull/down-up cycles without taking native animation ownership;
+Ongoing guardrails:
 - preserve accepted steady Home/Keyguard/AOD geometry, Build-473 Wi-Fi optical behavior, and the verified QS_FAKE capacity/reservation boundaries;
+- treat Build 744's Home-mirror source scoping as the accepted ownership boundary on the pinned target;
+- require concrete code-level or reproducible device evidence before performance/compositing changes, and keep each runtime candidate behind CI/Canary/device acceptance;
 - avoid project-owned gesture timing, duplicate translation writers, endpoint snaps, duplicate occupancy, or benchmark-only geometry changes.
 
 ## Phase 3 — Keyguard / AOD ownership — integrated and runtime-verified
@@ -41,8 +42,9 @@ Established:
 - AOD remains ineligible as a Control Center transition source.
 
 Remaining:
-- preserve family continuity and preference independence while completing residual cross-scene performance/compatibility qualification;
-- revalidate the family owner on any new SystemUI target instead of inferring compatibility from the pinned target.
+- preserve family continuity and preference independence as new features or targets are added;
+- revalidate the family owner on any new SystemUI target instead of inferring compatibility from the pinned target;
+- reopen cross-scene performance work only from concrete code-level or device evidence rather than carrying forward a closed pinned-target ownership investigation.
 
 ## Phase 4 — Companion app and customization — product polish
 

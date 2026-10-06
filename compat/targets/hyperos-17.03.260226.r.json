@@ -46,7 +46,9 @@
     "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate",
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController",
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController$notificationCallback$1",
-    "com.android.systemui.controlcenter.shade.NotificationShadeWrapper"
+    "com.android.systemui.controlcenter.shade.NotificationShadeWrapper",
+    "com.android.systemui.statusbar.phone.KeyguardStatusBarViewControllerInject",
+    "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1"
   ],
   "hookPoints": {
     "statusHostInflated": {
@@ -120,6 +122,42 @@
       "className": "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate",
       "methodName": "onVisibleChanged",
       "descriptor": "(Z)V"
+    },
+    "batteryAodSetAnimate": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
+      "methodName": "setIsAodAnimate",
+      "descriptor": "(Z)V"
+    },
+    "batteryAodToggleMode": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
+      "methodName": "toggleAodMode",
+      "descriptor": "(Z)V"
+    },
+    "keyguardFullAodTransition": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.phone.KeyguardStatusBarViewControllerInject",
+      "methodName": "animateFullAod",
+      "descriptor": "(ZZ)V"
+    },
+    "keyguardStatusIconTransition": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
+      "methodName": "animateIconContainer",
+      "descriptor": "(Z)V"
+    },
+    "controlCenterExpansion": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
+      "methodName": "onExpansionChanged",
+      "descriptor": "(F)V"
+    },
+    "controlCenterAppearance": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
+      "methodName": "onAppearanceChanged",
+      "descriptor": "(ZZ)V"
     }
   },
   "verifiedSystemUiMethods": {
@@ -141,7 +179,9 @@
       "emit(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
     ],
     "com.android.systemui.statusbar.views.MiuiBatteryMeterView": [
-      "updateState(I)V"
+      "updateState(I)V",
+      "setIsAodAnimate(Z)V",
+      "toggleAodMode(Z)V"
     ],
     "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView": [
       "onBatteryLevelChanged(IZZ)V",
@@ -159,6 +199,16 @@
     ],
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController$notificationCallback$1": [
       "onExpansionChanged(F)V"
+    ],
+    "com.android.systemui.statusbar.phone.KeyguardStatusBarViewControllerInject": [
+      "animateFullAod(ZZ)V"
+    ],
+    "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView": [
+      "animateIconContainer(Z)V"
+    ],
+    "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1": [
+      "onExpansionChanged(F)V",
+      "onAppearanceChanged(ZZ)V"
     ]
   },
   "nativeStatusViews": {
@@ -173,7 +223,10 @@
   },
   "verifiedSystemUiFields": {
     "com.android.systemui.statusbar.views.MiuiBatteryMeterView": [
-      "mStatusBarState"
+      "mStatusBarState",
+      "mToAod",
+      "mIsAodAnimate",
+      "mAnimToAod"
     ],
     "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView": [
       "mLevel",
