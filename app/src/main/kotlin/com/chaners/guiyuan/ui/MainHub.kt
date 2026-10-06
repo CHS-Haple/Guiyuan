@@ -76,8 +76,8 @@ internal fun MainHub(
     val scope = rememberCoroutineScope()
     var hotReloadInProgress by remember { mutableStateOf(false) }
     val floatingMaterialActive =
-        settings.floatingNavigationBarEnabled &&
-            settings.floatingNavigationStyle.requiresTextureBackdrop &&
+        settings.navEnabled &&
+            settings.navStyle.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val backdrop =
@@ -126,7 +126,7 @@ internal fun MainHub(
             Modifier.floatingNavigationMaterial(
                 backdrop = backdrop,
                 darkMode = darkMode,
-                style = settings.floatingNavigationStyle,
+                style = settings.navStyle,
             )
         } else {
             Modifier
@@ -134,7 +134,7 @@ internal fun MainHub(
 
     Scaffold(
         bottomBar = {
-            if (settings.floatingNavigationBarEnabled) {
+            if (settings.navEnabled) {
                 FloatingNavigationBar(
                     modifier = navigationBarModifier,
                     color =
@@ -147,7 +147,7 @@ internal fun MainHub(
                     items.forEachIndexed { index, item ->
                         val selected = pagerState.currentPage == index
                         NavContentItem(
-                            content = settings.floatingNavigationContent,
+                            content = settings.navContent,
                             selected = selected,
                             onClick = { selectPage(index) },
                             icon = if (selected) item.selectedIcon else item.icon,
@@ -187,7 +187,7 @@ internal fun MainHub(
                 bottomPadding = innerPadding,
                 appLanguage = appLanguage,
                 launcherIconHidden = launcherIconHidden,
-                swipeBackEnabled = settings.swipeBackEnabled,
+                swipeBackEnabled = settings.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
                 onHotReload = {
                     if (!hotReloadInProgress) {

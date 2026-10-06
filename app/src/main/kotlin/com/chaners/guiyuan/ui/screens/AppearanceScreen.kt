@@ -96,7 +96,7 @@ internal fun AppearanceScreen(
         Section(R.string.section_theme) {
             OverlayDropdownPreference(
                 items = themeOptions,
-                selectedIndex = settings.themeMode.ordinal,
+                selectedIndex = settings.theme.ordinal,
                 title = stringResource(R.string.theme_mode),
                 summary = stringResource(R.string.theme_mode_summary),
                 startAction = {
@@ -107,7 +107,7 @@ internal fun AppearanceScreen(
                 showValue = true,
                 onSelectedIndexChange = { index ->
                     ThemeMode.entries.getOrNull(index)?.let { mode ->
-                        if (mode != settings.themeMode) {
+                        if (mode != settings.theme) {
                             onThemeModeChange(mode)
                         }
                     }
@@ -121,7 +121,7 @@ internal fun AppearanceScreen(
                         iconRes = R.drawable.ic_material_symbol_palette,
                     )
                 },
-                checked = settings.dynamicColorEnabled,
+                checked = settings.dynamicColor,
                 onCheckedChange = onDynamicColorEnabledChange,
             )
         }
@@ -135,13 +135,13 @@ internal fun AppearanceScreen(
                         iconRes = R.drawable.ic_material_symbol_bottom_navigation,
                     )
                 },
-                checked = settings.floatingNavigationBarEnabled,
+                checked = settings.navEnabled,
                 onCheckedChange = onFloatingNavigationBarEnabledChange,
             )
-            AnimatedPreferenceGroup(visible = settings.floatingNavigationBarEnabled) {
+            AnimatedPreferenceGroup(visible = settings.navEnabled) {
                 OverlayDropdownPreference(
                     items = floatingStyleOptions,
-                    selectedIndex = settings.floatingNavigationStyle.ordinal,
+                    selectedIndex = settings.navStyle.ordinal,
                     title = stringResource(R.string.floating_navigation_style),
                     summary = stringResource(R.string.floating_navigation_style_summary),
                     startAction = {
@@ -152,7 +152,7 @@ internal fun AppearanceScreen(
                     showValue = true,
                     onSelectedIndexChange = { index ->
                         NavStyle.entries.getOrNull(index)?.let { style ->
-                            if (style != settings.floatingNavigationStyle) {
+                            if (style != settings.navStyle) {
                                 onNavStyleChange(style)
                             }
                         }
@@ -160,7 +160,7 @@ internal fun AppearanceScreen(
                 )
                 OverlayDropdownPreference(
                     items = floatingContentOptions,
-                    selectedIndex = settings.floatingNavigationContent.ordinal,
+                    selectedIndex = settings.navContent.ordinal,
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
@@ -171,7 +171,7 @@ internal fun AppearanceScreen(
                     showValue = true,
                     onSelectedIndexChange = { index ->
                         NavContent.entries.getOrNull(index)?.let { content ->
-                            if (content != settings.floatingNavigationContent) {
+                            if (content != settings.navContent) {
                                 onNavContentChange(content)
                             }
                         }
@@ -249,9 +249,9 @@ private fun AppearanceMiniPreview(
                 MiniSwitchSettingPreview()
                 MiniSliderSettingPreview()
                 MiniNavigationPreview(
-                    floating = settings.floatingNavigationBarEnabled,
-                    style = settings.floatingNavigationStyle,
-                    content = settings.floatingNavigationContent,
+                    floating = settings.navEnabled,
+                    style = settings.navStyle,
+                    content = settings.navContent,
                     darkMode = darkMode,
                 )
             }

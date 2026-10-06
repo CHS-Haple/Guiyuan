@@ -50,15 +50,15 @@ class MainActivity : ComponentActivity() {
         window.isNavigationBarContrastEnforced = false
 
         val repo = AppearanceRepo(applicationContext)
-        val initialLanguage = AppPlatform.currentLanguage(this)
-        val initialIconHidden = AppPlatform.isLauncherIconHidden(this)
+        val initialLanguage = AppPlatform.language(this)
+        val initialIconHidden = AppPlatform.iconHidden(this)
 
         setContent {
             val settings by repo.settings.collectAsState(initial = Appearance())
             val scope = rememberCoroutineScope()
             val systemDark = isSystemInDarkTheme()
             val darkMode =
-                when (settings.themeMode) {
+                when (settings.theme) {
                     ThemeMode.Light -> false
                     ThemeMode.Dark -> true
                     ThemeMode.System -> systemDark
@@ -84,13 +84,13 @@ class MainActivity : ComponentActivity() {
                     (application as GyApplication).hotReloadSysUi(onComplete)
                 },
                 onThemeModeChange = { mode ->
-                    scope.launch { repo.setThemeMode(mode) }
+                    scope.launch { repo.setTheme(mode) }
                 },
                 onDynamicColorEnabledChange = { enabled ->
-                    scope.launch { repo.setDynamicColorEnabled(enabled) }
+                    scope.launch { repo.setDynamicColor(enabled) }
                 },
                 onFloatingNavigationBarEnabledChange = { enabled ->
-                    scope.launch { repo.setFloatingNavigationBarEnabled(enabled) }
+                    scope.launch { repo.setNavEnabled(enabled) }
                 },
                 onNavStyleChange = { style: NavStyle ->
                     scope.launch { repo.setNavStyle(style) }
@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
                     scope.launch { repo.setNavContent(content) }
                 },
                 onSwipeBackEnabledChange = { enabled ->
-                    scope.launch { repo.setSwipeBackEnabled(enabled) }
+                    scope.launch { repo.setSwipeBack(enabled) }
                 },
                 onAppLangChange = { language ->
                     if (language != appLanguage) {
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                     }
                 },
                 onLauncherIconHiddenChange = { hidden ->
-                    AppPlatform.setLauncherIconHidden(this, hidden)
+                    AppPlatform.setIconHidden(this, hidden)
                     launcherIconHidden = hidden
                 },
             )

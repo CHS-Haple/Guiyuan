@@ -7,7 +7,7 @@ import android.content.pm.PackageManager
 import android.os.LocaleList
 
 internal enum class AppLang(
-    val languageTag: String?,
+    val tag: String?,
 ) {
     System(null),
     English("en"),
@@ -17,15 +17,13 @@ internal enum class AppLang(
 internal object AppPlatform {
     private const val ALIAS_SUFFIX = ".LauncherAlias"
 
-    fun currentLanguage(context: Context): AppLang {
-        val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
-        if (locales.isEmpty) {
-            return AppLang.System
-        }
+    fun language(ctx: Context): AppLang {
+        val locales = ctx.getSystemService(LocaleManager::class.java).applicationLocales
+        if (locales.isEmpty) return AppLang.System
 
         val tag = locales[0].toLanguageTag()
-        return AppLang.entries.firstOrNull { language ->
-            language.languageTag?.equals(tag, ignoreCase = true) == true
+        return AppLang.entries.firstOrNull { lang ->
+            lang.tag?.equals(tag, ignoreCase = true) == true
         } ?: when (locales[0].language) {
             "zh" -> AppLang.SimplifiedChinese
             "en" -> AppLang.English
@@ -34,19 +32,19 @@ internal object AppPlatform {
     }
 
     fun setLanguage(
-        context: Context,
-        language: AppLang,
+        ctx: Context,
+        lang: AppLang,
     ) {
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager.applicationLocales = language.languageTag
-            ?.let(LocaleList::forLanguageTags)
-            ?: LocaleList.getEmptyLocaleList()
+        val manager = ctx.getSystemService(LocaleManager::class.java)
+        manager.applicationLocales =
+            lang.tag?.let(LocaleList::forLanguageTags)
+                ?: LocaleList.getEmptyLocaleList()
     }
 
-    fun isLauncherIconHidden(context: Context): Boolean {
-        return when (
-            context.packageManager.getComponentEnabledSetting(
-                launcherComponent(context),
+    fun iconHidden(ctx: Context): Boolean =
+        when (
+            ctx.packageManager.getComponentEnabledSetting(
+                launcher(ctx),
             )
         ) {
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
@@ -56,15 +54,14 @@ internal object AppPlatform {
 
             else -> false
         }
-    }
 
-    fun setLauncherIconHidden(
-        context: Context,
+    fun setIconHidden(
+        ctx: Context,
         hidden: Boolean,
     ) {
         // Toggle only the launcher alias; keep this process alive so the UI updates in place.
-        context.packageManager.setComponentEnabledSetting(
-            launcherComponent(context),
+        ctx.packageManager.setComponentEnabledSetting(
+            launcher(ctx),
             if (hidden) {
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             } else {
@@ -74,9 +71,9 @@ internal object AppPlatform {
         )
     }
 
-    private fun launcherComponent(context: Context): ComponentName =
+    private fun launcher(ctx: Context): ComponentName =
         ComponentName(
-            context.packageName,
-            context.packageName + ALIAS_SUFFIX,
+            ctx.packageName,
+            ctx.packageName + ALIAS_SUFFIX,
         )
 }

@@ -10,9 +10,9 @@ class AppearanceTest {
     fun defaultsPreserveExistingNavStyle() {
         val settings = Appearance()
 
-        assertTrue(settings.floatingNavigationBarEnabled)
-        assertEquals(NavStyle.Glass, settings.floatingNavigationStyle)
-        assertEquals(NavContent.IconOnly, settings.floatingNavigationContent)
+        assertTrue(settings.navEnabled)
+        assertEquals(NavStyle.Glass, settings.navStyle)
+        assertEquals(NavContent.IconOnly, settings.navContent)
     }
 
     @Test
@@ -106,7 +106,7 @@ class AppearanceTest {
             )
 
         assertEquals(ThemeMode.System, result.mode)
-        assertTrue(result.dynamicColorEnabled)
+        assertTrue(result.dynamicColor)
     }
 
     @Test
@@ -118,7 +118,7 @@ class AppearanceTest {
             )
 
         assertEquals(ThemeMode.System, result.mode)
-        assertFalse(result.dynamicColorEnabled)
+        assertFalse(result.dynamicColor)
     }
 
     @Test
@@ -130,7 +130,7 @@ class AppearanceTest {
             )
 
         assertEquals(ThemeMode.Light, result.mode)
-        assertTrue(result.dynamicColorEnabled)
+        assertTrue(result.dynamicColor)
     }
 
     @Test
@@ -142,6 +142,6 @@ class AppearanceTest {
             )
 
         assertEquals(ThemeMode.System, result.mode)
-        assertFalse(result.dynamicColorEnabled)
+        assertFalse(result.dynamicColor)
     }
 }

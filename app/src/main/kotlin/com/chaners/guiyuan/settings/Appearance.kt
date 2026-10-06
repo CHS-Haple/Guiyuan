@@ -31,17 +31,17 @@ internal enum class NavContent {
 }
 
 internal data class Appearance(
-    val themeMode: ThemeMode = ThemeMode.System,
-    val dynamicColorEnabled: Boolean = false,
-    val floatingNavigationBarEnabled: Boolean = true,
-    val floatingNavigationStyle: NavStyle = NavStyle.Glass,
-    val floatingNavigationContent: NavContent = NavContent.IconOnly,
-    val swipeBackEnabled: Boolean = true,
+    val theme: ThemeMode = ThemeMode.System,
+    val dynamicColor: Boolean = false,
+    val navEnabled: Boolean = true,
+    val navStyle: NavStyle = NavStyle.Glass,
+    val navContent: NavContent = NavContent.IconOnly,
+    val swipeBack: Boolean = true,
 )
 
 internal data class ThemeChoice(
     val mode: ThemeMode,
-    val dynamicColorEnabled: Boolean,
+    val dynamicColor: Boolean,
 )
 
 internal fun decodeNavStyle(
@@ -83,18 +83,18 @@ internal fun decodeTheme(
             ?: ThemeMode.System
     return ThemeChoice(
         mode = mode,
-        dynamicColorEnabled = storedDynamicColorEnabled ?: legacyDynamic,
+        dynamicColor = storedDynamicColorEnabled ?: legacyDynamic,
     )
 }
 
-private val Context.appearanceDataStore: DataStore<Preferences> by preferencesDataStore(
+private val Context.appearanceStore: DataStore<Preferences> by preferencesDataStore(
     name = "appearance",
 )
 
 internal class AppearanceRepo(context: Context) {
-    private val dataStore = context.applicationContext.appearanceDataStore
+    private val store = context.applicationContext.appearanceStore
 
-    val settings: Flow<Appearance> = dataStore.data
+    val settings: Flow<Appearance> = store.data
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
@@ -102,89 +102,80 @@ internal class AppearanceRepo(context: Context) {
                 throw error
             }
         }
-        .map { preferences ->
-            val themeSelection =
+        .map { prefs ->
+            val theme =
                 decodeTheme(
-                    storedMode = preferences[ThemeModeKey],
-                    storedDynamicColorEnabled = preferences[DynamicColorEnabledKey],
+                    storedMode = prefs[themeKey],
+                    storedDynamicColorEnabled = prefs[dynamicKey],
                 )
             Appearance(
-                themeMode = themeSelection.mode,
-                dynamicColorEnabled = themeSelection.dynamicColorEnabled,
-                floatingNavigationBarEnabled =
-                    preferences[FloatingNavigationBarEnabledKey] ?: true,
-                floatingNavigationStyle =
+                theme = theme.mode,
+                dynamicColor = theme.dynamicColor,
+                navEnabled = prefs[navEnabledKey] ?: true,
+                navStyle =
                     decodeNavStyle(
-                        storedStyle = preferences[NavStyleKey],
-                        storedFloatingBlurEnabled =
-                            preferences[LegacyFloatingNavigationBlurEnabledKey],
-                        legacyBlurEnabled = preferences[LegacyBlurEnabledKey],
-                        legacyGlassEnabled = preferences[LegacyGlassBottomBarEnabledKey],
+                        storedStyle = prefs[navStyleKey],
+                        storedFloatingBlurEnabled = prefs[legacyNavBlurKey],
+                        legacyBlurEnabled = prefs[legacyBlurKey],
+                        legacyGlassEnabled = prefs[legacyGlassKey],
                     ),
-                floatingNavigationContent =
-                    decodeNavContent(
-                        preferences[NavContentKey],
-                    ),
-                swipeBackEnabled = preferences[SwipeBackEnabledKey] ?: true,
+                navContent = decodeNavContent(prefs[navContentKey]),
+                swipeBack = prefs[swipeBackKey] ?: true,
             )
         }
 
-    suspend fun setThemeMode(mode: ThemeMode) {
-        dataStore.edit { preferences ->
-            preferences[ThemeModeKey] = mode.name
+    suspend fun setTheme(mode: ThemeMode) {
+        store.edit { prefs ->
+            prefs[themeKey] = mode.name
         }
     }
 
-    suspend fun setDynamicColorEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            if (preferences[ThemeModeKey] == LEGACY_DYNAMIC_THEME_MODE) {
-                preferences[ThemeModeKey] = ThemeMode.System.name
+    suspend fun setDynamicColor(enabled: Boolean) {
+        store.edit { prefs ->
+            if (prefs[themeKey] == LEGACY_DYNAMIC_THEME_MODE) {
+                prefs[themeKey] = ThemeMode.System.name
             }
-            preferences[DynamicColorEnabledKey] = enabled
+            prefs[dynamicKey] = enabled
         }
     }
 
-    suspend fun setFloatingNavigationBarEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[FloatingNavigationBarEnabledKey] = enabled
+    suspend fun setNavEnabled(enabled: Boolean) {
+        store.edit { prefs ->
+            prefs[navEnabledKey] = enabled
         }
     }
 
     suspend fun setNavStyle(style: NavStyle) {
-        dataStore.edit { preferences ->
-            preferences[NavStyleKey] = style.name
-            preferences.remove(LegacyFloatingNavigationBlurEnabledKey)
-            preferences.remove(LegacyGlassBottomBarEnabledKey)
-            preferences.remove(LegacyBlurEnabledKey)
+        store.edit { prefs ->
+            prefs[navStyleKey] = style.name
+            prefs.remove(legacyNavBlurKey)
+            prefs.remove(legacyGlassKey)
+            prefs.remove(legacyBlurKey)
         }
     }
 
     suspend fun setNavContent(content: NavContent) {
-        dataStore.edit { preferences ->
-            preferences[NavContentKey] = content.name
+        store.edit { prefs ->
+            prefs[navContentKey] = content.name
         }
     }
 
-    suspend fun setSwipeBackEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[SwipeBackEnabledKey] = enabled
+    suspend fun setSwipeBack(enabled: Boolean) {
+        store.edit { prefs ->
+            prefs[swipeBackKey] = enabled
         }
     }
 
     private companion object {
-        val ThemeModeKey = stringPreferencesKey("theme_mode")
-        val DynamicColorEnabledKey = booleanPreferencesKey("dynamic_color_enabled")
-        val LegacyBlurEnabledKey = booleanPreferencesKey("blur_enabled")
-        val LegacyGlassBottomBarEnabledKey = booleanPreferencesKey("glass_bottom_bar_enabled")
-        val FloatingNavigationBarEnabledKey =
-            booleanPreferencesKey("floating_navigation_bar_enabled")
-        val NavStyleKey =
-            stringPreferencesKey("floating_navigation_style")
-        val NavContentKey =
-            stringPreferencesKey("floating_navigation_content")
-        val LegacyFloatingNavigationBlurEnabledKey =
-            booleanPreferencesKey("floating_navigation_blur_enabled")
-        val SwipeBackEnabledKey = booleanPreferencesKey("swipe_back_enabled")
+        val themeKey = stringPreferencesKey("theme_mode")
+        val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
+        val legacyBlurKey = booleanPreferencesKey("blur_enabled")
+        val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
+        val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
+        val navStyleKey = stringPreferencesKey("floating_navigation_style")
+        val navContentKey = stringPreferencesKey("floating_navigation_content")
+        val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
+        val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")
     }
 }
 

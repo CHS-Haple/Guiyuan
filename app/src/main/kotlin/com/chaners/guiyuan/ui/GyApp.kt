@@ -51,8 +51,8 @@ internal fun GyApp(
     onLauncherIconHiddenChange: (Boolean) -> Unit,
 ) {
     GyTheme(
-        themeMode = settings.themeMode,
-        dynamicColorEnabled = settings.dynamicColorEnabled,
+        themeMode = settings.theme,
+        dynamicColorEnabled = settings.dynamicColor,
     ) {
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
@@ -120,7 +120,7 @@ internal fun GyApp(
 
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
         val swipeBackDirection = when {
-            !settings.swipeBackEnabled -> NavSwipeDirection.None
+            !settings.swipeBack -> NavSwipeDirection.None
             LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
             else -> NavSwipeDirection.RightToLeft
         }
