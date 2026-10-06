@@ -341,9 +341,9 @@ class VisualCfgTest {
         val settings = VisualCfg()
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.layout)
-        assertEquals(true, settings.batteryTopTextFollowsBatteryColor)
+        assertEquals(true, settings.topTextFollowsBatteryColor)
         assertEquals(true, settings.showTopChargingIcon)
-        assertEquals(true, settings.batteryTopChargingIconFollowsBatteryColor)
+        assertEquals(true, settings.topChargingIconFollowsBatteryColor)
     }
 
     @Test

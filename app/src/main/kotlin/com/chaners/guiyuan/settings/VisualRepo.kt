@@ -90,7 +90,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopTextFollowsBatteryColor(enabled: Boolean) {
+    fun setTopTextFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY), enabled)
@@ -104,7 +104,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setBatteryTopChargingIconFollowsBatteryColor(enabled: Boolean) {
+    fun setTopChargingIconFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY), enabled)
@@ -372,7 +372,7 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
                 baseKey = BATTERY_TOP_READOUT_ENABLED_KEY,
                 defaultValue = false,
             ),
-        batteryTopTextFollowsBatteryColor =
+        topTextFollowsBatteryColor =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
@@ -384,7 +384,7 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
                 baseKey = BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 defaultValue = true,
             ),
-        batteryTopChargingIconFollowsBatteryColor =
+        topChargingIconFollowsBatteryColor =
             profileBoolean(
                 layout = layout,
                 baseKey = BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
@@ -516,13 +516,13 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.showTopReadout,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopTextFollowsBatteryColor,
+        normalized.topTextFollowsBatteryColor,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
         normalized.showTopChargingIcon,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.batteryTopChargingIconFollowsBatteryColor,
+        normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         normalized.batteryFillFollowsRetractEndpoint,

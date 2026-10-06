@@ -130,8 +130,8 @@ class ColorPolicyTest {
                     ),
                 visualSettings =
                     VisualCfg(
-                        batteryTopTextFollowsBatteryColor = false,
-                        batteryTopChargingIconFollowsBatteryColor = false,
+                        topTextFollowsBatteryColor = false,
+                        topChargingIconFollowsBatteryColor = false,
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )

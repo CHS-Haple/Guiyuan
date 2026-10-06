@@ -4558,9 +4558,9 @@ class GyModule : XposedModule() {
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
                 "batteryNumber" to settings.showTopReadout,
                 "chargingIcon" to settings.showTopChargingIcon,
-                "batteryNumberFollowsBattery" to settings.batteryTopTextFollowsBatteryColor,
+                "batteryNumberFollowsBattery" to settings.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
-                    settings.batteryTopChargingIconFollowsBatteryColor,
+                    settings.topChargingIconFollowsBatteryColor,
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
@@ -4623,9 +4623,9 @@ class GyModule : XposedModule() {
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
                 "batteryNumber" to visual.showTopReadout,
                 "chargingIcon" to visual.showTopChargingIcon,
-                "batteryNumberFollowsBattery" to visual.batteryTopTextFollowsBatteryColor,
+                "batteryNumberFollowsBattery" to visual.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
-                    visual.batteryTopChargingIconFollowsBatteryColor,
+                    visual.topChargingIconFollowsBatteryColor,
                 "eventDriven" to true,
                 "mainThread" to true,
             )

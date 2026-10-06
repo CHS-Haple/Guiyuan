@@ -315,9 +315,9 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
-                    checked = visual.batteryTopTextFollowsBatteryColor,
+                    checked = visual.topTextFollowsBatteryColor,
                     enabled = featureCfg.enabled,
-                    onCheckedChange = visualRepo::setBatteryTopTextFollowsBatteryColor,
+                    onCheckedChange = visualRepo::setTopTextFollowsBatteryColor,
                 )
             }
 
@@ -359,10 +359,10 @@ internal fun FeaturesScreen(
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
-                    checked = visual.batteryTopChargingIconFollowsBatteryColor,
+                    checked = visual.topChargingIconFollowsBatteryColor,
                     enabled = featureCfg.enabled,
                     onCheckedChange =
-                        visualRepo::setBatteryTopChargingIconFollowsBatteryColor,
+                        visualRepo::setTopChargingIconFollowsBatteryColor,
                 )
             }
 

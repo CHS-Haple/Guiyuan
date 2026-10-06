@@ -40,10 +40,10 @@ internal object ColorPolicy {
                 else nativeParticipantTint,
             batteryTint = batteryTint,
             batteryTextTint =
-                if (visualSettings.batteryTopTextFollowsBatteryColor) batteryTint
+                if (visualSettings.topTextFollowsBatteryColor) batteryTint
                 else nativeParticipantTint,
             chargingIconTint =
-                if (visualSettings.batteryTopChargingIconFollowsBatteryColor) batteryTint
+                if (visualSettings.topChargingIconFollowsBatteryColor) batteryTint
                 else nativeParticipantTint,
         )
     }

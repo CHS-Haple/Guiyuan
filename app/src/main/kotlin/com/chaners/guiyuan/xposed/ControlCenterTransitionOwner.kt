@@ -688,7 +688,7 @@ internal object ControlCenterTransitionOwner {
                                     tinted =
                                         batteryTinted &&
                                             currentSnapshot.visual
-                                                .batteryTopTextFollowsBatteryColor,
+                                                .topTextFollowsBatteryColor,
                                 ),
                             chargingIconTint =
                                 resolveTint(
@@ -696,7 +696,7 @@ internal object ControlCenterTransitionOwner {
                                     tinted =
                                         batteryTinted &&
                                             currentSnapshot.visual
-                                                .batteryTopChargingIconFollowsBatteryColor,
+                                                .topChargingIconFollowsBatteryColor,
                                 ),
                         )
                     }
