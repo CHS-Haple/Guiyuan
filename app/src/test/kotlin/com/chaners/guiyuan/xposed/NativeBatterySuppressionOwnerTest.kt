@@ -6,11 +6,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiNativeBatterySuppressionOwnerTest {
+class NativeBatterySuppressionOwnerTest {
     @Test
     fun replacementDoesNotOverrideNativeVisibleLayout() {
         assertFalse(
-            SystemUiNativeBatterySuppressionOwner.resolveNativeLayoutHide(
+            NativeBatterySuppressionOwner.resolveNativeLayoutHide(
                 nativeRequestedHide = false,
             ),
         )
@@ -19,7 +19,7 @@ class SystemUiNativeBatterySuppressionOwnerTest {
     @Test
     fun nativeHideRemainsAuthoritativeWhileReplacementIsActive() {
         assertTrue(
-            SystemUiNativeBatterySuppressionOwner.resolveNativeLayoutHide(
+            NativeBatterySuppressionOwner.resolveNativeLayoutHide(
                 nativeRequestedHide = true,
             ),
         )
@@ -29,7 +29,7 @@ class SystemUiNativeBatterySuppressionOwnerTest {
     fun activeSuppressionKeepsChargingSlotButRemovesGlyph() {
         assertEquals(
             View.INVISIBLE,
-            SystemUiNativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
                 nativeVisibility = View.VISIBLE,
                 suppressionActive = true,
             ),
@@ -40,7 +40,7 @@ class SystemUiNativeBatterySuppressionOwnerTest {
     fun activeSuppressionPreservesNativeGoneState() {
         assertEquals(
             View.GONE,
-            SystemUiNativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
                 nativeVisibility = View.GONE,
                 suppressionActive = true,
             ),
@@ -51,7 +51,7 @@ class SystemUiNativeBatterySuppressionOwnerTest {
     fun activeSuppressionPreservesNativeInvisibleState() {
         assertEquals(
             View.INVISIBLE,
-            SystemUiNativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
                 nativeVisibility = View.INVISIBLE,
                 suppressionActive = true,
             ),
@@ -62,7 +62,7 @@ class SystemUiNativeBatterySuppressionOwnerTest {
     fun inactiveSuppressionPreservesNativeVisibility() {
         assertEquals(
             View.VISIBLE,
-            SystemUiNativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
+            NativeBatterySuppressionOwner.resolveChargingPresentationVisibility(
                 nativeVisibility = View.VISIBLE,
                 suppressionActive = false,
             ),
