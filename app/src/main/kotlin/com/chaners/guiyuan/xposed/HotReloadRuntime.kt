@@ -54,7 +54,7 @@ internal object HotReloadRuntime {
 
         val ccCompactReady =
             CcSession
-                .currentNativePresentationReadyForHotReload()
+                .isNativeReadyForReload()
 
         val transfer =
             HotReloadTransfer.capture(
@@ -64,13 +64,13 @@ internal object HotReloadRuntime {
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
                 notificationShadeHomeEligible = null,
-                ccHomeEligible =
+                controlCenterHomeEligible =
                     PanelTransitionSource.currentCcHomeEligibility(),
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    CcSession.currentAttachedHostForHotReload(),
-                ccCompactReady = ccCompactReady,
+                    CcSession.attachedHostForReload(),
+                controlCenterCompactReady = ccCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
