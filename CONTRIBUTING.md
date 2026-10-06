@@ -29,7 +29,7 @@ Prefer Android, HyperOS, MIUIX, and Modern Xposed contracts over project-local r
 Avoid duplicate hooks/listeners/state machines, polling, repeated View-tree traversal, hot-path reflection, resident Root work, per-frame diagnostics, and unnecessary caching.
 
 ### Human-maintainable
-Write code for the next human maintainer, not for a naming generator. Prefer natural domain terms, familiar abbreviations, and names that use their package/class/file context instead of repeating it. Avoid sentence-shaped identifiers, redundant prefixes, one-word project shorthand that only this repository understands, and aliases kept only to preserve an obsolete internal name.
+Write code for the next human maintainer, not for a naming generator. Prefer natural domain terms, familiar abbreviations, and names that use their package/class/file context instead of repeating it. Use common engineering abbreviations when they are immediately clear (for example `Repo`, `Env`, `Info`, `Config`, `Compat`, `Diag`, `Sub`, `ID`, `UI`, `API`, `AOD`, `QS`, and `SysUI`) instead of spelling every word out. Avoid sentence-shaped identifiers, redundant prefixes, one-word project shorthand that only this repository understands, and aliases kept only to preserve an obsolete internal name.
 
 Keep structure equally human: place constants/helpers near the code they serve, split a file only when the split creates a clear owner/cohesive responsibility, and do not create layers or one-line wrappers just to make code look organized.
 
