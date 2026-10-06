@@ -115,6 +115,8 @@ internal object NativeParticipantUi {
             ).size
 
     @Synchronized
+    // Bind to the native participant lifecycle without stealing slot geometry.
+    // Geometry ownership is taken only after a verified visible handoff.
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,

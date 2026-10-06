@@ -66,6 +66,8 @@ internal class StatusPainter(
             }
         }
 
+    // Rendering is pure with respect to SystemUI ownership: callers provide
+    // resolved state/geometry and the painter never mutates native Views.
     fun draw(
         canvas: Canvas,
         width: Int,
@@ -207,6 +209,8 @@ internal class StatusPainter(
         )
     }
 
+    // Transition helpers consume resolved endpoints only; they must not invent
+    // a second gesture timeline or query live native layout mid-draw.
     fun drawTransitionComponent(
         canvas: Canvas,
         width: Int,
@@ -1528,6 +1532,8 @@ internal class StatusPainter(
             BATTERY_TOP_CONTENT_CENTER_Y
         }
 
+    // Battery, top readout and charging glyph share one logical coordinate
+    // space so optical tuning cannot leak into native slot layout.
     private fun drawBattery(
         canvas: Canvas,
         model: RenderModel,
@@ -2625,6 +2631,8 @@ internal class StatusPainter(
             ?.let { resource.copy(resourceId = it) }
     }
 
+    // Native drawable probes preserve authored alpha/optics and are cached by
+    // resource identity; do not add raster compensation for visual matching.
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
@@ -3193,6 +3201,8 @@ internal class StatusPainter(
         return cachedMobileTypeTypeface
     }
 
+    // Mobile morph geometry stays in the logical canvas. Native target bars
+    // supply endpoints, not an alternate layout writer.
     private fun mobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,

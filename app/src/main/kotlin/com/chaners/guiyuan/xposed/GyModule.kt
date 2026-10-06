@@ -571,6 +571,8 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Runtime owners are installed once per SystemUI generation. Each owner
+    // keeps its own cleanup boundary so Hot Reload cannot create two writers.
     private fun installHomePresentation(
         classLoader: ClassLoader,
         source: String,
@@ -1027,6 +1029,8 @@ class GyModule : XposedModule() {
     }
 
 
+    // Control Center motion stays HyperOS-owned. Guiyuan only projects into
+    // the verified QS_FAKE carrier and yields native on ambiguous geometry.
     private fun installCcTransitionSource(
         classLoader: ClassLoader,
         source: String,
@@ -1614,6 +1618,8 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Native state sources only report facts. They never decide which scene
+    // owns presentation; that decision stays in the scene/presentation layer.
     private fun installBatteryStateSource(
         classLoader: ClassLoader,
         source: String,
@@ -1941,6 +1947,8 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Keyguard and AOD share one family renderer. The handoff state below
+    // keeps one visual writer while native callbacks change scene authority.
     private fun onAodTransitionStart() {
         val settings = FeaturePrefsOwner.currentSettings()
         val homeOwnedAtStart =
@@ -3504,6 +3512,8 @@ class GyModule : XposedModule() {
         )
     }
 
+    // Hot Reload transfers only verified state. Anything tied to the old
+    // class loader is released before the new generation can take ownership.
     private fun teardownOldGenerationForHotReload(
         continuousHandoff: Boolean = false,
     ) {
@@ -4351,6 +4361,8 @@ class GyModule : XposedModule() {
 
     }
 
+    // Preferences are observed, never polled. Diagnostic switches may change
+    // observation detail but must not change functional ownership or hooks.
     private fun bindRuntimeDiagnostics() {
         if (!BuildConfig.RUNTIME_DIAGNOSTICS) {
             DiagPrefsOwner.unbind()

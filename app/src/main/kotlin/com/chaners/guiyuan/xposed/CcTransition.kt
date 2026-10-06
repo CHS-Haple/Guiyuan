@@ -21,6 +21,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 internal object CcTransition {
+    // Transition drawing owns only Guiyuan geometry. HyperOS remains the
+    // authority for panel progress, native tint, visibility and final layout.
     private const val STATUS_ICON_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
@@ -209,6 +211,8 @@ internal object CcTransition {
         )
     }
 
+    // A session freezes only the source/target facts needed for one visible
+    // cycle. Missing or ambiguous native witnesses fail back to native.
     private class Session(
         root: ViewGroup,
         fakeRoot: ViewGroup,

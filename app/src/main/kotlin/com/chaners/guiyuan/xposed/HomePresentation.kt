@@ -146,6 +146,8 @@ internal object HomePresentation {
     }
 
     @Synchronized
+    // This owner coordinates native slot masking and reservation. Native
+    // layout remains authoritative until the replacement handoff is valid.
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -720,6 +722,8 @@ internal object HomePresentation {
             keyguardFamilyCurrent?.ownsBatteryContainer(candidate) == true
 
     @Synchronized
+    // CC uses the native QS_FAKE row as a bounded bridge. Final Control Center
+    // layout and motion always remain native-owned.
     fun activateControlCenter(
         host: ViewGroup,
         statusIcons: ViewGroup,
