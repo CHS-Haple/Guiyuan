@@ -58,11 +58,11 @@ internal class VisualRepo(context: Context) {
 
     private fun activeProfileKey(baseKey: String): String =
         visualProfileKey(
-            layout = preferences.readContentLayout(),
+            layout = preferences.readLayout(),
             baseKey = baseKey,
         )
 
-    fun setContentLayout(layout: ContentLayout) {
+    fun setLayout(layout: ContentLayout) {
         preferences
             .edit()
             .putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
@@ -184,7 +184,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setWifiSizeScale(scale: Float) {
+    fun setWifiScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
@@ -193,7 +193,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setAirplaneSizeScale(scale: Float) {
+    fun setAirplaneScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
@@ -202,7 +202,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setNoSimSizeScale(scale: Float) {
+    fun setNoSimScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
@@ -211,7 +211,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setMobileTypeSizeScale(scale: Float) {
+    fun setMobileTypeScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_SIZE_SCALE_KEY),
@@ -298,7 +298,7 @@ internal class VisualRepo(context: Context) {
     }
 }
 
-internal fun SharedPreferences.readContentLayout(): ContentLayout =
+internal fun SharedPreferences.readLayout(): ContentLayout =
     ContentLayout.fromPersisted(
         getString(
             CONTENT_LAYOUT_KEY,
@@ -351,9 +351,9 @@ private fun SharedPreferences.profileInt(
 }
 
 internal fun SharedPreferences.readVisualCfg(): VisualCfg {
-    val layout = readContentLayout()
+    val layout = readLayout()
     return VisualCfg(
-        contentLayout = layout,
+        layout = layout,
         mobileFollowsBatteryColor =
             profileBoolean(
                 layout = layout,
@@ -428,17 +428,17 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
             profileFloat(layout, COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale =
             profileFloat(layout, OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
-        wifiSizeScale =
+        wifiScale =
             profileFloat(layout, WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
-        airplaneSizeScale =
+        airplaneScale =
             profileFloat(layout, AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
-        noSimSizeScale =
+        noSimScale =
             profileFloat(layout, NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
-        mobileTypeSizeScale =
+        mobileTypeScale =
             profileFloat(
                 layout,
                 MOBILE_TYPE_SIZE_SCALE_KEY,
-                mobileTypeSizeScaleDefault(layout),
+                mobileTypeScaleDefault(layout),
             ),
         mobileTypeWeight =
             profileInt(layout, MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
@@ -501,7 +501,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     settings: VisualCfg,
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
-    val layout = normalized.contentLayout
+    val layout = normalized.layout
     return putString(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
@@ -549,16 +549,16 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.outerWeightScale,
     ).putFloat(
         visualProfileKey(layout, WIFI_SIZE_SCALE_KEY),
-        normalized.wifiSizeScale,
+        normalized.wifiScale,
     ).putFloat(
         visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
-        normalized.airplaneSizeScale,
+        normalized.airplaneScale,
     ).putFloat(
         visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
-        normalized.noSimSizeScale,
+        normalized.noSimScale,
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
-        normalized.mobileTypeSizeScale,
+        normalized.mobileTypeScale,
     ).putInt(
         visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
         normalized.mobileTypeWeight,

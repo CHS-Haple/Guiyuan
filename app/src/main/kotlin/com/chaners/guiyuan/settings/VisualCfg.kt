@@ -171,7 +171,7 @@ internal object IosStyleBatteryPalette {
 }
 
 internal data class VisualCfg(
-    val contentLayout: ContentLayout = ContentLayout.NETWORK_CENTER,
+    val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val batteryTopReadoutEnabled: Boolean = false,
@@ -180,17 +180,17 @@ internal data class VisualCfg(
     val batteryTopChargingIconFollowsBatteryColor: Boolean = true,
     val batteryFillFollowsRetractEndpoint: Boolean = false,
     val controlCenterTintTransitionEnabled: Boolean = true,
-    val batteryTopTextScale: Float = batteryTopTextScaleDefault(contentLayout),
+    val batteryTopTextScale: Float = batteryTopTextScaleDefault(layout),
     val batteryTopTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
     val batteryTopVerticalOffset: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
     val batteryTopChargingIconScale: Float =
-        batteryTopChargingIconScaleDefault(contentLayout),
+        batteryTopChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
-    val wifiSizeScale: Float = WIFI_SIZE_SCALE_DEFAULT,
-    val airplaneSizeScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
-    val noSimSizeScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
-    val mobileTypeSizeScale: Float = mobileTypeSizeScaleDefault(contentLayout),
+    val wifiScale: Float = WIFI_SIZE_SCALE_DEFAULT,
+    val airplaneScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
+    val noSimScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
+    val mobileTypeScale: Float = mobileTypeScaleDefault(layout),
     val mobileTypeWeight: Int = MOBILE_TYPE_WEIGHT_DEFAULT,
     val batteryColorPreset: BatteryColorPreset =
         BatteryColorPreset.HYPEROS,
@@ -225,13 +225,13 @@ internal fun VisualCfg.normalized(): VisualCfg =
         combinedScale = combinedScale.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX),
         outerWeightScale =
             outerWeightScale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
-        wifiSizeScale = wifiSizeScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
-        airplaneSizeScale =
-            airplaneSizeScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
-        noSimSizeScale =
-            noSimSizeScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
-        mobileTypeSizeScale =
-            mobileTypeSizeScale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
+        wifiScale = wifiScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+        airplaneScale =
+            airplaneScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+        noSimScale =
+            noSimScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
+        mobileTypeScale =
+            mobileTypeScale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
         batteryColorOverrides =

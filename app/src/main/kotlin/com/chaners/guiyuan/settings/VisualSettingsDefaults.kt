@@ -208,7 +208,7 @@ internal fun batteryTopTextUiScaleDefault(
         ContentLayout.BATTERY_CENTER -> 1.4f
     }
 
-internal fun mobileTypeSizeScaleDefault(
+internal fun mobileTypeScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
