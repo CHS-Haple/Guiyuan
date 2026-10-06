@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DiagLevel
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +32,7 @@ class DiagPrefsOwnerTest {
         assertEquals(1, preferences.listenerCount)
         assertEquals(listOf(false), observed)
 
-        preferences.setDiagnosticsLevel(DiagnosticsLevel.Detailed.name)
+        preferences.setDiagnosticsLevel(DiagLevel.Detailed.name)
 
         assertEquals(listOf(false, true), observed)
     }
@@ -54,7 +54,7 @@ class DiagPrefsOwnerTest {
         assertFalse(DiagPrefsOwner.isBound)
         assertEquals(0, preferences.listenerCount)
 
-        preferences.setRawDiagnosticsLevel(DiagnosticsLevel.Detailed.name)
+        preferences.setRawDiagnosticsLevel(DiagLevel.Detailed.name)
         staleListener?.onSharedPreferenceChanged(
             preferences,
             DIAGNOSTICS_LEVEL_KEY,
@@ -78,13 +78,13 @@ class DiagPrefsOwnerTest {
         assertTrue(result.detailedEnabled)
         assertEquals(listOf(true), observed)
 
-        preferences.setDiagnosticsLevel(DiagnosticsLevel.General.name)
+        preferences.setDiagnosticsLevel(DiagLevel.General.name)
 
         assertEquals(listOf(true, true), observed)
     }
 
     private class FakePreferences : SharedPreferences {
-        private var diagnosticsLevel: String = DiagnosticsLevel.General.name
+        private var diagnosticsLevel: String = DiagLevel.General.name
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 

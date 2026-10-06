@@ -2,7 +2,7 @@ package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.BuildConfig
 
-internal object DiagnosticsLogReader {
+internal object DiagLogReader {
     private const val LogTimeoutSeconds = 10L
 
     private const val LsposedModuleLogCommand =

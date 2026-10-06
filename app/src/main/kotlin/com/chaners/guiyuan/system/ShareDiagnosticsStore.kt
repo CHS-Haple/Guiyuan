@@ -4,7 +4,7 @@ import android.content.Context
 import com.chaners.guiyuan.BuildConfig
 import java.time.OffsetDateTime
 
-internal object ShareDiagnosticsStore {
+internal object SharedDiagStore {
     private const val PreferencesName = "share-diagnostics"
     private const val EventsKey = "events"
     private const val MaxLines = 64

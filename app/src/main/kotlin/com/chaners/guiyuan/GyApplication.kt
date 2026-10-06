@@ -13,8 +13,8 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_FEATURE_PREFS_NAME
 import com.chaners.guiyuan.settings.COMBINED_STATUS_KEYGUARD_ENABLED_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DIAGNOSTICS_PREFS_NAME
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DIAG_PREFS_NAME
+import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
@@ -31,8 +31,8 @@ class GyApplication :
     Application(),
     XposedServiceHelper.OnServiceListener {
 
-    private val diagnosticsPreferences: SharedPreferences by lazy {
-        getSharedPreferences(DIAGNOSTICS_PREFS_NAME, Context.MODE_PRIVATE)
+    private val diagPrefs: SharedPreferences by lazy {
+        getSharedPreferences(DIAG_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     private val featurePreferences: SharedPreferences by lazy {
@@ -90,7 +90,7 @@ class GyApplication :
     override fun onCreate() {
         super.onCreate()
         migrateBatteryTopChargingScaleReferenceIfNeeded(visualPreferences)
-        diagnosticsPreferences.registerOnSharedPreferenceChangeListener(diagnosticsListener)
+        diagPrefs.registerOnSharedPreferenceChangeListener(diagnosticsListener)
         featurePreferences.registerOnSharedPreferenceChangeListener(featureListener)
         visualPreferences.registerOnSharedPreferenceChangeListener(visualListener)
         XposedServiceHelper.registerListener(this)
@@ -115,7 +115,7 @@ class GyApplication :
     }
 
     override fun onTerminate() {
-        diagnosticsPreferences.unregisterOnSharedPreferenceChangeListener(diagnosticsListener)
+        diagPrefs.unregisterOnSharedPreferenceChangeListener(diagnosticsListener)
         featurePreferences.unregisterOnSharedPreferenceChangeListener(featureListener)
         visualPreferences.unregisterOnSharedPreferenceChangeListener(visualListener)
         mainHandler.removeCallbacks(xposedServiceBindTimeout)
@@ -184,10 +184,10 @@ class GyApplication :
 
     private fun syncRuntimeConfig(service: XposedService) {
         val level =
-            diagnosticsPreferences.getString(
+            diagPrefs.getString(
                 DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
-            ) ?: DiagnosticsLevel.General.name
+                DiagLevel.General.name,
+            ) ?: DiagLevel.General.name
         val combinedStatusEnabled =
             featurePreferences.getBoolean(
                 COMBINED_STATUS_ENABLED_KEY,

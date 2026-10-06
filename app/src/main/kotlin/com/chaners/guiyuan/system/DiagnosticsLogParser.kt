@@ -21,7 +21,7 @@ internal enum class DiagnosticLogCategory {
     Other,
 }
 
-internal data class DiagnosticLogEntry(
+internal data class DiagLogEntry(
     val rawLine: String,
     val timestamp: String?,
     val timeText: String?,
@@ -69,8 +69,8 @@ internal data class DiagnosticLogEntry(
         }
 }
 
-internal object DiagnosticsLogParser {
-    fun parse(line: String): DiagnosticLogEntry {
+internal object DiagLogParser {
+    fun parse(line: String): DiagLogEntry {
         val envelope = parseEnvelope(line)
         val structured =
             DiagnosticsProtocol.parse(envelope.message)
@@ -87,7 +87,7 @@ internal object DiagnosticsLogParser {
         val state = structured?.state
         val fields = structured?.fields ?: legacy?.fields.orEmpty()
 
-        return DiagnosticLogEntry(
+        return DiagLogEntry(
             rawLine = line,
             timestamp = envelope.timestamp,
             timeText = displayTime(envelope.timestamp),

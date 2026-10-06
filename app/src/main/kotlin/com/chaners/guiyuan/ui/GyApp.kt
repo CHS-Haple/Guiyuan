@@ -17,7 +17,7 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
-import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
+import com.chaners.guiyuan.ui.screens.DiagScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
@@ -217,7 +217,7 @@ internal fun GyApp(
                 AboutThirdPartyScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.Diagnostics>(swipeDismiss = swipeBackDirection) {
-                DiagnosticsScreen(onBack = ::navigateBack)
+                DiagScreen(onBack = ::navigateBack)
             }
         }
     }

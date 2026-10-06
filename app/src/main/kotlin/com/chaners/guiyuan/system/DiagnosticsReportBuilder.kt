@@ -3,14 +3,14 @@ package com.chaners.guiyuan.system
 import android.content.Context
 import com.chaners.guiyuan.BuildConfig
 
-internal object DiagnosticsReportBuilder {
+internal object DiagReportBuilder {
     private const val DetailedLogLineLimit = 600
     private const val ReleaseLogLineLimit = 120
 
     suspend fun build(context: Context): String =
-        build(DiagnosticsCapture.capture(context.applicationContext))
+        build(DiagCapture.capture(context.applicationContext))
 
-    internal fun build(snapshot: DiagnosticsSnapshot): String {
+    internal fun build(snapshot: DiagSnapshot): String {
         val env = snapshot.environment
         val level = snapshot.diagnosticsLevel
         val log = snapshot.runtimeLog
@@ -86,7 +86,7 @@ internal object DiagnosticsReportBuilder {
             appendLine("systemUiVersion=" + env.systemUiVersionName)
             appendLine(
                 "systemUiVersionCode=" +
-                    (env.systemUiVersionCode?.toString() ?: "unknown"),
+                    (env.systemUiVersionCode?.function toString() { [native code] }() ?: "unknown"),
             )
             appendLine()
             appendLine("[Runtime health]")

@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal object DiagnosticsReportFiles {
+internal object DiagReportFiles {
     const val ShareMimeType = "text/plain"
 
     private const val ShareLogTag = "CombinedStatusShare"
@@ -60,7 +60,7 @@ internal object DiagnosticsReportFiles {
                         "cleanup transport=mediaStore result=failed " +
                             "error=${error.javaClass.simpleName}"
                     Log.w(ShareLogTag, message)
-                    ShareDiagnosticsStore.append(context, message)
+                    SharedDiagStore.append(context, message)
                 }
             }
 
@@ -112,7 +112,7 @@ internal object DiagnosticsReportFiles {
                     "prepare transport=mediaStore managed=true scheme=${uri.scheme} " +
                         "authority=${uri.authority} relativePath=$ShareRelativePath $probe"
                 Log.i(ShareLogTag, message)
-                ShareDiagnosticsStore.append(context, message)
+                SharedDiagStore.append(context, message)
             }
 
             PreparedShare(uri = uri)
@@ -125,7 +125,7 @@ internal object DiagnosticsReportFiles {
                     "prepare transport=mediaStore result=failed " +
                         "error=${error.javaClass.simpleName} message=${error.message.orEmpty()}"
                 Log.e(ShareLogTag, message)
-                ShareDiagnosticsStore.append(context, message)
+                SharedDiagStore.append(context, message)
             }
         }.getOrNull()
     }
@@ -143,7 +143,7 @@ internal object DiagnosticsReportFiles {
             "intent action=${intent.action} type=${intent.type} flags=0x${intent.flags.toString(16)} " +
                 "clipItems=${intent.clipData?.itemCount ?: 0} uriAuthority=${uri.authority}"
         Log.i(ShareLogTag, message)
-        ShareDiagnosticsStore.append(context, message)
+        SharedDiagStore.append(context, message)
     }
 
     fun logChooserLaunch(
@@ -166,7 +166,7 @@ internal object DiagnosticsReportFiles {
         } else {
             Log.e(ShareLogTag, message)
         }
-        ShareDiagnosticsStore.append(context, message)
+        SharedDiagStore.append(context, message)
     }
 
     fun discardShare(

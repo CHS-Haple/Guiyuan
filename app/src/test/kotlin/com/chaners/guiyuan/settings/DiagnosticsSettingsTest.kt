@@ -7,24 +7,24 @@ class DiagnosticsSettingsTest {
     @Test
     fun defaultsToGeneralWhenValueIsMissing() {
         assertEquals(
-            DiagnosticsLevel.General,
-            decodeDiagnosticsLevel(null),
+            DiagLevel.General,
+            decodeDiagLevel(null),
         )
     }
 
     @Test
     fun restoresDetailedValue() {
         assertEquals(
-            DiagnosticsLevel.Detailed,
-            decodeDiagnosticsLevel(DiagnosticsLevel.Detailed.name),
+            DiagLevel.Detailed,
+            decodeDiagLevel(DiagLevel.Detailed.name),
         )
     }
 
     @Test
     fun invalidValueFallsBackToGeneral() {
         assertEquals(
-            DiagnosticsLevel.General,
-            decodeDiagnosticsLevel("Verbose"),
+            DiagLevel.General,
+            decodeDiagLevel("Verbose"),
         )
     }
 }

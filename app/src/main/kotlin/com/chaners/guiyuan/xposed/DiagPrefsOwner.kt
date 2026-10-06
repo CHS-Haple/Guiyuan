@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
-import com.chaners.guiyuan.settings.DiagnosticsLevel
+import com.chaners.guiyuan.settings.DiagLevel
 
 internal object DiagPrefsOwner {
     private var prefs: SharedPreferences? = null
@@ -97,6 +97,6 @@ internal object DiagPrefsOwner {
         forceDetailed ||
             preferences.getString(
                 DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
-            ) == DiagnosticsLevel.Detailed.name
+                DiagLevel.General.name,
+            ) == DiagLevel.Detailed.name
 }

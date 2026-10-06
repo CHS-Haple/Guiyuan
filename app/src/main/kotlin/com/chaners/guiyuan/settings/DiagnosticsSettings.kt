@@ -7,31 +7,31 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal enum class DiagnosticsLevel {
+internal enum class DiagLevel {
     General,
     Detailed,
 }
 
-internal data class DiagnosticsSettings(
-    val level: DiagnosticsLevel = DiagnosticsLevel.General,
+internal data class DiagSettings(
+    val level: DiagLevel = DiagLevel.General,
 )
 
-internal fun decodeDiagnosticsLevel(stored: String?): DiagnosticsLevel =
-    DiagnosticsLevel.entries.firstOrNull { it.name == stored }
-        ?: DiagnosticsLevel.General
+internal fun decodeDiagLevel(stored: String?): DiagLevel =
+    DiagLevel.entries.firstOrNull { it.name == stored }
+        ?: DiagLevel.General
 
 // 诊断等级只存这一份，运行时通过 RemotePreferences 直接读它。
-internal class DiagnosticsRepo(context: Context) {
+internal class DiagRepo(context: Context) {
     private val prefs =
         context.applicationContext.getSharedPreferences(
-            DIAGNOSTICS_PREFS_NAME,
+            DIAG_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
 
-    val settings: Flow<DiagnosticsSettings> =
+    val settings: Flow<DiagSettings> =
         callbackFlow {
             fun emitCurrent() {
-                trySend(DiagnosticsSettings(level = currentLevel()))
+                trySend(DiagSettings(level = currentLevel()))
             }
 
             val listener =
@@ -48,15 +48,15 @@ internal class DiagnosticsRepo(context: Context) {
             }
         }.distinctUntilChanged()
 
-    fun currentLevel(): DiagnosticsLevel =
-        decodeDiagnosticsLevel(
+    fun currentLevel(): DiagLevel =
+        decodeDiagLevel(
             prefs.getString(
                 DIAGNOSTICS_LEVEL_KEY,
-                DiagnosticsLevel.General.name,
+                DiagLevel.General.name,
             ),
         )
 
-    fun setLevel(level: DiagnosticsLevel) {
+    fun setLevel(level: DiagLevel) {
         prefs
             .edit()
             .putString(DIAGNOSTICS_LEVEL_KEY, level.name)
@@ -64,5 +64,5 @@ internal class DiagnosticsRepo(context: Context) {
     }
 }
 
-internal const val DIAGNOSTICS_PREFS_NAME = "diagnostics"
+internal const val DIAG_PREFS_NAME = "diagnostics"
 internal const val DIAGNOSTICS_LEVEL_KEY = "diagnostics_level"
