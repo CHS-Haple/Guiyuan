@@ -43,7 +43,7 @@ internal class RenderView(
     private var tintState: TintState? = null
 
     @Volatile
-    private var visualSettings = VisualCfg()
+    private var visual = VisualCfg()
 
     @Volatile
     private var logicalViewportWidthPx: Int = 0
@@ -126,11 +126,11 @@ internal class RenderView(
         requestRedraw()
     }
 
-    fun setVisualCfg(state: VisualCfg) {
-        if (visualSettings == state) {
+    fun setVisualCfg(next: VisualCfg) {
+        if (visual == next) {
             return
         }
-        visualSettings = state
+        visual = next
         requestRedraw()
     }
 
@@ -181,7 +181,7 @@ internal class RenderView(
             width = logicalWidthPx,
             height = logicalHeightPx,
             model = current,
-            visual = visualSettings,
+            visual = this.visual,
             previousCenterIndicator = previousCenterIndicator,
             // 这里预留的是布局空间，两端都按完整尺寸算，动画时才不会被裁掉。
             centerExitAmount = 1f,
@@ -299,10 +299,10 @@ internal class RenderView(
                 ColorPolicy.resolve(
                     model = current,
                     tintState = tint,
-                    visualSettings = visualSettings,
+                    visualSettings = visual,
                 ),
             opacity = 1f,
-            visual = visualSettings,
+            visual = this.visual,
             previousCenterIndicator = previousCenterIndicator,
             centerExitAmount =
                 1f -

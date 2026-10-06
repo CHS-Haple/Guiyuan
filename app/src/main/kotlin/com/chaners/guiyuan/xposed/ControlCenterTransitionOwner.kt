@@ -585,7 +585,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
-                    visual = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 )
             if (specs.isEmpty()) return
 
@@ -641,7 +641,7 @@ internal object ControlCenterTransitionOwner {
             val batteryTinted =
                 BatteryColorPolicy.isTinted(
                     state = model.batterySemanticState,
-                    settings = currentSnapshot.visualSettings,
+                    settings = currentSnapshot.visual,
                 )
             val transitionColors =
                 cachedNativePeerTint
@@ -656,7 +656,7 @@ internal object ControlCenterTransitionOwner {
                                 progress = motionProgress,
                                 tinted = tinted,
                                 transitionEnabled =
-                                    currentSnapshot.visualSettings
+                                    currentSnapshot.visual
                                         .controlCenterTintTransitionEnabled,
                             )
 
@@ -666,7 +666,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.centerTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .centerFollowsBatteryColor,
                                 ),
                             mobileTint =
@@ -674,7 +674,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.mobileTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .mobileFollowsBatteryColor,
                                 ),
                             batteryTint =
@@ -687,7 +687,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.batteryTextTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .batteryTopTextFollowsBatteryColor,
                                 ),
                             chargingIconTint =
@@ -695,7 +695,7 @@ internal object ControlCenterTransitionOwner {
                                     source = currentSnapshot.colors.chargingIconTint,
                                     tinted =
                                         batteryTinted &&
-                                            currentSnapshot.visualSettings
+                                            currentSnapshot.visual
                                                 .batteryTopChargingIconFollowsBatteryColor,
                                 ),
                         )
@@ -706,7 +706,7 @@ internal object ControlCenterTransitionOwner {
             lastTintTransitionColors = transitionColors
             lastTintBatteryTinted = batteryTinted
             lastTintTransitionEnabled =
-                currentSnapshot.visualSettings.controlCenterTintTransitionEnabled
+                currentSnapshot.visual.controlCenterTintTransitionEnabled
             lastTintMotionProgress = motionProgress
 
             val refreshWitnessDiagnostic =
@@ -902,7 +902,7 @@ internal object ControlCenterTransitionOwner {
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
-                                visual = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 
                         spec.component ==
@@ -911,7 +911,7 @@ internal object ControlCenterTransitionOwner {
                                 width = sourceWidth,
                                 height = sourceHeight,
                                 model = model,
-                                visual = currentSnapshot.visualSettings,
+                                visual = currentSnapshot.visual,
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
@@ -965,7 +965,7 @@ internal object ControlCenterTransitionOwner {
                     component = spec.component,
                     shapePolicy = spec.shapePolicy,
                     opacity = 1f,
-                    visual = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
                         when (spec.shapePolicy) {
@@ -1298,7 +1298,7 @@ internal object ControlCenterTransitionOwner {
                 painter.transitionAirplaneSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
-                    visual = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1364,7 +1364,7 @@ internal object ControlCenterTransitionOwner {
                 height = sourceHeight,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visual = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
             return "airplane-reveal:" + witness.summary
@@ -1398,7 +1398,7 @@ internal object ControlCenterTransitionOwner {
                     width = sourceWidth,
                     height = sourceHeight,
                     resource = resource,
-                    visual = currentSnapshot.visualSettings,
+                    visual = currentSnapshot.visual,
                 ) ?: return null
             val sourceGeometry =
                 ControlCenterTransitionPolicy.componentGeometry(
@@ -1465,7 +1465,7 @@ internal object ControlCenterTransitionOwner {
                 resource = resource,
                 tint = colors.centerTint,
                 opacity = 1f,
-                visual = currentSnapshot.visualSettings,
+                visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
             return "no-sim-reveal:" + witness.summary
@@ -1535,7 +1535,7 @@ internal object ControlCenterTransitionOwner {
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = (frozenSource?.width ?: source.width).coerceAtLeast(0),
-                    userScale = currentSnapshot.visualSettings.combinedScale,
+                    userScale = currentSnapshot.visual.combinedScale,
                 )
             val currentReservation =
                 lastReservationWidthPx ?: compactWidth
@@ -1724,7 +1724,7 @@ internal object ControlCenterTransitionOwner {
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
-                    userScale = currentSnapshot.visualSettings.combinedScale,
+                    userScale = currentSnapshot.visual.combinedScale,
                 )
             val requestedWidth =
                 ControlCenterTransitionPolicy.resolveTransitionReservationWidth(

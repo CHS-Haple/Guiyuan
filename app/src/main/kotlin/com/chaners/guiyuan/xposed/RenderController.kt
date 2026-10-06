@@ -41,8 +41,8 @@ internal class RenderController(
         )
     }
 
-    fun updateVisualCfg(state: VisualCfg) {
-        view.setVisualCfg(state)
+    fun updateVisualCfg(visual: VisualCfg) {
+        view.setVisualCfg(visual)
     }
 
     fun currentTintState(): TintState? = stableTint

@@ -117,8 +117,8 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onVisualCfgChanged(settings: VisualCfg) {
-        current?.updateVisualCfg(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        current?.updateVisualCfg(visual)
     }
 
     @Synchronized
@@ -454,8 +454,8 @@ internal object KeyguardRenderSession {
             }
         }
 
-        fun updateVisualCfg(settings: VisualCfg) {
-            renderController.updateVisualCfg(settings)
+        fun updateVisualCfg(visual: VisualCfg) {
+            renderController.updateVisualCfg(visual)
             layoutProbe()
         }
 

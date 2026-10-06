@@ -1277,8 +1277,8 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onVisualCfgChanged(settings: VisualCfg) {
-        renderController?.updateVisualCfg(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        renderController?.updateVisualCfg(visual)
     }
 
     @Synchronized

@@ -107,8 +107,8 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onVisualCfgChanged(settings: VisualCfg) {
-        current?.updateVisualCfg(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        current?.updateVisualCfg(visual)
     }
 
     @Synchronized
@@ -434,8 +434,8 @@ internal object HomeRenderSession {
             }
         }
 
-        fun updateVisualCfg(settings: VisualCfg) {
-            renderController.updateVisualCfg(settings)
+        fun updateVisualCfg(visual: VisualCfg) {
+            renderController.updateVisualCfg(visual)
             layoutProbe()
         }
 

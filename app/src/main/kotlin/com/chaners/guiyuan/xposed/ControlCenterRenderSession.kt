@@ -261,8 +261,8 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onVisualCfgChanged(settings: VisualCfg) {
-        current?.updateVisualCfg(settings)
+    fun onVisualCfgChanged(visual: VisualCfg) {
+        current?.updateVisualCfg(visual)
     }
 
     @Synchronized
@@ -496,7 +496,7 @@ internal object ControlCenterRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
-        private var currentVisualSettings = VisualPrefsOwner.current()
+        private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
         private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
@@ -559,9 +559,9 @@ internal object ControlCenterRenderSession {
                     ColorPolicy.resolve(
                         model = model,
                         tintState = tint,
-                        visualSettings = currentVisualSettings,
+                        visualSettings = visual,
                     ),
-                visualSettings = currentVisualSettings,
+                visual = visual,
                 stateVersion = transitionStateVersion,
             ).also { snapshot ->
                 cachedTransitionSourceSnapshot = snapshot
@@ -587,7 +587,7 @@ internal object ControlCenterRenderSession {
             carrier.get()?.addOnLayoutChangeListener(carrierLayoutListener)
             renderView.visibility = View.GONE
             hostView.overlay.add(renderView)
-            renderController.updateVisualCfg(currentVisualSettings)
+            renderController.updateVisualCfg(visual)
             update(StatusStateStore.snapshot())
             refreshTint()
             layoutProjection()
@@ -780,12 +780,12 @@ internal object ControlCenterRenderSession {
             syncPresentation("feature")
         }
 
-        fun updateVisualCfg(settings: VisualCfg) {
-            if (currentVisualSettings != settings) {
-                currentVisualSettings = settings
+        fun updateVisualCfg(next: VisualCfg) {
+            if (visual != next) {
+                visual = next
                 transitionStateVersion += 1
             }
-            renderController.updateVisualCfg(settings)
+            renderController.updateVisualCfg(next)
         }
 
         private fun refreshTint() {
@@ -1019,7 +1019,7 @@ internal object ControlCenterRenderSession {
         val anchorView: View,
         val model: RenderModel,
         val colors: RenderColors,
-        val visualSettings: VisualCfg,
+        val visual: VisualCfg,
         val stateVersion: Long,
     )
 
