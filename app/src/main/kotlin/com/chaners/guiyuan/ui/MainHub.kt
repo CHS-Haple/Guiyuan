@@ -26,7 +26,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.ui.components.NavContentItem
-import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
+import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
@@ -123,7 +123,7 @@ internal fun MainHub(
 
     val navigationBarModifier =
         if (backdrop != null) {
-            Modifier.floatingNavigationMaterial(
+            Modifier.floatingNavMaterial(
                 backdrop = backdrop,
                 darkMode = darkMode,
                 style = settings.navStyle,

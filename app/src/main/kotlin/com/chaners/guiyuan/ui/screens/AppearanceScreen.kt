@@ -32,7 +32,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
-import com.chaners.guiyuan.ui.components.floatingNavigationMaterial
+import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
@@ -462,7 +462,7 @@ private fun MiniNavigationPreview(
         }
     val floatingModifier =
         if (backdrop != null) {
-            Modifier.floatingNavigationMaterial(
+            Modifier.floatingNavMaterial(
                 backdrop = backdrop,
                 darkMode = darkMode,
                 style = style,
