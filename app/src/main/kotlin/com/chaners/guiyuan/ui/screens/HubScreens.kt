@@ -509,12 +509,12 @@ internal fun FeaturesScreen(
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
-    appLanguage: AppLang,
-    launcherIconHidden: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     swipeBackEnabled: Boolean,
-    onAppLangChange: (AppLang) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val languageOptions = listOf(
@@ -536,19 +536,19 @@ internal fun SettingsHubScreen(
         secondaryContent = {
             OverlayDropdownPreference(
                 items = languageOptions,
-                selectedIndex = appLanguage.ordinal,
+                selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
                 summary = stringResource(R.string.language_summary),
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    AppLang.entries.getOrNull(index)?.let(onAppLangChange)
+                    AppLang.entries.getOrNull(index)?.let(onLangChange)
                 },
             )
             SwitchPreference(
                 title = stringResource(R.string.hide_launcher_icon),
                 summary = stringResource(R.string.hide_launcher_icon_summary),
-                checked = launcherIconHidden,
-                onCheckedChange = onLauncherIconHiddenChange,
+                checked = iconHidden,
+                onCheckedChange = onIconHiddenChange,
             )
         },
         tertiarySectionTitle = stringResource(R.string.section_diagnostics_maintenance),
@@ -642,7 +642,7 @@ internal fun SettingsHubScreen(
             title = stringResource(R.string.swipe_back),
             summary = stringResource(R.string.swipe_back_summary),
             checked = swipeBackEnabled,
-            onCheckedChange = onSwipeBackEnabledChange,
+            onCheckedChange = onSwipeBackChange,
         )
     }
 }

@@ -23,8 +23,8 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.appearance.AppLang
+import com.chaners.guiyuan.appearance.Appearance
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
@@ -61,14 +61,14 @@ private data class WeightedNavigationItem(
 
 @Composable
 internal fun MainHub(
-    settings: Appearance,
-    darkMode: Boolean,
-    appLanguage: AppLang,
-    launcherIconHidden: Boolean,
+    appearance: Appearance,
+    dark: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
-    onAppLangChange: (AppLang) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
     previewState: PreviewSandboxUiState,
     onNavigate: (AppRoute) -> Unit,
 ) {
@@ -76,8 +76,8 @@ internal fun MainHub(
     val scope = rememberCoroutineScope()
     var hotReloadInProgress by remember { mutableStateOf(false) }
     val floatingMaterialActive =
-        settings.navEnabled &&
-            settings.navStyle.requiresTextureBackdrop &&
+        appearance.navEnabled &&
+            appearance.navStyle.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val backdrop =
@@ -125,8 +125,8 @@ internal fun MainHub(
         if (backdrop != null) {
             Modifier.floatingNavMaterial(
                 backdrop = backdrop,
-                darkMode = darkMode,
-                style = settings.navStyle,
+                dark = dark,
+                style = appearance.navStyle,
             )
         } else {
             Modifier
@@ -134,7 +134,7 @@ internal fun MainHub(
 
     Scaffold(
         bottomBar = {
-            if (settings.navEnabled) {
+            if (appearance.navEnabled) {
                 FloatingNavigationBar(
                     modifier = navigationBarModifier,
                     color =
@@ -147,7 +147,7 @@ internal fun MainHub(
                     items.forEachIndexed { index, item ->
                         val selected = pagerState.currentPage == index
                         NavContentItem(
-                            content = settings.navContent,
+                            content = appearance.navContent,
                             selected = selected,
                             onClick = { selectPage(index) },
                             icon = if (selected) item.selectedIcon else item.icon,
@@ -185,9 +185,9 @@ internal fun MainHub(
             TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
-                appLanguage = appLanguage,
-                launcherIconHidden = launcherIconHidden,
-                swipeBackEnabled = settings.swipeBack,
+                lang = lang,
+                iconHidden = iconHidden,
+                swipeBackEnabled = appearance.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
                 onHotReload = {
                     if (!hotReloadInProgress) {
@@ -200,9 +200,9 @@ internal fun MainHub(
                         }
                     }
                 },
-                onAppLangChange = onAppLangChange,
-                onLauncherIconHiddenChange = onLauncherIconHiddenChange,
-                onSwipeBackEnabledChange = onSwipeBackEnabledChange,
+                onLangChange = onLangChange,
+                onIconHiddenChange = onIconHiddenChange,
+                onSwipeBackChange = onSwipeBackChange,
                 previewState = previewState,
                 onNavigate = onNavigate,
             )
@@ -231,14 +231,14 @@ private fun TopLevelBackHandler(
 private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
-    appLanguage: AppLang,
-    launcherIconHidden: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     swipeBackEnabled: Boolean,
     hotReloadInProgress: Boolean,
     onHotReload: () -> Unit,
-    onAppLangChange: (AppLang) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
     previewState: PreviewSandboxUiState,
     onNavigate: (AppRoute) -> Unit,
 ) {
@@ -276,12 +276,12 @@ private fun TopLevelPager(
             )
             2 -> SettingsHubScreen(
                 bottomContentPadding = bottom,
-                appLanguage = appLanguage,
-                launcherIconHidden = launcherIconHidden,
+                lang = lang,
+                iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                onAppLangChange = onAppLangChange,
-                onLauncherIconHiddenChange = onLauncherIconHiddenChange,
-                onSwipeBackEnabledChange = onSwipeBackEnabledChange,
+                onLangChange = onLangChange,
+                onIconHiddenChange = onIconHiddenChange,
+                onSwipeBackChange = onSwipeBackChange,
                 onNavigate = onNavigate,
             )
         }

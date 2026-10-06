@@ -83,13 +83,13 @@ class MainActivity : ComponentActivity() {
                 onHotReload = { onComplete ->
                     (application as GyApplication).hotReloadSysUi(onComplete)
                 },
-                onThemeModeChange = { mode ->
+                onThemeChange = { mode ->
                     scope.launch { repo.setTheme(mode) }
                 },
-                onDynamicColorEnabledChange = { enabled ->
+                onDynamicChange = { enabled ->
                     scope.launch { repo.setDynamicColor(enabled) }
                 },
-                onFloatingNavigationBarEnabledChange = { enabled ->
+                onNavEnabledChange = { enabled ->
                     scope.launch { repo.setNavEnabled(enabled) }
                 },
                 onNavStyleChange = { style: NavStyle ->
@@ -98,16 +98,16 @@ class MainActivity : ComponentActivity() {
                 onNavContentChange = { content: NavContent ->
                     scope.launch { repo.setNavContent(content) }
                 },
-                onSwipeBackEnabledChange = { enabled ->
+                onSwipeBackChange = { enabled ->
                     scope.launch { repo.setSwipeBack(enabled) }
                 },
-                onAppLangChange = { language ->
+                onLangChange = { language ->
                     if (language != lang) {
                         lang = language
                         AppPlatform.setLanguage(this, language)
                     }
                 },
-                onLauncherIconHiddenChange = { hidden ->
+                onIconHiddenChange = { hidden ->
                     AppPlatform.setIconHidden(this, hidden)
                     iconHidden = hidden
                 },

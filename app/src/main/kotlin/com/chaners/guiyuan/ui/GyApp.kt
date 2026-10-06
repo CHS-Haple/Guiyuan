@@ -41,14 +41,14 @@ internal fun GyApp(
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    onDynamicColorEnabledChange: (Boolean) -> Unit,
-    onFloatingNavigationBarEnabledChange: (Boolean) -> Unit,
+    onThemeChange: (ThemeMode) -> Unit,
+    onDynamicChange: (Boolean) -> Unit,
+    onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
-    onSwipeBackEnabledChange: (Boolean) -> Unit,
-    onAppLangChange: (AppLang) -> Unit,
-    onLauncherIconHiddenChange: (Boolean) -> Unit,
+    onSwipeBackChange: (Boolean) -> Unit,
+    onLangChange: (AppLang) -> Unit,
+    onIconHiddenChange: (Boolean) -> Unit,
 ) {
     GyTheme(
         themeMode = appearance.theme,
@@ -148,26 +148,26 @@ internal fun GyApp(
         ) {
             entry<AppRoute.Home> {
                 MainHub(
-                    settings = appearance,
-                    darkMode = dark,
-                    appLanguage = lang,
-                    launcherIconHidden = iconHidden,
+                    appearance = appearance,
+                    dark = dark,
+                    lang = lang,
+                    iconHidden = iconHidden,
                     onHotReload = onHotReload,
-                    onAppLangChange = onAppLangChange,
-                    onLauncherIconHiddenChange = onLauncherIconHiddenChange,
-                    onSwipeBackEnabledChange = onSwipeBackEnabledChange,
+                    onLangChange = onLangChange,
+                    onIconHiddenChange = onIconHiddenChange,
+                    onSwipeBackChange = onSwipeBackChange,
                     previewState = previewState,
                     onNavigate = ::navigate,
                 )
             }
             entry<AppRoute.Appearance>(swipeDismiss = swipeBackDirection) {
                 AppearanceScreen(
-                    settings = appearance,
-                    darkMode = dark,
-                    onThemeModeChange = onThemeModeChange,
-                    onDynamicColorEnabledChange = onDynamicColorEnabledChange,
-                    onFloatingNavigationBarEnabledChange =
-                        onFloatingNavigationBarEnabledChange,
+                    appearance = appearance,
+                    dark = dark,
+                    onThemeChange = onThemeChange,
+                    onDynamicChange = onDynamicChange,
+                    onNavEnabledChange =
+                        onNavEnabledChange,
                     onNavStyleChange =
                         onNavStyleChange,
                     onNavContentChange =
