@@ -1,7 +1,7 @@
 ## 2026-10-06 — pre-release-grade repository consistency audit
 
-**Type:** repository/documentation consistency maintenance  
-**Runtime baseline:** Guiyuan 0.2.0 / Build 743 (`20261006-743`)  
+**Type:** repository/documentation consistency maintenance
+**Runtime baseline:** Guiyuan 0.2.0 / Build 743 (`20261006-743`)
 **Branch:** `fix/pre-release-consistency-audit`
 
 ### Scope
