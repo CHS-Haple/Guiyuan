@@ -498,8 +498,8 @@ internal object CcSession {
         private var currentTint: TintState? = null
         private var currentVisualSettings = VisualPrefsOwner.currentSettings()
         private var transitionStateVersion = 0L
-        private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
-        private var cachedTransitionSourceSnapshotVersion = Long.MIN_VALUE
+        private var sourceSnapshotCache: TransitionSourceSnapshot? = null
+        private var sourceSnapshotVersion = Long.MIN_VALUE
 
         private var requestedVisible = false
         private var featureEnabled = FeaturePrefsOwner.currentSettings().enabled
@@ -544,8 +544,8 @@ internal object CcSession {
 
         fun transitionSourceSnapshot(): TransitionSourceSnapshot? {
             if (!projectionReady()) return null
-            cachedTransitionSourceSnapshot
-                ?.takeIf { cachedTransitionSourceSnapshotVersion == transitionStateVersion }
+            sourceSnapshotCache
+                ?.takeIf { sourceSnapshotVersion == transitionStateVersion }
                 ?.let { return it }
 
             val anchorView = carrier.get() ?: return null
@@ -564,8 +564,8 @@ internal object CcSession {
                 visualSettings = currentVisualSettings,
                 stateVersion = transitionStateVersion,
             ).also { snapshot ->
-                cachedTransitionSourceSnapshot = snapshot
-                cachedTransitionSourceSnapshotVersion = transitionStateVersion
+                sourceSnapshotCache = snapshot
+                sourceSnapshotVersion = transitionStateVersion
             }
         }
 
@@ -800,7 +800,7 @@ internal object CcSession {
         ) {
             val peerTint =
                 statusIcons.get()?.let(
-                    NativeNetworkSuppression::currentAppliedStatusIconTintForGroup,
+                    NativeNetworkSuppression::currentStatusTint,
                 )
             val resolved =
                 TintAuthority.resolveBatteryEvent(

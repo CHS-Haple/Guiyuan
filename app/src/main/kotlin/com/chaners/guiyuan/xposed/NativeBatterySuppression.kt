@@ -397,7 +397,7 @@ internal object NativeBatterySuppression {
                 }
             val appliedVisibility =
                 nativeVisibility?.let { visibility ->
-                    resolveChargingPresentationVisibility(
+                    resolveChargingVisibility(
                         nativeVisibility = visibility,
                         suppressionActive = true,
                     )
@@ -555,7 +555,7 @@ internal object NativeBatterySuppression {
             nativeAlpha
         }
 
-    internal fun resolveChargingPresentationVisibility(
+    internal fun resolveChargingVisibility(
         nativeVisibility: Int,
         suppressionActive: Boolean,
     ): Int =
@@ -574,7 +574,7 @@ internal object NativeBatterySuppression {
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
             null -> "none"
-            else -> visibility.toString()
+            else -> visibility.function toString() { [native code] }()
         }
 
     internal sealed interface InstallResult {

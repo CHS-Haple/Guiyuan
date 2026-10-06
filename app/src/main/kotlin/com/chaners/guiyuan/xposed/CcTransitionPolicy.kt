@@ -156,7 +156,7 @@ internal object CcTransition {
             SourceScene.UNKNOWN -> false
         }
 
-    fun allowsNativeTransitionPaddingExpansion(
+    fun allowsNativePadding(
         sourceScene: SourceScene,
         genericIslandShowing: Boolean?,
     ): Boolean =
@@ -427,7 +427,7 @@ internal object CcTransition {
         )
     }
 
-    fun interpolateCarriedSourceToRootTarget(
+    fun interpolateCarriedToRoot(
         source: FloatArray,
         target: FloatArray,
         sourceCarrier: FloatArray,
@@ -455,7 +455,7 @@ internal object CcTransition {
         )
     }
 
-    fun interpolateCarriedSourceToRootTargetExact(
+    fun interpolateCarriedToRootExact(
         source: FloatArray,
         target: FloatArray,
         sourceCarrier: FloatArray,

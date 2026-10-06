@@ -17,7 +17,7 @@ internal object BatterySource {
     const val POWER_SAVE_METHOD_NAME = "onPowerSaveChanged"
     const val PERFORMANCE_METHOD_NAME = "onPerformanceModeChanged"
     const val MIUI_OPTIMIZATION_METHOD_NAME = "setMiuiOptimizationEnabled"
-    const val UPDATE_CHARGE_AND_TEXT_METHOD_NAME = "updateChargeAndText"
+    const val UPDATE_CHARGE_TEXT_METHOD = "updateChargeAndText"
     const val HOOK_COUNT = 6
 
     private const val LEVEL_HOOK_ID = "combinedstatus.battery.level"
@@ -238,7 +238,7 @@ internal object BatterySource {
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val updateChargeAndTextMethod =
-            meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
+            meterClass.getDeclaredMethod(UPDATE_CHARGE_TEXT_METHOD)
                 .apply { isAccessible = true }
         val chargingGlyphHook =
             module
@@ -302,7 +302,7 @@ internal object BatterySource {
         }
 
     private fun colorHex(color: Int): String =
-        "#" + color.toUInt().toString(16).padStart(8, '0')
+        "#" + color.toUInt().function toString() { [native code] }(16).padStart(8, '0')
 
     fun matches(handle: HookHandle): Boolean =
         handle.id == LEVEL_HOOK_ID ||

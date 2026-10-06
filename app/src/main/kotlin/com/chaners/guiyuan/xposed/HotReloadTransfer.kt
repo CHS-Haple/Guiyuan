@@ -18,12 +18,12 @@ internal object HotReloadTransfer {
     private const val INDEX_HOST = 1
     private const val INDEX_STATE = 2
     private const val INDEX_BINDINGS = 3
-    private const val INDEX_NOTIFICATION_SHADE_HOME_ELIGIBLE = 4
-    private const val INDEX_CONTROL_CENTER_HOME_ELIGIBLE = 5
+    private const val IDX_SHADE_HOME_ELIGIBLE = 4
+    private const val IDX_CC_HOME_ELIGIBLE = 5
     private const val INDEX_APPLIED_TINT = 6
     private const val INDEX_STATUS_ICON_TINT = 7
-    private const val INDEX_CONTROL_CENTER_FAKE_HOST = 8
-    private const val INDEX_CONTROL_CENTER_COMPACT_READY = 9
+    private const val IDX_CC_FAKE_HOST = 8
+    private const val IDX_CC_COMPACT_READY = 9
     private const val INDEX_GENERATION_HANDOFF = 10
     private const val CURRENT_PAYLOAD_SIZE = 11
     private const val PRESENTATION_PAYLOAD_SIZE = 9
@@ -35,7 +35,7 @@ internal object HotReloadTransfer {
     private const val VISUAL_PAYLOAD_SIZE = 5
     private const val NATIVE_PAYLOAD_SIZE = 6
 
-    private const val CONTROL_CENTER_FAKE_ROOT_CLASS_NAME =
+    private const val CC_FAKE_ROOT_CLASS =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
 
     fun capture(
@@ -59,7 +59,7 @@ internal object HotReloadTransfer {
             controlCenterFakeHost
                 ?.takeIf { candidate ->
                     candidate.isAttachedToWindow &&
-                        candidate.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
+                        candidate.javaClass.name == CC_FAKE_ROOT_CLASS
                 }
 
         return arrayOf(
@@ -113,7 +113,7 @@ internal object HotReloadTransfer {
                 version == CONTROL_CENTER_TRANSFER_VERSION ||
                 version == SHADE_TRANSFER_VERSION
             ) {
-                payload.getOrNull(INDEX_NOTIFICATION_SHADE_HOME_ELIGIBLE) as? Boolean
+                payload.getOrNull(IDX_SHADE_HOME_ELIGIBLE) as? Boolean
             } else {
                 null
             }
@@ -124,7 +124,7 @@ internal object HotReloadTransfer {
                 version == TINT_TRANSFER_VERSION ||
                 version == CONTROL_CENTER_TRANSFER_VERSION
             ) {
-                payload.getOrNull(INDEX_CONTROL_CENTER_HOME_ELIGIBLE) as? Boolean
+                payload.getOrNull(IDX_CC_HOME_ELIGIBLE) as? Boolean
             } else {
                 null
             }
@@ -158,10 +158,10 @@ internal object HotReloadTransfer {
 
         val controlCenterFakeHost =
             if (version == VERSION || version == PRESENTATION_TRANSFER_VERSION) {
-                (payload.getOrNull(INDEX_CONTROL_CENTER_FAKE_HOST) as? ViewGroup)
+                (payload.getOrNull(IDX_CC_FAKE_HOST) as? ViewGroup)
                     ?.takeIf { candidate ->
                         candidate.isAttachedToWindow &&
-                            candidate.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
+                            candidate.javaClass.name == CC_FAKE_ROOT_CLASS
                     }
             } else {
                 null
@@ -169,7 +169,7 @@ internal object HotReloadTransfer {
 
         val controlCenterCompactReady =
             if (version == VERSION) {
-                payload.getOrNull(INDEX_CONTROL_CENTER_COMPACT_READY) as? Boolean ?: false
+                payload.getOrNull(IDX_CC_COMPACT_READY) as? Boolean ?: false
             } else {
                 false
             }

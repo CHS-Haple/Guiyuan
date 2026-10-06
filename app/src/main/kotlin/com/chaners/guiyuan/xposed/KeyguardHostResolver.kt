@@ -72,13 +72,13 @@ internal object KeyguardHostResolver {
     ): Float? {
         val statusIcons = resolved.statusIcons
         if (!statusIcons.isAttachedToWindow) return null
-        return resolveStatusIconsPresentationAlpha(
+        return statusIconsAlpha(
             visible = statusIcons.visibility == View.VISIBLE,
             alpha = statusIcons.alpha,
         )
     }
 
-    internal fun resolveStatusIconsPresentationAlpha(
+    internal fun statusIconsAlpha(
         visible: Boolean,
         alpha: Float,
     ): Float =

@@ -23,7 +23,7 @@ internal object KeyguardIconTransition {
         val candidates =
             viewClass.declaredMethods.filter { method ->
                 method.name == ANIMATE_ICON_CONTAINER_METHOD &&
-                    matchesAnimateIconContainerSignature(
+                    matchesAnimateIconSignature(
                         parameterTypes = method.parameterTypes,
                         returnType = method.returnType,
                     )
@@ -56,7 +56,7 @@ internal object KeyguardIconTransition {
         )
     }
 
-    internal fun matchesAnimateIconContainerSignature(
+    internal fun matchesAnimateIconSignature(
         parameterTypes: Array<Class<*>>,
         returnType: Class<*>,
     ): Boolean =

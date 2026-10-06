@@ -11,7 +11,7 @@ internal object NativeStatusInventory {
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
 
-    const val MIUI_STATUS_ICON_CONTAINER_CLASS_NAME =
+    const val MIUI_STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     const val STATUS_ICON_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.phone.StatusIconContainer"
@@ -109,7 +109,7 @@ internal object NativeStatusInventory {
         val viewResourceId = resourceId(view)
         val className = view.javaClass.name
         if (
-            className == MIUI_STATUS_ICON_CONTAINER_CLASS_NAME &&
+            className == MIUI_STATUS_ICON_CONTAINER_CLASS &&
             scanState.miuiStatusIconContainer == null
         ) {
             scanState.miuiStatusIconContainer = view as? ViewGroup
@@ -248,7 +248,7 @@ internal object NativeStatusInventory {
             MOBILE_NETWORK_VIEW_CLASS_NAME -> "mobileNetwork"
             WIFI_VIEW_CLASS_NAME -> "wifi"
             BATTERY_VIEW_CLASS_NAME -> "battery"
-            MIUI_STATUS_ICON_CONTAINER_CLASS_NAME -> "miuiStatusIcons"
+            MIUI_STATUS_ICON_CONTAINER_CLASS -> "miuiStatusIcons"
             STATUS_ICON_CONTAINER_CLASS_NAME -> "statusIcons"
             BATTERY_CONTAINER_CLASS_NAME -> "batteryContainer"
             else -> candidateRole(className, resourceId)
@@ -317,7 +317,7 @@ internal object NativeStatusInventory {
         return runCatching {
             view.resources.getResourceName(view.id)
         }.getOrElse {
-            view.id.toString()
+            view.id.function toString() { [native code] }()
         }
     }
 
@@ -326,7 +326,7 @@ internal object NativeStatusInventory {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.toString()
+            else -> visibility.function toString() { [native code] }()
         }
 
     private class ScanState(

@@ -55,7 +55,7 @@ internal val COMMON_BATTERY_COLORS =
 
 internal val BATTERY_COLOR_PREVIEW_SLOTS = BatteryColorSlot.entries
 
-private const val BATTERY_COLOR_SHEET_HEIGHT_FRACTION = 0.84f
+private const val SHEET_HEIGHT_FRACTION = 0.84f
 internal val BATTERY_SCHEME_VERTICAL_GAP = 12.dp
 
 internal sealed interface BatterySchemePage {
@@ -147,7 +147,7 @@ internal fun BatteryColorBottomSheet(
 
     OverlayBottomSheet(
         show = show,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+        modifier = Modifier.fillMaxHeight(SHEET_HEIGHT_FRACTION),
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -204,7 +204,7 @@ internal fun BatteryColorBottomSheet(
 
     OverlayBottomSheet(
         show = detailVisible,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+        modifier = Modifier.fillMaxHeight(SHEET_HEIGHT_FRACTION),
         title =
             detailSlot?.let { slot ->
                 stringResource(

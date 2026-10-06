@@ -34,7 +34,7 @@ internal object NativePresentationResolver {
                 ?.context
                 ?.let(ActiveSubSource::current)
         val resolvedActive =
-            resolveActiveBindingSubscriptionIds(
+            activeBindingSubIds(
                 boundSubscriptionIds =
                     bindings.map { binding -> binding.subscriptionId },
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
@@ -128,7 +128,7 @@ internal object NativePresentationResolver {
                 ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
             ?: boundSubscriptionIds.firstOrNull()
 
-    internal fun resolveActiveBindingSubscriptionIds(
+    internal fun activeBindingSubIds(
         boundSubscriptionIds: List<Int>,
         semanticActiveSubscriptionIds: Set<Int>,
         authoritativeActiveSubscriptionIds: Set<Int>?,
@@ -181,7 +181,7 @@ internal object NativePresentationResolver {
 
         findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
-                val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
+                val text = (view as? TextView)?.text?.function toString() { [native code] }()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
                     return NetworkType(
                         label = text,
@@ -207,7 +207,7 @@ internal object NativePresentationResolver {
         if (beforeMeasure) {
             return if (label == MOBILE_TYPE_DOUBLE_PLUS_LABEL) {
                 NetworkType(
-                    label = MOBILE_TYPE_DOUBLE_PLUS_BASE_LABEL,
+                    label = MOBILE_TYPE_DOUBLE_PLUS_BASE,
                     enhanced = true,
                     source = NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
                 )
@@ -340,5 +340,5 @@ internal object NativePresentationResolver {
     private const val MOBILE_TYPE_FIELD = "mMobileType"
     private const val MOBILE_TYPE_ENHANCED_FIELD = "mShowMobileTypeDoublePlus"
     private const val MOBILE_TYPE_DOUBLE_PLUS_LABEL = "5G++"
-    private const val MOBILE_TYPE_DOUBLE_PLUS_BASE_LABEL = "5G"
+    private const val MOBILE_TYPE_DOUBLE_PLUS_BASE = "5G"
 }

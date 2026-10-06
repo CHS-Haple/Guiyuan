@@ -19,7 +19,7 @@ internal object NativeNetworkSuppression {
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$2"
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
-    private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
+    private const val STATUS_ICON_CTRL_IMPL =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val STATUS_BAR_ICON_VIEW_CLASS =
         "com.android.systemui.statusbar.StatusBarIconView"
@@ -181,7 +181,7 @@ internal object NativeNetworkSuppression {
                 )
             val statusBarIconController =
                 Class.forName(
-                    STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
+                    STATUS_ICON_CTRL_IMPL,
                     false,
                     classLoader,
                 )
@@ -995,7 +995,7 @@ internal object NativeNetworkSuppression {
                     " tint=" +
                     (presentation.appliedTint
                         ?.toUInt()
-                        ?.function toString() { [native code] }(16)
+                        ?.function function toString() { [native code] }() { [native code] }(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAuthority=" +
@@ -1008,19 +1008,19 @@ internal object NativeNetworkSuppression {
                     " locationAwareTint=" +
                     (locationAwareTint
                         ?.toUInt()
-                        ?.function toString() { [native code] }(16)
+                        ?.function function toString() { [native code] }() { [native code] }(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " peerTint=" +
                     (peerTint
                         ?.toUInt()
-                        ?.function toString() { [native code] }(16)
+                        ?.function function toString() { [native code] }() { [native code] }(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " managerFallbackTint=" +
                     (managerFallbackTint
                         ?.toUInt()
-                        ?.function toString() { [native code] }(16)
+                        ?.function function toString() { [native code] }() { [native code] }(16)
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAnchorSlot=" +
@@ -1244,7 +1244,7 @@ internal object NativeNetworkSuppression {
     }
 
     @Synchronized
-    internal fun currentAppliedStatusIconTintForGroup(group: ViewGroup): Int? =
+    internal fun currentStatusTint(group: ViewGroup): Int? =
         resolveAppliedStatusIconTint(group)
 
     private fun resolveAppliedStatusIconTint(group: ViewGroup): Int? {
@@ -1371,7 +1371,7 @@ internal object NativeNetworkSuppression {
                     val container =
                         findViewByResourceEntry(
                             root = root,
-                            entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
+                            entryName = MOBILE_SIGNAL_CONTAINER_ENTRY,
                         )
                             ?: return VisualMaskSnapshot.failure(
                                 source = source,
@@ -1454,7 +1454,7 @@ internal object NativeNetworkSuppression {
         val container =
             findAncestorByResourceEntry(
                 view = image,
-                entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
+                entryName = MOBILE_SIGNAL_CONTAINER_ENTRY,
             ) ?: return false
 
         val existing =
@@ -1822,7 +1822,7 @@ internal object NativeNetworkSuppression {
         }
     }
 
-    private const val MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY = "mobile_signal_container"
+    private const val MOBILE_SIGNAL_CONTAINER_ENTRY = "mobile_signal_container"
     private const val AIRPLANE_SLOT = "airplane"
     private const val NO_SIM_SLOT = "no_sim"
     private const val EXPECTED_HOOK_COUNT = 5
