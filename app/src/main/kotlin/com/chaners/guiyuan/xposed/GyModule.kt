@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureSettings
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
-import com.chaners.guiyuan.system.DiagnosticsProtocol
+import com.chaners.guiyuan.system.DiagProtocol
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -1888,7 +1888,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.function function toString() { [native code] }() { [native code] }(16)
+                                ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1919,12 +1919,12 @@ class GyModule : XposedModule() {
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.function function toString() { [native code] }() { [native code] }(16)
+                            ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1932,7 +1932,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.function function toString() { [native code] }() { [native code] }(16)
+                            ?.function function function toString() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -4719,7 +4719,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().function function toString() { [native code] }() { [native code] }(36)
+            SystemClock.elapsedRealtime().function function function toString() { [native code] }() { [native code] }() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4732,17 +4732,17 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.function function toString() { [native code] }() { [native code] }())
+                        put(key, value.function function function toString() { [native code] }() { [native code] }() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().function function toString() { [native code] }() { [native code] }())
-                put("sequence", diagnosticSequence.incrementAndGet().function function toString() { [native code] }() { [native code] }())
+                put("uptimeMs", SystemClock.elapsedRealtime().function function function toString() { [native code] }() { [native code] }() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function function function toString() { [native code] }() { [native code] }() { [native code] }())
             }
         log(
             level,
             TAG,
-            DiagnosticsProtocol.format(
+            DiagProtocol.format(
                 event = event,
                 component = component,
                 state = state,
