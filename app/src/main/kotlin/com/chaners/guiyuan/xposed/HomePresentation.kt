@@ -1671,7 +1671,7 @@ internal object HomePresentation {
             nativeLayoutOwnershipDeferred = false
             capacityLeaseSuppressed = false
             fakeCarrierVisibleCycleActive = false
-            pendingNativeBaselineWidthPx = null
+            this.pendingNativeBaselineWidthPx = null
             deferVisualMaskUntilLayout = false
             host.get()?.removeOnAttachStateChangeListener(this)
             battery.get()?.removeOnLayoutChangeListener(batteryLayoutListener)
@@ -1915,8 +1915,8 @@ internal object HomePresentation {
         ): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return false
             val normalized = requestedSlotWidthPx.coerceAtLeast(0)
-            if (requestedSlotWidthPx == normalized) return true
-            requestedSlotWidthPx = normalized
+            if (this.requestedSlotWidthPx == normalized) return true
+            this.requestedSlotWidthPx = normalized
             return syncEndReservation()
         }
 
@@ -2219,13 +2219,13 @@ internal object HomePresentation {
                 }
             }
 
-            val pendingNativeBaselineWidthPx =
+            val pendingBaselineWidthPx =
                 pendingNativeBaselineWidthPx
             val baselineWidthPx =
                 when {
-                    pendingNativeBaselineWidthPx != null &&
-                        params.width == pendingNativeBaselineWidthPx ->
-                        pendingNativeBaselineWidthPx
+                    pendingBaselineWidthPx != null &&
+                        params.width == pendingBaselineWidthPx ->
+                        pendingBaselineWidthPx
 
                     hostView.width > 0 &&
                         params.width == hostView.width ->
