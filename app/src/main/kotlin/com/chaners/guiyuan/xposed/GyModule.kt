@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicLong
 class GyModule : XposedModule() {
     private var islandMotionSourceInstalled = false
     private var panelTransitionSourceInstalled = false
-    private var controlCenterSceneVisible = false
-    private var controlCenterSceneEligible = false
-    private var controlCenterSourceScene = SourceScene.UNKNOWN
+    private var ccVisible = false
+    private var ccEligible = false
+    private var ccSourceScene = SourceScene.UNKNOWN
     private var steadyStatusSourceScene = SourceScene.UNKNOWN
     private var lastStableKeyguardAodScene =
         ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -39,7 +39,7 @@ class GyModule : XposedModule() {
     private var homeNativeAodFallbackActive = false
     private var homeAodTransitionOriginPending = false
     private var homeAodTargetPrearmPending = false
-    private var controlCenterExpansionFraction = 0f
+    private var ccFraction = 0f
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
     private var keyguardPresentationReadyObserved = false
@@ -98,11 +98,11 @@ class GyModule : XposedModule() {
             return
         }
 
-        installHomePresentationOwner(
+        installHomePresentation(
             classLoader = param.classLoader,
             source = "coldStart",
         )
-        installNativeNetworkSuppression(
+        installNetworkSuppression(
             classLoader = param.classLoader,
             source = "coldStart",
         )
@@ -140,11 +140,11 @@ class GyModule : XposedModule() {
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
-            installPresentationRuntimeSources(
+            installPresentationSources(
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
-            installPanelTransitionSource(
+            installCcTransitionSource(
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
@@ -213,7 +213,7 @@ class GyModule : XposedModule() {
             "wifiRoots" to prepared.wifiRoots,
             "mobileRoots" to prepared.mobileRoots,
             "tintTransfer" to if (prepared.tintTransferred) "ready" else "native-fallback",
-            "controlCenterCompactReady" to prepared.controlCenterCompactReady,
+            "controlCenterCompactReady" to prepared.ccCompactReady,
         )
         log(
             Log.INFO,
@@ -230,7 +230,7 @@ class GyModule : XposedModule() {
             state = "deferred-to-new-generation",
             "uiMutation" to "single-main-thread-handoff",
             "homePresentation" to "retained-until-generation-handoff",
-            "controlCenterCompactReady" to prepared.controlCenterCompactReady,
+            "controlCenterCompactReady" to prepared.ccCompactReady,
         )
         return true
     }
@@ -270,9 +270,9 @@ class GyModule : XposedModule() {
             NetworkRuntime.resetRuntimeState()
             islandMotionSourceInstalled = false
             panelTransitionSourceInstalled = false
-            controlCenterSceneVisible = false
-            controlCenterSceneEligible = false
-            controlCenterSourceScene = SourceScene.UNKNOWN
+            ccVisible = false
+            ccEligible = false
+            ccSourceScene = SourceScene.UNKNOWN
             steadyStatusSourceScene = SourceScene.UNKNOWN
             lastStableKeyguardAodScene =
                 ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -285,7 +285,7 @@ class GyModule : XposedModule() {
             homeNativeAodFallbackActive = false
             homeAodTransitionOriginPending = false
             homeAodTargetPrearmPending = false
-            controlCenterExpansionFraction = 0f
+            ccFraction = 0f
             keyguardRuntimeReady = false
             aodRendererAttached = false
             keyguardPresentationReadyObserved = false
@@ -331,19 +331,19 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installPresentationRuntimeSources(
+            installPresentationSources(
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installHomePresentationOwner(
+            installHomePresentation(
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installNativeNetworkSuppression(
+            installNetworkSuppression(
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installPanelTransitionSource(
+            installCcTransitionSource(
                 classLoader = classLoader,
                 source = "hotReload",
             )
@@ -506,14 +506,14 @@ class GyModule : XposedModule() {
                 "intermediateRequestLayout" to false,
             )
 
-            PanelTransitionSource.restoreControlCenterHomeEligibility(
-                restored.controlCenterHomeEligible,
+            PanelTransitionSource.restoreCcHomeEligibility(
+                restored.ccHomeEligible,
             )
             val controlCenterFakeRestore =
                 restored.controlCenterFakeHost?.let { fakeHost ->
-                    restoreControlCenterAfterReload(
+                    restoreCcAfterReload(
                         host = fakeHost,
-                        transferredCompactReady = restored.controlCenterCompactReady,
+                        transferredCompactReady = restored.ccCompactReady,
                     )
                 } ?: "late-fallback"
             val transferredTint =
@@ -542,7 +542,7 @@ class GyModule : XposedModule() {
                 "state" to restoredSnapshot.logLine,
                 "homePresentation" to "native-carrier-lifecycle",
                 "controlCenterHomeEligible" to
-                    (restored.controlCenterHomeEligible ?: "unknown"),
+                    (restored.ccHomeEligible ?: "unknown"),
                 "controlCenterFakePrearm" to controlCenterFakeRestore,
                 "tintTransfer" to if (transferredTint != null) "restored" else "native-fallback",
                 "mainThread" to true,
@@ -571,7 +571,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installHomePresentationOwner(
+    private fun installHomePresentation(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -698,7 +698,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installNativeNetworkSuppression(
+    private fun installNetworkSuppression(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -1027,7 +1027,7 @@ class GyModule : XposedModule() {
     }
 
 
-    private fun installPanelTransitionSource(
+    private fun installCcTransitionSource(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -1086,14 +1086,14 @@ class GyModule : XposedModule() {
     private fun onPanelTransitionUpdate(
         update: PanelTransitionSource.Update,
     ) {
-        val effectiveSourceScene = handleControlCenterPanelUpdate(update)
+        val effectiveSourceScene = handleCcPanelUpdate(update)
         val transitionUpdate =
             if (effectiveSourceScene != null) {
-                update.copy(controlCenterSourceScene = effectiveSourceScene)
+                update.copy(ccSourceScene = effectiveSourceScene)
             } else {
                 update
             }
-        ControlCenterTransition.onPanelUpdate(transitionUpdate)
+        CcTransition.onPanelUpdate(transitionUpdate)
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1101,7 +1101,7 @@ class GyModule : XposedModule() {
             lastBatteryNumberProbeDiagnosticSummary == null
         ) {
             val batteryNumberProbe =
-                ControlCenterTransition.latestBatteryNumberProbeDiagnostic()
+                CcTransition.latestBatteryNumberProbeDiagnostic()
             if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeDiagnosticSummary = batteryNumberProbe
                 logDiagnostic(
@@ -1118,24 +1118,24 @@ class GyModule : XposedModule() {
 
     }
 
-    private fun handleControlCenterPanelUpdate(
+    private fun handleCcPanelUpdate(
         update: PanelTransitionSource.Update,
     ): SourceScene? {
-        update.fraction?.let(::onControlCenterExpansionFraction)
+        update.fraction?.let(::onCcFraction)
 
         val visible = update.visible ?: return null
         if (!visible) {
-            controlCenterSceneVisible = false
+            ccVisible = false
             // Restore Home first. QS_FAKE compact presentation remains prearmed
             // for the lifetime of the native fake root; only the Combined
             // overlay visibility changes with Control Center visibility.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
-            ControlCenterSession.setRequestedVisible(false)
+            CcSession.setRequestedVisible(false)
             return null
         }
 
-        controlCenterSceneVisible = true
-        if (!ControlCenterSession.beginVisibleCycle()) {
+        ccVisible = true
+        if (!CcSession.beginVisibleCycle()) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.WARN,
@@ -1145,21 +1145,21 @@ class GyModule : XposedModule() {
                 "reason" to "visible-cycle-rearm-failed",
                 "fallback" to "native-control-center-until-next-native-event",
             )
-            return update.controlCenterSourceScene
+            return update.ccSourceScene
         }
         val panelSourceScene =
-            update.controlCenterSourceScene
+            update.ccSourceScene
                 ?: SourceScene.UNKNOWN
         val incomingBoundaryReady =
             incomingKeyguardReady()
         val effectiveSourceScene =
-            ScenePolicy.resolveControlCenterSourceScene(
+            ScenePolicy.resolveCcSourceScene(
                 panelSourceScene = panelSourceScene,
                 steadySourceScene = steadyStatusSourceScene,
                 lastStableFamilyScene = lastStableKeyguardAodScene,
                 incomingKeyguardPresentationReady = incomingBoundaryReady,
             )
-        updateControlCenterSource(
+        updateCcSource(
             sourceScene = effectiveSourceScene,
             authority =
                 when {
@@ -1171,7 +1171,7 @@ class GyModule : XposedModule() {
                     else -> "steady-source-view-override"
                 },
         )
-        val carrier = update.controlCenterPresentationHost
+        val carrier = update.ccHost
         if (carrier == null) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
@@ -1185,16 +1185,16 @@ class GyModule : XposedModule() {
             return effectiveSourceScene
         }
 
-        when (prepareControlCenter(carrier, "visible-fallback")) {
-            ControlCenterSession.AttachResult.Ready -> {
+        when (prepareCc(carrier, "visible-fallback")) {
+            CcSession.AttachResult.Ready -> {
                 val ready =
-                    ControlCenterSession.setRequestedVisible(true)
+                    CcSession.setRequestedVisible(true)
                 if (!ready) {
                     HomeRenderSession.onControlCenterAuthorityChanged(true)
                 }
             }
 
-            is ControlCenterSession.AttachResult.Failure -> {
+            is CcSession.AttachResult.Failure -> {
                 HomeRenderSession.onControlCenterAuthorityChanged(true)
                 logDiagnostic(
                     level = Log.WARN,
@@ -1209,7 +1209,7 @@ class GyModule : XposedModule() {
         return effectiveSourceScene
     }
 
-    private fun updateControlCenterSource(
+    private fun updateCcSource(
         sourceScene: SourceScene,
         authority: String,
     ) {
@@ -1222,8 +1222,8 @@ class GyModule : XposedModule() {
                 reconcileReadiness = true,
             )
         }
-        controlCenterSourceScene = sourceScene
-        HomePresentation.updateControlCenterSourceScene(sourceScene)
+        ccSourceScene = sourceScene
+        HomePresentation.updateCcSourceScene(sourceScene)
         acquireKeyguardCcLease(
             source = "source-scene:" + authority,
         )
@@ -1242,13 +1242,13 @@ class GyModule : XposedModule() {
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,
             )
-        if (nextEligible == controlCenterSceneEligible) {
+        if (nextEligible == ccEligible) {
             return
         }
 
-        controlCenterSceneEligible = nextEligible
-        ControlCenterSession.setSceneEligible(nextEligible)
-        ControlCenterTransition.setSceneEligible(nextEligible)
+        ccEligible = nextEligible
+        CcSession.setSceneEligible(nextEligible)
+        CcTransition.setSceneEligible(nextEligible)
         logDiagnostic(
             level = Log.INFO,
             event = "scene.eligibility",
@@ -1260,23 +1260,23 @@ class GyModule : XposedModule() {
             "keyguardRuntimeReady" to keyguardRuntimeReady,
             "incomingBoundaryReady" to incomingBoundaryReady,
             "keyguardPresentationReady" to keyguardPresentationReady,
-            "controlCenterVisible" to controlCenterSceneVisible,
+            "controlCenterVisible" to ccVisible,
             "fallback" to if (nextEligible) "combined-qs-fake" else "native-qs-fake",
             "nativeGeometryWrites" to 0,
         )
     }
 
-    private fun onControlCenterExpansionFraction(rawFraction: Float) {
+    private fun onCcFraction(rawFraction: Float) {
         val fraction = rawFraction.coerceIn(0f, 1f)
-        val previous = controlCenterExpansionFraction
-        controlCenterExpansionFraction = fraction
+        val previous = ccFraction
+        ccFraction = fraction
 
         if (fraction > 0f) {
             if (
-                controlCenterSourceScene != SourceScene.KEYGUARD &&
+                ccSourceScene != SourceScene.KEYGUARD &&
                 incomingKeyguardReady()
             ) {
-                updateControlCenterSource(
+                updateCcSource(
                     sourceScene = SourceScene.KEYGUARD,
                     authority = "incoming-keyguard-fraction",
                 )
@@ -1305,9 +1305,9 @@ class GyModule : XposedModule() {
         if (
             keyguardControlCenterLeaseActive ||
             !ScenePolicy.shouldAcquireKeyguardCcLease(
-                sourceScene = controlCenterSourceScene,
+                sourceScene = ccSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
-                nativeFraction = controlCenterExpansionFraction,
+                nativeFraction = ccFraction,
             )
         ) {
             return
@@ -1320,8 +1320,8 @@ class GyModule : XposedModule() {
             component = "keyguardControlCenter",
             state = "acquired",
             "source" to source,
-            "sourceScene" to controlCenterSourceScene.name,
-            "nativeFraction" to controlCenterExpansionFraction,
+            "sourceScene" to ccSourceScene.name,
+            "nativeFraction" to ccFraction,
             "cleanupBoundary" to "native-fraction-zero-or-authoritative-source-change",
             "timingDelay" to false,
             "nativeGeometryWrites" to 0,
@@ -1343,13 +1343,13 @@ class GyModule : XposedModule() {
             incomingKeyguardReady()
         return ScenePolicy.shouldKeepKeyguardCcLease(
             leaseActive = keyguardControlCenterLeaseActive,
-            sourceScene = controlCenterSourceScene,
+            sourceScene = ccSourceScene,
             featureEnabled = settings.enabled,
             keyguardEnabled = settings.keyguardEnabled,
             hostAttached = resolved.host.systemIcons.isAttachedToWindow,
             aodBlocked = aodBlocked,
             incomingBoundaryPresentationReady = incomingBoundaryReady,
-            nativeFraction = controlCenterExpansionFraction,
+            nativeFraction = ccFraction,
         )
     }
 
@@ -1365,8 +1365,8 @@ class GyModule : XposedModule() {
             component = "keyguardControlCenter",
             state = "released",
             "source" to source,
-            "sourceScene" to controlCenterSourceScene.name,
-            "nativeFraction" to controlCenterExpansionFraction,
+            "sourceScene" to ccSourceScene.name,
+            "nativeFraction" to ccFraction,
             "observedReady" to keyguardPresentationReadyObserved,
             "reconcileReadiness" to reconcileReadiness,
             "timingDelay" to false,
@@ -1405,43 +1405,43 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun refreshControlCenterSource(authority: String) {
-        updateControlCenterSource(
-            sourceScene = controlCenterSourceScene,
+    private fun refreshCcSource(authority: String) {
+        updateCcSource(
+            sourceScene = ccSourceScene,
             authority = authority,
         )
     }
 
-    private fun reconcileKeyguardControlCenter(authority: String) {
+    private fun reconcileKeyguardCc(authority: String) {
         if (
-            !ScenePolicy.shouldReconcileKeyguardControlCenter(
-                controlCenterVisible = controlCenterSceneVisible,
-                nativeFraction = controlCenterExpansionFraction,
+            !ScenePolicy.shouldReconcileKeyguardCc(
+                controlCenterVisible = ccVisible,
+                nativeFraction = ccFraction,
                 leaseActive = keyguardControlCenterLeaseActive,
             )
         ) {
             return
         }
-        refreshControlCenterSource(authority)
+        refreshCcSource(authority)
     }
 
-    private fun restoreControlCenterAfterReload(
+    private fun restoreCcAfterReload(
         host: ViewGroup,
         transferredCompactReady: Boolean,
     ): String {
         return when (
             val result =
-                ControlCenterSession.restoreLaidOutHost(
+                CcSession.restoreLaidOutHost(
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onControlCenterProjectionReady,
+                    onProjectionReadinessChanged = ::onCcProjectionReady,
                     transferredCompactReady = transferredCompactReady,
                 )
         ) {
-            ControlCenterSession.AttachResult.Ready -> {
+            CcSession.AttachResult.Ready -> {
                 val compactReady =
-                    ControlCenterSession
+                    CcSession
                         .isNativeReadyForReload()
                 logDiagnostic(
                     level = Log.INFO,
@@ -1466,7 +1466,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            is ControlCenterSession.AttachResult.Failure -> {
+            is CcSession.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.restore",
@@ -1486,14 +1486,14 @@ class GyModule : XposedModule() {
     private fun onControlCenterFakePresentationAttached(host: ViewGroup) {
         when (
             val result =
-                ControlCenterSession.prearmAfterNextNativeLayout(
+                CcSession.prearmAfterNextNativeLayout(
                     host = host,
                     onEvent = ::onPanelTransitionEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onControlCenterProjectionReady,
+                    onProjectionReadinessChanged = ::onCcProjectionReady,
                 )
         ) {
-            is ControlCenterSession.PrearmResult.Scheduled -> {
+            is CcSession.PrearmResult.Scheduled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "projection.prearm",
@@ -1502,12 +1502,12 @@ class GyModule : XposedModule() {
                     "source" to "fake-root-attached",
                     "boundary" to "first-native-layout",
                     "reused" to result.reused,
-                    "requestedVisible" to controlCenterSceneVisible,
+                    "requestedVisible" to ccVisible,
                     "nativeGeometryWrites" to 0,
                 )
             }
 
-            is ControlCenterSession.PrearmResult.Failure -> {
+            is CcSession.PrearmResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.prearm",
@@ -1521,18 +1521,18 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun prepareControlCenter(
+    private fun prepareCc(
         host: ViewGroup,
         source: String,
-    ): ControlCenterSession.AttachResult {
+    ): CcSession.AttachResult {
         val result =
-            ControlCenterSession.attach(
+            CcSession.attach(
                 host = host,
                 onEvent = ::onPanelTransitionEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onControlCenterProjectionReady,
+                onProjectionReadinessChanged = ::onCcProjectionReady,
             )
-        if (result is ControlCenterSession.AttachResult.Failure) {
+        if (result is CcSession.AttachResult.Failure) {
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.prepare",
@@ -1546,9 +1546,9 @@ class GyModule : XposedModule() {
         return result
     }
 
-    private fun onControlCenterProjectionReady(ready: Boolean) {
-        ControlCenterTransition.onProjectionReadinessChanged(ready)
-        if (!controlCenterSceneVisible) {
+    private fun onCcProjectionReady(ready: Boolean) {
+        CcTransition.onProjectionReadinessChanged(ready)
+        if (!ccVisible) {
             return
         }
         // Projected owner is already visible when ready=true. On the reverse
@@ -1584,19 +1584,19 @@ class GyModule : XposedModule() {
                 )
             }
         }
-        controlCenterSceneEligible = false
-        controlCenterSourceScene = SourceScene.UNKNOWN
+        ccEligible = false
+        ccSourceScene = SourceScene.UNKNOWN
         safely {
-            HomePresentation.updateControlCenterSourceScene(SourceScene.UNKNOWN)
+            HomePresentation.updateCcSourceScene(SourceScene.UNKNOWN)
         }
         safely {
-            ControlCenterTransition.setSceneEligible(false)
+            CcTransition.setSceneEligible(false)
         }
         safely {
-            ControlCenterTransition.detach("panel-runtime-failure")
+            CcTransition.detach("panel-runtime-failure")
         }
         safely {
-            ControlCenterSession.setSceneEligible(false)
+            CcSession.setSceneEligible(false)
         }
         safely {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
@@ -1680,7 +1680,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installPresentationRuntimeSources(
+    private fun installPresentationSources(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -1846,13 +1846,13 @@ class GyModule : XposedModule() {
     ) {
         HomeRenderSession.onState(snapshot, trace)
         KeyguardRenderSession.onState(snapshot)
-        ControlCenterSession.onState(snapshot)
+        CcSession.onState(snapshot)
     }
 
     private fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
         HomeRenderSession.onPresentationStateChanged(trace)
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterSession.onPresentationStateChanged()
+        CcSession.onPresentationStateChanged()
         refreshStatusIconObservation("presentation")
     }
 
@@ -1871,7 +1871,7 @@ class GyModule : XposedModule() {
             state.appliedTint,
         )
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterSession.onPresentationStateChanged()
+        CcSession.onPresentationStateChanged()
 
         if (changed != null) {
             val presentationTrace = markPresentationCommitted(trace)
@@ -1888,7 +1888,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.function toString() { [native code] }(16)
+                                ?.function function toString() { [native code] }() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1912,19 +1912,19 @@ class GyModule : XposedModule() {
             )
         val resolvedUpdate = update.copy(state = resolvedState)
         HomeRenderSession.onTintUpdate(resolvedUpdate)
-        ControlCenterSession.onTintUpdate(resolvedUpdate)
+        CcSession.onTintUpdate(resolvedUpdate)
         if (detailedDiagnosticsEnabled) {
             log(
                 Log.INFO,
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.function toString() { [native code] }(16)
+                            ?.function function toString() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1932,7 +1932,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.function toString() { [native code] }(16)
+                            ?.function function toString() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -2367,7 +2367,7 @@ class GyModule : XposedModule() {
             "nativeGeometryWrites" to 0,
         )
         if (keyguardBoundaryVisualBoundaryReached) {
-            reconcileKeyguardControlCenter(
+            reconcileKeyguardCc(
                 "keyguard-boundary-layout-ready",
             )
         }
@@ -2387,7 +2387,7 @@ class GyModule : XposedModule() {
                 "layoutAuthority" to "precommitted-before-native-animation",
                 "nativeGeometryWrites" to 0,
             )
-            reconcileKeyguardControlCenter(
+            reconcileKeyguardCc(
                 "keyguard-boundary-visual-ready",
             )
         } else {
@@ -2678,7 +2678,7 @@ class GyModule : XposedModule() {
                     reconcileReadiness = false,
                 )
             }
-            updateControlCenterSource(
+            updateCcSource(
                 sourceScene = SourceScene.HOME,
                 authority = "steady-source-view",
             )
@@ -2707,7 +2707,7 @@ class GyModule : XposedModule() {
             // KEYGUARD eligibility.
             deactivateKeyguardRuntime("home-source-active")
         } else if (sourceScene != SourceScene.UNKNOWN) {
-            updateControlCenterSource(
+            updateCcSource(
                 sourceScene = sourceScene,
                 authority = "steady-source-view",
             )
@@ -3079,7 +3079,7 @@ class GyModule : XposedModule() {
                     state = "retained",
                     "source" to source,
                     "reason" to "incoming-boundary-presentation-ready",
-                    "nativeFraction" to controlCenterExpansionFraction,
+                    "nativeFraction" to ccFraction,
                     "leaseActive" to keyguardControlCenterLeaseActive,
                     "timingDelay" to false,
                     "nativeGeometryWrites" to 0,
@@ -3093,7 +3093,7 @@ class GyModule : XposedModule() {
                     component = "keyguardPresentation",
                     state = "retained",
                     "source" to source,
-                    "nativeFraction" to controlCenterExpansionFraction,
+                    "nativeFraction" to ccFraction,
                     "leaseActive" to keyguardControlCenterLeaseActive,
                     "cleanupDeferredUntil" to "native-control-center-handoff-end",
                     "timingDelay" to false,
@@ -3209,7 +3209,7 @@ class GyModule : XposedModule() {
                     "nativeGeometryWrites" to 0,
                 )
                 if (!visualOnlyBoundary) {
-                    refreshControlCenterSource(
+                    refreshCcSource(
                         "keyguard-compact-layout-pending",
                     )
                 }
@@ -3228,7 +3228,7 @@ class GyModule : XposedModule() {
                     "reason" to result.reason,
                     "fallback" to "native-keyguard",
                 )
-                refreshControlCenterSource("keyguard-activation-failed")
+                refreshCcSource("keyguard-activation-failed")
             }
 
             is HomePresentation.StateResult.Inactive -> Unit
@@ -3240,7 +3240,7 @@ class GyModule : XposedModule() {
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
         HomePresentation.deactivateKeyguard("readiness-lost:" + source)
-        reconcileKeyguardControlCenter("keyguard-readiness-lost")
+        reconcileKeyguardCc("keyguard-readiness-lost")
     }
 
     private fun completeKeyguardPresentationCutover(
@@ -3273,7 +3273,7 @@ class GyModule : XposedModule() {
             "motion" to "inherited-from-keyguard-system-icons",
             "aodOwned" to false,
         )
-        refreshControlCenterSource("keyguard-ready")
+        refreshCcSource("keyguard-ready")
     }
 
     private fun onKeyguardPresentationRuntimeFailure(reason: String) {
@@ -3290,7 +3290,7 @@ class GyModule : XposedModule() {
             "reason" to reason,
             "fallback" to "native-keyguard",
         )
-        reconcileKeyguardControlCenter("keyguard-fail-native")
+        reconcileKeyguardCc("keyguard-fail-native")
     }
 
     private fun deactivateKeyguardRuntime(source: String) {
@@ -3303,7 +3303,7 @@ class GyModule : XposedModule() {
         HomePresentation.deactivateKeyguard(source)
         KeyguardRenderSession.detach()
         if (wasReady) {
-            reconcileKeyguardControlCenter("keyguard-deactivate:" + source)
+            reconcileKeyguardCc("keyguard-deactivate:" + source)
         }
     }
 
@@ -3507,22 +3507,22 @@ class GyModule : XposedModule() {
     private fun teardownOldGenerationForHotReload(
         continuousHandoff: Boolean = false,
     ) {
-        controlCenterSceneVisible = false
-        controlCenterSceneEligible = false
-        controlCenterSourceScene = SourceScene.UNKNOWN
+        ccVisible = false
+        ccEligible = false
+        ccSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
         lastStableKeyguardAodScene =
             ScenePolicy.StableKeyguardAodScene.UNKNOWN
         keyguardAodFullTargetPending = false
         keyguardAodFullTransitionActive = false
         homeAodTargetPrearmPending = false
-        controlCenterExpansionFraction = 0f
+        ccFraction = 0f
         keyguardRuntimeReady = false
         aodRendererAttached = false
         keyguardPresentationReadyObserved = false
         keyguardControlCenterLeaseActive = false
-        ControlCenterTransition.detach("hotReload-oldGeneration")
-        ControlCenterSession.detach(
+        CcTransition.detach("hotReload-oldGeneration")
+        CcSession.detach(
             source = "hotReload-oldGeneration",
             releaseNativePresentation = !continuousHandoff,
         )
@@ -4475,7 +4475,7 @@ class GyModule : XposedModule() {
         }
         HomeRenderSession.onFeatureSettingsChanged(settings)
         KeyguardRenderSession.onFeatureSettingsChanged(settings)
-        ControlCenterSession.onFeatureSettingsChanged(settings)
+        CcSession.onFeatureSettingsChanged(settings)
 
         if (!settings.enabled) {
             releaseFeaturePresentationOwnership("feature-disabled")
@@ -4495,7 +4495,7 @@ class GyModule : XposedModule() {
                 )
             }
         }
-        refreshControlCenterSource("feature-settings")
+        refreshCcSource("feature-settings")
 
         logDiagnostic(
             level = Log.INFO,
@@ -4527,11 +4527,11 @@ class GyModule : XposedModule() {
         homeNativeAodFallbackActive = false
         homeAodTransitionOriginPending = false
         homeAodTargetPrearmPending = false
-        controlCenterSceneEligible = false
+        ccEligible = false
         keyguardControlCenterLeaseActive = false
-        ControlCenterSession.setSceneEligible(false)
-        ControlCenterTransition.setSceneEligible(false)
-        HomePresentation.deactivateControlCenter(source)
+        CcSession.setSceneEligible(false)
+        CcTransition.setSceneEligible(false)
+        HomePresentation.deactivateCc(source)
         HomePresentation.deactivateAod(source)
         HomePresentation.deactivateKeyguard(source)
         HomePresentation.deactivate(source)
@@ -4606,7 +4606,7 @@ class GyModule : XposedModule() {
 
         HomeRenderSession.onVisualSettingsChanged(settings)
         KeyguardRenderSession.onVisualSettingsChanged(settings)
-        ControlCenterSession.onVisualSettingsChanged(settings)
+        CcSession.onVisualSettingsChanged(settings)
         HomePresentation.onVisualSettingsChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
@@ -4719,7 +4719,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().function toString() { [native code] }(36)
+            SystemClock.elapsedRealtime().function function toString() { [native code] }() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4732,12 +4732,12 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.function toString() { [native code] }())
+                        put(key, value.function function toString() { [native code] }() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().function toString() { [native code] }())
-                put("sequence", diagnosticSequence.incrementAndGet().function toString() { [native code] }())
+                put("uptimeMs", SystemClock.elapsedRealtime().function function toString() { [native code] }() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function function toString() { [native code] }() { [native code] }())
             }
         log(
             level,

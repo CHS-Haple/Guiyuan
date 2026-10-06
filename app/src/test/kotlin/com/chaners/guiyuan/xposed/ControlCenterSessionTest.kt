@@ -8,7 +8,7 @@ class ControlCenterSessionTest {
     @Test
     fun projectionReadinessRequiresPreparedFakeRootAndCompactPresentation() {
         assertTrue(
-            ControlCenterSession.resolveProjectionReady(
+            CcSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -19,7 +19,7 @@ class ControlCenterSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterSession.resolveProjectionReady(
+            CcSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = false,
                 modelReady = true,
@@ -30,7 +30,7 @@ class ControlCenterSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterSession.resolveProjectionReady(
+            CcSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -41,7 +41,7 @@ class ControlCenterSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterSession.resolveProjectionReady(
+            CcSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -55,22 +55,22 @@ class ControlCenterSessionTest {
     @Test
     fun firstLayoutRetryOnlyCoversEarlyGeometryReadinessFailures() {
         assertTrue(
-            ControlCenterSession.isFirstLayoutRetryable(
+            CcSession.isFirstLayoutRetryable(
                 "battery-core-width-unavailable",
             ),
         )
         assertTrue(
-            ControlCenterSession.isFirstLayoutRetryable(
+            CcSession.isFirstLayoutRetryable(
                 "fake-status-bar-area-unresolved",
             ),
         )
         assertFalse(
-            ControlCenterSession.isFirstLayoutRetryable(
+            CcSession.isFirstLayoutRetryable(
                 "fake-root-type-mismatch",
             ),
         )
         assertFalse(
-            ControlCenterSession.isFirstLayoutRetryable(
+            CcSession.isFirstLayoutRetryable(
                 "ignored-slots-field-unavailable",
             ),
         )
@@ -80,7 +80,7 @@ class ControlCenterSessionTest {
     @Test
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
         assertTrue(
-            ControlCenterSession
+            CcSession
                 .shouldRestoreLaidOutHost(
                     attached = true,
                     inLayout = false,
@@ -89,7 +89,7 @@ class ControlCenterSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldRestoreLaidOutHost(
                     attached = true,
                     inLayout = true,
@@ -98,7 +98,7 @@ class ControlCenterSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldRestoreLaidOutHost(
                     attached = true,
                     inLayout = false,
@@ -107,7 +107,7 @@ class ControlCenterSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldRestoreLaidOutHost(
                     attached = false,
                     inLayout = false,
@@ -120,13 +120,13 @@ class ControlCenterSessionTest {
     @Test
     fun transferredCompactReadinessIsAdoptedOnlyWhenPreviouslyReady() {
         assertTrue(
-            ControlCenterSession
+            CcSession
                 .shouldAdoptCompactReady(
                     transferredCompactReady = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldAdoptCompactReady(
                     transferredCompactReady = false,
                 ),
@@ -136,21 +136,21 @@ class ControlCenterSessionTest {
     @Test
     fun transientLayoutLossRetainsPreparedFakePresentationWhileRootStaysAttached() {
         assertTrue(
-            ControlCenterSession
+            CcSession
                 .keepNativeWhenLayoutMissing(
                     hostAttached = true,
                     nativePresentationReady = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .keepNativeWhenLayoutMissing(
                     hostAttached = false,
                     nativePresentationReady = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .keepNativeWhenLayoutMissing(
                     hostAttached = true,
                     nativePresentationReady = false,
@@ -161,28 +161,28 @@ class ControlCenterSessionTest {
     @Test
     fun carrierCapacityLeaseBeginsOnlyWhenAttachedSessionActuallyBecomesVisible() {
         assertTrue(
-            ControlCenterSession
+            CcSession
                 .shouldBeginCapacityLease(
                     previousRequestedVisible = false,
                     nextRequestedVisible = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldBeginCapacityLease(
                     previousRequestedVisible = true,
                     nextRequestedVisible = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldBeginCapacityLease(
                     previousRequestedVisible = true,
                     nextRequestedVisible = false,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldBeginCapacityLease(
                     previousRequestedVisible = false,
                     nextRequestedVisible = false,
@@ -193,28 +193,28 @@ class ControlCenterSessionTest {
     @Test
     fun carrierCapacityLeaseEndsOnlyWhenVisibleCycleActuallyCloses() {
         assertTrue(
-            ControlCenterSession
+            CcSession
                 .shouldEndCapacityLease(
                     previousRequestedVisible = true,
                     nextRequestedVisible = false,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldEndCapacityLease(
                     previousRequestedVisible = false,
                     nextRequestedVisible = false,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldEndCapacityLease(
                     previousRequestedVisible = false,
                     nextRequestedVisible = true,
                 ),
         )
         assertFalse(
-            ControlCenterSession
+            CcSession
                 .shouldEndCapacityLease(
                     previousRequestedVisible = true,
                     nextRequestedVisible = true,

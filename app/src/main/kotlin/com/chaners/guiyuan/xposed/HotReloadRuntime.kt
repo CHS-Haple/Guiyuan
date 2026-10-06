@@ -11,7 +11,7 @@ internal object HotReloadRuntime {
             val wifiRoots: Int,
             val mobileRoots: Int,
             val tintTransferred: Boolean,
-            val controlCenterCompactReady: Boolean,
+            val ccCompactReady: Boolean,
         ) : PrepareResult
 
         data class Unavailable(
@@ -52,8 +52,8 @@ internal object HotReloadRuntime {
             )
         }
 
-        val controlCenterCompactReady =
-            ControlCenterSession
+        val ccCompactReady =
+            CcSession
                 .currentNativePresentationReadyForHotReload()
 
         val transfer =
@@ -64,13 +64,13 @@ internal object HotReloadRuntime {
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
                 notificationShadeHomeEligible = null,
-                controlCenterHomeEligible =
-                    PanelTransitionSource.currentControlCenterHomeEligibility(),
+                ccHomeEligible =
+                    PanelTransitionSource.currentCcHomeEligibility(),
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    ControlCenterSession.currentAttachedHostForHotReload(),
-                controlCenterCompactReady = controlCenterCompactReady,
+                    CcSession.currentAttachedHostForHotReload(),
+                ccCompactReady = ccCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
@@ -93,7 +93,7 @@ internal object HotReloadRuntime {
             wifiRoots = bindingCounts.first,
             mobileRoots = bindingCounts.second,
             tintTransferred = stableTint != null,
-            controlCenterCompactReady = controlCenterCompactReady,
+            ccCompactReady = ccCompactReady,
         )
     }
 

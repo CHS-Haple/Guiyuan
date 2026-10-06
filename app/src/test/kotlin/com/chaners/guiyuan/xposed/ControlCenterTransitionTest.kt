@@ -33,7 +33,7 @@ class ControlCenterTransitionTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            ControlCenterTransition.interpolateGeometry(
+            CcTransition.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -165,7 +165,7 @@ class ControlCenterTransitionTest {
             )
 
         val follower =
-            ControlCenterTransition.followAnchorGeometry(
+            CcTransition.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -182,7 +182,7 @@ class ControlCenterTransitionTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = ControlCenterTransition
+        val policy = CcTransition
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -220,7 +220,7 @@ class ControlCenterTransitionTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = ControlCenterTransition
+        val policy = CcTransition
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
@@ -312,7 +312,7 @@ class ControlCenterTransitionTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            ControlCenterTransition.interpolateSimilarityGeometry(
+            CcTransition.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -329,7 +329,7 @@ class ControlCenterTransitionTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            ControlCenterTransition.interpolateSimilarityGeometry(
+            CcTransition.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,

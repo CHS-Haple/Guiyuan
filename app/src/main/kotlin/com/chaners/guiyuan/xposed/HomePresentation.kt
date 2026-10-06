@@ -57,13 +57,13 @@ internal object HomePresentation {
     private var controlCenterCurrent: Session? = null
     private var controlCenterEventSink: ((String) -> Unit)? = null
     private var controlCenterFailNativeSink: ((String) -> Unit)? = null
-    private var controlCenterReadySink: ((ControlCenterStateResult.Active) -> Unit)? = null
+    private var controlCenterReadySink: ((CcStateResult.Active) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
     private var failNativeSink: ((String) -> Unit)? = null
     private var keyguardFamilyEventSink: ((String) -> Unit)? = null
     private var keyguardFamilyFailNativeSink: ((String) -> Unit)? = null
     private var keyguardFamilyReadySink: ((StateResult.Active) -> Unit)? = null
-    private var controlCenterSourceScene = SourceScene.UNKNOWN
+    private var ccSourceScene = SourceScene.UNKNOWN
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
 
@@ -111,9 +111,9 @@ internal object HomePresentation {
             keyguardFamilyCurrent?.hasPresentationClaim() == true
 
     @Synchronized
-    fun updateControlCenterSourceScene(sourceScene: SourceScene) {
-        if (controlCenterSourceScene == sourceScene) return
-        controlCenterSourceScene = sourceScene
+    fun updateCcSourceScene(sourceScene: SourceScene) {
+        if (ccSourceScene == sourceScene) return
+        ccSourceScene = sourceScene
 
         // The steady-peer mirror samples Home native island state, so it is valid
         // only while Home is the authoritative Control Center source.
@@ -729,43 +729,43 @@ internal object HomePresentation {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onFailNative: (String) -> Unit,
-        onReady: (ControlCenterStateResult.Active) -> Unit,
-    ): ControlCenterStateResult {
+        onReady: (CcStateResult.Active) -> Unit,
+    ): CcStateResult {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return ControlCenterStateResult.Failure("main-thread-required")
+            return CcStateResult.Failure("main-thread-required")
         }
         if (installedHookCount != HOOK_COUNT) {
-            return ControlCenterStateResult.Failure("hooks-not-ready")
+            return CcStateResult.Failure("hooks-not-ready")
         }
         if (host !== batteryContainer || host.javaClass.name != BATTERY_CONTAINER) {
-            return ControlCenterStateResult.Failure("fake-status-bar-area-mismatch")
+            return CcStateResult.Failure("fake-status-bar-area-mismatch")
         }
         if (statusIcons.javaClass.name != STATUS_ICON_CONTAINER) {
-            return ControlCenterStateResult.Failure("status-icon-group-type-mismatch")
+            return CcStateResult.Failure("status-icon-group-type-mismatch")
         }
         if (battery.javaClass.name != BATTERY_VIEW) {
-            return ControlCenterStateResult.Failure("battery-view-type-mismatch")
+            return CcStateResult.Failure("battery-view-type-mismatch")
         }
 
         val field =
             ignoredSlotsField
-                ?: return ControlCenterStateResult.Failure("ignored-slots-field-unavailable")
+                ?: return CcStateResult.Failure("ignored-slots-field-unavailable")
         val addMethod =
             addIgnoredSlotsMethod
-                ?: return ControlCenterStateResult.Failure("add-ignored-slots-method-unavailable")
+                ?: return CcStateResult.Failure("add-ignored-slots-method-unavailable")
         val setMethod =
             setIgnoredSlotsMethod
-                ?: return ControlCenterStateResult.Failure("set-ignored-slots-method-unavailable")
+                ?: return CcStateResult.Failure("set-ignored-slots-method-unavailable")
         val hideField =
             batteryHideField
-                ?: return ControlCenterStateResult.Failure("battery-hide-field-unavailable")
+                ?: return CcStateResult.Failure("battery-hide-field-unavailable")
         HomeCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
-            ?: return ControlCenterStateResult.Failure("battery-core-width-unavailable")
+            ?: return CcStateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
         val list =
             runCatching { field.get(statusIcons) as? MutableList<String> }.getOrNull()
-                ?: return ControlCenterStateResult.Failure("ignored-slots-list-unavailable")
+                ?: return CcStateResult.Failure("ignored-slots-list-unavailable")
         list.size
 
         controlCenterEventSink = onEvent
@@ -798,18 +798,18 @@ internal object HomePresentation {
                     ownerStillCurrent = controlCenterCurrent === existing,
                 )
             ) {
-                return ControlCenterStateResult.Failure(
+                return CcStateResult.Failure(
                     "control-center-reuse-aborted-after-fail-native",
                 )
             }
             return if (existing.isLayoutCutoverReady()) {
-                ControlCenterStateResult.Active(
+                CcStateResult.Active(
                     representedSlots = representedSlots.size,
                     maskedViews = masked,
                     reused = true,
                 )
             } else {
-                ControlCenterStateResult.Prepared(
+                CcStateResult.Prepared(
                     representedSlots = representedSlots.size,
                     reused = true,
                 )
@@ -853,18 +853,18 @@ internal object HomePresentation {
                 ownerStillCurrent = controlCenterCurrent === session,
             )
         ) {
-            return ControlCenterStateResult.Failure(
+            return CcStateResult.Failure(
                 "control-center-activation-aborted-after-fail-native",
             )
         }
         return if (session.isLayoutCutoverReady()) {
-            ControlCenterStateResult.Active(
+            CcStateResult.Active(
                 representedSlots = representedSlots.size,
                 maskedViews = masked,
                 reused = false,
             )
         } else {
-            ControlCenterStateResult.Prepared(
+            CcStateResult.Prepared(
                 representedSlots = representedSlots.size,
                 reused = false,
             )
@@ -872,13 +872,13 @@ internal object HomePresentation {
     }
 
     @Synchronized
-    fun adoptControlCenterLayoutCutoverFromHotReload(): ControlCenterStateResult {
+    fun adoptControlCenterLayoutCutoverFromHotReload(): CcStateResult {
         val session =
             controlCenterCurrent
-                ?: return ControlCenterStateResult.Inactive(0)
+                ?: return CcStateResult.Inactive(0)
         val masked =
             session.adoptTransferredCompactLayout()
-                ?: return ControlCenterStateResult.Failure(
+                ?: return CcStateResult.Failure(
                     "transferred-compact-layout-adoption-failed",
                 )
         if (
@@ -886,11 +886,11 @@ internal object HomePresentation {
                 ownerStillCurrent = controlCenterCurrent === session,
             )
         ) {
-            return ControlCenterStateResult.Failure(
+            return CcStateResult.Failure(
                 "transferred-compact-layout-aborted-after-fail-native",
             )
         }
-        return ControlCenterStateResult.Active(
+        return CcStateResult.Active(
             representedSlots = representedSlots.size,
             maskedViews = masked,
             reused = true,
@@ -898,10 +898,10 @@ internal object HomePresentation {
     }
 
     @Synchronized
-    fun deactivateControlCenter(source: String): ControlCenterStateResult {
+    fun deactivateCc(source: String): CcStateResult {
         val session =
             controlCenterCurrent
-                ?: return ControlCenterStateResult.Inactive(0)
+                ?: return CcStateResult.Inactive(0)
         controlCenterCurrent = null
         val restored = session.stop(source)
         controlCenterEventSink?.invoke(
@@ -912,12 +912,12 @@ internal object HomePresentation {
         controlCenterEventSink = null
         controlCenterFailNativeSink = null
         controlCenterReadySink = null
-        return ControlCenterStateResult.Inactive(restored)
+        return CcStateResult.Inactive(restored)
     }
 
     @Synchronized
-    fun onControlCenterVisibilityChanged(visible: Boolean): Boolean =
-        controlCenterCurrent?.onControlCenterVisibilityChanged(visible) ?: true
+    fun onCcVisibility(visible: Boolean): Boolean =
+        controlCenterCurrent?.onCcVisibility(visible) ?: true
 
     @Synchronized
     fun updateControlCenterTransitionReservation(
@@ -934,7 +934,7 @@ internal object HomePresentation {
             ?: true
 
     @Synchronized
-    fun failControlCenterPresentation(reason: String): Boolean {
+    fun failCcPresentation(reason: String): Boolean {
         if (controlCenterCurrent == null) return false
         onControlCenterSessionFailure(reason)
         return true
@@ -993,7 +993,7 @@ internal object HomePresentation {
         keyguardFamilyEventSink = null
         keyguardFamilyFailNativeSink = null
         keyguardFamilyReadySink = null
-        controlCenterSourceScene = SourceScene.UNKNOWN
+        ccSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
@@ -1001,7 +1001,7 @@ internal object HomePresentation {
 
     @Synchronized
     fun resetRuntimeState(source: String) {
-        deactivateControlCenter(source)
+        deactivateCc(source)
         deactivateAod(source)
         deactivateKeyguard(source)
         deactivate(source)
@@ -1113,7 +1113,7 @@ internal object HomePresentation {
         if (role == HOME_SURFACE) {
             val homeMirrorAllowed =
                 synchronized(this) {
-                    SteadyPeerMirrorPolicy.shouldUseHomeMirror(controlCenterSourceScene)
+                    SteadyPeerMirrorPolicy.shouldUseHomeMirror(ccSourceScene)
                 }
             if (!homeMirrorAllowed) {
                 return false
@@ -1147,7 +1147,7 @@ internal object HomePresentation {
 
         val snapshot =
             synchronized(this) {
-                if (SteadyPeerMirrorPolicy.shouldUseHomeMirror(controlCenterSourceScene)) {
+                if (SteadyPeerMirrorPolicy.shouldUseHomeMirror(ccSourceScene)) {
                     SteadyPeerMirrorSnapshot(
                         active = steadyPeerMirrorActive,
                         hiddenSlots = steadyPeerMirrorHiddenSlots,
@@ -1258,7 +1258,7 @@ internal object HomePresentation {
             return
         }
         val active =
-            ControlCenterStateResult.Active(
+            CcStateResult.Active(
                 representedSlots = representedSlots.size,
                 maskedViews = maskedViews,
                 reused = reused,
@@ -1311,7 +1311,7 @@ internal object HomePresentation {
         keyguardFamilyEventSink = null
         keyguardFamilyFailNativeSink = null
         keyguardFamilyReadySink = null
-        controlCenterSourceScene = SourceScene.UNKNOWN
+        ccSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
     }
@@ -1873,7 +1873,7 @@ internal object HomePresentation {
             return restored
         }
 
-        fun onControlCenterVisibilityChanged(visible: Boolean): Boolean {
+        fun onCcVisibility(visible: Boolean): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (visible) {
                 if (fakeCarrierVisibleCycleActive && !fakeCarrierCapacityLeaseSuppressed) {
@@ -2988,25 +2988,25 @@ internal object HomePresentation {
         data class Failure(val reason: String) : StateResult
     }
 
-    internal sealed interface ControlCenterStateResult {
+    internal sealed interface CcStateResult {
         data class Active(
             val representedSlots: Int,
             val maskedViews: Int,
             val reused: Boolean,
-        ) : ControlCenterStateResult
+        ) : CcStateResult
 
         data class Prepared(
             val representedSlots: Int,
             val reused: Boolean,
-        ) : ControlCenterStateResult
+        ) : CcStateResult
 
         data class Inactive(
             val restoredViews: Int,
-        ) : ControlCenterStateResult
+        ) : CcStateResult
 
         data class Failure(
             val reason: String,
-        ) : ControlCenterStateResult
+        ) : CcStateResult
     }
 
     internal sealed interface LegacyCleanupResult {

@@ -139,11 +139,11 @@ internal object HomeRenderSession {
 
     internal fun resolveOverlayVisible(
         featureEnabled: Boolean,
-        controlCenterAllowsHome: Boolean,
+        ccAllowsHome: Boolean,
         nativeHandoffActive: Boolean,
     ): Boolean =
         featureEnabled &&
-            controlCenterAllowsHome &&
+            ccAllowsHome &&
             !nativeHandoffActive
 
     internal fun resolveOwnerReady(
@@ -240,7 +240,7 @@ internal object HomeRenderSession {
         private var rejectedTintLogged = false
         // Control Center handoff is coordinator-owned. Source visibility is
         // diagnostic context only until a projected carrier is ready.
-        private var controlCenterAllowsHome = true
+        private var ccAllowsHome = true
         private var nativeHandoffActive = initialNativeHandoffActive
         private var featureEnabled = initialFeatureEnabled
         private var modelReady = false
@@ -384,16 +384,16 @@ internal object HomeRenderSession {
                 }
                 return
             }
-            if (controlCenterAllowsHome == homeEligible) {
+            if (ccAllowsHome == homeEligible) {
                 return
             }
-            controlCenterAllowsHome = homeEligible
+            ccAllowsHome = homeEligible
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderControlCenterEligibility" +
                     " source=" + source +
                     detail +
-                    " homeEligible=" + controlCenterAllowsHome +
+                    " homeEligible=" + ccAllowsHome +
                     " visible=" + visible +
                     " nativeGeometryWrites=0"
             }
@@ -470,7 +470,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
+                        state.appliedTint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -481,12 +481,12 @@ internal object HomeRenderSession {
                     emitEvent {
                         "homeRenderTint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
                             " statusIcon=#" +
                             (
                                 resolved.statusIconTint
                                     ?.toUInt()
-                                    ?.function toString() { [native code] }(16)
+                                    ?.function function toString() { [native code] }() { [native code] }(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +
@@ -504,7 +504,7 @@ internal object HomeRenderSession {
             val visibleTrace =
                 trace?.takeIf {
                     layoutLogged &&
-                        controlCenterAllowsHome
+                        ccAllowsHome
                 }
             val update =
                 renderController.update(
@@ -600,7 +600,7 @@ internal object HomeRenderSession {
             val visible =
                 resolveOverlayVisible(
                     featureEnabled = featureEnabled,
-                    controlCenterAllowsHome = controlCenterAllowsHome,
+                    ccAllowsHome = ccAllowsHome,
                     nativeHandoffActive = nativeHandoffActive,
                 )
             probeView.visibility = if (visible) View.VISIBLE else View.GONE
@@ -629,11 +629,11 @@ internal object HomeRenderSession {
                 "homeRenderReadiness source=" + source +
                     " ownerReady=" + ownerReady +
                     " overlayEligible=" +
-                    controlCenterAllowsHome +
+                    ccAllowsHome +
                     " modelReady=" + modelReady +
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
-                    " controlCenterHomeEligible=" + controlCenterAllowsHome +
+                    " controlCenterHomeEligible=" + ccAllowsHome +
                     " featureEnabled=" + featureEnabled +
                     " nativeGeometryWrites=0"
             }

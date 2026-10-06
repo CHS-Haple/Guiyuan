@@ -4,7 +4,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-internal object ControlCenterTransition {
+internal object CcTransition {
     private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f

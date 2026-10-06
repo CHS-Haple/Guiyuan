@@ -9,7 +9,7 @@ import com.chaners.guiyuan.settings.VisualSettings
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
-internal object ControlCenterSession {
+internal object CcSession {
     private const val FAKE_ROOT_CLASS_NAME =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val BATTERY_CONTAINER_CLASS_NAME =
@@ -100,7 +100,7 @@ internal object ControlCenterSession {
         }
 
         if (existing != null) {
-            HomePresentation.deactivateControlCenter("host-replaced")
+            HomePresentation.deactivateCc("host-replaced")
             existing.stop("host-replaced")
         }
 
@@ -123,7 +123,7 @@ internal object ControlCenterSession {
 
     @Synchronized
     fun beginVisibleCycle(): Boolean =
-        HomePresentation.onControlCenterVisibilityChanged(true)
+        HomePresentation.onCcVisibility(true)
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -135,7 +135,7 @@ internal object ControlCenterSession {
         val session = current
         session?.setSceneEligible(eligible)
         if (!eligible) {
-            HomePresentation.deactivateControlCenter("scene-ineligible")
+            HomePresentation.deactivateCc("scene-ineligible")
         } else {
             session?.prepareNativePresentation(reused = true)
         }
@@ -186,7 +186,7 @@ internal object ControlCenterSession {
             shouldAdoptCompactReady(transferredCompactReady)
         ) {
             when (HomePresentation.adoptControlCenterLayoutCutoverFromHotReload()) {
-                is HomePresentation.ControlCenterStateResult.Active -> {
+                is HomePresentation.CcStateResult.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
@@ -252,7 +252,7 @@ internal object ControlCenterSession {
         val session = current
         session?.setFeatureEnabled(settings.enabled)
         if (!settings.enabled || !sceneEligible) {
-            HomePresentation.deactivateControlCenter(
+            HomePresentation.deactivateCc(
                 if (!settings.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
@@ -273,7 +273,7 @@ internal object ControlCenterSession {
         pendingPrearm?.cancel()
         pendingPrearm = null
         if (releaseNativePresentation) {
-            HomePresentation.deactivateControlCenter(source)
+            HomePresentation.deactivateCc(source)
         }
         current?.stop(source)
         current = null
@@ -416,13 +416,13 @@ internal object ControlCenterSession {
             oldRight: Int,
             oldBottom: Int,
         ) {
-            ControlCenterSession.onPendingPrearmLayout(this)
+            CcSession.onPendingPrearmLayout(this)
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
 
         override fun onViewDetachedFromWindow(view: View) {
-            ControlCenterSession.onPendingPrearmDetached(this)
+            CcSession.onPendingPrearmDetached(this)
         }
     }
 
@@ -621,7 +621,7 @@ internal object ControlCenterSession {
                     previousRequestedVisible = requestedVisible,
                     nextRequestedVisible = visible,
                 ) &&
-                !HomePresentation.onControlCenterVisibilityChanged(true)
+                !HomePresentation.onCcVisibility(true)
             ) {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
@@ -632,7 +632,7 @@ internal object ControlCenterSession {
                     nextRequestedVisible = visible,
                 )
             ) {
-                HomePresentation.onControlCenterVisibilityChanged(false)
+                HomePresentation.onCcVisibility(false)
             }
             requestedVisible = visible
             syncPresentation("visibility")
@@ -686,7 +686,7 @@ internal object ControlCenterSession {
                         },
                     )
             ) {
-                is HomePresentation.ControlCenterStateResult.Active -> {
+                is HomePresentation.CcStateResult.Active -> {
                     setNativePresentationReady(
                         ready = true,
                         maskedViews = result.maskedViews,
@@ -695,7 +695,7 @@ internal object ControlCenterSession {
                     AttachResult.Ready
                 }
 
-                is HomePresentation.ControlCenterStateResult.Prepared -> {
+                is HomePresentation.CcStateResult.Prepared -> {
                     emitEvent {
                         "controlCenterProjection prearm state=prepared " +
                             "reused=" + reused +
@@ -705,7 +705,7 @@ internal object ControlCenterSession {
                     AttachResult.Ready
                 }
 
-                is HomePresentation.ControlCenterStateResult.Failure -> {
+                is HomePresentation.CcStateResult.Failure -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -714,7 +714,7 @@ internal object ControlCenterSession {
                     AttachResult.Failure(result.reason)
                 }
 
-                is HomePresentation.ControlCenterStateResult.Inactive -> {
+                is HomePresentation.CcStateResult.Inactive -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -895,7 +895,7 @@ internal object ControlCenterSession {
                 )
             if (!retainNativePresentation) {
                 nativePresentationReady = false
-                HomePresentation.deactivateControlCenter(
+                HomePresentation.deactivateCc(
                     "projection-layout-unavailable-detached",
                 )
             }
@@ -963,7 +963,7 @@ internal object ControlCenterSession {
             layoutReady = false
             nativePresentationReady = false
             renderView.visibility = View.GONE
-            HomePresentation.deactivateControlCenter(
+            HomePresentation.deactivateCc(
                 "fake-root-detached",
             )
             dispatchReadiness("detach")

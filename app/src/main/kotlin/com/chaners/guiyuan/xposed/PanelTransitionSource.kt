@@ -46,8 +46,8 @@ internal object PanelTransitionSource {
 
     private var controlProbe = ProbeState()
     @Volatile
-    private var controlCenterHomeEligible: Boolean? = null
-    private var controlAnchorContract: ControlCenterAnchorContract? = null
+    private var ccHomeEligible: Boolean? = null
+    private var controlAnchorContract: CcAnchorContract? = null
     private var controlHeaderRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
 
@@ -107,7 +107,7 @@ internal object PanelTransitionSource {
                 .apply { isAccessible = true }
 
         controlAnchorContract =
-            ControlCenterAnchorContract.resolve(
+            CcAnchorContract.resolve(
                 classLoader = classLoader,
                 delegateClass = controlClass,
             )
@@ -125,23 +125,23 @@ internal object PanelTransitionSource {
                         Hooker { chain ->
                             val visible = chain.getArg(0) as? Boolean
                             val result = chain.proceed()
-                            controlCenterHomeEligible =
-                                controlCenterAllowsHome(visible)
-                            val controlCenterPresentationHost =
+                            ccHomeEligible =
+                                ccAllowsHome(visible)
+                            val ccHost =
                                 if (visible == true) {
-                                    resolveControlCenterFakePresentationHost(chain.thisObject)
+                                    resolveCcHost(chain.thisObject)
                                 } else {
                                     null
                                 }
-                            val controlCenterSourceScene =
+                            val ccSourceScene =
                                 if (visible == true) {
-                                    resolveControlCenterSourceScene(chain.thisObject)
+                                    resolveCcSourceScene(chain.thisObject)
                                 } else {
                                     null
                                 }
                             val transitionEndpoints =
                                 if (visible == true) {
-                                    resolveControlCenterTransitionEndpoints(chain.thisObject)
+                                    resolveCcEndpoints(chain.thisObject)
                                 } else {
                                     null
                                 }
@@ -152,12 +152,12 @@ internal object PanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = visible,
-                                    controlCenterPresentationHost = controlCenterPresentationHost,
-                                    controlCenterSourceScene = controlCenterSourceScene,
-                                    controlCenterTransitionEndpoints = transitionEndpoints,
-                                    controlCenterBatteryIslandActive =
+                                    ccHost = ccHost,
+                                    ccSourceScene = ccSourceScene,
+                                    ccEndpoints = transitionEndpoints,
+                                    ccBatteryIslandActive =
                                         if (visible == true) {
-                                            resolveControlCenterBatteryIslandActive(chain.thisObject)
+                                            resolveCcBatteryIsland(chain.thisObject)
                                         } else {
                                             null
                                         },
@@ -212,8 +212,8 @@ internal object PanelTransitionSource {
 
             // Control Center visibility is the only panel runtime authority.
             // Notification Shade inherits the native Home carrier lifecycle.
-            if (controlCenterHomeEligible == null) {
-                controlCenterHomeEligible = true
+            if (ccHomeEligible == null) {
+                ccHomeEligible = true
             }
 
             handles +=
@@ -239,8 +239,8 @@ internal object PanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = null,
-                                    controlCenterTransitionEndpoints = transitionEndpoints,
-                                    controlCenterBatteryIslandActive = batteryIslandActive,
+                                    ccEndpoints = transitionEndpoints,
+                                    ccBatteryIslandActive = batteryIslandActive,
                                 )
                             // Reservation/source projection must be committed before
                             // HyperOS consumes this expansion sample. Drawing still
@@ -272,12 +272,12 @@ internal object PanelTransitionSource {
                                     expanded = null,
                                     tracking = null,
                                     visible = null,
-                                    controlCenterAppearance = first,
-                                    controlCenterAppearanceAnimated = second,
-                                    controlCenterTransitionEndpoints =
+                                    ccAppearance = first,
+                                    ccAppearanceAnimated = second,
+                                    ccEndpoints =
                                         controlAnchorContract
                                             ?.transitionEndpointsFromCallback(chain.thisObject),
-                                    controlCenterBatteryIslandActive =
+                                    ccBatteryIslandActive =
                                         controlAnchorContract
                                             ?.batteryIslandFromCallback(chain.thisObject),
                                 )
@@ -294,7 +294,7 @@ internal object PanelTransitionSource {
             handles.asReversed().forEach { handle ->
                 runCatching { handle.unhook() }
             }
-            controlCenterHomeEligible = false
+            ccHomeEligible = false
             throw error
         }
     }
@@ -302,7 +302,7 @@ internal object PanelTransitionSource {
     fun resetRuntimeState() {
         synchronized(this) {
             controlProbe = ProbeState()
-            controlCenterHomeEligible = null
+            ccHomeEligible = null
             controlAnchorContract = null
             controlHeaderRef = WeakReference(null)
             fakeIslandContractRootRef = WeakReference(null)
@@ -392,7 +392,7 @@ internal object PanelTransitionSource {
                         val value =
                             runCatching { resolved.get(view) }
                                 .getOrNull()
-                                ?.toString()
+                                ?.function toString() { [native code] }()
                                 ?: "unavailable"
                         name + "=" + value
                     }
@@ -446,20 +446,20 @@ internal object PanelTransitionSource {
         CONTROL_CENTER_RUNTIME_HOOK_COUNT +
             if (includeControlCenterDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
 
-    fun currentControlCenterHomeEligibility(): Boolean? =
-        controlCenterHomeEligible
+    fun currentCcHomeEligibility(): Boolean? =
+        ccHomeEligible
 
     @Synchronized
-    fun restoreControlCenterHomeEligibility(eligible: Boolean?) {
+    fun restoreCcHomeEligibility(eligible: Boolean?) {
         if (eligible != null) {
-            controlCenterHomeEligible = eligible
+            ccHomeEligible = eligible
         }
     }
 
-    internal fun controlCenterAllowsHome(visible: Boolean?): Boolean =
+    internal fun ccAllowsHome(visible: Boolean?): Boolean =
         visible == false
 
-    private fun resolveControlCenterHeader(delegate: Any?): Any? {
+    private fun resolveCcHeader(delegate: Any?): Any? {
         delegate ?: return null
         val contract = controlAnchorContract ?: return null
         return controlHeaderRef.get()
@@ -468,49 +468,49 @@ internal object PanelTransitionSource {
             }
     }
 
-    private fun resolveControlCenterFakePresentationHost(
+    private fun resolveCcHost(
         delegate: Any?,
     ): ViewGroup? {
         val contract = controlAnchorContract ?: return null
-        val header = resolveControlCenterHeader(delegate) ?: return null
+        val header = resolveCcHeader(delegate) ?: return null
         return contract.fakePresentationRoot(header)
     }
 
-    private fun captureControlCenterAnchor(delegate: Any?): ControlCenterAnchorSnapshot? {
+    private fun captureCcAnchor(delegate: Any?): CcAnchorSnapshot? {
         val contract = controlAnchorContract ?: return null
-        val header = resolveControlCenterHeader(delegate) ?: return null
+        val header = resolveCcHeader(delegate) ?: return null
         return contract.snapshot(header)
     }
 
-    private fun resolveControlCenterTransitionEndpoints(
+    private fun resolveCcEndpoints(
         delegate: Any?,
-    ): ControlCenterTransitionEndpoints? {
+    ): CcTransitionEndpoints? {
         val contract = controlAnchorContract ?: return null
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveCcHeader(delegate)
                 ?: return null
         return contract.transitionEndpoints(header)
     }
 
-    private fun resolveControlCenterBatteryIslandActive(
+    private fun resolveCcBatteryIsland(
         delegate: Any?,
     ): Boolean? {
         val contract = controlAnchorContract ?: return null
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveCcHeader(delegate)
                 ?: return null
         return contract.batteryIslandActive(header)
     }
 
-    private fun resolveControlCenterSourceScene(delegate: Any?): SourceScene {
+    private fun resolveCcSourceScene(delegate: Any?): SourceScene {
         val contract = controlAnchorContract ?: return SourceScene.UNKNOWN
         val header =
-            resolveControlCenterHeader(delegate)
+            resolveCcHeader(delegate)
                 ?: return SourceScene.UNKNOWN
         val realSystemIcons =
             contract.realSystemIcons(header)
                 ?: return SourceScene.UNKNOWN
-        return classifyControlCenterSourceScene(
+        return classifyCcSourceScene(
             homeIdentityMatches =
                 HomePresentation.ownsBatteryContainer(realSystemIcons),
             structuralScene =
@@ -518,7 +518,7 @@ internal object PanelTransitionSource {
         )
     }
 
-    internal fun classifyControlCenterSourceScene(
+    internal fun classifyCcSourceScene(
         homeIdentityMatches: Boolean,
         structuralScene: SourceScene,
     ): SourceScene =
@@ -545,20 +545,20 @@ internal object PanelTransitionSource {
         val visibleChanged =
             update.visible != null && update.visible != probe.visible
         val sourceSceneChanged =
-            update.controlCenterSourceScene != null &&
-                update.controlCenterSourceScene != probe.sourceScene
+            update.ccSourceScene != null &&
+                update.ccSourceScene != probe.sourceScene
         val batteryIslandChanged =
-            update.controlCenterBatteryIslandActive != null &&
-                update.controlCenterBatteryIslandActive != probe.batteryIsland
+            update.ccBatteryIslandActive != null &&
+                update.ccBatteryIslandActive != probe.batteryIsland
 
         if (update.expanded != null) probe.expanded = update.expanded
         if (update.tracking != null) probe.tracking = update.tracking
         if (update.visible != null) probe.visible = update.visible
-        if (update.controlCenterSourceScene != null) {
-            probe.sourceScene = update.controlCenterSourceScene
+        if (update.ccSourceScene != null) {
+            probe.sourceScene = update.ccSourceScene
         }
-        if (update.controlCenterBatteryIslandActive != null) {
-            probe.batteryIsland = update.controlCenterBatteryIslandActive
+        if (update.ccBatteryIslandActive != null) {
+            probe.batteryIsland = update.ccBatteryIslandActive
         }
 
         if (
@@ -574,9 +574,9 @@ internal object PanelTransitionSource {
         }
 
         val sourceSceneSummary =
-            update.controlCenterSourceScene?.let { " sourceScene=" + it.name }.orEmpty()
+            update.ccSourceScene?.let { " sourceScene=" + it.name }.orEmpty()
         val batteryIslandSummary =
-            update.controlCenterBatteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
+            update.ccBatteryIslandActive?.let { " batteryIsland=" + it }.orEmpty()
         dispatchRuntimeCallback(
             callback = {
                 onEvent(
@@ -600,13 +600,13 @@ internal object PanelTransitionSource {
         val expanded: Boolean?,
         val tracking: Boolean?,
         val visible: Boolean?,
-        val controlCenterPresentationHost: ViewGroup? = null,
-        val controlCenterSourceScene: SourceScene? = null,
-        val controlCenterAppearance: Boolean? = null,
-        val controlCenterAppearanceAnimated: Boolean? = null,
-        val controlCenterTransitionEndpoints: ControlCenterTransitionEndpoints? = null,
-        val controlCenterBatteryIslandActive: Boolean? = null,
-        val controlCenterAnchor: ControlCenterAnchorSnapshot? = null,
+        val ccHost: ViewGroup? = null,
+        val ccSourceScene: SourceScene? = null,
+        val ccAppearance: Boolean? = null,
+        val ccAppearanceAnimated: Boolean? = null,
+        val ccEndpoints: CcTransitionEndpoints? = null,
+        val ccBatteryIslandActive: Boolean? = null,
+        val controlCenterAnchor: CcAnchorSnapshot? = null,
     )
 
     internal enum class Source(
@@ -615,12 +615,12 @@ internal object PanelTransitionSource {
         CONTROL_CENTER("control-center"),
     }
 
-    internal data class ControlCenterTransitionEndpoints(
+    internal data class CcTransitionEndpoints(
         val fakeRoot: ViewGroup,
         val finalRoot: ViewGroup,
     )
 
-    internal data class ControlCenterFakePresentationSnapshot(
+    internal data class CcFakeSnapshot(
         val rootClassName: String?,
         val rootVisibility: Int?,
         val rootAlpha: Float?,
@@ -647,7 +647,7 @@ internal object PanelTransitionSource {
                     ")}"
     }
 
-    internal data class ControlCenterAnchorSnapshot(
+    internal data class CcAnchorSnapshot(
         val systemIconsX: Int?,
         val systemIconsWidth: Int?,
         val statusIconsX: Int?,
@@ -658,7 +658,7 @@ internal object PanelTransitionSource {
         val normalStatusIconsTranslationX: Int?,
         val batteryWidthDiff: Int?,
         val addBatteryIsland: Boolean?,
-        val controlCenterExpanding: Boolean?,
+        val ccExpanding: Boolean?,
     ) {
         val summary: String
             get() =
@@ -673,11 +673,11 @@ internal object PanelTransitionSource {
                     ",normalStatusIconsTx=" + (normalStatusIconsTranslationX ?: "unknown") +
                     ",batteryWidthDiff=" + (batteryWidthDiff ?: "unknown") +
                     ",addBatteryIsland=" + (addBatteryIsland ?: "unknown") +
-                    ",expanding=" + (controlCenterExpanding ?: "unknown") +
+                    ",expanding=" + (ccExpanding ?: "unknown") +
                     "}"
     }
 
-    private class ControlCenterAnchorContract(
+    private class CcAnchorContract(
         private val callbackClass: Class<*>,
         private val callbacksField: Field,
         private val callbackOuterField: Field,
@@ -721,10 +721,10 @@ internal object PanelTransitionSource {
 
         fun transitionEndpoints(
             header: Any,
-        ): ControlCenterTransitionEndpoints? {
+        ): CcTransitionEndpoints? {
             val fakeRoot = fakeStatusBar(header) ?: return null
             val finalRoot = finalStatusBar(header) ?: return null
-            return ControlCenterTransitionEndpoints(
+            return CcTransitionEndpoints(
                 fakeRoot = fakeRoot,
                 finalRoot = finalRoot,
             )
@@ -732,7 +732,7 @@ internal object PanelTransitionSource {
 
         fun transitionEndpointsFromCallback(
             callback: Any?,
-        ): ControlCenterTransitionEndpoints? {
+        ): CcTransitionEndpoints? {
             val header = headerFromCallback(callback) ?: return null
             return transitionEndpoints(header)
         }
@@ -745,14 +745,14 @@ internal object PanelTransitionSource {
         fun batteryIslandActive(header: Any): Boolean? =
             readBoolean(addBatteryIslandField, header)
 
-        fun snapshotFromCallback(callback: Any?): ControlCenterAnchorSnapshot? {
+        fun snapshotFromCallback(callback: Any?): CcAnchorSnapshot? {
             val header = headerFromCallback(callback) ?: return null
             return snapshot(header)
         }
 
         fun fakePresentationFromCallback(
             callback: Any?,
-        ): ControlCenterFakePresentationSnapshot? {
+        ): CcFakeSnapshot? {
             val header = headerFromCallback(callback) ?: return null
             val fakeRoot = fakeStatusBar(header) ?: return null
             val delegate =
@@ -762,7 +762,7 @@ internal object PanelTransitionSource {
             val statusBarArea =
                 runCatching { fakeStatusBarAreaField.get(delegate) as? View }
                     .getOrNull()
-            return ControlCenterFakePresentationSnapshot(
+            return CcFakeSnapshot(
                 rootClassName = fakeRoot.javaClass.name,
                 rootVisibility = fakeRoot.visibility,
                 rootAlpha = fakeRoot.alpha,
@@ -805,7 +805,7 @@ internal object PanelTransitionSource {
             }.getOrNull()
         }
 
-        fun snapshot(header: Any): ControlCenterAnchorSnapshot? {
+        fun snapshot(header: Any): CcAnchorSnapshot? {
             val anchor =
                 runCatching { statusBarAnchorField.get(header) }
                     .getOrNull()
@@ -819,7 +819,7 @@ internal object PanelTransitionSource {
             val statusLocation =
                 runCatching { statusIconsLocationField.get(anchor) as? IntArray }
                     .getOrNull()
-            return ControlCenterAnchorSnapshot(
+            return CcAnchorSnapshot(
                 systemIconsX = systemLocation?.getOrNull(0),
                 systemIconsWidth = readInt(systemIconsWidthField, anchor),
                 statusIconsX = statusLocation?.getOrNull(0),
@@ -832,7 +832,7 @@ internal object PanelTransitionSource {
                     readInt(normalStatusIconsTranslationXField, header),
                 batteryWidthDiff = readInt(batteryWidthDiffField, header),
                 addBatteryIsland = readBoolean(addBatteryIslandField, header),
-                controlCenterExpanding =
+                ccExpanding =
                     readBoolean(controlCenterExpandingField, header),
             )
         }
@@ -847,7 +847,7 @@ internal object PanelTransitionSource {
             fun resolve(
                 classLoader: ClassLoader,
                 delegateClass: Class<*>,
-            ): ControlCenterAnchorContract? =
+            ): CcAnchorContract? =
                 runCatching {
                     val callbackClass =
                         Class.forName(
@@ -891,7 +891,7 @@ internal object PanelTransitionSource {
                             false,
                             classLoader,
                         )
-                    ControlCenterAnchorContract(
+                    CcAnchorContract(
                         callbackClass = callbackClass,
                         callbacksField =
                             delegateClass.getDeclaredField("callbacks").accessible(),
