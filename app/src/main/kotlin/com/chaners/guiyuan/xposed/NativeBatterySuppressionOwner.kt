@@ -142,8 +142,7 @@ internal object NativeBatterySuppressionOwner {
             clearOwnedStateLocked()
             eventSink = onEvent
             nativeLayoutHideSink = null
-            
-                error.message ?: error.javaClass.simpleName
+            error.message ?: error.javaClass.simpleName
         }
     }
 
