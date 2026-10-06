@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal data class DiagnosticsSnapshot(
-    val environment: RuntimeEnvironmentInfo,
+    val environment: RuntimeEnv,
     val diagnosticsLevel: DiagnosticsLevel,
     val runtimeLog: DiagnosticsLogReader.Snapshot,
     val runtimeHealth: RuntimeHealthSnapshot,
@@ -19,7 +19,7 @@ internal data class DiagnosticsSnapshot(
 internal object DiagnosticsSnapshotProvider {
     suspend fun capture(context: Context): DiagnosticsSnapshot {
         val appCtx = context.applicationContext
-        val env = RuntimeEnvironmentInfo.resolve(appCtx)
+        val env = RuntimeEnv.resolve(appCtx)
         val level = DiagnosticsRepo(appCtx).currentLevel()
         val log = DiagnosticsLogReader.read()
         val entries =

@@ -77,16 +77,16 @@ internal object DiagnosticsReportBuilder {
             appendLine()
             appendLine("[Device]")
             appendLine("manufacturer=" + env.manufacturer)
-            appendLine("name=" + env.deviceName)
+            appendLine("name=" + env.device)
             appendLine("model=" + env.model)
             appendLine("device=" + env.codename)
             appendLine("android=" + env.androidVersion)
             appendLine("sdk=" + env.sdk)
             appendLine("os=" + env.osVersion)
-            appendLine("systemUiVersion=" + env.systemUiVersionName)
+            appendLine("systemUiVersion=" + env.sysUiVersion)
             appendLine(
-                "systemUiVersionCode=" +
-                    (env.systemUiVersionCode?.toString() ?: "unknown"),
+                "sysUiVersionCode=" +
+                    (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
             appendLine("[Runtime health]")

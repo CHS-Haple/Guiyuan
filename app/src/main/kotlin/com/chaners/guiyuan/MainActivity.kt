@@ -28,33 +28,33 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        (application as GyApplication).refreshXposedRuntimeStatus()
+        (application as GyApplication).refreshXposedStatus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val initialSystemDarkMode =
+        val initialDark =
             resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
                 Configuration.UI_MODE_NIGHT_YES
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 Color.TRANSPARENT,
                 Color.TRANSPARENT,
-            ) { initialSystemDarkMode },
+            ) { initialDark },
             navigationBarStyle = SystemBarStyle.auto(
                 Color.TRANSPARENT,
                 Color.TRANSPARENT,
-            ) { initialSystemDarkMode },
+            ) { initialDark },
         )
         window.isNavigationBarContrastEnforced = false
 
-        val repository = AppearanceSettingsRepository(applicationContext)
-        val initialAppLanguage = AppPlatformSettings.currentLanguage(this)
-        val initialLauncherIconHidden = AppPlatformSettings.isLauncherIconHidden(this)
+        val repo = AppearanceSettingsRepository(applicationContext)
+        val initialLanguage = AppPlatformSettings.currentLanguage(this)
+        val initialIconHidden = AppPlatformSettings.isLauncherIconHidden(this)
 
         setContent {
-            val settings by repository.settings.collectAsState(initial = AppearanceSettings())
+            val settings by repo.settings.collectAsState(initial = AppearanceSettings())
             val scope = rememberCoroutineScope()
             val systemDark = isSystemInDarkTheme()
             val darkMode =
@@ -64,14 +64,14 @@ class MainActivity : ComponentActivity() {
                     AppThemeMode.System -> systemDark
                 }
             var appLanguage by remember {
-                mutableStateOf(initialAppLanguage)
+                mutableStateOf(initialLanguage)
             }
             var launcherIconHidden by remember {
-                mutableStateOf(initialLauncherIconHidden)
+                mutableStateOf(initialIconHidden)
             }
 
             DisposableEffect(darkMode) {
-                updateSystemBarIconAppearance(darkMode)
+                updateBarIcons(darkMode)
                 onDispose { }
             }
 
@@ -81,25 +81,25 @@ class MainActivity : ComponentActivity() {
                 appLanguage = appLanguage,
                 launcherIconHidden = launcherIconHidden,
                 onHotReload = { onComplete ->
-                    (application as GyApplication).hotReloadSystemUi(onComplete)
+                    (application as GyApplication).hotReloadSysUi(onComplete)
                 },
                 onThemeModeChange = { mode ->
-                    scope.launch { repository.setThemeMode(mode) }
+                    scope.launch { repo.setThemeMode(mode) }
                 },
                 onDynamicColorEnabledChange = { enabled ->
-                    scope.launch { repository.setDynamicColorEnabled(enabled) }
+                    scope.launch { repo.setDynamicColorEnabled(enabled) }
                 },
                 onFloatingNavigationBarEnabledChange = { enabled ->
-                    scope.launch { repository.setFloatingNavigationBarEnabled(enabled) }
+                    scope.launch { repo.setFloatingNavigationBarEnabled(enabled) }
                 },
                 onFloatingNavigationStyleChange = { style: FloatingNavigationStyle ->
-                    scope.launch { repository.setFloatingNavigationStyle(style) }
+                    scope.launch { repo.setFloatingNavigationStyle(style) }
                 },
                 onFloatingNavigationContentChange = { content: FloatingNavigationContent ->
-                    scope.launch { repository.setFloatingNavigationContent(content) }
+                    scope.launch { repo.setFloatingNavigationContent(content) }
                 },
                 onSwipeBackEnabledChange = { enabled ->
-                    scope.launch { repository.setSwipeBackEnabled(enabled) }
+                    scope.launch { repo.setSwipeBackEnabled(enabled) }
                 },
                 onAppLanguageChange = { language ->
                     if (language != appLanguage) {
@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun updateSystemBarIconAppearance(darkMode: Boolean) {
+    private fun updateBarIcons(darkMode: Boolean) {
         val lightBarsMask =
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
                 WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS

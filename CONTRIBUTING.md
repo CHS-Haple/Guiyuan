@@ -89,7 +89,36 @@ A visual sizing issue does not automatically justify native layout mutation. A t
 ### Compatibility and fallback
 The pinned SystemUI profile is evidence for the current target, not proof for every HyperOS build. Live runtime topology is authoritative when other modules or system variants can alter the View tree. Failure should restore the smallest affected surface to native.
 
-## 5. Diagnostics, UI, and text
+## 5. Maintainability
+
+Optimize for the next human maintainer. Prefer the shortest name or structure that stays obvious in its actual scope; do not optimize for maximum verbosity or for clever brevity.
+
+### Naming
+- Name to the scope. Local variables and private members may be short when nearby context already carries the meaning; cross-file and architecture-boundary names must retain enough context to stay searchable and unambiguous.
+- When the original meaning stays obvious, shorten aggressively with familiar project/platform forms such as `SysUi`, `Diag`, `Env`, `Repo`, `Prefs`, `Ctx`, `Cfg`, `AOD`, `QS`, and `CC`. Use natural Kotlin casing such as `SysUi` for a type segment and `sysUi` for a value.
+- Remove repeated product or domain wording when the package, file, receiver, or owner already establishes it. Use `Gy` only where Guiyuan identity is actually useful.
+- Keep words such as `Owner`, `Source`, `Policy`, `Session`, `Contract`, and `Probe` only when they carry real responsibility, lifecycle, authority, or compatibility meaning. Do not keep them merely to make a name sound formal.
+- File names should normally match the primary type. Cohesive helper files may keep a broader domain name when splitting them would make navigation worse.
+- Persisted preference keys, protocol/event names, log schema fields, reflection/class/member targets, resource identities, Xposed-facing identifiers, and other externally consumed names are compatibility surfaces. Do not rename them as cleanup without an explicit migration reason.
+- Do not keep obsolete aliases solely to preserve old internal names. Retain an alias only when a real compatibility or migration boundary requires it.
+- Do not use broad search/replace as the renaming method. Inspect each symbol, its call sites, and same-text uses first; edit the intended references explicitly, then search again for stale old names and accidental changes.
+- Remove dead helpers only after confirming they have no normal references and are not reached through reflection, serialization, resources, generated code, or another external contract.
+
+### Comments
+- Add a comment only when it helps a future maintainer understand something the code cannot express cleanly.
+- Prefer short, natural comments that explain **why**, an invariant, ownership, lifecycle, fallback behavior, or a non-obvious Android/HyperOS/Xposed limitation.
+- Do not narrate the next line, repeat names/types, document obvious control flow, or leave Build-by-Build debugging history in source comments.
+- Do not stamp the same comment template across similar files. Different code may need different explanation, and many locations need no comment at all.
+- Keep the comment beside the invariant it protects. Update or remove it when that invariant changes so comments do not become a second, stale implementation.
+
+### Refactor discipline
+- Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
+- Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
+- Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
+- Prefer deleting proven dead code and redundant indirection over renaming it.
+- Do not run CI for every micro-edit. Validate at meaningful checkpoints; request device evidence only when the refactor can plausibly change runtime behavior.
+
+## 6. Diagnostics, UI, and text
 
 Diagnostics should be event-driven and bounded:
 
@@ -123,15 +152,14 @@ For Material Symbols used as semantic row-leading icons:
 
 `SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
 
-Public identity is Guiyuan / 归元, package com.chaners.guiyuan. In internal code, use `Gy` only where product identity is actually needed and omit product-name prefixes when package or domain context already makes ownership clear. Preserve established platform names such as `SystemUi` when they communicate a real integration boundary; prefer natural abbreviations over project-specific shorthand.
-
-## 6. Git workflow
+## 7. Git workflow
 
 Use the lightest route that keeps the change attributable.
 
 Branch roles:
 - feat/* — one coherent capability or behavior change;
 - fix/* — one bounded correction;
+- refactor/* — behavior-neutral maintainability work with a coherent review boundary;
 - dev — integration;
 - main — accepted stable baseline;
 - hotfix/* — urgent correction from main;
@@ -144,7 +172,7 @@ A work branch represents one coherent change boundary, not every tweak, diagnost
 ### Product/runtime path
 
 ~~~text
-feat/* or fix/* -> dev -> dev-to-main PR -> main
+feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
 Create work branches from current dev.
@@ -153,7 +181,7 @@ A PR may stay Draft while implementation is moving. Mark it ready once it reache
 
 Merge to dev when the change is complete, deterministic blockers are resolved, required automated validation passes, and required focused device evidence has passed. If a remaining test genuinely depends on integrated dev state, note it explicitly.
 
-Use squash merge for normal feat/fix -> dev work.
+Use squash merge for normal feat/fix/refactor -> dev work.
 
 ### Stable promotion
 The dev-to-main PR is the promotion boundary. Do not create promote/*.
@@ -172,7 +200,7 @@ CI/build/release workflow changes require Full validation because they alter the
 ### Hotfix
 Urgent stable defects may use hotfix/* from main. Keep the fix narrow, validate it appropriately, merge to main, then reconcile it into dev before the next promotion.
 
-## 7. CI and device validation
+## 8. CI and device validation
 
 CI has three developer-facing scopes.
 
@@ -203,7 +231,7 @@ Request real-device testing when its result can change an engineering decision o
 
 Do not request device testing merely because a new commit or APK exists. Group related changes when failure attribution remains clear.
 
-## 8. Versions, dependencies, and release
+## 9. Versions, dependencies, and release
 
 Current display/build identity comes from project build configuration. ROADMAP records the first formal-release target; no separate version-status document is required.
 
@@ -215,7 +243,7 @@ Dependency updates require relevance and exact-revision evidence where applicabl
 
 Formal stable releases publish from prepared main state and must satisfy release workflow, signing, metadata, version, tag, and changelog checks.
 
-## 9. Development memory
+## 10. Development memory
 
 Daily recovery is intentionally short.
 
@@ -257,7 +285,7 @@ Update only when a reusable architecture contract or reusable evidence changes. 
 ### CHANGELOG
 Update only for durable net behavior, compatibility, public/contributor-facing engineering state, or release changes.
 
-## 10. Definition of done
+## 11. Definition of done
 
 Apply only the checks relevant to the change.
 

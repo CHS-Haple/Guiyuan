@@ -70,7 +70,7 @@ import com.chaners.guiyuan.settings.batteryTopTextUiScale
 import com.chaners.guiyuan.settings.batteryTopTextUiScaleDefault
 import com.chaners.guiyuan.settings.batteryTopVerticalOffsetUi
 import com.chaners.guiyuan.settings.mobileTypeSizeScaleDefault
-import com.chaners.guiyuan.system.SystemUiScopeController
+import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -584,7 +584,7 @@ internal fun SettingsHubScreen(
                         restartAfterDialogDismiss = false
                         restartInProgress = true
                         scope.launch {
-                            val success = SystemUiScopeController.restart()
+                            val success = SysUiScope.restart()
                             restartInProgress = false
                             if (!success) {
                                 showRestartFailure = true
