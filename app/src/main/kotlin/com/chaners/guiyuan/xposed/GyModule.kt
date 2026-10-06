@@ -3533,7 +3533,7 @@ class GyModule : XposedModule() {
         val restoredPresentationViews =
             SystemUiHomePresentationOwner.releaseGenerationForHotReload(
                 requestLayout =
-                    SystemUiHomePresentationOwner.HotReloadHandoffPolicy
+                    HotReloadHandoffPolicy
                         .shouldRequestLayoutOnRelease(continuousHandoff),
             )
         SystemUiNativeNetworkSuppressionOwner.deactivate("hotReload-oldGeneration")
@@ -3555,7 +3555,7 @@ class GyModule : XposedModule() {
             "homePresentationRestoredViews" to restoredPresentationViews,
             "continuousHandoff" to continuousHandoff,
             "intermediateRequestLayout" to
-                SystemUiHomePresentationOwner.HotReloadHandoffPolicy
+                HotReloadHandoffPolicy
                     .shouldRequestLayoutOnRelease(continuousHandoff),
             "stableStatusDetached" to true,
             "airplaneObserverDetached" to true,
