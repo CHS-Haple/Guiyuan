@@ -61,7 +61,7 @@ For defects, investigate in this order:
 
 Do not add geometry, timing, alpha, visibility, polling, or delayed patches merely because they hide one symptom. When several explanations remain plausible, prefer a bounded single-variable diagnostic. New evidence may invalidate the current hypothesis.
 
-Before committing or starting CI for a non-trivial checkpoint, review the complete base-to-HEAD diff rather than only the latest edit. Check requirement closure, naming/comments, stale references, dead code, compatibility contracts, ownership/lifecycle, hot paths, tests, and documentation. Fix deterministic review findings before asking CI to find them.
+Before committing or starting CI for a non-trivial checkpoint, review the complete base-to-HEAD diff rather than only the latest edit. Check requirement closure, naming/comments, stale references, dead code, compatibility contracts, ownership/lifecycle, hot paths, tests, and documentation. Fix deterministic review findings before asking CI to find them. Group related deterministic cleanup into the same coherent checkpoint instead of pushing avoidable one-line follow-ups that only rerun the same validation.
 
 ## 4. Runtime safety
 
@@ -143,6 +143,7 @@ Use the lightest route that keeps the change attributable.
 Branch roles:
 - feat/* — one coherent capability or behavior change;
 - fix/* — one bounded correction;
+- refactor/* — one coherent behavior-preserving maintainability or structure change;
 - dev — integration;
 - main — accepted stable baseline;
 - hotfix/* — urgent correction from main;
@@ -155,7 +156,7 @@ A work branch represents one coherent change boundary, not every tweak, diagnost
 ### Product/runtime path
 
 ~~~text
-feat/* or fix/* -> dev -> dev-to-main PR -> main
+feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
 Create work branches from current dev.
@@ -164,7 +165,7 @@ A PR may stay Draft while implementation is moving. Mark it ready once it reache
 
 Merge to dev when the change is complete, deterministic blockers are resolved, required automated validation passes, and required focused device evidence has passed. If a remaining test genuinely depends on integrated dev state, note it explicitly.
 
-Use squash merge for normal feat/fix -> dev work.
+Use squash merge for normal feat/fix/refactor -> dev work. If a refactor starts changing user-visible or runtime behavior, split or reclassify that change rather than hiding it inside a behavior-preserving refactor.
 
 ### Stable promotion
 The dev-to-main PR is the promotion boundary. Do not create promote/*.
