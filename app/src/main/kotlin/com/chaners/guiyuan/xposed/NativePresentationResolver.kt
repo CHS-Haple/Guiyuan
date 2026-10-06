@@ -10,7 +10,7 @@ internal object NativePresentationResolver {
     fun resolve(
         state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
-            SystemUiDefaultDataSubscriptionSource.currentSubscriptionId(),
+            SysUiDefaultDataSubSource.currentSubscriptionId(),
         pendingMobileTypeDrawable: Drawable? = null,
     ): Snapshot {
         val bindings =

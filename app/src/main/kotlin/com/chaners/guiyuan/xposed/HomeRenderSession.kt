@@ -92,7 +92,7 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -314,7 +314,7 @@ internal object HomeRenderSession {
                 transferred = initialTintState,
                 allowLiveSeed = allowLiveTintSeed,
                 liveState = {
-                    SystemUiTintStateSource.currentState(battery)
+                    SysUiTintSource.currentState(battery)
                 },
             )?.let { seed ->
                 applyTintState(seed.state, seed.source)
@@ -439,7 +439,7 @@ internal object HomeRenderSession {
             layoutProbe()
         }
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: SysUiTintSource.TintUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) {
                 return

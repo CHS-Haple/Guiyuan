@@ -14,23 +14,23 @@ internal object SystemUiCoreRuntimeOwner {
         context: Context,
         onAirplaneMode: (Boolean) -> Unit,
         onDefaultDataSubscriptionChanged: (Int) -> Unit,
-        onConnectivityState: (SystemUiConnectivityStateSource.State) -> Unit,
+        onConnectivityState: (SysUiConnectivitySource.State) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): AttachResult {
         val airplaneReady =
-            SystemUiAirplaneStateSource.attach(
+            SysUiAirplaneSource.attach(
                 context = context,
                 onAirplaneMode = onAirplaneMode,
                 onEvent = onEvent,
             )
         val defaultDataSubscriptionReady =
-            SystemUiDefaultDataSubscriptionSource.attach(
+            SysUiDefaultDataSubSource.attach(
                 context = context,
                 onChanged = onDefaultDataSubscriptionChanged,
                 onEvent = onEvent,
             )
         val connectivityReady =
-            SystemUiConnectivityStateSource.attach(
+            SysUiConnectivitySource.attach(
                 context = context,
                 onState = onConnectivityState,
                 onEvent = onEvent,
@@ -44,8 +44,8 @@ internal object SystemUiCoreRuntimeOwner {
 
     @Synchronized
     fun detach() {
-        SystemUiConnectivityStateSource.detach()
-        SystemUiDefaultDataSubscriptionSource.detach()
-        SystemUiAirplaneStateSource.detach()
+        SysUiConnectivitySource.detach()
+        SysUiDefaultDataSubSource.detach()
+        SysUiAirplaneSource.detach()
     }
 }

@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.telephony.SubscriptionManager
 
-internal object SystemUiDefaultDataSubscriptionSource {
+internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 

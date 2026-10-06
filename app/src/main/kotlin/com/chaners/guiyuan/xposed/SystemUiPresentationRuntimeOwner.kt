@@ -35,11 +35,11 @@ internal object SystemUiPresentationRuntimeOwner {
         val keyguardStatusIconHooks: Int,
     ) {
         val tintReady: Boolean
-            get() = tintHooks == SystemUiTintStateSource.HOOK_COUNT
+            get() = tintHooks == SysUiTintSource.HOOK_COUNT
         val sceneReady: Boolean
             get() = sceneHooks == SystemUiSceneStateSource.HOOK_COUNT
         val mobileTypeReady: Boolean
-            get() = mobileTypeHooks == SystemUiMobileTypeStateSource.HOOK_COUNT
+            get() = mobileTypeHooks == SysUiMobileTypeSource.HOOK_COUNT
         val keyguardAodReady: Boolean
             get() = keyguardAodHooks == SystemUiKeyguardAodStateSource.HOOK_COUNT
         val keyguardFullAodReady: Boolean
@@ -56,7 +56,7 @@ internal object SystemUiPresentationRuntimeOwner {
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onTintState: (SystemUiTintStateSource.TintUpdate) -> Unit,
+        onTintState: (SysUiTintSource.TintUpdate) -> Unit,
         onSceneState: (SystemUiSceneStateSource.SceneUpdate) -> Unit,
         onKeyguardAodState: (SystemUiKeyguardAodStateSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
@@ -68,7 +68,7 @@ internal object SystemUiPresentationRuntimeOwner {
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
         val tintHooks =
-            SystemUiTintStateSource.install(
+            SysUiTintSource.install(
                 module = module,
                 classLoader = classLoader,
                 onTintState = onTintState,
@@ -131,7 +131,7 @@ internal object SystemUiPresentationRuntimeOwner {
                 onEvent = onSceneEvent,
             ).size
         val mobileTypeHooks =
-            SystemUiMobileTypeStateSource.install(
+            SysUiMobileTypeSource.install(
                 module = module,
                 classLoader = classLoader,
                 onChanged = onMobileTypeChanged,
@@ -150,7 +150,7 @@ internal object SystemUiPresentationRuntimeOwner {
     @Synchronized
     fun resetRuntimeState() {
         current = null
-        SystemUiTintStateSource.resetRuntimeState()
+        SysUiTintSource.resetRuntimeState()
         SystemUiSceneStateSource.resetRuntimeState()
         SystemUiKeyguardAodStateSource.resetRuntimeState()
         SystemUiKeyguardHostProbe.resetRuntimeState()

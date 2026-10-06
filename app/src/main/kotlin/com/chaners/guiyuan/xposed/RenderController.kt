@@ -13,7 +13,7 @@ internal class RenderController(
         trace: RuntimeRenderTrace? = null,
     ): ModelUpdate {
         val defaultDataSubscriptionId =
-            SystemUiDefaultDataSubscriptionSource.currentSubscriptionId()
+            SysUiDefaultDataSubSource.currentSubscriptionId()
         val candidate =
             RenderModel.from(
                 snapshot = snapshot,

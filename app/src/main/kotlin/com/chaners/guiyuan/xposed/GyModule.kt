@@ -1902,7 +1902,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onTintStateUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
             SystemUiNativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
@@ -2718,9 +2718,9 @@ class GyModule : XposedModule() {
             SystemUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
         }
 
-        SystemUiTintStateSource.currentState(update.sourceView)?.let { state ->
+        SysUiTintSource.currentState(update.sourceView)?.let { state ->
             onTintStateUpdate(
-                SystemUiTintStateSource.TintUpdate(
+                SysUiTintSource.TintUpdate(
                     sourceView = update.sourceView,
                     state = state,
                 ),
@@ -3637,7 +3637,7 @@ class GyModule : XposedModule() {
                 if (coreRuntime?.defaultDataSubscriptionReady == true) "ready" else "unavailable",
             "source" to source,
             "observer" to "default-data-subscription-broadcast",
-            "subscriptionId" to SystemUiDefaultDataSubscriptionSource.currentSubscriptionId(),
+            "subscriptionId" to SysUiDefaultDataSubSource.currentSubscriptionId(),
             "eventDriven" to true,
         )
         logDiagnostic(

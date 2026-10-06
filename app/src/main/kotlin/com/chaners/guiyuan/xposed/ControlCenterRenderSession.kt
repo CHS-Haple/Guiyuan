@@ -235,7 +235,7 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun onTintUpdate(update: SystemUiTintStateSource.TintUpdate) {
+    fun onTintUpdate(update: SysUiTintSource.TintUpdate) {
         current?.updateTint(update)
     }
 
@@ -758,7 +758,7 @@ internal object ControlCenterRenderSession {
         fun refresh() =
             update(StatusStateStore.snapshot())
 
-        fun updateTint(update: SystemUiTintStateSource.TintUpdate) {
+        fun updateTint(update: SysUiTintSource.TintUpdate) {
             val batteryView = battery.get() ?: return
             if (update.sourceView !== batteryView) return
             applyTint(update.state, "battery")
@@ -790,7 +790,7 @@ internal object ControlCenterRenderSession {
 
         private fun refreshTint() {
             val batteryView = battery.get() ?: return
-            val state = SystemUiTintStateSource.currentState(batteryView) ?: return
+            val state = SysUiTintSource.currentState(batteryView) ?: return
             applyTint(state, "surface")
         }
 
