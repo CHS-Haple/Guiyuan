@@ -29,11 +29,13 @@ Prefer Android, HyperOS, MIUIX, and Modern Xposed contracts over project-local r
 Avoid duplicate hooks/listeners/state machines, polling, repeated View-tree traversal, hot-path reflection, resident Root work, per-frame diagnostics, and unnecessary caching.
 
 ### Human-maintainable
-Write code for the next human maintainer, not for a naming generator. Prefer natural domain terms, familiar abbreviations, and names that use their package/class/file context instead of repeating it. Use common engineering abbreviations when they are immediately clear (for example `Repo`, `Env`, `Info`, `Config`, `Compat`, `Diag`, `Sub`, `ID`, `UI`, `API`, `AOD`, `QS`, and `SysUI`) instead of spelling every word out. Avoid sentence-shaped identifiers, redundant prefixes, one-word project shorthand that only this repository understands, and aliases kept only to preserve an obsolete internal name.
+Prefer the shortest natural name that remains clear in context. When the package, type, file, or scope already carries part of the meaning, do not repeat it in the identifier. Use familiar engineering abbreviations when they stay immediately clear (for example `Repo`, `Env`, `Info`, `Config`, `Compat`, `Diag`, `Sub`, `ID`, `UI`, `API`, `AOD`, `QS`, and `SysUI`). Avoid sentence-shaped identifiers, redundant prefixes, private shorthand, and aliases kept only for obsolete internal names. Do not make names longer merely to look formal, and do not shorten them until the meaning becomes ambiguous.
 
-Keep structure equally human: place constants/helpers near the code they serve, split a file only when the split creates a clear owner/cohesive responsibility, and do not create layers or one-line wrappers just to make code look organized.
+Keep structure equally maintainable: place constants/helpers near the code they serve, split a file only when the split creates a clear owner/cohesive responsibility, and do not create layers or one-line wrappers just to make code look organized.
 
-Comments are for non-obvious reasoning: ownership/lifecycle boundaries, upstream or compatibility seams, safety invariants, and decisions that would be easy to "simplify" incorrectly later. Keep them short, natural, adjacent to the relevant code, and current. Do not narrate obvious statements, repeat the identifier in prose, or preserve debugging/history as source comments.
+Keep concise comments where future maintenance would otherwise need to rediscover non-obvious reasoning: ownership/lifecycle boundaries, upstream or compatibility seams, safety invariants, and constraints that would be easy to "simplify" incorrectly later. Brief KDoc is appropriate for contract-bearing APIs when it adds information the signature cannot express. Do not narrate obvious statements, repeat the identifier in prose, or preserve debugging/history as source comments.
+
+A readability refactor must not silently rename persisted keys, protocol/schema fields, diagnostic or log contracts, hook IDs, reflection target strings, resource identities, or other external compatibility contracts. Change those only with an explicit migration or compatibility plan.
 
 ### Modern
 Prefer maintained APIs and project-pinned dependencies when they satisfy the requirement. Newer is not automatically better; compatibility and lifecycle evidence still matter.
@@ -58,6 +60,8 @@ For defects, investigate in this order:
 5. a narrow workaround only when a direct fix is not practical.
 
 Do not add geometry, timing, alpha, visibility, polling, or delayed patches merely because they hide one symptom. When several explanations remain plausible, prefer a bounded single-variable diagnostic. New evidence may invalidate the current hypothesis.
+
+Before committing or starting CI for a non-trivial checkpoint, review the complete base-to-HEAD diff rather than only the latest edit. Check requirement closure, naming/comments, stale references, dead code, compatibility contracts, ownership/lifecycle, hot paths, tests, and documentation. Fix deterministic review findings before asking CI to find them.
 
 ## 4. Runtime safety
 
