@@ -1150,21 +1150,21 @@ internal object SystemUiNativeCombinedParticipantOwner {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureCfg) {
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
         val root = rootRef?.get()
         if (
             root != null &&
             Looper.myLooper() !== Looper.getMainLooper()
         ) {
             root.post {
-                onFeatureSettingsChanged(settings)
+                onFeatureCfgChanged(cfg)
             }
             return
         }
-        if (featureEnabled == settings.enabled) {
+        if (featureEnabled == cfg.enabled) {
             return
         }
-        featureEnabled = settings.enabled
+        featureEnabled = cfg.enabled
         if (featureEnabled) {
             if (!resumeValidatedHandoff()) {
                 reconcileVisibleHandoff("feature-enabled")

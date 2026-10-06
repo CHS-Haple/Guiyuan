@@ -112,8 +112,8 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureCfg) {
-        current?.setFeatureSettings(settings)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureCfg(cfg)
     }
 
     @Synchronized
@@ -415,12 +415,12 @@ internal object KeyguardRenderSession {
             (renderView.parent as? ViewGroup)?.removeView(renderView)
         }
 
-        fun setFeatureSettings(settings: FeatureCfg) {
+        fun setFeatureCfg(cfg: FeatureCfg) {
             val enabled =
                 resolveFamilyFeatureEnabled(
-                    featureEnabled = settings.enabled,
-                    keyguardEnabled = settings.keyguard,
-                    aodEnabled = settings.aod,
+                    featureEnabled = cfg.enabled,
+                    keyguardEnabled = cfg.keyguard,
+                    aodEnabled = cfg.aod,
                     sceneIsAod = scene == Scene.AOD,
                 )
             setFeatureState(enabled)

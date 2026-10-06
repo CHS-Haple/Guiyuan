@@ -248,12 +248,12 @@ internal object ControlCenterRenderSession {
         current?.transitionSourceSnapshot()
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureCfg) {
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
         val session = current
-        session?.setFeatureEnabled(settings.enabled)
-        if (!settings.enabled || !sceneEligible) {
+        session?.setFeatureEnabled(cfg.enabled)
+        if (!cfg.enabled || !sceneEligible) {
             SystemUiHomePresentationOwner.deactivateControlCenter(
-                if (!settings.enabled) "feature-disabled" else "scene-ineligible",
+                if (!cfg.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
             session?.prepareNativePresentation(reused = true)

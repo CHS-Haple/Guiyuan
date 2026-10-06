@@ -54,7 +54,7 @@ class GyModule : XposedModule() {
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         bindRuntimeDiagnostics()
-        bindRuntimeFeatureSettings()
+        bindFeatureCfg()
         bindRuntimeVisualSettings()
         log(
             Log.INFO,
@@ -245,7 +245,7 @@ class GyModule : XposedModule() {
 
         if (takeover == null) {
             bindRuntimeDiagnostics()
-            bindRuntimeFeatureSettings()
+            bindFeatureCfg()
             bindRuntimeVisualSettings()
             logDiagnostic(
                 level = Log.ERROR,
@@ -295,7 +295,7 @@ class GyModule : XposedModule() {
             SystemUiHomePresentationOwner.resetRuntimeState("hotReload")
             SystemUiNativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
             bindRuntimeDiagnostics()
-            bindRuntimeFeatureSettings()
+            bindFeatureCfg()
             bindRuntimeVisualSettings()
             logDiagnostic(
                 level = Log.INFO,
@@ -4394,26 +4394,26 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun bindRuntimeFeatureSettings() {
+    private fun bindFeatureCfg() {
         runCatching {
             FeaturePrefsOwner.bind(
                 source = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
-                onChanged = ::onRuntimeFeatureSettingsChanged,
+                onChanged = ::onFeatureCfgChanged,
             )
-        }.onSuccess { settings ->
+        }.onSuccess { cfg ->
             logDiagnostic(
                 level = Log.INFO,
                 event = "runtimePreferences.bind",
                 component = "featureSettings",
                 state = "ready",
-                "combinedStatusEnabled" to settings.enabled,
-                "keyguardEnabled" to settings.keyguard,
-                "aodEnabled" to settings.aod,
+                "combinedStatusEnabled" to cfg.enabled,
+                "keyguardEnabled" to cfg.keyguard,
+                "aodEnabled" to cfg.aod,
                 "transport" to "remote-preferences",
             )
         }.onFailure { error ->
             FeaturePrefsOwner.unbind()
-            onRuntimeFeatureSettingsChanged(
+            onFeatureCfgChanged(
                 FeaturePrefsOwner.current(),
                 null,
             )
@@ -4431,16 +4431,16 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onRuntimeFeatureSettingsChanged(
-        settings: FeatureCfg,
-        preferenceTransportLatencyNanos: Long?,
+    private fun onFeatureCfgChanged(
+        cfg: FeatureCfg,
+        transportNs: Long?,
     ) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {
-                    onRuntimeFeatureSettingsChanged(
-                        settings = settings,
-                        preferenceTransportLatencyNanos = preferenceTransportLatencyNanos,
+                    onFeatureCfgChanged(
+                        cfg = cfg,
+                        transportNs = transportNs,
                     )
                 }
             val hostView = SystemUiHostRegistry.currentStatusHost() as? android.view.View
@@ -4456,36 +4456,36 @@ class GyModule : XposedModule() {
                 component = "combinedStatus",
                 state = "error",
                 "reason" to "main-thread-dispatch-failed",
-                "combinedStatusEnabled" to settings.enabled,
-                "keyguardEnabled" to settings.keyguard,
-                "aodEnabled" to settings.aod,
+                "combinedStatusEnabled" to cfg.enabled,
+                "keyguardEnabled" to cfg.keyguard,
+                "aodEnabled" to cfg.aod,
                 "fallback" to "leave-current-native-ownership-unchanged",
             )
             return
         }
 
-        SystemUiNativeCombinedParticipantOwner.onFeatureSettingsChanged(settings)
+        SystemUiNativeCombinedParticipantOwner.onFeatureCfgChanged(cfg)
         if (
-            !settings.enabled ||
-            !settings.keyguard ||
-            settings.aod
+            !cfg.enabled ||
+            !cfg.keyguard ||
+            cfg.aod
         ) {
             homeNativeAodFallbackCandidate = false
             homeNativeAodFallbackActive = false
         }
-        HomeRenderSession.onFeatureSettingsChanged(settings)
-        KeyguardRenderSession.onFeatureSettingsChanged(settings)
-        ControlCenterRenderSession.onFeatureSettingsChanged(settings)
+        HomeRenderSession.onFeatureCfgChanged(cfg)
+        KeyguardRenderSession.onFeatureCfgChanged(cfg)
+        ControlCenterRenderSession.onFeatureCfgChanged(cfg)
 
-        if (!settings.enabled) {
+        if (!cfg.enabled) {
             releaseFeaturePresentationOwnership("feature-disabled")
             deactivateAodRuntime("feature-disabled")
             deactivateKeyguardRuntime("feature-disabled")
         } else {
-            if (!settings.keyguard) {
+            if (!cfg.keyguard) {
                 deactivateKeyguardRuntime("keyguard-feature-disabled")
             }
-            if (!settings.aod) {
+            if (!cfg.aod) {
                 deactivateAodRuntime("aod-feature-disabled")
             }
             SystemUiKeyguardHostResolver.current()?.let { resolution ->
@@ -4501,19 +4501,19 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "featureSettings.changed",
             component = "combinedStatus",
-            state = if (settings.enabled) "enabled" else "disabled",
-            "combinedStatusEnabled" to settings.enabled,
-            "keyguardEnabled" to settings.keyguard,
-            "aodEnabled" to settings.aod,
+            state = if (cfg.enabled) "enabled" else "disabled",
+            "combinedStatusEnabled" to cfg.enabled,
+            "keyguardEnabled" to cfg.keyguard,
+            "aodEnabled" to cfg.aod,
             "preferenceTransportMs" to
                 (
-                    preferenceTransportLatencyNanos
+                    transportNs
                         ?.let { nanos -> nanos / 1_000_000.0 }
                         ?: "initial-bind"
                 ),
             "eventDriven" to true,
             "mainThread" to true,
-            "fallback" to if (settings.enabled) "combined-status" else "native-systemui",
+            "fallback" to if (cfg.enabled) "combined-status" else "native-systemui",
         )
     }
 

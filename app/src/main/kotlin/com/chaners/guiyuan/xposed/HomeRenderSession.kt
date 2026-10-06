@@ -102,8 +102,8 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
-    fun onFeatureSettingsChanged(settings: FeatureCfg) {
-        current?.setFeatureEnabled(settings.enabled)
+    fun onFeatureCfgChanged(cfg: FeatureCfg) {
+        current?.setFeatureEnabled(cfg.enabled)
     }
 
     @Synchronized
