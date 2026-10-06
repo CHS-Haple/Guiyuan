@@ -7,6 +7,7 @@ internal object SysUiHostHook {
     @Volatile
     private var ready = false
 
+    // Hook readiness is separate from whether a live host exists.
     val isReady: Boolean
         get() = ready
 
