@@ -5144,3 +5144,35 @@ The full-AOD state refactor received a direct old-vs-new lifecycle review. One s
 - PR #248 was squash-merged to `dev` as `6f7c3a1`.
 - No Canary/device gate is required because the remaining questions were resolved by source-level lifecycle comparison and automated validation.
 - `main` remains unchanged; version 0.2.1 and Build 746 are not bumped by this maintenance batch.
+
+## 2026-10-07 — Build 746: close maintainability coverage gaps
+
+**Type:** behavior-neutral maintainability / coverage-gap audit  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `refactor/maintainability-gap-audit`
+
+### Coverage method
+
+This pass starts from accepted `dev@50f5aa2` and uses maintenance-PR changed-files as the coverage map instead of scanning already-reviewed areas again. #217 and #228-#248 were unioned first, then merged functional PRs between those checkpoints were checked for later changes that could invalidate an earlier review.
+
+The remaining uncovered set was 15 production Kotlin files plus 11 test/tooling/workflow entries. Intermediate feature/fix work did not expose an additional post-review gap: the affected Home/UI/target-profile paths were subsequently covered by later maintenance PRs.
+
+### Confirmed gaps
+
+- `SystemActiveSubscriptionSource` carried an unused `Snapshot + Authority + reason` shell even though every caller consumed only the nullable subscription-ID set. The source now returns that set directly. `null` still means the platform authority is unavailable; an empty set remains an authoritative no-active-subscription result.
+- `SystemUiCompatibilityProbe.summary` unconditionally said `SystemUI ready` even on a partial structural match. The summary is now neutral; the actual diagnostic ready/unavailable state remains derived from the observed status-host marker.
+- `NativeStatusBarSlotGeometryTest` had two equivalent cases, one named as if it proved transient battery expansion even though no battery-expansion input existed. The self-proof duplicate is removed.
+
+### False positives retained
+
+- `RootShell.Result` represents real timeout / exit / error outcomes rather than a success/failure wrapper.
+- `CenterTransitionPolicy` protects a real three-family transition rule.
+- `NativeWifiOpticalReferencePolicy.canShareReferenceViewport` is shared by two optical-geometry paths, so inlining it would duplicate the same invariant.
+- render-latency samples, native-status inventory counts and runtime-health state are based on actual runtime timestamps/events/view scans, not synthetic metrics.
+- workflow validation is based on real diffs, exact source SHAs, build outputs, signatures and metadata checks; no fixed health/readiness evidence was found.
+
+### Boundary
+
+No version or Build bump. No geometry constant, native writer, transition clock, ownership boundary, fail-native path or device-specific compensation is changed. One coherent Runtime CI checkpoint is sufficient unless it leaves a device-only uncertainty.
+
