@@ -3,8 +3,8 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#246. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
+- Integration `dev`: synchronized with stable `main` at Guiyuan 0.2.1 / Build 746 after PR #247 promotion closeout. Runtime behavior and Build identity remain unchanged.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,16 +24,16 @@
 
 ## Active objective
 
-The behavior-neutral maintainability review is complete through PR #246. The remaining large runtime files are ownership/lifecycle-dense, tooling-bound, or have no clear tested stateless boundary; further cosmetic splitting/renaming would add churn without a clear maintenance gain.
+PR #247 is merged after exact-head Full validation, and the long-lived `dev` branch has been restored/synchronized to the promoted stable state. The behavior-neutral maintainability review through PR #246 is closed.
 
-The current objective is stable promotion of the existing Guiyuan 0.2.1 / Build 746 source from `dev` to `main`. Runtime behavior, Build identity, persisted keys, hooks, diagnostics protocol, native ownership, and fail-native boundaries are unchanged from the accepted checkpoint. No new device gate is required unless promotion review or Full validation finds evidence of a runtime-affecting change.
+The remaining large runtime files are ownership/lifecycle-dense, tooling-bound, or have no clear tested stateless boundary. Do not continue splitting or renaming them merely to reduce line count or standardize names; start another maintenance batch only when a concrete readability, ownership, dead-indirection, or compatibility problem has a clear net benefit.
 
 Current priorities:
 
-1. review the complete `main` → `dev` promotion diff for accidental compatibility/runtime drift;
-2. run the required dev-to-main Full validation on the exact promotion head;
-3. merge only if Full is green and no runtime blocker appears;
-4. after merge, verify the long-lived `dev` branch still exists and matches promoted `main`.
+1. start future work from the synchronized `dev` branch;
+2. preserve the accepted runtime ownership/lifecycle/fail-native contracts and Build 746 identity until a real behavior change or explicit version decision requires otherwise;
+3. prefer high-value structural simplification over cosmetic churn;
+4. request device evidence only when a future diff can plausibly change runtime behavior or an engineering decision.
 
 ## Non-negotiable bounds
 
@@ -47,8 +47,8 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime baseline; Build 746 remains the promoted 0.2.1 build identity.
-- Open the dev-to-main stable-promotion PR from the current `dev` tree and require Full validation.
-- Do not request Canary/device testing unless review or Full uncovers a plausible runtime-affecting delta.
-- After promotion, verify/recreate `dev` at the promoted `main` SHA before new development.
+- Treat Build 744 as the accepted runtime baseline; Build 746 remains the stable 0.2.1 release/build identity.
+- `main` and `dev` must remain synchronized at promotion closeout before the next work branch starts.
+- Begin the next coherent task from current `dev`; do not reopen the closed alpha-layer performance experiment or resume low-value cosmetic cleanup without new evidence.
+- Keep comments concise and natural, and apply the cross-file extraction review rule for imports, annotations, visibility, top-level constants, and receiver context.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
