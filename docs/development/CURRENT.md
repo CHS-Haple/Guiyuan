@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), promoted through PR #226 after the dev-to-main Full validation boundary passed.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#238. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 plus merged maintainability PRs #228–#239. Runtime behavior and Build identity remain unchanged from the promoted checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,18 +24,16 @@
 
 ## Active objective
 
-The active work is `refactor/maintainability-sysui-helpers`, a behavior-neutral cleanup of the small SystemUI integration helpers around host capture, native carrier geometry, island observation, and Keyguard host resolution.
+PR #239 is integrated and its work branch is closed. Continue the maintainability review from live `dev`, but only where a name, comment, structure, or dead indirection has a clear maintenance benefit.
 
-This batch fixes names where responsibility or scope was misleading: the host hook is not a runtime owner, the carrier helper is shared across Home / Keyguard / QS fake rather than Home-only, and the remaining helper types use the established `SysUi` form. It also replaces stale or overly formal source comments with short maintenance notes that explain real ownership, lifecycle, and platform constraints.
-
-Runtime strings, persisted keys, Hook IDs, reflection/resource targets, diagnostics schema, source ownership, mutable writers, and behavior remain unchanged. Build identity stays at 746; no device evidence is required while the diff remains behavior-neutral.
+The helper pass established the current style: keep names concise at the call site, keep real ownership terms when they describe actual authority/lifecycle, and leave short natural comments only where they explain a non-obvious contract or “why”.
 
 Current priorities:
 
-1. complete the helper rename/comment pass with full base→HEAD review and automated validation;
-2. keep comments concise, natural, and useful to the next maintainer rather than documenting obvious code or old Build history;
-3. preserve real `Owner` / `Source` / `Probe` / `Resolver` responsibility terms where they still carry meaning;
-4. keep the closed performance line closed unless new reproducible evidence appears.
+1. audit the remaining SystemUI/runtime layer for misleading responsibility names, receiver-redundant APIs, stale comments, and proven dead indirection;
+2. prefer structural simplification over cosmetic renames when a large type is hard to maintain;
+3. preserve persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities;
+4. keep Build identity at 746 for behavior-neutral maintenance and keep the closed performance line closed without new evidence.
 
 ## Non-negotiable bounds
 
@@ -50,7 +48,7 @@ Current priorities:
 ## Immediate next
 
 - Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
-- Finish `refactor/maintainability-sysui-helpers` with stale-name/comment review and automated validation before integration.
-- Do not request Canary/device testing unless a later edit crosses into runtime behavior.
-- After integration, close the active branch reference in CURRENT before starting another maintenance batch.
+- Audit from the live `dev` tree before choosing the next coherent maintenance batch.
+- Keep comments concise and natural; add them only where they protect ownership, lifecycle, fallback, or a non-obvious platform contract.
+- Request device evidence only if a later diff can plausibly affect runtime behavior.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
