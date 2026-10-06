@@ -374,7 +374,7 @@ internal object SystemUiHomePresentationOwner {
             batteryContainer.directChild(BATTERY_VIEW)
                 ?: return StateResult.Failure("battery-view-missing")
         val batteryCarrier =
-            SysUiCarrierMetrics.resolveCarrierView(battery)
+            SysUiCarrierMetrics.resolveView(battery)
                 ?: return StateResult.Failure("battery-core-carrier-missing")
         val field =
             ignoredSlotsField
@@ -383,7 +383,7 @@ internal object SystemUiHomePresentationOwner {
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
         val baseSlotWidthPx =
-            SysUiCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+            SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
                 ?: return StateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -568,7 +568,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return StateResult.Failure("battery-hide-field-unavailable")
-        SysUiCarrierMetrics.resolveCarrierWidthPx(resolved.batteryCarrier)
+        SysUiCarrierMetrics.resolveWidthPx(resolved.batteryCarrier)
             ?: return StateResult.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -759,7 +759,7 @@ internal object SystemUiHomePresentationOwner {
         val hideField =
             batteryHideField
                 ?: return ControlCenterStateResult.Failure("battery-hide-field-unavailable")
-        SysUiCarrierMetrics.resolveCarrierWidthPx(batteryCarrier)
+        SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
             ?: return ControlCenterStateResult.Failure("battery-core-width-unavailable")
 
         @Suppress("UNCHECKED_CAST")
@@ -1992,7 +1992,7 @@ internal object SystemUiHomePresentationOwner {
                 batteryCarrier.get()
                     ?: run { onFailNative("battery-core-carrier-released"); return false }
             val stableCarrierWidthPx =
-                SysUiCarrierMetrics.resolveCarrierWidthPx(carrier)
+                SysUiCarrierMetrics.resolveWidthPx(carrier)
                     ?: run { onFailNative("battery-core-width-unavailable"); return false }
             if (actualBatteryWidthPx < stableCarrierWidthPx) {
                 onFailNative("battery-presentation-narrower-than-core")
@@ -2482,7 +2482,7 @@ internal object SystemUiHomePresentationOwner {
             if (!active || surfaceName != HOME_SURFACE) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
-            val islandShowing = SysUiIslandSource.currentIslandShowing() == true
+            val islandShowing = SysUiIslandSource.currentShowing() == true
             if (!islandShowing) {
                 return SteadyPeerMirrorSnapshot(false, emptySet())
             }
