@@ -24,16 +24,16 @@
 
 ## Active objective
 
-PRs #239–#246 are integrated and their work branches are closed. The latest passes extracted stateless presentation, transition, and native-combined decisions, consolidated pure network suppression decisions into the existing policy, shortened redundant native owner names, and renamed the multi-surface owner to `SysUiPresentationOwner`; runtime behavior and Build identity remain unchanged.
+The behavior-neutral maintainability review is complete through PR #246. The remaining large runtime files are ownership/lifecycle-dense, tooling-bound, or have no clear tested stateless boundary; further cosmetic splitting/renaming would add churn without a clear maintenance gain.
 
-Continue the maintainability review from live `dev`, but only where a name, comment, structure, or dead indirection has a clear maintenance benefit. Keep names concise at the call site, keep real ownership terms when they describe actual authority/lifecycle, and leave short natural comments only where they explain a non-obvious contract or “why”.
+The current objective is stable promotion of the existing Guiyuan 0.2.1 / Build 746 source from `dev` to `main`. Runtime behavior, Build identity, persisted keys, hooks, diagnostics protocol, native ownership, and fail-native boundaries are unchanged from the accepted checkpoint. No new device gate is required unless promotion review or Full validation finds evidence of a runtime-affecting change.
 
 Current priorities:
 
-1. audit the remaining SystemUI/runtime layer for misleading responsibility names, receiver-redundant APIs, stale comments, and proven dead indirection;
-2. prefer structural simplification over cosmetic renames when a large type is hard to maintain;
-3. preserve persisted, reflection, resource, protocol/log-schema and Xposed compatibility identities;
-4. keep Build identity at 746 for behavior-neutral maintenance and keep the closed performance line closed without new evidence.
+1. review the complete `main` → `dev` promotion diff for accidental compatibility/runtime drift;
+2. run the required dev-to-main Full validation on the exact promotion head;
+3. merge only if Full is green and no runtime blocker appears;
+4. after merge, verify the long-lived `dev` branch still exists and matches promoted `main`.
 
 ## Non-negotiable bounds
 
@@ -47,8 +47,8 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime baseline; Build 746 is the promoted 0.2.1 version/release checkpoint.
-- Audit from the live `dev` tree before choosing the next coherent maintenance batch.
-- Keep comments concise and natural; add them only where they protect ownership, lifecycle, fallback, or a non-obvious platform contract.
-- Request device evidence only if a later diff can plausibly affect runtime behavior.
+- Treat Build 744 as the accepted runtime baseline; Build 746 remains the promoted 0.2.1 build identity.
+- Open the dev-to-main stable-promotion PR from the current `dev` tree and require Full validation.
+- Do not request Canary/device testing unless review or Full uncovers a plausible runtime-affecting delta.
+- After promotion, verify/recreate `dev` at the promoted `main` SHA before new development.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
