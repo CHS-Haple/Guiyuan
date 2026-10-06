@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `50f5aa2`, with PR #248 runtime-plumbing cleanup and #249 documentation closeout merged. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `8cf504c1`, with #248/#249 runtime-plumbing maintenance and #250 coverage-gap audit merged. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,26 +24,20 @@
 
 ## Active objective
 
-The maintainability coverage-gap audit is active on `refactor/maintainability-gap-audit`, based on accepted `dev@50f5aa2`. This is not another broad cleanup pass.
+The maintainability coverage-gap audit is closed.
 
-Coverage was rebuilt from the changed-files of #217 and #228-#248, then checked against the merged functional work between those maintenance batches. That left 15 production Kotlin files and 11 test/tooling/workflow entries that had not received equivalent maintenance coverage.
+PR #250 was reviewed against accepted `dev@50f5aa2`, passed exact-head Runtime CI #2883, and was squash-merged to `dev` as `8cf504c1`. Integrated `dev` validation #2884 then passed the signed Canary path, including target-profile verification, unit tests, APK build, Modern Xposed metadata, Haple signature and non-debuggable checks.
 
-Confirmed gaps are intentionally small:
+The audit used #217 and #228-#248 changed-files plus intervening merged feature/fix work to identify only genuinely uncovered or invalidated areas. It found three bounded issues: an unused active-subscription result shell, unconditional `ready` wording in a compatibility summary, and one self-proof duplicate geometry test. Caller-level review excluded the remaining candidates where their complexity or abstraction carried a real process, transition, optical-geometry, protocol or runtime-observation contract.
 
-- collapse the unused `SystemActiveSubscriptionSource.Snapshot/Authority/reason` shell to the nullable active-subscription set already consumed by the resolver;
-- remove the unconditional `ready` claim from the plain compatibility summary while keeping the separately observed compatibility state unchanged;
-- remove one duplicate geometry test whose name claimed a battery-expansion fact that its inputs did not model.
-
-Several tempting candidates are retained after caller-level review: `RootShell.Result` carries real process outcomes; `CenterTransitionPolicy` and the Wi-Fi optical-reference policy protect real transition/geometry contracts; render-latency and native-status inventory fields are runtime observations; navigation/resource/protocol constants retain compatibility meaning.
-
-No ownership, geometry, transition timing, fail-native behavior, external version or Build identity is intentionally changed.
+No device validation is required: no renderer, geometry, Hook, ownership, transition timing or fail-native behavior changed, and both exact-head and integrated-dev automated validation passed.
 
 Current priorities:
 
-1. finish exact base→HEAD review for this bounded gap batch;
-2. run one exact-head Runtime CI checkpoint rather than per-edit CI;
-3. merge to `dev` only if compile/tests and repository validation pass;
-4. require device evidence only if automated validation exposes a runtime-only question.
+1. start the next coherent task from current `dev@8cf504c1`;
+2. do not reopen the coverage-gap audit just to chase shorter names, fewer classes, zero warnings or stylistic uniformity;
+3. continue treating synthetic metrics / fixed self-proof diagnostics as high-priority defects if newly introduced;
+4. keep `main` unchanged until a separate dev-to-main promotion is explicitly chosen.
 
 ## Non-negotiable bounds
 
@@ -58,7 +52,7 @@ Current priorities:
 ## Immediate next
 
 - Treat Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Use accepted `dev@50f5aa2` as the integration base; #249 is documentation-only but is still part of the current branch head.
+- Use accepted `dev@8cf504c1` as the integration base; #250 is merged and its maintainability coverage-gap audit is closed.
 - Do not reopen the rejected alpha-layer experiment or continue runtime-plumbing cleanup without a concrete maintenance or compatibility problem.
 - Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

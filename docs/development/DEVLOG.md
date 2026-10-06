@@ -5176,3 +5176,12 @@ The remaining uncovered set was 15 production Kotlin files plus 11 test/tooling/
 
 No version or Build bump. No geometry constant, native writer, transition clock, ownership boundary, fail-native path or device-specific compensation is changed. One coherent Runtime CI checkpoint is sufficient unless it leaves a device-only uncertainty.
 
+### Closeout
+
+- PR #250 exact-head Runtime CI #2883 passed on `7ae45292`: target-profile verification, Kotlin compilation, unit tests, debug APK build and Modern Xposed metadata checks succeeded.
+- PR #250 was squash-merged to `dev` as `8cf504c1`.
+- Integrated `dev` Runtime validation #2884 passed the signed Canary path, including Haple signing, metadata and non-debuggable validation.
+- No new warning class came from the touched files; existing warnings remain in previously reviewed runtime areas and are not reopened by this audit.
+- No Canary/device gate is required beyond the automatic integrated-dev artifact because the batch is behavior-neutral and leaves no device-only engineering question.
+- External version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
