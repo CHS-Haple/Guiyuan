@@ -481,6 +481,22 @@ class SystemUiHomePresentationOwnerTest {
     }
 
     @Test
+    fun steadyPeerMirrorIsScopedToHomeControlCenterSource() {
+        assertTrue(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .shouldUseHomeMirror(SourceScene.HOME),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .shouldUseHomeMirror(SourceScene.KEYGUARD),
+        )
+        assertFalse(
+            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+                .shouldUseHomeMirror(SourceScene.UNKNOWN),
+        )
+    }
+
+    @Test
     fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
         assertTrue(
             SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy

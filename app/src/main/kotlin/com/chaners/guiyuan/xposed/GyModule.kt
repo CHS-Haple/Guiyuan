@@ -1223,6 +1223,7 @@ class GyModule : XposedModule() {
             )
         }
         controlCenterSourceScene = sourceScene
+        SystemUiHomePresentationOwner.updateControlCenterSourceScene(sourceScene)
         acquireKeyguardControlCenterLeaseIfEligible(
             source = "source-scene:" + authority,
         )
@@ -1585,6 +1586,9 @@ class GyModule : XposedModule() {
         }
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
+        safely {
+            SystemUiHomePresentationOwner.updateControlCenterSourceScene(SourceScene.UNKNOWN)
+        }
         safely {
             ControlCenterTransitionOwner.setSceneEligible(false)
         }

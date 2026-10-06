@@ -4960,3 +4960,35 @@ No fixed device pixels, delay, retry, polling, translation, alpha, visibility wr
 
 Required device gate: Home, non-charging, no island; repeatedly pull Control Center down and swipe it fully back up, including fast reversals. Confirm the projected transition never drops to native mid-return. Then smoke-test charging/island and Keyguard reverse pulls.
 
+## 2026-10-06 — Build 744: scope Home steady-peer mirror to Home-origin QS_FAKE
+
+**Type:** ownership correction / Keyguard-island performance
+**Display version:** 0.2.0
+**Build:** 744 / `20261006-744`
+**Branch / PR:** `fix/keyguard-island-home-mirror-scope` / #221
+
+### Evidence
+
+The remaining device-visible gap is Keyguard + active island + repeated full Control Center pull-down / swipe-up remaining slightly less smooth than the equivalent Home path after the Build 689-693 diagnostic/reflection reductions.
+
+Historical Build 690 diagnostics captured `sourceScene=KEYGUARD` while the functional `steadyPeerMirror source=home` continued following Home native layouts. Static review confirms `captureSteadyPeerMirror()` samples only the Home presentation surface and QS_FAKE previously consumed that module-level mirror without checking the authoritative Control Center source scene.
+
+### Correction
+
+- reuse the existing `GyModule.controlCenterSourceScene` authority rather than adding a second detector;
+- propagate source-scene changes to `SystemUiHomePresentationOwner`;
+- sample and consume the Home steady-peer mirror only for `SourceScene.HOME`;
+- clear the Home-derived mirror for `KEYGUARD` and `UNKNOWN`, leaving native QS_FAKE island authority in force;
+- immediately seed the existing mirror from the current Home session when source authority returns to Home;
+- keep Home hidden-slot policy, peer clip ownership and fake-island suppression unchanged.
+
+### Review boundary
+
+The native-layout hook still executes its normal layout validation, clip refresh and layout-ready completion for Keyguard-origin QS_FAKE; only the Home-derived mirror scan/propagation is skipped. The helper Boolean is not used as a failure or lifecycle signal.
+
+No transition geometry, reservation/capacity, tint, progress, draw layer, alpha/translation/visibility writer, timer, poller, retry loop or fixed device geometry changes.
+
+### Device gate
+
+A/B Build 744 against Build 743 with Keyguard + active island and repeated complete pull-down / swipe-up cycles. Verify Home + island remains unchanged. If a meaningful gap remains, continue to residual TransitionDrawable/compositing audit rather than adding more mirror logic.
+
