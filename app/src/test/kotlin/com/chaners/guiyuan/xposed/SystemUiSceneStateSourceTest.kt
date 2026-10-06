@@ -3,24 +3,24 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class SystemUiSceneStateSourceTest {
+class SceneSourceTest {
     @Test
     fun batteryStatusStatesRemainReadOnlyClassifications() {
         assertEquals(
-            SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR,
-            SystemUiSceneStateSource.classifyRawState(0),
+            SceneSource.Surface.UNLOCKED_STATUS_BAR,
+            SceneSource.classifyRawState(0),
         )
         assertEquals(
-            SystemUiSceneStateSource.Surface.KEYGUARD,
-            SystemUiSceneStateSource.classifyRawState(1),
+            SceneSource.Surface.KEYGUARD,
+            SceneSource.classifyRawState(1),
         )
         assertEquals(
-            SystemUiSceneStateSource.Surface.SHADE_LOCKED,
-            SystemUiSceneStateSource.classifyRawState(2),
+            SceneSource.Surface.SHADE_LOCKED,
+            SceneSource.classifyRawState(2),
         )
         assertEquals(
-            SystemUiSceneStateSource.Surface.UNKNOWN,
-            SystemUiSceneStateSource.classifyRawState(99),
+            SceneSource.Surface.UNKNOWN,
+            SceneSource.classifyRawState(99),
         )
     }
 
@@ -28,7 +28,7 @@ class SystemUiSceneStateSourceTest {
     fun steadySourceAuthorityRequiresMatchingStructuralHost() {
         assertEquals(
             SourceScene.HOME,
-            SystemUiSceneStateSource.classifySteadySourceAncestors(
+            SceneSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
                     "com.android.systemui.statusbar.phone.MiuiNotificationStatusContainer",
@@ -37,7 +37,7 @@ class SystemUiSceneStateSourceTest {
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            SystemUiSceneStateSource.classifySteadySourceAncestors(
+            SceneSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
                     "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
@@ -46,7 +46,7 @@ class SystemUiSceneStateSourceTest {
         )
         assertEquals(
             SourceScene.UNKNOWN,
-            SystemUiSceneStateSource.classifySteadySourceAncestors(
+            SceneSource.classifySteadySourceAncestors(
                 listOf(
                     "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
                     "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons",

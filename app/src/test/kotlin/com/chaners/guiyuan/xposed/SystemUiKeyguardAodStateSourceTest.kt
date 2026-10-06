@@ -4,23 +4,23 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiKeyguardAodStateSourceTest {
+class KeyguardAodSourceTest {
     @Test
     fun pinnedToggleAodContractRequiresSingleBooleanParameter() {
         assertTrue(
-            SystemUiKeyguardAodStateSource.matchesToggleAodSignature(
+            KeyguardAodSource.matchesToggleAodSignature(
                 parameterTypes = arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
                 returnType = Void.TYPE,
             ),
         )
         assertFalse(
-            SystemUiKeyguardAodStateSource.matchesToggleAodSignature(
+            KeyguardAodSource.matchesToggleAodSignature(
                 parameterTypes = emptyArray(),
                 returnType = Void.TYPE,
             ),
         )
         assertFalse(
-            SystemUiKeyguardAodStateSource.matchesToggleAodSignature(
+            KeyguardAodSource.matchesToggleAodSignature(
                 parameterTypes = arrayOf<Class<*>>(Int::class.javaPrimitiveType!!),
                 returnType = Void.TYPE,
             ),
@@ -29,18 +29,18 @@ class SystemUiKeyguardAodStateSourceTest {
 
     @Test
     fun stableAodRequiresTargetAodWithNativeAnimationFinished() {
-        assertTrue(SystemUiKeyguardAodStateSource.isStableAod(true, false))
-        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(true, true))
-        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(false, false))
-        assertFalse(SystemUiKeyguardAodStateSource.isStableAod(false, true))
+        assertTrue(KeyguardAodSource.isStableAod(true, false))
+        assertFalse(KeyguardAodSource.isStableAod(true, true))
+        assertFalse(KeyguardAodSource.isStableAod(false, false))
+        assertFalse(KeyguardAodSource.isStableAod(false, true))
     }
 
     @Test
     fun anyNativeAodSignalBlocksKeyguardProjection() {
-        assertFalse(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(false, false, false))
-        assertTrue(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(true, false, false))
-        assertTrue(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(false, true, false))
-        assertFalse(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(false, false, true))
-        assertFalse(SystemUiKeyguardAodStateSource.blocksKeyguardProjection(false, false, null))
+        assertFalse(KeyguardAodSource.blocksKeyguardProjection(false, false, false))
+        assertTrue(KeyguardAodSource.blocksKeyguardProjection(true, false, false))
+        assertTrue(KeyguardAodSource.blocksKeyguardProjection(false, true, false))
+        assertFalse(KeyguardAodSource.blocksKeyguardProjection(false, false, true))
+        assertFalse(KeyguardAodSource.blocksKeyguardProjection(false, false, null))
     }
 }

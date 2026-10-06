@@ -4,11 +4,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiKeyguardFullAodTransitionSourceTest {
+class KeyguardAodTransitionSourceTest {
     @Test
     fun pinnedAnimateFullAodContractRequiresTwoBooleans() {
         assertTrue(
-            SystemUiKeyguardFullAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,
@@ -18,7 +18,7 @@ class SystemUiKeyguardFullAodTransitionSourceTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardFullAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,
@@ -27,7 +27,7 @@ class SystemUiKeyguardFullAodTransitionSourceTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardFullAodTransitionSource.matchesAnimateFullAodSignature(
+            KeyguardAodTransitionSource.matchesAnimateFullAodSignature(
                 parameterTypes =
                     arrayOf<Class<*>>(
                         Boolean::class.javaPrimitiveType!!,

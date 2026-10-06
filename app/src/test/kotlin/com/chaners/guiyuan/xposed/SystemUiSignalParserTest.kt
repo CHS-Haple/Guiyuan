@@ -3,13 +3,13 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class SystemUiSignalParserTest {
+class SignalParserTest {
     @Test
     fun mobileSignalLevelsCoverZeroThroughFour() {
         for (level in 0..4) {
             assertEquals(
                 SignalStrength.Level(level),
-                SystemUiSignalParser.mobile(
+                SignalParser.mobile(
                     "com.android.systemui:drawable/stat_sys_signal_" + level,
                 ),
             )
@@ -20,7 +20,7 @@ class SystemUiSignalParserTest {
     fun mobileNullSignalIsUnavailable() {
         assertEquals(
             SignalStrength.Unavailable,
-            SystemUiSignalParser.mobile(
+            SignalParser.mobile(
                 "com.android.systemui:drawable/stat_sys_signal_null",
             ),
         )
@@ -31,7 +31,7 @@ class SystemUiSignalParserTest {
         for (level in 0..3) {
             assertEquals(
                 SignalStrength.Level(level),
-                SystemUiSignalParser.wifi(
+                SignalParser.wifi(
                     "com.android.systemui:drawable/stat_sys_wifi_signal_" + level,
                 ),
             )
@@ -42,13 +42,13 @@ class SystemUiSignalParserTest {
     fun wifiVariantResourcesPreserveSignalLevel() {
         assertEquals(
             SignalStrength.Level(2),
-            SystemUiSignalParser.wifi(
+            SignalParser.wifi(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
             ),
         )
         assertEquals(
             SignalStrength.Level(1),
-            SystemUiSignalParser.wifi(
+            SignalParser.wifi(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_unavailable_1",
             ),
         )
@@ -58,13 +58,13 @@ class SystemUiSignalParserTest {
     fun hotspotWifiFamilyPreservesNativeSignalLevelAndInternetVariant() {
         assertEquals(
             SignalStrength.Level(2),
-            SystemUiSignalParser.wifi(
+            SignalParser.wifi(
                 "com.android.systemui:drawable/stat_sys_hotspot_signal_2",
             ),
         )
         assertEquals(
             false,
-            SystemUiSignalParser.wifiInternetValidated(
+            SignalParser.wifiInternetValidated(
                 "com.android.systemui:drawable/stat_sys_hotspot_signal_2_unavailable",
             ),
         )
@@ -74,25 +74,25 @@ class SystemUiSignalParserTest {
     fun wifiInternetHintComesFromSystemUiResourceVariant() {
         assertEquals(
             true,
-            SystemUiSignalParser.wifiInternetValidated(
+            SignalParser.wifiInternetValidated(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_3",
             ),
         )
         assertEquals(
             false,
-            SystemUiSignalParser.wifiInternetValidated(
+            SignalParser.wifiInternetValidated(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
             ),
         )
         assertEquals(
             false,
-            SystemUiSignalParser.wifiInternetValidated(
+            SignalParser.wifiInternetValidated(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_no_internet_1",
             ),
         )
         assertEquals(
             null,
-            SystemUiSignalParser.wifiInternetValidated(
+            SignalParser.wifiInternetValidated(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_2_dark",
             ),
         )
@@ -102,29 +102,29 @@ class SystemUiSignalParserTest {
     fun unknownResourcesStayUnknown() {
         assertEquals(
             SignalStrength.Unknown,
-            SystemUiSignalParser.mobile(
+            SignalParser.mobile(
                 "com.android.systemui:drawable/stat_sys_signal_roaming",
             ),
         )
         assertEquals(
             SignalStrength.Unknown,
-            SystemUiSignalParser.wifi(
+            SignalParser.wifi(
                 "com.android.systemui:drawable/stat_sys_wifi_unavailable",
             ),
         )
-        assertEquals(SignalStrength.Unknown, SystemUiSignalParser.wifi(null))
+        assertEquals(SignalStrength.Unknown, SignalParser.wifi(null))
     }
     @Test
     fun hotspotResourceFamilyIsDistinguishedFromRegularWifi() {
         assertEquals(
             true,
-            SystemUiSignalParser.isHotspotWifiResource(
+            SignalParser.isHotspotWifiResource(
                 "com.android.systemui:drawable/stat_sys_hotspot_signal_3",
             ),
         )
         assertEquals(
             false,
-            SystemUiSignalParser.isHotspotWifiResource(
+            SignalParser.isHotspotWifiResource(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_3",
             ),
         )
@@ -135,9 +135,9 @@ class SystemUiSignalParserTest {
         val resource =
             "com.android.systemui:drawable/stat_sys_wifi_signal_2_no_internet"
 
-        assertEquals(true, SystemUiSignalParser.isWifiFamilyResource(resource))
-        assertEquals(SignalStrength.Level(2), SystemUiSignalParser.wifi(resource))
-        assertEquals(false, SystemUiSignalParser.wifiInternetValidated(resource))
+        assertEquals(true, SignalParser.isWifiFamilyResource(resource))
+        assertEquals(SignalStrength.Level(2), SignalParser.wifi(resource))
+        assertEquals(false, SignalParser.wifiInternetValidated(resource))
     }
 
     @Test
@@ -145,10 +145,10 @@ class SystemUiSignalParserTest {
         val resource =
             "com.android.systemui:drawable/stat_sys_hotspot_signal_3_unavailable"
 
-        assertEquals(true, SystemUiSignalParser.isWifiFamilyResource(resource))
-        assertEquals(true, SystemUiSignalParser.isHotspotWifiResource(resource))
-        assertEquals(SignalStrength.Level(3), SystemUiSignalParser.wifi(resource))
-        assertEquals(false, SystemUiSignalParser.wifiInternetValidated(resource))
+        assertEquals(true, SignalParser.isWifiFamilyResource(resource))
+        assertEquals(true, SignalParser.isHotspotWifiResource(resource))
+        assertEquals(SignalStrength.Level(3), SignalParser.wifi(resource))
+        assertEquals(false, SignalParser.wifiInternetValidated(resource))
     }
 
     @Test
@@ -157,7 +157,7 @@ class SystemUiSignalParserTest {
 
         assertEquals(
             true,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            NetworkStateSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 100,
                 previousTaggedResId = 99,
@@ -167,7 +167,7 @@ class SystemUiSignalParserTest {
         )
         assertEquals(
             false,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            NetworkStateSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 100,
                 previousTaggedResId = 100,
@@ -177,7 +177,7 @@ class SystemUiSignalParserTest {
         )
         assertEquals(
             false,
-            SystemUiNetworkStateSource.shouldUseAppliedHotspotFallback(
+            NetworkStateSource.shouldUseAppliedHotspotFallback(
                 semanticState = hidden,
                 taggedResId = 101,
                 previousTaggedResId = 100,

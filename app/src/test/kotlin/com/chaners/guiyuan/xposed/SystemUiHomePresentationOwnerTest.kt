@@ -5,11 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiHomePresentationOwnerTest {
+class HomePresentationTest {
     @Test
     fun temporaryEntriesPreserveExistingAndRestoreOnlyOwnedEntries() {
         val slots = mutableListOf("alarm_clock", "wifi")
-        SystemUiHomePresentationOwner.OwnedListEntries.withTemporaryEntries(
+        HomePresentation.OwnedListEntries.withTemporaryEntries(
             target = slots,
             entries = listOf("wifi", "mobile", "no_sim"),
         ) {
@@ -26,7 +26,7 @@ class SystemUiHomePresentationOwnerTest {
         val existing = listOf("alarm_clock", "wifi")
         val requested = listOf("wifi", "mobile", "no_sim")
         val owned =
-            SystemUiHomePresentationOwner.PersistentIgnoredSlotPolicy.ownedDelta(
+            HomePresentation.PersistentIgnoredSlotPolicy.ownedDelta(
                 existing = existing,
                 requested = requested,
             )
@@ -35,7 +35,7 @@ class SystemUiHomePresentationOwnerTest {
         val live = listOf("alarm_clock", "wifi", "mobile", "no_sim", "vpn")
         assertEquals(
             listOf("alarm_clock", "wifi", "vpn"),
-            SystemUiHomePresentationOwner.PersistentIgnoredSlotPolicy.restoreTarget(
+            HomePresentation.PersistentIgnoredSlotPolicy.restoreTarget(
                 live = live,
                 ownedEntries = owned,
             ),
@@ -45,13 +45,13 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun persistentIgnoredSlotRestoreAvoidsNativeSetterDuringContinuousHandoff() {
         assertFalse(
-            SystemUiHomePresentationOwner.PersistentIgnoredSlotPolicy
+            HomePresentation.PersistentIgnoredSlotPolicy
                 .shouldUseNativeSetterOnRestore(
                     requestLayout = false,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.PersistentIgnoredSlotPolicy
+            HomePresentation.PersistentIgnoredSlotPolicy
                 .shouldUseNativeSetterOnRestore(
                     requestLayout = true,
                 ),
@@ -62,21 +62,21 @@ class SystemUiHomePresentationOwnerTest {
     fun transitionReservationCannotShrinkBelowCompactWidth() {
         assertEquals(
             105,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolveRequestedSlotWidth(
+            HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
                 transitionRequestedSlotWidthPx = 80,
             ),
         )
         assertEquals(
             168,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolveRequestedSlotWidth(
+            HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
                 transitionRequestedSlotWidthPx = 168,
             ),
         )
         assertEquals(
             105,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolveRequestedSlotWidth(
+            HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
                 compactSlotWidthPx = 105,
                 transitionRequestedSlotWidthPx = null,
             ),
@@ -87,7 +87,7 @@ class SystemUiHomePresentationOwnerTest {
     fun endReservationKeepsOneResolvedEndBoundaryAcrossBatteryStates() {
         assertEquals(
             0,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolvePaddingEndDelta(
+            HomePresentation.EndReservationPolicy.resolvePaddingEndDelta(
                 nativeHide = false,
                 actualBatteryWidthPx = 105,
                 requestedSlotWidthPx = 105,
@@ -95,7 +95,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             -30,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolvePaddingEndDelta(
+            HomePresentation.EndReservationPolicy.resolvePaddingEndDelta(
                 nativeHide = false,
                 actualBatteryWidthPx = 135,
                 requestedSlotWidthPx = 105,
@@ -103,7 +103,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             105,
-            SystemUiHomePresentationOwner.EndReservationPolicy.resolvePaddingEndDelta(
+            HomePresentation.EndReservationPolicy.resolvePaddingEndDelta(
                 nativeHide = true,
                 actualBatteryWidthPx = 135,
                 requestedSlotWidthPx = 105,
@@ -114,9 +114,9 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun hiddenPrearmNativeWidthResetIsAdoptedInsteadOfFailNative() {
         assertEquals(
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 587,
@@ -130,9 +130,9 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun visibleLeaseWidthMismatchStillFailsNative() {
         assertEquals(
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = true,
                     liveWidthPx = 587,
@@ -146,9 +146,9 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun unchangedHiddenLeaseIsReused() {
         assertEquals(
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .ExistingLeaseAction.REUSE,
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 836,
@@ -162,9 +162,9 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun hiddenLeaseDoesNotAdoptAcrossParentContractChange() {
         assertEquals(
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            SystemUiHomePresentationOwner.FakeCarrierCapacityLeasePolicy
+            HomePresentation.FakeCarrierCapacityLeasePolicy
                 .resolveExistingLeaseAction(
                     visibleCycleActive = false,
                     liveWidthPx = 587,
@@ -179,7 +179,7 @@ class SystemUiHomePresentationOwnerTest {
     fun fakeCarrierCapacityLeaseUsesOnlyVerifiedParentContentWidth() {
         assertEquals(
             250,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityDelta(
                     nativeCarrierWidthPx = 587,
                     parentContentWidthPx = 837,
@@ -187,7 +187,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             0,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityDelta(
                     nativeCarrierWidthPx = 587,
                     parentContentWidthPx = 587,
@@ -195,7 +195,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             null,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityDelta(
                     nativeCarrierWidthPx = 588,
                     parentContentWidthPx = 587,
@@ -206,13 +206,13 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun deferredControlCenterCutoverPreservesNativeVisualsUntilCompactLayout() {
         assertTrue(
-            SystemUiHomePresentationOwner.VisualMaskPolicy
+            HomePresentation.VisualMaskPolicy
                 .shouldPreserveNativeBeforeCompactCutover(
                     deferVisualMaskUntilLayout = true,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy
+            HomePresentation.VisualMaskPolicy
                 .shouldPreserveNativeBeforeCompactCutover(
                     deferVisualMaskUntilLayout = false,
                 ),
@@ -222,21 +222,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun keyguardFamilyReleaseIgnoresOldSceneAfterSuccessfulRetarget() {
         assertFalse(
-            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
-                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.KEYGUARD,
+            HomePresentation.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = HomePresentation.KeyguardFamilySurface.AOD,
+                requestedSurface = HomePresentation.KeyguardFamilySurface.KEYGUARD,
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.KEYGUARD,
-                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+            HomePresentation.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = HomePresentation.KeyguardFamilySurface.KEYGUARD,
+                requestedSurface = HomePresentation.KeyguardFamilySurface.AOD,
             ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
-                requestedSurface = SystemUiHomePresentationOwner.KeyguardFamilySurface.AOD,
+            HomePresentation.KeyguardFamilyHandoffPolicy.shouldRelease(
+                activeSurface = HomePresentation.KeyguardFamilySurface.AOD,
+                requestedSurface = HomePresentation.KeyguardFamilySurface.AOD,
             ),
         )
     }
@@ -244,19 +244,19 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun aodPreMaskRequiresDeferredLayoutAndExplicitHandoffRequest() {
         assertTrue(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+            HomePresentation.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
                 deferVisualMaskUntilLayout = true,
                 preMaskBeforeLayout = true,
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+            HomePresentation.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
                 deferVisualMaskUntilLayout = true,
                 preMaskBeforeLayout = false,
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+            HomePresentation.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
                 deferVisualMaskUntilLayout = false,
                 preMaskBeforeLayout = true,
             ),
@@ -266,7 +266,7 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -275,7 +275,7 @@ class SystemUiHomePresentationOwnerTest {
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = false,
                 layoutRequested = false,
@@ -284,7 +284,7 @@ class SystemUiHomePresentationOwnerTest {
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = true,
@@ -293,7 +293,7 @@ class SystemUiHomePresentationOwnerTest {
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -303,7 +303,7 @@ class SystemUiHomePresentationOwnerTest {
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+            HomePresentation.VisualMaskPolicy.shouldAdoptExistingNativeLayout(
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
@@ -316,25 +316,25 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun visualOnlyKeyguardHandoffDefersNativeLayoutMutationAndCompletion() {
         assertFalse(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldWriteNativeLayout(
                     nativeLayoutOwnershipDeferred = true,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldCompleteCompactLayout(
                     nativeLayoutOwnershipDeferred = true,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldWriteNativeLayout(
                     nativeLayoutOwnershipDeferred = false,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldCompleteCompactLayout(
                     nativeLayoutOwnershipDeferred = false,
                 ),
@@ -344,13 +344,13 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun continuousHotReloadHandoffSuppressesIntermediateLayoutRequest() {
         assertFalse(
-            SystemUiHomePresentationOwner.HotReloadHandoffPolicy
+            HomePresentation.HotReloadHandoffPolicy
                 .shouldRequestLayoutOnRelease(
                     continuousHandoff = true,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.HotReloadHandoffPolicy
+            HomePresentation.HotReloadHandoffPolicy
                 .shouldRequestLayoutOnRelease(
                     continuousHandoff = false,
                 ),
@@ -360,21 +360,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
         assertTrue(
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .shouldDeferLiveBatteryWidthUnavailable(
                     retainOnTransientLoss = true,
                     compactLayoutReady = true,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .shouldDeferLiveBatteryWidthUnavailable(
                     retainOnTransientLoss = true,
                     compactLayoutReady = false,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .shouldDeferLiveBatteryWidthUnavailable(
                     retainOnTransientLoss = false,
                     compactLayoutReady = true,
@@ -386,7 +386,7 @@ class SystemUiHomePresentationOwnerTest {
     fun temporaryEntriesRestoreAfterFailure() {
         val slots = mutableListOf("alarm_clock")
         runCatching {
-            SystemUiHomePresentationOwner.OwnedListEntries.withTemporaryEntries(
+            HomePresentation.OwnedListEntries.withTemporaryEntries(
                 target = slots,
                 entries = listOf("wifi", "mobile"),
             ) {
@@ -400,7 +400,7 @@ class SystemUiHomePresentationOwnerTest {
     fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
         assertEquals(
             0,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
@@ -409,7 +409,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             144,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
@@ -418,7 +418,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             249,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityRequirement(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
@@ -427,7 +427,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             249,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveFakeCarrierCapacityRequirement(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
@@ -440,7 +440,7 @@ class SystemUiHomePresentationOwnerTest {
     fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
         assertEquals(
             354,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveCapacityBoundedReservationDelta(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
@@ -450,7 +450,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             354,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveCapacityBoundedReservationDelta(
                     nativeHide = true,
                     compactSlotWidthPx = 105,
@@ -460,7 +460,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             200,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveCapacityBoundedReservationDelta(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
@@ -470,7 +470,7 @@ class SystemUiHomePresentationOwnerTest {
         )
         assertEquals(
             249,
-            SystemUiHomePresentationOwner.EndReservationPolicy
+            HomePresentation.EndReservationPolicy
                 .resolveCapacityBoundedReservationDelta(
                     nativeHide = false,
                     compactSlotWidthPx = 105,
@@ -483,15 +483,15 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun steadyPeerMirrorIsScopedToHomeControlCenterSource() {
         assertTrue(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .shouldUseHomeMirror(SourceScene.HOME),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .shouldUseHomeMirror(SourceScene.KEYGUARD),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .shouldUseHomeMirror(SourceScene.UNKNOWN),
         )
     }
@@ -499,21 +499,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
         assertTrue(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .isIslandHidden(
                     visibleState = 2,
                     inIslandState = 10,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .isIslandHidden(
                     visibleState = 2,
                     inIslandState = 20,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .isIslandHidden(
                     visibleState = 0,
                     inIslandState = 10,
@@ -524,21 +524,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun steadyPeerMirrorSuppressesOnlyFakeSecondIslandDecision() {
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .exposeFakeIslandShowing(
                     nativeIslandShowing = true,
                     steadyMirrorActive = true,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .exposeFakeIslandShowing(
                     nativeIslandShowing = true,
                     steadyMirrorActive = false,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.SteadyPeerMirrorPolicy
+            HomePresentation.SteadyPeerMirrorPolicy
                 .exposeFakeIslandShowing(
                     nativeIslandShowing = false,
                     steadyMirrorActive = true,
@@ -549,7 +549,7 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
         assertFalse(
-            SystemUiHomePresentationOwner.failControlCenterPresentation(
+            HomePresentation.failControlCenterPresentation(
                 "unit-test-no-session",
             ),
         )
@@ -558,21 +558,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
         assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+            HomePresentation.HotPathDiagnosticPolicy
                 .shouldReportControlCenterLayoutState(
                     detailedDiagnosticsEnabled = false,
                     transitionReservationActive = false,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+            HomePresentation.HotPathDiagnosticPolicy
                 .shouldReportControlCenterLayoutState(
                     detailedDiagnosticsEnabled = true,
                     transitionReservationActive = true,
                 ),
         )
         assertTrue(
-            SystemUiHomePresentationOwner.HotPathDiagnosticPolicy
+            HomePresentation.HotPathDiagnosticPolicy
                 .shouldReportControlCenterLayoutState(
                     detailedDiagnosticsEnabled = true,
                     transitionReservationActive = false,
@@ -586,21 +586,21 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun deferredFamilyOwnershipResumesWhenRetargetLeavesVisualOnlyBoundary() {
         assertTrue(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldResumeOwnershipForRetarget(
                     nativeLayoutOwnershipDeferred = true,
                     nextDeferNativeLayoutOwnership = false,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldResumeOwnershipForRetarget(
                     nativeLayoutOwnershipDeferred = true,
                     nextDeferNativeLayoutOwnership = true,
                 ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.DeferredNativeLayoutPolicy
+            HomePresentation.DeferredNativeLayoutPolicy
                 .shouldResumeOwnershipForRetarget(
                     nativeLayoutOwnershipDeferred = false,
                     nextDeferNativeLayoutOwnership = false,
@@ -613,19 +613,19 @@ class SystemUiHomePresentationOwnerTest {
     @Test
     fun activationSuccessRequiresOwnerAndFamilySurfaceToStillBeCurrent() {
         assertTrue(
-            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+            HomePresentation.ActivationCommitPolicy.canReportSuccess(
                 ownerStillCurrent = true,
                 surfaceStillCurrent = true,
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+            HomePresentation.ActivationCommitPolicy.canReportSuccess(
                 ownerStillCurrent = false,
                 surfaceStillCurrent = true,
             ),
         )
         assertFalse(
-            SystemUiHomePresentationOwner.ActivationCommitPolicy.canReportSuccess(
+            HomePresentation.ActivationCommitPolicy.canReportSuccess(
                 ownerStillCurrent = true,
                 surfaceStillCurrent = false,
             ),

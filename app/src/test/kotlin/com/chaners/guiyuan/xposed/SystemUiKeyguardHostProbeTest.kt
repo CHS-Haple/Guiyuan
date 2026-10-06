@@ -4,22 +4,22 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiKeyguardHostProbeTest {
+class KeyguardHostProbeTest {
     @Test
     fun probeRunsOnlyForKeyguardSurface() {
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.KEYGUARD,
+            KeyguardHostProbe.shouldProbe(
+                SceneSource.Surface.KEYGUARD,
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR,
+            KeyguardHostProbe.shouldProbe(
+                SceneSource.Surface.UNLOCKED_STATUS_BAR,
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldProbe(
-                SystemUiSceneStateSource.Surface.SHADE_LOCKED,
+            KeyguardHostProbe.shouldProbe(
+                SceneSource.Surface.SHADE_LOCKED,
             ),
         )
     }
@@ -27,12 +27,12 @@ class SystemUiKeyguardHostProbeTest {
     @Test
     fun hostGuardAcceptsOnlyPinnedMiuiKeyguardHost() {
         assertTrue(
-            SystemUiKeyguardHostProbe.isKeyguardHostClassName(
+            KeyguardHostProbe.isKeyguardHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.isKeyguardHostClassName(
+            KeyguardHostProbe.isKeyguardHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
             ),
         )
@@ -41,7 +41,7 @@ class SystemUiKeyguardHostProbeTest {
     @Test
     fun sampleFreezesOnlyAfterPositiveReadyTopology() {
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -50,7 +50,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertTrue(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -59,7 +59,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 0,
@@ -68,7 +68,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,
@@ -77,7 +77,7 @@ class SystemUiKeyguardHostProbeTest {
             ),
         )
         assertFalse(
-            SystemUiKeyguardHostProbe.shouldFreezeSample(
+            KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,
                 systemIconsAttached = true,
                 systemIconsWidth = 105,

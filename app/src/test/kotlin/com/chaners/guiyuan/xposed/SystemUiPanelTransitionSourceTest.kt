@@ -6,12 +6,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiPanelTransitionSourceTest {
+class PanelTransitionSourceTest {
     @Test
     fun runtimeCallbackFailureIsContainedAndReported() {
         var reported: Throwable? = null
         val completed =
-            SystemUiPanelTransitionSource.dispatchRuntimeCallback(
+            PanelTransitionSource.dispatchRuntimeCallback(
                 callback = { error("callback-failure") },
                 onFailure = { reported = it },
             )
@@ -23,7 +23,7 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun runtimeCallbackFailureHandlerCannotEscapeTheHookBoundary() {
         val completed =
-            SystemUiPanelTransitionSource.dispatchRuntimeCallback(
+            PanelTransitionSource.dispatchRuntimeCallback(
                 callback = { error("callback-failure") },
                 onFailure = { error("failure-handler-failure") },
             )
@@ -33,47 +33,47 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun nativeFractionPreservesFiniteHyperOsPayload() {
-        assertEquals(-0.2f, SystemUiPanelTransitionSource.nativeFraction(-0.2f))
-        assertEquals(0.5f, SystemUiPanelTransitionSource.nativeFraction(0.5f))
-        assertEquals(1.4f, SystemUiPanelTransitionSource.nativeFraction(1.4f))
-        assertNull(SystemUiPanelTransitionSource.nativeFraction(Float.NaN))
-        assertNull(SystemUiPanelTransitionSource.nativeFraction(Float.POSITIVE_INFINITY))
+        assertEquals(-0.2f, PanelTransitionSource.nativeFraction(-0.2f))
+        assertEquals(0.5f, PanelTransitionSource.nativeFraction(0.5f))
+        assertEquals(1.4f, PanelTransitionSource.nativeFraction(1.4f))
+        assertNull(PanelTransitionSource.nativeFraction(Float.NaN))
+        assertNull(PanelTransitionSource.nativeFraction(Float.POSITIVE_INFINITY))
     }
 
     @Test
     fun controlCenterHomeEligibilityRequiresNativeInvisibleSemantics() {
-        assertEquals(true, SystemUiPanelTransitionSource.controlCenterAllowsHome(false))
-        assertEquals(false, SystemUiPanelTransitionSource.controlCenterAllowsHome(true))
-        assertEquals(false, SystemUiPanelTransitionSource.controlCenterAllowsHome(null))
+        assertEquals(true, PanelTransitionSource.controlCenterAllowsHome(false))
+        assertEquals(false, PanelTransitionSource.controlCenterAllowsHome(true))
+        assertEquals(false, PanelTransitionSource.controlCenterAllowsHome(null))
     }
 
     @Test
     fun controlCenterEligibilitySnapshotCanSeedHotReloadGeneration() {
-        SystemUiPanelTransitionSource.resetRuntimeState()
-        assertNull(SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        PanelTransitionSource.resetRuntimeState()
+        assertNull(PanelTransitionSource.currentControlCenterHomeEligibility())
 
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(false)
-        assertEquals(false, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        PanelTransitionSource.restoreControlCenterHomeEligibility(false)
+        assertEquals(false, PanelTransitionSource.currentControlCenterHomeEligibility())
 
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(true)
-        assertEquals(true, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        PanelTransitionSource.restoreControlCenterHomeEligibility(true)
+        assertEquals(true, PanelTransitionSource.currentControlCenterHomeEligibility())
 
         // A v5 or older payload has no Control Center field; do not erase the
         // successfully installed generation's current/bootstrap eligibility.
-        SystemUiPanelTransitionSource.restoreControlCenterHomeEligibility(null)
-        assertEquals(true, SystemUiPanelTransitionSource.currentControlCenterHomeEligibility())
+        PanelTransitionSource.restoreControlCenterHomeEligibility(null)
+        assertEquals(true, PanelTransitionSource.currentControlCenterHomeEligibility())
     }
 
     @Test
     fun runtimeHookCountIncludesOnlyNativeReadAndFakeLifecycleHooks() {
-        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(false))
-        assertEquals(4, SystemUiPanelTransitionSource.expectedHookCount(true))
+        assertEquals(4, PanelTransitionSource.expectedHookCount(false))
+        assertEquals(4, PanelTransitionSource.expectedHookCount(true))
     }
 
     @Test
     fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
         assertTrue(
-            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+            PanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
                 expandedChanged = false,
                 trackingChanged = false,
                 visibleChanged = true,
@@ -82,7 +82,7 @@ class SystemUiPanelTransitionSourceTest {
             ),
         )
         assertTrue(
-            SystemUiPanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
+            PanelTransitionSource.DiagnosticPolicy.shouldReportPanelEvent(
                 expandedChanged = false,
                 trackingChanged = false,
                 visibleChanged = false,
@@ -94,20 +94,20 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMatrixUsesRawNativeExpansionProgress() {
-        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(0f))
+        assertEquals(0f, ControlCenterTransition.geometryProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionPolicy.geometryProgress(0.41f),
+            ControlCenterTransition.geometryProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionPolicy.geometryProgress(0.82f),
+            ControlCenterTransition.geometryProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1f))
-        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(-0.2f))
-        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1.4f))
+        assertEquals(1f, ControlCenterTransition.geometryProgress(1f))
+        assertEquals(0f, ControlCenterTransition.geometryProgress(-0.2f))
+        assertEquals(1f, ControlCenterTransition.geometryProgress(1.4f))
     }
 
     @Test
@@ -122,7 +122,7 @@ class SystemUiPanelTransitionSourceTest {
             )
         val component =
             requireNotNull(
-                ControlCenterTransitionPolicy.componentGeometry(
+                ControlCenterTransition.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,
@@ -139,32 +139,32 @@ class SystemUiPanelTransitionSourceTest {
 
     @Test
     fun transitionMotionAndMobileMorphUseNativeExpansion() {
-        assertEquals(0f, ControlCenterTransitionPolicy.motionProgress(0f))
+        assertEquals(0f, ControlCenterTransition.motionProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionPolicy.motionProgress(0.41f),
+            ControlCenterTransition.motionProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionPolicy.motionProgress(0.82f),
+            ControlCenterTransition.motionProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionPolicy.motionProgress(1f))
+        assertEquals(1f, ControlCenterTransition.motionProgress(1f))
 
         assertEquals(
             0f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0f),
+            ControlCenterTransition.mobileSignalShapeProgress(0f),
             0.0001f,
         )
         assertEquals(
             0.25f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0.5f),
+            ControlCenterTransition.mobileSignalShapeProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(1f),
+            ControlCenterTransition.mobileSignalShapeProgress(1f),
             0.0001f,
         )
     }
@@ -173,13 +173,13 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                ControlCenterTransitionPolicy.ReservationSpan(
+                ControlCenterTransition.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                ControlCenterTransitionPolicy.ReservationSpan(
+                ControlCenterTransition.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -189,7 +189,7 @@ class SystemUiPanelTransitionSourceTest {
 
         assertEquals(
             105,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            ControlCenterTransition.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -197,7 +197,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             105,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            ControlCenterTransition.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -205,7 +205,7 @@ class SystemUiPanelTransitionSourceTest {
         )
         assertEquals(
             145,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            ControlCenterTransition.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
@@ -309,12 +309,12 @@ class SystemUiPanelTransitionSourceTest {
     fun transitionDoesNotOwnANativeReleaseTimeline() {
         assertEquals(
             0.92f,
-            ControlCenterTransitionPolicy.geometryProgress(0.92f),
+            ControlCenterTransition.geometryProgress(0.92f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionPolicy.geometryProgress(1f),
+            ControlCenterTransition.geometryProgress(1f),
             0.0001f,
         )
     }
@@ -324,7 +324,7 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            ControlCenterTransition.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -344,7 +344,7 @@ class SystemUiPanelTransitionSourceTest {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
-            ControlCenterTransitionPolicy.interpolateGeometry(
+            ControlCenterTransition.interpolateGeometry(
                 source,
                 target,
                 0.5f,
@@ -361,21 +361,21 @@ class SystemUiPanelTransitionSourceTest {
     fun controlCenterSourceUsesHomeCarrierIdentityBeforeStructuralFallback() {
         assertEquals(
             SourceScene.HOME,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            PanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = true,
                 structuralScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            PanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.KEYGUARD,
             ),
         )
         assertEquals(
             SourceScene.UNKNOWN,
-            SystemUiPanelTransitionSource.classifyControlCenterSourceScene(
+            PanelTransitionSource.classifyControlCenterSourceScene(
                 homeIdentityMatches = false,
                 structuralScene = SourceScene.UNKNOWN,
             ),
@@ -385,8 +385,8 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterUpdateCarriesNativeAppearanceState() {
         val update =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            PanelTransitionSource.Update(
+                source = PanelTransitionSource.Source.CONTROL_CENTER,
                 fraction = null,
                 expanded = null,
                 tracking = null,
@@ -402,8 +402,8 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterUpdateCarriesExactNativeBatteryIslandState() {
         val active =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            PanelTransitionSource.Update(
+                source = PanelTransitionSource.Source.CONTROL_CENTER,
                 fraction = 0.5f,
                 expanded = null,
                 tracking = null,
@@ -420,8 +420,8 @@ class SystemUiPanelTransitionSourceTest {
     @Test
     fun controlCenterUpdateCarriesNativeSelectedSourceScene() {
         val update =
-            SystemUiPanelTransitionSource.Update(
-                source = SystemUiPanelTransitionSource.Source.CONTROL_CENTER,
+            PanelTransitionSource.Update(
+                source = PanelTransitionSource.Source.CONTROL_CENTER,
                 fraction = null,
                 expanded = null,
                 tracking = null,

@@ -4,42 +4,42 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SystemUiKeyguardHostResolverTest {
+class KeyguardHostResolverTest {
     @Test
     fun steadyKeyguardAcceptsKeyguardAndShadeLockedOnly() {
-        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.KEYGUARD))
-        assertTrue(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.SHADE_LOCKED))
-        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.UNLOCKED_STATUS_BAR))
-        assertFalse(SystemUiKeyguardHostResolver.isSteadyKeyguardSurface(SystemUiSceneStateSource.Surface.UNKNOWN))
+        assertTrue(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.KEYGUARD))
+        assertTrue(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.SHADE_LOCKED))
+        assertFalse(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertFalse(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.UNKNOWN))
     }
 
     @Test
     fun resolverAcceptsOnlyPinnedKeyguardHostClass() {
-        assertTrue(SystemUiKeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
-        assertFalse(SystemUiKeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
+        assertTrue(KeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
+        assertFalse(KeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
     }
     @Test
     fun keyguardStatusIconsAlphaUsesOnlyLocalNativeStatusIconLayer() {
         assertTrue(
-            SystemUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            KeyguardHostResolver.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 1f,
             ) == 1f,
         )
         assertTrue(
-            SystemUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            KeyguardHostResolver.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 0.005f,
             ) == 0.005f,
         )
         assertTrue(
-            SystemUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            KeyguardHostResolver.resolveStatusIconsPresentationAlpha(
                 visible = false,
                 alpha = 1f,
             ) == 0f,
         )
         assertTrue(
-            SystemUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            KeyguardHostResolver.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 2f,
             ) == 1f,
