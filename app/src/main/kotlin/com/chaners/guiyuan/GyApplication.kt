@@ -11,7 +11,7 @@ import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS_NAME
 import com.chaners.guiyuan.settings.KEYGUARD_ENABLED_KEY
-import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
+import com.chaners.guiyuan.settings.VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAGNOSTICS_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS_NAME
 import com.chaners.guiyuan.settings.DiagLevel
@@ -40,7 +40,7 @@ class GyApplication :
     }
 
     private val visualPreferences: SharedPreferences by lazy {
-        getSharedPreferences(COMBINED_STATUS_VISUAL_PREFS_NAME, Context.MODE_PRIVATE)
+        getSharedPreferences(VISUAL_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     @Volatile
@@ -203,7 +203,7 @@ class GyApplication :
                 AOD_ENABLED_KEY,
                 false,
             )
-        val featureChangeElapsedRealtimeNanos =
+        val featureChangedNs =
             featurePreferences.getLong(
                 FEATURE_CHANGED_NS_KEY,
                 0L,
@@ -230,7 +230,7 @@ class GyApplication :
                 )
                 .putLong(
                     FEATURE_CHANGED_NS_KEY,
-                    featureChangeElapsedRealtimeNanos,
+                    featureChangedNs,
                 )
                 .putVisualSettings(visualSettings)
             check(editor.commit()) { "remote preference commit failed" }

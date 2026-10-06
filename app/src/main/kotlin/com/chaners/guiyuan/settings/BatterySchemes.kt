@@ -7,28 +7,28 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal const val BATTERY_COLOR_SCHEME_CUSTOM_MAX = 5
+internal const val BATTERY_SCHEME_CUSTOM_MAX = 5
 internal const val BATTERY_SCHEME_NAME_LIMIT = 24
-internal const val BATTERY_COLOR_SCHEME_HYPEROS_KEY = "builtin:hyperos"
-internal const val BATTERY_COLOR_SCHEME_IOS_KEY = "builtin:ios"
+internal const val BATTERY_SCHEME_HYPEROS_KEY = "builtin:hyperos"
+internal const val BATTERY_SCHEME_IOS_KEY = "builtin:ios"
 internal const val BATTERY_SCHEME_LOW_SAT_KEY = "builtin:low_saturation"
 
-private const val BATTERY_COLOR_SCHEME_PREFIX = "battery_color_scheme_library."
-private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
+private const val BATTERY_SCHEME_PREFIX = "battery_color_scheme_library."
+private const val BATTERY_SCHEME_SCHEMA_KEY = BATTERY_SCHEME_PREFIX + "schema"
 private const val BATTERY_SCHEME_SCHEMA = 1
-private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
-private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
+private const val BATTERY_SCHEME_ACTIVE_KEY = BATTERY_SCHEME_PREFIX + "active"
+private const val BATTERY_SCHEME_ORDER_KEY = BATTERY_SCHEME_PREFIX + "custom_order"
 
 internal enum class BuiltInBatteryScheme(
     val key: String,
     val preset: BatteryColorPreset,
 ) {
     HYPEROS(
-        BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+        BATTERY_SCHEME_HYPEROS_KEY,
         BatteryColorPreset.HYPEROS,
     ),
     IOS(
-        BATTERY_COLOR_SCHEME_IOS_KEY,
+        BATTERY_SCHEME_IOS_KEY,
         BatteryColorPreset.IOS_STYLE,
     ),
     LOW_SATURATION(
@@ -123,7 +123,7 @@ internal data class CustomBatteryScheme(
 }
 
 internal data class BatterySchemeLibrary(
-    val activeSchemeKey: String = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+    val activeSchemeKey: String = BATTERY_SCHEME_HYPEROS_KEY,
     val customSchemes: List<CustomBatteryScheme> = emptyList(),
 ) {
     fun customById(id: Int): CustomBatteryScheme? =
@@ -167,7 +167,7 @@ internal fun batterySchemeEntryColor(
 internal class BatterySchemeRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
-            COMBINED_STATUS_VISUAL_PREFS_NAME,
+            VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
 
@@ -183,7 +183,7 @@ internal class BatterySchemeRepo(context: Context) {
 
             val listener =
                 SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == null || key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)) {
+                    if (key == null || key.startsWith(BATTERY_SCHEME_PREFIX)) {
                         emitCurrent()
                     }
                 }
@@ -199,13 +199,13 @@ internal class BatterySchemeRepo(context: Context) {
 
     fun nextAvailableCustomId(): Int? {
         val used = current().customSchemes.mapTo(mutableSetOf()) { it.id }
-        return (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { it !in used }
+        return (1..BATTERY_SCHEME_CUSTOM_MAX).firstOrNull { it !in used }
     }
 
     fun activateScheme(key: String) {
         val library = current()
         val target =
-            if (library.containsKey(key)) key else BATTERY_COLOR_SCHEME_HYPEROS_KEY
+            if (library.containsKey(key)) key else BATTERY_SCHEME_HYPEROS_KEY
         val updated = library.copy(activeSchemeKey = target)
         val editor = preferences.edit()
         writeLibrary(editor, updated)
@@ -218,7 +218,7 @@ internal class BatterySchemeRepo(context: Context) {
         fromSchemeKey: String,
     ): Int? {
         val library = current()
-        if (library.customSchemes.size >= BATTERY_COLOR_SCHEME_CUSTOM_MAX) return null
+        if (library.customSchemes.size >= BATTERY_SCHEME_CUSTOM_MAX) return null
         val id = nextAvailableCustomId() ?: return null
         val sourceBuiltIn =
             BuiltInBatteryScheme.fromKey(fromSchemeKey)
@@ -230,7 +230,7 @@ internal class BatterySchemeRepo(context: Context) {
         val custom =
             CustomBatteryScheme(
                 id = id,
-                name = normalizeBatteryCustomSchemeName(name),
+                name = normalizeSchemeName(name),
                 baseTemplate = baseTemplate,
                 entries = entries,
             )
@@ -249,7 +249,7 @@ internal class BatterySchemeRepo(context: Context) {
         name: String,
     ) {
         updateCustom(id) { scheme ->
-            scheme.copy(name = normalizeBatteryCustomSchemeName(name))
+            scheme.copy(name = normalizeSchemeName(name))
         }
     }
 
@@ -356,7 +356,7 @@ internal class BatterySchemeRepo(context: Context) {
 
     private fun migrateIfNeeded() {
         if (
-            preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >=
+            preferences.getInt(BATTERY_SCHEME_SCHEMA_KEY, 0) >=
                 BATTERY_SCHEME_SCHEMA
         ) return
 
@@ -400,19 +400,19 @@ internal class BatterySchemeRepo(context: Context) {
 
     private fun readLibrary(): BatterySchemeLibrary {
         val order =
-            preferences.getString(BATTERY_COLOR_SCHEME_ORDER_KEY, null)
+            preferences.getString(BATTERY_SCHEME_ORDER_KEY, null)
                 ?.split(',')
                 ?.mapNotNull(String::toIntOrNull)
                 ?.distinct()
-                ?.filter { it in 1..BATTERY_COLOR_SCHEME_CUSTOM_MAX }
+                ?.filter { it in 1..BATTERY_SCHEME_CUSTOM_MAX }
                 .orEmpty()
 
         val customs = order.mapNotNull(::readCustom)
         val rawActive =
             preferences.getString(
-                BATTERY_COLOR_SCHEME_ACTIVE_KEY,
-                BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-            ) ?: BATTERY_COLOR_SCHEME_HYPEROS_KEY
+                BATTERY_SCHEME_ACTIVE_KEY,
+                BATTERY_SCHEME_HYPEROS_KEY,
+            ) ?: BATTERY_SCHEME_HYPEROS_KEY
         val provisional =
             BatterySchemeLibrary(
                 activeSchemeKey = rawActive,
@@ -421,7 +421,7 @@ internal class BatterySchemeRepo(context: Context) {
         return if (provisional.containsKey(rawActive)) {
             provisional
         } else {
-            provisional.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY)
+            provisional.copy(activeSchemeKey = BATTERY_SCHEME_HYPEROS_KEY)
         }
     }
 
@@ -464,11 +464,11 @@ internal class BatterySchemeRepo(context: Context) {
         library: BatterySchemeLibrary,
     ) {
         editor
-            .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_SCHEME_SCHEMA)
-            .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
+            .putInt(BATTERY_SCHEME_SCHEMA_KEY, BATTERY_SCHEME_SCHEMA)
+            .putString(BATTERY_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
             .putString(
-                BATTERY_COLOR_SCHEME_ORDER_KEY,
-                library.customSchemes.joinToString(",") { it.id.function toString() { [native code] }() },
+                BATTERY_SCHEME_ORDER_KEY,
+                library.customSchemes.joinToString(",") { it.id.function function toString() { [native code] }() { [native code] }() },
             )
         library.customSchemes.forEach { scheme ->
             val prefix = customPrefix(scheme.id)
@@ -507,7 +507,7 @@ internal class BatterySchemeRepo(context: Context) {
         }
 
         val custom = library.customByKey(key) ?: run {
-            applyProjection(editor, library, BATTERY_COLOR_SCHEME_HYPEROS_KEY)
+            applyProjection(editor, library, BATTERY_SCHEME_HYPEROS_KEY)
             return
         }
         editor.putString(
@@ -595,7 +595,7 @@ internal fun customSchemeId(key: String): Int? =
         ?.toIntOrNull()
 
 private fun customPrefix(id: Int): String =
-    BATTERY_COLOR_SCHEME_PREFIX + "custom." + id + "."
+    BATTERY_SCHEME_PREFIX + "custom." + id + "."
 
 private fun customSourceKey(
     id: Int,
@@ -610,7 +610,7 @@ private fun customColorKey(
     customPrefix(id) + "color." + slot.name.lowercase()
 
 
-internal fun limitBatteryCustomSchemeNameInput(value: String): String {
+internal fun limitSchemeNameInput(value: String): String {
     val codePointCount = value.codePointCount(0, value.length)
     if (codePointCount <= BATTERY_SCHEME_NAME_LIMIT) return value
     val endIndex =
@@ -621,8 +621,8 @@ internal fun limitBatteryCustomSchemeNameInput(value: String): String {
     return value.substring(0, endIndex)
 }
 
-internal fun normalizeBatteryCustomSchemeName(value: String): String =
-    limitBatteryCustomSchemeNameInput(value.trim())
+internal fun normalizeSchemeName(value: String): String =
+    limitSchemeNameInput(value.trim())
 
 
 internal fun legacySchemeSource(

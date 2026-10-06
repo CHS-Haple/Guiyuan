@@ -40,7 +40,7 @@ internal object NetworkStateSource {
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.MiuiMobileIconViewModel"
     const val MOBILE_VIEW_LOGGER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.MobileViewLogger"
-    const val MOBILE_SIGNAL_EMITTER_CLASS_NAME =
+    const val MOBILE_SIGNAL_EMITTER_CLASS =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$4\$2"
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
 
@@ -336,7 +336,7 @@ internal object NetworkStateSource {
                 }
             val mobileSignalEmitterClass =
                 atStage("mobile.resolve.signalEmitterClass") {
-                    Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
+                    Class.forName(MOBILE_SIGNAL_EMITTER_CLASS, false, classLoader)
                 }
             val mobileSignalEmitMethod =
                 atStage("mobile.resolve.signalEmitMethod") {
@@ -903,7 +903,7 @@ internal object NetworkStateSource {
                 }
             val eventKey =
                 effective.valueType + ":" +
-                    (effective.resourceId?.function toString() { [native code] }() ?: "none")
+                    (effective.resourceId?.function function toString() { [native code] }() { [native code] }() ?: "none")
             val changed =
                 synchronized(this) {
                     lastWifiEvents.put(image, eventKey) != eventKey
@@ -1026,11 +1026,11 @@ internal object NetworkStateSource {
             val subscriptionId = findMobileSubscription(image)
             if (subscriptionId != null) {
                 val valueText = when (value) {
-                    is Number -> value.toLong().function toString() { [native code] }()
+                    is Number -> value.toLong().function function toString() { [native code] }() { [native code] }()
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.function toString() { [native code] }() + ":" + valueText
+                val eventKey = classId.function function toString() { [native code] }() { [native code] }() + ":" + valueText
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
@@ -1124,7 +1124,7 @@ internal object NetworkStateSource {
         return if (params == null) {
             "none"
         } else {
-            params.width.function toString() { [native code] }() + "x" + params.height +
+            params.width.function function toString() { [native code] }() { [native code] }() + "x" + params.height +
                 ":measured=" + view.measuredWidth + "x" + view.measuredHeight
         }
     }
@@ -1187,15 +1187,15 @@ internal object NetworkStateSource {
     ): String {
         if (tint == null) return "none"
         val resolved = tint.getColorForState(state, tint.defaultColor)
-        return "0x" + resolved.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
-            "/default=0x" + tint.defaultColor.toUInt().function toString() { [native code] }(16).padStart(8, '0')
+        return "0x" + resolved.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
+            "/default=0x" + tint.defaultColor.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0')
     }
 
     private fun visibilityName(visibility: Int): String = when (visibility) {
         View.VISIBLE -> "VISIBLE"
         View.INVISIBLE -> "INVISIBLE"
         View.GONE -> "GONE"
-        else -> visibility.function toString() { [native code] }()
+        else -> visibility.function function toString() { [native code] }() { [native code] }()
     }
 
     private fun resourceId(view: View): String {
@@ -1206,7 +1206,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(view.id)
         }.getOrElse {
-            view.id.function toString() { [native code] }()
+            view.id.function function toString() { [native code] }() { [native code] }()
         }
     }
 
@@ -1221,7 +1221,7 @@ internal object NetworkStateSource {
         return runCatching {
             view.resources.getResourceName(resId)
         }.getOrElse {
-            resId.function toString() { [native code] }()
+            resId.function function toString() { [native code] }() { [native code] }()
         }
     }
 }

@@ -144,7 +144,7 @@ internal object CcTransition {
             ?: valid(cachedTint)
     }
 
-    fun usesSemanticTransitionReservation(
+    fun usesSemanticReservation(
         sourceScene: SourceScene,
         charging: Boolean = false,
         nativeBatteryIslandActive: Boolean? = null,
@@ -207,7 +207,7 @@ internal object CcTransition {
             progress = 1f,
         )
 
-    fun resolveTransitionReservationWidth(
+    fun reservationWidth(
         compactWidthPx: Int,
         spans: List<ReservationSpan>,
         progress: Float,
@@ -380,7 +380,7 @@ internal object CcTransition {
         )
     }
 
-    fun endAnchoredMotionCarrierGeometry(
+    fun endAnchoredCarrierGeometry(
         carrierGeometry: FloatArray,
         carrierWidth: Int,
         carrierHeight: Int,

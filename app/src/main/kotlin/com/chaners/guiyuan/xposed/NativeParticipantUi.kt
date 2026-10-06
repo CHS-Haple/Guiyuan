@@ -1260,7 +1260,7 @@ internal object NativeParticipantUi {
             handoffCommitted = true
             applyOwnVisualBounds(root)
             requestNativeLayout(root)
-            startMasterSwitchTransitionProbe(
+            startMasterSwitchProbe(
                 direction = "enable",
                 root = root,
             )
@@ -1310,7 +1310,7 @@ internal object NativeParticipantUi {
     }
 
     @Synchronized
-    private fun onNativeBindingVisibilityStateChanged(
+    private fun onBindingVisibilityChanged(
         bindingState: BindingState,
         state: Int,
         parameterCount: Int,
@@ -1487,7 +1487,7 @@ internal object NativeParticipantUi {
             sink.invoke(
                 "nativeCombinedParticipant tint " +
                     "authority=ModernStatusBarViewBinding.onIconTintChanged " +
-                    "tint=#" + tint.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    "tint=#" + tint.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " parameterCount=" + parameterCount +
                     " nativeGeometryWrites=0",
             )
@@ -1509,7 +1509,7 @@ internal object NativeParticipantUi {
         reconcileVisibleHandoff("native-tint")
     }
 
-    private fun startMasterSwitchTransitionProbe(
+    private fun startMasterSwitchProbe(
         direction: String,
         root: View,
     ) {
@@ -1609,7 +1609,7 @@ internal object NativeParticipantUi {
                 requestNativeLayout(root)
             }
             if (root != null && source == "feature-disabled") {
-                startMasterSwitchTransitionProbe(
+                startMasterSwitchProbe(
                     direction = "disable",
                     root = root,
                 )
@@ -1654,7 +1654,7 @@ internal object NativeParticipantUi {
     private fun colorHex(color: Int?): String =
         color
             ?.let { value ->
-                "#" + value.toUInt().function function toString() { [native code] }() { [native code] }(16).padStart(8, '0')
+                "#" + value.toUInt().function function function toString() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0')
             }
             ?: "none"
 
@@ -2017,12 +2017,12 @@ internal object NativeParticipantUi {
     }
 
     @Synchronized
-    fun onNativeBatteryLayoutHideChanged(hidden: Boolean): Boolean {
+    fun onBatteryLayoutHideChanged(hidden: Boolean): Boolean {
         nativeBatteryLayoutHidden = hidden
         val root = rootRef?.get() ?: return true
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return root.post {
-                onNativeBatteryLayoutHideChanged(hidden)
+                onBatteryLayoutHideChanged(hidden)
             }
         }
         val visualWidth =
@@ -2429,7 +2429,7 @@ internal object NativeParticipantUi {
                         (args?.firstOrNull() as? Number)
                             ?.toInt()
                             ?.let { state ->
-                                onNativeBindingVisibilityStateChanged(
+                                onBindingVisibilityChanged(
                                     bindingState = bindingState,
                                     state = state,
                                     parameterCount = method.parameterCount,
@@ -2554,7 +2554,7 @@ internal object NativeParticipantUi {
             View.VISIBLE -> "VISIBLE"
             View.INVISIBLE -> "INVISIBLE"
             View.GONE -> "GONE"
-            else -> visibility.function function toString() { [native code] }() { [native code] }()
+            else -> visibility.function function function toString() { [native code] }() { [native code] }() { [native code] }()
         }
 
     internal sealed interface HotReloadAdoptResult {

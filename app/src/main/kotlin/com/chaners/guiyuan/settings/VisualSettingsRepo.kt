@@ -24,7 +24,7 @@ internal fun isVisualPreferenceKey(key: String?): Boolean {
 internal class VisualSettingsRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
-            COMBINED_STATUS_VISUAL_PREFS_NAME,
+            VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
         )
 
@@ -72,14 +72,14 @@ internal class VisualSettingsRepo(context: Context) {
     fun setMobileFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(MOBILE_FOLLOWS_BATTERY_COLOR_KEY), enabled)
+            .putBoolean(activeProfileKey(MOBILE_FOLLOWS_BATTERY_KEY), enabled)
             .apply()
     }
 
     fun setCenterFollowsBatteryColor(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(CENTER_FOLLOWS_BATTERY_COLOR_KEY), enabled)
+            .putBoolean(activeProfileKey(CENTER_FOLLOWS_BATTERY_KEY), enabled)
             .apply()
     }
 
@@ -107,7 +107,7 @@ internal class VisualSettingsRepo(context: Context) {
     fun setChargingIconFollowsBattery(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeProfileKey(CHARGING_ICON_FOLLOWS_BATTERY_KEY), enabled)
+            .putBoolean(activeProfileKey(CHARGE_ICON_FOLLOWS_BATTERY_KEY), enabled)
             .apply()
     }
 
@@ -357,13 +357,13 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
         mobileFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
+                baseKey = MOBILE_FOLLOWS_BATTERY_KEY,
                 defaultValue = false,
             ),
         centerFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = CENTER_FOLLOWS_BATTERY_COLOR_KEY,
+                baseKey = CENTER_FOLLOWS_BATTERY_KEY,
                 defaultValue = false,
             ),
         topReadoutEnabled =
@@ -387,7 +387,7 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
         chargingIconFollowsBattery =
             profileBoolean(
                 layout = layout,
-                baseKey = CHARGING_ICON_FOLLOWS_BATTERY_KEY,
+                baseKey = CHARGE_ICON_FOLLOWS_BATTERY_KEY,
                 defaultValue = true,
             ),
         fillFollowsRetract =
@@ -456,43 +456,43 @@ internal fun SharedPreferences.readVisualSettings(): VisualSettings {
             BatteryColorModes(
                 normal =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_NORMAL_KEY,
-                        colorKey = BATTERY_COLOR_NORMAL_KEY,
+                        modeKey = BATTERY_MODE_NORMAL_KEY,
+                        colorKey = BATTERY_NORMAL_COLOR_KEY,
                     ),
                 powerSave =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-                        colorKey = BATTERY_COLOR_POWER_SAVE_KEY,
+                        modeKey = BATTERY_MODE_POWER_SAVE_KEY,
+                        colorKey = BATTERY_POWER_SAVE_COLOR_KEY,
                     ),
                 performance =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-                        colorKey = BATTERY_COLOR_PERFORMANCE_KEY,
+                        modeKey = BATTERY_MODE_PERF_KEY,
+                        colorKey = BATTERY_PERF_COLOR_KEY,
                     ),
                 superPowerSave =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-                        colorKey = BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
+                        modeKey = BATTERY_MODE_SUPER_SAVE_KEY,
+                        colorKey = BATTERY_SUPER_SAVE_COLOR_KEY,
                     ),
                 charging =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_CHARGING_KEY,
-                        colorKey = BATTERY_COLOR_CHARGING_KEY,
+                        modeKey = BATTERY_MODE_CHARGING_KEY,
+                        colorKey = BATTERY_CHARGING_COLOR_KEY,
                     ),
                 low =
                     batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_LOW_KEY,
-                        colorKey = BATTERY_COLOR_LOW_KEY,
+                        modeKey = BATTERY_MODE_LOW_KEY,
+                        colorKey = BATTERY_LOW_COLOR_KEY,
                     ),
             ),
         batteryColorOverrides =
             BatteryColorOverrides(
-                normal = optionalColor(BATTERY_COLOR_NORMAL_KEY),
-                powerSave = optionalColor(BATTERY_COLOR_POWER_SAVE_KEY),
-                performance = optionalColor(BATTERY_COLOR_PERFORMANCE_KEY),
-                superPowerSave = optionalColor(BATTERY_COLOR_SUPER_POWER_SAVE_KEY),
-                charging = optionalColor(BATTERY_COLOR_CHARGING_KEY),
-                low = optionalColor(BATTERY_COLOR_LOW_KEY),
+                normal = optionalColor(BATTERY_NORMAL_COLOR_KEY),
+                powerSave = optionalColor(BATTERY_POWER_SAVE_COLOR_KEY),
+                performance = optionalColor(BATTERY_PERF_COLOR_KEY),
+                superPowerSave = optionalColor(BATTERY_SUPER_SAVE_COLOR_KEY),
+                charging = optionalColor(BATTERY_CHARGING_COLOR_KEY),
+                low = optionalColor(BATTERY_LOW_COLOR_KEY),
             ),
     ).normalized()
 }
@@ -506,10 +506,10 @@ internal fun SharedPreferences.Editor.putVisualSettings(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putBoolean(
-        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_KEY),
         normalized.mobileFollowsBattery,
     ).putBoolean(
-        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
+        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_KEY),
         normalized.centerFollowsBattery,
     ).putBoolean(
         visualProfileKey(layout, TOP_READOUT_KEY),
@@ -521,7 +521,7 @@ internal fun SharedPreferences.Editor.putVisualSettings(
         visualProfileKey(layout, CHARGING_ICON_ENABLED_KEY),
         normalized.chargingIconEnabled,
     ).putBoolean(
-        visualProfileKey(layout, CHARGING_ICON_FOLLOWS_BATTERY_KEY),
+        visualProfileKey(layout, CHARGE_ICON_FOLLOWS_BATTERY_KEY),
         normalized.chargingIconFollowsBattery,
     ).putBoolean(
         FILL_FOLLOWS_RETRACT_KEY,

@@ -790,7 +790,7 @@ internal object HomePresentation {
                 existing.start(
                     deferVisualMaskUntilLayout = true,
                     onLayoutReady = { maskedViews ->
-                        onControlCenterSessionLayoutReady(
+                        onCcLayoutReady(
                             session = existing,
                             maskedViews = maskedViews,
                             reused = true,
@@ -845,7 +845,7 @@ internal object HomePresentation {
             session.start(
                 deferVisualMaskUntilLayout = true,
                 onLayoutReady = { maskedViews ->
-                    onControlCenterSessionLayoutReady(
+                    onCcLayoutReady(
                         session = session,
                         maskedViews = maskedViews,
                         reused = false,
@@ -1253,7 +1253,7 @@ internal object HomePresentation {
     }
 
     @Synchronized
-    private fun onControlCenterSessionLayoutReady(
+    private fun onCcLayoutReady(
         session: Session,
         maskedViews: Int,
         reused: Boolean,
@@ -1469,7 +1469,7 @@ internal object HomePresentation {
             this.layoutReadyCallback = onLayoutReady
             if (started) {
                 if (
-                    DeferredNativeLayoutPolicy.shouldResumeOwnershipForRetarget(
+                    DeferredNativeLayoutPolicy.shouldResumeForRetarget(
                         nativeLayoutOwnershipDeferred = nativeLayoutOwnershipDeferred,
                         nextDeferNativeLayoutOwnership =
                             deferNativeLayoutOwnershipUntilCommit,
@@ -1507,7 +1507,7 @@ internal object HomePresentation {
                     return refreshClipMasks()
                 }
                 return if (
-                    VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+                    VisualMaskPolicy.shouldPreMaskBeforeCutover(
                         deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
                         preMaskBeforeLayout = preMaskBeforeLayout,
                     )
@@ -1573,7 +1573,7 @@ internal object HomePresentation {
             ) {
                 compactLayoutReady = false
                 val preMasked =
-                    VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
+                    VisualMaskPolicy.shouldPreMaskBeforeCutover(
                         deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
                         preMaskBeforeLayout = preMaskBeforeLayout,
                     )
@@ -2771,7 +2771,7 @@ internal object HomePresentation {
             deferVisualMaskUntilLayout: Boolean,
         ): Boolean = deferVisualMaskUntilLayout
 
-        fun shouldPreMaskBeforeCompactCutover(
+        fun shouldPreMaskBeforeCutover(
             deferVisualMaskUntilLayout: Boolean,
             preMaskBeforeLayout: Boolean,
         ): Boolean =
@@ -2802,7 +2802,7 @@ internal object HomePresentation {
             nativeLayoutOwnershipDeferred: Boolean,
         ): Boolean = !nativeLayoutOwnershipDeferred
 
-        fun shouldResumeOwnershipForRetarget(
+        fun shouldResumeForRetarget(
             nativeLayoutOwnershipDeferred: Boolean,
             nextDeferNativeLayoutOwnership: Boolean,
         ): Boolean =

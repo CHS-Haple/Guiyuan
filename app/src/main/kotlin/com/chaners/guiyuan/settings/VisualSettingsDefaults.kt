@@ -3,16 +3,16 @@ package com.chaners.guiyuan.settings
 import android.content.SharedPreferences
 import kotlin.math.abs
 
-internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
+internal const val VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
-internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
-internal const val CENTER_FOLLOWS_BATTERY_COLOR_KEY = "center_follows_battery_color"
+internal const val MOBILE_FOLLOWS_BATTERY_KEY = "mobile_follows_battery_color"
+internal const val CENTER_FOLLOWS_BATTERY_KEY = "center_follows_battery_color"
 internal const val TOP_READOUT_KEY = "battery_top_readout_enabled"
 internal const val TOP_TEXT_FOLLOWS_BATTERY_KEY =
     "battery_top_text_follows_battery_color"
 internal const val CHARGING_ICON_ENABLED_KEY =
     "battery_top_charging_icon_enabled"
-internal const val CHARGING_ICON_FOLLOWS_BATTERY_KEY =
+internal const val CHARGE_ICON_FOLLOWS_BATTERY_KEY =
     "battery_top_charging_icon_follows_battery_color"
 internal const val FILL_FOLLOWS_RETRACT_KEY =
     "battery_fill_follows_retract_endpoint"
@@ -30,28 +30,28 @@ internal const val NO_SIM_SIZE_SCALE_KEY = "no_sim_size_scale"
 internal const val MOBILE_TYPE_SIZE_SCALE_KEY = "mobile_type_size_scale"
 internal const val MOBILE_TYPE_WEIGHT_KEY = "mobile_type_weight"
 internal const val BATTERY_COLOR_PRESET_KEY = "battery_color_preset"
-internal const val BATTERY_COLOR_MODE_NORMAL_KEY = "battery_color_mode_normal"
-internal const val BATTERY_COLOR_MODE_POWER_SAVE_KEY = "battery_color_mode_power_save"
-internal const val BATTERY_COLOR_MODE_PERFORMANCE_KEY = "battery_color_mode_performance"
-internal const val BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY = "battery_color_mode_super_power_save"
-internal const val BATTERY_COLOR_MODE_CHARGING_KEY = "battery_color_mode_charging"
-internal const val BATTERY_COLOR_MODE_LOW_KEY = "battery_color_mode_low"
-internal const val BATTERY_COLOR_NORMAL_KEY = "battery_color_normal"
-internal const val BATTERY_COLOR_POWER_SAVE_KEY = "battery_color_power_save"
-internal const val BATTERY_COLOR_PERFORMANCE_KEY = "battery_color_performance"
-internal const val BATTERY_COLOR_SUPER_POWER_SAVE_KEY = "battery_color_super_power_save"
-internal const val BATTERY_COLOR_CHARGING_KEY = "battery_color_charging"
-internal const val BATTERY_COLOR_LOW_KEY = "battery_color_low"
+internal const val BATTERY_MODE_NORMAL_KEY = "battery_color_mode_normal"
+internal const val BATTERY_MODE_POWER_SAVE_KEY = "battery_color_mode_power_save"
+internal const val BATTERY_MODE_PERF_KEY = "battery_color_mode_performance"
+internal const val BATTERY_MODE_SUPER_SAVE_KEY = "battery_color_mode_super_power_save"
+internal const val BATTERY_MODE_CHARGING_KEY = "battery_color_mode_charging"
+internal const val BATTERY_MODE_LOW_KEY = "battery_color_mode_low"
+internal const val BATTERY_NORMAL_COLOR_KEY = "battery_color_normal"
+internal const val BATTERY_POWER_SAVE_COLOR_KEY = "battery_color_power_save"
+internal const val BATTERY_PERF_COLOR_KEY = "battery_color_performance"
+internal const val BATTERY_SUPER_SAVE_COLOR_KEY = "battery_color_super_power_save"
+internal const val BATTERY_CHARGING_COLOR_KEY = "battery_color_charging"
+internal const val BATTERY_LOW_COLOR_KEY = "battery_color_low"
 internal const val RUNTIME_REMOTE_PREFS_NAME = "CombinedStatusRuntimeConfig"
 
 internal val PROFILE_VISUAL_BASE_KEYS =
     setOf(
-        MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
-        CENTER_FOLLOWS_BATTERY_COLOR_KEY,
+        MOBILE_FOLLOWS_BATTERY_KEY,
+        CENTER_FOLLOWS_BATTERY_KEY,
         TOP_READOUT_KEY,
         TOP_TEXT_FOLLOWS_BATTERY_KEY,
         CHARGING_ICON_ENABLED_KEY,
-        CHARGING_ICON_FOLLOWS_BATTERY_KEY,
+        CHARGE_ICON_FOLLOWS_BATTERY_KEY,
         TOP_TEXT_SCALE_KEY,
         TOP_TEXT_WEIGHT_KEY,
         TOP_OFFSET_KEY,
@@ -70,18 +70,18 @@ internal val GLOBAL_VISUAL_KEYS =
         FILL_FOLLOWS_RETRACT_KEY,
         CC_TINT_TRANSITION_KEY,
         BATTERY_COLOR_PRESET_KEY,
-        BATTERY_COLOR_MODE_NORMAL_KEY,
-        BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-        BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-        BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-        BATTERY_COLOR_MODE_CHARGING_KEY,
-        BATTERY_COLOR_MODE_LOW_KEY,
-        BATTERY_COLOR_NORMAL_KEY,
-        BATTERY_COLOR_POWER_SAVE_KEY,
-        BATTERY_COLOR_PERFORMANCE_KEY,
-        BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
-        BATTERY_COLOR_CHARGING_KEY,
-        BATTERY_COLOR_LOW_KEY,
+        BATTERY_MODE_NORMAL_KEY,
+        BATTERY_MODE_POWER_SAVE_KEY,
+        BATTERY_MODE_PERF_KEY,
+        BATTERY_MODE_SUPER_SAVE_KEY,
+        BATTERY_MODE_CHARGING_KEY,
+        BATTERY_MODE_LOW_KEY,
+        BATTERY_NORMAL_COLOR_KEY,
+        BATTERY_POWER_SAVE_COLOR_KEY,
+        BATTERY_PERF_COLOR_KEY,
+        BATTERY_SUPER_SAVE_COLOR_KEY,
+        BATTERY_CHARGING_COLOR_KEY,
+        BATTERY_LOW_COLOR_KEY,
     )
 
 // Persisted text scale remains in the pre-521 physical scale.
@@ -303,22 +303,22 @@ internal const val MOBILE_TYPE_WEIGHT_MAX = 1400
 
 internal fun batteryColorModeKey(slot: BatteryColorSlot): String =
     when (slot) {
-        BatteryColorSlot.NORMAL -> BATTERY_COLOR_MODE_NORMAL_KEY
-        BatteryColorSlot.POWER_SAVE -> BATTERY_COLOR_MODE_POWER_SAVE_KEY
-        BatteryColorSlot.PERFORMANCE -> BATTERY_COLOR_MODE_PERFORMANCE_KEY
-        BatteryColorSlot.SUPER_POWER_SAVE -> BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY
-        BatteryColorSlot.CHARGING -> BATTERY_COLOR_MODE_CHARGING_KEY
-        BatteryColorSlot.LOW -> BATTERY_COLOR_MODE_LOW_KEY
+        BatteryColorSlot.NORMAL -> BATTERY_MODE_NORMAL_KEY
+        BatteryColorSlot.POWER_SAVE -> BATTERY_MODE_POWER_SAVE_KEY
+        BatteryColorSlot.PERFORMANCE -> BATTERY_MODE_PERF_KEY
+        BatteryColorSlot.SUPER_POWER_SAVE -> BATTERY_MODE_SUPER_SAVE_KEY
+        BatteryColorSlot.CHARGING -> BATTERY_MODE_CHARGING_KEY
+        BatteryColorSlot.LOW -> BATTERY_MODE_LOW_KEY
     }
 
 internal fun batteryColorOverrideKey(slot: BatteryColorSlot): String =
     when (slot) {
-        BatteryColorSlot.NORMAL -> BATTERY_COLOR_NORMAL_KEY
-        BatteryColorSlot.POWER_SAVE -> BATTERY_COLOR_POWER_SAVE_KEY
-        BatteryColorSlot.PERFORMANCE -> BATTERY_COLOR_PERFORMANCE_KEY
-        BatteryColorSlot.SUPER_POWER_SAVE -> BATTERY_COLOR_SUPER_POWER_SAVE_KEY
-        BatteryColorSlot.CHARGING -> BATTERY_COLOR_CHARGING_KEY
-        BatteryColorSlot.LOW -> BATTERY_COLOR_LOW_KEY
+        BatteryColorSlot.NORMAL -> BATTERY_NORMAL_COLOR_KEY
+        BatteryColorSlot.POWER_SAVE -> BATTERY_POWER_SAVE_COLOR_KEY
+        BatteryColorSlot.PERFORMANCE -> BATTERY_PERF_COLOR_KEY
+        BatteryColorSlot.SUPER_POWER_SAVE -> BATTERY_SUPER_SAVE_COLOR_KEY
+        BatteryColorSlot.CHARGING -> BATTERY_CHARGING_COLOR_KEY
+        BatteryColorSlot.LOW -> BATTERY_LOW_COLOR_KEY
     }
 
 internal fun batteryColorModeFromPersisted(

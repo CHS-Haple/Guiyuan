@@ -42,8 +42,8 @@ class GyModule : XposedModule() {
     private var ccFraction = 0f
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
-    private var keyguardPresentationReadyObserved = false
-    private var keyguardControlCenterLeaseActive = false
+    private var keyguardReadyObserved = false
+    private var keyguardCcLeaseActive = false
     private var lastBatteryProbeSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
@@ -161,7 +161,7 @@ class GyModule : XposedModule() {
                 param = param,
                 generationHandoff =
                     Runnable {
-                        teardownOldGenerationForHotReload(
+                        teardownOldGeneration(
                             continuousHandoff = true,
                         )
                     },
@@ -288,8 +288,8 @@ class GyModule : XposedModule() {
             ccFraction = 0f
             keyguardRuntimeReady = false
             aodRendererAttached = false
-            keyguardPresentationReadyObserved = false
-            keyguardControlCenterLeaseActive = false
+            keyguardReadyObserved = false
+            keyguardCcLeaseActive = false
             PresentationRuntime.resetRuntimeState()
             KeyguardHostResolver.resetRuntimeState()
             HomePresentation.resetRuntimeState("hotReload")
@@ -587,7 +587,7 @@ class GyModule : XposedModule() {
                             log(Log.INFO, TAG, event)
                         }
                     },
-                    onFailNative = ::onHomePresentationRuntimeFailure,
+                    onFailNative = ::onHomeRuntimeFailure,
                 )
         ) {
             HomePresentation.InstallResult.Installed,
@@ -617,7 +617,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installNativeCombinedParticipant(
+    private fun installNativeParticipant(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -772,7 +772,7 @@ class GyModule : XposedModule() {
                     },
                     onNativeLayoutHideChanged = { hidden ->
                         NativeParticipantUi
-                            .onNativeBatteryLayoutHideChanged(hidden)
+                            .onBatteryLayoutHideChanged(hidden)
                     },
                 )
         ) {
@@ -1218,7 +1218,7 @@ class GyModule : XposedModule() {
         authority: String,
     ) {
         if (
-            keyguardControlCenterLeaseActive &&
+            keyguardCcLeaseActive &&
             sourceScene != SourceScene.KEYGUARD
         ) {
             releaseKeyguardCcLease(
@@ -1292,7 +1292,7 @@ class GyModule : XposedModule() {
         }
 
         if (
-            keyguardControlCenterLeaseActive &&
+            keyguardCcLeaseActive &&
             previous > 0f
         ) {
             releaseKeyguardCcLease(
@@ -1307,7 +1307,7 @@ class GyModule : XposedModule() {
             keyguardRuntimeReady ||
                 incomingKeyguardReady()
         if (
-            keyguardControlCenterLeaseActive ||
+            keyguardCcLeaseActive ||
             !ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = ccSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
@@ -1317,7 +1317,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        keyguardControlCenterLeaseActive = true
+        keyguardCcLeaseActive = true
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.lease",
@@ -1346,7 +1346,7 @@ class GyModule : XposedModule() {
         val incomingBoundaryReady =
             incomingKeyguardReady()
         return ScenePolicy.shouldKeepKeyguardCcLease(
-            leaseActive = keyguardControlCenterLeaseActive,
+            leaseActive = keyguardCcLeaseActive,
             sourceScene = ccSourceScene,
             featureEnabled = settings.enabled,
             keyguardEnabled = settings.keyguardEnabled,
@@ -1361,8 +1361,8 @@ class GyModule : XposedModule() {
         source: String,
         reconcileReadiness: Boolean,
     ) {
-        if (!keyguardControlCenterLeaseActive) return
-        keyguardControlCenterLeaseActive = false
+        if (!keyguardCcLeaseActive) return
+        keyguardCcLeaseActive = false
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.lease",
@@ -1371,14 +1371,14 @@ class GyModule : XposedModule() {
             "source" to source,
             "sourceScene" to ccSourceScene.name,
             "nativeFraction" to ccFraction,
-            "observedReady" to keyguardPresentationReadyObserved,
+            "observedReady" to keyguardReadyObserved,
             "reconcileReadiness" to reconcileReadiness,
             "timingDelay" to false,
             "nativeGeometryWrites" to 0,
         )
         if (
             reconcileReadiness &&
-            !keyguardPresentationReadyObserved &&
+            !keyguardReadyObserved &&
             !incomingKeyguardReady()
         ) {
             applyKeyguardNotReady(
@@ -1421,7 +1421,7 @@ class GyModule : XposedModule() {
             !ScenePolicy.shouldReconcileKeyguardCc(
                 controlCenterVisible = ccVisible,
                 nativeFraction = ccFraction,
-                leaseActive = keyguardControlCenterLeaseActive,
+                leaseActive = keyguardCcLeaseActive,
             )
         ) {
             return
@@ -1580,7 +1580,7 @@ class GyModule : XposedModule() {
             }
         }
 
-        if (keyguardControlCenterLeaseActive) {
+        if (keyguardCcLeaseActive) {
             safely {
                 releaseKeyguardCcLease(
                     source = "panel-runtime-failure",
@@ -1894,7 +1894,7 @@ class GyModule : XposedModule() {
                         (
                             state.appliedTint
                                 ?.toUInt()
-                                ?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                                ?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                 ?.padStart(8, '0')
                                 ?: "none"
                         ),
@@ -1925,12 +1925,12 @@ class GyModule : XposedModule() {
                 TAG,
                 "tintCommit source=batteryDarkReceiver" +
                     " applied=#" +
-                    resolvedState.appliedTint.toUInt().function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                    resolvedState.appliedTint.toUInt().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                     " statusIcon=#" +
                     (
                         resolvedState.statusIconTint
                             ?.toUInt()
-                            ?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -1938,7 +1938,7 @@ class GyModule : XposedModule() {
                     (
                         liveStatusIconTint
                             ?.toUInt()
-                            ?.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                            ?.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                             ?.padStart(8, '0')
                             ?: "none"
                     ) +
@@ -2099,7 +2099,7 @@ class GyModule : XposedModule() {
                 )
             }
             val prearmed =
-                armHomeAodTargetPrearmIfEligible(
+                armHomeAodPrearm(
                     resolution = ready,
                     nativeToLockScreenTarget = target,
                     source = "animateFullAod:after",
@@ -2142,7 +2142,7 @@ class GyModule : XposedModule() {
         }
 
         val prearmed =
-            armHomeAodTargetPrearmIfEligible(
+            armHomeAodPrearm(
                 resolution = resolution,
                 nativeToLockScreenTarget = target,
                 source = "animateIconContainer",
@@ -2473,7 +2473,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun armHomeAodTargetPrearmIfEligible(
+    private fun armHomeAodPrearm(
         resolution: KeyguardHostResolver.ResolveResult.Ready,
         nativeToLockScreenTarget: Boolean?,
         source: String,
@@ -2680,7 +2680,7 @@ class GyModule : XposedModule() {
             // boundary. A Keyguard Control Center lease must never outlive it:
             // otherwise a fast first pull-down can consume stale KEYGUARD
             // source state and temporarily fall back to native QS icons.
-            if (keyguardControlCenterLeaseActive) {
+            if (keyguardCcLeaseActive) {
                 releaseKeyguardCcLease(
                     source = "authoritative-home",
                     reconcileReadiness = false,
@@ -3035,7 +3035,7 @@ class GyModule : XposedModule() {
                     },
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onPresentationReadinessChanged = { ready ->
-                        onAodPresentationReadinessChanged(
+                        onAodReadyChanged(
                             ready = ready,
                             source = source,
                         )
@@ -3077,7 +3077,7 @@ class GyModule : XposedModule() {
         ready: Boolean,
         source: String,
     ) {
-        keyguardPresentationReadyObserved = ready
+        keyguardReadyObserved = ready
         if (!ready) {
             if (incomingKeyguardReady()) {
                 logDiagnostic(
@@ -3088,7 +3088,7 @@ class GyModule : XposedModule() {
                     "source" to source,
                     "reason" to "incoming-boundary-presentation-ready",
                     "nativeFraction" to ccFraction,
-                    "leaseActive" to keyguardControlCenterLeaseActive,
+                    "leaseActive" to keyguardCcLeaseActive,
                     "timingDelay" to false,
                     "nativeGeometryWrites" to 0,
                 )
@@ -3102,7 +3102,7 @@ class GyModule : XposedModule() {
                     state = "retained",
                     "source" to source,
                     "nativeFraction" to ccFraction,
-                    "leaseActive" to keyguardControlCenterLeaseActive,
+                    "leaseActive" to keyguardCcLeaseActive,
                     "cleanupDeferredUntil" to "native-control-center-handoff-end",
                     "timingDelay" to false,
                     "nativeGeometryWrites" to 0,
@@ -3268,7 +3268,7 @@ class GyModule : XposedModule() {
             return
         }
         keyguardRuntimeReady = true
-        keyguardPresentationReadyObserved = true
+        keyguardReadyObserved = true
         KeyguardRenderSession.setNativeHandoffActive(false)
         logDiagnostic(
             level = Log.INFO,
@@ -3286,8 +3286,8 @@ class GyModule : XposedModule() {
 
     private fun onKeyguardRuntimeFailure(reason: String) {
         resetKeyguardHandoff()
-        keyguardControlCenterLeaseActive = false
-        keyguardPresentationReadyObserved = false
+        keyguardCcLeaseActive = false
+        keyguardReadyObserved = false
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
         logDiagnostic(
@@ -3304,8 +3304,8 @@ class GyModule : XposedModule() {
     private fun deactivateKeyguardRuntime(source: String) {
         val wasReady = keyguardRuntimeReady
         resetKeyguardHandoff()
-        keyguardControlCenterLeaseActive = false
-        keyguardPresentationReadyObserved = false
+        keyguardCcLeaseActive = false
+        keyguardReadyObserved = false
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
         HomePresentation.deactivateKeyguard(source)
@@ -3315,12 +3315,12 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onAodPresentationReadinessChanged(
+    private fun onAodReadyChanged(
         ready: Boolean,
         source: String,
     ) {
         if (!ready) {
-            applyAodPresentationReadinessLost(source)
+            applyAodNotReady(source)
             return
         }
 
@@ -3423,7 +3423,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun applyAodPresentationReadinessLost(source: String) {
+    private fun applyAodNotReady(source: String) {
         KeyguardRenderSession.setAodNativeHandoffActive(true)
         HomePresentation.deactivateAod("readiness-lost:" + source)
     }
@@ -3514,7 +3514,7 @@ class GyModule : XposedModule() {
 
     // Hot Reload transfers only verified state. Anything tied to the old
     // class loader is released before the new generation can take ownership.
-    private fun teardownOldGenerationForHotReload(
+    private fun teardownOldGeneration(
         continuousHandoff: Boolean = false,
     ) {
         ccVisible = false
@@ -3529,8 +3529,8 @@ class GyModule : XposedModule() {
         ccFraction = 0f
         keyguardRuntimeReady = false
         aodRendererAttached = false
-        keyguardPresentationReadyObserved = false
-        keyguardControlCenterLeaseActive = false
+        keyguardReadyObserved = false
+        keyguardCcLeaseActive = false
         CcTransition.detach("hotReload-oldGeneration")
         CcSession.detach(
             source = "hotReload-oldGeneration",
@@ -3855,7 +3855,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onHomePresentationRuntimeFailure(reason: String) {
+    private fun onHomeRuntimeFailure(reason: String) {
         HomeRenderSession.setNativeHandoffActive(true)
         logDiagnostic(
             level = Log.WARN,
@@ -3867,7 +3867,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun scheduleNativeParticipantRuntime(
+    private fun scheduleNativeParticipant(
         host: Any,
         source: String,
     ) {
@@ -4540,7 +4540,7 @@ class GyModule : XposedModule() {
         homeAodTransitionOriginPending = false
         homeAodTargetPrearmPending = false
         ccEligible = false
-        keyguardControlCenterLeaseActive = false
+        keyguardCcLeaseActive = false
         CcSession.setSceneEligible(false)
         CcTransition.setSceneEligible(false)
         HomePresentation.deactivateCc(source)
@@ -4731,7 +4731,7 @@ class GyModule : XposedModule() {
     private fun newRuntimeSessionId(): String =
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
-            SystemClock.elapsedRealtime().function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(36)
+            SystemClock.elapsedRealtime().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(36)
 
     private fun logDiagnostic(
         level: Int,
@@ -4744,12 +4744,12 @@ class GyModule : XposedModule() {
             buildMap {
                 fields.forEach { (key, value) ->
                     if (value != null) {
-                        put(key, value.function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                        put(key, value.function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
                     }
                 }
                 put("sessionId", runtimeSessionId)
-                put("uptimeMs", SystemClock.elapsedRealtime().function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
-                put("sequence", diagnosticSequence.incrementAndGet().function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                put("uptimeMs", SystemClock.elapsedRealtime().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
+                put("sequence", diagnosticSequence.incrementAndGet().function function function function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }())
             }
         log(
             level,

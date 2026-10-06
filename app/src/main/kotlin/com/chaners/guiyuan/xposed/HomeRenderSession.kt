@@ -13,7 +13,7 @@ internal object HomeRenderSession {
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
-    private const val STATUS_ICON_CONTAINER_CLASS_NAME =
+    private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
 
     private var current: Session? = null
@@ -33,7 +33,7 @@ internal object HomeRenderSession {
             ?: return AttachResult.Failure("host-not-view-group")
         val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
             ?: return AttachResult.Failure("battery-container-missing")
-        val statusIcons = batteryContainer.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+        val statusIcons = batteryContainer.directChild(STATUS_ICON_CONTAINER_CLASS)
             ?: return AttachResult.Failure("status-icons-missing")
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
             ?: return AttachResult.Failure("battery-view-missing")
@@ -470,7 +470,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                        state.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -481,12 +481,12 @@ internal object HomeRenderSession {
                     emitEvent {
                         "homeRenderTint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16).padStart(8, '0') +
                             " statusIcon=#" +
                             (
                                 resolved.statusIconTint
                                     ?.toUInt()
-                                    ?.function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
+                                    ?.function function function function function toString() { [native code] }() { [native code] }() { [native code] }() { [native code] }() { [native code] }(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +

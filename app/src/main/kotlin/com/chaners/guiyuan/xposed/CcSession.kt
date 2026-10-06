@@ -14,7 +14,7 @@ internal object CcSession {
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val BATTERY_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
-    private const val STATUS_ICON_CONTAINER_CLASS_NAME =
+    private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -76,7 +76,7 @@ internal object CcSession {
             host.uniqueDescendant(BATTERY_CONTAINER_CLASS_NAME)
                 ?: return AttachResult.Failure("fake-status-bar-area-unresolved")
         val statusIcons =
-            statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
+            statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS) as? ViewGroup
                 ?: return AttachResult.Failure("status-icons-missing")
         val battery =
             statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup

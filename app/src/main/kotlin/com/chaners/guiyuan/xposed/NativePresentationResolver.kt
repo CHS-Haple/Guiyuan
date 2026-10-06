@@ -179,9 +179,9 @@ internal object NativePresentationResolver {
                 }
             }
 
-        findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
+        findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_ENTRY)
             ?.let { view ->
-                val text = (view as? TextView)?.text?.function toString() { [native code] }()?.trim().orEmpty()
+                val text = (view as? TextView)?.text?.function function toString() { [native code] }() { [native code] }()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
                     return NetworkType(
                         label = text,
@@ -336,7 +336,7 @@ internal object NativePresentationResolver {
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"
-    private const val MOBILE_TYPE_SINGLE_RESOURCE_ENTRY = "mobile_type_single"
+    private const val MOBILE_TYPE_SINGLE_ENTRY = "mobile_type_single"
     private const val MOBILE_TYPE_FIELD = "mMobileType"
     private const val MOBILE_TYPE_ENHANCED_FIELD = "mShowMobileTypeDoublePlus"
     private const val MOBILE_TYPE_DOUBLE_PLUS_LABEL = "5G++"
