@@ -329,7 +329,7 @@ internal object HomeRenderSession {
             val motion = statusIcons.get() ?: return null
             val render = probeView
             if (
-                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
+                !ScenePolicy.hasRetainedSourceWitness(
                     widthPx = render.width,
                     heightPx = render.height,
                     hostAttached =
@@ -470,7 +470,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                        state.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -481,12 +481,12 @@ internal object HomeRenderSession {
                     emitEvent {
                         "homeRenderTint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
                             " statusIcon=#" +
                             (
                                 resolved.statusIconTint
                                     ?.toUInt()
-                                    ?.toString(16)
+                                    ?.function toString() { [native code] }(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
                             ) +

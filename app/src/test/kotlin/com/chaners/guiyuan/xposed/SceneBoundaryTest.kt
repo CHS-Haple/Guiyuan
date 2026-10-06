@@ -262,7 +262,7 @@ class SceneBoundaryTest {
     @Test
     fun keyguardBoundaryVisualHandoffIsOnlyForIncomingEnabledKeyguard() {
         assertTrue(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -272,7 +272,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -283,7 +283,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = false,
                 aodEnabled = true,
@@ -293,7 +293,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -303,7 +303,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -313,7 +313,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+            ScenePolicy.shouldUseKeyguardHandoff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -363,7 +363,7 @@ class SceneBoundaryTest {
     @Test
     fun keyguardBoundaryLayoutPrecommitRequiresHiddenNativeStatusIcons() {
         assertTrue(
-            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -374,7 +374,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -386,7 +386,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -397,7 +397,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            ScenePolicy.shouldPrecommitKeyguardLayout(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -412,7 +412,7 @@ class SceneBoundaryTest {
     @Test
     fun disabledAodHomeFallbackArmsOnlyFromVisibleNativeHomeCarrier() {
         assertTrue(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -421,7 +421,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -430,7 +430,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -439,7 +439,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            ScenePolicy.shouldArmHomeAodFallback(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -452,7 +452,7 @@ class SceneBoundaryTest {
     @Test
     fun disabledAodHomeFallbackConsumesOnNativeAodAnimationNotTransientKeyguard() {
         assertTrue(
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            ScenePolicy.shouldConsumeHomeAodFallback(
                 candidateActive = true,
                 featureEnabled = true,
                 keyguardEnabled = true,
@@ -462,7 +462,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            ScenePolicy.shouldConsumeHomeAodFallback(
                 candidateActive = true,
                 featureEnabled = true,
                 keyguardEnabled = true,
@@ -472,7 +472,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            ScenePolicy.shouldConsumeHomeAodFallback(
                 candidateActive = false,
                 featureEnabled = true,
                 keyguardEnabled = true,
@@ -486,7 +486,7 @@ class SceneBoundaryTest {
     @Test
     fun disabledAodDirectTargetReleasesOnlyArmedHomeFallback() {
         assertTrue(
-            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -496,7 +496,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -506,7 +506,7 @@ class SceneBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+            ScenePolicy.shouldReleaseHomeKeyguardForAodOff(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -539,35 +539,35 @@ class SceneBoundaryTest {
     @Test
     fun pendingFullAodTargetClosesOnlyAtItsMatchingStableEndpoint() {
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = true,
                 isAodAnimate = false,
             ),
         )
         assertTrue(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = false,
                 isAodAnimate = false,
             ),
         )
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = false,
                 isAodAnimate = false,
             ),
         )
         assertTrue(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = true,
                 isAodAnimate = false,
             ),
         )
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            ScenePolicy.aodTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = false,
                 isAodAnimate = true,

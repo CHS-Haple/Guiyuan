@@ -348,7 +348,7 @@ internal object KeyguardRenderSession {
             val motion = statusIcons.get() ?: return null
             val render = renderView
             if (
-                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
+                !ScenePolicy.hasRetainedSourceWitness(
                     widthPx = render.width,
                     heightPx = render.height,
                     hostAttached =
@@ -520,7 +520,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                            resolved.appliedTint.toUInt().function toString() { [native code] }(16).padStart(8, '0') +
                             " authority=keyguard-battery eventDriven=true stable=true"
                     }
                 }

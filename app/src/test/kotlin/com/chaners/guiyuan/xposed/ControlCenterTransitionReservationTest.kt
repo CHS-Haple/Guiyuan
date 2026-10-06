@@ -98,7 +98,7 @@ class ControlCenterTransitionReservationTest {
                 )
         val native =
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = semantic,
@@ -123,7 +123,7 @@ class ControlCenterTransitionReservationTest {
 
         val unprojected =
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 220,
@@ -131,7 +131,7 @@ class ControlCenterTransitionReservationTest {
                 )
         val projected =
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 220,
@@ -158,7 +158,7 @@ class ControlCenterTransitionReservationTest {
         assertEquals(
             80,
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 40,
                     spans = spans,
                     semanticWidthPx = 140,
@@ -183,7 +183,7 @@ class ControlCenterTransitionReservationTest {
         assertEquals(
             135,
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 161,
@@ -193,7 +193,7 @@ class ControlCenterTransitionReservationTest {
         assertEquals(
             180,
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 180,
@@ -203,7 +203,7 @@ class ControlCenterTransitionReservationTest {
         assertEquals(
             150,
             ControlCenterTransition
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .batteryPeerReservationWidth(
                     compactWidthPx = 105,
                     spans =
                         listOf(
