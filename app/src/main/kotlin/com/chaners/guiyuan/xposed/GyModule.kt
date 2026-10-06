@@ -377,7 +377,7 @@ class GyModule : XposedModule() {
                 return@runCatching
             }
 
-            val capture = SysUiHostRegistry.restoreStatusHost(restored.host)
+            val capture = SysUiHostRegistry.restore(restored.host)
             logDiagnostic(
                 level = Log.INFO,
                 event = "host.restore",
@@ -4444,7 +4444,7 @@ class GyModule : XposedModule() {
                         transportNs = transportNs,
                     )
                 }
-            val hostView = SysUiHostRegistry.currentStatusHost() as? android.view.View
+            val hostView = SysUiHostRegistry.current() as? android.view.View
             val scheduled =
                 (hostView?.post(dispatch) == true) ||
                     Handler(Looper.getMainLooper()).post(dispatch)
@@ -4583,7 +4583,7 @@ class GyModule : XposedModule() {
                 Runnable {
                     onVisualCfgChanged(visual)
                 }
-            val hostView = SysUiHostRegistry.currentStatusHost() as? android.view.View
+            val hostView = SysUiHostRegistry.current() as? android.view.View
             val scheduled =
                 (hostView?.post(dispatch) == true) ||
                     Handler(Looper.getMainLooper()).post(dispatch)
