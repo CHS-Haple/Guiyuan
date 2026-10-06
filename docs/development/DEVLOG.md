@@ -1,3 +1,66 @@
+## 2026-10-06 — Pre-release consistency follow-up: pinned target contract coverage
+
+**Type:** repository / compatibility contract / CI audit  
+**Runtime baseline:** Guiyuan 0.2.0 / Build 744 (`20261006-744`)  
+**Runtime behavior:** unchanged
+
+### Audit finding
+
+The repository consistency pass found two current-state drifts after #221 merged:
+
+- `CURRENT.md` still described `dev` as Build 743 and PR #221 / Build 744 as an active candidate awaiting validation/merge;
+- the pinned HyperOS profile still covered the earlier hook surface even though current runtime source also consumes exact-target Keyguard/AOD and Control Center lifecycle callbacks.
+
+Build 744 has already passed its exact-head Runtime CI, signed Work-branch Canary, focused device validation, and integrated `dev` Runtime CI #2779. The previous Keyguard + active-island ownership gap is therefore no longer carried as an open blocker. Parallel PR #224 / Build 745 is a separate compositing-cost candidate based on a concrete `saveLayerAlpha` code path; it does not reopen the closed ownership defect and remains subject to its own Runtime CI, Canary, and focused device gate.
+
+### Exact-target contract coverage
+
+The follow-up keeps the existing SystemUI artifact identity `a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d` and adds only contracts already recorded against that exact artifact in SystemUI-Reference:
+
+- `MiuiBatteryMeterView.setIsAodAnimate(boolean): void`;
+- `MiuiBatteryMeterView.toggleAodMode(boolean): void` plus `mToAod`, `mIsAodAnimate`, and `mAnimToAod`;
+- `KeyguardStatusBarViewControllerInject.animateFullAod(boolean, boolean): void`;
+- `MiuiKeyguardStatusBarView.animateIconContainer(boolean): void`;
+- `ControlCenterHeaderExpandController$controlCenterCallback$1.onExpansionChanged(float): void`;
+- `ControlCenterHeaderExpandController$controlCenterCallback$1.onAppearanceChanged(boolean, boolean): void`.
+
+`tools/verify_target_profile.py` cross-checks these profile entries against the corresponding runtime source constants, including the already-pinned Control Center visibility callback. CI can therefore fail when those class/method identities drift instead of validating an obsolete profile surface.
+
+`ControlCenterFakeStatusIcons.onAttachedToWindow()` remains a uniquely runtime-resolved seam and is intentionally **not** promoted to the static profile until the exact-artifact reference index records that method explicitly. The audit records the gap rather than fabricating static verification.
+
+### Boundary
+
+Established internal `CombinedStatus*` preference names, Hook IDs, diagnostics identities and build-property keys remain compatibility identities, not branding defects. Low-value implementation-only leftovers are not sufficient reason to create a runtime checkpoint.
+
+No Xposed/SystemUI behavior, renderer, animation, geometry, alpha/visibility writer, fail-native path, dependency version, external version, internal Build identity, or Canary artifact changes in this follow-up. Repository-selected CI is sufficient; no device gate is introduced by this audit.
+
+
+## 2026-10-06 — pre-release-grade repository consistency audit
+
+**Type:** repository/documentation consistency maintenance
+**Runtime baseline:** Guiyuan 0.2.0 / Build 743 (`20261006-743`)
+**Branch:** `fix/pre-release-consistency-audit`
+
+### Scope
+
+This is a pre-release-grade audit standard applied while Guiyuan remains in active development. It is not a release-candidate freeze, a 1.0.0 qualification pass, or a runtime promotion.
+
+### Findings corrected
+
+- public README still advertised the promoted line as 0.1.0 and described AOD as native-only even though the accepted runtime family owner supports independently gated AOD;
+- architecture/roadmap/reference documents still presented Build 537/625 Keyguard/AOD work as current candidates or pending validation, risking restoration of superseded ownership routes;
+- layout policy referenced the removed `CombinedStatusHomeLayoutResolver` symbol instead of the current `HomeLayoutResolver -> LayoutPolicy` chain;
+- privacy documentation still named the old `Download/CombinedStatus` share directory while runtime writes `Download/Guiyuan`;
+- third-party notices still named Gradle 9.7.1 while the checked-in wrapper is 9.8.0;
+- the security-advisory link still pointed to the former CombinedStatus repository;
+- the bug-report version placeholder was tied to obsolete 0.0.3.
+
+### Review boundary
+
+Historical CHANGELOG/DEVLOG facts remain untouched. Established internal `CombinedStatus*` preference, hook, diagnostic, and compatibility identities are not treated as branding defects. Runtime code, Build 743 behavior, version identity, CI workflow behavior, and the active Keyguard-island performance investigation remain unchanged.
+
+Validation for this branch is repository-selected Light validation; no Canary or device gate is required unless later edits cross into runtime/build surfaces.
+
 ## 2026-10-04 — Build 685: reconcile AOD family lifecycle with QS_FAKE recovery
 
 **Type:** integration / lifecycle + Control Center recovery reconciliation  
@@ -4899,4 +4962,117 @@ The maintainer clarified the residual native-status symptom before the 0.2.0 sta
 Future diagnosis must preserve that distinction. A shorthand such as “Home/desktop becomes native” is too broad and can send investigation toward the wrong owner. If this residual issue is reopened, inspect the QS_FAKE -> Home return boundary, projection release/reacquisition ordering, and native visibility handoff first; do not assume steady Home presentation has been lost without separate evidence.
 
 This entry is documentation-only and changes no APK/runtime behavior. Build 742 device/runtime acceptance remains the Build 741 implementation checkpoint plus release metadata, with integrated dev Runtime CI #2757 passed.
+
+## 2026-10-06 — Build 743: bound ordinary QS_FAKE reservation before fail-native
+
+**Type:** runtime blocker / Control Center reverse-transition ownership
+**Display version:** 0.2.0
+**Build:** 743 / `20261006-743`
+**Branch / PR:** `fix/control-center-capacity-overflow` / #220
+
+### Evidence
+
+Build 741 Detailed diagnostics captured the maintainer's rare Home-origin pull-down / swipe-up symptom. During a still-visible Control Center cycle, QS_FAKE had a verified native width of 587px, a leased parent-content width of 836px, and therefore 249px of additional physical carrier capacity. The session later emitted `failNative reason=fake-carrier-capacity-insufficient restoredNative=true` while Control Center was still visible.
+
+The same session was non-charging and reported `batteryIsland=false`, so this is not the charging-island path and not a steady-Home owner loss.
+
+### Root cause
+
+`resolveCapacityBoundedReservationDelta()` bounded physical QS_FAKE reservation only when HyperOS marked the native Battery hidden. With the Battery visible, the function returned the full requested transition delta unchanged, but the following capacity guard still required that delta to fit the verified fake-carrier lease.
+
+A valid transition frame could therefore request more native `statusIcons.paddingEnd` than the verified carrier can physically expose and tear down the whole QS_FAKE presentation even though Guiyuan's semantic transition remained valid.
+
+### Correction
+
+- keep Guiyuan semantic transition width, targets, progress, motion carrier and drawable geometry unchanged;
+- keep one native peer-layout writer: `statusIcons.paddingEnd`;
+- for Battery-visible QS_FAKE, cap only the native reservation delta at the live verified fake-carrier capacity;
+- retain the existing Battery-hidden rule, where the compact slot plus leased capacity is the physical reservation limit;
+- retain fail-native for real carrier-contract, writer-conflict, host, layout, or restoration failures;
+- add focused unit coverage showing an in-capacity visible-Battery request is unchanged and an overflow request saturates at the verified capacity.
+
+### Safety / device gate
+
+No fixed device pixels, delay, retry, polling, translation, alpha, visibility writer, target rewrite or gesture timeline is added. The cap is derived from the same verified parent-content lease already owned by the QS_FAKE presentation session.
+
+Required device gate: Home, non-charging, no island; repeatedly pull Control Center down and swipe it fully back up, including fast reversals. Confirm the projected transition never drops to native mid-return. Then smoke-test charging/island and Keyguard reverse pulls.
+
+## 2026-10-06 — Build 744: scope Home steady-peer mirror to Home-origin QS_FAKE
+
+**Type:** ownership correction / Keyguard-island performance
+**Display version:** 0.2.0
+**Build:** 744 / `20261006-744`
+**Branch / PR:** `fix/keyguard-island-home-mirror-scope` / #221
+
+### Evidence
+
+The remaining device-visible gap is Keyguard + active island + repeated full Control Center pull-down / swipe-up remaining slightly less smooth than the equivalent Home path after the Build 689-693 diagnostic/reflection reductions.
+
+Historical Build 690 diagnostics captured `sourceScene=KEYGUARD` while the functional `steadyPeerMirror source=home` continued following Home native layouts. Static review confirms `captureSteadyPeerMirror()` samples only the Home presentation surface and QS_FAKE previously consumed that module-level mirror without checking the authoritative Control Center source scene.
+
+### Correction
+
+- reuse the existing `GyModule.controlCenterSourceScene` authority rather than adding a second detector;
+- propagate source-scene changes to `SystemUiHomePresentationOwner`;
+- sample and consume the Home steady-peer mirror only for `SourceScene.HOME`;
+- clear the Home-derived mirror for `KEYGUARD` and `UNKNOWN`, leaving native QS_FAKE island authority in force;
+- immediately seed the existing mirror from the current Home session when source authority returns to Home;
+- keep Home hidden-slot policy, peer clip ownership and fake-island suppression unchanged.
+
+### Review boundary
+
+The native-layout hook still executes its normal layout validation, clip refresh and layout-ready completion for Keyguard-origin QS_FAKE; only the Home-derived mirror scan/propagation is skipped. The helper Boolean is not used as a failure or lifecycle signal.
+
+No transition geometry, reservation/capacity, tint, progress, draw layer, alpha/translation/visibility writer, timer, poller, retry loop or fixed device geometry changes.
+
+### Device gate
+
+A/B Build 744 against Build 743 with Keyguard + active island and repeated complete pull-down / swipe-up cycles. Verify Home + island remains unchanged. If a meaningful gap remains, continue to residual TransitionDrawable/compositing audit rather than adding more mirror logic.
+
+## 2026-10-06 — Build 745 rejected: bounded alpha layers clipped mobile signal
+
+**Type:** rejected rendering-performance experiment
+**Display version:** 0.2.0
+**Candidate build:** 745 / `20261006-745`
+**Branch / PR:** `fix/control-center-alpha-layer-bounds` / #224
+**Integration status:** closed unmerged; accepted runtime baseline remains Build 744
+
+### Intent
+
+After Build 744 closed the proven Home-mirror ownership mismatch, one residual audit examined the cost of per-component `Canvas.saveLayerAlpha(null, ...)` calls in the Control Center transition drawable. Build 745 kept group-alpha semantics but bounded each offscreen layer to the source viewport plus known transition overflow.
+
+### Device evidence
+
+Focused Canary validation showed a visible mobile-signal clipping regression during the transition. The affected path is consistent with the new finite offscreen-layer boundary: mobile morph / latent reveal pixels can extend beyond the nominal source viewport after transform and axis compensation, while the previous unbounded layer did not impose that additional local edge.
+
+The diagnostic session otherwise retained healthy runtime ownership and mobile presentation state, so the visual failure is sufficient to reject the optimization rather than reinterpret it as a state-source defect.
+
+### Decision
+
+- PR #224 is closed without merge.
+- Do not add guessed padding, margins, or geometry compensation around the bounded layer.
+- Do not carry Build 745 into `dev`, `main`, or a later checkpoint as an optimization baseline.
+- Build 744 remains the accepted runtime baseline.
+- The recent Keyguard / Control Center performance optimization line is closed. Reopen it only if new reproducible device evidence identifies a concrete blocker or bounded root cause.
+
+## 2026-10-06 — Build 746: prepare Guiyuan 0.2.1 stable promotion
+
+**Type:** version / stable-promotion metadata
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Branch:** `dev`
+
+### Scope
+
+The maintainer explicitly authorized promotion of the accepted current development state to `main` as Guiyuan 0.2.1.
+
+Build 746 changes version/release metadata only. Its runtime code is the accepted Build 744 integration; rejected Build 745 remains closed and unmerged.
+
+### Release boundary
+
+- bump external version from 0.2.0 to 0.2.1;
+- advance the internal Build identity to 746 so the rejected 745 Canary identity is never reused;
+- add the dated 0.2.1 CHANGELOG section for the net accepted changes since 0.2.0;
+- keep Build 744 device evidence applicable because no APK/runtime behavior changes are introduced by this checkpoint;
+- require the normal dev-to-main Full stable-promotion validation before merge.
 

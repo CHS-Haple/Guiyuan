@@ -63,6 +63,7 @@ internal object SystemUiHomePresentationOwner {
     private var keyguardFamilyEventSink: ((String) -> Unit)? = null
     private var keyguardFamilyFailNativeSink: ((String) -> Unit)? = null
     private var keyguardFamilyReadySink: ((StateResult.Active) -> Unit)? = null
+    private var controlCenterSourceScene = SourceScene.UNKNOWN
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
 
@@ -108,6 +109,34 @@ internal object SystemUiHomePresentationOwner {
     internal fun currentAodPresentationClaimed(): Boolean =
         keyguardFamilySurface == KeyguardFamilySurface.AOD &&
             keyguardFamilyCurrent?.hasPresentationClaim() == true
+
+    @Synchronized
+    fun updateControlCenterSourceScene(sourceScene: SourceScene) {
+        if (controlCenterSourceScene == sourceScene) return
+        controlCenterSourceScene = sourceScene
+
+        // The steady-peer mirror samples Home native island state, so it is valid
+        // only while Home is the authoritative Control Center source.
+        if (!SteadyPeerMirrorPolicy.shouldUseHomeMirror(sourceScene)) {
+            steadyPeerMirrorActive = false
+            steadyPeerMirrorHiddenSlots = emptySet()
+            controlCenterCurrent?.updateSteadyPeerMirror(
+                active = false,
+                hiddenSlots = emptySet(),
+            )
+            return
+        }
+
+        val snapshot =
+            current?.captureSteadyPeerMirror()
+                ?: SteadyPeerMirrorSnapshot(false, emptySet())
+        steadyPeerMirrorActive = snapshot.active
+        steadyPeerMirrorHiddenSlots = snapshot.hiddenSlots
+        controlCenterCurrent?.updateSteadyPeerMirror(
+            active = snapshot.active,
+            hiddenSlots = snapshot.hiddenSlots,
+        )
+    }
 
     @Synchronized
     fun onVisualSettingsChanged() {
@@ -964,6 +993,7 @@ internal object SystemUiHomePresentationOwner {
         keyguardFamilyEventSink = null
         keyguardFamilyFailNativeSink = null
         keyguardFamilyReadySink = null
+        controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
@@ -1081,6 +1111,14 @@ internal object SystemUiHomePresentationOwner {
             } ?: return false
 
         if (role == HOME_SURFACE) {
+            val homeMirrorAllowed =
+                synchronized(this) {
+                    SteadyPeerMirrorPolicy.shouldUseHomeMirror(controlCenterSourceScene)
+                }
+            if (!homeMirrorAllowed) {
+                return false
+            }
+
             val snapshot = session.captureSteadyPeerMirror()
             var changed = false
             val fake =
@@ -1109,10 +1147,14 @@ internal object SystemUiHomePresentationOwner {
 
         val snapshot =
             synchronized(this) {
-                SteadyPeerMirrorSnapshot(
-                    active = steadyPeerMirrorActive,
-                    hiddenSlots = steadyPeerMirrorHiddenSlots,
-                )
+                if (SteadyPeerMirrorPolicy.shouldUseHomeMirror(controlCenterSourceScene)) {
+                    SteadyPeerMirrorSnapshot(
+                        active = steadyPeerMirrorActive,
+                        hiddenSlots = steadyPeerMirrorHiddenSlots,
+                    )
+                } else {
+                    SteadyPeerMirrorSnapshot(false, emptySet())
+                }
             }
         session.updateSteadyPeerMirror(
             active = snapshot.active,
@@ -1269,6 +1311,7 @@ internal object SystemUiHomePresentationOwner {
         keyguardFamilyEventSink = null
         keyguardFamilyFailNativeSink = null
         keyguardFamilyReadySink = null
+        controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
     }
@@ -2638,6 +2681,9 @@ internal object SystemUiHomePresentationOwner {
         private const val VISIBLE_STATE_HIDDEN = 2
         private const val ISLAND_STATE_HIDDEN = 10
 
+        fun shouldUseHomeMirror(sourceScene: SourceScene): Boolean =
+            sourceScene == SourceScene.HOME
+
         fun isIslandHidden(
             visibleState: Int?,
             inIslandState: Int?,
@@ -2838,10 +2884,14 @@ internal object SystemUiHomePresentationOwner {
             requestedReservationDeltaPx: Int,
             capacityDeltaPx: Int,
         ): Int {
-            if (!nativeHide) return requestedReservationDeltaPx
             val compact = compactSlotWidthPx.coerceAtLeast(0)
             val capacity = capacityDeltaPx.coerceAtLeast(0)
-            val maxNativeReservation = compact + capacity
+            val maxNativeReservation =
+                if (nativeHide) {
+                    compact + capacity
+                } else {
+                    capacity
+                }
             return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
         }
 

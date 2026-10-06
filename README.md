@@ -16,7 +16,7 @@
 
 ### Project status
 
-> **Pre-release development.** The active promoted line is **0.1.0**. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The active pre-release line is **0.2.1**, a maintenance checkpoint over 0.2.0. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -24,7 +24,7 @@
 | Verified SystemUI baseline | `17.03.260226.r` |
 | Xposed interface | Modern Xposed API 102 |
 | Companion app | Android 13 / API 33+ |
-| Verified Guiyuan surfaces | Home status bar; opt-in lock screen / Keyguard |
+| Verified Guiyuan surfaces | Home status bar; opt-in lock screen / Keyguard; opt-in AOD |
 | Other SystemUI surfaces | Native until separately supported and validated |
 
 Compatibility is established against the actual target SystemUI. Other HyperOS builds or device variants may differ internally and are not assumed compatible until validated.
@@ -50,7 +50,7 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 
 ### Current scope
 
-The Home status bar and the opt-in lock-screen / Keyguard presentation are runtime-verified on the pinned target. Notification Shade remains native because this target does not expose the status-icon row there. Partial Control Center pulls use the bounded SystemUI-owned transition bridge from a verified source scene; the fully expanded Control Center and AOD remain native.
+The Home status bar plus the opt-in lock-screen / Keyguard and AOD presentations are runtime-verified on the pinned target. Notification Shade remains native because this target does not expose the status-icon row there. Partial Control Center pulls use the bounded SystemUI-owned transition bridge from an eligible Home or Keyguard source; the fully expanded Control Center remains native, and AOD is not a Control Center transition source.
 
 The project is still under active development, so wider device, system-version, and scene compatibility should not be inferred from the current verified target.
 
@@ -79,7 +79,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前已提升版本线为 **0.1.0**。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本线为 **0.2.1**，属于 0.2.0 基础上的维护检查点。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -87,7 +87,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 | 已验证 SystemUI 基线 | `17.03.260226.r` |
 | Xposed 接口 | Modern Xposed API 102 |
 | 配套应用 | Android 13 / API 33+ |
-| 已验证归元场景 | 主状态栏 Home；可选锁屏 / Keyguard |
+| 已验证归元场景 | 主状态栏 Home；可选锁屏 / Keyguard；可选 AOD |
 | 其他 SystemUI 场景 | 在分别完成支持与验证前保持原生 |
 
 兼容性以目标 SystemUI 的实际结构和运行表现为准。其他 HyperOS 版本或不同机型的内部实现可能不同，在完成验证前不会默认视为兼容。
@@ -113,7 +113,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 当前范围
 
-主状态栏 Home 与可选的锁屏 / Keyguard 归元显示已在当前固定目标上完成运行时验证。通知栏在该目标上不提供状态图标行，因此保持系统原生；控制中心部分下拉通过由 SystemUI 主导的有界过渡桥衔接，完全展开的控制中心与 AOD 保持系统原生。
+主状态栏 Home，以及可选的锁屏 / Keyguard 与 AOD 归元显示已在当前固定目标上完成运行时验证。通知栏在该目标上不提供状态图标行，因此保持系统原生；控制中心部分下拉通过由 SystemUI 主导、以 Home 或 Keyguard 为合格来源的有界过渡桥衔接，完全展开的控制中心保持系统原生，AOD 不作为控制中心过渡来源。
 
 项目仍处于持续开发阶段，因此不应仅根据当前验证目标推定其他机型、系统版本或场景已经兼容。
 

@@ -6,6 +6,16 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` describes
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-06
+
+### Fixed
+- Control Center QS_FAKE native peer reservation is bounded to verified live carrier capacity, preventing the rare Home pull-down -> swipe-up/collapse path from dropping the projected transition back to native while preserving Guiyuan semantic transition geometry.
+- Home-derived steady-peer island mirroring is consumed only for Home-origin Control Center cycles; Keyguard and unknown sources retain native QS_FAKE island authority instead of sampling background Home peer state.
+
+### Changed
+- Exact-target compatibility metadata and verification coverage are aligned with the pinned HyperOS SystemUI hook surface, and repository/current-state documentation is tightened without changing runtime behavior.
+- The residual Keyguard / Control Center performance audit is closed at the accepted Build 744 runtime baseline; the rejected Build 745 alpha-layer experiment is not part of this release.
+
 ## [0.2.0] - 2026-10-06
 
 ### Added

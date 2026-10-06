@@ -12,6 +12,10 @@ NATIVE_STATUS_INVENTORY_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" 
 NETWORK_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiNetworkStateSource.kt"
 SCENE_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiSceneStateSource.kt"
 BATTERY_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiBatteryStateSource.kt"
+KEYGUARD_AOD_STATE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardAodStateSource.kt"
+KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardFullAodTransitionSource.kt"
+KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiKeyguardStatusIconTransitionSource.kt"
+PANEL_TRANSITION_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SystemUiPanelTransitionSource.kt"
 
 HEX_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64}
 
@@ -30,6 +34,16 @@ def validate_artifact(name: str, artifact: dict) -> None:
         value = artifact.get(key)
         if not isinstance(value, int) or value <= 0:
             fail(f"{name}.{key} must be a positive integer")
+
+
+def source_string_constant(source_text: str, constant_name: str, label: str) -> str:
+    match = re.search(
+        rf'{re.escape(constant_name)}\s*=\s*\n?\s*"([^"]+)"',
+        source_text,
+    )
+    if not match:
+        fail(f"{label} source constant is missing: {constant_name}")
+    return match.group(1).replace("\\$", "$")
 
 
 profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
@@ -222,6 +236,114 @@ if not battery_semantic_fields.issubset(source_required_fields):
         ", ".join(sorted(battery_semantic_fields - source_required_fields))
     )
 
+
+# Pinned lifecycle hooks added after the original target profile was created.
+# These are backed by the same exact SystemUI artifact in SystemUI-Reference and
+# are also resolved uniquely by runtime source code. Keep the profile and source
+# constants in lockstep so CI cannot silently validate an obsolete hook surface.
+lifecycle_hook_specs = (
+    (
+        "batteryAodSetAnimate",
+        KEYGUARD_AOD_STATE_SOURCE_PATH,
+        "BATTERY_VIEW_CLASS",
+        "SET_AOD_ANIMATE_METHOD",
+        "(Z)V",
+    ),
+    (
+        "batteryAodToggleMode",
+        KEYGUARD_AOD_STATE_SOURCE_PATH,
+        "BATTERY_VIEW_CLASS",
+        "TOGGLE_AOD_METHOD",
+        "(Z)V",
+    ),
+    (
+        "keyguardFullAodTransition",
+        KEYGUARD_FULL_AOD_TRANSITION_SOURCE_PATH,
+        "CONTROLLER_CLASS",
+        "ANIMATE_FULL_AOD_METHOD",
+        "(ZZ)V",
+    ),
+    (
+        "keyguardStatusIconTransition",
+        KEYGUARD_STATUS_ICON_TRANSITION_SOURCE_PATH,
+        "KEYGUARD_VIEW_CLASS",
+        "ANIMATE_ICON_CONTAINER_METHOD",
+        "(Z)V",
+    ),
+    (
+        "controlCenterVisibility",
+        PANEL_TRANSITION_SOURCE_PATH,
+        "CONTROL_CENTER_CLASS",
+        "CONTROL_CENTER_VISIBLE_METHOD",
+        "(Z)V",
+    ),
+    (
+        "controlCenterExpansion",
+        PANEL_TRANSITION_SOURCE_PATH,
+        "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
+        "CONTROL_CENTER_EXPANSION_METHOD",
+        "(F)V",
+    ),
+    (
+        "controlCenterAppearance",
+        PANEL_TRANSITION_SOURCE_PATH,
+        "CONTROL_CENTER_HEADER_CALLBACK_CLASS",
+        "CONTROL_CENTER_APPEARANCE_METHOD",
+        "(ZZ)V",
+    ),
+)
+source_cache = {}
+for (
+    hook_name,
+    source_path,
+    class_constant,
+    method_constant,
+    expected_descriptor,
+) in lifecycle_hook_specs:
+    hook_point = hook_points.get(hook_name)
+    if not isinstance(hook_point, dict):
+        fail(f"missing lifecycle hook point: {hook_name}")
+    source_text = source_cache.setdefault(
+        source_path,
+        source_path.read_text(encoding="utf-8"),
+    )
+    source_class = source_string_constant(
+        source_text,
+        class_constant,
+        hook_name,
+    )
+    source_method = source_string_constant(
+        source_text,
+        method_constant,
+        hook_name,
+    )
+    if source_class != hook_point.get("className"):
+        fail(f"lifecycle source class drifted from profile: {hook_name}")
+    if source_method != hook_point.get("methodName"):
+        fail(f"lifecycle source method drifted from profile: {hook_name}")
+    if hook_point.get("descriptor") != expected_descriptor:
+        fail(f"lifecycle hook descriptor drifted from profile: {hook_name}")
+
+keyguard_aod_text = source_cache.get(KEYGUARD_AOD_STATE_SOURCE_PATH)
+if keyguard_aod_text is None:
+    keyguard_aod_text = KEYGUARD_AOD_STATE_SOURCE_PATH.read_text(encoding="utf-8")
+keyguard_aod_class = source_string_constant(
+    keyguard_aod_text,
+    "BATTERY_VIEW_CLASS",
+    "keyguard AOD",
+)
+for field_constant in ("TO_AOD_FIELD", "IS_AOD_ANIMATE_FIELD", "ANIM_TO_AOD_FIELD"):
+    field_name = source_string_constant(
+        keyguard_aod_text,
+        field_constant,
+        "keyguard AOD",
+    )
+    if field_name not in set(verified_fields.get(keyguard_aod_class, [])):
+        fail(f"keyguard AOD field is not verified in the SystemUI APK: {field_name}")
+
+# The fake Control Center attach seam is deliberately not promoted to the
+# static profile until SystemUI-Reference indexes that method explicitly.
+# Runtime still resolves it uniquely and fails native if unavailable.
 
 native_status_views = profile.get("nativeStatusViews", {})
 expected_native_roles = {"mobileNetwork", "wifi", "battery"}

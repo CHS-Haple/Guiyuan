@@ -11,11 +11,11 @@ Guiyuan keeps four responsibilities separate:
 
 A value from one responsibility must not silently become the control value for another.
 
-## Current 0.0.3 Home contract
+## Current Home contract
 
-The current work-branch Home path uses the existing native Home host rather than a permanent extra status participant:
+The accepted Home path uses the existing native Home host rather than a permanent extra status participant:
 
-`MiuiNotificationStatusContainer / system_icon_area (HostSession) -> MiuiStatusBatteryContainer / system_icons (native carrier) -> module-owned direct child -> logical viewport -> CombinedStatusHomeLayoutResolver -> Guiyuan renderer`
+`MiuiNotificationStatusContainer / system_icon_area (HostSession) -> MiuiStatusBatteryContainer / system_icons (native carrier) -> module-owned direct child -> logical viewport -> HomeLayoutResolver -> LayoutPolicy -> Guiyuan renderer`
 
 Build 397 is the first device-accepted charging-carrier checkpoint for this route. Build 398 refines the carrier-width authority to the live `battery_icon_container`. Build 536 device-validates the current render-surface contract: logical Home slot geometry remains unchanged while only the module-owned child may gain transparent top overflow.
 
@@ -37,7 +37,7 @@ Home currently uses this mode. Build 536 keeps the visual inside the native `sys
 
 Guiyuan does not render on the surface. Native SystemUI content and motion remain authoritative.
 
-Notification Shade and AOD currently use this mode. Keyguard has a separate opt-in PROJECTED adapter, and Control Center has a separately verified bounded projection/transition path; neither transfers native peer layout or motion ownership to Guiyuan.
+Notification Shade and the fully expanded Control Center currently use this mode. Keyguard and opt-in AOD use one host-scoped PROJECTED family presentation owner, while Control Center has a separately verified bounded PROJECTED transition bridge; none of these transfers native peer motion ownership to Guiyuan.
 
 ## Shared `ResolvedLayout` contract
 
@@ -171,7 +171,7 @@ Build 536 separates visual drawing capacity from native slot geometry.
 - If current top-slot ink crosses logical y=0, Guiyuan may enlarge only its own child upward by the exact required transparent overflow.
 - The child is laid out so `physicalTop + logicalTopInset == logicalTop`; ring, center, mobile and transition source coordinates therefore do not move merely because extra pixels exist.
 - Physical overflow must never be converted into native slot height, status-bar height, peer padding, target geometry or motion.
-- Build 537 candidate applies the same policy to the separate opt-in Keyguard render child because its verified `mSystemIconsContainer` is also a `MiuiStatusBatteryContainer`. Keyguard session/tint/AOD ownership remains separate and requires device validation.
+- Build 537 extended the same policy to the opt-in Keyguard render child because its verified `mSystemIconsContainer` is also a `MiuiStatusBatteryContainer`. Later Keyguard/AOD family integration retains this render-surface boundary while sharing one host-scoped family presentation owner; Home ownership remains separate.
 
 ### TopSlot optical avoidance
 
