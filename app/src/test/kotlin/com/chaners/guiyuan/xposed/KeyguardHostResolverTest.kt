@@ -6,7 +6,7 @@ import org.junit.Test
 
 class KeyguardHostResolverTest {
     @Test
-    fun steadyKeyguardAcceptsKeyguardAndShadeLockedOnly() {
+    fun steadyKeyguardAcceptsLockedStates() {
         assertTrue(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.KEYGUARD))
         assertTrue(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.SHADE_LOCKED))
         assertFalse(KeyguardHostResolver.isSteadyKeyguardSurface(SceneSource.Surface.UNLOCKED_STATUS_BAR))
@@ -14,12 +14,12 @@ class KeyguardHostResolverTest {
     }
 
     @Test
-    fun resolverAcceptsOnlyPinnedKeyguardHostClass() {
+    fun resolverAcceptsPinnedHost() {
         assertTrue(KeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
         assertFalse(KeyguardHostResolver.isKeyguardHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
     }
     @Test
-    fun keyguardStatusIconsAlphaUsesOnlyLocalNativeStatusIconLayer() {
+    fun keyguardAlphaUsesLocalIconLayer() {
         assertTrue(
             KeyguardHostResolver.resolveStatusIconsPresentationAlpha(
                 visible = true,

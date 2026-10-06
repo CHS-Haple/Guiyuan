@@ -7,7 +7,7 @@ import org.junit.Test
 
 class HomeRenderSessionTest {
     @Test
-    fun ownerReadinessDependsOnlyOnStructuralHomeRequirements() {
+    fun ownerReadyUsesStructuralHome() {
         assertTrue(
             HomeRenderSession.resolveOwnerReady(
                 featureEnabled = true,
@@ -38,7 +38,7 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun overlayVisibilityRequiresControlCenterOwnership() {
+    fun overlayNeedsCcOwnership() {
         assertTrue(
             HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
@@ -57,7 +57,7 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun overlayVisibilityHonorsFeatureAndHandoffGates() {
+    fun overlayHonorsFeatureGates() {
         assertFalse(
             HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = false,
@@ -82,7 +82,7 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun transferredTintWinsWithoutReadingTransientLiveState() {
+    fun transferredTintWins() {
         var liveReads = 0
         val transferred =
             TintState(
@@ -108,7 +108,7 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun invalidTransferredTintFallsBackToLiveNativeSeed() {
+    fun invalidTransferUsesNativeTint() {
         var liveReads = 0
         val live =
             TintState(
@@ -134,7 +134,7 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun legacyHotReloadWithoutTransferredTintWaitsForNativeEvent() {
+    fun legacyReloadWaitsForNativeTint() {
         var liveReads = 0
 
         val seed =
@@ -153,7 +153,7 @@ class HomeRenderSessionTest {
         assertEquals(0, liveReads)
     }
     @Test
-    fun topOverflowExpandsOnlyPhysicalSurfaceWithoutMovingLogicalViewport() {
+    fun topOverflowOnlyExpandsSurface() {
         val resolved =
             VerticalOverflowPolicy.resolve(
                 logicalTopPx = 0,

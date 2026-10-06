@@ -19,7 +19,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun projectedSceneKeepsNativeSlotButReusesTheSameVisualRule() {
+    fun projectedSceneKeepsNativeSlot() {
         val projected = resolve(scale = 1.2f)
 
         assertEquals(105f, projected.appliedSlotWidthPx, 0.001f)
@@ -28,7 +28,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun nativeOnlySceneDoesNotRenderCombinedVisuals() {
+    fun nativeOnlySkipsReplacement() {
         val layout = resolve(
             scale = 1f,
             renderMode = RenderMode.NATIVE_ONLY,
@@ -41,7 +41,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun sharedPolicyDoesNotChangeIdealGeometryBySceneCapability() {
+    fun sharedPolicyKeepsIdealGeometry() {
         val projected = resolve(scale = 0.9f)
         val nativeOnly = resolve(
             scale = 0.9f,
@@ -58,7 +58,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun centeredShrinkReservationTracksTheVisibleLeadingEdge() {
+    fun shrinkReservationTracksLeadingEdge() {
         assertEquals(
             105,
             CompactReservationPolicy.resolveCenteredVisualWidth(
@@ -76,7 +76,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun homeResolverKeepsCurrentCarrierWidthAndHostHeightSeparated() {
+    fun homeResolverSeparatesWidthHeight() {
         val layout =
             requireNotNull(
                 HomeLayoutResolver.resolve(
@@ -95,7 +95,7 @@ class LayoutPolicyTest {
     }
 
     @Test
-    fun homeResolverUsesStableBaseSlotInsteadOfChargingInflatedWidth() {
+    fun homeResolverUsesBaseSlotWidth() {
         val layout =
             requireNotNull(
                 HomeLayoutResolver.resolve(

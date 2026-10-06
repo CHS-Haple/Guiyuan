@@ -7,7 +7,7 @@ import org.junit.Test
 
 class FeaturePrefsOwnerTest {
     @Test
-    fun clearNotificationParticipatesInFeatureRuntimeSync() {
+    fun clearNotificationSyncsFeature() {
         assertEquals(true, isFeaturePreferenceKey(null))
         assertEquals(true, isFeaturePreferenceKey("combined_status_enabled"))
         assertEquals(true, isFeaturePreferenceKey("combined_status_keyguard_enabled"))
@@ -24,7 +24,7 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun keyguardAndAodPreferencesRemainIndependentOfEachOtherAndMasterGate() {
+    fun keyguardAndAodPrefsStayIndependent() {
         val keyguardOnly =
             com.chaners.guiyuan.settings.FeatureSettings(
                 enabled = true,
@@ -54,7 +54,7 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun validCrossProcessTimestampProducesTransportLatency() {
+    fun validTimestampProducesLatency() {
         assertEquals(
             6_000_000L,
             FeaturePrefsOwner.resolveTransportLatencyNanos(
@@ -75,7 +75,7 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun invalidFutureTimestampDoesNotInventLatency() {
+    fun futureTimestampHasNoLatency() {
         assertNull(
             FeaturePrefsOwner.resolveTransportLatencyNanos(
                 changedAtElapsedRealtimeNanos = 2_000_000_000L,

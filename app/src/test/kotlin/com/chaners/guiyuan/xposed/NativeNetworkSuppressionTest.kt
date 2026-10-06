@@ -5,7 +5,7 @@ import org.junit.Test
 
 class NativeNetworkSuppressionTest {
     @Test
-    fun activeMobileVisualMaskMakesNativeSignalContainerTransparent() {
+    fun mobileMaskMakesNativeTransparent() {
         assertEquals(
             0f,
             NativeNetworkSuppression.resolveMobileVisualMaskAlpha(
@@ -16,7 +16,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun inactiveMobileVisualMaskPreservesNativeAlpha() {
+    fun inactiveMobileMaskKeepsAlpha() {
         assertEquals(
             0.65f,
             NativeNetworkSuppression.resolveMobileVisualMaskAlpha(
@@ -26,7 +26,7 @@ class NativeNetworkSuppressionTest {
         )
     }
     @Test
-    fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
+    fun airplaneKeepsMobileSuppressed() {
         assertEquals(
             true,
             NativeNetworkSuppressionPolicy.suppressMobile(
@@ -38,7 +38,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun airplaneExitKeepsPreviousSuppressionThroughUnknownPresentationGap() {
+    fun airplaneExitKeepsSuppression() {
         val unknown =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.UNKNOWN,
@@ -70,7 +70,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun knownNonReplaceableMobilePresentationReleasesStickySuppression() {
+    fun nonReplaceableMobileReleasesSuppression() {
         val dualSeparate =
             NativePresentationResolver.Snapshot(
                 mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
@@ -95,7 +95,7 @@ class NativeNetworkSuppressionTest {
 
 
     @Test
-    fun observedNoSimCanBecomeSuppressedInTheSameVisibilityEvent() {
+    fun noSimSuppressesInSameEvent() {
         assertEquals(
             true,
             NativeNetworkSuppression.shouldSuppressStaticSlot(
@@ -108,7 +108,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun staticSystemSlotsAreSuppressedOnlyWhenTheirReplacementIsReady() {
+    fun staticSlotsWaitForReplacement() {
         assertEquals(
             true,
             NativeNetworkSuppression.shouldSuppressStaticSlot(
@@ -174,7 +174,7 @@ class NativeNetworkSuppressionTest {
         )
     }
     @Test
-    fun locationAwareTintWinsOverPeerManagerAndCachedFallback() {
+    fun localTintWins() {
         assertEquals(
             0xe6ffffff.toInt(),
             NativeNetworkSuppression.selectStatusIconTint(
@@ -187,7 +187,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun peerTintWinsWhenLocationAwareTintIsUnavailable() {
+    fun peerTintWinsWithoutLocalTint() {
         assertEquals(
             0xfff2f2f2.toInt(),
             NativeNetworkSuppression.selectStatusIconTint(
@@ -234,7 +234,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun representedSlotsAreNotEligibleVisibleTintAuthorities() {
+    fun representedSlotsCannotOwnTint() {
         listOf("combined_status", "wifi", "mobile", "stacked_mobile", "airplane", "no_sim").forEach { slot ->
             assertEquals(
                 false,
@@ -249,7 +249,7 @@ class NativeNetworkSuppressionTest {
     }
 
     @Test
-    fun visibleNonRepresentedPeerCanAnchorHomeTint() {
+    fun visiblePeerCanAnchorTint() {
         assertEquals(
             true,
             NativeNetworkSuppression.isTintAuthorityCandidate(

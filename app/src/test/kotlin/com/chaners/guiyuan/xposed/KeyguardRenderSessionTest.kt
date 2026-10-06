@@ -7,7 +7,7 @@ import org.junit.Test
 
 class KeyguardRenderSessionTest {
     @Test
-    fun overlayRequiresFeatureAndCompletedNativeHandoff() {
+    fun overlayNeedsCompletedHandoff() {
         assertFalse(KeyguardRenderSession.resolveOverlayVisible(false, false, false))
         assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, true, false))
         assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, false, true))
@@ -15,7 +15,7 @@ class KeyguardRenderSessionTest {
     }
 
     @Test
-    fun keyguardAndAodFamilyKeepChildFeatureGatesIndependent() {
+    fun familyChildGatesStayIndependent() {
         assertTrue(
             KeyguardRenderSession.resolveFamilyFeatureEnabled(
                 featureEnabled = true,
@@ -51,7 +51,7 @@ class KeyguardRenderSessionTest {
     }
 
     @Test
-    fun keyguardFamilyChildDoesNotCopyIndependentBatteryAodAlpha() {
+    fun familyChildIgnoresBatteryAodAlpha() {
         assertEquals(
             1f,
             KeyguardRenderSession.resolveFamilyChildAlpha(),
@@ -60,7 +60,7 @@ class KeyguardRenderSessionTest {
     }
 
     @Test
-    fun readinessRequiresCompleteAttachedKeyguardSurface() {
+    fun readyNeedsCompleteKeyguardSurface() {
         assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, false))
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, false))
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, false))
@@ -68,7 +68,7 @@ class KeyguardRenderSessionTest {
     }
 
     @Test
-    fun retargetOnlyForcesPresentationReadinessWhenFamilySceneChanges() {
+    fun retargetForcesReadyOnSceneChange() {
         assertFalse(
             KeyguardRenderSession.shouldForceReadinessDispatch(
                 sceneChanged = false,

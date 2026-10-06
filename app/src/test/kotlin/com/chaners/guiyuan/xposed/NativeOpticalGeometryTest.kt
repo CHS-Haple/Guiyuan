@@ -7,7 +7,7 @@ import org.junit.Test
 
 class NativeOpticalGeometryTest {
     @Test
-    fun currentOpticalWidthStaysResourceSpecificUnderSharedReferenceFit() {
+    fun opticalWidthStaysResourceSpecific() {
         val narrow =
             NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 100,
@@ -54,7 +54,7 @@ class NativeOpticalGeometryTest {
     }
 
     @Test
-    fun opticalBoundsPreserveCurrentResourceAsymmetry() {
+    fun opticalBoundsKeepAsymmetry() {
         val resolved =
             NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = 120,

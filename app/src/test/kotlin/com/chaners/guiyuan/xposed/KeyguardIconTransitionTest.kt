@@ -6,7 +6,7 @@ import org.junit.Test
 
 class KeyguardIconTransitionSourceTest {
     @Test
-    fun pinnedAnimateIconContainerContractRequiresOneBoolean() {
+    fun iconTransitionNeedsOneBool() {
         assertTrue(
             KeyguardIconTransition.matchesAnimateIconContainerSignature(
                 arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),

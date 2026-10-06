@@ -7,7 +7,7 @@ import org.junit.Test
 
 class HomePresentationTest {
     @Test
-    fun temporaryEntriesPreserveExistingAndRestoreOnlyOwnedEntries() {
+    fun tempEntriesRestoreOwnedOnly() {
         val slots = mutableListOf("alarm_clock", "wifi")
         HomePresentation.OwnedListEntries.withTemporaryEntries(
             target = slots,
@@ -22,7 +22,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun persistentIgnoredSlotRestoreRemovesOnlySessionOwnedDelta() {
+    fun ignoredSlotRestoreRemovesOwnedDelta() {
         val existing = listOf("alarm_clock", "wifi")
         val requested = listOf("wifi", "mobile", "no_sim")
         val owned =
@@ -43,7 +43,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun persistentIgnoredSlotRestoreAvoidsNativeSetterDuringContinuousHandoff() {
+    fun handoffRestoreSkipsNativeSetter() {
         assertFalse(
             HomePresentation.PersistentIgnoredSlotPolicy
                 .useNativeSetterOnRestore(
@@ -59,7 +59,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun transitionReservationCannotShrinkBelowCompactWidth() {
+    fun reservationKeepsCompactWidth() {
         assertEquals(
             105,
             HomePresentation.EndReservationPolicy.resolveRequestedSlotWidth(
@@ -84,7 +84,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun endReservationKeepsOneResolvedEndBoundaryAcrossBatteryStates() {
+    fun endReservationKeepsBoundary() {
         assertEquals(
             0,
             HomePresentation.EndReservationPolicy.resolvePaddingEndDelta(
@@ -112,7 +112,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun hiddenPrearmNativeWidthResetIsAdoptedInsteadOfFailNative() {
+    fun hiddenPrearmAdoptsWidthReset() {
         assertEquals(
             HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
@@ -160,7 +160,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun hiddenLeaseDoesNotAdoptAcrossParentContractChange() {
+    fun hiddenLeaseRejectsParentChange() {
         assertEquals(
             HomePresentation.CapacityLeasePolicy
                 .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
@@ -176,7 +176,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun fakeCarrierCapacityLeaseUsesOnlyVerifiedParentContentWidth() {
+    fun capacityLeaseUsesVerifiedParent() {
         assertEquals(
             250,
             HomePresentation.EndReservationPolicy
@@ -204,7 +204,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun deferredControlCenterCutoverPreservesNativeVisualsUntilCompactLayout() {
+    fun deferredCcKeepsNativeUntilLayout() {
         assertTrue(
             HomePresentation.VisualMaskPolicy
                 .shouldKeepNativeBeforeCutover(
@@ -220,7 +220,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun keyguardFamilyReleaseIgnoresOldSceneAfterSuccessfulRetarget() {
+    fun retargetReleaseIgnoresOldScene() {
         assertFalse(
             HomePresentation.KeyguardFamilyHandoffPolicy.shouldRelease(
                 activeSurface = HomePresentation.KeyguardFamilySurface.AOD,
@@ -242,7 +242,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun aodPreMaskRequiresDeferredLayoutAndExplicitHandoffRequest() {
+    fun aodPreMaskNeedsDeferredHandoff() {
         assertTrue(
             HomePresentation.VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
                 deferVisualMaskUntilLayout = true,
@@ -264,7 +264,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
+    fun lateCcAdoptsCompletedLayout() {
         assertTrue(
             HomePresentation.VisualMaskPolicy.shouldAdoptNativeLayout(
                 deferVisualMaskUntilLayout = true,
@@ -314,7 +314,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun visualOnlyKeyguardHandoffDefersNativeLayoutMutationAndCompletion() {
+    fun visualHandoffDefersLayoutMutation() {
         assertFalse(
             HomePresentation.DeferredNativeLayoutPolicy
                 .shouldWriteNativeLayout(
@@ -342,7 +342,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun continuousHotReloadHandoffSuppressesIntermediateLayoutRequest() {
+    fun reloadHandoffSkipsMidLayout() {
         assertFalse(
             HomePresentation.HotReloadHandoffPolicy
                 .shouldRequestLayoutOnRelease(
@@ -358,7 +358,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
+    fun batteryWidthLossDefersAfterCc() {
         assertTrue(
             HomePresentation.EndReservationPolicy
                 .shouldDeferBatteryWidth(
@@ -397,7 +397,7 @@ class HomePresentationTest {
         assertTrue("wifi" !in slots && "mobile" !in slots)
     }
     @Test
-    fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
+    fun islandCapacityCountsExtraWidth() {
         assertEquals(
             0,
             HomePresentation.EndReservationPolicy
@@ -437,7 +437,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
+    fun ccReservationStopsAtCapacity() {
         assertEquals(
             354,
             HomePresentation.EndReservationPolicy
@@ -481,7 +481,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun steadyPeerMirrorIsScopedToHomeControlCenterSource() {
+    fun peerMirrorScopedToHomeCc() {
         assertTrue(
             HomePresentation.SteadyPeerMirrorPolicy
                 .shouldUseHomeMirror(SourceScene.HOME),
@@ -497,7 +497,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
+    fun peerMirrorUsesHomeIslandState() {
         assertTrue(
             HomePresentation.SteadyPeerMirrorPolicy
                 .isIslandHidden(
@@ -522,7 +522,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun steadyPeerMirrorSuppressesOnlyFakeSecondIslandDecision() {
+    fun peerMirrorSuppressesFakeIslandOnly() {
         assertFalse(
             HomePresentation.SteadyPeerMirrorPolicy
                 .exposeFakeIslandShowing(
@@ -547,7 +547,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
+    fun ccFailureWithoutSessionIsNoOp() {
         assertFalse(
             HomePresentation.failControlCenterPresentation(
                 "unit-test-no-session",
@@ -556,7 +556,7 @@ class HomePresentationTest {
     }
 
     @Test
-    fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
+    fun ccHotPathSkipsDiagnostics() {
         assertFalse(
             HomePresentation.HotPathDiagnosticPolicy
                 .shouldReportCcLayout(
@@ -584,7 +584,7 @@ class HomePresentationTest {
 
 
     @Test
-    fun deferredFamilyOwnershipResumesWhenRetargetLeavesVisualOnlyBoundary() {
+    fun familyOwnershipResumesAfterRetarget() {
         assertTrue(
             HomePresentation.DeferredNativeLayoutPolicy
                 .shouldResumeOwnershipForRetarget(
@@ -611,7 +611,7 @@ class HomePresentationTest {
 
 
     @Test
-    fun activationSuccessRequiresOwnerAndFamilySurfaceToStillBeCurrent() {
+    fun activationRequiresCurrentOwner() {
         assertTrue(
             HomePresentation.ActivationCommitPolicy.canReportSuccess(
                 ownerStillCurrent = true,

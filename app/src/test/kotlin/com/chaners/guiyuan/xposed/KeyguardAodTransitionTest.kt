@@ -6,7 +6,7 @@ import org.junit.Test
 
 class KeyguardAodTransitionSourceTest {
     @Test
-    fun pinnedAnimateFullAodContractRequiresTwoBooleans() {
+    fun fullAodContractNeedsTwoBools() {
         assertTrue(
             KeyguardAodTransition.matchesAnimateFullAodSignature(
                 parameterTypes =

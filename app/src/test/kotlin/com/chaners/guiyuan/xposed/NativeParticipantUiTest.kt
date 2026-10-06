@@ -7,7 +7,7 @@ import org.junit.Test
 
 class NativeParticipantPresentationTest {
     @Test
-    fun zeroSlotBridgeAcceptsPreservedBatteryGeometry() {
+    fun zeroSlotAcceptsBatteryGeometry() {
         assertTrue(
             NativeParticipantUi.isZeroSlotHandoffReady(
                 rootMeasuredWidth = 0,
@@ -45,7 +45,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun zeroSlotBridgeRejectsCenteredChildOverflow() {
+    fun zeroSlotRejectsCenteredOverflow() {
         assertFalse(
             NativeParticipantUi.isZeroSlotHandoffReady(
                 rootMeasuredWidth = 0,
@@ -64,7 +64,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun zeroSlotBridgeRejectsClippedOrMisalignedOverflow() {
+    fun zeroSlotRejectsBadOverflow() {
         assertFalse(
             NativeParticipantUi.isZeroSlotHandoffReady(
                 rootMeasuredWidth = 0,
@@ -108,7 +108,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun handoffModePrearmsHiddenHomeParticipantOnKeyguard() {
+    fun handoffPrearmsHiddenHome() {
         assertEquals(
             NativeParticipantUi.HandoffMode.PREARMED_KEYGUARD,
             NativeParticipantUi.resolveHandoffMode(
@@ -119,7 +119,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun handoffModeDoesNotPrearmVisibleParticipantOnKeyguard() {
+    fun handoffSkipsVisibleHome() {
         assertEquals(
             NativeParticipantUi.HandoffMode.BLOCKED,
             NativeParticipantUi.resolveHandoffMode(
@@ -130,7 +130,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun handoffModeFailsClosedForUnknownAndShadeLocked() {
+    fun handoffFailsClosedOnUnknown() {
         listOf(
             SceneSource.Surface.UNKNOWN,
             SceneSource.Surface.SHADE_LOCKED,
@@ -147,7 +147,7 @@ class NativeParticipantPresentationTest {
 
 
     @Test
-    fun activeNativeSlotKeepsZeroWidthShellAlignedToBatterySlot() {
+    fun nativeSlotKeepsZeroWidthShell() {
         assertTrue(
             NativeParticipantUi.isActiveSlotHandoffReady(
                 rootLayoutWidth = 0,
@@ -166,7 +166,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun activeNativeSlotRejectsDuplicateShellOccupancy() {
+    fun nativeSlotRejectsDuplicateShell() {
         assertFalse(
             NativeParticipantUi.isActiveSlotHandoffReady(
                 rootLayoutWidth = 105,
@@ -185,7 +185,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun activeNativeSlotRejectsAnchorOrVisualMismatch() {
+    fun nativeSlotRejectsMismatch() {
         assertFalse(
             NativeParticipantUi.isActiveSlotHandoffReady(
                 rootLayoutWidth = 0,
@@ -219,7 +219,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun zeroOccupancyShellResolvesRealVisualBounds() {
+    fun zeroShellResolvesVisualBounds() {
         assertEquals(
             105,
             NativeParticipantUi.resolvePostLayoutVisualWidth(
@@ -231,7 +231,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeBatteryHideClaimsOnlyReleasedSlotWidth() {
+    fun batteryHideClaimsReleasedWidth() {
         assertEquals(
             0,
             NativeParticipantUi.resolveNativeSlotOccupancyWidth(
@@ -256,7 +256,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun releasedBatterySlotAcceptsNativeMeasuredVisualWidth() {
+    fun releasedSlotAcceptsNativeWidth() {
         assertEquals(
             105,
             NativeParticipantUi.resolvePostLayoutVisualWidth(
@@ -269,7 +269,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun visualBoundsRejectNonZeroOccupancyOrInvalidVisualWidth() {
+    fun visualBoundsRejectBadOccupancy() {
         assertEquals(
             null,
             NativeParticipantUi.resolvePostLayoutVisualWidth(
@@ -289,7 +289,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun chargingPresentationDoesNotChangeStableSlotTranslation() {
+    fun chargingKeepsSlotTranslation() {
         val stableBoundary = 478
         val chargingLiveBoundary = 448
 
@@ -311,7 +311,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeSlotTranslationUsesStableStatusIconBoundary() {
+    fun slotTranslationUsesStatusBoundary() {
         assertEquals(
             478f,
             NativeParticipantUi.resolveNativeSlotTranslationX(
@@ -336,7 +336,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun activeHandoffUsesSlotAnchorInsteadOfEvictedBatteryContent() {
+    fun handoffUsesSlotAnchor() {
         assertTrue(
             NativeParticipantUi.isActiveSlotHandoffReady(
                 rootLayoutWidth = 0,
@@ -370,7 +370,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeBindingTintBecomesSingleResolvedTintAuthority() {
+    fun bindingTintBecomesAuthority() {
         val merged =
             NativeParticipantUi.mergeNativeParticipantTint(
                 batteryTint =
@@ -386,7 +386,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeBindingTintDoesNotDependOnBatteryAnchor() {
+    fun bindingTintIgnoresBatteryAnchor() {
         val merged =
             NativeParticipantUi.mergeNativeParticipantTint(
                 batteryTint =
@@ -401,7 +401,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun missingNativeTintDropsLegacyStatusIconFallbackAndUsesBatteryAnchor() {
+    fun missingNativeTintUsesBatteryAnchor() {
         val merged =
             NativeParticipantUi.mergeNativeParticipantTint(
                 batteryTint =
@@ -417,7 +417,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun transparentNativeBindingTintFallsBackWithoutOverwritingAnchor() {
+    fun transparentTintKeepsAnchor() {
         val merged =
             NativeParticipantUi.mergeNativeParticipantTint(
                 batteryTint =
@@ -432,7 +432,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun masterSwitchBlocksHomeOverlayRegardlessOfControlCenterOrHandoffState() {
+    fun masterSwitchBlocksHomeOverlay() {
         assertFalse(
             HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = false,
@@ -461,7 +461,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun enabledMasterSwitchStillDefersToControlCenterAndNativeHandoff() {
+    fun masterSwitchStillDefersToCc() {
         assertTrue(
             HomeRenderSession.resolveOverlayVisible(
                 featureEnabled = true,
@@ -480,7 +480,7 @@ class NativeParticipantPresentationTest {
 
 
     @Test
-    fun nativeIconStateShowsCombinedRendererAndHidesDot() {
+    fun iconStateShowsRenderer() {
         val visibility =
             NativeParticipantUi.resolveNativeContentVisibility(
                 state = 7,
@@ -494,7 +494,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeDotStateUsesSystemDotWithoutCombinedRenderer() {
+    fun dotStateUsesSystemDot() {
         val visibility =
             NativeParticipantUi.resolveNativeContentVisibility(
                 state = 8,
@@ -508,7 +508,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeHiddenStateKeepsShellButDrawsNoCombinedContent() {
+    fun hiddenStateKeepsEmptyShell() {
         val visibility =
             NativeParticipantUi.resolveNativeContentVisibility(
                 state = 9,
@@ -536,7 +536,7 @@ class NativeParticipantPresentationTest {
 
 
     @Test
-    fun validatedMasterSwitchUsesNativeRemoveLifecycle() {
+    fun validatedSwitchUsesNativeRemove() {
         assertEquals(
             false,
             NativeParticipantUi.resolveNativeFeatureRemoveFlag(
@@ -554,7 +554,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun unvalidatedMasterSwitchStaysOnBootstrapFallback() {
+    fun unvalidatedSwitchUsesBootstrap() {
         assertEquals(
             null,
             NativeParticipantUi.resolveNativeFeatureRemoveFlag(
@@ -565,7 +565,7 @@ class NativeParticipantPresentationTest {
     }
 
     @Test
-    fun nativeVisibleStateNamesResolveWithoutAssumingNumericOrder() {
+    fun visibleStateNamesIgnoreOrdinal() {
         val states =
             NativeParticipantUi.resolveNativeVisibilityStates { candidate ->
                 when (candidate) {

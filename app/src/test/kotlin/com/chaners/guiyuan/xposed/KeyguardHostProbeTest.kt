@@ -25,7 +25,7 @@ class KeyguardHostProbeTest {
     }
 
     @Test
-    fun hostGuardAcceptsOnlyPinnedMiuiKeyguardHost() {
+    fun hostGuardAcceptsPinnedHost() {
         assertTrue(
             KeyguardHostProbe.isKeyguardHostClassName(
                 "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
@@ -39,7 +39,7 @@ class KeyguardHostProbeTest {
     }
 
     @Test
-    fun sampleFreezesOnlyAfterPositiveReadyTopology() {
+    fun sampleFreezesAfterReadyTopology() {
         assertTrue(
             KeyguardHostProbe.shouldFreezeSample(
                 hostAttached = true,

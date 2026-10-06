@@ -6,7 +6,7 @@ import org.junit.Test
 
 class KeyguardAodSourceTest {
     @Test
-    fun pinnedToggleAodContractRequiresSingleBooleanParameter() {
+    fun toggleAodContractNeedsOneBool() {
         assertTrue(
             KeyguardAodSource.matchesToggleAodSignature(
                 parameterTypes = arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
@@ -28,7 +28,7 @@ class KeyguardAodSourceTest {
     }
 
     @Test
-    fun stableAodRequiresTargetAodWithNativeAnimationFinished() {
+    fun stableAodNeedsFinishedAnimation() {
         assertTrue(KeyguardAodSource.isStableAod(true, false))
         assertFalse(KeyguardAodSource.isStableAod(true, true))
         assertFalse(KeyguardAodSource.isStableAod(false, false))
@@ -36,7 +36,7 @@ class KeyguardAodSourceTest {
     }
 
     @Test
-    fun anyNativeAodSignalBlocksKeyguardProjection() {
+    fun nativeAodBlocksKeyguard() {
         assertFalse(KeyguardAodSource.blocksKeyguardProjection(false, false, false))
         assertTrue(KeyguardAodSource.blocksKeyguardProjection(true, false, false))
         assertTrue(KeyguardAodSource.blocksKeyguardProjection(false, true, false))

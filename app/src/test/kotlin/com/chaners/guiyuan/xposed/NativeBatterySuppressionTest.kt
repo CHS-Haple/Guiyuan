@@ -8,7 +8,7 @@ import org.junit.Test
 
 class NativeBatterySuppressionTest {
     @Test
-    fun replacementDoesNotOverrideNativeVisibleLayout() {
+    fun replacementKeepsNativeLayout() {
         assertFalse(
             NativeBatterySuppression.resolveNativeLayoutHide(
                 nativeRequestedHide = false,
@@ -17,7 +17,7 @@ class NativeBatterySuppressionTest {
     }
 
     @Test
-    fun nativeHideRemainsAuthoritativeWhileReplacementIsActive() {
+    fun nativeHideStaysAuthoritative() {
         assertTrue(
             NativeBatterySuppression.resolveNativeLayoutHide(
                 nativeRequestedHide = true,
@@ -26,7 +26,7 @@ class NativeBatterySuppressionTest {
     }
 
     @Test
-    fun activeSuppressionKeepsChargingSlotButRemovesGlyph() {
+    fun suppressionKeepsSlotRemovesGlyph() {
         assertEquals(
             View.INVISIBLE,
             NativeBatterySuppression.resolveChargingPresentationVisibility(
@@ -48,7 +48,7 @@ class NativeBatterySuppressionTest {
     }
 
     @Test
-    fun activeSuppressionPreservesNativeInvisibleState() {
+    fun suppressionKeepsNativeHidden() {
         assertEquals(
             View.INVISIBLE,
             NativeBatterySuppression.resolveChargingPresentationVisibility(
@@ -59,7 +59,7 @@ class NativeBatterySuppressionTest {
     }
 
     @Test
-    fun inactiveSuppressionPreservesNativeVisibility() {
+    fun inactiveKeepsNativeVisibility() {
         assertEquals(
             View.VISIBLE,
             NativeBatterySuppression.resolveChargingPresentationVisibility(
