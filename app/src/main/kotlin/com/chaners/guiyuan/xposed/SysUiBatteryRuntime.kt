@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiBatteryRuntimeOwner {
+internal object SysUiBatteryRuntime {
     private var current: AttachResult? = null
 
     val installedHookCount: Int

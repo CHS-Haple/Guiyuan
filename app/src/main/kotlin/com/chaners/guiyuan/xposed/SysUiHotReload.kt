@@ -4,7 +4,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
 
-internal object SystemUiHotReloadRuntimeOwner {
+internal object SysUiHotReload {
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,

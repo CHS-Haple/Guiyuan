@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiNetworkRuntimeOwner {
+internal object SysUiNetworkRuntime {
     private var current: SysUiNetworkSource.InstallResult? = null
 
     val installedHookCount: Int

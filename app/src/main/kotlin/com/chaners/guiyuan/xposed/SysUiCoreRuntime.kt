@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.content.Context
 
-internal object SystemUiCoreRuntimeOwner {
+internal object SysUiCoreRuntime {
     internal data class AttachResult(
         val airplaneReady: Boolean,
         val defaultDataSubscriptionReady: Boolean,

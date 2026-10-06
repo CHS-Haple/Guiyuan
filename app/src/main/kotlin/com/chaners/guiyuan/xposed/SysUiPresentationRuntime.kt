@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.graphics.drawable.Drawable
 import io.github.libxposed.api.XposedModule
 
-internal object SystemUiPresentationRuntimeOwner {
+internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
 
     val installedHookCount: Int
