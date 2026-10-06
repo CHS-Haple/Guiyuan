@@ -36,10 +36,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GyApp(
-    settings: Appearance,
-    darkMode: Boolean,
-    appLanguage: AppLang,
-    launcherIconHidden: Boolean,
+    appearance: Appearance,
+    dark: Boolean,
+    lang: AppLang,
+    iconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorEnabledChange: (Boolean) -> Unit,
@@ -51,8 +51,8 @@ internal fun GyApp(
     onLauncherIconHiddenChange: (Boolean) -> Unit,
 ) {
     GyTheme(
-        themeMode = settings.theme,
-        dynamicColorEnabled = settings.dynamicColor,
+        themeMode = appearance.theme,
+        dynamicColorEnabled = appearance.dynamicColor,
     ) {
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
@@ -120,7 +120,7 @@ internal fun GyApp(
 
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
         val swipeBackDirection = when {
-            !settings.swipeBack -> NavSwipeDirection.None
+            !appearance.swipeBack -> NavSwipeDirection.None
             LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
             else -> NavSwipeDirection.RightToLeft
         }
@@ -148,10 +148,10 @@ internal fun GyApp(
         ) {
             entry<AppRoute.Home> {
                 MainHub(
-                    settings = settings,
-                    darkMode = darkMode,
-                    appLanguage = appLanguage,
-                    launcherIconHidden = launcherIconHidden,
+                    settings = appearance,
+                    darkMode = dark,
+                    appLanguage = lang,
+                    launcherIconHidden = iconHidden,
                     onHotReload = onHotReload,
                     onAppLangChange = onAppLangChange,
                     onLauncherIconHiddenChange = onLauncherIconHiddenChange,
@@ -162,8 +162,8 @@ internal fun GyApp(
             }
             entry<AppRoute.Appearance>(swipeDismiss = swipeBackDirection) {
                 AppearanceScreen(
-                    settings = settings,
-                    darkMode = darkMode,
+                    settings = appearance,
+                    darkMode = dark,
                     onThemeModeChange = onThemeModeChange,
                     onDynamicColorEnabledChange = onDynamicColorEnabledChange,
                     onFloatingNavigationBarEnabledChange =
