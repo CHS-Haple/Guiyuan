@@ -643,7 +643,7 @@ class GyModule : XposedModule() {
                 isTransitionProbeEnabled = { detailedDiagnosticsEnabled },
                 onSlotOrderResult = { slotOrder ->
                     when (slotOrder) {
-                        is NativeStatusBarSlotReservation.Result.Ready -> {
+                        is NativeSlotOrder.Result.Ready -> {
                             logDiagnostic(
                                 level = Log.INFO,
                                 event = "slot.reserve",
@@ -662,7 +662,7 @@ class GyModule : XposedModule() {
                             )
                         }
 
-                        is NativeStatusBarSlotReservation.Result.Failure -> {
+                        is NativeSlotOrder.Result.Failure -> {
                             logDiagnostic(
                                 level = Log.WARN,
                                 event = "slot.reserve",
@@ -1060,7 +1060,7 @@ class GyModule : XposedModule() {
             } else {
                 update
             }
-        ControlCenterTransitionOwner.onSourceUpdate(transitionUpdate)
+        CcTransitionOwner.onSourceUpdate(transitionUpdate)
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1068,7 +1068,7 @@ class GyModule : XposedModule() {
             lastBatteryNumberProbeSummary == null
         ) {
             val batteryNumberProbe =
-                ControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
+                CcTransitionOwner.latestBatteryNumberProbeDiagnostic()
             if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeSummary = batteryNumberProbe
                 logDiagnostic(
@@ -1095,12 +1095,12 @@ class GyModule : XposedModule() {
             // for the lifetime of the native fake root; only the Combined
             // overlay visibility changes with Control Center visibility.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
-            ControlCenterRenderSession.setRequestedVisible(false)
+            CcRenderSession.setRequestedVisible(false)
             return null
         }
 
         controlCenterSceneVisible = true
-        if (!ControlCenterRenderSession.beginVisibleCycle()) {
+        if (!CcRenderSession.beginVisibleCycle()) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.WARN,
@@ -1153,7 +1153,7 @@ class GyModule : XposedModule() {
         val prepareFailure = prepareCcFake(carrier, "visible-fallback")
         if (prepareFailure == null) {
             val ready =
-                ControlCenterRenderSession.setRequestedVisible(true)
+                CcRenderSession.setRequestedVisible(true)
             if (!ready) {
                 HomeRenderSession.onControlCenterAuthorityChanged(true)
             }
@@ -1209,8 +1209,8 @@ class GyModule : XposedModule() {
         }
 
         controlCenterSceneEligible = nextEligible
-        ControlCenterRenderSession.setSceneEligible(nextEligible)
-        ControlCenterTransitionOwner.setSceneEligible(nextEligible)
+        CcRenderSession.setSceneEligible(nextEligible)
+        CcTransitionOwner.setSceneEligible(nextEligible)
         logDiagnostic(
             level = Log.INFO,
             event = "scene.eligibility",
@@ -1388,7 +1388,7 @@ class GyModule : XposedModule() {
         transferredCompactReady: Boolean,
     ): String {
         val failure =
-            ControlCenterRenderSession.restoreLaidOutHostAfterHotReload(
+            CcRenderSession.restoreLaidOutHostAfterHotReload(
                 host = host,
                 onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1410,7 +1410,7 @@ class GyModule : XposedModule() {
         }
 
         val compactReady =
-            ControlCenterRenderSession
+            CcRenderSession
                 .currentNativePresentationReadyForHotReload()
         logDiagnostic(
             level = Log.INFO,
@@ -1437,14 +1437,14 @@ class GyModule : XposedModule() {
     private fun onCcFakeAttached(host: ViewGroup) {
         when (
             val result =
-                ControlCenterRenderSession.prearmAfterNextNativeLayout(
+                CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
                     onEvent = ::onCcEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 )
         ) {
-            is ControlCenterRenderSession.PrearmResult.Scheduled -> {
+            is CcRenderSession.PrearmResult.Scheduled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "projection.prearm",
@@ -1457,7 +1457,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is ControlCenterRenderSession.PrearmResult.Failure -> {
+            is CcRenderSession.PrearmResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.prearm",
@@ -1476,7 +1476,7 @@ class GyModule : XposedModule() {
         source: String,
     ): String? {
         val failure =
-            ControlCenterRenderSession.attach(
+            CcRenderSession.attach(
                 host = host,
                 onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1497,7 +1497,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
-        ControlCenterTransitionOwner.onProjectionReadinessChanged(ready)
+        CcTransitionOwner.onProjectionReadinessChanged(ready)
         if (!controlCenterSceneVisible) {
             return
         }
@@ -1540,13 +1540,13 @@ class GyModule : XposedModule() {
             SysUiPresentationOwner.updateControlCenterSourceScene(SourceScene.UNKNOWN)
         }
         safely {
-            ControlCenterTransitionOwner.setSceneEligible(false)
+            CcTransitionOwner.setSceneEligible(false)
         }
         safely {
-            ControlCenterTransitionOwner.detach("panel-runtime-failure")
+            CcTransitionOwner.detach("panel-runtime-failure")
         }
         safely {
-            ControlCenterRenderSession.setSceneEligible(false)
+            CcRenderSession.setSceneEligible(false)
         }
         safely {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
@@ -1792,13 +1792,13 @@ class GyModule : XposedModule() {
     ) {
         HomeRenderSession.onState(snapshot, trace)
         KeyguardRenderSession.onState(snapshot)
-        ControlCenterRenderSession.onState(snapshot)
+        CcRenderSession.onState(snapshot)
     }
 
     private fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
         HomeRenderSession.onPresentationStateChanged(trace)
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterRenderSession.onPresentationStateChanged()
+        CcRenderSession.onPresentationStateChanged()
         refreshStatusIconObservation("presentation")
     }
 
@@ -1817,7 +1817,7 @@ class GyModule : XposedModule() {
             state.appliedTint,
         )
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterRenderSession.onPresentationStateChanged()
+        CcRenderSession.onPresentationStateChanged()
 
         if (changed != null) {
             val presentationTrace = markPresentationCommitted(trace)
@@ -1857,7 +1857,7 @@ class GyModule : XposedModule() {
             )
         val resolvedUpdate = update.copy(state = resolvedState)
         HomeRenderSession.onTintUpdate(resolvedUpdate)
-        ControlCenterRenderSession.onTintUpdate(resolvedUpdate)
+        CcRenderSession.onTintUpdate(resolvedUpdate)
         if (detailedDiagnosticsEnabled) {
             log(
                 Log.INFO,
@@ -3438,8 +3438,8 @@ class GyModule : XposedModule() {
         aodRendererAttached = false
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
-        ControlCenterTransitionOwner.detach("hotReload-oldGeneration")
-        ControlCenterRenderSession.detach(
+        CcTransitionOwner.detach("hotReload-oldGeneration")
+        CcRenderSession.detach(
             source = "hotReload-oldGeneration",
             releaseNativePresentation = !continuousHandoff,
         )
@@ -4332,7 +4332,7 @@ class GyModule : XposedModule() {
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
-        ControlCenterRenderSession.onFeatureCfgChanged(cfg)
+        CcRenderSession.onFeatureCfgChanged(cfg)
 
         if (!cfg.enabled) {
             releaseFeatureOwnership("feature-disabled")
@@ -4380,8 +4380,8 @@ class GyModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardCcLeaseActive = false
-        ControlCenterRenderSession.setSceneEligible(false)
-        ControlCenterTransitionOwner.setSceneEligible(false)
+        CcRenderSession.setSceneEligible(false)
+        CcTransitionOwner.setSceneEligible(false)
         SysUiPresentationOwner.deactivateControlCenter(source)
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
@@ -4457,7 +4457,7 @@ class GyModule : XposedModule() {
 
         HomeRenderSession.onVisualCfgChanged(visual)
         KeyguardRenderSession.onVisualCfgChanged(visual)
-        ControlCenterRenderSession.onVisualCfgChanged(visual)
+        CcRenderSession.onVisualCfgChanged(visual)
         SysUiPresentationOwner.onVisualCfgChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(

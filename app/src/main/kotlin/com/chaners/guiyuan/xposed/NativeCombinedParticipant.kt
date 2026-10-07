@@ -117,7 +117,7 @@ internal object NativeCombinedParticipant {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
-        onSlotOrderResult: ((NativeStatusBarSlotReservation.Result) -> Unit)? = null,
+        onSlotOrderResult: ((NativeSlotOrder.Result) -> Unit)? = null,
         isTransitionProbeEnabled: () -> Boolean = { false },
     ): String? {
         if (installedHookCount == HOOK_COUNT) {
@@ -283,7 +283,7 @@ internal object NativeCombinedParticipant {
                 ?: return "controller-registry-constructor-missing"
         val iconListParameterIndex =
             constructor.parameterTypes.indexOfFirst { type ->
-                type.name == NativeStatusBarSlotReservation.STATUS_BAR_ICON_LIST
+                type.name == NativeSlotOrder.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
             return "controller-icon-list-parameter-missing"
@@ -494,18 +494,17 @@ internal object NativeCombinedParticipant {
                             val slotPreparation =
                                 when (
                                     val result =
-                                        NativeStatusBarSlotReservation.reserveTail(
+                                        NativeSlotOrder.reserveTail(
                                             iconList = iconList,
                                             slot = SLOT,
                                         )
                                 ) {
-                                    is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                                    is NativeSlotOrder.Result.Ready ->
                                         result
 
-                                    is NativeStatusBarSlotReservation.ReservationResult.Failure -> {
-                                        onSlotOrderResult?.invoke(result.result)
-                                        onEvent?.invoke(result.result.logLine)
-                                        recordFailure("slot-predeclare-" + result.result.reason)
+                                    is NativeSlotOrder.Result.Failure -> {
+                                        onSlotOrderResult?.invoke(result)
+                                        recordFailure("slot-predeclare-" + result.reason)
                                         return@Hooker chain.proceed()
                                     }
                                 }
@@ -525,7 +524,7 @@ internal object NativeCombinedParticipant {
                             if (!replaced) {
                                 val slotRolledBack = slotReservation.rollback()
                                 val slotFailure =
-                                    NativeStatusBarSlotReservation.Result.Failure(
+                                    NativeSlotOrder.Result.Failure(
                                         if (slotRolledBack) {
                                             "transaction-aborted-registry-replacement"
                                         } else {
@@ -533,7 +532,6 @@ internal object NativeCombinedParticipant {
                                         },
                                     )
                                 onSlotOrderResult?.invoke(slotFailure)
-                                onEvent?.invoke(slotFailure.logLine)
                                 recordFailure("registry-replacement-failed")
                                 return@Hooker chain.proceed()
                             }
@@ -544,8 +542,7 @@ internal object NativeCombinedParticipant {
                             try {
                                 val result = chain.proceed()
                                 controllerCreated = true
-                                onSlotOrderResult?.invoke(slotPreparation.result)
-                                onEvent?.invoke(slotPreparation.result.logLine)
+                                onSlotOrderResult?.invoke(slotPreparation)
                                 onEvent?.invoke(
                                     "nativeCombinedParticipant injected slot=" + SLOT +
                                         " registryOriginal=" + original.size +
@@ -561,7 +558,7 @@ internal object NativeCombinedParticipant {
                                 if (!controllerCreated) {
                                     val slotRolledBack = slotReservation.rollback()
                                     val slotFailure =
-                                        NativeStatusBarSlotReservation.Result.Failure(
+                                        NativeSlotOrder.Result.Failure(
                                             if (slotRolledBack) {
                                                 "transaction-aborted-controller-construction"
                                             } else {
@@ -569,7 +566,6 @@ internal object NativeCombinedParticipant {
                                             },
                                         )
                                     onSlotOrderResult?.invoke(slotFailure)
-                                    onEvent?.invoke(slotFailure.logLine)
                                     injected = false
                                     failureReason =
                                         if (slotRolledBack) {
@@ -720,16 +716,16 @@ internal object NativeCombinedParticipant {
         val slotPreparation =
             when (
                 val result =
-                    NativeStatusBarSlotReservation.reserveTail(
+                    NativeSlotOrder.reserveTail(
                         iconList = iconList,
                         slot = SLOT,
                     )
             ) {
-                is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                is NativeSlotOrder.Result.Ready ->
                     result
-                is NativeStatusBarSlotReservation.ReservationResult.Failure ->
+                is NativeSlotOrder.Result.Failure ->
                     return HotReloadAdoptResult.Failure(
-                        "slot-reservation-" + result.result.reason,
+                        "slot-reservation-" + result.reason,
                     )
             }
 

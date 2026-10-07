@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ControlCenterTransitionOwnerTest {
+class CcTransitionOwnerTest {
     @Test
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(
@@ -33,7 +33,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateGeometry(
+            CcTransitionPolicy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -165,7 +165,7 @@ class ControlCenterTransitionOwnerTest {
             )
 
         val follower =
-            ControlCenterTransitionPolicy.followAnchorGeometry(
+            CcTransitionPolicy.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -182,7 +182,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = ControlCenterTransitionPolicy
+        val policy = CcTransitionPolicy
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -220,7 +220,7 @@ class ControlCenterTransitionOwnerTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = ControlCenterTransitionPolicy
+        val policy = CcTransitionPolicy
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
@@ -312,7 +312,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -329,7 +329,7 @@ class ControlCenterTransitionOwnerTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,

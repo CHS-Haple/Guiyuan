@@ -4,11 +4,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ControlCenterRenderSessionTest {
+class CcRenderSessionTest {
     @Test
     fun projectionReadinessRequiresPreparedFakeRootAndCompactPresentation() {
         assertTrue(
-            ControlCenterRenderSession.resolveProjectionReady(
+            CcRenderSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -19,7 +19,7 @@ class ControlCenterRenderSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterRenderSession.resolveProjectionReady(
+            CcRenderSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = false,
                 modelReady = true,
@@ -30,7 +30,7 @@ class ControlCenterRenderSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterRenderSession.resolveProjectionReady(
+            CcRenderSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -41,7 +41,7 @@ class ControlCenterRenderSessionTest {
             ),
         )
         assertFalse(
-            ControlCenterRenderSession.resolveProjectionReady(
+            CcRenderSession.resolveProjectionReady(
                 featureEnabled = true,
                 sceneEligible = true,
                 modelReady = true,
@@ -55,22 +55,22 @@ class ControlCenterRenderSessionTest {
     @Test
     fun firstLayoutRetryOnlyCoversEarlyGeometryReadinessFailures() {
         assertTrue(
-            ControlCenterRenderSession.isFirstLayoutRetryable(
+            CcRenderSession.isFirstLayoutRetryable(
                 "battery-core-width-unavailable",
             ),
         )
         assertTrue(
-            ControlCenterRenderSession.isFirstLayoutRetryable(
+            CcRenderSession.isFirstLayoutRetryable(
                 "fake-status-bar-area-unresolved",
             ),
         )
         assertFalse(
-            ControlCenterRenderSession.isFirstLayoutRetryable(
+            CcRenderSession.isFirstLayoutRetryable(
                 "fake-root-type-mismatch",
             ),
         )
         assertFalse(
-            ControlCenterRenderSession.isFirstLayoutRetryable(
+            CcRenderSession.isFirstLayoutRetryable(
                 "ignored-slots-field-unavailable",
             ),
         )
@@ -80,7 +80,7 @@ class ControlCenterRenderSessionTest {
     @Test
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
         assertTrue(
-            ControlCenterRenderSession
+            CcRenderSession
                 .canRestoreAfterReload(
                     attached = true,
                     inLayout = false,
@@ -89,7 +89,7 @@ class ControlCenterRenderSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterRenderSession
+            CcRenderSession
                 .canRestoreAfterReload(
                     attached = true,
                     inLayout = true,
@@ -98,7 +98,7 @@ class ControlCenterRenderSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterRenderSession
+            CcRenderSession
                 .canRestoreAfterReload(
                     attached = true,
                     inLayout = false,
@@ -107,7 +107,7 @@ class ControlCenterRenderSessionTest {
                 ),
         )
         assertFalse(
-            ControlCenterRenderSession
+            CcRenderSession
                 .canRestoreAfterReload(
                     attached = false,
                     inLayout = false,

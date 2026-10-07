@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeStatusBarSlotReservation {
+internal object NativeSlotOrder {
     const val STATUS_BAR_ICON_LIST =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconList"
 
@@ -11,9 +11,9 @@ internal object NativeStatusBarSlotReservation {
     fun reserveTail(
         iconList: Any,
         slot: String,
-    ): ReservationResult {
+    ): Result {
         if (iconList.javaClass.name != STATUS_BAR_ICON_LIST) {
-            return ReservationResult.Failure(
+            return Result.Failure(
                 Result.Failure("status-bar-icon-list-type-mismatch"),
             )
         }
@@ -21,17 +21,17 @@ internal object NativeStatusBarSlotReservation {
         @Suppress("UNCHECKED_CAST")
         val slots =
             readField(iconList, SLOTS_FIELD) as? MutableList<Any?>
-                ?: return ReservationResult.Failure(
+                ?: return Result.Failure(
                     Result.Failure("slot-list-unreadable"),
                 )
         val viewOnlySlots =
             readField(iconList, VIEW_ONLY_SLOTS_FIELD) as? List<*>
-                ?: return ReservationResult.Failure(
+                ?: return Result.Failure(
                     Result.Failure("view-only-slot-list-unreadable"),
                 )
 
         if (!sameBackingProjection(slots, viewOnlySlots)) {
-            return ReservationResult.Failure(
+            return Result.Failure(
                 Result.Failure("view-only-slot-projection-mismatch"),
             )
         }
@@ -42,7 +42,7 @@ internal object NativeStatusBarSlotReservation {
             }
         if (existingIndices.isNotEmpty()) {
             if (existingIndices.size != 1) {
-                return ReservationResult.Failure(
+                return Result.Failure(
                     Result.Failure("existing-slot-duplicate"),
                 )
             }
@@ -51,23 +51,21 @@ internal object NativeStatusBarSlotReservation {
                 existingIndex != slots.lastIndex ||
                 viewOnlySlots.getOrNull(existingIndex) !== slots[existingIndex]
             ) {
-                return ReservationResult.Failure(
+                return Result.Failure(
                     Result.Failure("existing-slot-not-tail"),
                 )
             }
-            return ReservationResult.Ready(
+            return Result.Ready(
+
                 reservation = Reservation.noOp(),
-                result =
-                    Result.Ready(
-                        created = false,
+created = false,
                         nativeIndex = existingIndex,
                         fromIndex = existingIndex,
                         toIndex = existingIndex,
                         slotCount = slots.size,
                         viewOnlySynced = true,
                         originalOrderPreserved = true,
-                    ),
-            )
+        )
         }
 
         val findOrInsert =
@@ -80,7 +78,7 @@ internal object NativeStatusBarSlotReservation {
                         ) &&
                         method.returnType == Integer.TYPE
                 }
-                ?: return ReservationResult.Failure(
+                ?: return Result.Failure(
                     Result.Failure("find-or-insert-slot-method-missing"),
                 )
         findOrInsert.isAccessible = true
@@ -91,7 +89,7 @@ internal object NativeStatusBarSlotReservation {
                 (findOrInsert.invoke(iconList, slot) as Number).toInt()
             }.getOrElse { error ->
                 val restored = restore(slots, viewOnlySlots, original)
-                return ReservationResult.Failure(
+                return Result.Failure(
                     Result.Failure(
                         if (restored) {
                             "find-or-insert-slot-" +
@@ -112,7 +110,7 @@ internal object NativeStatusBarSlotReservation {
             slots.size != original.size + 1
         ) {
             val restored = restore(slots, viewOnlySlots, original)
-            return ReservationResult.Failure(
+            return Result.Failure(
                 Result.Failure(
                     if (restored) {
                         "slot-create-verification-failed"
@@ -132,7 +130,7 @@ internal object NativeStatusBarSlotReservation {
             }
         if (mutation.isFailure) {
             val restored = restore(slots, viewOnlySlots, original)
-            return ReservationResult.Failure(
+            return Result.Failure(
                 Result.Failure(
                     if (restored) {
                         "slot-tail-placement-" +
@@ -160,7 +158,7 @@ internal object NativeStatusBarSlotReservation {
 
         if (!tailReady) {
             val restored = restore(slots, viewOnlySlots, original)
-            return ReservationResult.Failure(
+            return Result.Failure(
                 Result.Failure(
                     if (restored) {
                         "slot-tail-verification-failed"
@@ -171,23 +169,21 @@ internal object NativeStatusBarSlotReservation {
             )
         }
 
-        return ReservationResult.Ready(
+        return Result.Ready(
+
             reservation =
                 Reservation(
                     slots = slots,
                     viewOnlySlots = viewOnlySlots,
                     original = original,
                 ),
-            result =
-                Result.Ready(
-                    created = true,
+created = true,
                     nativeIndex = nativeIndex,
                     fromIndex = createdIndex,
                     toIndex = toIndex,
                     slotCount = slots.size,
                     viewOnlySynced = true,
                     originalOrderPreserved = true,
-                ),
         )
     }
 
@@ -292,21 +288,9 @@ internal object NativeStatusBarSlotReservation {
         }
     }
 
-    internal sealed interface ReservationResult {
+    internal sealed interface Result {
         data class Ready(
             val reservation: Reservation,
-            val result: Result.Ready,
-        ) : ReservationResult
-
-        data class Failure(
-            val result: Result.Failure,
-        ) : ReservationResult
-    }
-
-    internal sealed interface Result {
-        val logLine: String
-
-        data class Ready(
             val created: Boolean,
             val nativeIndex: Int,
             val fromIndex: Int,
@@ -314,30 +298,10 @@ internal object NativeStatusBarSlotReservation {
             val slotCount: Int,
             val viewOnlySynced: Boolean,
             val originalOrderPreserved: Boolean,
-        ) : Result {
-            override val logLine: String
-                get() =
-                    "nativeSlotOrder reserved slot=" +
-                        NativeCombinedParticipant.SLOT +
-                        " created=" + created +
-                        " nativeIndex=" + nativeIndex +
-                        " from=" + fromIndex +
-                        " to=" + toIndex +
-                        " slots=" + slotCount +
-                        " viewOnlySynced=" + viewOnlySynced +
-                        " originalOrderPreserved=" + originalOrderPreserved +
-                        " mode=controller-pre-init"
-        }
+        ) : Result
 
         data class Failure(
             val reason: String,
-        ) : Result {
-            override val logLine: String
-                get() =
-                    "nativeSlotOrder unchanged slot=" +
-                        NativeCombinedParticipant.SLOT +
-                        " reason=" + reason +
-                        " mode=controller-pre-init"
-        }
+        ) : Result
     }
 }
