@@ -107,7 +107,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        val compatibility = SystemUiCompatibilityProbe.inspect(param.classLoader)
+        val compatibility = SysUiCompatibilityProbe.inspect(param.classLoader)
         log(Log.INFO, TAG, compatibility.summary)
         val statusHostAvailable = compatibility.isAvailable("statusHost")
         logDiagnostic(
