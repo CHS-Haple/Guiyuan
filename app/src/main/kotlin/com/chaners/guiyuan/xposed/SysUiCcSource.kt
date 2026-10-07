@@ -10,11 +10,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 
 internal object SysUiCcSource {
-    const val CONTROL_CENTER_RUNTIME_HOOK_COUNT = 4
-    const val CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT = 0
-    const val HOOK_COUNT =
-        CONTROL_CENTER_RUNTIME_HOOK_COUNT +
-            CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT
+    const val HOOK_COUNT = 4
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
@@ -29,11 +25,7 @@ internal object SysUiCcSource {
         "com.android.systemui.controlcenter.shade.CombinedHeaderController"
     private const val CONTROL_CENTER_FAKE_STATUS_BAR_CLASS =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
-    private const val CC_FAKE_STATUS_BAR_ICONS_CLASS =
-        "com.android.systemui.controlcenter.header.CcFakeStatusBarIcons"
     private const val DAGGER_LAZY_CLASS = "dagger.Lazy"
-    private const val STATUS_BAR_ANCHOR_CLASS =
-        "com.android.systemui.controlcenter.shade.StatusBarAnchorBounds"
 
     private const val CONTROL_CENTER_EXPANSION_HOOK_ID =
         "combinedstatus.panel.control-center.expansion"
@@ -59,7 +51,6 @@ internal object SysUiCcSource {
         onRuntimeFailure: ((Throwable) -> Unit)? = null,
         onEvent: ((String) -> Unit)? = null,
         isProbeEnabled: () -> Boolean = { false },
-        includeDiagnostics: Boolean = true,
     ): List<HookHandle> {
         val ccClass =
             Class.forName(CONTROL_CENTER_CLASS, false, classLoader)
@@ -113,9 +104,7 @@ internal object SysUiCcSource {
             )
 
         val handles =
-            ArrayList<HookHandle>(
-                expectedHookCount(includeDiagnostics),
-            )
+            ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
                 module
@@ -442,10 +431,6 @@ internal object SysUiCcSource {
     internal fun nativeFraction(value: Float?): Float? =
         value?.takeIf { it.isFinite() }
 
-    internal fun expectedHookCount(includeDiagnostics: Boolean): Int =
-        CONTROL_CENTER_RUNTIME_HOOK_COUNT +
-            if (includeDiagnostics) CONTROL_CENTER_DIAGNOSTIC_HOOK_COUNT else 0
-
     fun currentHomeEligibility(): Boolean? =
         homeEligible
 
@@ -474,12 +459,6 @@ internal object SysUiCcSource {
         val contract = anchorContract ?: return null
         val header = resolveHeader(delegate) ?: return null
         return contract.fakePresentationRoot(header)
-    }
-
-    private fun captureAnchor(delegate: Any?): AnchorSnapshot? {
-        val contract = anchorContract ?: return null
-        val header = resolveHeader(delegate) ?: return null
-        return contract.snapshot(header)
     }
 
     private fun resolveTransitionEndpoints(
@@ -606,7 +585,6 @@ internal object SysUiCcSource {
         val appearanceAnimated: Boolean? = null,
         val transitionEndpoints: TransitionEndpoints? = null,
         val batteryIslandActive: Boolean? = null,
-        val anchor: AnchorSnapshot? = null,
     )
 
     internal enum class Source(
@@ -620,85 +598,16 @@ internal object SysUiCcSource {
         val finalRoot: ViewGroup,
     )
 
-    internal data class FakePresentationSnapshot(
-        val rootClassName: String?,
-        val rootVisibility: Int?,
-        val rootAlpha: Float?,
-        val rootWidth: Int?,
-        val rootHeight: Int?,
-        val statusBarAreaClassName: String?,
-        val statusBarAreaVisibility: Int?,
-        val statusBarAreaAlpha: Float?,
-        val statusBarAreaWidth: Int?,
-        val statusBarAreaHeight: Int?,
-    ) {
-        val summary: String
-            get() =
-                "{root=" + (rootClassName ?: "unknown") +
-                    "(v=" + (rootVisibility ?: "unknown") +
-                    ",a=" + (rootAlpha ?: "unknown") +
-                    ",w=" + (rootWidth ?: "unknown") +
-                    ",h=" + (rootHeight ?: "unknown") +
-                    "),statusBarArea=" + (statusBarAreaClassName ?: "unknown") +
-                    "(v=" + (statusBarAreaVisibility ?: "unknown") +
-                    ",a=" + (statusBarAreaAlpha ?: "unknown") +
-                    ",w=" + (statusBarAreaWidth ?: "unknown") +
-                    ",h=" + (statusBarAreaHeight ?: "unknown") +
-                    ")}"
-    }
-
-    internal data class AnchorSnapshot(
-        val systemIconsX: Int?,
-        val systemIconsWidth: Int?,
-        val statusIconsX: Int?,
-        val statusIconsWidth: Int?,
-        val batteryWidth: Int?,
-        val realSystemIconsWidth: Int?,
-        val normalStatusBarTranslationX: Int?,
-        val normalStatusIconsTranslationX: Int?,
-        val batteryWidthDiff: Int?,
-        val addBatteryIsland: Boolean?,
-        val expanding: Boolean?,
-    ) {
-        val summary: String
-            get() =
-                "{" +
-                    "systemIconsX=" + (systemIconsX ?: "unknown") +
-                    ",systemIconsWidth=" + (systemIconsWidth ?: "unknown") +
-                    ",statusIconsX=" + (statusIconsX ?: "unknown") +
-                    ",statusIconsWidth=" + (statusIconsWidth ?: "unknown") +
-                    ",batteryWidth=" + (batteryWidth ?: "unknown") +
-                    ",realSystemIconsWidth=" + (realSystemIconsWidth ?: "unknown") +
-                    ",normalStatusBarTx=" + (normalStatusBarTranslationX ?: "unknown") +
-                    ",normalStatusIconsTx=" + (normalStatusIconsTranslationX ?: "unknown") +
-                    ",batteryWidthDiff=" + (batteryWidthDiff ?: "unknown") +
-                    ",addBatteryIsland=" + (addBatteryIsland ?: "unknown") +
-                    ",expanding=" + (expanding ?: "unknown") +
-                    "}"
-    }
-
     private class AnchorContract(
         private val callbackClass: Class<*>,
         private val callbacksField: Field,
         private val callbackOuterField: Field,
-        private val statusBarAnchorField: Field,
-        private val normalStatusBarTranslationXField: Field,
-        private val statusIconsTranslationXField: Field,
-        private val batteryWidthDiffField: Field,
         private val addBatteryIslandField: Field,
-        private val expandingField: Field,
         private val realSystemIconsField: Field,
         private val headerControllerField: Field,
         private val lazyGetMethod: Method,
         private val fakeStatusBarField: Field,
         private val statusBarField: Field,
-        private val fakeDelegateField: Field,
-        private val fakeStatusBarAreaField: Field,
-        private val systemIconsLocationField: Field,
-        private val systemIconsWidthField: Field,
-        private val statusIconsLocationField: Field,
-        private val statusIconsWidthField: Field,
-        private val batteryWidthField: Field,
     ) {
         fun resolveHeader(delegate: Any): Any? {
             val callbacks =
@@ -745,37 +654,6 @@ internal object SysUiCcSource {
         fun batteryIslandActive(header: Any): Boolean? =
             readBoolean(addBatteryIslandField, header)
 
-        fun snapshotFromCallback(callback: Any?): AnchorSnapshot? {
-            val header = headerFromCallback(callback) ?: return null
-            return snapshot(header)
-        }
-
-        fun fakePresentationFromCallback(
-            callback: Any?,
-        ): FakePresentationSnapshot? {
-            val header = headerFromCallback(callback) ?: return null
-            val fakeRoot = fakeStatusBar(header) ?: return null
-            val delegate =
-                runCatching { fakeDelegateField.get(fakeRoot) }
-                    .getOrNull()
-                    ?: return null
-            val statusBarArea =
-                runCatching { fakeStatusBarAreaField.get(delegate) as? View }
-                    .getOrNull()
-            return FakePresentationSnapshot(
-                rootClassName = fakeRoot.javaClass.name,
-                rootVisibility = fakeRoot.visibility,
-                rootAlpha = fakeRoot.alpha,
-                rootWidth = fakeRoot.width,
-                rootHeight = fakeRoot.height,
-                statusBarAreaClassName = statusBarArea?.javaClass?.name,
-                statusBarAreaVisibility = statusBarArea?.visibility,
-                statusBarAreaAlpha = statusBarArea?.alpha,
-                statusBarAreaWidth = statusBarArea?.width,
-                statusBarAreaHeight = statusBarArea?.height,
-            )
-        }
-
         private fun headerFromCallback(callback: Any?): Any? =
             callback
                 ?.let { candidate ->
@@ -805,41 +683,6 @@ internal object SysUiCcSource {
             }.getOrNull()
         }
 
-        fun snapshot(header: Any): AnchorSnapshot? {
-            val anchor =
-                runCatching { statusBarAnchorField.get(header) }
-                    .getOrNull()
-                    ?: return null
-            val realSystemIcons =
-                runCatching { realSystemIconsField.get(header) as? View }
-                    .getOrNull()
-            val systemLocation =
-                runCatching { systemIconsLocationField.get(anchor) as? IntArray }
-                    .getOrNull()
-            val statusLocation =
-                runCatching { statusIconsLocationField.get(anchor) as? IntArray }
-                    .getOrNull()
-            return AnchorSnapshot(
-                systemIconsX = systemLocation?.getOrNull(0),
-                systemIconsWidth = readInt(systemIconsWidthField, anchor),
-                statusIconsX = statusLocation?.getOrNull(0),
-                statusIconsWidth = readInt(statusIconsWidthField, anchor),
-                batteryWidth = readInt(batteryWidthField, anchor),
-                realSystemIconsWidth = realSystemIcons?.width,
-                normalStatusBarTranslationX =
-                    readInt(normalStatusBarTranslationXField, header),
-                normalStatusIconsTranslationX =
-                    readInt(statusIconsTranslationXField, header),
-                batteryWidthDiff = readInt(batteryWidthDiffField, header),
-                addBatteryIsland = readBoolean(addBatteryIslandField, header),
-                expanding =
-                    readBoolean(expandingField, header),
-            )
-        }
-
-        private fun readInt(field: Field, target: Any): Int? =
-            runCatching { field.getInt(target) }.getOrNull()
-
         private fun readBoolean(field: Field, target: Any): Boolean? =
             runCatching { field.getBoolean(target) }.getOrNull()
 
@@ -867,27 +710,9 @@ internal object SysUiCcSource {
                             false,
                             classLoader,
                         )
-                    val fakeStatusBarClass =
-                        Class.forName(
-                            CONTROL_CENTER_FAKE_STATUS_BAR_CLASS,
-                            false,
-                            classLoader,
-                        )
-                    val fakeStatusBarIconsClass =
-                        Class.forName(
-                            CC_FAKE_STATUS_BAR_ICONS_CLASS,
-                            false,
-                            classLoader,
-                        )
                     val lazyClass =
                         Class.forName(
                             DAGGER_LAZY_CLASS,
-                            false,
-                            classLoader,
-                        )
-                    val anchorClass =
-                        Class.forName(
-                            STATUS_BAR_ANCHOR_CLASS,
                             false,
                             classLoader,
                         )
@@ -897,24 +722,8 @@ internal object SysUiCcSource {
                             delegateClass.getDeclaredField("callbacks").accessible(),
                         callbackOuterField =
                             callbackClass.getDeclaredField("this\$0").accessible(),
-                        statusBarAnchorField =
-                            headerClass.getDeclaredField("statusBarAnchor").accessible(),
-                        normalStatusBarTranslationXField =
-                            headerClass
-                                .getDeclaredField("normalControlStatusBarTranslationX")
-                                .accessible(),
-                        statusIconsTranslationXField =
-                            headerClass
-                                .getDeclaredField("normalControlStatusIconsTranslationX")
-                                .accessible(),
-                        batteryWidthDiffField =
-                            headerClass.getDeclaredField("batteryWidthDiff").accessible(),
                         addBatteryIslandField =
                             headerClass.getDeclaredField("isAddBatteryIsland").accessible(),
-                        expandingField =
-                            headerClass
-                                .getDeclaredField("isControlCenterExpanding")
-                                .accessible(),
                         realSystemIconsField =
                             headerClass.getDeclaredField("realSystemIcons").accessible(),
                         headerControllerField =
@@ -931,24 +740,6 @@ internal object SysUiCcSource {
                             combinedHeaderClass
                                 .getDeclaredField("controlCenterStatusBar")
                                 .accessible(),
-                        fakeDelegateField =
-                            fakeStatusBarClass.getDeclaredField("delegate").accessible(),
-                        fakeStatusBarAreaField =
-                            fakeStatusBarIconsClass.getDeclaredField("statusBarArea").accessible(),
-                        systemIconsLocationField =
-                            anchorClass
-                                .getDeclaredField("systemIconsLocationOnScreen")
-                                .accessible(),
-                        systemIconsWidthField =
-                            anchorClass.getDeclaredField("systemIconsWidth").accessible(),
-                        statusIconsLocationField =
-                            anchorClass
-                                .getDeclaredField("statusIconsLocationInWindow")
-                                .accessible(),
-                        statusIconsWidthField =
-                            anchorClass.getDeclaredField("statusIconsWidth").accessible(),
-                        batteryWidthField =
-                            anchorClass.getDeclaredField("batteryWidth").accessible(),
                     )
                 }.getOrNull()
         }
@@ -970,7 +761,6 @@ internal object SysUiCcSource {
                 visibleChanged ||
                 sourceSceneChanged ||
                 batteryIslandChanged
-
     }
 
     private data class ProbeState(

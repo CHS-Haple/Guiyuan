@@ -54,7 +54,7 @@ class SceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseRejectsEveryIndependentInvalidBoundary() {
         val base =
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -66,7 +66,7 @@ class SceneControlCenterTest {
         assertTrue(base)
 
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = false,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -77,7 +77,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = false,
@@ -88,7 +88,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -99,7 +99,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -114,29 +114,29 @@ class SceneControlCenterTest {
     @Test
     fun hiddenControlCenterIgnoresKeyguardLifecycleChurnUntilItActuallyOpens() {
         assertFalse(
-            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = false,
+            ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = false,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = true,
+            ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = true,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = false,
+            ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = false,
                 nativeFraction = 0.1f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = false,
+            ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = false,
                 nativeFraction = 0f,
                 leaseActive = true,
             ),
@@ -204,7 +204,7 @@ class SceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseMaySpanIncomingBoundaryBeforeStableFamily() {
         assertTrue(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -216,7 +216,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -232,14 +232,14 @@ class SceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseExistsOnlyInsideVerifiedNativeTransitionLifetime() {
         assertTrue(
-            ScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0.5f,
             ),
         )
         assertFalse(
-            ScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0f,
@@ -247,7 +247,7 @@ class SceneControlCenterTest {
         )
 
         assertTrue(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -258,7 +258,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.HOME,
                 featureEnabled = true,
@@ -269,7 +269,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -280,7 +280,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardControlCenterLease(
+            ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,

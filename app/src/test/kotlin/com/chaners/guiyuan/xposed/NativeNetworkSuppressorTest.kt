@@ -4,11 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class NativeNetworkSuppressorTest {
-
-
-
-
-
     @Test
     fun observedNoSimCanBecomeSuppressedInTheSameVisibilityEvent() {
         assertEquals(
@@ -89,8 +84,6 @@ class NativeNetworkSuppressorTest {
         )
     }
 
-
-
     @Test
     fun representedSlotsAreNotEligibleVisibleTintAuthorities() {
         listOf("combined_status", "wifi", "mobile", "stacked_mobile", "airplane", "no_sim").forEach { slot ->
@@ -136,5 +129,4 @@ class NativeNetworkSuppressorTest {
             ),
         )
     }
-
 }

@@ -414,12 +414,12 @@ print(
     f"dex={artifacts['systemUi']['dexCount']} "
     f"classes={artifacts['systemUi']['classCount']}"
 )
-print(f"Runtime markers: {len(runtime_markers)}/{len(runtime_markers)}")
-print(f"Verified hook points: {len(hook_points)}/{len(hook_points)}")
+print(f"Runtime markers verified: {len(runtime_markers)}")
+print(f"Hook points verified: {len(hook_points)}")
 print(
     "Battery semantic contract: "
-    f"{len(battery_semantic_fields)}/{len(battery_semantic_fields)} fields, "
+    f"{len(battery_semantic_fields)} fields verified, "
     "progress-status verified"
 )
-print(f"Native status views: {len(native_status_views)}/{len(native_status_views)}")
-print(f"Native status containers: {len(native_status_containers)}/{len(native_status_containers)}")
+print(f"Native status views verified: {len(native_status_views)}")
+print(f"Native status containers verified: {len(native_status_containers)}")
