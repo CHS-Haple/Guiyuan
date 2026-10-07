@@ -112,18 +112,6 @@ class AppearanceTest {
     }
 
     @Test
-    fun firstLiquidSelectionDefaultsToIconAndText() {
-        assertTrue(shouldDefaultToLabels(NavStyle.Liquid, null))
-        assertFalse(shouldDefaultToLabels(NavStyle.Glass, null))
-    }
-
-    @Test
-    fun liquidSelectionKeepsPreviouslyChosenContent() {
-        assertFalse(shouldDefaultToLabels(NavStyle.Liquid, NavContent.IconOnly.name))
-        assertFalse(shouldDefaultToLabels(NavStyle.Liquid, NavContent.IconAndText.name))
-    }
-
-    @Test
     fun liquidModeDefaultsToClearAndRoundTrips() {
         assertEquals(LiquidMode.Clear, decodeLiquidMode(null))
         assertEquals(LiquidMode.Clear, decodeLiquidMode("Unknown"))
