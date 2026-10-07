@@ -1,3 +1,34 @@
+## 2026-10-07 — Residual runtime plumbing maintainability cleanup
+
+**Type:** behavior-neutral maintainability / runtime plumbing
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Integration commit:** `af976eb1`
+**Validation:** exact-head Runtime CI #2925 passed on PR #257
+
+### Result
+
+PR #257 completed a full sweep of the current Xposed/SystemUI runtime package for the recurring maintainability patterns identified during the post-0.2.1 audit.
+
+The accepted changes were deliberately selective rather than mechanical:
+
+- shortened internal names where package/receiver context already carried the domain, including the Control Center `Cc*` runtime path;
+- collapsed duplicate nested result wrappers and several empty-success / reason-only attach result types;
+- kept real multi-state results where success carries independent data, rollback ownership, pending state or another useful contract;
+- replaced `Session.active + started` storage booleans with one explicit `CREATED / RUNNING / STOPPED` lifecycle while preserving the old reachable semantics;
+- replaced fake-carrier visible/suppressed boolean combinations with `PREARM / VISIBLE / SUPPRESSED` lease phases while keeping layout-awaiting as an independent fact;
+- removed hard-coded diagnostic proof fields and repeated booleans that restated an already-recorded state instead of observing runtime behavior;
+- removed a single-caller `ActiveSubscriptionSource` helper whose separate Source abstraction had no independent lifecycle, reuse or compatibility boundary;
+- retained model/tint/layout/native-readiness booleans where they are genuinely parallel facts rather than one state machine.
+
+During final base-to-HEAD review, the initial lifecycle enum translation was found to make STOPPED report `started=false`, unlike the original reachable `active=false, started=true` state. That semantic drift was corrected before the merge gate. A suspected Control Center slot/resource fallback change was also investigated and confirmed to be only diff alignment around the `NativeParticipantAccess` rename.
+
+### Durable rule
+
+Maintainability cleanup is not a request to force every boolean into an enum, every helper into one file, or every long domain term into an abbreviation. A separate type or state representation must earn its cost through real ownership, lifecycle, reuse, compatibility, policy or caller simplification. Diagnostics must be based on observed facts rather than synthetic proof fields.
+
+No SystemUI ownership, hooks, rendering, geometry, motion, transition semantics, state authority, fail-native behavior, settings behavior, external version or Build identity changed in this work.
+
 ## 2026-10-06 — Guiyuan 0.2.1 stable promotion complete
 
 **Type:** stable promotion / repository state
