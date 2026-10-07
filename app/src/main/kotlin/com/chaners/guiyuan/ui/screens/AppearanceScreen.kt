@@ -29,10 +29,18 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
+import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
+import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
@@ -65,6 +73,7 @@ internal fun AppearanceScreen(
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
+    onLiquidModeChange: (LiquidMode) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -78,11 +87,17 @@ internal fun AppearanceScreen(
             stringResource(R.string.floating_navigation_style_standard),
             stringResource(R.string.floating_navigation_style_blur),
             stringResource(R.string.floating_navigation_style_glass),
+            stringResource(R.string.floating_navigation_style_liquid),
         )
     val floatingContentOptions =
         listOf(
             stringResource(R.string.floating_navigation_content_icon_only),
             stringResource(R.string.floating_navigation_content_icon_and_text),
+        )
+    val liquidModeOptions =
+        listOf(
+            stringResource(R.string.floating_navigation_liquid_mode_blur),
+            stringResource(R.string.floating_navigation_liquid_mode_clear),
         )
 
     SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
@@ -158,6 +173,27 @@ internal fun AppearanceScreen(
                         }
                     },
                 )
+                AnimatedPreferenceGroup(visible = appearance.navStyle == NavStyle.Liquid) {
+                    OverlayDropdownPreference(
+                        items = liquidModeOptions,
+                        selectedIndex = appearance.liquidMode.ordinal,
+                        title = stringResource(R.string.floating_navigation_liquid_mode),
+                        summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_blur_circular,
+                            )
+                        },
+                        showValue = true,
+                        onSelectedIndexChange = { index ->
+                            LiquidMode.entries.getOrNull(index)?.let { mode ->
+                                if (mode != appearance.liquidMode) {
+                                    onLiquidModeChange(mode)
+                                }
+                            }
+                        },
+                    )
+                }
                 OverlayDropdownPreference(
                     items = floatingContentOptions,
                     selectedIndex = appearance.navContent.ordinal,
@@ -252,6 +288,7 @@ private fun AppearanceMiniPreview(
                     floating = appearance.navEnabled,
                     style = appearance.navStyle,
                     content = appearance.navContent,
+                    liquidMode = appearance.liquidMode,
                     dark = dark,
                 )
             }
@@ -444,15 +481,20 @@ private fun MiniNavigationPreview(
     floating: Boolean,
     style: NavStyle,
     content: NavContent,
+    liquidMode: LiquidMode,
     dark: Boolean,
 ) {
-    val materialActive =
+    val miuixMaterialActive =
         floating &&
             style.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
+    val liquidMaterialActive =
+        floating &&
+            style == NavStyle.Liquid &&
+            liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val backdrop =
-        if (materialActive) {
+    val miuixBackdrop =
+        if (miuixMaterialActive) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -460,10 +502,22 @@ private fun MiniNavigationPreview(
         } else {
             null
         }
+    val liquidBackdrop =
+        if (liquidMaterialActive) {
+            rememberLiquidNavBackdrop(surfaceColor)
+        } else {
+            null
+        }
+    val liquidBottomSpace =
+        if (liquidBackdrop != null) {
+            liquidNavBottomPadding()
+        } else {
+            0.dp
+        }
     val floatingModifier =
-        if (backdrop != null) {
+        if (miuixBackdrop != null) {
             Modifier.floatingNavMaterial(
-                backdrop = backdrop,
+                backdrop = miuixBackdrop,
                 dark = dark,
                 style = style,
             )
@@ -475,7 +529,7 @@ private fun MiniNavigationPreview(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(MiniNavigationViewportHeight),
+                .height(MiniNavigationViewportHeight + liquidBottomSpace),
         contentAlignment = Alignment.TopCenter,
     ) {
         Box(
@@ -483,8 +537,15 @@ private fun MiniNavigationPreview(
                 Modifier
                     .fillMaxSize()
                     .then(
-                        if (backdrop != null) {
-                            Modifier.layerBackdrop(backdrop)
+                        if (miuixBackdrop != null) {
+                            Modifier.layerBackdrop(miuixBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .then(
+                        if (liquidBackdrop != null) {
+                            Modifier.liquidNavBackdropSource(liquidBackdrop)
                         } else {
                             Modifier
                         },
@@ -507,38 +568,74 @@ private fun MiniNavigationPreview(
         }
 
         if (floating) {
-            MiniNavViewport {
-                FloatingNavigationBar(
-                    modifier = floatingModifier,
-                    color =
-                        if (backdrop != null) {
-                            Color.Transparent
-                        } else {
-                            MiuixTheme.colorScheme.surfaceContainer
-                        },
-                    defaultWindowInsetsPadding = false,
-                ) {
-                    NavContentItem(
-                        content = content,
-                        selected = false,
-                        onClick = {},
-                        icon = MiuixIcons.Normal.Home,
-                        label = stringResource(R.string.nav_home),
-                    )
-                    NavContentItem(
-                        content = content,
-                        selected = false,
-                        onClick = {},
-                        icon = MiuixIcons.Normal.Tune,
-                        label = stringResource(R.string.nav_features),
-                    )
-                    NavContentItem(
-                        content = content,
-                        selected = true,
-                        onClick = {},
-                        icon = MiuixIcons.Medium.Settings,
-                        label = stringResource(R.string.nav_settings),
-                    )
+            MiniNavViewport(bottomPadding = liquidBottomSpace) {
+                if (liquidBackdrop != null) {
+                    val labels =
+                        listOf(
+                            stringResource(R.string.nav_home),
+                            stringResource(R.string.nav_features),
+                            stringResource(R.string.nav_settings),
+                        )
+                    val icons =
+                        listOf(
+                            MiuixIcons.Normal.Home,
+                            MiuixIcons.Normal.Tune,
+                            MiuixIcons.Normal.Settings,
+                        )
+                    LiquidNavBar(
+                        selectedIndex = { 2 },
+                        onSelected = {},
+                        backdrop = liquidBackdrop,
+                        tabsCount = labels.size,
+                        dark = dark,
+                        mode = liquidMode,
+                        interactive = false,
+                        modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                    ) {
+                        labels.indices.forEach { index ->
+                            LiquidNavEntry(
+                                contentMode = content,
+                                onClick = {},
+                                icon = icons[index],
+                                label = labels[index],
+                                dark = dark,
+                                interactive = false,
+                            )
+                        }
+                    }
+                } else {
+                    FloatingNavigationBar(
+                        modifier = floatingModifier,
+                        color =
+                            if (miuixBackdrop != null) {
+                                Color.Transparent
+                            } else {
+                                MiuixTheme.colorScheme.surfaceContainer
+                            },
+                        defaultWindowInsetsPadding = false,
+                    ) {
+                        NavContentItem(
+                            content = content,
+                            selected = false,
+                            onClick = {},
+                            icon = MiuixIcons.Normal.Home,
+                            label = stringResource(R.string.nav_home),
+                        )
+                        NavContentItem(
+                            content = content,
+                            selected = false,
+                            onClick = {},
+                            icon = MiuixIcons.Normal.Tune,
+                            label = stringResource(R.string.nav_features),
+                        )
+                        NavContentItem(
+                            content = content,
+                            selected = true,
+                            onClick = {},
+                            icon = MiuixIcons.Medium.Settings,
+                            label = stringResource(R.string.nav_settings),
+                        )
+                    }
                 }
             }
         } else {
@@ -559,6 +656,7 @@ private fun MiniNavigationPreview(
 
 @Composable
 private fun MiniNavViewport(
+    bottomPadding: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     Layout(
@@ -572,10 +670,13 @@ private fun MiniNavViewport(
                     maxHeight = Constraints.Infinity,
                 ),
             )
+        val bottomPx = bottomPadding.roundToPx()
         layout(constraints.maxWidth, constraints.maxHeight) {
             placeable.placeRelative(
                 x = ((constraints.maxWidth - placeable.width) / 2).coerceAtLeast(0),
-                y = (constraints.maxHeight - placeable.height).coerceAtLeast(0),
+                y =
+                    (constraints.maxHeight - placeable.height - bottomPx)
+                        .coerceAtLeast(0),
             )
         }
     }

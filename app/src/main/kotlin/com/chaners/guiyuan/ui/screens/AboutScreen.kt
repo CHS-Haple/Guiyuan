@@ -250,6 +250,18 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
+                    name = "AndroidLiquidGlass (Backdrop)",
+                    version = BuildConfig.BACKDROP_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/AndroidLiquidGlass",
+                ),
+                AboutDependency(
+                    name = "Kyant Shapes",
+                    version = BuildConfig.SHAPES_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/Shapes",
+                ),
+                AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
@@ -291,16 +303,16 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         remember {
             listOf(
                 AboutDependency(
-                    name = "JUnit 4",
-                    version = BuildConfig.JUNIT_VERSION,
-                    license = "EPL-1.0",
-                    upstreamUrl = "https://github.com/junit-team/junit4",
-                ),
-                AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/gradle/gradle",
+                ),
+                AboutDependency(
+                    name = "JUnit 4",
+                    version = BuildConfig.JUNIT_VERSION,
+                    license = "EPL-1.0",
+                    upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
             )
         }

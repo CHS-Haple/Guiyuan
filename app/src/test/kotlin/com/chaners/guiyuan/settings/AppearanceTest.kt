@@ -13,6 +13,7 @@ class AppearanceTest {
         assertTrue(settings.navEnabled)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconOnly, settings.navContent)
+        assertEquals(LiquidMode.Clear, settings.liquidMode)
     }
 
     @Test
@@ -26,6 +27,19 @@ class AppearanceTest {
             )
 
         assertEquals(NavStyle.Blur, result)
+    }
+
+    @Test
+    fun storedLiquidStyleRoundTrips() {
+        val result =
+            decodeNavStyle(
+                storedStyle = "Liquid",
+                storedFloatingBlurEnabled = null,
+                legacyBlurEnabled = null,
+                legacyGlassEnabled = null,
+            )
+
+        assertEquals(NavStyle.Liquid, result)
     }
 
     @Test
@@ -95,6 +109,14 @@ class AppearanceTest {
             NavContent.IconAndText,
             decodeNavContent("IconAndText"),
         )
+    }
+
+    @Test
+    fun liquidModeDefaultsToClearAndRoundTrips() {
+        assertEquals(LiquidMode.Clear, decodeLiquidMode(null))
+        assertEquals(LiquidMode.Clear, decodeLiquidMode("Unknown"))
+        assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur"))
+        assertEquals(LiquidMode.Clear, decodeLiquidMode("Clear"))
     }
 
     @Test
