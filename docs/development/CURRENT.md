@@ -3,12 +3,10 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `77b2490c`; runtime behavior remains the validated `9799dc50` state, with #255 adding documentation-only closeout. `main` is still at the PR #247 stable checkpoint.
-- PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
-- PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
-- PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
-- Historical PR #197 remains superseded and must not be restored as an active implementation route.
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`).
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `af976eb1`, with PR #257 merged after exact-head Runtime CI #2925.
+- PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
+- Historical PR #197 remains superseded.
 
 ## Accepted runtime baseline
 
@@ -18,23 +16,22 @@
 - QS_FAKE is the bounded Control Center bridge; the fully expanded Control Center remains native.
 - HyperOS remains authoritative for native scene, island, appearance, motion, alpha, visibility and translation timing.
 - One transition-reservation writer remains. Fake-carrier capacity is a bounded visible-cycle lease and fail-native restores only the affected surface.
-- The Home steady-peer mirror is Home-source data. Build 744 rejects it for Keyguard/UNKNOWN Control Center sources and restores it only when Home becomes authoritative again.
-- Build 689-693 removed or bounded the previously identified diagnostic/reflection hot-path costs. Detailed diagnostics remain observational and must not change functional behavior.
-- Build 745 does not belong to the accepted runtime line. Do not reintroduce bounded per-component alpha layers or compensate the observed clipping with guessed padding/margins.
+- Detailed diagnostics are observational and must not change functional behavior.
 
-## Active objective
+## Current maintainability state
 
-PR #257 (`refactor/residual-maintainability-gaps` -> `dev`) is the active work line on Guiyuan 0.2.1 / Build 746. The objective is behavior-neutral maintainability cleanup of the remaining plumbing: self-reporting diagnostics, redundant result wrappers, overlong internal naming, lifecycle state that can form invalid boolean combinations, and narrow abstractions that do not earn an independent boundary.
+PR #257 completed the first residual runtime-plumbing cleanup across the Xposed/SystemUI integration layer.
 
-This work keeps SystemUI ownership, hooks, rendering, geometry, transition semantics, state authority, and fail-native behavior unchanged. It does not bump the external version or Build. Device validation is not a gate unless a later change can plausibly alter runtime behavior.
+Accepted cleanup boundaries:
 
-Current priorities:
+- remove redundant product/domain wording when the package or receiver already carries it;
+- keep `Owner` / `Source` / `Policy` / `Probe` / `Session` only when they carry real lifecycle, authority, compatibility, reuse or policy value;
+- do not stack duplicate Result/State wrappers around the same outcome;
+- model one mutually-exclusive lifecycle as one explicit state, but keep genuinely independent readiness facts independent;
+- diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
+- inline single-caller helper types when the separate abstraction does not earn a boundary.
 
-1. finish the residual maintainability audit across runtime plumbing rather than only the originally cited examples;
-2. keep real lifecycle/ownership contracts explicit while collapsing duplicate wrappers and ceremonial layers;
-3. keep diagnostics tied to observed runtime facts and useful decision boundaries;
-4. review the complete PR diff, run one suitable CI checkpoint, then merge to `dev` only if deterministic review/validation stays clean;
-5. keep `main` unchanged until the maintainer explicitly chooses another stable promotion.
+The next maintainability pass expands this audit beyond the Xposed package to the rest of the repository. Runtime behavior remains frozen unless a concrete defect is found.
 
 ## Non-negotiable bounds
 
@@ -42,13 +39,13 @@ Current priorities:
 - Keep one owner/writer per mutable surface.
 - Do not add polling, delay, retry loops, custom gesture clocks, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final-QS appearance ownership.
-- Do not weaken fail-native or restoration boundaries to gain smoothness.
-- Do not trade accepted Home, Keyguard/AOD, charging-island or Control Center geometry for speculative performance work.
-- A branch name alone does not make a route active; require code/PR/CI/device evidence that agrees with the current objective.
+- Do not weaken fail-native or restoration boundaries.
+- Do not trade accepted Home, Keyguard/AOD, charging-island or Control Center geometry for cleanup-only work.
+- Keep version 0.2.1 / Build 746 unchanged unless explicitly requested.
 
 ## Immediate next
 
-- Continue PR #257 from the current `dev` base; do not revive stale maintainability branches.
-- Complete the remaining naming/state/logging/abstraction audit with behavior-neutral changes only.
-- Run full base-to-HEAD review before the next validation checkpoint.
-- Keep Build 746 / version 0.2.1 unchanged unless the maintainer explicitly requests a bump.
+- Audit the rest of the repository for the same maintainability problems already addressed in Xposed/runtime plumbing.
+- Prioritize app UI/settings, diagnostics/system code, tests, build tooling and CI scripts.
+- Change only deterministic issues with a clear maintenance benefit; do not create churn for uniformity.
+- Use one coherent work branch/PR and run one suitable validation checkpoint after complete base-to-HEAD review.
