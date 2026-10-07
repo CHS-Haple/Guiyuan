@@ -46,5 +46,5 @@ PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtim
 ## Immediate next
 
 - Keep the repository-wide maintainability sweep closed unless new concrete evidence appears.
-- Continue normal development from current `dev` as needed.
-- Do not promote this state to `main` until explicitly requested.
+- Promote the accepted current `dev` state to `main` through the normal dev-to-main stable boundary; this promotion was explicitly requested after the maintainer spot check passed.
+- Keep version 0.2.1 / Build 746 unchanged; this is a maintenance-state promotion, not a new release-version bump.
