@@ -16,6 +16,15 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatteryArcSegments
+import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
+import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
+import com.chaners.guiyuan.xposed.battery.batteryArcSegments
+import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
+import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
+import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.WifiOpticalReference
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min

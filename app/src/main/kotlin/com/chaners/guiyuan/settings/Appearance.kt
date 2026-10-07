@@ -23,11 +23,17 @@ internal enum class NavStyle {
     Standard,
     Blur,
     Glass,
+    Liquid,
 }
 
 internal enum class NavContent {
     IconOnly,
     IconAndText,
+}
+
+internal enum class LiquidMode {
+    Blur,
+    Clear,
 }
 
 internal data class Appearance(
@@ -36,6 +42,7 @@ internal data class Appearance(
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
+    val liquidMode: LiquidMode = LiquidMode.Clear,
     val swipeBack: Boolean = true,
 )
 
@@ -72,6 +79,11 @@ internal fun decodeNavContent(storedContent: String?): NavContent =
     NavContent.entries
         .firstOrNull { it.name == storedContent }
         ?: NavContent.IconOnly
+
+internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
+    LiquidMode.entries
+        .firstOrNull { it.name == storedMode }
+        ?: LiquidMode.Clear
 
 internal fun decodeTheme(
     storedMode: String?,
@@ -120,6 +132,7 @@ internal class AppearanceRepo(context: Context) {
                         legacyGlassEnabled = prefs[legacyGlassKey],
                     ),
                 navContent = decodeNavContent(prefs[navContentKey]),
+                liquidMode = decodeLiquidMode(prefs[liquidModeKey]),
                 swipeBack = prefs[swipeBackKey] ?: true,
             )
         }
@@ -160,6 +173,12 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
+    suspend fun setLiquidMode(mode: LiquidMode) {
+        store.edit { prefs ->
+            prefs[liquidModeKey] = mode.name
+        }
+    }
+
     suspend fun setSwipeBack(enabled: Boolean) {
         store.edit { prefs ->
             prefs[swipeBackKey] = enabled
@@ -174,6 +193,7 @@ internal class AppearanceRepo(context: Context) {
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
         val navStyleKey = stringPreferencesKey("floating_navigation_style")
         val navContentKey = stringPreferencesKey("floating_navigation_content")
+        val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
         val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")
     }

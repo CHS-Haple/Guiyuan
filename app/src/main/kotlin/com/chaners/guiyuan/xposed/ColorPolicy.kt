@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
+import com.chaners.guiyuan.xposed.battery.BatteryColorPrefs
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 
 internal data class RenderColors(
     val centerTint: Int,

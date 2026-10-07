@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed
 
 import android.os.Bundle
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object StatusStateStore {
     @Volatile
@@ -19,17 +21,11 @@ internal object StatusStateStore {
     }
 
     @Synchronized
-    fun updateBatteryChargingIcon(resourceId: Int?): Snapshot? {
+    fun updateBatteryChargingIcon(resourceId: Int): Snapshot? {
         val battery = current.battery ?: return null
-        val next =
-            battery.copy(
-                chargingIconResId =
-                    if (battery.charging) {
-                        resourceId?.takeIf { it != 0 }
-                    } else {
-                        null
-                    },
-            )
+        if (!battery.charging || resourceId == 0) return null
+
+        val next = battery.copy(chargingIconResId = resourceId)
         if (battery == next) {
             return null
         }
@@ -61,10 +57,7 @@ internal object StatusStateStore {
             if (recoveryPending) {
                 current.mobile
                     .mapValues { (_, state) ->
-                        state.copy(
-                            signalResId = null,
-                            signal = SignalStrength.Unknown,
-                        )
+                        state.copy(signal = SignalStrength.Unknown)
                     }
                     .toSortedMap()
             } else {
@@ -114,24 +107,18 @@ internal object StatusStateStore {
     }
 
     @Synchronized
-    fun updateMobile(update: MobileIconUpdate): Snapshot? {
-        val previous = current.mobile[update.subscriptionId] ?: MobileState()
-        val resourceId = update.resourceId?.takeIf { it != 0 }
-        val next = when (update.kind) {
-            MobileIconKind.SIGNAL -> previous.copy(
-                signalResId = resourceId,
-                signal = update.signal ?: SignalStrength.Unknown,
-            )
-            MobileIconKind.VOLTE -> previous.copy(volteResId = resourceId)
-            MobileIconKind.VOWIFI -> previous.copy(vowifiResId = resourceId)
-        }
-
+    fun updateMobileSignal(
+        subscriptionId: Int,
+        signal: SignalStrength,
+    ): Snapshot? {
+        val previous = current.mobile[subscriptionId] ?: MobileState()
+        val next = previous.copy(signal = signal)
         if (previous == next) {
             return null
         }
 
         val mobile = current.mobile.toMutableMap()
-        mobile[update.subscriptionId] = next
+        mobile[subscriptionId] = next
         current = current.copy(mobile = mobile.toSortedMap())
         return current
     }
@@ -181,10 +168,7 @@ internal object StatusStateStore {
             current.mobile.entries.forEachIndexed { index, (subscriptionId, state) ->
                 val base = index * MOBILE_STRIDE
                 flattened[base] = subscriptionId
-                flattened[base + 1] = state.signalResId ?: 0
                 flattened[base + 2] = encodeSignal(state.signal)
-                flattened[base + 3] = state.volteResId ?: 0
-                flattened[base + 4] = state.vowifiResId ?: 0
             }
             putIntArray(KEY_MOBILE, flattened)
         }
@@ -255,10 +239,7 @@ internal object StatusStateStore {
             val subscriptionId = flattened[offset]
             mobile[subscriptionId] =
                 MobileState(
-                    signalResId = flattened[offset + 1].takeIf { it != 0 },
                     signal = decodeSignal(flattened[offset + 2]),
-                    volteResId = flattened[offset + 3].takeIf { it != 0 },
-                    vowifiResId = flattened[offset + 4].takeIf { it != 0 },
                 )
             offset += MOBILE_STRIDE
         }
@@ -318,24 +299,8 @@ internal object StatusStateStore {
         ) : WifiState
     }
 
-    internal enum class MobileIconKind {
-        SIGNAL,
-        VOLTE,
-        VOWIFI,
-    }
-
-    internal data class MobileIconUpdate(
-        val subscriptionId: Int,
-        val kind: MobileIconKind,
-        val resourceId: Int?,
-        val signal: SignalStrength? = null,
-    )
-
     internal data class MobileState(
-        val signalResId: Int? = null,
         val signal: SignalStrength = SignalStrength.Unknown,
-        val volteResId: Int? = null,
-        val vowifiResId: Int? = null,
     )
 
     private const val KEY_BATTERY_PRESENT = "batteryPresent"
@@ -366,5 +331,6 @@ internal object StatusStateStore {
 
     private const val SIGNAL_UNKNOWN = -2
     private const val SIGNAL_UNAVAILABLE = -1
+    // Keep the old Hot Reload layout so adjacent generations can still hand off.
     private const val MOBILE_STRIDE = 5
 }

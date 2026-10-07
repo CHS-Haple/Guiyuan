@@ -12,6 +12,15 @@ import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.system.DiagProtocol
+import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
+import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
+import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
+import com.chaners.guiyuan.xposed.network.NetworkSuppressionPolicy
+import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
+import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
+import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -833,9 +842,13 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
-                onMobileIcon = { update ->
+                onMobileSignal = { subscriptionId, signal ->
                     val trace = beginRenderTrace("mobile")
-                    val changed = StatusStateStore.updateMobile(update)
+                    val changed =
+                        StatusStateStore.updateMobileSignal(
+                            subscriptionId = subscriptionId,
+                            signal = signal,
+                        )
                     val stateTrace =
                         if (changed != null) {
                             markStateCommitted(trace)

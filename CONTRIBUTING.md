@@ -96,6 +96,8 @@ A compatibility failure should fail native for the smallest affected surface.
 
 Optimize for the next human maintainer. Prefer concise scope-aware names and structures; avoid both modifier-heavy verbosity and cryptic shortening.
 
+When a package becomes crowded, group files by problem domain rather than technical role. Keep source paths aligned with Kotlin packages and move cohesive areas incrementally instead of churning unrelated code.
+
 ### Naming
 
 - Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`.
@@ -241,6 +243,8 @@ Signed work-branch Canary is demand-driven. Request it only when device evidence
 A device test is useful for ownership/lifecycle/scene/transition/geometry changes, first meaningful runtime checkpoints, competing hypotheses, integrated runtime validation or a runtime-affecting stable candidate.
 
 Do not request device testing merely because a commit or APK exists.
+
+The `internal` build is a distribution-only test variant: non-debuggable, release-equivalent, and runtime-diagnostic capable. It may gate app-side public project navigation, but must not change SystemUI behavior, settings semantics or Xposed scope.
 
 ## Versions, dependencies and release
 

@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -46,6 +47,7 @@ internal fun GyApp(
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
+    onLiquidModeChange: (LiquidMode) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
@@ -172,6 +174,8 @@ internal fun GyApp(
                         onNavStyleChange,
                     onNavContentChange =
                         onNavContentChange,
+                    onLiquidModeChange =
+                        onLiquidModeChange,
                     onBack = ::navigateBack,
                 )
             }

@@ -14,6 +14,11 @@ import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
+import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 import kotlin.math.min

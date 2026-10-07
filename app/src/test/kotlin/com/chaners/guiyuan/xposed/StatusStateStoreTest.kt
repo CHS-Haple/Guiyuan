@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -11,13 +13,9 @@ class StatusStateStoreTest {
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 1,
-                signal = SignalStrength.Level(4),
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Level(4),
         )
 
         val snapshot =
@@ -26,7 +24,6 @@ class StatusStateStoreTest {
 
         assertTrue(snapshot.mobileRecoveryPending)
         assertTrue(snapshot.mobile[4]?.signal is SignalStrength.Unknown)
-        assertNull(snapshot.mobile[4]?.signalResId)
     }
 
     @Test
@@ -34,13 +31,9 @@ class StatusStateStoreTest {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 2,
-                signal = SignalStrength.Unavailable,
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Unavailable,
         )
 
         val completed =
@@ -77,17 +70,28 @@ class StatusStateStoreTest {
     }
 
     @Test
+    fun invalidChargingIconDoesNotClearCurrentIcon() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(
+                percent = 80,
+                charging = true,
+                chargingIconResId = 7,
+            ),
+        )
+
+        assertNull(StatusStateStore.updateBatteryChargingIcon(0))
+        assertEquals(7, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
     fun freshSignalAndMobileTypeFinishAirplaneRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 3,
-                signal = SignalStrength.Level(3),
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Level(3),
         )
 
         val completed =
