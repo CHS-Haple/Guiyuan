@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `c6748e6a`; default-branch Canary now accepts trusted `refactor/*` PRs through #259.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `6812a2b1`, with Canary workflow support for `refactor/*` merged through PR #258 after Full CI #2929. PR #257 was previously integrated after Runtime CI #2925.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `844eb1f3`, with PR #260 merged after Full CI #2943 and exact-head Work Branch Canary #794. Maintainer spot testing reported no issues.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
 
@@ -31,7 +31,7 @@ Accepted cleanup boundaries:
 - diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
 - inline single-caller helper types when the separate abstraction does not earn a boundary.
 
-Draft PR #260 (`refactor/repo-maintainability-sweep` -> `dev`) extends the earlier Xposed audit to the companion UI, settings, system/diagnostics, unit tests, tooling and build scripts. The 44 non-Xposed Kotlin main sources and all 63 unit-test files have been screened, flagged areas have had targeted semantic review, and implementation is now frozen pending final Full CI plus a maintainer-requested Canary spot check. Runtime/SystemUI behavior remains unchanged.
+PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtime plumbing. All 44 non-Xposed Kotlin main sources and 63 unit-test files were screened, flagged areas received targeted semantic review, and the accepted cleanup is now integrated on `dev`. Runtime/SystemUI behavior remains unchanged.
 
 ## Non-negotiable bounds
 
@@ -45,7 +45,6 @@ Draft PR #260 (`refactor/repo-maintainability-sweep` -> `dev`) extends the earli
 
 ## Immediate next
 
-- Keep PR #260 implementation frozen.
-- Run final Full CI on the complete base-to-HEAD diff.
-- Build one exact-head Work Branch Canary for maintainer spot testing.
-- If validation and the spot check remain clean, record the durable result in DEVLOG and merge #260 to `dev`.
+- Keep the repository-wide maintainability sweep closed unless new concrete evidence appears.
+- Continue normal development from current `dev` as needed.
+- Do not promote this state to `main` until explicitly requested.
