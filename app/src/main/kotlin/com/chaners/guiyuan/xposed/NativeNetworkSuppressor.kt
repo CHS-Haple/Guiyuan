@@ -318,13 +318,7 @@ internal object NativeNetworkSuppressor {
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name,
         )
-        return Result.Active(
-            bindings = 0,
-            slots = emptyList(),
-            wifiSuppressed = false,
-            mobileSuppressed = false,
-            mobileVisualMasks = 0,
-        )
+        return Result.Active
     }
 
     @Synchronized
@@ -371,13 +365,7 @@ internal object NativeNetworkSuppressor {
         }
 
         eventSink?.invoke(snapshot.logLine)
-        return Result.Active(
-            bindings = snapshot.bindingCount,
-            slots = snapshot.slots,
-            wifiSuppressed = snapshot.wifiSuppressed,
-            mobileSuppressed = snapshot.mobileSuppressed,
-            mobileVisualMasks = snapshot.mobileVisualMaskCount,
-        )
+        return Result.Active
     }
 
     @Synchronized
@@ -409,13 +397,7 @@ internal object NativeNetworkSuppressor {
         }
 
         eventSink?.invoke(snapshot.logLine)
-        return Result.Active(
-            bindings = snapshot.bindingCount,
-            slots = snapshot.slots,
-            wifiSuppressed = snapshot.wifiSuppressed,
-            mobileSuppressed = snapshot.mobileSuppressed,
-            mobileVisualMasks = snapshot.mobileVisualMaskCount,
-        )
+        return Result.Active
     }
 
     @Synchronized
@@ -437,7 +419,7 @@ internal object NativeNetworkSuppressor {
                     " restoredMobileVisualMasks=" + restoredVisualMasks,
             )
         }
-        return Result.Inactive(previousCount)
+        return Result.Inactive
     }
 
     @Synchronized
@@ -1631,20 +1613,8 @@ internal object NativeNetworkSuppressor {
     internal sealed interface Result {
         val summary: String
 
-        data class Active(
-            val bindings: Int,
-            val slots: List<String>,
-            val wifiSuppressed: Boolean,
-            val mobileSuppressed: Boolean,
-            val mobileVisualMasks: Int,
-        ) : Result {
-            override val summary: String
-                get() =
-                    "active:bindings=" + bindings +
-                        ",slots=" + slots.joinToString(",") +
-                        ",wifiSuppressed=" + wifiSuppressed +
-                        ",mobileSuppressed=" + mobileSuppressed +
-                        ",mobileVisualMasks=" + mobileVisualMasks
+        data object Active : Result {
+            override val summary = "active"
         }
 
         data class Pending(
@@ -1654,11 +1624,8 @@ internal object NativeNetworkSuppressor {
                 get() = "pending:" + reason
         }
 
-        data class Inactive(
-            val restoredBindings: Int,
-        ) : Result {
-            override val summary: String
-                get() = "inactive:restoredBindings=" + restoredBindings
+        data object Inactive : Result {
+            override val summary = "inactive"
         }
 
         data class Failure(

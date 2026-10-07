@@ -208,21 +208,15 @@ internal object NativeBatterySuppressor {
         }
 
         val effectiveHide = resolveNativeLayoutHide(nativeRequestedHide)
-        val result =
-            Result.Active(
-                nativeRequestedHide = nativeRequestedHide,
-                effectiveHide = effectiveHide,
-                maskedChildren = mask.maskedChildren,
-                visualChanged = mask.alphaWrites > 0 || mask.visibilityWrites > 0,
-            )
+        val visualChanged = mask.alphaWrites > 0 || mask.visibilityWrites > 0
         eventSink?.invoke(
             "nativeBatterySuppression active source=" + source +
-                " nativeRequestedHide=" + result.nativeRequestedHide +
-                " effectiveHide=" + result.effectiveHide +
-                " maskedChildren=" + result.maskedChildren +
-                " visualChanged=" + result.visualChanged,
+                " nativeRequestedHide=" + nativeRequestedHide +
+                " effectiveHide=" + effectiveHide +
+                " maskedChildren=" + mask.maskedChildren +
+                " visualChanged=" + visualChanged,
         )
-        return result
+        return Result.Active
     }
 
     @Synchronized
@@ -235,19 +229,14 @@ internal object NativeBatterySuppressor {
         val restoredChildren = restorePresentationMasksLocked()
         val wasActive = suppressionActive
         clearOwnedStateLocked()
-        val result =
-            Result.Inactive(
-                restoredNativeHide = nativeHide,
-                restoredChildren = restoredChildren,
-                visualChanged = wasActive && restoredChildren > 0,
-            )
+        val visualChanged = wasActive && restoredChildren > 0
         eventSink?.invoke(
             "nativeBatterySuppression inactive source=" + source +
-                " restoredNativeHide=" + (result.restoredNativeHide ?: "unknown") +
-                " restoredChildren=" + result.restoredChildren +
-                " visualChanged=" + result.visualChanged,
+                " restoredNativeHide=" + (nativeHide ?: "unknown") +
+                " restoredChildren=" + restoredChildren +
+                " visualChanged=" + visualChanged,
         )
-        return result
+        return Result.Inactive
     }
 
     @Synchronized
@@ -581,30 +570,12 @@ internal object NativeBatterySuppressor {
     internal sealed interface Result {
         val summary: String
 
-        data class Active(
-            val nativeRequestedHide: Boolean,
-            val effectiveHide: Boolean,
-            val maskedChildren: Int,
-            val visualChanged: Boolean,
-        ) : Result {
-            override val summary: String
-                get() =
-                    "active:nativeRequestedHide=" + nativeRequestedHide +
-                        ",effectiveHide=" + effectiveHide +
-                        ",maskedChildren=" + maskedChildren +
-                        ",visualChanged=" + visualChanged
+        data object Active : Result {
+            override val summary = "active"
         }
 
-        data class Inactive(
-            val restoredNativeHide: Boolean?,
-            val restoredChildren: Int,
-            val visualChanged: Boolean,
-        ) : Result {
-            override val summary: String
-                get() =
-                    "inactive:restoredNativeHide=" + restoredNativeHide +
-                        ",restoredChildren=" + restoredChildren +
-                        ",visualChanged=" + visualChanged
+        data object Inactive : Result {
+            override val summary = "inactive"
         }
 
         data class Failure(
