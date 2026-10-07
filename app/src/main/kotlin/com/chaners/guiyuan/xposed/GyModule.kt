@@ -4489,8 +4489,27 @@ class GyModule : XposedModule() {
         level: Int,
         event: String,
         component: String,
-        state: String? = null,
+        state: String,
         vararg fields: Pair<String, Any?>,
+    ) {
+        writeDiagnostic(level, event, component, state, fields)
+    }
+
+    private fun logDiagnostic(
+        level: Int,
+        event: String,
+        component: String,
+        vararg fields: Pair<String, Any?>,
+    ) {
+        writeDiagnostic(level, event, component, null, fields)
+    }
+
+    private fun writeDiagnostic(
+        level: Int,
+        event: String,
+        component: String,
+        state: String?,
+        fields: Array<out Pair<String, Any?>>,
     ) {
         val values =
             buildMap {
