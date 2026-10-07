@@ -1,8 +1,8 @@
-name: Work Branch Canary
+name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'issue_comment'
       && github.event.issue.title
-      || format('canary - {0}', inputs.source_branch) }}
+      || format('{0} - {1}', inputs.variant, inputs.source_branch) }}
 
 on:
   workflow_dispatch:
@@ -11,6 +11,14 @@ on:
         description: 'Trusted same-repository feat/*, fix/* or refactor/* branch to validate'
         required: true
         type: string
+      variant:
+        description: APK variant
+        required: true
+        default: canary
+        type: choice
+        options:
+          - canary
+          - internal
   issue_comment:
     types: [created]
 
@@ -22,17 +30,17 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: work-canary-${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.event.issue.number }}
+  group: work-apk-${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
-  canary:
+  build:
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        github.actor == github.repository_owner) ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
-       github.event.comment.body == '/canary' &&
+       (github.event.comment.body == '/canary' || github.event.comment.body == '/internal') &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -50,7 +58,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_SOURCE_BRANCH: ${{ inputs.source_branch }}
+          MANUAL_VARIANT: ${{ inputs.variant }}
           COMMENT_PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
 
@@ -58,8 +68,13 @@ jobs:
           case "$EVENT_NAME" in
             workflow_dispatch)
               branch="$MANUAL_SOURCE_BRANCH"
+              variant="$MANUAL_VARIANT"
               if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
-                echo "::error::Manual Canary source must be a feat/*, fix/* or refactor/* branch, got: $branch"
+                echo "::error::Manual APK source must be a feat/*, fix/* or refactor/* branch, got: $branch"
+                exit 1
+              fi
+              if [[ "$variant" != "canary" && "$variant" != "internal" ]]; then
+                echo "::error::Unsupported APK variant: $variant"
                 exit 1
               fi
               source_sha="$(
@@ -77,6 +92,14 @@ jobs:
               head_repo="$(jq -r '.head.repo.full_name // empty' <<<"$pr_json")"
               branch="$(jq -r '.head.ref // empty' <<<"$pr_json")"
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
+              case "$COMMENT_BODY" in
+                /canary) variant="canary" ;;
+                /internal) variant="internal" ;;
+                *)
+                  echo "::error::Unsupported PR build command."
+                  exit 1
+                  ;;
+              esac
 
               if [[ "$pr_state" != "open" ]]; then
                 echo "::error::Comment-triggered Canary requires an open pull request."
@@ -96,7 +119,7 @@ jobs:
           esac
 
           if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
-            echo "::error::Canary source must be a feat/*, fix/* or refactor/* branch, got: $branch"
+            echo "::error::APK source must be a feat/*, fix/* or refactor/* branch, got: $branch"
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -106,11 +129,13 @@ jobs:
 
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "variant=$variant" >> "$GITHUB_OUTPUT"
           {
             printf '%s\n' "### Trusted source"
             printf '%s\n' "- Trigger: \`$EVENT_NAME\`"
             printf '%s\n' "- Source branch: \`$branch\`"
             printf '%s\n' "- Resolved SHA: \`$source_sha\`"
+            printf '%s\n' "- APK variant: \`$variant\`"
             printf '%s\n' "- Validation: this workflow independently tests and builds the exact resolved source SHA"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -126,6 +151,7 @@ jobs:
         env:
           EXPECTED_SOURCE_SHA: ${{ steps.source.outputs.sha }}
           EXPECTED_SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
+          EXPECTED_VARIANT: ${{ steps.source.outputs.variant }}
         run: |
           set -euo pipefail
           resolved_sha="$(git rev-parse HEAD)"
@@ -135,6 +161,7 @@ jobs:
           fi
           echo "TRUSTED_SOURCE_SHA=$resolved_sha" >> "$GITHUB_ENV"
           echo "TRUSTED_SOURCE_BRANCH=$EXPECTED_SOURCE_BRANCH" >> "$GITHUB_ENV"
+          echo "APK_VARIANT=$EXPECTED_VARIANT" >> "$GITHUB_ENV"
 
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
@@ -170,24 +197,35 @@ jobs:
       - name: Verify pinned HyperOS target profile
         run: python3 tools/verify_target_profile.py
 
-      - name: Test and build Canary
+      - name: Test and build requested APK
         env:
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
           HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
-        run: ./gradlew :app:testDebugUnitTest :app:assembleCanary --stacktrace
-
-      - name: Resolve Canary APK
         shell: bash
         run: |
-          if [[ -f "app/build/outputs/apk/canary/app-canary.apk" ]]; then
-            CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary.apk"
-          elif [[ -f "app/build/outputs/apk/canary/app-canary-unsigned.apk" ]]; then
-            CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary-unsigned.apk"
+          case "$APK_VARIANT" in
+            canary) ASSEMBLE_TASK=":app:assembleCanary" ;;
+            internal) ASSEMBLE_TASK=":app:assembleInternal" ;;
+            *)
+              echo "::error::Unsupported APK variant: $APK_VARIANT"
+              exit 1
+              ;;
+          esac
+          ./gradlew :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
+
+      - name: Resolve built APK
+        shell: bash
+        run: |
+          APK_DIR="app/build/outputs/apk/$APK_VARIANT"
+          if [[ -f "$APK_DIR/app-$APK_VARIANT.apk" ]]; then
+            APK_PATH="$APK_DIR/app-$APK_VARIANT.apk"
+          elif [[ -f "$APK_DIR/app-$APK_VARIANT-unsigned.apk" ]]; then
+            APK_PATH="$APK_DIR/app-$APK_VARIANT-unsigned.apk"
           else
-            echo "Canary APK output was not found."
+            echo "$APK_VARIANT APK output was not found."
             exit 1
           fi
-          echo "CANARY_APK_PATH=$CANARY_APK_PATH" >> "$GITHUB_ENV"
+          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
 
       - name: Verify modern Xposed metadata
         shell: bash
@@ -199,34 +237,34 @@ jobs:
           )
 
           for entry in "${REQUIRED_ENTRIES[@]}"; do
-            if ! unzip -Z1 "$CANARY_APK_PATH" | grep -Fxq "$entry"; then
+            if ! unzip -Z1 "$APK_PATH" | grep -Fxq "$entry"; then
               echo "Missing modern Xposed metadata: $entry"
               exit 1
             fi
           done
 
-          if unzip -Z1 "$CANARY_APK_PATH" | grep -Fxq "assets/xposed_init"; then
+          if unzip -Z1 "$APK_PATH" | grep -Fxq "assets/xposed_init"; then
             echo "Legacy Xposed entry metadata must not be packaged."
             exit 1
           fi
 
-          if [[ "$(unzip -p "$CANARY_APK_PATH" META-INF/xposed/scope.list | tr -d '\r\n')" != "com.android.systemui" ]]; then
+          if [[ "$(unzip -p "$APK_PATH" META-INF/xposed/scope.list | tr -d '\r\n')" != "com.android.systemui" ]]; then
             echo "Unexpected Xposed scope."
             exit 1
           fi
 
-          if ! unzip -p "$CANARY_APK_PATH" META-INF/xposed/module.prop | grep -Fxq "targetApiVersion=102"; then
+          if ! unzip -p "$APK_PATH" META-INF/xposed/module.prop | grep -Fxq "targetApiVersion=102"; then
             echo "Modern Xposed target API 102 metadata is missing."
             exit 1
           fi
 
-          if ! unzip -p "$CANARY_APK_PATH" META-INF/xposed/module.prop | grep -Fxq "autoHotReload=true"; then
+          if ! unzip -p "$APK_PATH" META-INF/xposed/module.prop | grep -Fxq "autoHotReload=true"; then
             echo "Modern Xposed hot reload metadata is missing."
             exit 1
           fi
 
           JAVA_ENTRY_COUNT="$(
-            unzip -p "$CANARY_APK_PATH" META-INF/xposed/java_init.list |
+            unzip -p "$APK_PATH" META-INF/xposed/java_init.list |
               tr -d '\r' |
               sed '/^[[:space:]]*$/d' |
               wc -l |
@@ -243,20 +281,20 @@ jobs:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$CANARY_APK_PATH"
+          "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$APK_PATH"
 
           ACTUAL_CERT_SHA256="$(
-            "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$CANARY_APK_PATH" |
+            "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$APK_PATH" |
               awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
               tr '[:upper:]' '[:lower:]'
           )"
 
           if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
-            echo "Built Canary is not signed by the Haple certificate."
+            echo "Built APK is not signed by the Haple certificate."
             exit 1
           fi
 
-      - name: Verify Canary is non-debuggable
+      - name: Verify APK is non-debuggable
         shell: bash
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -266,34 +304,35 @@ jobs:
             exit 1
           fi
 
-          if [[ "$("$APKANALYZER" manifest debuggable "$CANARY_APK_PATH")" != "false" ]]; then
-            echo "Canary APK must be non-debuggable."
+          if [[ "$("$APKANALYZER" manifest debuggable "$APK_PATH")" != "false" ]]; then
+            echo "$APK_VARIANT APK must be non-debuggable."
             exit 1
           fi
 
-      - name: Prepare Canary artifact
+      - name: Prepare APK artifact
         shell: bash
         run: |
           VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
           BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-          CANARY_APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-canary.apk"
+          APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${APK_VARIANT}.apk"
           mkdir -p dist
-          cp "$CANARY_APK_PATH" "dist/$CANARY_APK_NAME"
-          echo "CANARY_APK_NAME=$CANARY_APK_NAME" >> "$GITHUB_ENV"
+          cp "$APK_PATH" "dist/$APK_NAME"
+          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
 
-      - name: Upload Canary APK
+      - name: Upload APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ env.CANARY_APK_NAME }}
-          path: dist/${{ env.CANARY_APK_NAME }}
+          name: ${{ env.APK_NAME }}
+          path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
 
       - name: Validation summary
         if: always()
         shell: bash
         run: |
-          echo "### Work-branch Canary" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Work-branch APK" >> "$GITHUB_STEP_SUMMARY"
           echo "- Source branch: $TRUSTED_SOURCE_BRANCH" >> "$GITHUB_STEP_SUMMARY"
           echo "- Source SHA: $TRUSTED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Variant: $APK_VARIANT" >> "$GITHUB_STEP_SUMMARY"
           echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Validation: independent exact-SHA Canary validation" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Validation: independent exact-SHA APK validation" >> "$GITHUB_STEP_SUMMARY"

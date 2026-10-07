@@ -120,6 +120,8 @@
     <string name="section_about_project">Project</string>
     <string name="about_project_home_title">Project homepage</string>
     <string name="about_project_home_summary">View source code and project information</string>
+    <string name="about_repo_unavailable_title">Project link unavailable</string>
+    <string name="about_repo_unavailable_summary">This limited test build does not provide the project link yet. It will be available here later.</string>
     <string name="about_open_source_license_title">Open-source license</string>
     <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">Third-party dependencies</string>
