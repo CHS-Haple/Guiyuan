@@ -1,8 +1,11 @@
 package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
@@ -19,14 +22,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
+import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
+import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
@@ -75,17 +87,27 @@ internal fun MainHub(
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val scope = rememberCoroutineScope()
     var hotReloadInProgress by remember { mutableStateOf(false) }
-    val floatingMaterialActive =
+    val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
+    val liquidMaterialActive =
+        appearance.navEnabled &&
+            appearance.navStyle == NavStyle.Liquid &&
+            liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val backdrop =
-        if (floatingMaterialActive) {
+    val miuixBackdrop =
+        if (miuixMaterialActive) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
             }
+        } else {
+            null
+        }
+    val liquidBackdrop =
+        if (liquidMaterialActive) {
+            rememberLiquidNavBackdrop(surfaceColor)
         } else {
             null
         }
@@ -122,49 +144,83 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (backdrop != null) {
+        if (miuixBackdrop != null) {
             Modifier.floatingNavMaterial(
-                backdrop = backdrop,
+                backdrop = miuixBackdrop,
                 dark = dark,
                 style = appearance.navStyle,
             )
         } else {
             Modifier
         }
+    val liquidBottomPadding = liquidNavBottomPadding()
 
     Scaffold(
         bottomBar = {
-            if (appearance.navEnabled) {
-                FloatingNavigationBar(
-                    modifier = navigationBarModifier,
-                    color =
-                        if (backdrop != null) {
-                            Color.Transparent
-                        } else {
-                            MiuixTheme.colorScheme.surfaceContainer
-                        },
-                ) {
-                    items.forEachIndexed { index, item ->
-                        val selected = pagerState.currentPage == index
-                        NavContentItem(
-                            content = appearance.navContent,
-                            selected = selected,
-                            onClick = { selectPage(index) },
-                            icon = if (selected) item.selectedIcon else item.icon,
-                            label = item.label,
-                        )
+            when {
+                !appearance.navEnabled -> {
+                    NavigationBar {
+                        items.forEachIndexed { index, item ->
+                            val selected = pagerState.currentPage == index
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = { selectPage(index) },
+                                icon = if (selected) item.selectedIcon else item.icon,
+                                label = item.label,
+                            )
+                        }
                     }
                 }
-            } else {
-                NavigationBar {
-                    items.forEachIndexed { index, item ->
-                        val selected = pagerState.currentPage == index
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { selectPage(index) },
-                            icon = if (selected) item.selectedIcon else item.icon,
-                            label = item.label,
-                        )
+
+                liquidBackdrop != null -> {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = liquidBottomPadding),
+                    ) {
+                        LiquidNavBar(
+                            selectedIndex = { pagerState.currentPage },
+                            onSelected = ::selectPage,
+                            backdrop = liquidBackdrop,
+                            tabsCount = items.size,
+                            dark = dark,
+                            mode = appearance.liquidMode,
+                            modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                        ) {
+                            items.forEachIndexed { index, item ->
+                                LiquidNavEntry(
+                                    contentMode = appearance.navContent,
+                                    onClick = { selectPage(index) },
+                                    icon = item.icon,
+                                    label = item.label,
+                                    dark = dark,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                else -> {
+                    FloatingNavigationBar(
+                        modifier = navigationBarModifier,
+                        color =
+                            if (miuixBackdrop != null) {
+                                Color.Transparent
+                            } else {
+                                MiuixTheme.colorScheme.surfaceContainer
+                            },
+                    ) {
+                        items.forEachIndexed { index, item ->
+                            val selected = pagerState.currentPage == index
+                            NavContentItem(
+                                content = appearance.navContent,
+                                selected = selected,
+                                onClick = { selectPage(index) },
+                                icon = if (selected) item.selectedIcon else item.icon,
+                                label = item.label,
+                            )
+                        }
                     }
                 }
             }
@@ -175,8 +231,15 @@ internal fun MainHub(
                 Modifier
                     .fillMaxSize()
                     .then(
-                        if (backdrop != null) {
-                            Modifier.layerBackdrop(backdrop)
+                        if (miuixBackdrop != null) {
+                            Modifier.layerBackdrop(miuixBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .then(
+                        if (liquidBackdrop != null) {
+                            Modifier.liquidNavBackdropSource(liquidBackdrop)
                         } else {
                             Modifier
                         },

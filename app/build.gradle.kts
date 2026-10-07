@@ -9,6 +9,8 @@ val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get(
 val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
+val backdropVersion = providers.gradleProperty("backdrop.version").get()
+val shapesVersion = providers.gradleProperty("shapes.version").get()
 val libxposedVersion = "102.0.0"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.1.2"
@@ -47,6 +49,8 @@ android {
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
         buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
+        buildConfigField("String", "BACKDROP_VERSION", "\"$backdropVersion\"")
+        buildConfigField("String", "SHAPES_VERSION", "\"$shapesVersion\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
@@ -139,5 +143,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
+    implementation("io.github.kyant0:backdrop:$backdropVersion")
+    implementation("io.github.kyant0:shapes:$shapesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
 }

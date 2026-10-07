@@ -477,8 +477,8 @@ private fun resolveHomeRuntimeCardState(
             HomeRuntimeCardState(
                 titleRes = R.string.home_runtime_checking,
                 summaryRes = R.string.home_runtime_checking_summary,
-                tone = RuntimeStatusTone.Warning,
-                mark = RuntimeStatusMarkKind.Alert,
+                tone = RuntimeStatusTone.Neutral,
+                mark = RuntimeStatusMarkKind.Minus,
             )
 
         XposedStatus.FrameworkUnavailable ->
