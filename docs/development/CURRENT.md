@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `06635a7e`, with #248-#252 maintenance integrated and validated. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `fa2af0a7`; runtime code remains the validated `06635a7e` state, with #253 adding documentation-only closeout. `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,28 +24,20 @@
 
 ## Active objective
 
-The residual runtime-plumbing cleanup is closed.
+Phase 5 release qualification is active on `ci/stable-tag-boundary`, based on current `dev@fa2af0a7`.
 
-PR #252 was reviewed against accepted `dev@fa0e32c5`, then squash-merged to `dev` as `06635a7e`. The accepted net cleanup removes remaining synthetic/self-proof plumbing, keeps suppression results state-only, models the mutually exclusive Home native-AOD fallback as one explicit phase, folds low-value Policy wrappers, and shortens internal names where surrounding scope already supplies the missing context.
+The first release-safety audit found one concrete fail-closed gap in `.github/workflows/release.yml`: stable publishing rejects an existing GitHub Release for `v$VERSION_NAME`, but did not reject a pre-existing bare remote tag with the same name. GitHub CLI only creates the tag from `--target` when the matching tag does not already exist, so an old/manual bare tag could otherwise be reused by `gh release create`.
 
-The review explicitly retained independent Home-AOD origin/prearm facts, Keyguard readiness/lease facts, larger transition/slot/runtime-access types, partial-install results, and fail-native reasons where they carry real lifecycle or domain meaning. Do not reopen those merely to reduce character counts, Boolean counts, class counts, or compiler warnings.
+This branch adds one stable-only preflight: fail when either the Release already exists or the exact remote version tag already exists. Normal test releases are unchanged. No APK/runtime code, version, Build, dependency, signing certificate, changelog content, or device behavior changes.
 
-Validation history:
-
-- Full CI #2903 exposed one missed `ControlCenterRenderSession` reference after `SysUiPresentationOwner.StateResult -> Result`; no runtime or test failure was involved.
-- the missed reference was corrected at `5dcf8814`;
-- exact-head Full CI #2904 passed target-profile verification, Kotlin compilation, unit tests, Debug build, Modern Xposed metadata and non-debuggable checks;
-- #252 squash-merged as `06635a7e`;
-- integrated `dev` Full CI #2905 passed target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable checks and artifact upload.
-
-No separate device gate is required for this batch because review and CI leave no unresolved device-only behavior question. No display-version or Build bump was made.
+The broader Phase 5 audit has also confirmed that README/PRIVACY/SECURITY/THIRD_PARTY_NOTICES and direct dependency versions are present and materially aligned with the current project. The manifest does not declare `INTERNET`; the checked-in Wrapper is Gradle 9.8.0 as documented. Private Vulnerability Reporting account state could not be read through the available repository connector, so it is not treated as verified evidence here.
 
 Current priorities:
 
-1. start the next coherent task from current `dev@06635a7e`;
-2. treat the residual plumbing cleanup as closed unless a concrete maintenance, compatibility or runtime defect appears;
-3. continue rejecting synthetic metrics, self-proof diagnostics and success/failure contracts without a real failure source;
-4. keep `main` unchanged until a separate dev-to-main promotion is explicitly chosen.
+1. run Full validation for the release-workflow change;
+2. merge only if repository/tooling validation stays green;
+3. continue Phase 5 with concrete release/compatibility gaps rather than adding ceremonial documentation;
+4. keep `main` unchanged until an explicit dev-to-main promotion is chosen.
 
 ## Non-negotiable bounds
 
@@ -59,8 +51,8 @@ Current priorities:
 
 ## Immediate next
 
+- Validate the stable-tag fail-closed gate on `ci/stable-tag-boundary`.
 - Keep Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Use `dev@06635a7e` as the accepted integration base.
-- Do not reopen the completed plumbing pass just to shorten already-meaningful names, collapse independent state, or chase zero warnings.
-- Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
+- Treat `dev@fa2af0a7` as the current integration head and `06635a7e` as the latest runtime-affecting validated state beneath its documentation-only closeout.
+- Continue Phase 5 by verifying existing release/privacy/security/notice claims against source and workflow behavior; do not add documents merely to fill a checklist.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
