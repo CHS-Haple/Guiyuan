@@ -797,7 +797,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeParticipantRuntimeOwner.installControllerObserver(
+            NativeParticipantRuntime.installControllerObserver(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -813,7 +813,7 @@ class GyModule : XposedModule() {
                 component = "nativeParticipantControllerObserver",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeParticipantRuntimeOwner.installedHookCount,
+                "hooks" to NativeParticipantRuntime.installedHookCount,
             )
         } else {
             logDiagnostic(
@@ -3775,7 +3775,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeParticipantRuntimeOwner.schedule(
+            NativeParticipantRuntime.schedule(
                 host = host,
                 onReady = { readyHost ->
                     attachCombinedParticipant(

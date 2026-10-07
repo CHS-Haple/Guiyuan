@@ -531,7 +531,7 @@ internal object NativeParticipantRuntimeAccess {
         manager: Any,
     ): ControllerResolution {
         val observedController =
-            NativeParticipantRuntimeOwner.controllerFor(manager)
+            NativeParticipantRuntime.controllerFor(manager)
         if (observedController != null) {
             return ControllerResolution.Ready(
                 controller = observedController,

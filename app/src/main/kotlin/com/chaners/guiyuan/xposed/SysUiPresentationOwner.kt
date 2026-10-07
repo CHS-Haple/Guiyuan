@@ -404,7 +404,7 @@ internal object SysUiPresentationOwner {
                 ignoredSlotsField = field,
                 addIgnoredSlotsMethod = null,
                 setIgnoredSlotsMethod = null,
-                ignoredSlotLifetime = IgnoredSlotLifetime.NATIVE_CALL,
+                ignoreScope = IgnoreScope.CALL,
                 batteryHideField = hideField,
                 surfaceName = "home",
                 eventPrefix = "homePresentation",
@@ -616,7 +616,7 @@ internal object SysUiPresentationOwner {
                 ignoredSlotsField = field,
                 addIgnoredSlotsMethod = addMethod,
                 setIgnoredSlotsMethod = setMethod,
-                ignoredSlotLifetime = IgnoredSlotLifetime.PRESENTATION_SESSION,
+                ignoreScope = IgnoreScope.SESSION,
                 batteryHideField = hideField,
                 surfaceName = surface.surfaceName,
                 eventPrefix = surface.eventPrefix,
@@ -792,7 +792,7 @@ internal object SysUiPresentationOwner {
                 ignoredSlotsField = field,
                 addIgnoredSlotsMethod = addMethod,
                 setIgnoredSlotsMethod = setMethod,
-                ignoredSlotLifetime = IgnoredSlotLifetime.PRESENTATION_SESSION,
+                ignoreScope = IgnoreScope.SESSION,
                 batteryHideField = hideField,
                 surfaceName = "control-center-fake",
                 eventPrefix = "controlCenterPresentation",
@@ -1282,7 +1282,7 @@ internal object SysUiPresentationOwner {
         private val ignoredSlotsField: Field,
         private val addIgnoredSlotsMethod: java.lang.reflect.Method?,
         private val setIgnoredSlotsMethod: java.lang.reflect.Method?,
-        private val ignoredSlotLifetime: IgnoredSlotLifetime,
+        private val ignoreScope: IgnoreScope,
         private val batteryHideField: Field,
         private var surfaceName: String,
         private var eventPrefix: String,
@@ -1623,7 +1623,7 @@ internal object SysUiPresentationOwner {
                 )
             val restored = restoreClipMasks() + restoreMirroredPeerClipMasks()
             val explicitLayoutRequest =
-                requestLayout && ignoredSlotLifetime == IgnoredSlotLifetime.NATIVE_CALL
+                requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
                 batteryContainer.get()?.requestLayout()
             }
@@ -1638,7 +1638,7 @@ internal object SysUiPresentationOwner {
         }
 
         fun <T> withRepresentedSlotsIgnored(block: () -> T): T {
-            if (!active || ignoredSlotLifetime == IgnoredSlotLifetime.PRESENTATION_SESSION) {
+            if (!active || ignoreScope == IgnoreScope.SESSION) {
                 return block()
             }
             val container = statusIcons.get()
@@ -1676,7 +1676,7 @@ internal object SysUiPresentationOwner {
 
         private fun applyPersistentIgnoredSlots(group: ViewGroup): Boolean {
             if (
-                ignoredSlotLifetime != IgnoredSlotLifetime.PRESENTATION_SESSION ||
+                ignoreScope != IgnoreScope.SESSION ||
                 persistentIgnoredSlotsApplied
             ) {
                 return true
@@ -1748,7 +1748,7 @@ internal object SysUiPresentationOwner {
             requestLayout: Boolean,
         ): Boolean {
             if (
-                ignoredSlotLifetime != IgnoredSlotLifetime.PRESENTATION_SESSION ||
+                ignoreScope != IgnoreScope.SESSION ||
                 !persistentIgnoredSlotsApplied
             ) {
                 return true
@@ -2628,9 +2628,9 @@ internal object SysUiPresentationOwner {
         }
     }
 
-    private enum class IgnoredSlotLifetime {
-        NATIVE_CALL,
-        PRESENTATION_SESSION,
+    private enum class IgnoreScope {
+        CALL,
+        SESSION,
     }
 
 
