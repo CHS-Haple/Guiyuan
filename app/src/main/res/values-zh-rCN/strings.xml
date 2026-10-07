@@ -107,8 +107,8 @@
     <string name="floating_navigation_style_glass">玻璃</string>
     <string name="floating_navigation_style_liquid">液态玻璃</string>
     <string name="floating_navigation_liquid_mode">玻璃质感</string>
-    <string name="floating_navigation_liquid_mode_summary">选择柔和或通透的玻璃观感</string>
-    <string name="floating_navigation_liquid_mode_blur">柔和</string>
+    <string name="floating_navigation_liquid_mode_summary">选择模糊或通透的玻璃观感</string>
+    <string name="floating_navigation_liquid_mode_blur">模糊</string>
     <string name="floating_navigation_liquid_mode_clear">通透</string>
     <string name="floating_navigation_content">悬浮导航栏内容</string>
     <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>
