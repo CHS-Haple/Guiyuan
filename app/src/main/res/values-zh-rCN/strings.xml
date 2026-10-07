@@ -279,13 +279,8 @@
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_view">清空视图</string>
     <string name="diagnostics_view_cleared">视图已清空。刷新诊断即可重新读取当前状态。</string>
-    <string name="section_diagnostics_health">运行状态</string>
     <string name="section_diagnostics_events">关键事件</string>
     <string name="diagnostics_events_summary">本次运行，共 %1$d 条关键事件</string>
-    <string name="diagnostics_health_healthy">运行正常</string>
-    <string name="diagnostics_health_degraded">存在需要关注的状态</string>
-    <string name="diagnostics_health_unavailable">运行状态不可用</string>
-    <string name="diagnostics_health_summary">%1$s · %2$s</string>
     <string name="diagnostics_component_module">模块</string>
     <string name="diagnostics_component_compatibility">兼容性</string>
     <string name="diagnostics_component_status_host">状态栏宿主</string>

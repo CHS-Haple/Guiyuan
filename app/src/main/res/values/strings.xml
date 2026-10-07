@@ -280,13 +280,8 @@
     <string name="diagnostics_scroll_bottom">Scroll to bottom</string>
     <string name="diagnostics_clear_view">Clear view</string>
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
-    <string name="section_diagnostics_health">Runtime health</string>
     <string name="section_diagnostics_events">Key events</string>
     <string name="diagnostics_events_summary">This run, %1$d key events</string>
-    <string name="diagnostics_health_healthy">Runtime healthy</string>
-    <string name="diagnostics_health_degraded">Runtime needs attention</string>
-    <string name="diagnostics_health_unavailable">Runtime health unavailable</string>
-    <string name="diagnostics_health_summary">%1$s · %2$s</string>
     <string name="diagnostics_component_module">Module</string>
     <string name="diagnostics_component_compatibility">Compatibility</string>
     <string name="diagnostics_component_status_host">Status bar host</string>

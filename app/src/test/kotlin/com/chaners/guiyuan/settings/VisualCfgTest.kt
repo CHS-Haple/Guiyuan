@@ -64,18 +64,6 @@ class VisualCfgTest {
     }
 
     @Test
-    fun missingPresetAlwaysDefaultsToHyperos() {
-        assertEquals(
-            BatteryColorPreset.HYPEROS,
-            batteryColorPresetForMissingKey(hadPreviousVisualSchema = true),
-        )
-        assertEquals(
-            BatteryColorPreset.HYPEROS,
-            batteryColorPresetForMissingKey(hadPreviousVisualSchema = false),
-        )
-    }
-
-    @Test
     fun legacyStoredCustomColorInfersCustomMode() {
         assertEquals(
             BatteryColorMode.CUSTOM,

@@ -21,7 +21,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
+import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
@@ -103,24 +103,27 @@ internal fun BatteryColorPreference(
     )
 }
 
+private data class DetailRequest(
+    val customId: Int,
+    val slot: BatteryColorSlot,
+)
+
+private data class CreateRequest(
+    val sourceKey: String,
+    val targetSlot: BatteryColorSlot?,
+)
+
 @Composable
 internal fun BatteryColorBottomSheet(
     show: Boolean,
     library: BatteryColorSchemeLibrary,
-    repository: BatteryColorSchemeLibraryRepository,
+    repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
-    var selectedCustomId by remember { mutableStateOf<Int?>(null) }
-    var selectedSlot by remember { mutableStateOf<BatteryColorSlot?>(null) }
+    var detailRequest by remember { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember { mutableStateOf(false) }
     var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var pendingCreateSourceKey by remember {
-        mutableStateOf(BATTERY_COLOR_SCHEME_HYPEROS_KEY)
-    }
-    var pendingCreateSlot by remember {
-        mutableStateOf<BatteryColorSlot?>(null)
-    }
+    var createRequest by remember { mutableStateOf<CreateRequest?>(null) }
     var renameCustomId by remember { mutableStateOf<Int?>(null) }
     var deleteCustomId by remember { mutableStateOf<Int?>(null) }
 
@@ -129,8 +132,8 @@ internal fun BatteryColorBottomSheet(
         nextCustomId?.let {
             stringResource(R.string.battery_custom_scheme_default_name, it)
         }
-    val detailCustom = selectedCustomId?.let(library::customById)
-    val detailSlot = selectedSlot
+    val detailCustom = detailRequest?.let { request -> library.customById(request.customId) }
+    val detailSlot = detailRequest?.slot
     val detailVisible =
         show &&
             showDetail &&
@@ -140,8 +143,7 @@ internal fun BatteryColorBottomSheet(
     LaunchedEffect(show) {
         if (!show) {
             showDetail = false
-            selectedCustomId = null
-            selectedSlot = null
+            detailRequest = null
         }
     }
 
@@ -175,19 +177,22 @@ internal fun BatteryColorBottomSheet(
             nextCustomName = nextCustomName,
             onApplyScheme = repository::activateScheme,
             onOpenBuiltInSlot = { scheme, slot ->
-                pendingCreateSourceKey = scheme.key
-                pendingCreateSlot = slot
-                showCreateDialog = true
+                createRequest =
+                    CreateRequest(
+                        sourceKey = scheme.key,
+                        targetSlot = slot,
+                    )
             },
             onOpenCustomSlot = { id, slot ->
-                selectedCustomId = id
-                selectedSlot = slot
+                detailRequest = DetailRequest(customId = id, slot = slot)
                 showDetail = true
             },
             onAdd = {
-                pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
-                pendingCreateSlot = null
-                showCreateDialog = true
+                createRequest =
+                    CreateRequest(
+                        sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                        targetSlot = null,
+                    )
             },
             onRenameCustom = { renameCustomId = it },
             onCopyCustom = { custom ->
@@ -230,8 +235,7 @@ internal fun BatteryColorBottomSheet(
         onDismissRequest = { showDetail = false },
         onDismissFinished = {
             if (!showDetail) {
-                selectedCustomId = null
-                selectedSlot = null
+                detailRequest = null
             }
         },
     ) {
@@ -250,28 +254,24 @@ internal fun BatteryColorBottomSheet(
     }
 
     BatteryCreateSchemeDialog(
-        show = showCreateDialog,
+        show = createRequest != null,
         nextId = nextCustomId,
         onDismiss = {
-            showCreateDialog = false
-            pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
-            pendingCreateSlot = null
+            createRequest = null
         },
         onCreate = { name ->
-            val sourceKey = pendingCreateSourceKey
-            val targetSlot = pendingCreateSlot
-            showCreateDialog = false
-            pendingCreateSourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY
-            pendingCreateSlot = null
-            repository.createCustom(
-                name = name,
-                fromSchemeKey = sourceKey,
-            )?.let { id ->
-                requestedSchemeKey = customSchemeKey(id)
-                if (targetSlot != null) {
-                    selectedCustomId = id
-                    selectedSlot = targetSlot
-                    showDetail = true
+            val request = createRequest
+            createRequest = null
+            if (request != null) {
+                repository.createCustom(
+                    name = name,
+                    fromSchemeKey = request.sourceKey,
+                )?.let { id ->
+                    requestedSchemeKey = customSchemeKey(id)
+                    request.targetSlot?.let { slot ->
+                        detailRequest = DetailRequest(customId = id, slot = slot)
+                        showDetail = true
+                    }
                 }
             }
         },

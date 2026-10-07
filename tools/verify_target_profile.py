@@ -95,13 +95,19 @@ if not isinstance(status_hook, dict):
 status_hook_class = status_hook.get("className")
 
 capture_text = STATUS_HOST_CAPTURE_PATH.read_text(encoding="utf-8")
-capture_class = re.search(r'HOST_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"', capture_text)
-capture_method = re.search(r'HOST_READY_METHOD_NAME\s*=\s*"([^"]+)"', capture_text)
-if not capture_class or not capture_method:
-    fail("status host capture constants are missing")
-if capture_class.group(1) != status_hook_class:
+capture_class = source_string_constant(
+    capture_text,
+    "HOST_CLASS_NAME",
+    "status host capture",
+)
+capture_method = source_string_constant(
+    capture_text,
+    "HOST_READY_METHOD_NAME",
+    "status host capture",
+)
+if capture_class != status_hook_class:
     fail("status host capture class drifted from the pinned APK profile")
-if capture_method.group(1) != status_hook.get("methodName"):
+if capture_method != status_hook.get("methodName"):
     fail("status host capture method drifted from the pinned APK profile")
 
 network_source_text = NETWORK_SOURCE_PATH.read_text(encoding="utf-8")
@@ -118,20 +124,19 @@ for hook_name, (class_constant, method_constant) in network_source_hook_constant
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing network hook point: {hook_name}")
-    class_match = re.search(
-        rf'{class_constant}\s*=\s*\n?\s*"([^"]+)"',
+    probe_class_name = source_string_constant(
         network_source_text,
+        class_constant,
+        f"network state source {hook_name}",
     )
-    method_match = re.search(
-        rf'{method_constant}\s*=\s*"([^"]+)"',
+    probe_method_name = source_string_constant(
         network_source_text,
+        method_constant,
+        f"network state source {hook_name}",
     )
-    if not class_match or not method_match:
-        fail(f"network state source constants are missing: {hook_name}")
-    probe_class_name = class_match.group(1).replace("\\$", "$")
     if probe_class_name != hook_point.get("className"):
         fail(f"network state source class drifted from profile: {hook_name}")
-    if method_match.group(1) != hook_point.get("methodName"):
+    if probe_method_name != hook_point.get("methodName"):
         fail(f"network state source method drifted from profile: {hook_name}")
 
 scene_hook = hook_points.get("batteryStatusBarState")
@@ -139,38 +144,38 @@ if not isinstance(scene_hook, dict):
     fail("missing batteryStatusBarState hook point")
 
 scene_source_text = SCENE_SOURCE_PATH.read_text(encoding="utf-8")
-scene_class = re.search(
-    r'BATTERY_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+scene_class = source_string_constant(
     scene_source_text,
+    "BATTERY_VIEW_CLASS_NAME",
+    "scene state source",
 )
-scene_method = re.search(
-    r'UPDATE_STATE_METHOD_NAME\s*=\s*"([^"]+)"',
+scene_method = source_string_constant(
     scene_source_text,
+    "UPDATE_STATE_METHOD_NAME",
+    "scene state source",
 )
-scene_field = re.search(
-    r'STATUS_BAR_STATE_FIELD_NAME\s*=\s*"([^"]+)"',
+scene_field = source_string_constant(
     scene_source_text,
+    "STATUS_BAR_STATE_FIELD_NAME",
+    "scene state source",
 )
-if not scene_class or not scene_method or not scene_field:
-    fail("scene state source constants are missing")
-if scene_class.group(1) != scene_hook.get("className"):
+if scene_class != scene_hook.get("className"):
     fail("scene state source class drifted from profile")
-if scene_method.group(1) != scene_hook.get("methodName"):
+if scene_method != scene_hook.get("methodName"):
     fail("scene state source method drifted from profile")
 
 verified_fields = profile.get("verifiedSystemUiFields", {})
-if scene_field.group(1) not in set(verified_fields.get(scene_class.group(1), [])):
+if scene_field not in set(verified_fields.get(scene_class, [])):
     fail("scene state source field is not verified in the SystemUI APK")
 
 
 
 battery_source_text = BATTERY_SOURCE_PATH.read_text(encoding="utf-8")
-battery_source_class = re.search(
-    r'BATTERY_ICON_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+battery_source_class = source_string_constant(
     battery_source_text,
+    "BATTERY_ICON_VIEW_CLASS_NAME",
+    "battery semantic source",
 )
-if not battery_source_class:
-    fail("battery semantic source class constant is missing")
 
 battery_hook_constants = {
     "batteryIconLevelChanged": "BATTERY_LEVEL_METHOD_NAME",
@@ -183,22 +188,21 @@ for hook_name, method_constant in battery_hook_constants.items():
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing battery semantic hook point: {hook_name}")
-    if battery_source_class.group(1) != hook_point.get("className"):
+    if battery_source_class != hook_point.get("className"):
         fail(f"battery semantic source class drifted from profile: {hook_name}")
-    method_match = re.search(
-        rf'{method_constant}\s*=\s*"([^"]+)"',
+    method_name = source_string_constant(
         battery_source_text,
+        method_constant,
+        f"battery semantic source {hook_name}",
     )
-    if not method_match:
-        fail(f"battery semantic method constant is missing: {hook_name}")
-    if method_match.group(1) != hook_point.get("methodName"):
+    if method_name != hook_point.get("methodName"):
         fail(f"battery semantic method drifted from profile: {hook_name}")
 
 battery_semantic_contract = profile.get("batterySemanticContract")
 if not isinstance(battery_semantic_contract, dict):
     fail("missing batterySemanticContract")
 battery_semantic_class = battery_semantic_contract.get("className")
-if battery_semantic_class != battery_source_class.group(1):
+if battery_semantic_class != battery_source_class:
     fail("battery semantic contract class drifted from source")
 if battery_semantic_class not in verified_systemui:
     fail("battery semantic contract class is not verified in the SystemUI APK")
