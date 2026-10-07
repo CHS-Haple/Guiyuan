@@ -5215,6 +5215,12 @@ This pass does not intentionally change rendering geometry, transition timing, H
 
 Full base-to-head review caught two cleanup defects before CI: an accidental executable-bit change on `tools/verify_target_profile.py`, and one malformed Home-AOD enum reset produced by an earlier mechanical replacement. Both were corrected before validation.
 
-### Validation
+### Validation and closeout
 
-Exact-head Runtime CI is required before merge. No device-only question is currently identified; device validation should be added only if automated validation or further review exposes one.
+- Full CI #2903 reached Kotlin compilation after target-profile success and exposed one incomplete internal rename: `ControlCenterRenderSession` still referenced `SysUiPresentationOwner.StateResult`. The five stale references were updated to `Result`; no behavior or state contract changed.
+- exact-head Full CI #2904 passed on `5dcf8814`: target-profile verification, Kotlin compilation, unit tests, Debug APK build, Modern Xposed metadata and non-debuggable verification all succeeded.
+- PR #252 was squash-merged to `dev` as `06635a7e`.
+- integrated `dev` Full CI #2905 passed the signed Canary path, including target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload.
+- existing Kotlin warnings remain in reflection/Java-interop areas; this pass does not reopen them merely to reach zero warnings.
+- no separate device gate is required because the accepted diff is behavior-neutral and leaves no unresolved device-only question.
+- external version remains 0.2.1 and Build remains 746 / `20261006-746`.
