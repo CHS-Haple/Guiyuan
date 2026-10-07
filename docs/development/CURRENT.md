@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `50b042e`; PR #264 adds project-support documentation/assets only.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `d6cd1d85` after PR #267 completed the second full-repository maintainability audit.
+- Integration runtime checkpoint: Guiyuan 0.2.1 / Build 746 at `d6cd1d85` after PR #267 completed the second full-repository maintainability audit. Later `dev` commits may be documentation-only state syncs and do not change this runtime checkpoint.
 - `main` and `dev` are historically diverged because the accepted support entry was committed separately through #264 and synced to `dev` through #265. The five support files are blob-identical across both branches; this is not a runtime/content conflict.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
