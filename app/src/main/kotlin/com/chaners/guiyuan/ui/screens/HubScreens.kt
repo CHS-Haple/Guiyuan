@@ -506,12 +506,9 @@ internal fun FeaturesScreen(
     }
 }
 
-private enum class RestartState {
-    IDLE,
-    CONFIRMING,
-    PENDING,
-    RESTARTING,
-    FAILED,
+private enum class RestartDialog {
+    CONFIRM,
+    FAILURE,
 }
 
 @Composable
@@ -531,7 +528,9 @@ internal fun SettingsHubScreen(
         stringResource(R.string.language_simplified_chinese),
     )
     val scope = rememberCoroutineScope()
-    var restartState by rememberSaveable { mutableStateOf(RestartState.IDLE) }
+    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
+    var restartInProgress by rememberSaveable { mutableStateOf(false) }
+    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
 
     HubPage(
         title = stringResource(R.string.settings_title),
@@ -571,30 +570,29 @@ internal fun SettingsHubScreen(
             BasicComponent(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_summary),
-                enabled =
-                    restartState != RestartState.PENDING &&
-                        restartState != RestartState.RESTARTING,
-                onClick = { restartState = RestartState.CONFIRMING },
+                enabled = !restartInProgress,
+                onClick = { restartDialog = RestartDialog.CONFIRM },
             )
         },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_dialog_summary),
-                show = restartState == RestartState.CONFIRMING,
+                show = restartDialog == RestartDialog.CONFIRM,
                 onDismissRequest = {
-                    restartState = RestartState.IDLE
+                    restartAfterDialogDismiss = false
+                    restartDialog = null
                 },
                 onDismissFinished = {
-                    if (restartState == RestartState.PENDING) {
-                        restartState = RestartState.RESTARTING
+                    if (restartAfterDialogDismiss && !restartInProgress) {
+                        restartAfterDialogDismiss = false
+                        restartInProgress = true
                         scope.launch {
-                            restartState =
-                                if (SysUiScope.restart()) {
-                                    RestartState.IDLE
-                                } else {
-                                    RestartState.FAILED
-                                }
+                            val success = SysUiScope.restart()
+                            restartInProgress = false
+                            if (!success) {
+                                restartDialog = RestartDialog.FAILURE
+                            }
                         }
                     }
                 },
@@ -607,7 +605,8 @@ internal fun SettingsHubScreen(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            restartState = RestartState.IDLE
+                            restartAfterDialogDismiss = false
+                            restartDialog = null
                         },
                     )
                     Spacer(Modifier.width(20.dp))
@@ -616,7 +615,8 @@ internal fun SettingsHubScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
-                            restartState = RestartState.PENDING
+                            restartAfterDialogDismiss = true
+                            restartDialog = null
                         },
                     )
                 }
@@ -625,14 +625,14 @@ internal fun SettingsHubScreen(
             OverlayDialog(
                 title = stringResource(R.string.restart_scope_failed),
                 summary = stringResource(R.string.restart_scope_failed_summary),
-                show = restartState == RestartState.FAILED,
-                onDismissRequest = { restartState = RestartState.IDLE },
+                show = restartDialog == RestartDialog.FAILURE,
+                onDismissRequest = { restartDialog = null },
             ) {
                 TextButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = { restartState = RestartState.IDLE },
+                    onClick = { restartDialog = null },
                 )
             }
         },
