@@ -507,7 +507,7 @@ private fun MiniNavigationPreview(
         }
 
         if (floating) {
-            MiniNavigationViewportContent {
+            MiniNavViewport {
                 FloatingNavigationBar(
                     modifier = floatingModifier,
                     color =
@@ -542,7 +542,7 @@ private fun MiniNavigationPreview(
                 }
             }
         } else {
-            MiniNavigationViewportContent {
+            MiniNavViewport {
                 NavigationBar(
                     color = MiuixTheme.colorScheme.surface,
                     showDivider = true,
@@ -558,7 +558,7 @@ private fun MiniNavigationPreview(
 }
 
 @Composable
-private fun MiniNavigationViewportContent(
+private fun MiniNavViewport(
     content: @Composable () -> Unit,
 ) {
     Layout(

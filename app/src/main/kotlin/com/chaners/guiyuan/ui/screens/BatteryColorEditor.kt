@@ -29,7 +29,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
-import com.chaners.guiyuan.settings.limitBatteryCustomSchemeNameInput
+import com.chaners.guiyuan.settings.limitCustomSchemeName
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -394,7 +394,7 @@ internal fun BatteryCreateSchemeDialog(
         Column {
             TextField(
                 value = name,
-                onValueChange = { name = limitBatteryCustomSchemeNameInput(it) },
+                onValueChange = { name = limitCustomSchemeName(it) },
                 label = stringResource(R.string.battery_custom_scheme_name),
                 singleLine = true,
             )
@@ -442,7 +442,7 @@ internal fun BatteryRenameSchemeDialog(
             Column {
                 TextField(
                     value = name,
-                    onValueChange = { name = limitBatteryCustomSchemeNameInput(it) },
+                    onValueChange = { name = limitCustomSchemeName(it) },
                     label = stringResource(R.string.battery_custom_scheme_name),
                     singleLine = true,
                 )
