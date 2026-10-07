@@ -244,6 +244,8 @@ A device test is useful for ownership/lifecycle/scene/transition/geometry change
 
 Do not request device testing merely because a commit or APK exists.
 
+The `internal` build is a distribution-only test variant: non-debuggable, release-equivalent, and runtime-diagnostic capable. It may gate app-side public project navigation, but must not change SystemUI behavior, settings semantics or Xposed scope.
+
 ## Versions, dependencies and release
 
 Current version/build identity comes from Gradle configuration. Display version changes only when explicitly intended; ordinary development may advance internal build identity.

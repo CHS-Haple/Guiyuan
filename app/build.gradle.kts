@@ -86,6 +86,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
@@ -94,6 +95,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
@@ -112,6 +114,16 @@ android {
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
+        create("internal") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+            versionNameSuffix = "-internal"
+            buildConfigField("String", "BUILD_CHANNEL", "\"internal\"")
+            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
+            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "false")
+        }
     }
 
     compileOptions {
@@ -122,7 +134,7 @@ android {
     packaging {
         resources {
             // Modern Xposed metadata is loaded directly by the framework and must survive
-            // optimized Canary/Release packaging even when dependency graphs change.
+            // optimized non-debug packaging even when dependency graphs change.
             merges += "META-INF/xposed/**"
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
