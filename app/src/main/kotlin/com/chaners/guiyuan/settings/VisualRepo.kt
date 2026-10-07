@@ -446,10 +446,7 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
             BatteryColorPreset.fromPersisted(
                 getString(
                     BATTERY_COLOR_PRESET_KEY,
-                    batteryColorPresetForMissingKey(
-                        hadPreviousVisualSchema =
-                            contains(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY),
-                    ).persistedValue,
+                    BatteryColorPreset.HYPEROS.persistedValue,
                 ),
             ),
         batteryColorModes =

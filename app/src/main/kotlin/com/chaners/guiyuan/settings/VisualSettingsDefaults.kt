@@ -128,14 +128,6 @@ internal const val BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY =
 private const val BATTERY_TOP_CHARGING_SCALE_SCHEMA_CURRENT = 2
 private const val BATTERY_TOP_SCALE_EPSILON = 0.0001f
 
-internal fun batteryColorPresetForMissingKey(
-    hadPreviousVisualSchema: Boolean,
-): BatteryColorPreset {
-    @Suppress("UNUSED_VARIABLE")
-    val compatibilityMarker = hadPreviousVisualSchema
-    return BatteryColorPreset.HYPEROS
-}
-
 internal fun migrateBatteryColorPresetDefaultIfNeeded(
     preferences: SharedPreferences,
 ) {
@@ -148,12 +140,10 @@ internal fun migrateBatteryColorPresetDefaultIfNeeded(
 
     val editor = preferences.edit()
     if (!preferences.contains(BATTERY_COLOR_PRESET_KEY)) {
-        val preset =
-            batteryColorPresetForMissingKey(
-                hadPreviousVisualSchema =
-                    preferences.contains(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY),
-            )
-        editor.putString(BATTERY_COLOR_PRESET_KEY, preset.persistedValue)
+        editor.putString(
+            BATTERY_COLOR_PRESET_KEY,
+            BatteryColorPreset.HYPEROS.persistedValue,
+        )
     }
     editor
         .putInt(
