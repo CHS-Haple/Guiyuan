@@ -4044,16 +4044,6 @@ class GyModule : XposedModule() {
                                         "overlayActive" to true,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batteryRollback.summary,
-                                        "nativeGeometryWrites" to
-                                            if (
-                                                batteryRollback is
-                                                    NativeBatterySuppressionOwner.StateResult.Inactive &&
-                                                batteryRollback.changed
-                                            ) {
-                                                1
-                                            } else {
-                                                0
-                                            },
                                     )
                                     false
                                 } else {
@@ -4068,16 +4058,6 @@ class GyModule : XposedModule() {
                                         "overlayActive" to false,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batterySuppression.summary,
-                                        "nativeGeometryWrites" to
-                                            if (
-                                                batterySuppression is
-                                                    NativeBatterySuppressionOwner.StateResult.Active &&
-                                                batterySuppression.changed
-                                            ) {
-                                                1
-                                            } else {
-                                                0
-                                            },
                                     )
                                     true
                                 }
@@ -4119,16 +4099,6 @@ class GyModule : XposedModule() {
                                     "overlayActive" to true,
                                     "networkSuppression" to networkSuppression.summary,
                                     "batterySuppression" to batterySuppression.summary,
-                                    "nativeGeometryWrites" to
-                                        if (
-                                            batterySuppression is
-                                                NativeBatterySuppressionOwner.StateResult.Inactive &&
-                                            batterySuppression.changed
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
                                 )
                                 true
                             }
