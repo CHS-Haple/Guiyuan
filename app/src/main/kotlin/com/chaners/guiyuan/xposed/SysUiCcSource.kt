@@ -761,7 +761,6 @@ internal object SysUiCcSource {
                 visibleChanged ||
                 sourceSceneChanged ||
                 batteryIslandChanged
-
     }
 
     private data class ProbeState(
