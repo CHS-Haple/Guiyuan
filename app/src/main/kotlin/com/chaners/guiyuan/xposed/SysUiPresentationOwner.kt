@@ -1304,7 +1304,7 @@ internal object SysUiPresentationOwner {
         private val active: Boolean
             get() = lifecycle != Lifecycle.STOPPED
         private val started: Boolean
-            get() = lifecycle == Lifecycle.RUNNING
+            get() = lifecycle != Lifecycle.CREATED
         private var deferVisualMaskUntilLayout = false
         private var compactLayoutReady = false
         private var layoutReadyCallback: ((Int) -> Unit)? = null
