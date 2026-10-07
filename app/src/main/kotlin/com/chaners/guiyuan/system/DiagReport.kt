@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.BuildConfig
+import com.chaners.guiyuan.settings.DiagLevel
 
 internal object DiagReport {
     private const val DETAILED_LINES = 600
@@ -12,7 +13,7 @@ internal object DiagReport {
         val log = snapshot.log
         val limit =
             if (
-                level.name == "Detailed" &&
+                level == DiagLevel.Detailed &&
                 (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
             ) {
                 DETAILED_LINES
