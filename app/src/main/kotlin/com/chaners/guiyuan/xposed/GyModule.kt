@@ -1185,7 +1185,7 @@ class GyModule : XposedModule() {
             )
         }
         controlCenterSourceScene = sourceScene
-        SysUiPresentationOwner.updateControlCenterSourceScene(sourceScene)
+        SysUiPresentationOwner.updateCcSourceScene(sourceScene)
         acquireKeyguardCcLease(
             source = "source-scene:" + authority,
         )
@@ -1388,7 +1388,7 @@ class GyModule : XposedModule() {
         transferredCompactReady: Boolean,
     ): String {
         val failure =
-            CcRenderSession.restoreLaidOutHostAfterHotReload(
+            CcRenderSession.restoreAfterHotReload(
                 host = host,
                 onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1411,7 +1411,7 @@ class GyModule : XposedModule() {
 
         val compactReady =
             CcRenderSession
-                .currentNativePresentationReadyForHotReload()
+                .nativeReadyForHotReload()
         logDiagnostic(
             level = Log.INFO,
             event = "projection.restore",
@@ -1537,7 +1537,7 @@ class GyModule : XposedModule() {
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         safely {
-            SysUiPresentationOwner.updateControlCenterSourceScene(SourceScene.UNKNOWN)
+            SysUiPresentationOwner.updateCcSourceScene(SourceScene.UNKNOWN)
         }
         safely {
             CcTransitionOwner.setSceneEligible(false)
@@ -4349,7 +4349,7 @@ class GyModule : XposedModule() {
         keyguardCcLeaseActive = false
         CcRenderSession.setSceneEligible(false)
         CcTransitionOwner.setSceneEligible(false)
-        SysUiPresentationOwner.deactivateControlCenter(source)
+        SysUiPresentationOwner.deactivateCc(source)
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)

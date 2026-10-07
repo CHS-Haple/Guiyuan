@@ -54,7 +54,7 @@ internal object SysUiHotReload {
 
         val controlCenterCompactReady =
             CcRenderSession
-                .currentNativePresentationReadyForHotReload()
+                .nativeReadyForHotReload()
 
         val transfer =
             HotReloadTransfer.capture(
@@ -69,7 +69,7 @@ internal object SysUiHotReload {
                 appliedTint = stableTint?.appliedTint,
                 statusIconTint = stableTint?.statusIconTint,
                 controlCenterFakeHost =
-                    CcRenderSession.currentAttachedHostForHotReload(),
+                    CcRenderSession.hotReloadHost(),
                 controlCenterCompactReady = controlCenterCompactReady,
                 generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(

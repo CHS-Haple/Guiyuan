@@ -136,7 +136,7 @@ internal object CcTransitionOwner {
         }
 
         val sourceSnapshot =
-            CcRenderSession.currentTransitionSourceSnapshot()
+            CcRenderSession.transitionSourceSnapshot()
                 ?: run {
                     current?.stop("source-unavailable")
                     current = null
@@ -291,7 +291,7 @@ internal object CcTransitionOwner {
                 }
 
                 val latest =
-                    CcRenderSession.currentTransitionSourceSnapshot()
+                    CcRenderSession.transitionSourceSnapshot()
                 if (
                     latest != null &&
                     latest.view === source &&
@@ -498,7 +498,7 @@ internal object CcTransitionOwner {
         }
 
         fun stop(source: String) {
-            SysUiPresentationOwner.clearControlCenterTransitionReservation(
+            SysUiPresentationOwner.clearCcTransitionReservation(
                 "transition-" + source,
             )
             genericIslandShowing = null
@@ -1703,7 +1703,7 @@ internal object CcTransitionOwner {
         private fun syncTransitionReservation() {
             if (!transitionReservationEnabled) {
                 if (lastNativeReservationWidthPx != null) {
-                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearCcTransitionReservation(
                         "transition-source-native-peer-motion",
                     )
                 }
@@ -1750,7 +1750,7 @@ internal object CcTransitionOwner {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
                                     SysUiPresentationOwner
-                                        .failControlCenterPresentation(
+                                        .failCcPresentation(
                                             "battery-island-peer-end-frame-unavailable",
                                         )
                                 if (!presentationFailed) {
@@ -1775,7 +1775,7 @@ internal object CcTransitionOwner {
 
             if (!nativePaddingExpansionAllowed) {
                 if (lastNativeReservationWidthPx != null) {
-                    SysUiPresentationOwner.clearControlCenterTransitionReservation(
+                    SysUiPresentationOwner.clearCcTransitionReservation(
                         "transition-island-native-padding-guard",
                     )
                     lastNativeReservationWidthPx = null
@@ -1786,7 +1786,7 @@ internal object CcTransitionOwner {
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
                     SysUiPresentationOwner
-                        .updateControlCenterTransitionReservation(
+                        .updateCcTransitionReservation(
                             requestedSlotWidthPx = nativeRequestedWidth,
                         )
                 if (!applied) {

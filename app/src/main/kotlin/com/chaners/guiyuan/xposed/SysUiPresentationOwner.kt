@@ -105,7 +105,7 @@ internal object SysUiPresentationOwner {
             keyguardFamilyCurrent?.hasPresentationClaim() == true
 
     @Synchronized
-    fun updateControlCenterSourceScene(sourceScene: SourceScene) {
+    fun updateCcSourceScene(sourceScene: SourceScene) {
         if (controlCenterSourceScene == sourceScene) return
         controlCenterSourceScene = sourceScene
 
@@ -687,7 +687,7 @@ internal object SysUiPresentationOwner {
             keyguardFamilyCurrent?.ownsBatteryContainer(candidate) == true
 
     @Synchronized
-    fun activateControlCenter(
+    fun activateCc(
         host: ViewGroup,
         statusIcons: ViewGroup,
         batteryContainer: ViewGroup,
@@ -753,7 +753,7 @@ internal object SysUiPresentationOwner {
                 existing.start(
                     deferVisualMaskUntilLayout = true,
                     onLayoutReady = { maskedViews ->
-                        onControlCenterSessionLayoutReady(
+                        onCcLayoutReady(
                             session = existing,
                             maskedViews = maskedViews,
                             reused = true,
@@ -798,7 +798,7 @@ internal object SysUiPresentationOwner {
                 eventPrefix = "controlCenterPresentation",
                 retainReservationOnWidthLoss = true,
                 onEvent = { event -> controlCenterEventSink?.invoke(event) },
-                onFailNative = ::onControlCenterSessionFailure,
+                onFailNative = ::onCcSessionFailure,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             )
         controlCenterCurrent = session
@@ -806,7 +806,7 @@ internal object SysUiPresentationOwner {
             session.start(
                 deferVisualMaskUntilLayout = true,
                 onLayoutReady = { maskedViews ->
-                    onControlCenterSessionLayoutReady(
+                    onCcLayoutReady(
                         session = session,
                         maskedViews = maskedViews,
                         reused = false,
@@ -835,7 +835,7 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun adoptControlCenterLayoutCutoverFromHotReload(): Result {
+    fun adoptCcLayoutAfterHotReload(): Result {
         val session =
             controlCenterCurrent
                 ?: return Result.Inactive(0)
@@ -859,7 +859,7 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun deactivateControlCenter(source: String): Result {
+    fun deactivateCc(source: String): Result {
         val session =
             controlCenterCurrent
                 ?: return Result.Inactive(0)
@@ -876,11 +876,11 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun onControlCenterVisibilityChanged(visible: Boolean): Boolean =
-        controlCenterCurrent?.onControlCenterVisibilityChanged(visible) ?: true
+    fun onCcVisibilityChanged(visible: Boolean): Boolean =
+        controlCenterCurrent?.onCcVisibilityChanged(visible) ?: true
 
     @Synchronized
-    fun updateControlCenterTransitionReservation(
+    fun updateCcTransitionReservation(
         requestedSlotWidthPx: Int,
     ): Boolean =
         controlCenterCurrent
@@ -888,15 +888,15 @@ internal object SysUiPresentationOwner {
             ?: false
 
     @Synchronized
-    fun clearControlCenterTransitionReservation(source: String): Boolean =
+    fun clearCcTransitionReservation(source: String): Boolean =
         controlCenterCurrent
             ?.clearTransitionReservation(source)
             ?: true
 
     @Synchronized
-    fun failControlCenterPresentation(reason: String): Boolean {
+    fun failCcPresentation(reason: String): Boolean {
         if (controlCenterCurrent == null) return false
-        onControlCenterSessionFailure(reason)
+        onCcSessionFailure(reason)
         return true
     }
 
@@ -960,7 +960,7 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun resetRuntimeState(source: String) {
-        deactivateControlCenter(source)
+        deactivateCc(source)
         deactivateAod(source)
         deactivateKeyguard(source)
         deactivate(source)
@@ -1206,7 +1206,7 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    private fun onControlCenterSessionLayoutReady(
+    private fun onCcLayoutReady(
         session: Session,
         maskedViews: Int,
         reused: Boolean,
@@ -1233,7 +1233,7 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    private fun onControlCenterSessionFailure(reason: String) {
+    private fun onCcSessionFailure(reason: String) {
         val session = controlCenterCurrent ?: return
         controlCenterCurrent = null
         session.stop("fail-native:" + reason)
@@ -1294,8 +1294,17 @@ internal object SysUiPresentationOwner {
         private val batteryContainer = WeakReference(batteryContainer)
         private val battery = WeakReference(battery)
         private val batteryCarrier = WeakReference(batteryCarrier)
-        private var active = true
-        private var started = false
+        private enum class Lifecycle {
+            CREATED,
+            RUNNING,
+            STOPPED,
+        }
+
+        private var lifecycle = Lifecycle.CREATED
+        private val active: Boolean
+            get() = lifecycle != Lifecycle.STOPPED
+        private val started: Boolean
+            get() = lifecycle == Lifecycle.RUNNING
         private var deferVisualMaskUntilLayout = false
         private var compactLayoutReady = false
         private var layoutReadyCallback: ((Int) -> Unit)? = null
@@ -1463,7 +1472,7 @@ internal object SysUiPresentationOwner {
                 }
             }
 
-            started = true
+            lifecycle = Lifecycle.RUNNING
             host.get()?.addOnAttachStateChangeListener(this)
             val group =
                 statusIcons.get()
@@ -1600,7 +1609,7 @@ internal object SysUiPresentationOwner {
             ) {
                 return 0
             }
-            active = false
+            lifecycle = Lifecycle.STOPPED
             layoutReadyCallback = null
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
@@ -1809,7 +1818,7 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
-        fun onControlCenterVisibilityChanged(visible: Boolean): Boolean {
+        fun onCcVisibilityChanged(visible: Boolean): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (visible) {
                 if (fakeCarrierVisibleCycleActive && !capacityLeaseSuppressed) {
