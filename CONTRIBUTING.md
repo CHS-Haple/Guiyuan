@@ -1,16 +1,21 @@
 # Contributing to Guiyuan
 
-This document is the engineering source of truth for Guiyuan. Use the smallest process that preserves runtime safety, traceability, and a clean stable branch.
+This is the engineering and contribution source of truth for Guiyuan. Use the smallest process that preserves runtime safety, traceability and a clean stable branch.
 
-## 1. Baseline
+## Baseline
 
-These rules apply to app code, SystemUI integration, compatibility, diagnostics, UI/resources, dependencies, build/release logic, CI, and engineering documentation.
+These rules apply to app code, SystemUI integration, compatibility, diagnostics, UI/resources, dependencies, build/release logic, CI and engineering documentation.
 
-English is canonical for source code, engineering documentation, contribution governance, pull requests, and repository templates. User-facing documentation may also provide Simplified Chinese.
+English is canonical for source code, engineering documentation, contribution governance, pull requests and repository templates. User-facing documentation may also provide Simplified Chinese.
 
-Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in Guiyuan are licensed under `GPL-3.0-only`, matching the project license.
+Contributions intentionally submitted for inclusion are licensed under `GPL-3.0-only`.
 
-Local baseline: JDK 21, Android SDK 37 / Build Tools 37.0.0, Modern Xposed API 102, the checked-in Gradle Wrapper, and the MIUIX revision pinned by project build files.
+Local baseline:
+- JDK 21;
+- Android SDK 37 / Build Tools 37.0.0;
+- Modern Xposed API 102;
+- checked-in Gradle Wrapper;
+- MIUIX revision pinned by project build files.
 
 For an ordinary code checkpoint:
 
@@ -18,118 +23,130 @@ For an ordinary code checkpoint:
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ~~~
 
-Keep credentials, signing material, local SDK paths, generated APK/AAB files, and machine-specific configuration out of the repository.
+Keep credentials, signing material, local SDK paths, generated packages and machine-specific configuration out of the repository.
 
-## 2. Engineering principles
+## Engineering principles
 
-### Standardized
-Prefer Android, HyperOS, MIUIX, and Modern Xposed contracts over project-local reinvention. Reuse verified HyperOS state, behavior, resources, and motion when they already express the required semantics. Prefer runtime resource references over copying proprietary assets.
+**Standardized.** Prefer Android, HyperOS, MIUIX and Modern Xposed contracts over project-local reinvention. Reuse verified platform state, resources and motion when they already express the required semantics.
 
-### Lightweight
-Avoid duplicate hooks/listeners/state machines, polling, repeated View-tree traversal, hot-path reflection, resident Root work, per-frame diagnostics, and unnecessary caching.
+**Lightweight.** Avoid duplicate hooks/listeners/state machines, polling, hot-path reflection, resident Root work, per-frame diagnostics and unnecessary caching.
 
-### Modern
-Prefer maintained APIs and project-pinned dependencies when they satisfy the requirement. Newer is not automatically better; compatibility and lifecycle evidence still matter.
+**Modern.** Prefer maintained APIs and pinned dependencies when they satisfy the requirement. Newer is not automatically safer; compatibility and lifecycle evidence still matter.
 
-### Fail native
-If Guiyuan cannot safely establish its replacement contract, preserve or restore native HyperOS behavior. Compatibility failure should disable the smallest affected feature.
+**Fail native.** If Guiyuan cannot safely establish a replacement contract, preserve or restore native behavior for the smallest affected feature.
 
-## 3. Change method
+## Change method
 
 Before editing:
-1. confirm the actual requirement or defect;
-2. identify the relevant owner, state source, lifecycle, API contract, or layout rule;
+1. confirm the requirement or defect;
+2. identify the responsible owner/state source/lifecycle/API/layout rule;
 3. define the smallest useful change boundary;
 4. identify behavior that must remain unchanged;
-5. decide what evidence is needed to accept the result.
+5. decide what evidence is needed for acceptance.
 
-For defects, investigate in this order:
-1. root cause;
-2. responsible source/owner;
-3. project and authoritative upstream guidance;
-4. established implementation patterns when needed;
-5. a narrow workaround only when a direct fix is not practical.
+For defects, investigate root cause before adding a workaround. Do not add geometry, timing, alpha, visibility, polling, retry or delayed patches merely because they hide one symptom.
 
-Do not add geometry, timing, alpha, visibility, polling, or delayed patches merely because they hide one symptom. When several explanations remain plausible, prefer a bounded single-variable diagnostic. New evidence may invalidate the current hypothesis.
+When several explanations remain plausible, prefer a bounded single-variable diagnostic.
 
-## 4. Runtime safety
+## Runtime safety
 
 ### Ownership and lifecycle
-Every long-lived runtime object needs one clear owner. For runtime-sensitive work, know who creates/owns it, when it becomes invalid, who cleans it up, and what happens on host replacement, SystemUI recreation, and Hot Reload.
+
+Every long-lived runtime object needs a clear owner, invalidation point and cleanup path. Review host replacement, SystemUI recreation and Hot Reload when relevant.
 
 Prefer host-scoped sessions over unrelated global mutable state.
 
-### State flow and writers
+### State and writers
+
 Prefer:
 
 ~~~text
 native/event source -> domain state -> scene/presentation policy -> renderer
 ~~~
 
-Use the highest verified native semantic source available. Do not maintain a parallel parser/state machine for a fact SystemUI already exposes authoritatively unless a verified compatibility boundary requires it.
+Use the highest verified native semantic source available. Do not maintain a parallel parser/state machine for a fact SystemUI already exposes authoritatively unless compatibility requires it.
 
-Observation is not ownership. One live mutable property should have one runtime writer. Width, position, translation, alpha, visibility, tint, animation state, and attachment are ownership-sensitive.
+Observation is not ownership. One live mutable property should have one writer. Width, position, translation, alpha, visibility, tint, animation and attachment are ownership-sensitive.
 
-Hooks are integration points, not architecture. Each hook should have one responsibility, an owner, failure behavior, and a bounded lifecycle.
+Hooks are integration points, not architecture. Each hook needs one responsibility, an owner, failure behavior and a bounded lifecycle.
 
-### Native resource integration
-When reusing a verified HyperOS/SystemUI drawable, preserve its resource identity, authored alpha/coverage, viewport relationships, and final native/vector rendering semantics. Do not add per-resource grayscale multipliers, hard-coded replacement grays, source-alpha edits, raster preprocessing/resampling, or other magic-number compensation merely to force a visual match unless exact-target evidence proves that transformation belongs to the native path.
+### Native resources
 
-Do not hide a native representation until the Guiyuan replacement is valid for the current session.
+When reusing a verified SystemUI drawable/resource, preserve its semantic identity and native presentation behavior. Do not add per-resource grayscale/alpha correction, raster preprocessing/resampling or screenshot-fitted constants merely to force visual similarity.
+
+Do not suppress a native representation until the Guiyuan replacement is valid for the current session.
 
 ### Geometry and motion
+
 Keep separate:
-1. native SystemUI layout/slot ownership;
+1. native layout/slot ownership;
 2. Guiyuan drawing geometry;
-3. transition/animation geometry;
+3. transition/motion geometry;
 4. optical adjustment.
 
-A visual sizing issue does not automatically justify native layout mutation. A transition issue does not automatically justify changing steady geometry. Prefer verified native progress/endpoints/motion ownership; do not create a second gesture timeline merely to imitate HyperOS.
+A sizing issue does not automatically justify native layout mutation. A transition issue does not automatically justify changing steady geometry. Prefer verified native progress/endpoints and motion ownership.
 
-### Compatibility and fallback
-The pinned SystemUI profile is evidence for the current target, not proof for every HyperOS build. Live runtime topology is authoritative when other modules or system variants can alter the View tree. Failure should restore the smallest affected surface to native.
+### Compatibility
 
-## 5. Maintainability
+The pinned SystemUI profile proves only the current target. Live topology is authoritative when system versions or other modules alter the View tree.
 
-Optimize for the next human maintainer. Prefer the clearest concise name or structure in its actual scope. Avoid both redundant verbosity and cryptic brevity: remove context the surrounding code already provides, but retain words that materially distinguish responsibility, ownership, platform, or behavior.
+A compatibility failure should fail native for the smallest affected surface.
+
+## Maintainability
+
+Optimize for the next human maintainer. Prefer concise scope-aware names and structures; avoid both modifier-heavy verbosity and cryptic shortening.
 
 ### Naming
-- Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`; internal shortening must not change public or compatibility identity.
-- Name to the scope. Local variables and private members may be short when nearby context already carries the meaning; cross-file and architecture-boundary names must retain enough context to stay searchable and unambiguous.
-- Use familiar project/platform forms such as `SysUi`, `Diag`, `Env`, `Repo`, `Prefs`, `Ctx`, `Cfg`, `AOD`, `QS`, and `CC` when they make a name easier to read and write without increasing ambiguity. Prefer the shortest form that remains self-explanatory at the call site.
-- Remove repeated product or domain wording when the package, file, receiver, or owner already establishes it. Use `Gy` only where Guiyuan identity is actually useful.
-- Keep a platform, domain, or responsibility term when it carries real distinguishing information. For example, `SysUiBatterySource` is preferable to both the redundant `SystemUiBatteryStateSource` and the overly generic `BatterySource`.
-- Keep words such as `Owner`, `Source`, `Policy`, `Session`, `Contract`, and `Probe` only when they carry real responsibility, lifecycle, authority, or compatibility meaning. In particular, `Owner` should mean actual lifetime, mutable-surface/session, or exclusive-authority ownership; installation/wiring coordinators should use the clearest domain noun instead.
-- File names should normally match the primary type. Cohesive helper files may keep a broader domain name when splitting them would make navigation worse.
-- Persisted preference keys, protocol/event names, log schema fields, reflection/class/member targets, resource identities, Xposed-facing identifiers, and other externally consumed names are compatibility surfaces. Do not rename them as cleanup without an explicit migration reason.
-- Do not keep obsolete aliases solely to preserve old internal names. Retain an alias only when a real compatibility or migration boundary requires it.
-- Do not rename solely to save characters. Consider typing cost, scanability, searchability, call-site clarity, and diff churn; a rename should provide a net maintenance benefit.
-- Prefer semantic compression over mechanical shortening: rename around the clearest established domain concept, and use a common project/platform abbreviation directly when it remains obvious in context. Do not derive a new name by merely deleting words from the old one.
-- Do not use broad search/replace as the renaming method. Inspect each symbol, its call sites, and same-text uses first; edit the intended references explicitly, then search again for stale old names and accidental changes.
-- Remove dead helpers only after confirming they have no normal references and are not reached through reflection, serialization, resources, generated code, or another external contract.
+
+- Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`.
+- Local/private names may be short when context already carries the meaning; cross-file/architecture names must remain searchable and unambiguous.
+- Familiar forms such as `SysUi`, `Diag`, `Repo`, `Prefs`, `Cfg`, `AOD`, `QS` and `CC` are preferred when they reduce typing without reducing clarity.
+- Remove repeated product/domain wording when the package/file/receiver already establishes it.
+- Keep `Owner`, `Source`, `Policy`, `Session`, `Contract`, `Probe` or similar suffixes only when they carry real lifecycle, authority, compatibility, reuse or policy meaning.
+- Persisted keys, protocol/log fields, reflection targets, resource identities, Xposed-facing IDs and other externally consumed names are compatibility surfaces; do not rename them as cosmetic cleanup.
+- Prefer semantic compression over mechanical shortening. Do not broad-search/replace a rename without inspecting call sites and same-text uses.
+- Remove dead helpers only after checking reflection, serialization, resources, generated code and other external reachability.
 
 ### Comments
-- Add a comment only when it helps a future maintainer understand something the code cannot express cleanly.
-- Prefer short, natural comments that explain **why**, an invariant, ownership, lifecycle, fallback behavior, or a non-obvious Android/HyperOS/Xposed limitation. Plain or conversational wording is fine when it stays precise.
-- Do not narrate the next line, repeat names/types, document obvious control flow, or leave Build-by-Build debugging history in source comments.
-- Do not stamp the same comment template across similar files. Different code may need different explanation, and many locations need no comment at all.
-- Keep the comment beside the invariant it protects. Update or remove it when that invariant changes so comments do not become a second, stale implementation.
+
+Add comments only when they explain a non-obvious reason, invariant, ownership/lifecycle boundary, fallback or platform limitation. Keep them short and natural.
+
+Do not narrate code, repeat names/types, stamp comment templates across files or preserve Build-by-Build debugging history in source comments.
 
 ### Refactor discipline
-- Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
-- Do not add a type or helper just to name an obvious boolean expression, pass a value through, or wrap a single caller. Keep an abstraction only when it makes the caller simpler or carries a real lifecycle, ownership, compatibility, or domain contract.
-- Do not model an operation as success/failure when it has no real failure source. A failure branch must come from an observable contract, exception, validation result, or other actual runtime outcome; do not manufacture an unreachable failure path for symmetry.
-- Do not stack two `Result`/`State` wrappers around the same outcome. Keep another layer only when it represents a real boundary, rollback owner, transport contract, or independently useful state.
-- Do not split a cohesive operation into `Source`/`Owner`/`Policy`/`Probe`/`Resolver` types merely to make the architecture look uniform. A separate type should earn its boundary through independent lifecycle, reuse, compatibility authority, testable policy, or clear caller simplification.
-- When several fields describe one lifecycle and can form invalid combinations, prefer one explicit state over a wall of `pending/ready/active` booleans. Keep independent facts independent; do not force unrelated flags into a state machine just for symmetry.
-- Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
-- Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
-- Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
-- When moving code between files, check file-level imports, annotations, visibility, top-level constants, and receiver/extension context; an unchanged body can still depend on the old file.
-- Prefer deleting proven dead code and redundant indirection over renaming it.
-- Do not run CI for every micro-edit. Validate at meaningful checkpoints; request device evidence only when the refactor can plausibly change runtime behavior.
 
-## 6. Diagnostics, UI, and text
+Maintainability refactors are behavior-neutral by default.
+
+Do not:
+- add a type/helper merely to name an obvious expression, pass through a value or wrap one caller;
+- invent a success/failure model without a real failure source;
+- stack Result/State wrappers around the same outcome without a real boundary;
+- split one cohesive operation into ceremonial Source/Owner/Policy/Probe/Resolver layers;
+- flatten one mutually exclusive lifecycle into invalid combinations of `pending/ready/active` booleans;
+- force genuinely independent facts into one state machine for symmetry.
+
+Work in coherent reviewable batches. Before a non-trivial commit, review the complete base→HEAD diff for incomplete renames, compatibility-string changes, semantic drift, lifecycle/writer changes and unnecessary churn.
+
+### Pre-commit maintainability review
+
+Every non-trivial code batch gets a separate maintainability review before the final commit/CI checkpoint.
+
+Check touched code and relevant adjacent call sites for:
+- unnecessarily long or suffix-stacked names;
+- boolean/nullable fields that actually encode one lifecycle;
+- string/reason-code control flow where a direct model is clearer;
+- one-caller wrappers, pass-through helpers and mirrored abstractions;
+- fake failure branches, proof-only helpers/tests or duplicated Result/State layers;
+- diagnostics that fill templates rather than report facts;
+- invented metrics, pass rates or proof fields;
+- comments that narrate code or preserve debugging history;
+- structures that make a small future change require touching unrelated layers.
+
+Keep an unusual structure when a real platform/maintenance constraint justifies it; otherwise simplify it. Add only the smallest useful explanation for a necessary non-obvious structure.
+
+Prefer deleting proven dead code/indirection over renaming it. Do not run CI for every micro-edit; validate meaningful checkpoints. Device evidence is required only when runtime behavior can plausibly change.
+
+## Diagnostics and UI
 
 Diagnostics should be event-driven and bounded:
 
@@ -137,179 +154,138 @@ Diagnostics should be event-driven and bounded:
 event -> bounded snapshot -> report
 ~~~
 
-Log state transitions, decisions, failures, and observations that help diagnose real behavior. Do not emit a symmetric success event for every internal branch, duplicate the same fact through both structured and free-form logs without a diagnostic need, or invent a reason-code taxonomy for local control flow that no boundary consumes.
+Log useful state transitions, decisions, failures and observations. Structured fields are facts, not mandatory template slots.
 
-Do not invent diagnostic facts. A field presented as a metric, readiness input, health signal, or observed value must come from a real runtime observation or calculation. Do not hard-code values such as `0`, `true`, or `false` merely to prove that Guiyuan did not write something, then feed that value back into readiness/health checks. If something is only a design invariant, express it in the code structure or a short comment; log it only when there is real evidence worth recording.
+A metric/readiness/health field must come from a real runtime observation or calculation. Do not hard-code values merely to prove an invariant or produce self-derived `N/N`, `100%` or coverage-looking output.
 
-Canary/Release may retain low-frequency operational diagnostics. Detailed geometry/topology probes must stay behind development/Detailed diagnostics and out of hot paths.
+Build-channel diagnostic flags are observation gates only. They must not control functional hook installation, state authority, ownership, acquisition/release or fail-native fallback. Canary and Release share functional control flow.
 
-Build-channel diagnostic flags such as `RUNTIME_DIAGNOSTICS` and `DEVELOPMENT_PROBES` are **observation gates only**. They must not decide whether a functional hook/state source is installed, which runtime state is authoritative, who owns a surface/property, when ownership is acquired/released, or which fail-native fallback applies. Canary and Release must share the same functional control flow; only logging, bounded probes, diagnostic preferences, and optional diagnostic event callbacks may differ. If a diagnostic source later becomes functional authority, move its functional installation/state path outside the diagnostic gate and leave only observation behind the flag.
+For app UI, prefer current MIUIX components and conventions. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
 
-For app UI, prefer current MIUIX components and conventions for spacing, typography, shape, state feedback, dialogs, navigation, back behavior, themes, and localization. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
+### Semantic leading icons
 
+Use Material Symbols for explanatory row semantics and MIUIX icons for MIUIX-owned controls/navigation/actions.
 
-For Material Symbols used as semantic row-leading icons:
-- this policy is global across the companion app. It applies to Appearance, About, Diagnostics, settings/information rows, and any future explanatory leading icon that uses Material Symbols; do not create page-specific optical rules;
-- use Material Symbols for explanatory row semantics; keep MIUIX icons for MIUIX-owned controls, navigation, menus, and action affordances;
-- align Material Symbols with the visual language of the pinned MIUIX icon set. MIUIX default aliases are Regular/line-oriented and its static preference-row examples normally use non-filled icons, so Outline/Regular is the default starting style for semantic row-leading Material Symbols;
-- choose the glyph from the row's semantic meaning, not from a previous icon shape, incidental text in the row value, or a desire to make neighboring silhouettes mechanically identical;
-- before accepting a new Material Symbol, inspect the actual official glyph shape/rendering rather than inferring suitability from its name. Judge the silhouette, recognizable details, optical center, negative space, and how the glyph reads at the final 22 dp visual size; use repository vectors, official previews, or device screenshots as evidence;
-- semantic correctness has priority over visual neatness. First select the glyph whose actual rendered shape best communicates the row meaning; only after that choice should style/weight and optical-mass normalization be applied. Do not pick a semantically weaker glyph merely because it looks more balanced beside neighboring icons;
-- within one visual group or card, style coherence has priority over a single glyph's isolated local optimum. Start from the semantically correct Outline Material Symbol at the standard optical weight, then normalize perceived mass using official glyph/weight variants;
-- W400 is the default starting weight. Use an official heavier weight such as W500 when the actual Outline glyph is perceptually too light because of thin, linear, ring-like, or highly open construction;
-- negative space does not by itself mean a glyph is visually too light. Judge the actual occupied mass, optical center, and neighboring glyphs at the final 22 dp visual size;
-- if an Outline glyph cannot reach acceptable legibility or perceived mass with a semantically correct official glyph/weight, a Filled variant may be used as a documented exception. Filled is also appropriate when fill itself communicates a real selected/active/stateful meaning, matching MIUIX's use of explicit Fill variants;
-- before choosing Filled for a static semantic row, first try another semantically correct Outline glyph and/or an official heavier weight. Do not use Filled merely to make one icon look darker in isolation;
-- normalize perceived visual mass with official glyph/variant/weight selection, not geometry hacks. Do not compensate with per-icon scale, translation, custom stroke, alpha, viewport edits, or ad-hoc padding;
-- all such icons share the same renderer contract: a 24 dp optical box, 22 dp visual size, common alignment, and common tint. A page must not override those dimensions merely to make one glyph look larger or smaller;
-- compare neighboring glyphs in both light and dark themes. Identical variant/weight values are not the goal; coherent perceived mass, optical center, and MIUIX-consistent style are the goal.
+For Material Symbols:
+- select the glyph by semantic meaning after inspecting the actual shape;
+- default to Outlined/Regular W400 to match the pinned MIUIX visual language;
+- use W500 only when the real glyph is perceptually too light;
+- use Filled only when state semantics or legibility justify it;
+- normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
+- use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
+- review neighboring glyphs in light and dark themes.
 
-
-`SemanticLeadingIcon` is the current shared renderer for these Material Symbols. New semantic left-side icons should use that shared path unless a different semantic component has a stronger platform/MIUIX owner.
-
-## 7. Git workflow
-
-Use the lightest route that keeps the change attributable.
+## Git workflow
 
 Branch roles:
-- feat/* — one coherent capability or behavior change;
-- fix/* — one bounded correction;
-- refactor/* — behavior-neutral maintainability work with a coherent review boundary;
-- dev — integration;
-- main — accepted stable baseline;
-- hotfix/* — urgent correction from main;
-- dependabot/* — bot-managed dependency proposal.
+- `feat/*` — coherent capability/behavior change;
+- `fix/*` — bounded correction;
+- `refactor/*` — behavior-neutral maintainability work;
+- `dev` — integration;
+- `main` — accepted stable baseline;
+- `hotfix/*` — urgent stable correction;
+- `dependabot/*` — dependency proposal.
 
-There is no validation marker branch and no promotion branch in the normal workflow.
-
-A work branch represents one coherent change boundary, not every tweak, diagnostic Build, or device response. Continue an existing branch while it still owns the same objective.
-
-### Product/runtime path
+Normal runtime path:
 
 ~~~text
 feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
-Create work branches from current dev.
+Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response.
 
-A PR may stay Draft while implementation is moving. Mark it ready once it reaches the final automated-review checkpoint; do not repeatedly toggle Draft/Ready after every device response.
+A PR may remain Draft while implementation is moving. Mark it ready at the final automated-review checkpoint. Merge to `dev` only when deterministic blockers are resolved, required CI is green and required focused device evidence has passed.
 
-Merge to dev when the change is complete, deterministic blockers are resolved, required automated validation passes, and required focused device evidence has passed. If a remaining test genuinely depends on integrated dev state, note it explicitly.
-
-Use squash merge for normal feat/fix/refactor -> dev work.
+Use squash merge for ordinary work branches.
 
 ### Stable promotion
-The dev-to-main PR is the promotion boundary. Do not create promote/*.
 
-Before merge: required CI is green, the latest runtime-affecting state has applicable maintainer device acceptance, no runtime blocker remains, and CHANGELOG/public documentation reflects the resulting stable state when needed.
+The dev-to-main PR is the stable promotion boundary.
 
-A documentation-only delta after an accepted runtime checkpoint does not invalidate device evidence if it cannot affect APK/runtime behavior.
+Before merge:
+- required CI is green;
+- the latest runtime-affecting state has applicable device acceptance;
+- no runtime blocker remains;
+- public documentation/changelog reflects the resulting stable state when needed.
 
-Because repository-level automatic head-branch deletion may treat `dev` like an ordinary merged PR head, every dev-to-main merge must immediately verify that the long-lived `dev` branch still exists and matches the promoted `main` commit. If GitHub removed it, recreate `dev` at the promoted main SHA before any new work branch is created. Do not continue development from a stale or missing integration branch.
+Documentation-only commits do not invalidate prior device evidence when they cannot affect the APK/runtime.
+
+After a dev-to-main merge, verify that long-lived `dev` still exists; recreate it at the promoted `main` SHA if repository auto-delete removed it.
 
 ### Repository-only maintenance
-Pure docs/metadata/governance work may use the shortest safe path. Keep shared policy/current-state documents aligned between main and dev when divergence would mislead development.
 
-CI/build/release workflow changes require Full validation because they alter the validation mechanism. They do not require device testing unless they also alter APK/runtime behavior.
+Pure docs/metadata/governance may use the shortest safe path. Keep shared policy/current-state documents aligned across long-lived branches when divergence would mislead development.
+
+CI/build/release workflow changes require Full validation because they change the validation mechanism; device testing is needed only if APK/runtime behavior also changes.
 
 ### Hotfix
-Urgent stable defects may use hotfix/* from main. Keep the fix narrow, validate it appropriately, merge to main, then reconcile it into dev before the next promotion.
 
-## 8. CI and device validation
+Hotfix from `main`, keep it narrow, validate it, merge to `main`, then reconcile it into `dev`.
 
-CI has three developer-facing scopes.
+## CI and device validation
 
-### Light
-Draft PRs and proven repository-only/mechanical work. Cheap repository/diff checks only.
+Developer-facing scopes:
 
-### Runtime
-Ordinary ready app/SystemUI PRs and trusted runtime integration on dev.
-- Ready runtime PRs run target-profile checks, tests, Debug build, and Xposed metadata validation.
-- Runtime pushes to dev validate the integrated source and produce the signed Canary integration artifact.
-
-### Full
-Main/stable boundaries and dependency, Gradle/build, CI/workflow, tooling, signing, or release changes. Full validates Debug and signed Canary where applicable.
+- **Light** — Draft and proven repository-only/mechanical changes.
+- **Runtime** — ordinary app/SystemUI PRs and trusted runtime integration on `dev`; validates target profile, tests, Debug build and Xposed metadata as configured.
+- **Full** — stable boundaries plus dependency/build/CI/tooling/signing/release changes; validates Debug and signed Canary where applicable.
 
 CI proves configured source/build checks, not SystemUI runtime correctness.
 
-For an active work-branch PR, synchronize the PR title to the exact next CI-triggering checkpoint before moving the branch ref. Use a concise one-line conventional-commit title such as `feat: refine battery color drawer layout` or `fix: center scheme preview`, keep CI-facing titles in English, and never reuse a stale title for later checkpoints. Pull-request Build and comment-triggered Work Branch Canary surface that checkpoint title as the Actions run name; push-triggered Build surfaces the head commit subject.
+Do not expose signing credentials or project-signed artifacts to untrusted fork workflows.
 
-Pull-request validation must remain safe for untrusted forks. Secret-independent checks are allowed; signing credentials and project-signed artifacts stay on trusted maintainer/default-branch workflows and must never be exposed to contributor-controlled workflow definitions.
+### Canary
 
-### Work-branch Canary
-Signed Canary is demand-driven. When device evidence is needed, the repository owner may request /canary on any open same-repository feat/*, fix/* or refactor/* PR, including Draft. The trusted default-branch workflow resolves the exact head SHA and independently performs target-profile checks, unit tests, Canary build, metadata/signature validation, and non-debuggable verification.
+Signed work-branch Canary is demand-driven. Request it only when device evidence can change an engineering decision or acceptance state.
 
-A prior ready-state Runtime build is not required. Manual workflow dispatch for a trusted same-repository feat/*, fix/* or refactor/* branch remains the fallback.
+A device test is useful for ownership/lifecycle/scene/transition/geometry changes, first meaningful runtime checkpoints, competing hypotheses, integrated runtime validation or a runtime-affecting stable candidate.
 
-### Device-test trigger
-Request real-device testing when its result can change an engineering decision or acceptance state: first meaningful runtime checkpoint, competing hypotheses, ownership/lifecycle/scene/transition/geometry change, integrated dev validation, or a runtime-affecting stable candidate.
+Do not request device testing merely because a commit or APK exists.
 
-Do not request device testing merely because a new commit or APK exists. Group related changes when failure attribution remains clear.
+## Versions, dependencies and release
 
-## 9. Versions, dependencies, and release
+Current version/build identity comes from Gradle configuration. Display version changes only when explicitly intended; ordinary development may advance internal build identity.
 
-Current display/build identity comes from project build configuration. ROADMAP records the first formal-release target; no separate version-status document is required.
-
-Normal development checkpoints may advance internal build identity without changing display version.
-
-CHANGELOG records durable net state, not failed experiments or Build-by-Build debugging history.
+CHANGELOG records durable release-level changes, not failed experiments or Build-by-Build debugging history.
 
 Dependency updates require relevance and exact-revision evidence where applicable. Add device testing only when runtime/UI behavior may change.
 
-Formal stable releases publish from prepared main state and must satisfy release workflow, signing, metadata, version, tag, and changelog checks.
+Formal stable releases publish from prepared `main` state and must satisfy release workflow, signing, metadata, version, tag and changelog checks.
 
-## 10. Development memory
+## Development memory
 
-Daily recovery is intentionally short.
+For normal recovery read:
+1. `CONTRIBUTING.md`;
+2. `docs/development/CURRENT.md`.
 
-Before normal development, read:
-1. CONTRIBUTING.md;
-2. docs/development/CURRENT.md.
-
-Then load only what the task needs:
-- ROADMAP for future sequencing/scope;
-- relevant architecture/reference entries for SystemUI work;
-- relevant DEVLOG history for past decisions, rejected routes, or device evidence.
+Then use:
+- ROADMAP for future direction;
+- DECISIONS for durable rationale;
+- architecture docs for current ownership/layout policy;
+- SystemUI reference for reusable target evidence.
 
 Repository state is authoritative over remembered chat context.
 
-### CURRENT
-The single day-to-day recovery point. Keep only accepted baseline, active objective/PR, current confirmed conclusions, current validation/blocker state, non-negotiable boundaries, and immediate next step. Do not copy CI history or Build chronology.
+### Document ownership
 
-If CURRENT names an active branch or PR, close or replace that reference as part of the merge/closeout that ends it. Do not leave a merged, closed, deleted, or otherwise non-existent route described as active.
+- **CURRENT** — accepted baseline, current blockers/guardrails and immediate next step; no Build/CI diary.
+- **ROADMAP** — future direction and release exit criteria; no debugging history.
+- **DECISIONS** — durable decisions/rationale only; no checkpoint log.
+- **Architecture/reference** — reusable current policy/evidence only.
+- **CHANGELOG** — durable release-level behavior and public engineering changes.
 
-### DEVLOG
-A decision/evidence history, not a required record for every APK checkpoint. Add an entry when a meaningful root cause is established, important reasoning is rejected/superseded, architecture/ownership/lifecycle/compatibility/fallback changes, device evidence materially changes a decision, or a durable lesson is likely to prevent regression.
+Do not synchronize every fact everywhere.
 
-A concise default entry is enough:
+## Definition of done
 
-~~~text
-Problem
-Evidence
-Conclusion
-Change
-Validation
-~~~
+Apply only checks relevant to the change.
 
-Add ownership/lifecycle details only when relevant. Preserve historical entries and append corrections rather than rewriting history.
+Runtime-sensitive work: review ownership/writer conflicts, lifecycle/cleanup, fail-native behavior, compatibility, performance, geometry/motion ownership and focused device evidence.
 
-### ROADMAP
-Contains phases, future direction, prerequisites, deferred work, and release exit criteria. It must not become a second DEVLOG.
+UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility and interaction.
 
-### Architecture/reference
-Update only when a reusable architecture contract or reusable evidence changes. Ordinary checkpoints do not require a documentation cascade.
+Repository/CI work: review triggers, secret boundaries, artifact semantics and branch protection.
 
-### CHANGELOG
-Update only for durable net behavior, compatibility, public/contributor-facing engineering state, or release changes.
+All non-trivial code work: complete the pre-commit maintainability review and resolve deterministic findings before the final commit/CI checkpoint.
 
-## 11. Definition of done
-
-Apply only the checks relevant to the change.
-
-Runtime-sensitive work: review applicable ownership/writer conflicts, lifecycle/cleanup, fail-native behavior, compatibility, performance, geometry/motion ownership, and focused device acceptance.
-
-UI work: review affected hierarchy, MIUIX behavior, themes, localization, accessibility, and interaction.
-
-Repository/CI work: review triggers, secret boundaries, artifact semantics, and branch protection.
-
-A completed non-trivial change should leave enough information in the PR/commit and, when warranted, CURRENT/DEVLOG to answer what changed and why, how it was validated, and what limitation or next step remains.
+A completed non-trivial change should leave enough information in the PR/commit and, when warranted, CURRENT/DECISIONS to answer what changed and why, how it was validated, and what limitation or next step remains.

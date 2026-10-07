@@ -1,50 +1,46 @@
 # Current Development State
 
-## Repository / build
+## Baseline
 
-- Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `c6748e6a`; default-branch Canary now accepts trusted `refactor/*` PRs through #259.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `844eb1f3`, with PR #260 merged after Full CI #2943 and exact-head Work Branch Canary #794. Maintainer spot testing reported no issues.
-- PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
-- Historical PR #197 remains superseded.
+- Stable product line: Guiyuan 0.2.1 / Build 746 (`20261006-746`).
+- Stable `main`: support/documentation checkpoint based on the accepted 0.2.1 runtime.
+- Integration runtime checkpoint: `d6cd1d85`, after the second repository-wide maintainability audit.
+- Later documentation-only commits do not change that runtime checkpoint.
+- No runtime blocker is currently recorded.
 
-## Accepted runtime baseline
+## Accepted runtime contract
 
-- Home remains an independent presentation owner.
-- Keyguard and AOD share one host-scoped family renderer/presentation owner and retarget scene semantics without duplicate mutable owners.
-- AOD is not a Control Center transition source.
-- QS_FAKE is the bounded Control Center bridge; the fully expanded Control Center remains native.
-- HyperOS remains authoritative for native scene, island, appearance, motion, alpha, visibility and translation timing.
-- One transition-reservation writer remains. Fake-carrier capacity is a bounded visible-cycle lease and fail-native restores only the affected surface.
-- Detailed diagnostics are observational and must not change functional behavior.
+- Home has its own projected presentation owner.
+- Keyguard and AOD share one host-scoped family presentation owner; same-host scene changes retarget that owner instead of creating duplicate mutable owners.
+- AOD is never a Control Center transition source.
+- Notification Shade and the fully expanded Control Center remain native.
+- QS_FAKE is the bounded Control Center transition bridge.
+- SystemUI owns native scene state, layout, appearance, alpha, visibility, translation and motion timing.
+- Guiyuan owns only its renderer plus the minimum verified suppression, masking, reservation and transition-projection state.
+- Any ownership, host, geometry or compatibility ambiguity fails native for the smallest affected surface.
+- Diagnostic/build-channel flags are observational only and must not alter functional runtime control flow.
 
-## Current maintainability state
+## Maintainability baseline
 
-PR #257 completed the first residual runtime-plumbing cleanup across the Xposed/SystemUI integration layer.
+Repository-wide maintainability review is considered complete unless a concrete new finding appears.
 
-Accepted cleanup boundaries:
+Current rules:
+- prefer concise, scope-appropriate names over modifier/suffix stacking;
+- keep abstractions only when they carry real ownership, lifecycle, compatibility, reuse or policy value;
+- model one mutually exclusive lifecycle as one state rather than a wall of invalid boolean combinations;
+- keep genuinely independent facts independent;
+- diagnostics report observed facts rather than invented proof fields, pass rates or symmetry-only events;
+- preserve compatibility identities when they are externally consumed.
 
-- remove redundant product/domain wording when the package or receiver already carries it;
-- keep `Owner` / `Source` / `Policy` / `Probe` / `Session` only when they carry real lifecycle, authority, compatibility, reuse or policy value;
-- do not stack duplicate Result/State wrappers around the same outcome;
-- model one mutually-exclusive lifecycle as one explicit state, but keep genuinely independent readiness facts independent;
-- diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
-- inline single-caller helper types when the separate abstraction does not earn a boundary.
+## Guardrails
 
-PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtime plumbing. All 44 non-Xposed Kotlin main sources and 63 unit-test files were screened, flagged areas received targeted semantic review, and the accepted cleanup is now integrated on `dev`. Runtime/SystemUI behavior remains unchanged.
+- Root cause before workaround.
+- One writer per mutable surface.
+- No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
+- Do not take over native translation, alpha, visibility or final Control Center appearance.
+- Do not weaken exact restoration or fail-native behavior.
+- Keep version 0.2.1 / Build 746 unchanged unless a version/build change is explicitly part of the task.
 
-## Non-negotiable bounds
+## Next
 
-- Root-cause first; prefer verified native/upstream contracts.
-- Keep one owner/writer per mutable surface.
-- Do not add polling, delay, retry loops, custom gesture clocks, guessed thresholds or fixed device geometry.
-- Do not take over native translation, alpha, visibility or final-QS appearance ownership.
-- Do not weaken fail-native or restoration boundaries.
-- Do not trade accepted Home, Keyguard/AOD, charging-island or Control Center geometry for cleanup-only work.
-- Keep version 0.2.1 / Build 746 unchanged unless explicitly requested.
-
-## Immediate next
-
-- Keep the repository-wide maintainability sweep closed unless new concrete evidence appears.
-- Promote the accepted current `dev` state to `main` through the normal dev-to-main stable boundary; this promotion was explicitly requested after the maintainer spot check passed.
-- Keep version 0.2.1 / Build 746 unchanged; this is a maintenance-state promotion, not a new release-version bump.
+Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete reported defect/feature request. Request a Canary or device check only when the change crosses a runtime boundary that automated review cannot settle.

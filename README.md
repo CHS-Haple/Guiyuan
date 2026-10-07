@@ -66,8 +66,11 @@ The project is still under active development, so wider device, system-version, 
 **Development / contribution**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — engineering, validation, ownership, CI, and contribution rules.
 - [docs/README.md](docs/README.md) — documentation map and authority guide.
-- [docs/development/README.md](docs/development/README.md) — current state, roadmap, engineering history, and lightweight development workflow.
-- [docs/architecture](docs/architecture) — architecture policy and scene/layout boundaries.
+- [docs/development/CURRENT.md](docs/development/CURRENT.md) — current development recovery point.
+- [docs/development/ROADMAP.md](docs/development/ROADMAP.md) — future direction and 1.0.0 qualification.
+- [docs/development/DECISIONS.md](docs/development/DECISIONS.md) — durable engineering decisions and rationale.
+- [docs/architecture](docs/architecture) — current architecture policy and scene/layout boundaries.
+- [docs/reference/systemui-contracts.md](docs/reference/systemui-contracts.md) — reusable target-SystemUI integration evidence.
 
 ### Support
 
@@ -133,8 +136,11 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 **开发 / 贡献**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 工程、验证、所有权、CI 与贡献规范。
 - [docs/README.md](docs/README.md) — 文档导航与权威关系说明。
-- [docs/development/README.md](docs/development/README.md) — 当前状态、路线图、工程历史与精简开发流程说明。
-- [docs/architecture](docs/architecture) — 架构策略与场景/布局边界。
+- [docs/development/CURRENT.md](docs/development/CURRENT.md) — 当前开发恢复点。
+- [docs/development/ROADMAP.md](docs/development/ROADMAP.md) — 后续方向与 1.0.0 准入条件。
+- [docs/development/DECISIONS.md](docs/development/DECISIONS.md) — 长期有效的工程决策与理由。
+- [docs/architecture](docs/architecture) — 当前架构策略与场景/布局边界。
+- [docs/reference/systemui-contracts.md](docs/reference/systemui-contracts.md) — 可复用的目标 SystemUI 集成证据。
 
 ### 支持项目
 
