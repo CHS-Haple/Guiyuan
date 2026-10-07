@@ -11,7 +11,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
-import com.chaners.guiyuan.system.RuntimeDiagnosticsProtocol
+import com.chaners.guiyuan.system.DiagProtocol
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -4514,7 +4514,7 @@ class GyModule : XposedModule() {
         log(
             level,
             TAG,
-            RuntimeDiagnosticsProtocol.format(
+            DiagProtocol.format(
                 event = event,
                 component = component,
                 state = state,

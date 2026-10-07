@@ -3,8 +3,8 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `c6748e6a`; default-branch Canary now accepts trusted `refactor/*` PRs through #259.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `844eb1f3`, with PR #260 merged after Full CI #2943 and exact-head Work Branch Canary #794. Maintainer spot testing reported no issues.
+- Stable `main` and integration `dev`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `9ee18c3` after the accepted maintenance state was promoted through PR #261.
+- Active maintenance branch: `refactor/code-naturalness` / PR #262, based on current `dev`. The work is behavior-neutral and focuses on residual machine-like structure in diagnostics, failure flow, naming, comments and local abstractions.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
 
@@ -45,6 +45,6 @@ PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtim
 
 ## Immediate next
 
-- Keep the repository-wide maintainability sweep closed unless new concrete evidence appears.
-- Promote the accepted current `dev` state to `main` through the normal dev-to-main stable boundary; this promotion was explicitly requested after the maintainer spot check passed.
-- Keep version 0.2.1 / Build 746 unchanged; this is a maintenance-state promotion, not a new release-version bump.
+- Finish the PR #262 repository-wide residual maintainability review without changing accepted runtime behavior.
+- Review the complete `dev` -> PR diff, fix deterministic findings, then run the appropriate automated validation once the batch is coherent.
+- Keep version 0.2.1 / Build 746 unchanged. Request a device Canary only if the final diff crosses a runtime behavior boundary that automated review cannot settle.

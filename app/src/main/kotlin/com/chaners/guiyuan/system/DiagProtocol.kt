@@ -33,7 +33,7 @@ internal data class RuntimeEventSnapshot(
                         append(' ')
                         append(key)
                         append('=')
-                        append(RuntimeDiagnosticsProtocol.encode(value))
+                        append(DiagProtocol.encode(value))
                     }
             }
         }
@@ -77,7 +77,7 @@ internal data class RuntimeEventSnapshot(
 
         fun fromLines(lines: List<String>): RuntimeEventSnapshot {
             val parsedEvents =
-                lines.mapNotNull(RuntimeDiagnosticsProtocol::parse)
+                lines.mapNotNull(DiagProtocol::parse)
             val latestSessionId =
                 parsedEvents
                     .asReversed()
@@ -123,7 +123,7 @@ internal data class RuntimeEventSnapshot(
     }
 }
 
-internal object RuntimeDiagnosticsProtocol {
+internal object DiagProtocol {
     const val SchemaVersion = 2
 
     private const val Marker = "diag "

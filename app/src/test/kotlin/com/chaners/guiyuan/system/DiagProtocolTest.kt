@@ -5,11 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class RuntimeDiagnosticsProtocolTest {
+class DiagProtocolTest {
     @Test
     fun formattedEventRoundTripsStructuredFields() {
         val line =
-            RuntimeDiagnosticsProtocol.format(
+            DiagProtocol.format(
                 event = "source.install",
                 component = "network",
                 state = "ready",
@@ -20,9 +20,9 @@ class RuntimeDiagnosticsProtocolTest {
                     ),
             )
 
-        val parsed = requireNotNull(RuntimeDiagnosticsProtocol.parse(line))
+        val parsed = requireNotNull(DiagProtocol.parse(line))
 
-        assertEquals(RuntimeDiagnosticsProtocol.SchemaVersion, parsed.schemaVersion)
+        assertEquals(DiagProtocol.SchemaVersion, parsed.schemaVersion)
         assertEquals("source.install", parsed.event)
         assertEquals("network", parsed.component)
         assertEquals("ready", parsed.state)
@@ -34,8 +34,8 @@ class RuntimeDiagnosticsProtocolTest {
     fun formattedObservationCanOmitState() {
         val parsed =
             requireNotNull(
-                RuntimeDiagnosticsProtocol.parse(
-                    RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.parse(
+                    DiagProtocol.format(
                         event = "pipeline.latency",
                         component = "renderLatency",
                         fields = mapOf("sourceToDrawUs" to "1200"),
@@ -51,7 +51,7 @@ class RuntimeDiagnosticsProtocolTest {
     fun legacyEventWithoutSchemaStillParses() {
         val parsed =
             requireNotNull(
-                RuntimeDiagnosticsProtocol.parse(
+                DiagProtocol.parse(
                     "diag event=module.loaded component=module state=ready",
                 ),
             )
@@ -64,12 +64,12 @@ class RuntimeDiagnosticsProtocolTest {
     fun eventSnapshotUsesLatestEventForEachComponent() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -92,7 +92,7 @@ class RuntimeDiagnosticsProtocolTest {
     fun eventSnapshotScopesToLatestRuntimeSession() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -103,7 +103,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "100",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "error",
@@ -114,7 +114,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "110",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "module.loaded",
                     component = "module",
                     state = "ready",
@@ -125,7 +125,7 @@ class RuntimeDiagnosticsProtocolTest {
                             "uptimeMs" to "200",
                         ),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
@@ -143,7 +143,7 @@ class RuntimeDiagnosticsProtocolTest {
         val network = requireNotNull(snapshot.component("network"))
 
         assertEquals("new", snapshot.sessionId)
-        assertEquals(RuntimeDiagnosticsProtocol.SchemaVersion, snapshot.schemaVersion)
+        assertEquals(DiagProtocol.SchemaVersion, snapshot.schemaVersion)
         assertEquals("ready", network.state)
         assertEquals("4", network.fields["hooks"])
         assertFalse(network.fields.containsKey("sessionId"))
@@ -155,13 +155,13 @@ class RuntimeDiagnosticsProtocolTest {
     fun excludedMetricEventsDoNotReplaceComponentSnapshot() {
         val lines =
             listOf(
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "source.install",
                     component = "network",
                     state = "ready",
                     fields = mapOf("hooks" to "4"),
                 ),
-                RuntimeDiagnosticsProtocol.format(
+                DiagProtocol.format(
                     event = "pipeline.latency",
                     component = "network",
                     state = "observed",
@@ -190,7 +190,7 @@ class RuntimeDiagnosticsProtocolTest {
         val snapshot =
             RuntimeEventSnapshot.fromLines(
                 listOf(
-                    RuntimeDiagnosticsProtocol.format(
+                    DiagProtocol.format(
                         event = "module.loaded",
                         component = "module",
                         state = "ready",
