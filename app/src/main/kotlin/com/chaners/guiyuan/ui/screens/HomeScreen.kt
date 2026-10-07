@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -203,21 +205,33 @@ private fun HomeRuntimeStatusCard(
             runtimeStatus = runtimeStatus,
             hotReloadInProgress = hotReloadInProgress,
         )
-    val accentColor =
+    val targetAccentColor =
         when (state.tone) {
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
             RuntimeStatusTone.Warning -> RuntimeWarningAccent
             RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
             RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.onSurfaceContainerVariant
         }
-    val containerColor =
+    val targetContainerColor =
         when (state.tone) {
             RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.surfaceContainer
             else ->
-                accentColor
+                targetAccentColor
                     .copy(alpha = 0.15f)
                     .compositeOver(MiuixTheme.colorScheme.surfaceContainer)
         }
+    val accentColor by
+        animateColorAsState(
+            targetValue = targetAccentColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeAccent",
+        )
+    val containerColor by
+        animateColorAsState(
+            targetValue = targetContainerColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeContainer",
+        )
 
     Card(
         modifier = modifier,
@@ -526,6 +540,7 @@ private fun resolveHomeRuntimeCardState(
     }
 }
 
+private const val StatusColorAnimMillis = 220
 private val RuntimeCardHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
