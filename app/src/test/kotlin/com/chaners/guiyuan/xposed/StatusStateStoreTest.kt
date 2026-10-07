@@ -79,6 +79,21 @@ class StatusStateStoreTest {
     }
 
     @Test
+    fun invalidChargingIconDoesNotClearCurrentIcon() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(
+                percent = 80,
+                charging = true,
+                chargingIconResId = 7,
+            ),
+        )
+
+        assertNull(StatusStateStore.updateBatteryChargingIcon(0))
+        assertEquals(7, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
     fun freshSignalAndMobileTypeFinishAirplaneRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
