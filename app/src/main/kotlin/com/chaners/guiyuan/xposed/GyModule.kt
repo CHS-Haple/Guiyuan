@@ -1402,11 +1402,11 @@ class GyModule : XposedModule() {
                 component = "controlCenterProjection",
                 state = "fallback",
                 "source" to "hot-reload-transfer",
-                "reason" to failure,
+                "reason" to failure.reason,
                 "next" to "first-native-layout-prearm",
             )
             onCcFakeAttached(host)
-            return "fallback-first-native-layout:" + failure
+            return "fallback-first-native-layout:" + failure.reason
         }
 
         val compactReady =
@@ -1489,11 +1489,11 @@ class GyModule : XposedModule() {
                 component = "controlCenterProjection",
                 state = "unavailable",
                 "source" to source,
-                "reason" to failure,
+                "reason" to failure.reason,
                 "fallback" to "native-qs-fake",
             )
         }
-        return failure
+        return failure?.reason
     }
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
@@ -3812,12 +3812,6 @@ class GyModule : XposedModule() {
                 },
             event = "contract.probe",
             component = "nativeParticipant",
-            state =
-                if (nativeParticipant.registrationContractReady) {
-                    "ready"
-                } else {
-                    "observed"
-                },
             "available" to nativeParticipant.available,
             "reason" to nativeParticipant.reason,
             "manager" to nativeParticipant.managerClass,
@@ -3861,7 +3855,6 @@ class GyModule : XposedModule() {
                 level = if (bindableProbeReady) Log.INFO else Log.WARN,
                 event = "contract.probe",
                 component = "nativeBindableParticipant",
-                state = if (bindableProbeReady) "ready" else "observed",
                 "source" to source,
                 "available" to bindableParticipant.available,
                 "reason" to bindableParticipant.reason,
@@ -3901,7 +3894,6 @@ class GyModule : XposedModule() {
                 level = if (visualGeometry.ready) Log.INFO else Log.WARN,
                 event = "contract.probe",
                 component = "nativeBindableVisualGeometry",
-                state = if (visualGeometry.ready) "ready" else "observed",
                 "source" to source,
                 "available" to visualGeometry.available,
                 "reason" to visualGeometry.reason,
@@ -4146,8 +4138,7 @@ class GyModule : XposedModule() {
                     level = Log.INFO,
                     event = "slot.probe",
                     component = "nativeSlot",
-                    state = "observed",
-                    "source" to source,
+                            "source" to source,
                     "root" to subtree.rootClassName,
                     "children" to subtree.rootChildCount,
                     "nodes" to subtree.entries.size,
@@ -4516,7 +4507,6 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "pipeline.latency",
             component = "renderLatency",
-            state = "observed",
             "traceId" to sample.traceId,
             "source" to sample.source,
             "sourceToStateUs" to sample.sourceToStateUs,
@@ -4541,7 +4531,7 @@ class GyModule : XposedModule() {
         level: Int,
         event: String,
         component: String,
-        state: String,
+        state: String? = null,
         vararg fields: Pair<String, Any?>,
     ) {
         val values =

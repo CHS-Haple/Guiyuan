@@ -31,6 +31,23 @@ class RuntimeDiagnosticsProtocolTest {
     }
 
     @Test
+    fun formattedObservationCanOmitState() {
+        val parsed =
+            requireNotNull(
+                RuntimeDiagnosticsProtocol.parse(
+                    RuntimeDiagnosticsProtocol.format(
+                        event = "pipeline.latency",
+                        component = "renderLatency",
+                        fields = mapOf("sourceToDrawUs" to "1200"),
+                    ),
+                ),
+            )
+
+        assertNull(parsed.state)
+        assertEquals("1200", parsed.fields["sourceToDrawUs"])
+    }
+
+    @Test
     fun legacyEventWithoutSchemaStillParses() {
         val parsed =
             requireNotNull(

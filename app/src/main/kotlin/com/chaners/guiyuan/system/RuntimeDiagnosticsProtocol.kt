@@ -4,7 +4,7 @@ internal data class RuntimeDiagnosticEvent(
     val schemaVersion: Int,
     val event: String,
     val component: String,
-    val state: String,
+    val state: String?,
     val fields: Map<String, String>,
 )
 
@@ -21,8 +21,10 @@ internal data class RuntimeEventSnapshot(
             buildString {
                 append("component=")
                 append(event.component)
-                append(" state=")
-                append(event.state)
+                event.state?.let { state ->
+                    append(" state=")
+                    append(state)
+                }
                 append(" event=")
                 append(event.event)
                 event.fields
@@ -122,14 +124,14 @@ internal data class RuntimeEventSnapshot(
 }
 
 internal object RuntimeDiagnosticsProtocol {
-    const val SchemaVersion = 1
+    const val SchemaVersion = 2
 
     private const val Marker = "diag "
 
     fun format(
         event: String,
         component: String,
-        state: String,
+        state: String? = null,
         fields: Map<String, String> = emptyMap(),
     ): String =
         buildString {
@@ -140,8 +142,10 @@ internal object RuntimeDiagnosticsProtocol {
             append(encode(event))
             append(" component=")
             append(encode(component))
-            append(" state=")
-            append(encode(state))
+            state?.let {
+                append(" state=")
+                append(encode(it))
+            }
             fields
                 .toSortedMap()
                 .forEach { (key, value) ->
@@ -175,7 +179,7 @@ internal object RuntimeDiagnosticsProtocol {
 
         val event = values["event"] ?: return null
         val component = values["component"] ?: return null
-        val state = values["state"] ?: return null
+        val state = values["state"]
 
         return RuntimeDiagnosticEvent(
             schemaVersion = values["schema"]?.toIntOrNull() ?: 0,

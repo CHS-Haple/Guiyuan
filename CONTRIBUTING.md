@@ -138,6 +138,7 @@ event -> bounded snapshot -> report
 ~~~
 
 Log state transitions, decisions, failures, and observations that help diagnose real behavior. Do not emit a symmetric success event for every internal branch, duplicate the same fact through both structured and free-form logs without a diagnostic need, or invent a reason-code taxonomy for local control flow that no boundary consumes.
+- Treat structured diagnostic fields as facts, not mandatory template slots. Use `state` only for a real lifecycle or outcome state; observation events should normally carry the event name and measured fields instead of filler values such as `observed` or `ready`.
 
 Do not invent diagnostic facts. A field presented as a metric, readiness input, health signal, or observed value must come from a real runtime observation or calculation. Do not hard-code values such as `0`, `true`, or `false` merely to prove that Guiyuan did not write something, then feed that value back into readiness/health checks. If something is only a design invariant, express it in the code structure or a short comment; log it only when there is real evidence worth recording.
 
