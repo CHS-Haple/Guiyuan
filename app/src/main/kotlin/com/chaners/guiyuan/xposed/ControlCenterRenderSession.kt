@@ -186,7 +186,7 @@ internal object ControlCenterRenderSession {
             transferredCompactReady
         ) {
             when (SysUiPresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
-                is SysUiPresentationOwner.StateResult.Active -> {
+                is SysUiPresentationOwner.Result.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
                             "controlCenterProjection hotReloadRestore state=adopted-compact " +
@@ -662,7 +662,7 @@ internal object ControlCenterRenderSession {
                         },
                     )
             ) {
-                is SysUiPresentationOwner.StateResult.Active -> {
+                is SysUiPresentationOwner.Result.Active -> {
                     setNativePresentationReady(
                         ready = true,
                         maskedViews = result.maskedViews,
@@ -671,7 +671,7 @@ internal object ControlCenterRenderSession {
                     null
                 }
 
-                is SysUiPresentationOwner.StateResult.Prepared -> {
+                is SysUiPresentationOwner.Result.Prepared -> {
                     emitEvent {
                         "controlCenterProjection prearm state=prepared " +
                             "reused=" + reused +
@@ -680,7 +680,7 @@ internal object ControlCenterRenderSession {
                     null
                 }
 
-                is SysUiPresentationOwner.StateResult.Failure -> {
+                is SysUiPresentationOwner.Result.Failure -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
@@ -689,7 +689,7 @@ internal object ControlCenterRenderSession {
                     result.reason
                 }
 
-                is SysUiPresentationOwner.StateResult.Inactive -> {
+                is SysUiPresentationOwner.Result.Inactive -> {
                     setNativePresentationReady(
                         ready = false,
                         maskedViews = 0,
