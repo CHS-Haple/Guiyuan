@@ -60,7 +60,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
+import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
@@ -114,13 +114,13 @@ internal fun FeaturesScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val batteryColorSchemeRepository =
+    val schemeRepo =
         remember(context.applicationContext) {
-            BatteryColorSchemeLibraryRepository(context.applicationContext)
+            BatterySchemeRepo(context.applicationContext)
         }
-    val batteryColorSchemeLibrary by
-        batteryColorSchemeRepository.library.collectAsState(
-            initial = batteryColorSchemeRepository.current(),
+    val schemeLibrary by
+        schemeRepo.library.collectAsState(
+            initial = schemeRepo.current(),
         )
     val layoutOptions =
         listOf(
@@ -243,7 +243,7 @@ internal fun FeaturesScreen(
         tertiarySectionTitle = stringResource(R.string.section_battery),
         tertiaryContent = {
             BatteryColorPreference(
-                library = batteryColorSchemeLibrary,
+                library = schemeLibrary,
                 enabled = featureCfg.enabled,
                 holdDownState = showBatteryColorSheet,
                 onClick = {
@@ -378,8 +378,8 @@ internal fun FeaturesScreen(
         overlay = {
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
-                library = batteryColorSchemeLibrary,
-                repository = batteryColorSchemeRepository,
+                library = schemeLibrary,
+                repository = schemeRepo,
                 onDismiss = {
                     showBatteryColorSheet = false
                 },

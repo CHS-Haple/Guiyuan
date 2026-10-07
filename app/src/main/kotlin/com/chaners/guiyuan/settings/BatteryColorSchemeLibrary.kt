@@ -164,7 +164,7 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
 
-internal class BatteryColorSchemeLibraryRepository(context: Context) {
+internal class BatterySchemeRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,

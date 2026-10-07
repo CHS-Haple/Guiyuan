@@ -21,7 +21,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
+import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
@@ -107,7 +107,7 @@ internal fun BatteryColorPreference(
 internal fun BatteryColorBottomSheet(
     show: Boolean,
     library: BatteryColorSchemeLibrary,
-    repository: BatteryColorSchemeLibraryRepository,
+    repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
     var selectedCustomId by remember { mutableStateOf<Int?>(null) }
