@@ -5168,7 +5168,7 @@ The remaining uncovered set was 15 production Kotlin files plus 11 test/tooling/
 
 - `RootShell.Result` represents real timeout / exit / error outcomes rather than a success/failure wrapper.
 - `CenterTransitionPolicy` protects a real three-family transition rule.
-- `NativeWifiOpticalReferencePolicy.canShareReferenceViewport` is shared by two optical-geometry paths, so inlining it would duplicate the same invariant.
+- `WifiOpticalReference.canShareReferenceViewport` is shared by two optical-geometry paths, so inlining it would duplicate the same invariant.
 - render-latency samples, native-status inventory counts and runtime-health state are based on actual runtime timestamps/events/view scans, not synthetic metrics.
 - workflow validation is based on real diffs, exact source SHAs, build outputs, signatures and metadata checks; no fixed health/readiness evidence was found.
 
@@ -5185,3 +5185,36 @@ No version or Build bump. No geometry constant, native writer, transition clock,
 - No Canary/device gate is required beyond the automatic integrated-dev artifact because the batch is behavior-neutral and leaves no device-only engineering question.
 - External version remains 0.2.1 and Build remains 746 / `20261006-746`.
 
+
+
+## 2026-10-07 — Build 746: residual runtime-plumbing cleanup
+
+**Type:** behavior-neutral maintainability / runtime plumbing  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `refactor/runtime-plumbing-residuals`
+
+### Why
+
+The broad maintainability and coverage-gap passes were already closed, but a focused review of the remaining plumbing still found a few concrete cases matching the project's own maintenance rules: redundant owner/policy wording, one mutually exclusive Boolean pair, result objects carrying fields only to reconstruct logs, a synthetic handoff write metric, and an unreachable failure branch around an operation that always succeeded.
+
+### Net cleanup
+
+- `NativeBatterySuppressionOwner` / `NativeNetworkSuppressionOwner` become the shorter `NativeBatterySuppressor` / `NativeNetworkSuppressor`; `NativeCombinedParticipantOwner` becomes `NativeCombinedParticipant`; `NativeParticipantRuntimeOwner` becomes `NativeParticipantRuntime`.
+- Home native-AOD fallback candidate/active booleans become one explicit phase. Independent Home origin/prearm and Keyguard readiness/lease facts remain separate.
+- Battery and network suppression success results no longer carry duplicate diagnostic payload; detailed runtime observations stay at the operation that measured them.
+- the synthetic handoff write count and the unreachable battery restore failure path are removed.
+- `BatteryArcPolicy` and `BatteryTopLayoutPolicy` are folded into `BatteryGeometry`; the thin `PresentationPolicy` shell is removed.
+- internal source/reference names are shortened where context already carries the domain: `ActiveSubscriptionSource`, `NativeStatusInventory`, `WifiOpticalReference`, `NetworkSuppressionPolicy`, `SysUiCompatibilityProbe`, and `SysUiSignalParser`.
+- private ignored-slot lifetime naming is reduced to `IgnoreScope.CALL / SESSION`.
+- CONTRIBUTING now explicitly rejects success/failure contracts without a real failure source.
+
+### Review boundary
+
+This pass does not intentionally change rendering geometry, transition timing, Hook ownership/count contracts, native alpha/translation/visibility ownership, fail-native policy, display version or Build identity.
+
+Full base-to-head review caught two cleanup defects before CI: an accidental executable-bit change on `tools/verify_target_profile.py`, and one malformed Home-AOD enum reset produced by an earlier mechanical replacement. Both were corrected before validation.
+
+### Validation
+
+Exact-head Runtime CI is required before merge. No device-only question is currently identified; device validation should be added only if automated validation or further review exposes one.
