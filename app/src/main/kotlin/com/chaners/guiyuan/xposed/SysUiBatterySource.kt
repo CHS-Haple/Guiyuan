@@ -138,12 +138,10 @@ internal object SysUiBatterySource {
             val state = readState(iconView) ?: return
             val changed =
                 synchronized(this) {
-                    if (state.charging) {
-                        if (lastChargingIconResId == null) {
-                            lastChargingIconResId = state.chargingIconResId
-                        }
-                    } else {
+                    if (!state.charging) {
                         lastChargingIconResId = null
+                    } else if (lastChargingIconResId == null) {
+                        lastChargingIconResId = state.chargingIconResId
                     }
                     if (lastState == state) {
                         false
@@ -164,7 +162,6 @@ internal object SysUiBatterySource {
                     " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
                     " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
             )
-
         }
 
         fun publishChargingGlyph(
