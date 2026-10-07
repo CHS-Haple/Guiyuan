@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.3.0**, consolidating the accepted maintainability baseline, public documentation, and user-facing text after 0.2.1. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.4.0**, adding Liquid Glass navigation and promoting the latest runtime-state ownership and maintainability fixes on the verified 0.3.0 baseline. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -38,7 +38,7 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 
 **Companion app**
 - MIUIX-based navigation and settings UI.
-- Light/dark appearance, dynamic color, and standard or floating navigation options.
+- Light/dark appearance, dynamic color, and standard, floating, or Liquid Glass navigation options.
 - English and Simplified Chinese with Android 13+ per-app language selection.
 - Optional launcher-icon hiding while retaining a non-launcher app entry point.
 
@@ -88,7 +88,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.3.0**，整合了 0.2.1 之后已接受的可维护性改进、公开文档整理与用户可见文案优化。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.4.0**，在 0.3.0 已验证基线上加入液态玻璃导航，并收口最新的运行时状态所有权与可维护性修复。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -110,7 +110,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 **配套应用**
 - 基于 MIUIX 的首页、功能与设置界面。
-- 支持亮色/深色、动态取色，以及标准或悬浮导航。
+- 支持亮色/深色、动态取色，以及标准、悬浮或液态玻璃导航。
 - 支持英文、简体中文和 Android 13+ 应用级语言选择。
 - 可隐藏桌面图标，同时保留非桌面入口。
 
