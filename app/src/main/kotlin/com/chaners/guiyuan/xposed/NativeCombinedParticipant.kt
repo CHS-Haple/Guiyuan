@@ -2117,7 +2117,7 @@ internal object NativeCombinedParticipant {
                         initView = initView,
                     )
                 }
-                "toString" -> "CombinedStatusNativeParticipantCreator"
+                "toString" -> "GyParticipantCreator"
                 "hashCode" -> System.identityHashCode(proxy)
                 "equals" -> proxy === args?.firstOrNull()
                 else -> defaultValue(method.returnType)
@@ -2166,7 +2166,7 @@ internal object NativeCombinedParticipant {
                             }
                         null
                     }
-                    "toString" -> "CombinedStatusNativeParticipantBinding"
+                    "toString" -> "GyParticipantBinding"
                     "hashCode" -> System.identityHashCode(proxy)
                     "equals" -> proxy === args?.firstOrNull()
                     else -> defaultValue(method.returnType)
@@ -2179,7 +2179,7 @@ internal object NativeCombinedParticipant {
             ) { proxy, method, args ->
                 when (method.name) {
                     "invoke" -> binding
-                    "toString" -> "CombinedStatusNativeParticipantBindingFactory"
+                    "toString" -> "GyParticipantBindingFactory"
                     "hashCode" -> System.identityHashCode(proxy)
                     "equals" -> proxy === args?.firstOrNull()
                     else -> defaultValue(method.returnType)
