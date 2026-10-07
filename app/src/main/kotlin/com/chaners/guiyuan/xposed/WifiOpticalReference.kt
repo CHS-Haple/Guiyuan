@@ -2,11 +2,11 @@ package com.chaners.guiyuan.xposed
 
 internal object WifiOpticalReference {
     fun connectedReferenceEntry(resourceName: String?): String? {
-        if (!SystemUiSignalParser.isWifiFamilyResource(resourceName)) {
+        if (!SysUiSignalParser.isWifiFamilyResource(resourceName)) {
             return null
         }
         val level =
-            (SystemUiSignalParser.wifi(resourceName) as? SignalStrength.Level)
+            (SysUiSignalParser.wifi(resourceName) as? SignalStrength.Level)
                 ?.value
                 ?: return null
         return "stat_sys_wifi_signal_" + level.coerceIn(0, 3)
