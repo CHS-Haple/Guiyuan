@@ -125,6 +125,21 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
 - Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
 - Before committing a non-trivial batch, review the complete base→HEAD diff for accidental compatibility-string changes, incomplete renames, mismatched source/test filenames, semantic drift, lifecycle/ownership changes, and unnecessary churn.
+
+### Pre-commit maintainability review
+Every non-trivial code batch must pass a separate maintainability/naturalness review before commit and CI. Apply the same strictness used for AI-code review, but judge the code by future human readability and editability rather than by guessing who wrote it.
+
+Review the touched code and relevant adjacent call sites for:
+- names that stack unnecessary modifiers or ceremonial suffixes, repeat context already supplied by the package/receiver, or avoid a familiar project abbreviation without adding clarity;
+- several booleans or nullable flags that actually encode one lifecycle, string values or reason codes that drive control flow, duplicated state fields, and `Result`/`State` layers that do not represent a real boundary;
+- one-caller wrappers, pass-through helpers, mirrored abstractions, symmetric success/failure branches, or `Owner`/`Source`/`Policy`/`Probe`/`Resolver` splits that exist mainly to make the structure look uniform;
+- logging or diagnostics that fill mandatory-looking templates instead of reporting facts, duplicate structured and free-form text, serialize a result only to embed it in another structured record, or invent proof fields/metrics;
+- comments that narrate code, repeat the same template across files, or preserve debugging history instead of explaining a non-obvious reason, invariant, ownership rule, lifecycle boundary, or platform limitation;
+- implementation shapes that make a small future change require touching unrelated layers, renaming several concepts, or updating duplicated mappings/taxonomies when one local source of truth would be clearer;
+- tests that merely mirror helper structure or invented taxonomies instead of protecting externally useful behavior, contracts, lifecycle, compatibility, or regression boundaries.
+
+Treat an unusual structure as suspicious until its maintenance value or platform constraint is clear. If the structure is necessary but non-obvious, keep it and add the smallest useful explanation. If it has no such justification, simplify it before committing. Do not create speculative cleanup or hide a behavior change inside this review merely to make code look more human.
+
 - When moving code between files, check file-level imports, annotations, visibility, top-level constants, and receiver/extension context; an unchanged body can still depend on the old file.
 - Prefer deleting proven dead code and redundant indirection over renaming it.
 - Do not run CI for every micro-edit. Validate at meaningful checkpoints; request device evidence only when the refactor can plausibly change runtime behavior.
@@ -312,5 +327,7 @@ Runtime-sensitive work: review applicable ownership/writer conflicts, lifecycle/
 UI work: review affected hierarchy, MIUIX behavior, themes, localization, accessibility, and interaction.
 
 Repository/CI work: review triggers, secret boundaries, artifact semantics, and branch protection.
+
+All non-trivial code work: complete the pre-commit maintainability/naturalness review and resolve deterministic findings before the final commit/CI checkpoint.
 
 A completed non-trivial change should leave enough information in the PR/commit and, when warranted, CURRENT/DEVLOG to answer what changed and why, how it was validated, and what limitation or next step remains.
