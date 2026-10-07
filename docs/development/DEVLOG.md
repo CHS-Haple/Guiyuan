@@ -5224,3 +5224,26 @@ Full base-to-head review caught two cleanup defects before CI: an accidental exe
 - existing Kotlin warnings remain in reflection/Java-interop areas; this pass does not reopen them merely to reach zero warnings.
 - no separate device gate is required because the accepted diff is behavior-neutral and leaves no unresolved device-only question.
 - external version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
+
+## 2026-10-07 — Build 746: fail closed on pre-existing stable tags
+
+**Type:** release safety / 1.0.0 qualification  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `ci/stable-tag-boundary`
+
+### Problem
+
+Stable release automation rejected an existing GitHub Release for `v$VERSION_NAME` but did not reject an existing bare remote tag with the same name. `gh release create --target ...` creates a tag from the requested target only when the matching tag does not already exist, so a stale/manual bare tag could bypass the intended prepared-main tag creation boundary.
+
+### Change
+
+- keep the existing stable Release existence check;
+- also query the exact remote `refs/tags/$RELEASE_TAG` before publishing;
+- fail stable publishing if that tag already exists instead of reusing it;
+- leave test-release behavior unchanged.
+
+### Boundary
+
+No runtime/APK behavior, version, Build, dependency, signing identity, changelog content or device contract changes. This is a release-workflow safety change and therefore requires Full automated validation but no device gate.
