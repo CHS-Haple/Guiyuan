@@ -87,7 +87,7 @@ internal object ScenePolicy {
     fun all(): List<SceneCapability> =
         StatusScene.entries.map(::capability)
 
-    fun shouldAcquireKeyguardControlCenterLease(
+    fun shouldAcquireKeyguardCcLease(
         sourceScene: SourceScene,
         keyguardPresentationReady: Boolean,
         nativeFraction: Float,
@@ -96,16 +96,16 @@ internal object ScenePolicy {
             keyguardPresentationReady &&
             nativeFraction > 0f
 
-    fun shouldReconcileControlCenterForKeyguardLifecycle(
-        controlCenterVisible: Boolean,
+    fun shouldReconcileCcForKeyguard(
+        ccVisible: Boolean,
         nativeFraction: Float,
         leaseActive: Boolean,
     ): Boolean =
-        controlCenterVisible ||
+        ccVisible ||
             nativeFraction > 0f ||
             leaseActive
 
-    fun shouldRetainKeyguardControlCenterLease(
+    fun shouldRetainKeyguardCcLease(
         leaseActive: Boolean,
         sourceScene: SourceScene,
         featureEnabled: Boolean,
