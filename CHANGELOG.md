@@ -8,8 +8,24 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-07
+
+### Added
+- Added Liquid Glass bottom navigation using AndroidLiquidGlass/Backdrop, with blurred and clear glass finishes and a non-interactive production preview.
+
+### Changed
+- Diagnostics now uses MIUIX pull-to-refresh as its single refresh interaction, including the initial page refresh animation.
+- Mobile runtime state now keeps subscription-scoped semantic signal strength instead of persisting native signal, VoLTE, and VoWiFi resource IDs.
+- Grouped the clearest Xposed runtime domains into `battery`, `prefs`, and `network` packages while keeping cross-domain orchestration at the root.
+
+### Fixed
+- Kept the charging glyph visible while SystemUI still reports charging, so a transient missing glyph sample no longer clears the charging presentation.
+- Preserved mobile presentation refresh timing and adjacent-generation Hot Reload compatibility while removing unused native resource persistence.
+
 ### Engineering
-- Grouped the clearest Xposed runtime domains into `battery`, `prefs`, and `network` packages while keeping cross-domain orchestration at the root; this is a behavior-neutral maintainability change.
+- Added AndroidLiquidGlass/Backdrop and Kyant Shapes notices and dependency metadata.
+- Added a non-debuggable internal test variant and unified work-branch APK workflow; internal builds may gate the project-home link without changing Xposed runtime behavior.
+- Kept the 0.4.0 repository, documentation, and build identity aligned on Build 748.
 
 ## [0.3.0] - 2026-10-07
 

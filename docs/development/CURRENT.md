@@ -2,9 +2,10 @@
 
 ## Baseline
 
-- Stable product line: Guiyuan 0.3.0 / Build 747 (`20261007-747`).
-- Stable `main`: accepted 0.3.0 maintainability, documentation, and user-facing text baseline.
-- Runtime ownership and scene behavior remain on the accepted 0.2.1 contract; 0.3.0 promotes the second maintainability audit plus text/resource cleanup.
+- Stable product line: Guiyuan 0.4.0 / Build 748 (`20261007-748`).
+- Stable `main`: accepted 0.4.0 Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
+- Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
+- Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
 - No runtime blocker is currently recorded.
 
 ## Accepted runtime contract
@@ -43,7 +44,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final Control Center appearance.
 - Do not weaken exact restoration or fail-native behavior.
-- Keep version 0.3.0 / Build 747 unchanged unless a version/build change is explicitly part of the task.
+- Keep version 0.4.0 / Build 748 unchanged unless a version/build change is explicitly part of the task.
 
 ## Next
 
