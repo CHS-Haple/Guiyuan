@@ -1,5 +1,6 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
+import com.chaners.guiyuan.xposed.NativePresentationResolver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

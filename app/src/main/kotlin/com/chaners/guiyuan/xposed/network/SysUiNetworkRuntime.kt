@@ -1,5 +1,6 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
+import com.chaners.guiyuan.xposed.StatusStateStore
 import io.github.libxposed.api.XposedModule
 
 internal object SysUiNetworkRuntime {

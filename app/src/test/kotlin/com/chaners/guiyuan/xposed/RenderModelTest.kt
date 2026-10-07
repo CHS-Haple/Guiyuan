@@ -1,5 +1,9 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.InternetState
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

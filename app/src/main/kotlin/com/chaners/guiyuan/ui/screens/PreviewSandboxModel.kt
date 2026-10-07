@@ -2,11 +2,11 @@ package com.chaners.guiyuan.ui.screens
 
 import android.content.Context
 import android.content.res.Resources
-import com.chaners.guiyuan.xposed.CenterIndicator
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.RenderModel
-import com.chaners.guiyuan.xposed.InternetState
+import com.chaners.guiyuan.xposed.network.InternetState
 
 internal enum class PreviewNetworkMode {
     MOBILE,

@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.InternetState
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

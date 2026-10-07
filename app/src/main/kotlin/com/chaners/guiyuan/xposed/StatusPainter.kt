@@ -23,6 +23,8 @@ import com.chaners.guiyuan.xposed.battery.batteryArcSegments
 import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.WifiOpticalReference
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min

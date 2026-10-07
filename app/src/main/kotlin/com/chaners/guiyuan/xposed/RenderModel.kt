@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal data class RenderModel(
     val batteryPercent: Int,

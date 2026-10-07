@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
 internal object WifiOpticalReference {
     fun connectedReferenceEntry(resourceName: String?): String? {

@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

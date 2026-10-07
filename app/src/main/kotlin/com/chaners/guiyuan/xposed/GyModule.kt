@@ -15,6 +15,12 @@ import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
+import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
+import com.chaners.guiyuan.xposed.network.NetworkSuppressionPolicy
+import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
+import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
+import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
