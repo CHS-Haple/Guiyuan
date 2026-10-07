@@ -24,12 +24,12 @@ Do not synchronize every fact everywhere:
 - Runtime — ordinary app/SystemUI validation; ready PRs build Debug, trusted runtime integration on dev produces signed Canary.
 - Full — main/stable boundaries and build/dependency/CI/tooling/release changes.
 
-Signed work-branch Canary is demand-driven. /canary may be requested on any open same-repository feat/* or fix/* PR; the trusted workflow independently validates the exact requested SHA.
+Signed work-branch Canary is demand-driven. /canary may be requested on any open same-repository feat/*, fix/* or refactor/* PR; the trusted workflow independently validates the exact requested SHA.
 
 Normal runtime path:
 
 ~~~text
-feat/* or fix/* -> dev -> dev-to-main PR -> main
+feat/*, fix/* or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
 There is no validation/dev marker or promote/* stage.

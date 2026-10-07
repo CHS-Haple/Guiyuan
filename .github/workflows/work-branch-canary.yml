@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Trusted same-repository feat/* or fix/* branch to validate'
+        description: 'Trusted same-repository feat/*, fix/* or refactor/* branch to validate'
         required: true
         type: string
   issue_comment:
@@ -58,8 +58,8 @@ jobs:
           case "$EVENT_NAME" in
             workflow_dispatch)
               branch="$MANUAL_SOURCE_BRANCH"
-              if [[ "$branch" != feat/* && "$branch" != fix/* ]]; then
-                echo "::error::Manual Canary source must be a feat/* or fix/* branch, got: $branch"
+              if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
+                echo "::error::Manual Canary source must be a feat/*, fix/* or refactor/* branch, got: $branch"
                 exit 1
               fi
               source_sha="$(
@@ -95,8 +95,8 @@ jobs:
               ;;
           esac
 
-          if [[ "$branch" != feat/* && "$branch" != fix/* ]]; then
-            echo "::error::Canary source must be a feat/* or fix/* branch, got: $branch"
+          if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
+            echo "::error::Canary source must be a feat/*, fix/* or refactor/* branch, got: $branch"
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
