@@ -96,6 +96,8 @@ A compatibility failure should fail native for the smallest affected surface.
 
 Optimize for the next human maintainer. Prefer concise scope-aware names and structures; avoid both modifier-heavy verbosity and cryptic shortening.
 
+When a package becomes crowded, group files by problem domain rather than technical role. Keep source paths aligned with Kotlin packages and move cohesive areas incrementally instead of churning unrelated code.
+
 ### Naming
 
 - Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`.

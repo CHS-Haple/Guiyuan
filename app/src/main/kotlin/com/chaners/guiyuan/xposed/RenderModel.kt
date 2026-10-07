@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+
 internal data class RenderModel(
     val batteryPercent: Int,
     val charging: Boolean,

@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
