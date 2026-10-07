@@ -74,14 +74,14 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
-import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
+import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -357,7 +357,7 @@ internal fun DiagnosticsScreen(
                 item(key = "diagnostics-state-cleared") {
                     LogStateCard(
                         text = stringResource(R.string.diagnostics_view_cleared),
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier,
                     )
                 }
             }
@@ -375,7 +375,7 @@ internal fun DiagnosticsScreen(
                                     R.string.diagnostics_events_empty
                                 },
                             ),
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier,
                     )
                 }
             }
@@ -389,7 +389,6 @@ internal fun DiagnosticsScreen(
                             ),
                         modifier =
                             Modifier
-                                .animateItem()
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp),
@@ -413,7 +412,7 @@ internal fun DiagnosticsScreen(
                                     entry.key
                                 }
                         },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier,
                     )
                 }
             }

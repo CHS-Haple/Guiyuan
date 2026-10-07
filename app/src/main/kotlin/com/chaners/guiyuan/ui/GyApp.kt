@@ -10,12 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.ThemeMode
-import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
