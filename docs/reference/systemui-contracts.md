@@ -1,12 +1,21 @@
-# SystemUI integration contracts
+# SystemUI Integration Contracts
 
-## Purpose
+This reference records reusable target-SystemUI evidence that may inform Guiyuan work. It is not a dependency declaration, implementation-lineage statement or archive of investigation history.
 
-This note records reusable contracts derived from the verified target SystemUI and accepted runtime behavior.
+## Reference rules
 
-It intentionally excludes product-comparison history, Build chronology, reverse-engineering tooling notes and abandoned implementation candidates. Those details are not required to understand the current contract.
+- Keep reusable platform behavior and ownership contracts, not incidental third-party project identities.
+- Do not copy third-party source code, proprietary assets or implementation-specific constants.
+- Keep target-specific identifiers only when they are necessary to describe a verified SystemUI contract.
+- Separate observed platform behavior from Guiyuan policy.
+- Evidence does not grant write ownership by itself; revalidate host, lifecycle, writer set, fallback and device behavior before adopting a new write.
+- Keep the current reusable conclusion here. Build chronology, tooling notes and superseded candidates belong in Git history or [DECISIONS.md](../development/DECISIONS.md).
 
-Current architecture authority remains `docs/architecture/` plus `docs/development/CURRENT.md`.
+Evidence language:
+- **Observed** — directly supported by target source/resource inspection or runtime evidence.
+- **Strong inference** — supported by multiple observations but not exposed as one explicit platform contract.
+- **Guiyuan rule** — an adopted project constraint based on current evidence.
+- **Not established** — insufficient evidence to use as a design premise.
 
 ## Target scope
 
@@ -14,237 +23,167 @@ Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`.
 
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
-## 1. Reuse an existing native host
+## Existing native host
 
-**Observed.**
+**Observed.** When a suitable native end-side host already owns layout and motion, composing Guiyuan inside that host avoids creating a second permanent layout identity.
 
-When a suitable native end-side host already owns layout and motion, composing Guiyuan inside that host avoids creating a second permanent layout identity.
-
-Reusable rule:
+**Guiyuan rule:** prefer:
 
 `verified native host -> Guiyuan presentation`
 
-is preferred over:
+over:
 
 `native host + permanent custom participant -> occupancy handoff`.
 
-**Guiyuan rule.** Home uses the existing native end-side carrier. Keyguard/AOD use their own verified family host. Other scenes require their own host and lifecycle proof.
+Home uses the existing native end-side carrier. Keyguard/AOD use their own verified family host. Other scenes need independent host/lifecycle proof.
 
-## 2. Represented-slot suppression follows the consuming lifetime
+## Represented-slot suppression
 
-**Observed.**
+**Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout.
 
-The target status-icon container exposes an ignored-slot contract consumed by native measure/layout.
+Safe mutation:
+- preserves existing platform ignored slots;
+- adds only the represented entries Guiyuan owns;
+- restores only that owned delta;
+- uses the shortest lifetime that still covers the native presentation consuming the state;
+- fails native if another writer makes ownership ambiguous.
 
-Safe mutation requires:
+For Home, native-call scope is sufficient for the relevant layout boundary. A verified transition-capable host may require the owned delta for the presentation session because native motion can consume layout state outside one measure/layout call.
 
-- preserve the platform's existing ignored slots;
-- add only the represented entries Guiyuan owns;
-- restore only that owned delta;
-- use the shortest lifetime that still covers the native presentation that consumes the state;
-- fail native if another writer makes ownership ambiguous.
+The reusable principle is lifecycle-scoped ownership, not universally temporary or universally persistent suppression.
 
-For Home, native-call scope is sufficient for the relevant layout boundary. For a verified transition-capable host, the owned ignored-slot delta may need to live for the presentation session because native motion can consume layout state outside one measure/layout invocation.
+## Reversible visual masking
 
-The reusable principle is therefore lifecycle-scoped ownership, not universally temporary or universally persistent suppression.
-
-## 3. Visual masking is separate from layout suppression
-
-**Observed.**
-
-A represented native View may remain attached and lifecycle-active while its pixels are hidden through a reversible clip mask.
+**Observed.** A represented native View may remain attached and lifecycle-active while its pixels are hidden through a reversible clip mask.
 
 Safe masking:
-
 - snapshots the prior clip;
 - applies only the module-owned empty clip;
 - restores only the value it owns;
 - leaves native state/tint/lifecycle delivery intact.
 
-Do not use permanent `GONE`, alpha racing or translation writes merely to suppress duplicate pixels.
+Visual masking is not compact-layout readiness and should not be replaced with permanent `GONE`, alpha racing or translation writes.
 
-A mask never proves compact layout readiness.
+## Host-scoped runtime state
 
-## 4. Runtime state is host-scoped
-
-**Guiyuan rule.**
-
-Prefer:
+**Guiyuan rule:** prefer:
 
 `Host -> HostSession -> owned resources`.
 
-A host/session boundary should identify:
+A host/session boundary identifies the authoritative host, observed native participants, presentation mode, owned mutations and cleanup behavior. Detached or replaced hosts must not leave mutable ownership or host-derived geometry globally reusable.
 
-- the authoritative native host;
-- the native participants it observes;
-- the presentation mode;
-- owned masks/exclusions/reservation state;
-- cleanup/restoration behavior.
+When Keyguard/AOD resolve to one verified host, a single presentation owner may retarget semantics. A distinct target host may prepare a bounded reversible visual claim but cannot inherit source-host layout readiness.
 
-Detached or replaced hosts must not leave geometry or mutable ownership in a global cache.
+## Sizing responsibilities
 
-### Same-host semantic retarget
+**Observed.** Native slot occupancy, Guiyuan logical viewport, visible glyph bounds, per-glyph scale, optical adjustment and transition endpoint geometry are distinct values.
 
-When Keyguard and AOD resolve to the same verified native family host, one presentation owner may retarget semantics without creating a second mutable owner.
+**Guiyuan rule:** one width or scale must not silently control all of them. User visual scale is presentation geometry, not automatically a native slot-width or native-translation write.
 
-### Cross-host handoff
+## Native hide and scene facts
 
-A distinct target host may prepare a bounded reversible visual claim, but it cannot inherit source-host layout readiness.
+**Observed.** Native Battery hide, scene and appearance state are authoritative inputs.
 
-## 5. Slot size and visible glyph size are independent
-
-**Observed.**
-
-Keep separate:
-
-- native slot occupancy;
-- Guiyuan logical viewport;
-- visible glyph/ink bounds;
-- per-glyph scale;
-- optical adjustment;
-- transition endpoint geometry.
-
-One width value must not silently serve all of these purposes.
-
-User scale belongs in shared presentation geometry. It must not automatically become a native slot-width or native translation write.
-
-## 6. Native hide and scene facts remain authoritative input
-
-**Observed.**
-
-Native Battery hide, scene and appearance state are inputs to eligibility and reservation decisions.
-
-Do not rewrite a native hide request merely to preserve Guiyuan's previous geometry. Repairing the downstream effects of such a rewrite creates a second scene/layout authority.
-
-Prefer:
+**Guiyuan rule:** prefer:
 
 `native fact -> Guiyuan policy`
 
 over:
 
-`native fact -> module override -> geometry repair`.
+`native fact -> module override -> downstream repair`.
 
-## 7. Native motion and appearance are distinct contracts
+Do not rewrite a native scene/hide request just to preserve previous Guiyuan geometry.
 
-**Observed.**
+## Native motion and appearance
 
-On the verified Control Center path, translation/progress and fake/final appearance are owned by separate native callbacks.
+**Observed.** On the verified Control Center path, translation/progress and fake/final appearance are owned by separate native callbacks.
 
 Consequences:
-
 - expansion progress is motion context, not a visibility threshold;
-- final native appearance must not be replaced by `fraction >= x`;
-- a Guiyuan transition visual may inherit or sample native transforms without becoming the native motion owner;
-- project-local geometry must not double-apply a translation already present on the parent native surface.
+- final appearance must not be replaced by a project `fraction >= x` rule;
+- a Guiyuan transition visual may inherit/read native transforms without becoming the native motion owner;
+- project-local geometry must not double-apply translation already present on its parent native surface.
 
-## 8. QS_FAKE and final-QS remain different surfaces
+## QS_FAKE and final Control Center
 
-**Observed.**
+**Observed.** The verified target exposes a fake transition surface and a distinct final native surface.
 
-The verified target exposes a fake Control Center status surface and a distinct final native surface.
+**Guiyuan rule:** use the fake surface only as bounded transition context and yield to the native final surface. Final participant membership, alpha/visibility, peer placement and final-only participants remain native-owned.
 
-Guiyuan's bounded bridge uses the fake surface as transition context but yields to the native final surface.
+## Projection uses real endpoints
 
-The final surface remains authoritative for:
+**Guiyuan rule:**
 
-- final native participant membership;
-- final alpha/visibility;
-- final peer placement;
-- final-only participants.
+`verified source geometry + verified target geometry + native progress -> draw-only Guiyuan projection`
 
-Guiyuan must not suppress the final native surface merely to preserve transition continuity.
-
-## 9. Projected transition geometry uses real endpoints
-
-**Guiyuan rule.**
-
-For an eligible compact-to-native transition:
-
-`verified source geometry + verified target geometry + native progress -> draw-only Guiyuan projection`.
-
-Prefer this to:
+is preferred to:
 
 `fixed offset + custom duration + independent interpolator`.
 
-Source position must come from the verified native source carrier plus Guiyuan's stable logical basis. A retained Guiyuan View may provide size/basis evidence, but it is not automatically global-position authority after its steady scene has yielded.
+Source position comes from the verified native source carrier plus Guiyuan's stable logical basis. A retained Guiyuan View may provide size/basis evidence but is not automatically global-position authority after its steady scene yields.
 
-Target position must come from verified native final participants. Internal child geometry may refine optical shape but must not erase a valid top-level participant trajectory.
+Target position comes from verified final native participants. Internal child geometry may refine optical shape but must not erase a valid top-level participant trajectory.
 
-## 10. Semantic correspondence does not transfer native ownership
+## Semantic correspondence
 
-**Guiyuan rule.**
+**Guiyuan rule.** Transition drawing may represent 1→1 correspondence, a verified 1→N split, or a 0→1 final-only reveal.
 
-The transition visual may represent:
+That correspondence exists only in Guiyuan drawing. Native final Views keep their own alpha, visibility, translation and lifecycle. If required target identity/geometry is unavailable, omit the projection or fail native rather than inventing a target.
 
-- 1 -> 1 correspondence, such as one compact semantic converging on one native target;
-- 1 -> N split when one compact semantic represents multiple verified final native participants;
-- 0 -> 1 reveal for a final-only semantic.
+## Reservation is occupancy, not motion
 
-This correspondence exists only in Guiyuan's transition drawing.
+**Guiyuan rule.** The one verified reservation writer may expose projected semantic occupancy to native layout while SystemUI owns motion.
 
-Native final Views retain their own alpha, visibility, translation and lifecycle.
+It must not:
+- run an independent gesture curve;
+- translate peers directly;
+- derive native width from temporary drawable folds/morphs;
+- release represented slots mid-transition solely to animate occupancy.
 
-If required target identity or geometry is unavailable, omit the projection and fail native where necessary rather than inventing a target.
+Carrier-capacity leasing and per-progress reservation are separate. Width leased only for measurement capacity must not become transition displacement.
 
-## 11. Reservation is occupancy, not a second gesture timeline
+## Tint authority
 
-**Guiyuan rule.**
+**Observed / Guiyuan rule.** A represented native View may remain a state/lifecycle carrier after its pixels are replaced; that does not automatically make it the best tint authority for Guiyuan's visible pixels.
 
-A transition may need changing native peer occupancy while SystemUI owns motion.
+Prefer a genuinely visible non-represented peer or verified native tint manager/global authority. Do not force a refresh or invent a color when no valid authority exists.
 
-The one verified reservation writer may expose projected semantic occupancy to native layout, but:
+## Native resource rendering
 
-- it must not run an independent timing curve;
-- it must not translate peers directly;
-- it must not derive width from temporary drawable folds/morphs;
-- represented native slots remain under their verified session suppression contract;
-- reservation cleanup follows the owning transition lifecycle.
+**Observed.** The target exposes semantic status-icon resource identity before final presentation transformation. Hidden semantic state remains authoritative even if a bound ImageView still retains old drawable/tag state.
 
-Carrier-capacity leasing and per-progress reservation are different responsibilities. Width leased only for measurement capacity must not be sampled as transition displacement.
+On the verified Wi-Fi family:
+- native slot height is `20dp`;
+- resource geometry uses the same `20dp x 20dp` intrinsic/viewport basis;
+- Light/base, Dark and Tint variants share geometry while presentation color/alpha differs;
+- native presentation state selects the resource variant, and Tint mode additionally applies the current ImageView tint.
 
-## 12. Tint authority follows the visible presentation
+The steady native draw path is effectively:
 
-**Observed / Guiyuan rule.**
+`semantic resource -> native presentation variant -> ImageView Drawable -> final bounds -> framework draw`.
 
-A represented native View may remain attached as a state/lifecycle carrier after its pixels are replaced. That does not automatically make it the best tint authority for Guiyuan's visible pixels.
+No Wi-Fi-specific final bitmap-resample layer was found in the verified path.
 
-Prefer a genuinely visible, non-represented native peer or the verified native tint manager/global authority. Do not force a refresh or invent a color when no valid visible peer exists.
+**Guiyuan rule:** when reusing a verified native resource, prefer:
 
-For Control Center transition drawing, use the verified native peer/final presentation tint facts rather than creating a second tint state machine.
+`semantic resource -> native-compatible variant -> cloned Drawable -> resolved Guiyuan bounds -> direct Drawable draw`.
 
-## 13. Cleanup is part of compatibility
+Keep semantic identity, native variant selection, optical measurement, Guiyuan placement, final Drawable rasterization and tint authority separate. A bounded raster probe may measure optical bounds, but it should not become the final rendered bitmap without separate evidence.
 
-Every owned mutation needs a restoration boundary.
+Do not use per-resource grayscale multipliers, alpha/coverage remaps, source-asset edits or screenshot-fitted constants as a substitute for the native presentation contract.
 
-Cleanup must cover the applicable cases:
+## Cleanup
 
-- feature disable;
-- host detach/replacement;
-- SystemUI recreation;
-- scene/family exit;
-- transition failure;
-- Hot Reload generation replacement.
+Every owned mutation needs a restoration boundary covering the applicable cases: feature disable, host detach/replacement, SystemUI recreation, family/scene exit, transition failure and Hot Reload replacement.
 
-Restore only module-owned state. If a live value no longer equals the value Guiyuan applied, treat that as another writer and avoid destructive restoration.
+Restore only module-owned state. If a live value no longer equals the value Guiyuan applied, treat it as another writer and avoid destructive restoration.
 
-## 14. Fail-native boundary
+## Fail-native boundary
 
-Reference evidence never justifies speculative ownership.
-
-Fail native when any required contract is unavailable or ambiguous, including:
-
-- host identity;
-- participant identity;
-- geometry;
-- lifecycle;
-- writer ownership;
-- source/target eligibility;
-- compatibility.
+Fail native when a required host, participant identity, geometry, lifecycle, writer, source/target eligibility or compatibility contract is unavailable or ambiguous.
 
 Failure should disable only the smallest affected presentation while leaving unrelated accepted surfaces intact.
 
 ## Evidence limits
 
-This document establishes reusable ownership/lifecycle/geometry principles for the verified target. It does not establish universal compatibility across HyperOS versions or devices.
-
-Exact class/member/resource identities belong only where they are necessary to describe the pinned target. Historical experiments remain available in Git history and should not be reintroduced into current policy without new evidence.
+This reference establishes reusable ownership, lifecycle, geometry and rendering principles for the verified target. It does not establish universal compatibility across HyperOS versions or devices.
