@@ -2402,7 +2402,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val tintEntryName =
-                        NativeCenterResourceVariantPolicy.tintEntryName(entryName)
+                        nativeCenterTintEntryName(entryName)
                     drawableContext.resources.getIdentifier(
                         tintEntryName,
                         "drawable",

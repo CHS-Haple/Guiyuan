@@ -1,8 +1,8 @@
 # Engineering Decisions
 
-This file keeps only durable decisions that are likely to matter to future design or regression work. It is not a Build diary.
+This file keeps only durable decisions that are likely to matter to future design or regression work. It is not a build log.
 
-Detailed implementation history, rejected experiments, CI runs and device-by-device investigation remain available in Git history.
+Detailed implementation history, rejected experiments, CI runs, and device investigation notes remain available in Git history.
 
 ## Native host over duplicate participant
 
@@ -18,7 +18,7 @@ Detailed implementation history, rejected experiments, CI runs and device-by-dev
 
 **Why:** overriding a native fact usually creates a second state machine and then requires geometry/timing compensation downstream.
 
-**Consequence:** native facts feed Guiyuan policy. Unsupported or ambiguous state fails native rather than being repaired with guessed thresholds or delays.
+**Consequence:** native facts feed Guiyuan policy. Unsupported or ambiguous state falls back to native presentation rather than being repaired with guessed thresholds or delays.
 
 ## One writer per mutable surface
 
@@ -42,7 +42,7 @@ Detailed implementation history, rejected experiments, CI runs and device-by-dev
 
 **Why:** native Views still carry useful state, tint and lifecycle behavior even when Guiyuan replaces their pixels.
 
-**Consequence:** ignored-slot changes and clip masks are scoped to the verified consuming lifetime, preserve pre-existing platform state, restore only module-owned deltas and fail native on writer ambiguity.
+**Consequence:** ignored-slot changes and clip masks are scoped to the verified consuming lifetime, preserve pre-existing platform state, restore only module-owned deltas and fall back to native presentation on writer ambiguity.
 
 ## Keyguard and AOD share one family owner
 
@@ -58,7 +58,7 @@ Detailed implementation history, rejected experiments, CI runs and device-by-dev
 
 **Why:** the verified transition contract is based on eligible Home or Keyguard presentation and native Control Center routing.
 
-**Consequence:** unknown/AOD source conditions fail native for the bridge instead of inventing a source.
+**Consequence:** unknown/AOD source conditions fall back to native presentation for the bridge instead of inventing a source.
 
 ## Control Center final surface remains native
 
@@ -80,7 +80,7 @@ Detailed implementation history, rejected experiments, CI runs and device-by-dev
 
 **Decision:** when a verified native drawable/resource expresses the needed semantic, preserve its resource/presentation path instead of recreating it through project-owned raster processing.
 
-**Why:** custom rasterization, grayscale/alpha remaps and screenshot-fit constants diverge from native rendering and are hard to maintain across variants.
+**Why:** custom rasterization, grayscale/alpha remaps and screenshot-fitted constants diverge from native rendering and are hard to maintain across variants.
 
 **Consequence:** keep semantic identity, native Light/Dark/Tint selection, optical measurement, Guiyuan placement and final Drawable rendering as separate concerns.
 
@@ -90,7 +90,7 @@ Detailed implementation history, rejected experiments, CI runs and device-by-dev
 
 **Why:** Canary/Release must not have different runtime semantics merely because one build logs more.
 
-**Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates or symmetrical success events.
+**Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
 
 ## Hot Reload is a generation handoff
 

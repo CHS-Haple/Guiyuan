@@ -9,11 +9,11 @@ The current pre-1.0 line already has:
 - projected Home presentation with native-owned surrounding layout and motion;
 - optional Keyguard and AOD presentation through one host-scoped family owner;
 - a bounded QS_FAKE Control Center transition bridge while the final Control Center remains native;
-- event-driven battery, Wi-Fi, mobile-network, airplane, SIM/data and tint state;
+- event-driven battery, Wi-Fi, mobile network, airplane, SIM/data and tint state;
 - fail-native replacement/suppression behavior;
 - Hot Reload with generation cleanup;
 - local diagnostics and export/share;
-- MIUIX companion-app navigation, preview/configuration and appearance controls;
+- MIUIX companion app navigation, preview/configuration and appearance controls;
 - battery-top information, visual sizing/weight controls and battery color schemes.
 
 ## Near-term development
@@ -22,10 +22,10 @@ Prioritize only work backed by a concrete product need, compatibility requiremen
 
 Likely areas:
 - adaptive size/spacing compatibility when live native geometry demonstrates a need;
-- broader target-profile validation without assuming compatibility from the current SystemUI baseline;
+- broader target profile validation without assuming compatibility from the current SystemUI baseline;
 - Preview/Sandbox scenarios that materially improve configuration usability;
 - bounded diagnostics when they answer a real unresolved question;
-- remaining companion-app polish where MIUIX or Android platform behavior provides a clear owner.
+- remaining companion app polish where MIUIX or Android platform behavior provides a clear owner.
 
 Do not add controls merely because a renderer parameter exists.
 

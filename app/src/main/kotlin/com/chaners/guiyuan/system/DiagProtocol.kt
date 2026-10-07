@@ -1,19 +1,19 @@
 package com.chaners.guiyuan.system
 
-internal data class RuntimeDiagnosticEvent(
+internal data class DiagEvent(
     val schemaVersion: Int,
     val event: String,
     val component: String,
-    val state: String,
+    val state: String?,
     val fields: Map<String, String>,
 )
 
 internal data class RuntimeEventSnapshot(
     val schemaVersion: Int,
     val sessionId: String?,
-    val events: List<RuntimeDiagnosticEvent>,
+    val events: List<DiagEvent>,
 ) {
-    fun component(name: String): RuntimeDiagnosticEvent? =
+    fun component(name: String): DiagEvent? =
         events.firstOrNull { event -> event.component == name }
 
     fun reportLines(): List<String> =
@@ -21,8 +21,10 @@ internal data class RuntimeEventSnapshot(
             buildString {
                 append("component=")
                 append(event.component)
-                append(" state=")
-                append(event.state)
+                event.state?.let { state ->
+                    append(" state=")
+                    append(state)
+                }
                 append(" event=")
                 append(event.event)
                 event.fields
@@ -31,7 +33,7 @@ internal data class RuntimeEventSnapshot(
                         append(' ')
                         append(key)
                         append('=')
-                        append(RuntimeDiagnosticsProtocol.encode(value))
+                        append(DiagProtocol.encode(value))
                     }
             }
         }
@@ -75,7 +77,7 @@ internal data class RuntimeEventSnapshot(
 
         fun fromLines(lines: List<String>): RuntimeEventSnapshot {
             val parsedEvents =
-                lines.mapNotNull(RuntimeDiagnosticsProtocol::parse)
+                lines.mapNotNull(DiagProtocol::parse)
             val latestSessionId =
                 parsedEvents
                     .asReversed()
@@ -89,7 +91,7 @@ internal data class RuntimeEventSnapshot(
                     }
                 }
 
-            val latest = linkedMapOf<String, RuntimeDiagnosticEvent>()
+            val latest = linkedMapOf<String, DiagEvent>()
             scopedEvents
                 .filterNot { event ->
                     event.fields[SnapshotExcludeField].equals("false", ignoreCase = true)
@@ -121,15 +123,15 @@ internal data class RuntimeEventSnapshot(
     }
 }
 
-internal object RuntimeDiagnosticsProtocol {
-    const val SchemaVersion = 1
+internal object DiagProtocol {
+    const val SchemaVersion = 2
 
     private const val Marker = "diag "
 
     fun format(
         event: String,
         component: String,
-        state: String,
+        state: String? = null,
         fields: Map<String, String> = emptyMap(),
     ): String =
         buildString {
@@ -140,8 +142,10 @@ internal object RuntimeDiagnosticsProtocol {
             append(encode(event))
             append(" component=")
             append(encode(component))
-            append(" state=")
-            append(encode(state))
+            state?.let {
+                append(" state=")
+                append(encode(it))
+            }
             fields
                 .toSortedMap()
                 .forEach { (key, value) ->
@@ -152,7 +156,7 @@ internal object RuntimeDiagnosticsProtocol {
                 }
         }
 
-    fun parse(line: String): RuntimeDiagnosticEvent? {
+    fun parse(line: String): DiagEvent? {
         val markerIndex = line.indexOf(Marker)
         if (markerIndex < 0) {
             return null
@@ -175,9 +179,9 @@ internal object RuntimeDiagnosticsProtocol {
 
         val event = values["event"] ?: return null
         val component = values["component"] ?: return null
-        val state = values["state"] ?: return null
+        val state = values["state"]
 
-        return RuntimeDiagnosticEvent(
+        return DiagEvent(
             schemaVersion = values["schema"]?.toIntOrNull() ?: 0,
             event = event,
             component = component,

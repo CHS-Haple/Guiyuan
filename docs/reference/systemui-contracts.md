@@ -1,6 +1,6 @@
 # SystemUI Integration Contracts
 
-This reference records reusable target-SystemUI evidence that may inform Guiyuan work. It is not a dependency declaration, implementation-lineage statement or archive of investigation history.
+This reference records reusable target SystemUI evidence that may inform Guiyuan work. It is not a dependency declaration, implementation lineage statement or archive of investigation history.
 
 ## Reference rules
 
@@ -46,9 +46,9 @@ Safe mutation:
 - adds only the represented entries Guiyuan owns;
 - restores only that owned delta;
 - uses the shortest lifetime that still covers the native presentation consuming the state;
-- fails native if another writer makes ownership ambiguous.
+- falls back to native presentation if another writer makes ownership ambiguous.
 
-For Home, native-call scope is sufficient for the relevant layout boundary. A verified transition-capable host may require the owned delta for the presentation session because native motion can consume layout state outside one measure/layout call.
+For Home, native call scope is sufficient for the relevant layout boundary. A verified transition-capable host may require the owned delta for the presentation session because native motion can consume layout state outside one measure/layout call.
 
 The reusable principle is lifecycle-scoped ownership, not universally temporary or universally persistent suppression.
 
@@ -62,7 +62,7 @@ Safe masking:
 - restores only the value it owns;
 - leaves native state/tint/lifecycle delivery intact.
 
-Visual masking is not compact-layout readiness and should not be replaced with permanent `GONE`, alpha racing or translation writes.
+Visual masking is not compact layout readiness and should not be replaced with permanent `GONE`, alpha racing or translation writes.
 
 ## Host-scoped runtime state
 
@@ -70,7 +70,7 @@ Visual masking is not compact-layout readiness and should not be replaced with p
 
 `Host -> HostSession -> owned resources`.
 
-A host/session boundary identifies the authoritative host, observed native participants, presentation mode, owned mutations and cleanup behavior. Detached or replaced hosts must not leave mutable ownership or host-derived geometry globally reusable.
+A host/session boundary identifies the authoritative host, observed native participants, presentation mode, owned mutations and cleanup behavior. Detached or replaced hosts must not leave mutable ownership or host-derived geometry reusable across unrelated hosts.
 
 When Keyguard/AOD resolve to one verified host, a single presentation owner may retarget semantics. A distinct target host may prepare a bounded reversible visual claim but cannot inherit source-host layout readiness.
 
@@ -100,7 +100,7 @@ Do not rewrite a native scene/hide request just to preserve previous Guiyuan geo
 
 Consequences:
 - expansion progress is motion context, not a visibility threshold;
-- final appearance must not be replaced by a project `fraction >= x` rule;
+- final appearance must not be replaced by a project-defined `fraction >= x` rule;
 - a Guiyuan transition visual may inherit/read native transforms without becoming the native motion owner;
 - project-local geometry must not double-apply translation already present on its parent native surface.
 

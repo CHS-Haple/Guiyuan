@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">归元</string>
-    <string name="app_description">面向 HyperOS，将电量、移动网络与 Wi-Fi 整合为一个紧凑的状态栏图标</string>
+    <string name="app_description">面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。</string>
     <string name="home_title">归元</string>
-    <string name="hot_reload">热重载 SystemUI 模块</string>
+    <string name="hot_reload">热重载归元</string>
     <string name="nav_home">首页</string>
     <string name="nav_features">功能</string>
     <string name="nav_settings">设置</string>
@@ -17,19 +17,17 @@
     <string name="content_layout_network_center">网络居中</string>
     <string name="content_layout_battery_center">电量居中</string>
     <string name="battery_charging_icon">显示充电图标</string>
-    <string name="battery_charging_icon_summary">使用 HyperOS 充电图标，快充自动切换对应资源</string>
+    <string name="battery_charging_icon_summary">跟随 HyperOS 当前充电状态使用对应原生图标</string>
     <string name="battery_text_follow_battery_color">电量数字跟随电量环颜色</string>
-    <string name="battery_text_follow_battery_color_summary">关闭后跟随当前状态栏前景色</string>
+    <string name="battery_text_follow_battery_color_summary">关闭时使用系统状态栏原生前景色</string>
     <string name="charging_icon_follow_battery_color">充电图标跟随电量环颜色</string>
-    <string name="charging_icon_follow_battery_color_summary">关闭后跟随当前状态栏前景色</string>
+    <string name="charging_icon_follow_battery_color_summary">关闭时使用系统状态栏原生前景色</string>
     <string name="top_info_vertical_offset">顶部信息上下偏移</string>
     <string name="settings_title">设置</string>
     <string name="section_appearance_interaction">外观与交互</string>
     <string name="section_app">应用</string>
     <string name="section_diagnostics_maintenance">诊断与维护</string>
     <string name="section_other">其他</string>
-    <string name="project_address_title">项目地址</string>
-    <string name="project_address_summary">本项目基于 GPL-3.0-only 协议开源</string>
     <string name="language_title">语言</string>
     <string name="language_summary">跟随系统或选择应用语言</string>
     <string name="language_system">跟随系统</string>
@@ -37,17 +35,10 @@
     <string name="language_simplified_chinese">简体中文</string>
     <string name="hide_launcher_icon">隐藏桌面图标</string>
     <string name="hide_launcher_icon_summary">隐藏桌面图标后，仍可从系统应用详情等入口打开</string>
-    <string name="preview_title">状态预览</string>
-    <string name="preview_value">▂▄▆█   Wi‑Fi   87%</string>
-    <string name="preview_label">示意</string>
-
-    <string name="section_hyperos_display">系统界面</string>
-    <string name="section_color_linkage">配色联动</string>
-    <string name="section_battery_top_readout">顶部电量</string>
     <string name="battery_fill_follow_retract">电量段跟随回收</string>
-    <string name="battery_fill_follow_retract_summary">实心电量段随回收端点移动，空心区域耗尽后再缩短</string>
+    <string name="battery_fill_follow_retract_summary">收口时，实心电量段随端点移动，剩余环长不足后再缩短</string>
     <string name="battery_top_readout">显示电量数字</string>
-    <string name="battery_top_readout_summary">显示电量百分比，电量环自动避让</string>
+    <string name="battery_top_readout_summary">显示当前电量数字，电量环自动避让</string>
     <string name="battery_top_text_size">数字大小</string>
     <string name="battery_top_text_weight">数字字重</string>
     <string name="battery_top_vertical_offset">上下偏移（正上负下）</string>
@@ -55,31 +46,23 @@
     <string name="battery_top_scale_value">%1$d%%</string>
     <string name="battery_top_weight_value">%1$d</string>
     <string name="battery_top_offset_value">%1$d</string>
-    <string name="combined_status_feature_title">三合一状态图标</string>
-    <string name="combined_status_feature_summary">控制所有已支持 SystemUI 场景中的三合一状态图标；关闭后恢复系统原生状态图标</string>
-    <string name="keyguard_combined_status_title">锁屏显示三合一</string>
+    <string name="keyguard_combined_status_title">锁屏显示</string>
     <string name="keyguard_combined_status_summary">在锁屏状态栏显示</string>
-    <string name="aod_combined_status_title">AOD 显示三合一</string>
-    <string name="aod_combined_status_summary">在稳定 AOD 状态显示；进入与退出动画保持系统原生</string>
+    <string name="aod_combined_status_title">AOD 显示</string>
+    <string name="aod_combined_status_summary">在 AOD 中显示，进入与退出过渡保持系统原生</string>
     <string name="mobile_follow_battery_color">移动信号跟随电量环颜色</string>
     <string name="mobile_follow_battery_color_summary">四点与叉号跟随电量环颜色</string>
     <string name="center_follow_battery_color">网络状态跟随电量环颜色</string>
     <string name="center_follow_battery_color_summary">Wi-Fi、热点、移动制式、飞行模式和无 SIM 等跟随电量环颜色</string>
     <string name="appearance_title">外观</string>
     <string name="appearance_summary">主题与界面效果</string>
-    <string name="status_bar_title">状态栏</string>
-    <string name="status_bar_summary">三合一图标与状态栏行为</string>
-    <string name="keyguard_aod_title">锁屏与 AOD</string>
-    <string name="keyguard_aod_summary">锁屏与息屏显示</string>
-    <string name="charging_title">充电显示</string>
-    <string name="charging_summary">充电与超级快充样式</string>
     <string name="about_title">关于</string>
     <string name="about_summary">版本、项目与运行环境</string>
     <string name="diagnostics_title">诊断</string>
     <string name="diagnostics_summary">查看归元运行日志</string>
-    <string name="restart_scope">重启系统界面</string>
-    <string name="restart_scope_summary">重新启动 SystemUI 以重新加载模块</string>
-    <string name="restart_scope_dialog_summary">此操作需要 Root 权限。SystemUI 将重新启动以重新加载模块，不会重启设备。</string>
+    <string name="restart_scope">重启 SystemUI</string>
+    <string name="restart_scope_summary">重启 SystemUI 以重新加载归元</string>
+    <string name="restart_scope_dialog_summary">需要 Root 权限。将重启 SystemUI 以重新加载归元，设备本身不会重启。</string>
     <string name="restart_scope_failed">重启失败</string>
     <string name="restart_scope_failed_summary">请确认 Root 权限可用且 SystemUI 能正常重新启动后重试</string>
     <string name="restart">重启</string>
@@ -89,8 +72,8 @@
     <string name="combined_size">整体大小</string>
     <string name="outer_weight">外环粗细</string>
     <string name="outer_weight_summary">同步调整外环、四点与叉号</string>
-    <string name="control_center_tint_transition">下拉反色过渡</string>
-    <string name="control_center_tint_transition_summary">下拉控制中心时，将已染色元素平滑过渡为系统反色</string>
+    <string name="control_center_tint_transition">控制中心颜色过渡</string>
+    <string name="control_center_tint_transition_summary">展开控制中心时，将使用电量颜色的元素平滑过渡到系统原生图标颜色</string>
     <string name="wifi_size">Wi-Fi 大小</string>
     <string name="airplane_size">飞行模式大小</string>
     <string name="no_sim_size">无 SIM 大小</string>
@@ -104,7 +87,7 @@
 
     <string name="section_theme">主题</string>
     <string name="theme_mode">主题模式</string>
-    <string name="theme_mode_summary">设置应用的明暗外观</string>
+    <string name="theme_mode_summary">跟随系统主题，或选择浅色/深色外观</string>
     <string name="theme_system">跟随系统</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
@@ -128,32 +111,11 @@
     <string name="floating_navigation_content_icon_and_text">图标与文字</string>
     <string name="swipe_back">页面滑动返回</string>
     <string name="swipe_back_summary">横向滑动页面返回上一级</string>
-
-    <string name="section_hyperos_systemui">显示与过渡</string>
-    <string name="enable_combined_icon">三合一图标</string>
-    <string name="enable_combined_icon_summary">预览状态栏中的三合一图标</string>
-    <string name="transition_effects">过渡效果</string>
-    <string name="transition_effects_summary">预览状态栏与控制中心过渡效果</string>
-
-    <string name="section_hyperos_display_scope">显示范围</string>
-    <string name="show_on_lock_screen">锁屏显示</string>
-    <string name="show_on_lock_screen_summary">预览锁屏显示效果</string>
-    <string name="show_on_aod">AOD 显示</string>
-    <string name="show_on_aod_summary">预览息屏显示效果</string>
-
-    <string name="section_hyperos_charging">充电</string>
-    <string name="show_charging_state">充电状态图标</string>
-    <string name="show_charging_state_summary">预览充电状态图标</string>
-    <string name="distinguish_super_charging">超级快充图标</string>
-    <string name="distinguish_super_charging_summary">超级快充使用独立图标，仅供界面预览</string>
-
-    <string name="section_current_build">版本信息</string>
-    <string name="section_diagnostics_app">应用</string>
     <string name="section_about_project">项目</string>
     <string name="about_project_home_title">项目主页</string>
     <string name="about_project_home_summary">查看源代码与项目说明</string>
     <string name="about_open_source_license_title">开源许可</string>
-    <string name="about_open_source_license_summary">GNU GPL v3.0</string>
+    <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">第三方依赖</string>
     <string name="about_third_party_summary">查看开源组件与许可</string>
     <string name="section_runtime_dependencies">运行与界面</string>
@@ -183,8 +145,6 @@
     <string name="runtime_scope_summary">系统界面｜com.android.systemui</string>
     <string name="runtime_target_title">适配基线</string>
     <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
-    <string name="runtime_inventory_title">原生状态探针</string>
-    <string name="runtime_inventory_summary">已启用 · 一次性记录状态栏结构与几何信息</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>
@@ -195,8 +155,8 @@
     <string name="diagnostics_log_copied">已复制到剪贴板</string>
     <string name="diagnostics_log_category_module">模块</string>
     <string name="diagnostics_log_category_network">网络</string>
-    <string name="diagnostics_log_category_display">展示</string>
-    <string name="diagnostics_log_category_native">原生接管</string>
+    <string name="diagnostics_log_category_display">显示</string>
+    <string name="diagnostics_log_category_native">原生集成</string>
     <string name="diagnostics_log_category_transition">过渡</string>
     <string name="diagnostics_log_category_performance">性能</string>
     <string name="diagnostics_log_category_settings">设置与维护</string>
@@ -213,9 +173,9 @@
     <string name="diagnostics_log_event_host_capture">状态栏宿主已捕获</string>
     <string name="diagnostics_log_event_host_restore">状态栏宿主已恢复</string>
     <string name="diagnostics_log_event_session_attach">渲染会话已连接</string>
-    <string name="diagnostics_log_event_presentation_cutover">展示接管</string>
-    <string name="diagnostics_log_event_presentation_resolve">展示状态解析</string>
-    <string name="diagnostics_log_event_fail_native">回退原生</string>
+    <string name="diagnostics_log_event_presentation_cutover">显示交接</string>
+    <string name="diagnostics_log_event_presentation_resolve">显示状态已解析</string>
+    <string name="diagnostics_log_event_fail_native">回退至原生</string>
     <string name="diagnostics_log_event_renderer_attach">渲染器已连接</string>
     <string name="diagnostics_log_event_diagnostics_snapshot">诊断状态快照</string>
     <string name="diagnostics_log_event_diagnostics_level">诊断等级变更</string>
@@ -223,7 +183,7 @@
     <string name="diagnostics_log_event_visual_settings">外观设置已更新</string>
     <string name="diagnostics_log_event_feature_settings">功能设置已更新</string>
     <string name="diagnostics_log_event_hot_reload">热重载完成</string>
-    <string name="diagnostics_log_event_hot_reload_prepare">热重载准备</string>
+    <string name="diagnostics_log_event_hot_reload_prepare">正在准备热重载</string>
     <string name="diagnostics_log_event_hot_reload_handoff">热重载代际交接</string>
     <string name="diagnostics_log_event_hot_reload_migration">热重载迁移</string>
     <string name="diagnostics_log_event_hot_reload_restore">热重载恢复</string>
@@ -235,10 +195,10 @@
     <string name="diagnostics_log_event_wifi_icon">Wi-Fi 图标状态更新</string>
     <string name="diagnostics_log_event_status_icon_presentation">状态栏展示状态</string>
     <string name="diagnostics_log_event_tint_commit">颜色提交</string>
-    <string name="diagnostics_log_event_home_tint">Home 颜色更新</string>
+    <string name="diagnostics_log_event_home_tint">主状态栏颜色更新</string>
     <string name="diagnostics_log_event_generic">日志事件</string>
     <string name="diagnostics_log_summary_validated">网络已验证</string>
-    <string name="diagnostics_log_summary_internet">Internet 可用</string>
+    <string name="diagnostics_log_summary_internet">互联网可用</string>
     <string name="diagnostics_log_summary_mobile_data_on">移动数据开启</string>
     <string name="diagnostics_log_summary_mobile_data_off">移动数据关闭</string>
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
@@ -246,7 +206,7 @@
     <string name="diagnostics_log_summary_separator">，</string>
     <string name="diagnostics_log_summary_recorded">已记录</string>
     <string name="diagnostics_log_state_ready">就绪</string>
-    <string name="diagnostics_log_state_observed">已记录</string>
+    <string name="diagnostics_log_state_observed">已观测</string>
     <string name="diagnostics_log_state_disabled">已禁用</string>
     <string name="diagnostics_log_state_unavailable">不可用</string>
     <string name="diagnostics_log_state_partial">部分完成</string>
@@ -261,7 +221,7 @@
     <string name="diagnostics_filter_info">信息</string>
     <string name="diagnostics_filter_warning">警告</string>
     <string name="diagnostics_filter_error">错误</string>
-    <string name="diagnostics_filter_module_compatibility">模块与兼容</string>
+    <string name="diagnostics_filter_module_compatibility">模块与兼容性</string>
     <string name="diagnostics_filter_network">网络</string>
     <string name="diagnostics_filter_display_transition">显示与过渡</string>
     <string name="diagnostics_filter_performance">性能</string>
@@ -280,7 +240,7 @@
     <string name="diagnostics_clear_view">清空视图</string>
     <string name="diagnostics_view_cleared">视图已清空。刷新诊断即可重新读取当前状态。</string>
     <string name="section_diagnostics_events">关键事件</string>
-    <string name="diagnostics_events_summary">本次运行，共 %1$d 条关键事件</string>
+    <string name="diagnostics_events_summary">本次运行共 %1$d 个关键事件</string>
     <string name="diagnostics_component_module">模块</string>
     <string name="diagnostics_component_compatibility">兼容性</string>
     <string name="diagnostics_component_status_host">状态栏宿主</string>
@@ -352,17 +312,17 @@
     <string name="battery_color_brightness">亮度</string>
     <string name="battery_color_precise_input">精确输入</string>
     <string name="battery_color_hex">HEX</string>
-    <string name="battery_color_follow_inversion">跟随反色</string>
+    <string name="battery_color_follow_inversion">跟随系统前景色</string>
     <string name="battery_color_no_fixed_color">无固定颜色</string>
-    <string name="battery_color_no_fixed_color_summary">选择固定颜色来源，或先设置自定义颜色后即可调节这些参数</string>
+    <string name="battery_color_no_fixed_color_summary">先选择固定颜色来源或设置自定义颜色，再调节这些参数</string>
     <string name="battery_color_settings">颜色设置</string>
     <string name="battery_color_edit_auto_custom">修改任意参数后自动切换为“自定义”</string>
-    <string name="battery_color_restore_from_scheme">恢复为 %1$s 的此模式颜色</string>
+    <string name="battery_color_restore_from_scheme">将此模式恢复为 %1$s 方案颜色</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s颜色</string>
     <string name="battery_custom_scheme_new">新建自定义样式</string>
     <string name="battery_custom_scheme_add_page_title">新建样式</string>
-    <string name="battery_custom_scheme_limit">自定义样式数量已上限</string>
+    <string name="battery_custom_scheme_limit">已达到自定义样式数量上限</string>
     <string name="battery_custom_scheme_default_name">自定义样式%1$d</string>
     <string name="battery_custom_scheme_name">样式名称</string>
     <string name="battery_custom_scheme_create">创建</string>
@@ -370,6 +330,6 @@
     <string name="battery_custom_scheme_rename">重命名</string>
     <string name="battery_custom_scheme_copy">复制</string>
     <string name="battery_custom_scheme_delete">删除</string>
-    <string name="battery_custom_scheme_delete_summary">删除“%1$s”？如果正在使用，将恢复到创建时的内置方案。</string>
+    <string name="battery_custom_scheme_delete_summary">删除“%1$s”？若当前正在使用，将切换回创建该样式时所基于的内置方案。</string>
 
 </resources>

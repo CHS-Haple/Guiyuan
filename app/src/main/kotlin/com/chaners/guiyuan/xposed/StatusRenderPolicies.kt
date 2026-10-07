@@ -74,14 +74,12 @@ internal object MobileTypeSuffixPolicy {
         }
 }
 
-internal object NativeCenterResourceVariantPolicy {
-    fun tintEntryName(entryName: String): String {
-        val base =
-            entryName
-                .removeSuffix("_darkmode")
-                .removeSuffix("_tint")
-        return base + "_tint"
-    }
+internal fun nativeCenterTintEntryName(entryName: String): String {
+    val base =
+        entryName
+            .removeSuffix("_darkmode")
+            .removeSuffix("_tint")
+    return base + "_tint"
 }
 
 

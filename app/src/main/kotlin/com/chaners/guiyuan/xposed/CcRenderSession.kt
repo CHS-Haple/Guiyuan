@@ -24,6 +24,11 @@ internal object CcRenderSession {
     private var pendingPrearm: PendingPrearm? = null
     private var sceneEligible = false
 
+    internal data class AttachFailure(
+        val reason: String,
+        val retryAfterLayout: Boolean = false,
+    )
+
     @Synchronized
     fun prearmAfterNextNativeLayout(
         host: ViewGroup,
@@ -65,25 +70,31 @@ internal object CcRenderSession {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onProjectionReadinessChanged: (Boolean) -> Unit,
-    ): String? {
+    ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return "main-thread-required"
+            return AttachFailure("main-thread-required")
         }
         if (host.javaClass.name != FAKE_ROOT_CLASS_NAME) {
-            return "fake-root-type-mismatch"
+            return AttachFailure("fake-root-type-mismatch")
         }
         val statusBarArea =
             host.uniqueDescendant(BATTERY_CONTAINER_CLASS_NAME)
-                ?: return "fake-status-bar-area-unresolved"
+                ?: return AttachFailure(
+                    "fake-status-bar-area-unresolved",
+                    retryAfterLayout = true,
+                )
         val statusIcons =
             statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
-                ?: return "status-icons-missing"
+                ?: return AttachFailure("status-icons-missing", retryAfterLayout = true)
         val battery =
             statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
-                ?: return "battery-view-missing"
+                ?: return AttachFailure("battery-view-missing", retryAfterLayout = true)
         val carrier =
             SysUiCarrierMetrics.resolveView(battery)
-                ?: return "battery-core-carrier-missing"
+                ?: return AttachFailure(
+                    "battery-core-carrier-missing",
+                    retryAfterLayout = true,
+                )
         val existing = current
         if (
             existing?.matches(
@@ -157,9 +168,9 @@ internal object CcRenderSession {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onProjectionReadinessChanged: (Boolean) -> Unit,
         transferredCompactReady: Boolean = false,
-    ): String? {
+    ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return "main-thread-required"
+            return AttachFailure("main-thread-required")
         }
         if (
             !canRestoreAfterReload(
@@ -169,7 +180,7 @@ internal object CcRenderSession {
                 height = host.height,
             )
         ) {
-            return "fake-root-hot-reload-layout-unavailable"
+            return AttachFailure("fake-root-hot-reload-layout-unavailable")
         }
 
         pendingPrearm?.cancel()
@@ -300,13 +311,13 @@ internal object CcRenderSession {
         }
 
         val retry =
-            isFirstLayoutRetryable(failure) &&
+            failure.retryAfterLayout &&
                 attempt < MAX_PREARM_LAYOUT_ATTEMPTS
         if (retry) {
             pending.emit(
                 "controlCenterProjection prearm state=deferred " +
                     "source=fake-root-first-layout attempt=" + attempt +
-                    " reason=" + failure +
+                    " reason=" + failure.reason +
                     " next=native-root-layout",
             )
             host.requestLayout()
@@ -316,7 +327,7 @@ internal object CcRenderSession {
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     "source=fake-root-first-layout attempt=" + attempt +
-                    " reason=" + failure +
+                    " reason=" + failure.reason +
                     " fallback=native-qs-fake",
             )
         }
@@ -328,18 +339,6 @@ internal object CcRenderSession {
         pending.cancel()
         pendingPrearm = null
     }
-
-    internal fun isFirstLayoutRetryable(reason: String): Boolean =
-        reason in
-            setOf(
-                "fake-status-bar-area-unresolved",
-                "status-icons-missing",
-                "battery-view-missing",
-                "battery-core-carrier-missing",
-                "battery-core-width-unavailable",
-                "ignored-slots-list-unavailable",
-                "hooks-not-ready",
-            )
 
     private class PendingPrearm(
         host: ViewGroup,
@@ -610,7 +609,7 @@ internal object CcRenderSession {
             return projectionReady()
         }
 
-        fun prepareNativePresentation(reused: Boolean): String? {
+        fun prepareNativePresentation(reused: Boolean): AttachFailure? {
             if (!featureEnabled || !sceneEligible) {
                 nativePresentationReady = false
                 syncPresentation(
@@ -620,16 +619,16 @@ internal object CcRenderSession {
             }
             val statusArea =
                 statusBarArea.get()
-                    ?: return "fake-status-bar-area-released"
+                    ?: return AttachFailure("fake-status-bar-area-released")
             val statusIconGroup =
                 statusIcons.get()
-                    ?: return "status-icons-released"
+                    ?: return AttachFailure("status-icons-released")
             val batteryView =
                 battery.get()
-                    ?: return "battery-view-released"
+                    ?: return AttachFailure("battery-view-released")
             val carrierView =
                 carrier.get()
-                    ?: return "battery-core-carrier-released"
+                    ?: return AttachFailure("battery-core-carrier-released")
 
             return when (
                 val result =
@@ -681,7 +680,10 @@ internal object CcRenderSession {
                         maskedViews = 0,
                         source = "prepare-failed:" + result.reason,
                     )
-                    result.reason
+                    AttachFailure(
+                        reason = result.reason,
+                        retryAfterLayout = result.retryAfterLayout,
+                    )
                 }
 
                 is SysUiPresentationOwner.Result.Inactive -> {
@@ -690,7 +692,7 @@ internal object CcRenderSession {
                         maskedViews = 0,
                         source = "prepare-inactive",
                     )
-                    "compact-presentation-inactive"
+                    AttachFailure("compact-presentation-inactive")
                 }
             }
         }

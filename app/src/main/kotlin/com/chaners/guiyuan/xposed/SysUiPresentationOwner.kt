@@ -702,7 +702,7 @@ internal object SysUiPresentationOwner {
             return Result.Failure("main-thread-required")
         }
         if (installedHookCount != HOOK_COUNT) {
-            return Result.Failure("hooks-not-ready")
+            return Result.Failure("hooks-not-ready", retryAfterLayout = true)
         }
         if (host !== batteryContainer || host.javaClass.name != BATTERY_CONTAINER) {
             return Result.Failure("fake-status-bar-area-mismatch")
@@ -727,12 +727,18 @@ internal object SysUiPresentationOwner {
             batteryHideField
                 ?: return Result.Failure("battery-hide-field-unavailable")
         SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
-            ?: return Result.Failure("battery-core-width-unavailable")
+            ?: return Result.Failure(
+                "battery-core-width-unavailable",
+                retryAfterLayout = true,
+            )
 
         @Suppress("UNCHECKED_CAST")
         val list =
             runCatching { field.get(statusIcons) as? MutableList<String> }.getOrNull()
-                ?: return Result.Failure("ignored-slots-list-unavailable")
+                ?: return Result.Failure(
+                    "ignored-slots-list-unavailable",
+                    retryAfterLayout = true,
+                )
         list.size
 
         controlCenterEventSink = onEvent
@@ -2669,7 +2675,10 @@ internal object SysUiPresentationOwner {
             val reused: Boolean,
         ) : Result
         data class Inactive(val restoredViews: Int) : Result
-        data class Failure(val reason: String) : Result
+        data class Failure(
+            val reason: String,
+            val retryAfterLayout: Boolean = false,
+        ) : Result
     }
 
 

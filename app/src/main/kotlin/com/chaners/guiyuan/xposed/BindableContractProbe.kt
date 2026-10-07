@@ -306,31 +306,6 @@ internal object BindableContractProbe {
         val staticContractReady: Boolean,
         val dynamicRegistrationObserved: Boolean,
     ) {
-        val logLine: String
-            get() =
-                "nativeBindableContract available=" + available +
-                    " reason=" + (reason ?: "none") +
-                    " interfaceReady=" + bindableInterfaceReady +
-                    " creatorReady=" + creatorReady +
-                    " registry=" + (registryClass ?: "none") +
-                    " registryConstructors=" + registryConstructors.joinToString("|") +
-                    " holder=" + (holderClass ?: "none") +
-                    " holderConstructors=" + holderConstructors.joinToString("|") +
-                    " modernView=" + (modernViewClass ?: "none") +
-                    " singleView=" + (singleBindableViewClass ?: "none") +
-                    " managerMapReady=" + managerBindableMapReady +
-                    " managerMapCount=" + managerBindableCount +
-                    " managerEntries=" + managerBindableEntries.joinToString("|") +
-                    " viewOnlySlotsReady=" + viewOnlySlotsReady +
-                    " viewOnlySlots=" + viewOnlySlots.joinToString("|") +
-                    " runtimeViews=" + runtimeBindableViews.joinToString("|") +
-                    " slotOrder=" + runtimeSlotOrder.joinToString("|") +
-                    " groupClipChildren=" + groupClipChildren +
-                    " groupClipToPadding=" + groupClipToPadding +
-                    " groupHeight=" + groupHeight +
-                    " staticContractReady=" + staticContractReady +
-                    " dynamicRegistrationObserved=" + dynamicRegistrationObserved
-
         companion object {
             fun unavailable(reason: String): Snapshot =
                 Snapshot(

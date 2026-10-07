@@ -75,7 +75,7 @@ internal object DiagLogReader {
 
         val sessionRefs =
             lines.mapIndexedNotNull { index, line ->
-                RuntimeDiagnosticsProtocol.parse(line)
+                DiagProtocol.parse(line)
                     ?.fields
                     ?.get("sessionId")
                     ?.let { sessionId -> index to sessionId }

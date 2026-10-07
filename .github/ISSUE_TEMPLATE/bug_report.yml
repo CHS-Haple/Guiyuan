@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. Guiyuan is pre-release software and currently has a narrow verified SystemUI baseline. Please provide enough runtime context to reproduce the issue.
+        Thanks for reporting a problem. Guiyuan is pre-release software and currently supports a narrow, verified SystemUI baseline. Please provide enough runtime context to reproduce the issue.
 
         Before attaching diagnostics or logs, review them and remove unrelated personal or sensitive information.
   - type: input
@@ -37,12 +37,12 @@ body:
       label: Affected scene
       options:
         - Home status bar
-        - Notification-shade transition
+        - Notification Shade transition
         - Control Center
-        - Lock screen / keyguard
+        - Lock screen / Keyguard
         - AOD
         - Companion app
-        - Hot reload / SystemUI restart
+        - Hot Reload / SystemUI restart
         - Other
     validations:
       required: true
@@ -81,5 +81,5 @@ body:
       options:
         - label: I reproduced the problem on the build identified above.
           required: true
-        - label: I checked that the report does not contain signing secrets, credentials, or unrelated private data.
+        - label: I checked that the report does not contain signing material, credentials, or unrelated private data.
           required: true

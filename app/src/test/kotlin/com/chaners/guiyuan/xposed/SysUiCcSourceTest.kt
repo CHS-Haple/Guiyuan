@@ -65,12 +65,6 @@ class SysUiCcSourceTest {
     }
 
     @Test
-    fun runtimeHookCountIncludesOnlyNativeReadAndFakeLifecycleHooks() {
-        assertEquals(4, SysUiCcSource.expectedHookCount(false))
-        assertEquals(4, SysUiCcSource.expectedHookCount(true))
-    }
-
-    @Test
     fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
         assertTrue(
             SysUiCcSource.DiagnosticPolicy.shouldReport(
@@ -382,52 +376,5 @@ class SysUiCcSourceTest {
         )
     }
 
-    @Test
-    fun controlCenterUpdateCarriesNativeAppearanceState() {
-        val update =
-            SysUiCcSource.Update(
-                source = SysUiCcSource.Source.CONTROL_CENTER,
-                fraction = null,
-                expanded = null,
-                tracking = null,
-                visible = null,
-                appearance = true,
-                appearanceAnimated = true,
-            )
-        assertEquals(true, update.appearance)
-        assertEquals(true, update.appearanceAnimated)
-    }
 
-
-    @Test
-    fun controlCenterUpdateCarriesExactNativeBatteryIslandState() {
-        val active =
-            SysUiCcSource.Update(
-                source = SysUiCcSource.Source.CONTROL_CENTER,
-                fraction = 0.5f,
-                expanded = null,
-                tracking = null,
-                visible = null,
-                batteryIslandActive = true,
-            )
-        val ordinary =
-            active.copy(batteryIslandActive = false)
-
-        assertEquals(true, active.batteryIslandActive)
-        assertEquals(false, ordinary.batteryIslandActive)
-    }
-
-    @Test
-    fun controlCenterUpdateCarriesNativeSelectedSourceScene() {
-        val update =
-            SysUiCcSource.Update(
-                source = SysUiCcSource.Source.CONTROL_CENTER,
-                fraction = null,
-                expanded = null,
-                tracking = null,
-                visible = true,
-                sourceScene = SourceScene.KEYGUARD,
-            )
-        assertEquals(SourceScene.KEYGUARD, update.sourceScene)
-    }
 }

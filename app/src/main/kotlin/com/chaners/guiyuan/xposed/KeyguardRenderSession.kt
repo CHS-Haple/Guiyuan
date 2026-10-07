@@ -166,11 +166,6 @@ internal object KeyguardRenderSession {
     ): Boolean =
         featureEnabled && if (sceneIsAod) aodEnabled else keyguardEnabled
 
-    internal fun resolveFamilyChildAlpha(): Float = 1f
-
-    internal fun shouldForceReadinessDispatch(sceneChanged: Boolean): Boolean =
-        sceneChanged
-
     private fun readViewField(
         owner: Any,
         name: String,
@@ -337,7 +332,7 @@ internal object KeyguardRenderSession {
             applyResolvedVisibility()
             dispatchPresentationReadiness(
                 source = "scene-transfer",
-                force = shouldForceReadinessDispatch(changedScene),
+                force = changedScene,
             )
         }
 
@@ -677,7 +672,7 @@ internal object KeyguardRenderSession {
                 // animation onto the whole combined visual: HyperOS animates
                 // Battery and status icons as separate children, and Battery may
                 // legitimately reach alpha=0 during a family scene transfer.
-                renderView.alpha = resolveFamilyChildAlpha()
+                renderView.alpha = 1f
             }
             renderView.visibility = if (visible) View.VISIBLE else View.GONE
             if (visible) {
