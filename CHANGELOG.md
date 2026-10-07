@@ -8,6 +8,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Engineering
+- Grouped the clearest Xposed runtime domains into `battery`, `prefs`, and `network` packages while keeping cross-domain orchestration at the root; this is a behavior-neutral maintainability change.
+
 ## [0.3.0] - 2026-10-07
 
 ### Changed
