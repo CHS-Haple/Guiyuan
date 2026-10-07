@@ -636,7 +636,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeCombinedParticipantOwner.install(
+            NativeCombinedParticipant.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -689,7 +689,7 @@ class GyModule : XposedModule() {
                 component = "nativeCombinedParticipant",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeCombinedParticipantOwner.installedHookCount,
+                "hooks" to NativeCombinedParticipant.installedHookCount,
                 "visible" to false,
             )
         } else {
@@ -765,7 +765,7 @@ class GyModule : XposedModule() {
                     }
                 },
                 onNativeLayoutHideChanged = { hidden ->
-                    NativeCombinedParticipantOwner
+                    NativeCombinedParticipant
                         .onNativeBatteryLayoutHideChanged(hidden)
                 },
             )
@@ -3959,7 +3959,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val nativeCombined =
-                NativeCombinedParticipantOwner.attachHidden(
+                NativeCombinedParticipant.attachHidden(
                     host = host,
                     onHandoffStateChanged = { active ->
                         val presentation =
@@ -4113,14 +4113,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is NativeCombinedParticipantOwner.AttachResult.Ready -> {
+            is NativeCombinedParticipant.AttachResult.Ready -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "participant.attach",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "slot" to NativeCombinedParticipantOwner.SLOT,
+                    "slot" to NativeCombinedParticipant.SLOT,
                     "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
@@ -4138,7 +4138,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is NativeCombinedParticipantOwner.AttachResult.Failure -> {
+            is NativeCombinedParticipant.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "participant.attach",
@@ -4331,7 +4331,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        NativeCombinedParticipantOwner.onFeatureCfgChanged(cfg)
+        NativeCombinedParticipant.onFeatureCfgChanged(cfg)
         if (
             !cfg.enabled ||
             !cfg.keyguard ||
