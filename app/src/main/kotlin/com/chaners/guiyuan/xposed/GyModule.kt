@@ -748,7 +748,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeBatterySuppressionOwner.install(
+            NativeBatterySuppressor.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -768,7 +768,7 @@ class GyModule : XposedModule() {
                 component = "nativeBatterySuppression",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeBatterySuppressionOwner.installedHookCount,
+                "hooks" to NativeBatterySuppressor.installedHookCount,
                 "contract" to
                     "MiuiStatusBatteryContainer.setIsHideBattery(Boolean):native-layout-authority+visual-mask",
             )
@@ -3965,7 +3965,7 @@ class GyModule : XposedModule() {
                             !FeaturePrefsOwner.current().enabled
                         ) {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressor.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
                             val networkSuppression =
@@ -3988,13 +3988,13 @@ class GyModule : XposedModule() {
                             false
                         } else if (active) {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.activate(
+                                NativeBatterySuppressor.activate(
                                     host = host,
                                     source = "native-handoff:" + source,
                                 )
                             if (
                                 batterySuppression is
-                                    NativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressor.Result.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4031,7 +4031,7 @@ class GyModule : XposedModule() {
                                         NativeNetworkSuppressionOwner.StateResult.Failure
                                 ) {
                                     val batteryRollback =
-                                        NativeBatterySuppressionOwner.deactivate(
+                                        NativeBatterySuppressor.deactivate(
                                             "native-handoff-rollback",
                                         )
                                     logDiagnostic(
@@ -4064,12 +4064,12 @@ class GyModule : XposedModule() {
                             }
                         } else {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressor.deactivate(
                                     "native-handoff-fallback",
                                 )
                             if (
                                 batterySuppression is
-                                    NativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressor.Result.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4390,7 +4390,7 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        NativeBatterySuppressionOwner.deactivate(source)
+        NativeBatterySuppressor.deactivate(source)
         NativeNetworkSuppressionOwner.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
     }

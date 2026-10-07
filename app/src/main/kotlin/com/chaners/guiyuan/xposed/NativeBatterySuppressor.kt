@@ -8,7 +8,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
-internal object NativeBatterySuppressionOwner {
+internal object NativeBatterySuppressor {
     const val HOOK_COUNT = 2
 
     private const val BATTERY_CONTAINER_CLASS_NAME =
@@ -150,25 +150,25 @@ internal object NativeBatterySuppressionOwner {
     fun activate(
         host: Any,
         source: String,
-    ): StateResult {
+    ): Result {
         if (
             installedHookCount != HOOK_COUNT ||
             hideField == null ||
             chargingViewField == null
         ) {
-            return StateResult.Failure("hook-not-ready")
+            return Result.Failure("hook-not-ready")
         }
 
         val hostView =
             host as? ViewGroup
-                ?: return StateResult.Failure("host-not-view-group")
+                ?: return Result.Failure("host-not-view-group")
         val container =
             hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
-                ?: return StateResult.Failure("battery-container-missing")
+                ?: return Result.Failure("battery-container-missing")
         val batteryView =
             (container as? ViewGroup)
                 ?.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
-                ?: return StateResult.Failure("battery-view-missing")
+                ?: return Result.Failure("battery-view-missing")
 
         val sameSession =
             suppressionActive &&
@@ -180,7 +180,7 @@ internal object NativeBatterySuppressionOwner {
             (activeContainer?.get() != null || activeBatteryView?.get() != null)
         ) {
             if (!restorePreviousLocked()) {
-                return StateResult.Failure("previous-session-restore-failed")
+                return Result.Failure("previous-session-restore-failed")
             }
         }
 
@@ -190,7 +190,7 @@ internal object NativeBatterySuppressionOwner {
                     ?: readNativeHideLocked(container)
             } else {
                 readNativeHideLocked(container)
-            } ?: return StateResult.Failure("native-hide-state-unavailable")
+            } ?: return Result.Failure("native-hide-state-unavailable")
 
         activeContainer = WeakReference(container)
         activeBatteryView = WeakReference(batteryView)
@@ -206,12 +206,12 @@ internal object NativeBatterySuppressionOwner {
         if (mask.failureReason != null) {
             restorePresentationMasksLocked()
             clearOwnedStateLocked()
-            return StateResult.Failure(mask.failureReason)
+            return Result.Failure(mask.failureReason)
         }
 
         val effectiveHide = resolveNativeLayoutHide(nativeRequestedHide)
         val result =
-            StateResult.Active(
+            Result.Active(
                 nativeRequestedHide = nativeRequestedHide,
                 effectiveHide = effectiveHide,
                 maskedChildren = mask.maskedChildren,
@@ -228,7 +228,7 @@ internal object NativeBatterySuppressionOwner {
     }
 
     @Synchronized
-    fun deactivate(source: String): StateResult {
+    fun deactivate(source: String): Result {
         val container = activeContainer?.get()
         val nativeHide =
             container?.let(::readNativeHideLocked)
@@ -238,7 +238,7 @@ internal object NativeBatterySuppressionOwner {
         val wasActive = suppressionActive
         clearOwnedStateLocked()
         val result =
-            StateResult.Inactive(
+            Result.Inactive(
                 restoredNativeHide = nativeHide,
                 restoredChildren = restoredChildren,
                 visualChanged = wasActive && restoredChildren > 0,
@@ -581,7 +581,7 @@ internal object NativeBatterySuppressionOwner {
             else -> visibility.toString()
         }
 
-    internal sealed interface StateResult {
+    internal sealed interface Result {
         val summary: String
 
         data class Active(
@@ -589,7 +589,7 @@ internal object NativeBatterySuppressionOwner {
             val effectiveHide: Boolean,
             val maskedChildren: Int,
             val visualChanged: Boolean,
-        ) : StateResult {
+        ) : Result {
             override val summary: String
                 get() =
                     "active:nativeRequestedHide=" + nativeRequestedHide +
@@ -602,7 +602,7 @@ internal object NativeBatterySuppressionOwner {
             val restoredNativeHide: Boolean?,
             val restoredChildren: Int,
             val visualChanged: Boolean,
-        ) : StateResult {
+        ) : Result {
             override val summary: String
                 get() =
                     "inactive:restoredNativeHide=" + restoredNativeHide +
@@ -612,7 +612,7 @@ internal object NativeBatterySuppressionOwner {
 
         data class Failure(
             val reason: String,
-        ) : StateResult {
+        ) : Result {
             override val summary: String
                 get() = "failed:" + reason
         }
