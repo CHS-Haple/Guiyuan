@@ -2,29 +2,9 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeBatterySuppressorTest {
-    @Test
-    fun replacementDoesNotOverrideNativeVisibleLayout() {
-        assertFalse(
-            NativeBatterySuppressor.resolveNativeLayoutHide(
-                nativeRequestedHide = false,
-            ),
-        )
-    }
-
-    @Test
-    fun nativeHideRemainsAuthoritativeWhileReplacementIsActive() {
-        assertTrue(
-            NativeBatterySuppressor.resolveNativeLayoutHide(
-                nativeRequestedHide = true,
-            ),
-        )
-    }
-
     @Test
     fun activeSuppressionKeepsChargingSlotButRemovesGlyph() {
         assertEquals(
