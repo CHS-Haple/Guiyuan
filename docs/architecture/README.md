@@ -1,48 +1,37 @@
-# Architecture document status
+# Architecture
 
-This directory contains the current architecture policy and scene/layout capability boundaries for Guiyuan.
+This directory defines Guiyuan's current runtime ownership and scene/layout contracts.
 
-## Current architecture status
+Historical experiments and Build-by-Build evidence do not belong here. Current execution state lives in `docs/development/CURRENT.md`; durable historical decisions belong in development history/decision records.
 
-The pinned target uses the accepted native Home carrier, one host-scoped Keyguard/AOD family presentation owner, and the bounded QS_FAKE Control Center transition bridge. Build-specific milestones below remain evidence for those contracts; live execution state belongs in `docs/development/CURRENT.md`.
+## Current model
 
-- Builds 386-393 remain historical evidence for the superseded permanent extra-participant / occupancy-handoff route.
-- Builds 397-535 establish the native carrier, width, motion and transition contracts that remain historical evidence for the current path.
-- Build 536 device-validates the logical-slot / physical-overflow split: Guiyuan keeps the verified Home slot unchanged while one module-owned direct child of `MiuiStatusBatteryContainer` may extend only its transparent drawing surface upward.
-- Build 537 extended that overflow policy to the opt-in Keyguard renderer; later Keyguard/AOD family integration and device validation retain the same logical-viewport / transparent-overflow boundary.
+Guiyuan reuses verified native SystemUI hosts instead of creating a second permanent status-bar layout identity.
 
-Current Home direction:
+Current boundaries:
 
-`MiuiNotificationStatusContainer / system_icon_area -> MiuiStatusBatteryContainer / system_icons -> module-owned direct child -> logical viewport -> Guiyuan renderer`
+- Home is an independent projected presentation hosted by the verified native Home end-side carrier.
+- Keyguard and AOD share one host-scoped family presentation owner and retarget scene semantics without duplicate mutable owners.
+- Notification Shade remains native-only.
+- Control Center remains native at the fully expanded endpoint; a bounded QS_FAKE bridge may project the compact representation during the native transition.
+- SystemUI remains authoritative for native scene state, layout, appearance, alpha, visibility, translation and motion timing.
+- Guiyuan owns only its own renderer, bounded represented-slot suppression/masking, verified reservation state and transition-only projection geometry.
+- Any ambiguity in host, lifecycle, writer ownership or compatibility must fail native for the smallest affected surface.
 
-SystemUI retains native peer measurement/layout, Battery hide/presentation, tint authority, end-side visibility and live island/Folme motion. Guiyuan measures/layouts only its own child after native layout and keeps its logical viewport separate from any transparent physical overflow.
+The steady Home hierarchy is:
+
+`MiuiNotificationStatusContainer / system_icon_area -> MiuiStatusBatteryContainer / system_icons -> Guiyuan child -> logical viewport -> renderer`
+
+The logical viewport is independent from transparent drawing overflow. Enlarging Guiyuan's drawing surface must not change native slot geometry or peer motion.
 
 ## Documents
 
-- [layout-policy.md](layout-policy.md)
-  - current shared geometry and Home carrier/reservation contract;
-  - separation of visual geometry, native occupancy, motion and optical adjustment;
-  - rejected geometry/writer patterns and future sizing boundary.
+- [layout-policy.md](layout-policy.md) — geometry, occupancy, masking, reservation, motion and drawing-surface ownership.
+- [scene-policy.md](scene-policy.md) — current scene capability classification, Keyguard/AOD family ownership and Control Center transition boundaries.
+- [../reference/README.md](../reference/README.md) — reusable target-platform evidence. Reference evidence does not grant write ownership by itself.
 
-- [scene-policy.md](scene-policy.md)
-  - current scene capability map;
-  - Home plus the opt-in Keyguard/AOD family are runtime-verified Guiyuan rendering surfaces on the pinned target; bounded QS_FAKE transition projection is also accepted while the fully expanded Control Center remains native;
-  - Notification Shade and the fully expanded Control Center remain native-only; Home, Keyguard, opt-in AOD, and the bounded QS_FAKE transition bridge are PROJECTED surfaces with SystemUI-owned native motion.
+## Authority
 
-- [../reference/README.md](../reference/README.md)
-  - generalized reusable implementation evidence;
-  - reference evidence never grants SystemUI write ownership by itself.
+Architecture documents describe current reusable contracts. They must not accumulate Build chronology, candidate implementations or superseded experiments.
 
-## Superseded architecture route
-
-The current architecture must not return to:
-
-`extra permanent status participant -> zero/full-width occupancy handoff -> custom slot/translation compensation`
-
-Those builds still provide useful evidence about native APPEAR behavior, battery-slot release, peer occupancy, charging geometry and panel anchors, but their carrier model created conflicting layout identities across scene transitions.
-
-A superseded mechanism may be reconsidered only if new exact-target evidence invalidates the current route and a fresh ownership/lifecycle/single-writer review proves the alternative safer.
-
-## History policy
-
-Do not rewrite historical `DEVLOG.md` entries to match current conclusions. Preserve what was actually implemented and believed at the time, append later corrections, and keep current policy in this directory plus `docs/development/CURRENT.md`.
+When runtime source and documentation disagree, verify the current source and target behavior, then correct the documentation. Do not revive an older route merely because it remains visible in Git history.

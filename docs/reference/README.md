@@ -1,27 +1,27 @@
-# Runtime Reference Library
+# Runtime reference library
 
-This directory stores generalized runtime-integration patterns that have been verified from mature Android/SystemUI implementations or exact target-platform behavior and may inform future Guiyuan work.
+This directory records reusable Android/SystemUI integration evidence that may inform Guiyuan development.
 
-It is an **engineering reference**, not a dependency declaration, implementation lineage, or permission to copy another project's code.
+It is an engineering reference, not a dependency declaration, implementation lineage statement, or archive of investigation history.
 
 ## Rules
 
-- Record reusable behavior and ownership patterns, not third-party product/package/class names.
-- Do not copy third-party source code, proprietary assets, or implementation-specific constants into this repository.
-- Keep platform-specific identifiers only when they are necessary to describe a verified target-SystemUI contract.
-- Separate **observed behavior** from **Guiyuan design decisions**.
-- A reference pattern is not automatically valid on the current target. Revalidate the host, lifecycle, writer, fallback, and device behavior before adopting it.
-- Prefer the smallest reusable concept: ownership, lifecycle, geometry, restoration, projection, or sizing contract.
-- Keep contradictory or superseded evidence rather than converting it into an unqualified rule.
+- Record reusable platform behavior and ownership contracts, not incidental third-party product identities.
+- Do not copy third-party source code, proprietary assets or implementation-specific constants.
+- Keep platform-specific identifiers only when they are necessary to describe the verified target contract.
+- Separate observed target behavior from Guiyuan design decisions.
+- Reference evidence does not automatically authorize a runtime write. Revalidate the host, lifecycle, writer set, fallback and device behavior before adoption.
+- Keep the reusable conclusion, not Build-by-Build chronology, tooling notes or abandoned candidate implementations.
+- When evidence changes, update the current conclusion and preserve historical detail through Git history or a dedicated decision record.
 
 ## Current entries
 
-- [Status-bar composition and scene-projection patterns](statusbar-composition-patterns.md) — existing-host composition, scoped slot suppression, reversible visual masking, host-scoped state, sizing separation, native-progress projection, and cleanup/fail-native behavior.
-- [Native status-icon resource rendering](native-icon-rendering.md) — native resource/tint/alpha-mask evidence and the Guiyuan reuse boundary.
+- [SystemUI integration contracts](systemui-contracts.md) — host reuse, slot suppression, masking, lifecycle ownership, sizing separation, transition projection, reservation and cleanup boundaries.
+- [Native status-icon resource rendering](native-icon-rendering.md) — target resource/tint/rendering evidence and the Guiyuan reuse boundary.
 
-## Confidence language
+## Evidence language
 
-- **Observed** — directly evidenced in the inspected implementation/runtime.
-- **Strong inference** — supported by several independent observations but not directly exposed as one explicit contract.
-- **Candidate for Guiyuan** — potentially useful architecture; still requires target-specific validation.
+- **Observed** — directly supported by target source/resource inspection or runtime evidence.
+- **Strong inference** — supported by multiple observations but not exposed as one explicit platform contract.
+- **Guiyuan rule** — an adopted project constraint based on current evidence.
 - **Not established** — insufficient evidence to use as a design premise.
