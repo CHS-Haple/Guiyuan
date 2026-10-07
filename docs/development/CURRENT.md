@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `fa2af0a7`; runtime code remains the validated `06635a7e` state, with #253 adding documentation-only closeout. `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `9799dc50`; runtime behavior remains unchanged, with #254 adding a validated release-workflow safety gate. `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,19 +24,25 @@
 
 ## Active objective
 
-Phase 5 release qualification is active on `ci/stable-tag-boundary`, based on current `dev@fa2af0a7`.
+Phase 5 / 1.0.0 qualification is active.
 
-The first release-safety audit found one concrete fail-closed gap in `.github/workflows/release.yml`: stable publishing rejects an existing GitHub Release for `v$VERSION_NAME`, but did not reject a pre-existing bare remote tag with the same name. GitHub CLI only creates the tag from `--target` when the matching tag does not already exist, so an old/manual bare tag could otherwise be reused by `gh release create`.
+The first release-safety blocker is closed. PR #254 adds a stable-only preflight that rejects both an existing GitHub Release and an existing exact remote `v$VERSION_NAME` tag before publishing. This prevents `gh release create` from silently reusing a stale/manual tag instead of creating the version tag from the prepared `main` commit.
 
-This branch adds one stable-only preflight: fail when either the Release already exists or the exact remote version tag already exists. Normal test releases are unchanged. No APK/runtime code, version, Build, dependency, signing certificate, changelog content, or device behavior changes.
+Validation:
 
-The broader Phase 5 audit has also confirmed that README/PRIVACY/SECURITY/THIRD_PARTY_NOTICES and direct dependency versions are present and materially aligned with the current project. The manifest does not declare `INTERNET`; the checked-in Wrapper is Gradle 9.8.0 as documented. Private Vulnerability Reporting account state could not be read through the available repository connector, so it is not treated as verified evidence here.
+- exact-head Full CI #2908 passed on `adae300e`;
+- PR #254 squash-merged to `dev` as `9799dc50`;
+- integrated `dev` Full CI #2909 passed target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload.
+
+The broader Phase 5 source audit has also confirmed that README/PRIVACY/SECURITY/THIRD_PARTY_NOTICES, manifest network policy, Root entry points, direct dependency versions, Gradle Wrapper identity, CODEOWNERS/Dependabot and signing-file ignore rules materially match the current implementation. Private Vulnerability Reporting account state is still not verified because the available repository connector does not expose that setting.
+
+The next release-boundary question is whether the stable channel should explicitly reject pre-1.0 version names. Project documentation consistently treats 1.0.0 as the first planned formal release, while the current stable workflow otherwise accepts any prepared `main` version with a dated changelog section. Review that boundary separately rather than folding it into #254.
 
 Current priorities:
 
-1. run Full validation for the release-workflow change;
-2. merge only if repository/tooling validation stays green;
-3. continue Phase 5 with concrete release/compatibility gaps rather than adding ceremonial documentation;
+1. verify the formal-release version boundary before changing it;
+2. continue Phase 5 only from concrete release/compatibility/security evidence;
+3. keep stale historical branches classified as cleanup candidates, but do not restore their old implementation routes;
 4. keep `main` unchanged until an explicit dev-to-main promotion is chosen.
 
 ## Non-negotiable bounds
@@ -51,8 +57,8 @@ Current priorities:
 
 ## Immediate next
 
-- Validate the stable-tag fail-closed gate on `ci/stable-tag-boundary`.
+- Review whether stable GitHub releases must require version 1.0.0 or later, consistent with the current first-formal-release policy.
 - Keep Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Treat `dev@fa2af0a7` as the current integration head and `06635a7e` as the latest runtime-affecting validated state beneath its documentation-only closeout.
-- Continue Phase 5 by verifying existing release/privacy/security/notice claims against source and workflow behavior; do not add documents merely to fill a checklist.
+- Use `dev@9799dc50` as the current integration base.
+- Do not add release/privacy/security documents merely to fill a checklist; verify existing claims against source and workflow behavior.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

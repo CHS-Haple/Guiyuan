@@ -5247,3 +5247,11 @@ Stable release automation rejected an existing GitHub Release for `v$VERSION_NAM
 ### Boundary
 
 No runtime/APK behavior, version, Build, dependency, signing identity, changelog content or device contract changes. This is a release-workflow safety change and therefore requires Full automated validation but no device gate.
+
+### Validation and closeout
+
+- exact-head Full CI #2908 passed on `adae300e`: target-profile verification, Kotlin compilation, unit tests, Debug build, Modern Xposed metadata and non-debuggable verification succeeded;
+- PR #254 was squash-merged to `dev` as `9799dc50`;
+- integrated `dev` Full CI #2909 passed the signed Canary path, including target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload;
+- no device gate is required;
+- external version remains 0.2.1 and Build remains 746 / `20261006-746`.
