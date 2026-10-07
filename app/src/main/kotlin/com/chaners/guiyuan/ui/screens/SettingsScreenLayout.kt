@@ -80,6 +80,7 @@ internal fun SettingsPage(
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
+    overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -158,6 +159,8 @@ internal fun SettingsPage(
                 SettingsList()
             }
         }
+
+        overlay()
     }
 }
 
