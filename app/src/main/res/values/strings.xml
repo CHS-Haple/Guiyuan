@@ -231,6 +231,7 @@
     <string name="diagnostics_filter_reset">Reset filters</string>
     <string name="diagnostics_filter_done">Done</string>
     <string name="diagnostics_filter_empty">No events match the current filters</string>
+    <string name="diagnostics_refresh">Refresh diagnostics</string>
     <string name="diagnostics_pull_to_refresh">Pull down to refresh</string>
     <string name="diagnostics_release_to_refresh">Release to refresh</string>
     <string name="diagnostics_refreshing">Refreshing</string>

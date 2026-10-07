@@ -118,6 +118,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
+    val refreshTitle = stringResource(R.string.diagnostics_refresh)
     val refreshTexts =
         listOf(
             stringResource(R.string.diagnostics_pull_to_refresh),
@@ -236,6 +237,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         actions = {
+            TooltipBox(text = refreshTitle) {
+                IconButton(
+                    onClick = { requestRefresh() },
+                    enabled = !loading && !exportOpen,
+                ) {
+                    Icon(MiuixIcons.Refresh, contentDescription = refreshTitle)
+                }
+            }
             TooltipBox(text = shareTitle) {
                 IconButton(
                     onClick = {
@@ -338,13 +347,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 }
             }
             loading && snapshot == null -> {
-                item(key = "diagnostics-state-loading") {
-                    LogStateCard(
-                        text = stringResource(R.string.diagnostics_log_loading),
-                        loading = true,
-                        modifier = Modifier.animateItem(),
-                    )
-                }
+                // Initial capture is intentionally silent; refresh feedback belongs to explicit refresh actions.
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {
