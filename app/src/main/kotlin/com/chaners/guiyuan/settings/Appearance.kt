@@ -80,6 +80,16 @@ internal fun decodeNavContent(storedContent: String?): NavContent =
         .firstOrNull { it.name == storedContent }
         ?: NavContent.IconOnly
 
+internal fun defaultNavContentFor(
+    style: NavStyle,
+    storedContent: String?,
+): NavContent? =
+    if (style == NavStyle.Liquid && storedContent == null) {
+        NavContent.IconAndText
+    } else {
+        null
+    }
+
 internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
     LiquidMode.entries
         .firstOrNull { it.name == storedMode }
@@ -161,6 +171,9 @@ internal class AppearanceRepo(context: Context) {
     suspend fun setNavStyle(style: NavStyle) {
         store.edit { prefs ->
             prefs[navStyleKey] = style.name
+            defaultNavContentFor(style, prefs[navContentKey])?.let { content ->
+                prefs[navContentKey] = content.name
+            }
             prefs.remove(legacyNavBlurKey)
             prefs.remove(legacyGlassKey)
             prefs.remove(legacyBlurKey)

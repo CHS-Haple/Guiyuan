@@ -112,6 +112,30 @@ class AppearanceTest {
     }
 
     @Test
+    fun firstLiquidSelectionDefaultsToIconAndText() {
+        assertEquals(
+            NavContent.IconAndText,
+            defaultNavContentFor(NavStyle.Liquid, null),
+        )
+        assertEquals(
+            null,
+            defaultNavContentFor(NavStyle.Glass, null),
+        )
+    }
+
+    @Test
+    fun liquidSelectionKeepsPreviouslyChosenContent() {
+        assertEquals(
+            null,
+            defaultNavContentFor(NavStyle.Liquid, NavContent.IconOnly.name),
+        )
+        assertEquals(
+            null,
+            defaultNavContentFor(NavStyle.Liquid, NavContent.IconAndText.name),
+        )
+    }
+
+    @Test
     fun liquidModeDefaultsToClearAndRoundTrips() {
         assertEquals(LiquidMode.Clear, decodeLiquidMode(null))
         assertEquals(LiquidMode.Clear, decodeLiquidMode("Unknown"))
