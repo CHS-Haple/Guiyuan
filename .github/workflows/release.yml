@@ -1,6 +1,10 @@
 name: Release
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - gradle.properties
   workflow_dispatch:
     inputs:
       channel:
@@ -11,6 +15,11 @@ on:
         options:
           - test
           - stable
+      publish:
+        description: Publish a GitHub Release after building the signed APK
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -20,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release
+    env:
+      RELEASE_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.channel || 'test' }}
     permissions:
       contents: write
 
@@ -27,7 +38,7 @@ jobs:
       - name: Validate release source
         shell: bash
         run: |
-          case "${{ inputs.channel }}" in
+          case "$RELEASE_CHANNEL" in
             stable)
               if [[ "$GITHUB_REF_NAME" != "main" ]]; then
                 echo "Stable releases must be published from main, not $GITHUB_REF_NAME."
@@ -41,7 +52,7 @@ jobs:
               fi
               ;;
             *)
-              echo "Unsupported release channel: ${{ inputs.channel }}"
+              echo "Unsupported release channel: $RELEASE_CHANNEL"
               exit 1
               ;;
           esac
@@ -189,7 +200,7 @@ jobs:
           APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk"
           cp app/build/outputs/apk/release/app-release.apk "dist/$APK_NAME"
 
-          if [[ "${{ inputs.channel }}" == "stable" ]]; then
+          if [[ "$RELEASE_CHANNEL" == "stable" ]]; then
             RELEASE_TAG="v$VERSION_NAME"
             RELEASE_TITLE="Guiyuan $VERSION_NAME"
           else
@@ -204,7 +215,7 @@ jobs:
           echo "RELEASE_TITLE=$RELEASE_TITLE" >> "$GITHUB_ENV"
 
       - name: Validate stable release boundary
-        if: inputs.channel == 'stable'
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'stable'
         shell: bash
         run: |
           python3 - <<'PY'
@@ -252,7 +263,7 @@ jobs:
           PY
 
       - name: Check stable release identity
-        if: inputs.channel == 'stable'
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'stable'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -276,7 +287,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish test release
-        if: inputs.channel == 'test'
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'test'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -288,7 +299,7 @@ jobs:
             --prerelease
 
       - name: Publish stable release
-        if: inputs.channel == 'stable'
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'stable'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

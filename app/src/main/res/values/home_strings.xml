@@ -19,13 +19,13 @@
     <string name="home_runtime_checking">Checking</string>
     <string name="home_runtime_checking_summary">Confirming SystemUI runtime state</string>
     <string name="home_runtime_reloading">Reloading</string>
-    <string name="home_runtime_reloading_summary">Refreshing the SystemUI module runtime</string>
+    <string name="home_runtime_reloading_summary">Hot reloading Guiyuan in SystemUI</string>
 
     <string name="section_home_preview_sandbox">Preview sandbox</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>
-    <string name="home_preview_sandbox_summary">Changes here are simulated only and never modify the real system.</string>
+    <string name="home_preview_sandbox_summary">All adjustments are preview-only and do not change actual system state.</string>
     <string name="home_preview_open_title">Preview sandbox</string>
-    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without changing the real system.</string>
+    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without changing actual system state.</string>
     <string name="home_preview_live_title">Live preview</string>
     <string name="home_preview_section_preview">Preview</string>
     <string name="home_preview_section_network">Network</string>
@@ -53,12 +53,10 @@
     <string name="home_preview_mobile_disabled_airplane">Unavailable while airplane mode is on</string>
 
     <string name="home_preview_wifi_state_title">Wi‑Fi state</string>
-    <string name="home_preview_wifi_off">Off</string>
     <string name="home_preview_wifi_connected">Connected</string>
     <string name="home_preview_wifi_no_internet">No internet</string>
     <string name="home_preview_wifi_hotspot">Hotspot</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi signal</string>
-    <string name="home_preview_wifi_disabled">Enable a Wi‑Fi state to adjust signal strength</string>
 
     <string name="home_preview_signal_none">None</string>
     <string name="home_preview_signal_level">%1$d bars</string>

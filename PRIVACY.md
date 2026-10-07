@@ -12,16 +12,16 @@ The application does not declare the Android `INTERNET` permission and does not 
 
 ### Local preferences
 
-Application preferences such as appearance, language-related state, launcher visibility, and diagnostics level are stored locally through Android platform storage.
+Preferences such as appearance, language choice, launcher visibility, and diagnostics level are stored locally using Android platform storage.
 
 ### Root access
 
-Root access is requested only for explicit maintenance/diagnostic actions that require it, currently including:
+Root access is used only for explicit maintenance or diagnostic actions that require it, currently:
 
 - restarting SystemUI after user confirmation;
 - reading Guiyuan-related local runtime logs when the user opens or refreshes the Diagnostics log view, or generates a diagnostic report.
 
-There is no resident Root service.
+Guiyuan does not run a persistent Root service.
 
 ### Diagnostic reports
 
@@ -29,21 +29,21 @@ Diagnostic reports are generated locally and only when requested by the user.
 
 A report may contain:
 
-- Guiyuan version, build, package, build channel, and diagnostics state;
+- Guiyuan version, build, package name, build channel, and diagnostics state;
 - device model/codename, Android version, HyperOS information, and SystemUI version;
-- Guiyuan structured runtime snapshot and module log entries;
+- Guiyuan structured runtime snapshot and module log entries.
 
 Guiyuan does not intentionally collect unrelated third-party application logs for diagnostic reports.
 
-Users should still review a diagnostic report before posting it publicly because device and runtime information may be identifying in some contexts.
+Review diagnostic reports before sharing them publicly, because device and runtime details may be identifying in some contexts.
 
 ### Export and sharing
 
-Export uses the Android system document flow selected by the user.
+Export uses Android's system document picker.
 
-When preparing a share attachment, Guiyuan creates a managed text report under `Download/Guiyuan`. Managed share reports are bounded and older entries are pruned by the app.
+When preparing a share attachment, Guiyuan creates an app-managed text report under `Download/Guiyuan` and automatically prunes older managed reports.
 
-Guiyuan does not upload diagnostic reports to a project server. Sharing occurs only through the Android destination/application selected by the user.
+Guiyuan does not upload diagnostic reports to a project server. Sharing occurs only after the user chooses a destination through Android's system UI.
 
 ### Security reports
 
@@ -61,16 +61,16 @@ Guiyuan 以本地运行和最小化数据处理为设计原则。
 
 ### 本地设置
 
-外观、语言相关状态、桌面图标显示以及诊断等级等应用设置通过 Android 平台存储保存在本机。
+外观、语言选择、桌面图标显示和诊断等级等设置通过 Android 平台存储保存在本机。
 
 ### Root 权限
 
-只有用户明确触发且确实需要时才使用 Root，目前主要用于：
+仅在用户明确触发且功能确实需要时使用 Root，目前用于：
 
 - 经用户确认后重启 SystemUI；
 - 用户打开或刷新“诊断”日志视图，或主动生成诊断报告时，读取与 Guiyuan 相关的本地运行日志。
 
-项目不使用常驻 Root 服务。
+归元不使用常驻 Root 服务。
 
 ### 诊断报告
 
@@ -84,15 +84,15 @@ Guiyuan 以本地运行和最小化数据处理为设计原则。
 
 Guiyuan 不会为了生成诊断报告而主动收集无关第三方应用的日志。
 
-由于设备和运行环境信息在某些场景下可能具有识别性，公开提交报告前仍建议用户先自行检查内容。
+由于设备和运行环境信息在某些场景下可能具有识别性，公开分享报告前仍建议先检查内容。
 
 ### 导出与分享
 
-导出使用用户选择的 Android 系统文档流程。
+导出使用 Android 系统文件选择器。
 
-准备分享附件时，Guiyuan 会在 `Download/Guiyuan` 下创建受管理的文本报告；这类临时分享报告数量和保存时间均有边界，并由应用清理旧条目。
+准备分享附件时，Guiyuan 会在 `Download/Guiyuan` 下创建由应用管理的文本报告，并自动清理较旧的此类文件。
 
-Guiyuan 不会将诊断报告上传至项目服务器。只有用户通过 Android 系统选择目标应用或位置后，报告才会被导出或分享。
+Guiyuan 不会将诊断报告上传至项目服务器。只有用户通过 Android 系统界面选择目标应用或位置后，报告才会被导出或分享。
 
 ### 安全问题
 

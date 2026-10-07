@@ -23,13 +23,13 @@ For an ordinary code checkpoint:
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ~~~
 
-Keep credentials, signing material, local SDK paths, generated packages and machine-specific configuration out of the repository.
+Keep credentials, signing material, local SDK paths, generated APK/AAB artifacts and machine-specific configuration out of the repository.
 
 ## Engineering principles
 
 **Standardized.** Prefer Android, HyperOS, MIUIX and Modern Xposed contracts over project-local reinvention. Reuse verified platform state, resources and motion when they already express the required semantics.
 
-**Lightweight.** Avoid duplicate hooks/listeners/state machines, polling, hot-path reflection, resident Root work, per-frame diagnostics and unnecessary caching.
+**Lightweight.** Avoid duplicate hooks/listeners/state machines, polling, hot-path reflection, persistent Root work, per-frame diagnostics and unnecessary caching.
 
 **Modern.** Prefer maintained APIs and pinned dependencies when they satisfy the requirement. Newer is not automatically safer; compatibility and lifecycle evidence still matter.
 
@@ -104,7 +104,7 @@ Optimize for the next human maintainer. Prefer concise scope-aware names and str
 - Remove repeated product/domain wording when the package/file/receiver already establishes it.
 - Keep `Owner`, `Source`, `Policy`, `Session`, `Contract`, `Probe` or similar suffixes only when they carry real lifecycle, authority, compatibility, reuse or policy meaning.
 - Persisted keys, protocol/log fields, reflection targets, resource identities, Xposed-facing IDs and other externally consumed names are compatibility surfaces; do not rename them as cosmetic cleanup.
-- Prefer semantic compression over mechanical shortening. Do not broad-search/replace a rename without inspecting call sites and same-text uses.
+- Prefer semantic compression over mechanical shortening. Do not use broad search-and-replace for a rename without inspecting call sites and same-text uses.
 - Remove dead helpers only after checking reflection, serialization, resources, generated code and other external reachability.
 
 ### Comments
@@ -136,7 +136,7 @@ Check touched code and relevant adjacent call sites for:
 - boolean/nullable fields that actually encode one lifecycle;
 - string/reason-code control flow where a direct model is clearer;
 - one-caller wrappers, pass-through helpers and mirrored abstractions;
-- fake failure branches, proof-only helpers/tests or duplicated Result/State layers;
+- synthetic failure branches, proof-only helpers/tests or duplicated Result/State layers;
 - diagnostics that fill templates rather than report facts;
 - invented metrics, pass rates or proof fields;
 - comments that narrate code or preserve debugging history;
@@ -156,7 +156,7 @@ event -> bounded snapshot -> report
 
 Log useful state transitions, decisions, failures and observations. Structured fields are facts, not mandatory template slots.
 
-A metric/readiness/health field must come from a real runtime observation or calculation. Do not hard-code values merely to prove an invariant or produce self-derived `N/N`, `100%` or coverage-looking output.
+A metric, readiness field, or health signal must come from a real runtime observation or calculation. Do not hard-code values merely to prove an invariant or produce self-derived `N/N`, `100%`, or coverage-looking output.
 
 Build-channel diagnostic flags are observation gates only. They must not control functional hook installation, state authority, ownership, acquisition/release or fail-native fallback. Canary and Release share functional control flow.
 
