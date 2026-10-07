@@ -13,27 +13,19 @@ internal object NativeSlotOrder {
         slot: String,
     ): Result {
         if (iconList.javaClass.name != STATUS_BAR_ICON_LIST) {
-            return Result.Failure(
-                Result.Failure("status-bar-icon-list-type-mismatch"),
-            )
+            return Result.Failure("status-bar-icon-list-type-mismatch")
         }
 
         @Suppress("UNCHECKED_CAST")
         val slots =
             readField(iconList, SLOTS_FIELD) as? MutableList<Any?>
-                ?: return Result.Failure(
-                    Result.Failure("slot-list-unreadable"),
-                )
+                ?: return Result.Failure("slot-list-unreadable")
         val viewOnlySlots =
             readField(iconList, VIEW_ONLY_SLOTS_FIELD) as? List<*>
-                ?: return Result.Failure(
-                    Result.Failure("view-only-slot-list-unreadable"),
-                )
+                ?: return Result.Failure("view-only-slot-list-unreadable")
 
         if (!sameBackingProjection(slots, viewOnlySlots)) {
-            return Result.Failure(
-                Result.Failure("view-only-slot-projection-mismatch"),
-            )
+            return Result.Failure("view-only-slot-projection-mismatch")
         }
 
         val existingIndices =
@@ -42,30 +34,25 @@ internal object NativeSlotOrder {
             }
         if (existingIndices.isNotEmpty()) {
             if (existingIndices.size != 1) {
-                return Result.Failure(
-                    Result.Failure("existing-slot-duplicate"),
-                )
+                return Result.Failure("existing-slot-duplicate")
             }
             val existingIndex = existingIndices.single()
             if (
                 existingIndex != slots.lastIndex ||
                 viewOnlySlots.getOrNull(existingIndex) !== slots[existingIndex]
             ) {
-                return Result.Failure(
-                    Result.Failure("existing-slot-not-tail"),
-                )
+                return Result.Failure("existing-slot-not-tail")
             }
             return Result.Ready(
-
                 reservation = Reservation.noOp(),
-created = false,
-                        nativeIndex = existingIndex,
-                        fromIndex = existingIndex,
-                        toIndex = existingIndex,
-                        slotCount = slots.size,
-                        viewOnlySynced = true,
-                        originalOrderPreserved = true,
-        )
+                created = false,
+                nativeIndex = existingIndex,
+                fromIndex = existingIndex,
+                toIndex = existingIndex,
+                slotCount = slots.size,
+                viewOnlySynced = true,
+                originalOrderPreserved = true,
+            )
         }
 
         val findOrInsert =
@@ -78,9 +65,7 @@ created = false,
                         ) &&
                         method.returnType == Integer.TYPE
                 }
-                ?: return Result.Failure(
-                    Result.Failure("find-or-insert-slot-method-missing"),
-                )
+                ?: return Result.Failure("find-or-insert-slot-method-missing")
         findOrInsert.isAccessible = true
 
         val original = slots.toList()
@@ -90,15 +75,13 @@ created = false,
             }.getOrElse { error ->
                 val restored = restore(slots, viewOnlySlots, original)
                 return Result.Failure(
-                    Result.Failure(
                         if (restored) {
                             "find-or-insert-slot-" +
                                 (error.message ?: error.javaClass.simpleName)
                         } else {
                             "find-or-insert-slot-and-rollback-failed"
                         },
-                    ),
-                )
+                    )
             }
 
         val createdIndices =
@@ -111,14 +94,12 @@ created = false,
         ) {
             val restored = restore(slots, viewOnlySlots, original)
             return Result.Failure(
-                Result.Failure(
                     if (restored) {
                         "slot-create-verification-failed"
                     } else {
                         "slot-create-verification-and-rollback-failed"
                     },
-                ),
-            )
+                )
         }
 
         val createdIndex = createdIndices.single()
@@ -131,15 +112,13 @@ created = false,
         if (mutation.isFailure) {
             val restored = restore(slots, viewOnlySlots, original)
             return Result.Failure(
-                Result.Failure(
                     if (restored) {
                         "slot-tail-placement-" +
                             (mutation.exceptionOrNull()?.javaClass?.simpleName ?: "failed")
                     } else {
                         "slot-tail-placement-and-rollback-failed"
                     },
-                ),
-            )
+                )
         }
 
         val toIndex = slots.lastIndex
@@ -159,31 +138,28 @@ created = false,
         if (!tailReady) {
             val restored = restore(slots, viewOnlySlots, original)
             return Result.Failure(
-                Result.Failure(
                     if (restored) {
                         "slot-tail-verification-failed"
                     } else {
                         "slot-tail-verification-and-rollback-failed"
                     },
-                ),
-            )
+                )
         }
 
         return Result.Ready(
-
             reservation =
                 Reservation(
                     slots = slots,
                     viewOnlySlots = viewOnlySlots,
                     original = original,
                 ),
-created = true,
-                    nativeIndex = nativeIndex,
-                    fromIndex = createdIndex,
-                    toIndex = toIndex,
-                    slotCount = slots.size,
-                    viewOnlySynced = true,
-                    originalOrderPreserved = true,
+            created = true,
+            nativeIndex = nativeIndex,
+            fromIndex = createdIndex,
+            toIndex = toIndex,
+            slotCount = slots.size,
+            viewOnlySynced = true,
+            originalOrderPreserved = true,
         )
     }
 
