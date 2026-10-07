@@ -18,7 +18,7 @@ internal object KeyguardRenderSession {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
-    ): AttachResult =
+    ): String? =
         attachFamily(
             resolved = resolved,
             scene = Scene.KEYGUARD,
@@ -35,7 +35,7 @@ internal object KeyguardRenderSession {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
-    ): AttachResult =
+    ): String? =
         attachFamily(
             resolved = resolved,
             scene = Scene.AOD,
@@ -52,12 +52,10 @@ internal object KeyguardRenderSession {
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onPresentationReadinessChanged: ((Boolean) -> Unit)?,
-    ): AttachResult {
+    ): String? {
         val settings = FeaturePrefsOwner.current()
         if (!sceneEligible) {
-            return AttachResult.Failure(
-                if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active",
-            )
+            return if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active"
         }
         val featureEnabled =
             resolveFamilyFeatureEnabled(
@@ -76,7 +74,7 @@ internal object KeyguardRenderSession {
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
             existing.update(StatusStateStore.snapshot())
-            return AttachResult.Ready
+            return null
         }
 
         existing?.stop()
@@ -93,7 +91,7 @@ internal object KeyguardRenderSession {
         current = session
         session.start()
         session.update(StatusStateStore.snapshot())
-        return AttachResult.Ready
+        return null
     }
 
     @Synchronized
@@ -725,8 +723,4 @@ internal object KeyguardRenderSession {
         }
     }
 
-    internal sealed interface AttachResult {
-        data object Ready : AttachResult
-        data class Failure(val reason: String) : AttachResult
-    }
 }

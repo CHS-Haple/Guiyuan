@@ -9,7 +9,7 @@ import com.chaners.guiyuan.settings.VisualCfg
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
 
-internal object ControlCenterRenderSession {
+internal object CcRenderSession {
     private const val FAKE_ROOT_CLASS_NAME =
         "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons"
     private const val BATTERY_CONTAINER_CLASS_NAME =
@@ -100,7 +100,7 @@ internal object ControlCenterRenderSession {
         }
 
         if (existing != null) {
-            SysUiPresentationOwner.deactivateControlCenter("host-replaced")
+            SysUiPresentationOwner.deactivateCc("host-replaced")
             existing.stop("host-replaced")
         }
 
@@ -123,7 +123,7 @@ internal object ControlCenterRenderSession {
 
     @Synchronized
     fun beginVisibleCycle(): Boolean =
-        SysUiPresentationOwner.onControlCenterVisibilityChanged(true)
+        SysUiPresentationOwner.onCcVisibilityChanged(true)
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -135,23 +135,23 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setSceneEligible(eligible)
         if (!eligible) {
-            SysUiPresentationOwner.deactivateControlCenter("scene-ineligible")
+            SysUiPresentationOwner.deactivateCc("scene-ineligible")
         } else {
             session?.prepareNativePresentation(reused = true)
         }
     }
 
     @Synchronized
-    fun currentAttachedHostForHotReload(): ViewGroup? =
+    fun hotReloadHost(): ViewGroup? =
         current?.attachedHost()
             ?: pendingPrearm?.host()?.takeIf { candidate -> candidate.isAttachedToWindow }
 
     @Synchronized
-    fun currentNativePresentationReadyForHotReload(): Boolean =
-        current?.nativePresentationReadyForHotReload() == true
+    fun nativeReadyForHotReload(): Boolean =
+        current?.nativeReadyForHotReload() == true
 
     @Synchronized
-    fun restoreLaidOutHostAfterHotReload(
+    fun restoreAfterHotReload(
         host: ViewGroup,
         onEvent: (String) -> Unit,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -185,7 +185,7 @@ internal object ControlCenterRenderSession {
             result == null &&
             transferredCompactReady
         ) {
-            when (SysUiPresentationOwner.adoptControlCenterLayoutCutoverFromHotReload()) {
+            when (SysUiPresentationOwner.adoptCcLayoutAfterHotReload()) {
                 is SysUiPresentationOwner.Result.Active -> {
                     if (isDetailedDiagnosticsEnabled()) {
                         onEvent(
@@ -236,11 +236,7 @@ internal object ControlCenterRenderSession {
     }
 
     @Synchronized
-    fun currentProjectionGeometryDiagnostic(): String =
-        current?.geometryDiagnostic() ?: "projection=unavailable"
-
-    @Synchronized
-    fun currentTransitionSourceSnapshot(): TransitionSourceSnapshot? =
+    fun transitionSourceSnapshot(): TransitionSourceSnapshot? =
         current?.transitionSourceSnapshot()
 
     @Synchronized
@@ -248,7 +244,7 @@ internal object ControlCenterRenderSession {
         val session = current
         session?.setFeatureEnabled(cfg.enabled)
         if (!cfg.enabled || !sceneEligible) {
-            SysUiPresentationOwner.deactivateControlCenter(
+            SysUiPresentationOwner.deactivateCc(
                 if (!cfg.enabled) "feature-disabled" else "scene-ineligible",
             )
         } else {
@@ -269,7 +265,7 @@ internal object ControlCenterRenderSession {
         pendingPrearm?.cancel()
         pendingPrearm = null
         if (releaseNativePresentation) {
-            SysUiPresentationOwner.deactivateControlCenter(source)
+            SysUiPresentationOwner.deactivateCc(source)
         }
         current?.stop(source)
         current = null
@@ -406,13 +402,13 @@ internal object ControlCenterRenderSession {
             oldRight: Int,
             oldBottom: Int,
         ) {
-            ControlCenterRenderSession.onPendingPrearmLayout(this)
+            CcRenderSession.onPendingPrearmLayout(this)
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
 
         override fun onViewDetachedFromWindow(view: View) {
-            ControlCenterRenderSession.onPendingPrearmDetached(this)
+            CcRenderSession.onPendingPrearmDetached(this)
         }
     }
 
@@ -523,7 +519,7 @@ internal object ControlCenterRenderSession {
         fun attachedHost(): ViewGroup? =
             host.get()?.takeIf { candidate -> candidate.isAttachedToWindow }
 
-        fun nativePresentationReadyForHotReload(): Boolean =
+        fun nativeReadyForHotReload(): Boolean =
             nativePresentationReady && attachedHost() != null
 
         fun transitionSourceSnapshot(): TransitionSourceSnapshot? {
@@ -593,8 +589,7 @@ internal object ControlCenterRenderSession {
                 onProjectionReadinessChanged(false)
             }
             emitEvent {
-                "controlCenterProjection cleanup source=" + source +
-                    " nativeCompactRestored=true"
+                "controlCenterProjection cleanup source=" + source
             }
         }
 
@@ -602,13 +597,13 @@ internal object ControlCenterRenderSession {
             if (
                 !requestedVisible &&
                 visible &&
-                !SysUiPresentationOwner.onControlCenterVisibilityChanged(true)
+                !SysUiPresentationOwner.onCcVisibilityChanged(true)
             ) {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
             }
             if (requestedVisible && !visible) {
-                SysUiPresentationOwner.onControlCenterVisibilityChanged(false)
+                SysUiPresentationOwner.onCcVisibilityChanged(false)
             }
             requestedVisible = visible
             syncPresentation("visibility")
@@ -638,7 +633,7 @@ internal object ControlCenterRenderSession {
 
             return when (
                 val result =
-                    SysUiPresentationOwner.activateControlCenter(
+                    SysUiPresentationOwner.activateCc(
                         host = statusArea,
                         statusIcons = statusIconGroup,
                         batteryContainer = statusArea,
@@ -713,8 +708,7 @@ internal object ControlCenterRenderSession {
             emitEvent {
                 "controlCenterProjection compact ready=" + ready +
                     " source=" + source +
-                    " maskedViews=" + maskedViews +
-                    " stableBatterySlot=true batteryWidthDiffConsumed=false"
+                    " maskedViews=" + maskedViews
             }
             dispatchReadiness("compact:" + source)
         }
@@ -866,7 +860,7 @@ internal object ControlCenterRenderSession {
                 hostAttached && nativePresentationReady
             if (!retainNativePresentation) {
                 nativePresentationReady = false
-                SysUiPresentationOwner.deactivateControlCenter(
+                SysUiPresentationOwner.deactivateCc(
                     "projection-layout-unavailable-detached",
                 )
             }
@@ -932,7 +926,7 @@ internal object ControlCenterRenderSession {
             layoutReady = false
             nativePresentationReady = false
             renderView.visibility = View.GONE
-            SysUiPresentationOwner.deactivateControlCenter(
+            SysUiPresentationOwner.deactivateCc(
                 "fake-root-detached",
             )
             dispatchReadiness("detach")

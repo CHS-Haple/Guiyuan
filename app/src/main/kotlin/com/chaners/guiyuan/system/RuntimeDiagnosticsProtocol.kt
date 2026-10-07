@@ -8,62 +8,49 @@ internal data class RuntimeDiagnosticEvent(
     val fields: Map<String, String>,
 )
 
-internal data class RuntimeHealthComponent(
-    val component: String,
-    val state: String,
-    val event: String,
-    val fields: Map<String, String>,
-)
-
-internal data class RuntimeHealthSnapshot(
-    val overall: String,
+internal data class RuntimeEventSnapshot(
     val schemaVersion: Int,
     val sessionId: String?,
-    val components: List<RuntimeHealthComponent>,
+    val events: List<RuntimeDiagnosticEvent>,
 ) {
-    fun component(name: String): RuntimeHealthComponent? =
-        components.firstOrNull { component -> component.component == name }
+    fun component(name: String): RuntimeDiagnosticEvent? =
+        events.firstOrNull { event -> event.component == name }
 
     fun reportLines(): List<String> =
-        buildList {
-            add("overall=$overall")
-            add("schemaVersion=$schemaVersion")
-            add("sessionId=" + (sessionId ?: "legacy-or-unavailable"))
-            components.forEach { component ->
-                add(
-                    buildString {
-                        append("component=")
-                        append(component.component)
-                        append(" state=")
-                        append(component.state)
-                        append(" event=")
-                        append(component.event)
-                        component.fields
-                            .toSortedMap()
-                            .forEach { (key, value) ->
-                                append(' ')
-                                append(key)
-                                append('=')
-                                append(RuntimeDiagnosticsProtocol.encode(value))
-                            }
-                    },
-                )
+        events.map { event ->
+            buildString {
+                append("component=")
+                append(event.component)
+                append(" state=")
+                append(event.state)
+                append(" event=")
+                append(event.event)
+                event.fields
+                    .toSortedMap()
+                    .forEach { (key, value) ->
+                        append(' ')
+                        append(key)
+                        append('=')
+                        append(RuntimeDiagnosticsProtocol.encode(value))
+                    }
             }
         }
 
     companion object {
         private const val SessionIdField = "sessionId"
-        private const val HealthSnapshotField = "healthSnapshot"
+
+        // Keep the old wire key because existing runtime logs already use it.
+        private const val SnapshotExcludeField = "healthSnapshot"
 
         private val eventMetadataFields =
             setOf(
                 SessionIdField,
-                HealthSnapshotField,
+                SnapshotExcludeField,
                 "uptimeMs",
                 "sequence",
             )
 
-        private val expectedComponents =
+        private val componentOrder =
             listOf(
                 "module",
                 "diagnostics",
@@ -86,22 +73,7 @@ internal data class RuntimeHealthSnapshot(
                 "hotReload",
             )
 
-        private val coreComponents =
-            setOf(
-                "module",
-                "diagnostics",
-                "compatibility",
-                "statusHostHook",
-                "statusHost",
-                "network",
-                "airplane",
-                "presentationRuntime",
-                "stableStatus",
-                "renderer",
-                "runtimeSession",
-            )
-
-        fun fromLines(lines: List<String>): RuntimeHealthSnapshot {
+        fun fromLines(lines: List<String>): RuntimeEventSnapshot {
             val parsedEvents =
                 lines.mapNotNull(RuntimeDiagnosticsProtocol::parse)
             val latestSessionId =
@@ -120,60 +92,30 @@ internal data class RuntimeHealthSnapshot(
             val latest = linkedMapOf<String, RuntimeDiagnosticEvent>()
             scopedEvents
                 .filterNot { event ->
-                    event.fields[HealthSnapshotField].equals("false", ignoreCase = true)
+                    event.fields[SnapshotExcludeField].equals("false", ignoreCase = true)
                 }
                 .forEach { event ->
-                    latest[event.component] = event
+                    latest[event.component] =
+                        event.copy(fields = event.fields - eventMetadataFields)
                 }
 
-            val components =
+            val events =
                 buildList {
-                    expectedComponents.forEach { component ->
-                        val event = latest[component]
-                        add(
-                            RuntimeHealthComponent(
-                                component = component,
-                                state = event?.state ?: "unknown",
-                                event = event?.event ?: "not-observed",
-                                fields = event?.fields.orEmpty() - eventMetadataFields,
-                            ),
-                        )
+                    componentOrder.forEach { component ->
+                        latest[component]?.let { event -> add(event) }
                     }
-
                     latest.keys
-                        .filterNot(expectedComponents::contains)
+                        .filterNot(componentOrder::contains)
                         .sorted()
                         .forEach { component ->
-                            val event = latest.getValue(component)
-                            add(
-                                RuntimeHealthComponent(
-                                    component = component,
-                                    state = event.state,
-                                    event = event.event,
-                                    fields = event.fields - eventMetadataFields,
-                                ),
-                            )
+                            add(latest.getValue(component))
                         }
                 }
 
-            val byName = components.associateBy(RuntimeHealthComponent::component)
-            val moduleState = byName["module"]?.state
-            val healthy =
-                coreComponents.all { component ->
-                    byName[component]?.state in setOf("ready", "disabled")
-                }
-            val overall =
-                when {
-                    moduleState == null || moduleState == "unknown" -> "unavailable"
-                    healthy -> "healthy"
-                    else -> "degraded"
-                }
-
-            return RuntimeHealthSnapshot(
-                overall = overall,
+            return RuntimeEventSnapshot(
                 schemaVersion = scopedEvents.maxOfOrNull { event -> event.schemaVersion } ?: 0,
                 sessionId = latestSessionId,
-                components = components,
+                events = events,
             )
         }
     }

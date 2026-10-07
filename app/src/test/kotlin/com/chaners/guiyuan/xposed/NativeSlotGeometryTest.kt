@@ -5,11 +5,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class NativeStatusBarSlotGeometryTest {
+class NativeSlotGeometryTest {
     @Test
     fun capturedStableWidthWinsWhenChargingLayoutHasAlreadyCollapsed() {
         val resolvedWidth =
-            NativeStatusBarSlotGeometry.resolveCapturedOrLiveChildWidth(
+            NativeSlotGeometry.resolveCapturedOrLiveChildWidth(
                 capturedWidth = 478,
                 layoutWidth = 448,
                 measuredWidth = 448,
@@ -18,7 +18,7 @@ class NativeStatusBarSlotGeometryTest {
         assertEquals(478, resolvedWidth)
 
         val resolved =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth = 587,
                 containerPaddingStart = 4,
                 containerPaddingEnd = 0,
@@ -35,7 +35,7 @@ class NativeStatusBarSlotGeometryTest {
     fun liveWidthRemainsFallbackWhenNoStableCaptureExists() {
         assertEquals(
             448,
-            NativeStatusBarSlotGeometry.resolveCapturedOrLiveChildWidth(
+            NativeSlotGeometry.resolveCapturedOrLiveChildWidth(
                 capturedWidth = null,
                 layoutWidth = 448,
                 measuredWidth = 448,
@@ -46,7 +46,7 @@ class NativeStatusBarSlotGeometryTest {
     @Test
     fun laidOutStatusIconWidthWinsOverTransientChargingMeasurement() {
         val stableWidth =
-            NativeStatusBarSlotGeometry.resolveStableChildWidth(
+            NativeSlotGeometry.resolveStableChildWidth(
                 layoutWidth = 478,
                 measuredWidth = 448,
             )
@@ -54,7 +54,7 @@ class NativeStatusBarSlotGeometryTest {
         assertEquals(478, stableWidth)
 
         val resolved =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth = 587,
                 containerPaddingStart = 4,
                 containerPaddingEnd = 0,
@@ -71,13 +71,13 @@ class NativeStatusBarSlotGeometryTest {
     fun measuredWidthIsOnlyFallbackBeforeLayout() {
         assertEquals(
             448,
-            NativeStatusBarSlotGeometry.resolveStableChildWidth(
+            NativeSlotGeometry.resolveStableChildWidth(
                 layoutWidth = 0,
                 measuredWidth = 448,
             ),
         )
         assertNull(
-            NativeStatusBarSlotGeometry.resolveStableChildWidth(
+            NativeSlotGeometry.resolveStableChildWidth(
                 layoutWidth = 0,
                 measuredWidth = 0,
             ),
@@ -87,7 +87,7 @@ class NativeStatusBarSlotGeometryTest {
     @Test
     fun stableHomeMeasurementResolvesNativeBatteryOccupancy() {
         val resolved =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth = 587,
                 containerPaddingStart = 4,
                 containerPaddingEnd = 0,
@@ -104,7 +104,7 @@ class NativeStatusBarSlotGeometryTest {
     @Test
     fun visiblePrivacyOccupancyIsExcludedFromBatterySlot() {
         val resolved =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth = 587,
                 containerPaddingStart = 4,
                 containerPaddingEnd = 0,
@@ -119,7 +119,7 @@ class NativeStatusBarSlotGeometryTest {
     @Test
     fun unavailableSlotFailsClosed() {
         val resolved =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth = 587,
                 containerPaddingStart = 4,
                 containerPaddingEnd = 0,

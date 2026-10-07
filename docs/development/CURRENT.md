@@ -24,20 +24,17 @@
 
 ## Active objective
 
-Phase 5 / 1.0.0 qualification continues on `ci/formal-release-version-boundary`, based on `dev@77b2490c`.
+PR #257 (`refactor/residual-maintainability-gaps` -> `dev`) is the active work line on Guiyuan 0.2.1 / Build 746. The objective is behavior-neutral maintainability cleanup of the remaining plumbing: self-reporting diagnostics, redundant result wrappers, overlong internal naming, lifecycle state that can form invalid boolean combinations, and narrow abstractions that do not earn an independent boundary.
 
-The first release-safety gate is already integrated: #254 prevents stable publishing from reusing an existing bare version tag.
-
-The next confirmed policy mismatch is the formal-release version boundary. README and CHANGELOG consistently define 1.0.0 as the first planned formal release, while CONTRIBUTING treats the stable channel as the formal stable-release path. The current stable workflow still accepts a prepared 0.x `main` version if its changelog section exists.
-
-This branch keeps pre-1.0 publishing available through the existing `test` channel/prerelease path, but rejects `stable` when the version major is below 1. It does not change the current 0.2.1 version, Build identity, test-release behavior, runtime/APK code, signing certificate, or device behavior.
+This work keeps SystemUI ownership, hooks, rendering, geometry, transition semantics, state authority, and fail-native behavior unchanged. It does not bump the external version or Build. Device validation is not a gate unless a later change can plausibly alter runtime behavior.
 
 Current priorities:
 
-1. run Full validation for the stable version-boundary change;
-2. merge only if workflow/build validation stays green;
-3. continue Phase 5 from concrete compatibility/security/release evidence;
-4. keep `main` unchanged until the maintainer explicitly chooses a formal promotion.
+1. finish the residual maintainability audit across runtime plumbing rather than only the originally cited examples;
+2. keep real lifecycle/ownership contracts explicit while collapsing duplicate wrappers and ceremonial layers;
+3. keep diagnostics tied to observed runtime facts and useful decision boundaries;
+4. review the complete PR diff, run one suitable CI checkpoint, then merge to `dev` only if deterministic review/validation stays clean;
+5. keep `main` unchanged until the maintainer explicitly chooses another stable promotion.
 
 ## Non-negotiable bounds
 
@@ -51,8 +48,7 @@ Current priorities:
 
 ## Immediate next
 
-- Validate the stable major-version gate on `ci/formal-release-version-boundary`.
-- Keep Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Use `dev@77b2490c` as the current integration head and `9799dc50` as the latest non-documentation validated state.
-- Keep pre-1.0 explicit publishing on the test/prerelease channel; do not promote 0.x through formal stable release automation.
-- External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
+- Continue PR #257 from the current `dev` base; do not revive stale maintainability branches.
+- Complete the remaining naming/state/logging/abstraction audit with behavior-neutral changes only.
+- Run full base-to-HEAD review before the next validation checkpoint.
+- Keep Build 746 / version 0.2.1 unchanged unless the maintainer explicitly requests a bump.

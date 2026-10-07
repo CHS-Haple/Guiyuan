@@ -94,20 +94,20 @@ class SysUiCcSourceTest {
 
     @Test
     fun transitionMatrixUsesRawNativeExpansionProgress() {
-        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(0f))
+        assertEquals(0f, CcTransitionPolicy.geometryProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionPolicy.geometryProgress(0.41f),
+            CcTransitionPolicy.geometryProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionPolicy.geometryProgress(0.82f),
+            CcTransitionPolicy.geometryProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1f))
-        assertEquals(0f, ControlCenterTransitionPolicy.geometryProgress(-0.2f))
-        assertEquals(1f, ControlCenterTransitionPolicy.geometryProgress(1.4f))
+        assertEquals(1f, CcTransitionPolicy.geometryProgress(1f))
+        assertEquals(0f, CcTransitionPolicy.geometryProgress(-0.2f))
+        assertEquals(1f, CcTransitionPolicy.geometryProgress(1.4f))
     }
 
     @Test
@@ -122,7 +122,7 @@ class SysUiCcSourceTest {
             )
         val component =
             requireNotNull(
-                ControlCenterTransitionPolicy.componentGeometry(
+                CcTransitionPolicy.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,
@@ -139,32 +139,32 @@ class SysUiCcSourceTest {
 
     @Test
     fun transitionMotionAndMobileMorphUseNativeExpansion() {
-        assertEquals(0f, ControlCenterTransitionPolicy.motionProgress(0f))
+        assertEquals(0f, CcTransitionPolicy.motionProgress(0f))
         assertEquals(
             0.41f,
-            ControlCenterTransitionPolicy.motionProgress(0.41f),
+            CcTransitionPolicy.motionProgress(0.41f),
             0.0001f,
         )
         assertEquals(
             0.82f,
-            ControlCenterTransitionPolicy.motionProgress(0.82f),
+            CcTransitionPolicy.motionProgress(0.82f),
             0.0001f,
         )
-        assertEquals(1f, ControlCenterTransitionPolicy.motionProgress(1f))
+        assertEquals(1f, CcTransitionPolicy.motionProgress(1f))
 
         assertEquals(
             0f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0f),
+            CcTransitionPolicy.mobileSignalShapeProgress(0f),
             0.0001f,
         )
         assertEquals(
             0.25f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(0.5f),
+            CcTransitionPolicy.mobileSignalShapeProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionPolicy.mobileSignalShapeProgress(1f),
+            CcTransitionPolicy.mobileSignalShapeProgress(1f),
             0.0001f,
         )
     }
@@ -173,13 +173,13 @@ class SysUiCcSourceTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                ControlCenterTransitionPolicy.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                ControlCenterTransitionPolicy.ReservationSpan(
+                CcTransitionPolicy.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -189,7 +189,7 @@ class SysUiCcSourceTest {
 
         assertEquals(
             105,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            CcTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -197,7 +197,7 @@ class SysUiCcSourceTest {
         )
         assertEquals(
             105,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            CcTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -205,7 +205,7 @@ class SysUiCcSourceTest {
         )
         assertEquals(
             145,
-            ControlCenterTransitionPolicy.resolveReservationWidth(
+            CcTransitionPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
@@ -309,12 +309,12 @@ class SysUiCcSourceTest {
     fun transitionDoesNotOwnANativeReleaseTimeline() {
         assertEquals(
             0.92f,
-            ControlCenterTransitionPolicy.geometryProgress(0.92f),
+            CcTransitionPolicy.geometryProgress(0.92f),
             0.0001f,
         )
         assertEquals(
             1f,
-            ControlCenterTransitionPolicy.geometryProgress(1f),
+            CcTransitionPolicy.geometryProgress(1f),
             0.0001f,
         )
     }
@@ -324,7 +324,7 @@ class SysUiCcSourceTest {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
-            ControlCenterTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -344,7 +344,7 @@ class SysUiCcSourceTest {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
-            ControlCenterTransitionPolicy.interpolateGeometry(
+            CcTransitionPolicy.interpolateGeometry(
                 source,
                 target,
                 0.5f,

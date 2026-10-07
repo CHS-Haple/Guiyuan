@@ -272,7 +272,7 @@ internal object NativeNetworkSuppressor {
             host as? View
                 ?: return Result.Failure("host-not-view")
         val manager =
-            NativeParticipantRuntimeAccess.managerFor(hostView)
+            NativeParticipantAccess.managerFor(hostView)
                 ?: run {
                     // MiuiNotificationStatusContainer finishes inflation before the parent
                     // MiuiPhoneStatusBarView necessarily owns its Home DarkIconManager.
@@ -285,7 +285,7 @@ internal object NativeNetworkSuppressor {
         pendingObservationHost = null
         pendingObservationSource = null
         val group =
-            NativeParticipantRuntimeAccess.groupFor(hostView)
+            NativeParticipantAccess.groupFor(hostView)
                 ?: return Result.Failure("status-icon-group-missing")
         if (manager.javaClass.name != HOME_MANAGER_CLASS) {
             return Result.Failure("home-manager-mismatch")
@@ -339,10 +339,10 @@ internal object NativeNetworkSuppressor {
         }
 
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = NativeParticipantAccess.resolve(host)) {
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return Result.Failure(resolution.reason)
             }
 
@@ -509,7 +509,7 @@ internal object NativeNetworkSuppressor {
                     val pendingSource = pendingObservationSource
                     if (
                         pendingHost != null &&
-                        NativeParticipantRuntimeAccess.managerFor(pendingHost) === manager
+                        NativeParticipantAccess.managerFor(pendingHost) === manager
                     ) {
                         when (
                             val state =
@@ -589,19 +589,19 @@ internal object NativeNetworkSuppressor {
         val mobile =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "mobile"
+                    NativeParticipantAccess.slotOf(child) == "mobile"
                 },
             )
         val wifi =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "wifi"
+                    NativeParticipantAccess.slotOf(child) == "wifi"
                 },
             )
         val combined =
             selectTransitionTarget(
                 children.filter { child ->
-                    NativeParticipantRuntimeAccess.slotOf(child) == "combined_status"
+                    NativeParticipantAccess.slotOf(child) == "combined_status"
                 },
             )
         val battery =
@@ -656,7 +656,7 @@ internal object NativeNetworkSuppressor {
             val view =
                 selectTransitionTarget(
                     children.filter { child ->
-                        NativeParticipantRuntimeAccess.slotOf(child) == slot
+                        NativeParticipantAccess.slotOf(child) == slot
                     },
                 ) ?: return null
             return readTransitionIconState(group, view)
@@ -924,7 +924,7 @@ internal object NativeNetworkSuppressor {
                 ?: (0 until group.childCount)
                     .map(group::getChildAt)
                     .firstOrNull { child ->
-                        NativeParticipantRuntimeAccess.slotOf(child) == NO_SIM_SLOT
+                        NativeParticipantAccess.slotOf(child) == NO_SIM_SLOT
                     }
         val noSimVisible =
             observedNoSimVisible
@@ -1000,7 +1000,7 @@ internal object NativeNetworkSuppressor {
                         ?.padStart(8, '0')
                         ?: "none") +
                     " tintAnchorSlot=" +
-                    (tintAnchor?.let(NativeParticipantRuntimeAccess::slotOf) ?: "none") +
+                    (tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none") +
                     " tintAnchorClass=" +
                     (tintAnchor?.javaClass?.simpleName ?: "none") +
                     " noSimVisible=" + presentation.noSimVisible +
@@ -1116,7 +1116,7 @@ internal object NativeNetworkSuppressor {
             val child = group.getChildAt(index)
             if (
                 isTintAuthorityCandidate(
-                    slot = NativeParticipantRuntimeAccess.slotOf(child),
+                    slot = NativeParticipantAccess.slotOf(child),
                     visible = child.visibility == View.VISIBLE,
                     width = child.width,
                     height = child.height,
@@ -1130,7 +1130,7 @@ internal object NativeNetworkSuppressor {
 
     private fun isTintAuthorityCandidate(view: View): Boolean =
         isTintAuthorityCandidate(
-            slot = NativeParticipantRuntimeAccess.slotOf(view),
+            slot = NativeParticipantAccess.slotOf(view),
             visible = view.visibility == View.VISIBLE,
             width = view.width,
             height = view.height,
@@ -1254,7 +1254,7 @@ internal object NativeNetworkSuppressor {
         val targetViews = mutableListOf<Pair<String, View>>()
         for (index in 0 until group.childCount) {
             val child = group.getChildAt(index)
-            val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+            val slot = NativeParticipantAccess.slotOf(child) ?: continue
             if (slot in targetSlots) {
                 targetViews += slot to child
             }

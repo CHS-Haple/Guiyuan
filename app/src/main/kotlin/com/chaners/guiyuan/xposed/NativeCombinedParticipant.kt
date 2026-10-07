@@ -117,7 +117,7 @@ internal object NativeCombinedParticipant {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
-        onSlotOrderResult: ((NativeStatusBarSlotReservation.Result) -> Unit)? = null,
+        onSlotOrderResult: ((NativeSlotOrder.Result) -> Unit)? = null,
         isTransitionProbeEnabled: () -> Boolean = { false },
     ): String? {
         if (installedHookCount == HOOK_COUNT) {
@@ -283,7 +283,7 @@ internal object NativeCombinedParticipant {
                 ?: return "controller-registry-constructor-missing"
         val iconListParameterIndex =
             constructor.parameterTypes.indexOfFirst { type ->
-                type.name == NativeStatusBarSlotReservation.STATUS_BAR_ICON_LIST
+                type.name == NativeSlotOrder.STATUS_BAR_ICON_LIST
             }
         if (iconListParameterIndex < 0) {
             return "controller-icon-list-parameter-missing"
@@ -494,18 +494,17 @@ internal object NativeCombinedParticipant {
                             val slotPreparation =
                                 when (
                                     val result =
-                                        NativeStatusBarSlotReservation.reserveTail(
+                                        NativeSlotOrder.reserveTail(
                                             iconList = iconList,
                                             slot = SLOT,
                                         )
                                 ) {
-                                    is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                                    is NativeSlotOrder.Result.Ready ->
                                         result
 
-                                    is NativeStatusBarSlotReservation.ReservationResult.Failure -> {
-                                        onSlotOrderResult?.invoke(result.result)
-                                        onEvent?.invoke(result.result.logLine)
-                                        recordFailure("slot-predeclare-" + result.result.reason)
+                                    is NativeSlotOrder.Result.Failure -> {
+                                        onSlotOrderResult?.invoke(result)
+                                        recordFailure("slot-predeclare-" + result.reason)
                                         return@Hooker chain.proceed()
                                     }
                                 }
@@ -525,7 +524,7 @@ internal object NativeCombinedParticipant {
                             if (!replaced) {
                                 val slotRolledBack = slotReservation.rollback()
                                 val slotFailure =
-                                    NativeStatusBarSlotReservation.Result.Failure(
+                                    NativeSlotOrder.Result.Failure(
                                         if (slotRolledBack) {
                                             "transaction-aborted-registry-replacement"
                                         } else {
@@ -533,7 +532,6 @@ internal object NativeCombinedParticipant {
                                         },
                                     )
                                 onSlotOrderResult?.invoke(slotFailure)
-                                onEvent?.invoke(slotFailure.logLine)
                                 recordFailure("registry-replacement-failed")
                                 return@Hooker chain.proceed()
                             }
@@ -544,13 +542,11 @@ internal object NativeCombinedParticipant {
                             try {
                                 val result = chain.proceed()
                                 controllerCreated = true
-                                onSlotOrderResult?.invoke(slotPreparation.result)
-                                onEvent?.invoke(slotPreparation.result.logLine)
+                                onSlotOrderResult?.invoke(slotPreparation)
                                 onEvent?.invoke(
                                     "nativeCombinedParticipant injected slot=" + SLOT +
                                         " registryOriginal=" + original.size +
-                                        " registryExtended=" + extended.size +
-                                        " visible=false ",
+                                        " registryExtended=" + extended.size,
                                 )
                                 result
                             } finally {
@@ -562,7 +558,7 @@ internal object NativeCombinedParticipant {
                                 if (!controllerCreated) {
                                     val slotRolledBack = slotReservation.rollback()
                                     val slotFailure =
-                                        NativeStatusBarSlotReservation.Result.Failure(
+                                        NativeSlotOrder.Result.Failure(
                                             if (slotRolledBack) {
                                                 "transaction-aborted-controller-construction"
                                             } else {
@@ -570,7 +566,6 @@ internal object NativeCombinedParticipant {
                                             },
                                         )
                                     onSlotOrderResult?.invoke(slotFailure)
-                                    onEvent?.invoke(slotFailure.logLine)
                                     injected = false
                                     failureReason =
                                         if (slotRolledBack) {
@@ -644,14 +639,14 @@ internal object NativeCombinedParticipant {
         }
 
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = NativeParticipantAccess.resolve(host)) {
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return HotReloadAdoptResult.Failure(resolution.reason)
             }
         val holder =
-            NativeParticipantRuntimeAccess.iconHolder(
+            NativeParticipantAccess.iconHolder(
                 handles = handles,
                 slot = SLOT,
             ) ?: return HotReloadAdoptResult.NotPresent
@@ -669,7 +664,7 @@ internal object NativeCombinedParticipant {
             fieldOrNull(holder, "isVisible")
                 ?: return HotReloadAdoptResult.Failure("native-visible-field-missing")
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            NativeParticipantAccess.removal(handles.controller.javaClass)
                 ?: return HotReloadAdoptResult.Failure("removal-contract-missing")
         val iconList =
             readField(handles.controller, "mStatusBarIconList")
@@ -685,7 +680,7 @@ internal object NativeCombinedParticipant {
 
         val removed =
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                NativeParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
@@ -697,14 +692,14 @@ internal object NativeCombinedParticipant {
         }
 
         val cleared =
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            NativeParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
             )
         if (
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null ||
-            NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) != null
+            NativeParticipantAccess.findSlotView(handles.group, SLOT) != null ||
+            NativeParticipantAccess.iconHolder(handles, SLOT) != null
         ) {
             return HotReloadAdoptResult.Failure("native-removal-verification-failed")
         }
@@ -721,16 +716,16 @@ internal object NativeCombinedParticipant {
         val slotPreparation =
             when (
                 val result =
-                    NativeStatusBarSlotReservation.reserveTail(
+                    NativeSlotOrder.reserveTail(
                         iconList = iconList,
                         slot = SLOT,
                     )
             ) {
-                is NativeStatusBarSlotReservation.ReservationResult.Ready ->
+                is NativeSlotOrder.Result.Ready ->
                     result
-                is NativeStatusBarSlotReservation.ReservationResult.Failure ->
+                is NativeSlotOrder.Result.Failure ->
                     return HotReloadAdoptResult.Failure(
-                        "slot-reservation-" + result.result.reason,
+                        "slot-reservation-" + result.reason,
                     )
             }
 
@@ -739,23 +734,23 @@ internal object NativeCombinedParticipant {
                 initializerField.set(holder, creator)
                 slotField.set(holder, SLOT)
                 visibleField.setBoolean(holder, true)
-                NativeParticipantRuntimeAccess.invokeSetIconHolder(
+                NativeParticipantAccess.invokeSetIconHolder(
                     handles = handles,
                     slot = SLOT,
                     holder = holder,
                 )
-                NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) === holder &&
-                    NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null
+                NativeParticipantAccess.iconHolder(handles, SLOT) === holder &&
+                    NativeParticipantAccess.findSlotView(handles.group, SLOT) != null
             }.getOrDefault(false)
         if (!rebound) {
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                NativeParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
                 )
             }
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            NativeParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
@@ -771,9 +766,7 @@ internal object NativeCombinedParticipant {
         failureReason = null
         eventSink?.invoke(
             "nativeCombinedParticipant hotReloadAdopt slot=" + SLOT +
-                " viewReady=true managerEntriesRefreshed=true " +
-                "clearedManagerEntries=" + cleared +
-                "",
+                " clearedManagerEntries=" + cleared,
         )
         return HotReloadAdoptResult.Ready(
             clearedManagerEntries = cleared,
@@ -788,17 +781,17 @@ internal object NativeCombinedParticipant {
         if (!injected) {
             return AttachResult.Failure(failureReason ?: "participant-not-injected")
         }
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = NativeParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return AttachResult.Failure(resolution.reason)
             }
 
         val root =
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) as? FrameLayout
+            NativeParticipantAccess.findSlotView(handles.group, SLOT) as? FrameLayout
                 ?: return AttachResult.Failure("native-root-missing")
         val bindingState =
             bindingStates[root]
@@ -820,7 +813,7 @@ internal object NativeCombinedParticipant {
         val stableSlotMetrics =
             StatusBarStableSession.currentSlotMetrics(host)
         val stableStatusIconsWidth =
-            NativeStatusBarSlotGeometry.resolveCapturedOrLiveChildWidth(
+            NativeSlotGeometry.resolveCapturedOrLiveChildWidth(
                 capturedWidth = stableSlotMetrics?.statusIconsWidth,
                 layoutWidth = statusIcons.width,
                 measuredWidth = statusIcons.measuredWidth,
@@ -829,14 +822,14 @@ internal object NativeCombinedParticipant {
             privacy
                 ?.takeIf { view -> view.visibility == View.VISIBLE }
                 ?.let { view ->
-                    NativeStatusBarSlotGeometry.resolveStableChildWidth(
+                    NativeSlotGeometry.resolveStableChildWidth(
                         layoutWidth = view.width,
                         measuredWidth = view.measuredWidth,
                     )
                 }
                 ?: 0
         val slotGeometry =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth =
                     batteryContainer.width
                         .takeIf { width -> width > 0 }
@@ -1027,7 +1020,7 @@ internal object NativeCombinedParticipant {
             registryRestored = registryRestored,
             rootClass = root.javaClass.name,
             rootVisibility = visibilityName(root.visibility),
-            iconVisible = NativeParticipantRuntimeAccess.iconVisible(root),
+            iconVisible = NativeParticipantAccess.iconVisible(root),
             layoutWidth = root.layoutParams?.width ?: Int.MIN_VALUE,
             layoutHeight = root.layoutParams?.height ?: Int.MIN_VALUE,
             renderWidth = render.measuredWidth,
@@ -1051,24 +1044,19 @@ internal object NativeCombinedParticipant {
         if (update?.model != null && update.candidateComplete) {
             modelReady = true
         }
-        if (
-            update?.model != null &&
-            !modelReadyLogged
-        ) {
+        if (modelReady && !modelReadyLogged) {
             modelReadyLogged = true
             val render = renderViewRef?.get()
             val root = rootRef?.get()
             eventSink?.invoke(
                 "nativeCombinedParticipant rendererReady " +
-                    "modelReady=true" +
-                    " candidateComplete=" + update.candidateComplete +
-                    " render=" +
+                    "render=" +
                     (render?.measuredWidth ?: -1) + "x" +
                     (render?.measuredHeight ?: -1) +
                     " rootVisibility=" +
                     (root?.let { visibilityName(it.visibility) } ?: "none") +
                     " iconVisible=" +
-                    (root?.let { NativeParticipantRuntimeAccess.iconVisible(it) } ?: "none") +
+                    (root?.let { NativeParticipantAccess.iconVisible(it) } ?: "none") +
                     " visible=" + handoffCommitted,
             )
         }
@@ -1109,8 +1097,7 @@ internal object NativeCombinedParticipant {
                 " batteryBounds=" + battery.left + "-" + battery.right +
                 " adjacentGap=" + (battery.left - statusIcons.right) +
                 " rootVisibility=" +
-                (rootRef?.get()?.let { visibilityName(it.visibility) } ?: "none") +
-                " visible=false ",
+                (rootRef?.get()?.let { visibilityName(it.visibility) } ?: "none"),
         )
     }
 
@@ -1214,8 +1201,7 @@ internal object NativeCombinedParticipant {
             if (!suppressionCommitted) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
-                        "source=feature-enabled reason=suppression-transaction-failed " +
-                        "failNative=true ",
+                        "source=feature-enabled reason=suppression-transaction-failed",
                 )
                 return false
             }
@@ -1227,8 +1213,7 @@ internal object NativeCombinedParticipant {
                 requestNativeLayout(root)
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
-                        "source=feature-enabled reason=set-remove-failed " +
-                        "failNative=true ",
+                        "source=feature-enabled reason=set-remove-failed",
                 )
                 return false
             }
@@ -1242,8 +1227,7 @@ internal object NativeCombinedParticipant {
             )
             eventSink?.invoke(
                 "nativeCombinedParticipant handoffResume " +
-                    "source=feature-enabled validated=true " +
-                    "mode=native-remove-lifecycle rootShown=" + root.isShown +
+                    "source=feature-enabled mode=native-remove-lifecycle rootShown=" + root.isShown +
                     " visibilityAuthority=binding+removeFlag" +
                     " nativeRemoveFlag=" + readNativeRemoveFlag(root),
             )
@@ -1439,7 +1423,7 @@ internal object NativeCombinedParticipant {
             if (child === root) {
                 continue
             }
-            val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+            val slot = NativeParticipantAccess.slotOf(child) ?: continue
             if (slot == "wifi" || slot == "mobile" || slot == "stacked_mobile") {
                 tracked += TransitionDiagnosticProbe.TrackedView.create(slot, child)
             }
@@ -1467,8 +1451,7 @@ internal object NativeCombinedParticipant {
             if (wasCommitted && handoffSink?.invoke(false) != true) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant featureGateFail source=" + source +
-                        " reason=native-restore-transaction-failed " +
-                        "failNative=true ",
+                        " reason=native-restore-transaction-failed",
                 )
                 return
             }
@@ -1537,7 +1520,6 @@ internal object NativeCombinedParticipant {
             ) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant featureGate source=" + source +
-                        " enabled=false" +
                         " previousHandoff=" + wasCommitted +
                         " visibilityAuthority=" +
                         (
@@ -1613,8 +1595,7 @@ internal object NativeCombinedParticipant {
                 " tintReady=" + tintReady +
                 " scene=" + currentSurface.name +
                 " mode=" + handoffMode.name +
-                " rootShownBefore=" + root.isShown +
-                " bootstrapVisibilityRelease=true ",
+                " rootShownBefore=" + root.isShown,
         )
 
         val listener =
@@ -1631,7 +1612,7 @@ internal object NativeCombinedParticipant {
                         }
 
                         val iconVisible =
-                            NativeParticipantRuntimeAccess.iconVisible(root) == true
+                            NativeParticipantAccess.iconVisible(root) == true
                         val render = renderViewRef?.get()
                         val battery = batteryRef?.get()
                         val parent = root.parent as? ViewGroup
@@ -1692,8 +1673,7 @@ internal object NativeCombinedParticipant {
                                 requestNativeLayout(root)
                                 eventSink?.invoke(
                                     "nativeCombinedParticipant handoffRollback " +
-                                        "reason=suppression-transaction-failed " +
-                                        "failNative=true ",
+                                        "reason=suppression-transaction-failed",
                                 )
                                 return@synchronized
                             }
@@ -1722,9 +1702,8 @@ internal object NativeCombinedParticipant {
                                     (parent?.clipChildren ?: true) +
                                     " bridge=preserved-native-battery-slot " +
                                     "shellLayoutWidth=" +
-                                    (root.layoutParams?.width ?: Int.MIN_VALUE) + " " +
-                                    "iconVisible=true overlayActive=false " +
-                                    "",
+                                    (root.layoutParams?.width ?: Int.MIN_VALUE) +
+                                    " iconVisible=" + iconVisible,
                             )
                         } else {
                             bindingState.visible = false
@@ -1751,8 +1730,7 @@ internal object NativeCombinedParticipant {
                                     (render?.right ?: Int.MIN_VALUE) +
                                     " parentClipChildren=" +
                                     (parent?.clipChildren ?: true) +
-                                    " bridgeReady=" + bridgeReady +
-                                    " overlayActive=true ",
+                                    " bridgeReady=" + bridgeReady,
                             )
                         }
                         } finally {
@@ -1967,12 +1945,12 @@ internal object NativeCombinedParticipant {
         }.getOrNull()
     }
 
-    private fun resolveCurrentHandles(): NativeParticipantRuntimeAccess.Handles? {
+    private fun resolveCurrentHandles(): NativeParticipantAccess.Handles? {
         val host = hostRef?.get() ?: return null
-        return when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-            is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+        return when (val resolution = NativeParticipantAccess.resolve(host)) {
+            is NativeParticipantAccess.ResolveResult.Ready ->
                 resolution.handles
-            is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+            is NativeParticipantAccess.ResolveResult.Failure ->
                 null
         }
     }

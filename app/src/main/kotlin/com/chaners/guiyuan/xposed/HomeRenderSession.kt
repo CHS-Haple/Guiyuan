@@ -28,18 +28,18 @@ internal object HomeRenderSession {
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
-    ): AttachResult {
+    ): String? {
         val hostView = host as? ViewGroup
-            ?: return AttachResult.Failure("host-not-view-group")
+            ?: return "host-not-view-group"
         val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
-            ?: return AttachResult.Failure("battery-container-missing")
+            ?: return "battery-container-missing"
         val statusIcons = batteryContainer.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
-            ?: return AttachResult.Failure("status-icons-missing")
+            ?: return "status-icons-missing"
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
-            ?: return AttachResult.Failure("battery-view-missing")
+            ?: return "battery-view-missing"
         val batteryCarrier =
             SysUiCarrierMetrics.resolveView(batteryView)
-                ?: return AttachResult.Failure("battery-core-carrier-missing")
+                ?: return "battery-core-carrier-missing"
 
         val existing = current
         if (
@@ -52,7 +52,7 @@ internal object HomeRenderSession {
             ) == true
         ) {
             existing.update(StatusStateStore.snapshot())
-            return AttachResult.Ready
+            return null
         }
 
         existing?.stop()
@@ -75,7 +75,7 @@ internal object HomeRenderSession {
         current = session
         session.start()
         session.update(StatusStateStore.snapshot())
-        return AttachResult.Ready
+        return null
     }
 
     @Synchronized
@@ -723,14 +723,6 @@ internal object HomeRenderSession {
                 bounds.bottom,
             )
         }
-    }
-
-    internal sealed interface AttachResult {
-        data object Ready : AttachResult
-
-        data class Failure(
-            val reason: String,
-        ) : AttachResult
     }
 
     private const val RENDER_OPACITY = 1f

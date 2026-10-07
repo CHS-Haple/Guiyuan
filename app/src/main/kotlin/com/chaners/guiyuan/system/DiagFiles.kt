@@ -109,7 +109,7 @@ internal object DiagFiles {
                 }
 
                 val message =
-                    "prepare transport=mediaStore managed=true scheme=${uri.scheme} " +
+                    "prepare transport=mediaStore scheme=${uri.scheme} " +
                         "authority=${uri.authority} relativePath=$SHARE_PATH $probe"
                 Log.i(LOG_TAG, message)
                 DiagShareStore.append(context, message)

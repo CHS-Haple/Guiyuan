@@ -119,6 +119,8 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 - Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
 - Do not add a type or helper just to name an obvious boolean expression, pass a value through, or wrap a single caller. Keep an abstraction only when it makes the caller simpler or carries a real lifecycle, ownership, compatibility, or domain contract.
 - Do not model an operation as success/failure when it has no real failure source. A failure branch must come from an observable contract, exception, validation result, or other actual runtime outcome; do not manufacture an unreachable failure path for symmetry.
+- Do not stack two `Result`/`State` wrappers around the same outcome. Keep another layer only when it represents a real boundary, rollback owner, transport contract, or independently useful state.
+- Do not split a cohesive operation into `Source`/`Owner`/`Policy`/`Probe`/`Resolver` types merely to make the architecture look uniform. A separate type should earn its boundary through independent lifecycle, reuse, compatibility authority, testable policy, or clear caller simplification.
 - When several fields describe one lifecycle and can form invalid combinations, prefer one explicit state over a wall of `pending/ready/active` booleans. Keep independent facts independent; do not force unrelated flags into a state machine just for symmetry.
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
 - Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.
@@ -134,6 +136,8 @@ Diagnostics should be event-driven and bounded:
 ~~~text
 event -> bounded snapshot -> report
 ~~~
+
+Log state transitions, decisions, failures, and observations that help diagnose real behavior. Do not emit a symmetric success event for every internal branch, duplicate the same fact through both structured and free-form logs without a diagnostic need, or invent a reason-code taxonomy for local control flow that no boundary consumes.
 
 Do not invent diagnostic facts. A field presented as a metric, readiness input, health signal, or observed value must come from a real runtime observation or calculation. Do not hard-code values such as `0`, `true`, or `false` merely to prove that Guiyuan did not write something, then feed that value back into readiness/health checks. If something is only a design invariant, express it in the code structure or a short comment; log it only when there is real evidence worth recording.
 

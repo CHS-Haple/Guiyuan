@@ -1,13 +1,11 @@
 package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CenterTransitionPolicyTest {
     @Test
-    fun mobileTypeChangesStayInTheSamePresentationFamily() {
+    fun sameFamilyChangeSnapsWithoutStartingTransition() {
         val fourG =
             CenterIndicator.MobileType(
                 label = "4G",
@@ -20,35 +18,20 @@ class CenterTransitionPolicyTest {
                 enhanced = false,
                 internet = InternetState.VALIDATED,
             )
-        val fiveGa =
-            CenterIndicator.MobileType(
-                label = "5GA",
-                enhanced = false,
-                internet = InternetState.VALIDATED,
-            )
 
-        assertFalse(CenterTransitionPolicy.shouldAnimate(fourG, fiveG))
-        assertFalse(CenterTransitionPolicy.shouldAnimate(fiveG, fiveGa))
+        assertEquals(
+            CenterTransitionPolicy.Decision.SNAP,
+            CenterTransitionPolicy.decide(
+                previous = fourG,
+                current = fiveG,
+                activeSource = null,
+                transitionRunning = false,
+            ),
+        )
     }
 
     @Test
-    fun wifiDetailChangesStayInTheSamePresentationFamily() {
-        val weak =
-            CenterIndicator.Wifi(
-                segments = 1,
-                internet = InternetState.VALIDATED,
-            )
-        val strongNoInternet =
-            CenterIndicator.Wifi(
-                segments = 3,
-                internet = InternetState.NO_INTERNET,
-            )
-
-        assertFalse(CenterTransitionPolicy.shouldAnimate(weak, strongNoInternet))
-    }
-
-    @Test
-    fun crossFamilyPresentationChangesAnimate() {
+    fun crossFamilyChangeStartsTransition() {
         val mobile =
             CenterIndicator.MobileType(
                 label = "5G",
@@ -61,9 +44,15 @@ class CenterTransitionPolicyTest {
                 internet = InternetState.VALIDATED,
             )
 
-        assertTrue(CenterTransitionPolicy.shouldAnimate(mobile, wifi))
-        assertTrue(CenterTransitionPolicy.shouldAnimate(wifi, CenterIndicator.Airplane))
-        assertTrue(CenterTransitionPolicy.shouldAnimate(CenterIndicator.Airplane, CenterIndicator.Empty))
+        assertEquals(
+            CenterTransitionPolicy.Decision.START,
+            CenterTransitionPolicy.decide(
+                previous = mobile,
+                current = wifi,
+                activeSource = null,
+                transitionRunning = false,
+            ),
+        )
     }
 
     @Test
@@ -145,6 +134,7 @@ class CenterTransitionPolicyTest {
             ),
         )
     }
+
     @Test
     fun noSimIsItsOwnNativeCenterFamily() {
         val noSim =
@@ -159,12 +149,14 @@ class CenterTransitionPolicyTest {
             CenterTransitionPolicy.Family.NO_SIM,
             CenterTransitionPolicy.family(noSim),
         )
-        assertTrue(
-            CenterTransitionPolicy.shouldAnimate(
-                CenterIndicator.Airplane,
-                noSim,
+        assertEquals(
+            CenterTransitionPolicy.Decision.START,
+            CenterTransitionPolicy.decide(
+                previous = CenterIndicator.Airplane,
+                current = noSim,
+                activeSource = null,
+                transitionRunning = false,
             ),
         )
     }
-
 }

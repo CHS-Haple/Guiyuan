@@ -96,13 +96,13 @@ internal object NativeParticipantRuntime {
     @Synchronized
     fun restoreExistingController(host: Any): Boolean {
         val manager =
-            NativeParticipantRuntimeAccess.managerFor(host)
+            NativeParticipantAccess.managerFor(host)
                 ?: return false
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = NativeParticipantAccess.resolve(host)) {
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return false
             }
         if (handles.manager !== manager) {
@@ -224,7 +224,7 @@ internal object NativeParticipantRuntime {
                 return
             }
             val targetManager =
-                NativeParticipantRuntimeAccess.managerFor(hostView)
+                NativeParticipantAccess.managerFor(hostView)
                     ?: return
             if (targetManager !== manager) {
                 return
@@ -234,7 +234,7 @@ internal object NativeParticipantRuntime {
 
         private fun armForController(): Boolean {
             val manager =
-                NativeParticipantRuntimeAccess.managerFor(hostView)
+                NativeParticipantAccess.managerFor(hostView)
             if (
                 manager != null &&
                 controllerFor(manager) != null

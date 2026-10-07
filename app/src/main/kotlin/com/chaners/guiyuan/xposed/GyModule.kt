@@ -523,7 +523,6 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "mode" to generationHandoff,
                 "layoutCommit" to "single-main-thread-turn",
-                "intermediateRequestLayout" to false,
             )
 
             SysUiCcSource.restoreHomeEligibility(
@@ -644,7 +643,7 @@ class GyModule : XposedModule() {
                 isTransitionProbeEnabled = { detailedDiagnosticsEnabled },
                 onSlotOrderResult = { slotOrder ->
                     when (slotOrder) {
-                        is NativeStatusBarSlotReservation.Result.Ready -> {
+                        is NativeSlotOrder.Result.Ready -> {
                             logDiagnostic(
                                 level = Log.INFO,
                                 event = "slot.reserve",
@@ -660,11 +659,10 @@ class GyModule : XposedModule() {
                                 "viewOnlySynced" to slotOrder.viewOnlySynced,
                                 "originalOrderPreserved" to
                                     slotOrder.originalOrderPreserved,
-                                "visible" to false,
                             )
                         }
 
-                        is NativeStatusBarSlotReservation.Result.Failure -> {
+                        is NativeSlotOrder.Result.Failure -> {
                             logDiagnostic(
                                 level = Log.WARN,
                                 event = "slot.reserve",
@@ -673,7 +671,6 @@ class GyModule : XposedModule() {
                                 "source" to source,
                                 "mode" to "controller-pre-init",
                                 "reason" to slotOrder.reason,
-                                "visible" to false,
                             )
                         }
                     }
@@ -687,7 +684,6 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "source" to source,
                 "hooks" to NativeCombinedParticipant.installedHookCount,
-                "visible" to false,
             )
         } else {
             logDiagnostic(
@@ -1064,7 +1060,7 @@ class GyModule : XposedModule() {
             } else {
                 update
             }
-        ControlCenterTransitionOwner.onSourceUpdate(transitionUpdate)
+        CcTransitionOwner.onSourceUpdate(transitionUpdate)
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1072,7 +1068,7 @@ class GyModule : XposedModule() {
             lastBatteryNumberProbeSummary == null
         ) {
             val batteryNumberProbe =
-                ControlCenterTransitionOwner.latestBatteryNumberProbeDiagnostic()
+                CcTransitionOwner.latestBatteryNumberProbeDiagnostic()
             if (batteryNumberProbe != null) {
                 lastBatteryNumberProbeSummary = batteryNumberProbe
                 logDiagnostic(
@@ -1099,12 +1095,12 @@ class GyModule : XposedModule() {
             // for the lifetime of the native fake root; only the Combined
             // overlay visibility changes with Control Center visibility.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
-            ControlCenterRenderSession.setRequestedVisible(false)
+            CcRenderSession.setRequestedVisible(false)
             return null
         }
 
         controlCenterSceneVisible = true
-        if (!ControlCenterRenderSession.beginVisibleCycle()) {
+        if (!CcRenderSession.beginVisibleCycle()) {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
                 level = Log.WARN,
@@ -1157,7 +1153,7 @@ class GyModule : XposedModule() {
         val prepareFailure = prepareCcFake(carrier, "visible-fallback")
         if (prepareFailure == null) {
             val ready =
-                ControlCenterRenderSession.setRequestedVisible(true)
+                CcRenderSession.setRequestedVisible(true)
             if (!ready) {
                 HomeRenderSession.onControlCenterAuthorityChanged(true)
             }
@@ -1189,7 +1185,7 @@ class GyModule : XposedModule() {
             )
         }
         controlCenterSourceScene = sourceScene
-        SysUiPresentationOwner.updateControlCenterSourceScene(sourceScene)
+        SysUiPresentationOwner.updateCcSourceScene(sourceScene)
         acquireKeyguardCcLease(
             source = "source-scene:" + authority,
         )
@@ -1213,8 +1209,8 @@ class GyModule : XposedModule() {
         }
 
         controlCenterSceneEligible = nextEligible
-        ControlCenterRenderSession.setSceneEligible(nextEligible)
-        ControlCenterTransitionOwner.setSceneEligible(nextEligible)
+        CcRenderSession.setSceneEligible(nextEligible)
+        CcTransitionOwner.setSceneEligible(nextEligible)
         logDiagnostic(
             level = Log.INFO,
             event = "scene.eligibility",
@@ -1392,7 +1388,7 @@ class GyModule : XposedModule() {
         transferredCompactReady: Boolean,
     ): String {
         val failure =
-            ControlCenterRenderSession.restoreLaidOutHostAfterHotReload(
+            CcRenderSession.restoreAfterHotReload(
                 host = host,
                 onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1414,8 +1410,8 @@ class GyModule : XposedModule() {
         }
 
         val compactReady =
-            ControlCenterRenderSession
-                .currentNativePresentationReadyForHotReload()
+            CcRenderSession
+                .nativeReadyForHotReload()
         logDiagnostic(
             level = Log.INFO,
             event = "projection.restore",
@@ -1441,14 +1437,14 @@ class GyModule : XposedModule() {
     private fun onCcFakeAttached(host: ViewGroup) {
         when (
             val result =
-                ControlCenterRenderSession.prearmAfterNextNativeLayout(
+                CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
                     onEvent = ::onCcEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 )
         ) {
-            is ControlCenterRenderSession.PrearmResult.Scheduled -> {
+            is CcRenderSession.PrearmResult.Scheduled -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "projection.prearm",
@@ -1461,7 +1457,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is ControlCenterRenderSession.PrearmResult.Failure -> {
+            is CcRenderSession.PrearmResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "projection.prearm",
@@ -1480,7 +1476,7 @@ class GyModule : XposedModule() {
         source: String,
     ): String? {
         val failure =
-            ControlCenterRenderSession.attach(
+            CcRenderSession.attach(
                 host = host,
                 onEvent = ::onCcEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1501,7 +1497,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
-        ControlCenterTransitionOwner.onProjectionReadinessChanged(ready)
+        CcTransitionOwner.onProjectionReadinessChanged(ready)
         if (!controlCenterSceneVisible) {
             return
         }
@@ -1541,16 +1537,16 @@ class GyModule : XposedModule() {
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         safely {
-            SysUiPresentationOwner.updateControlCenterSourceScene(SourceScene.UNKNOWN)
+            SysUiPresentationOwner.updateCcSourceScene(SourceScene.UNKNOWN)
         }
         safely {
-            ControlCenterTransitionOwner.setSceneEligible(false)
+            CcTransitionOwner.setSceneEligible(false)
         }
         safely {
-            ControlCenterTransitionOwner.detach("panel-runtime-failure")
+            CcTransitionOwner.detach("panel-runtime-failure")
         }
         safely {
-            ControlCenterRenderSession.setSceneEligible(false)
+            CcRenderSession.setSceneEligible(false)
         }
         safely {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
@@ -1796,13 +1792,13 @@ class GyModule : XposedModule() {
     ) {
         HomeRenderSession.onState(snapshot, trace)
         KeyguardRenderSession.onState(snapshot)
-        ControlCenterRenderSession.onState(snapshot)
+        CcRenderSession.onState(snapshot)
     }
 
     private fun onPresentationStateChanged(trace: RuntimeRenderTrace? = null) {
         HomeRenderSession.onPresentationStateChanged(trace)
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterRenderSession.onPresentationStateChanged()
+        CcRenderSession.onPresentationStateChanged()
         refreshStatusIconObservation("presentation")
     }
 
@@ -1821,7 +1817,7 @@ class GyModule : XposedModule() {
             state.appliedTint,
         )
         KeyguardRenderSession.onPresentationStateChanged()
-        ControlCenterRenderSession.onPresentationStateChanged()
+        CcRenderSession.onPresentationStateChanged()
 
         if (changed != null) {
             val presentationTrace = markPresentationCommitted(trace)
@@ -1861,7 +1857,7 @@ class GyModule : XposedModule() {
             )
         val resolvedUpdate = update.copy(state = resolvedState)
         HomeRenderSession.onTintUpdate(resolvedUpdate)
-        ControlCenterRenderSession.onTintUpdate(resolvedUpdate)
+        CcRenderSession.onTintUpdate(resolvedUpdate)
         if (detailedDiagnosticsEnabled) {
             log(
                 Log.INFO,
@@ -2894,52 +2890,47 @@ class GyModule : XposedModule() {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         source: String,
     ): Boolean {
-        return when (
-            val result =
-                KeyguardRenderSession.attach(
-                    resolved = resolved,
-                    sceneEligible = true,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
-                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onPresentationReadinessChanged = { ready ->
-                        onKeyguardReadyChanged(
-                            ready = ready,
-                            source = source,
-                        )
-                    },
-                )
-        ) {
-            KeyguardRenderSession.AttachResult.Ready -> {
-                aodRendererAttached = false
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "keyguardRenderer",
-                    state = "ready",
-                    "source" to source,
-                    "rawState" to resolved.rawState,
-                    "aodOwned" to false,
-                )
-                true
-            }
-
-            is KeyguardRenderSession.AttachResult.Failure -> {
-                deactivateKeyguardRuntime("renderer-attach-failed")
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "keyguardRenderer",
-                    state = "unavailable",
-                    "source" to source,
-                    "reason" to result.reason,
-                    "fallback" to "native-keyguard",
-                )
-                false
-            }
+        val failure =
+            KeyguardRenderSession.attach(
+                resolved = resolved,
+                sceneEligible = true,
+                onEvent = { event ->
+                    if (detailedDiagnosticsEnabled) {
+                        log(Log.INFO, TAG, event)
+                    }
+                },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                onPresentationReadinessChanged = { ready ->
+                    onKeyguardReadyChanged(
+                        ready = ready,
+                        source = source,
+                    )
+                },
+            )
+        return if (failure == null) {
+            aodRendererAttached = false
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "keyguardRenderer",
+                state = "ready",
+                "source" to source,
+                "rawState" to resolved.rawState,
+                "aodOwned" to false,
+            )
+            true
+        } else {
+            deactivateKeyguardRuntime("renderer-attach-failed")
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "keyguardRenderer",
+                state = "unavailable",
+                "source" to source,
+                "reason" to failure,
+                "fallback" to "native-keyguard",
+            )
+            false
         }
     }
 
@@ -2947,52 +2938,47 @@ class GyModule : XposedModule() {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         source: String,
     ): Boolean {
-        return when (
-            val result =
-                KeyguardRenderSession.attachAod(
-                    resolved = resolved,
-                    sceneEligible = true,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
-                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onPresentationReadinessChanged = { ready ->
-                        onAodReadyChanged(
-                            ready = ready,
-                            source = source,
-                        )
-                    },
-                )
-        ) {
-            KeyguardRenderSession.AttachResult.Ready -> {
-                aodRendererAttached = true
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "aodRenderer",
-                    state = "ready",
-                    "source" to source,
-                    "rawState" to resolved.rawState,
-                    "aodOwned" to true,
-                )
-                true
-            }
-
-            is KeyguardRenderSession.AttachResult.Failure -> {
-                deactivateAodRuntime("renderer-attach-failed")
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "aodRenderer",
-                    state = "unavailable",
-                    "source" to source,
-                    "reason" to result.reason,
-                    "fallback" to "native-aod",
-                )
-                false
-            }
+        val failure =
+            KeyguardRenderSession.attachAod(
+                resolved = resolved,
+                sceneEligible = true,
+                onEvent = { event ->
+                    if (detailedDiagnosticsEnabled) {
+                        log(Log.INFO, TAG, event)
+                    }
+                },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                onPresentationReadinessChanged = { ready ->
+                    onAodReadyChanged(
+                        ready = ready,
+                        source = source,
+                    )
+                },
+            )
+        return if (failure == null) {
+            aodRendererAttached = true
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "aodRenderer",
+                state = "ready",
+                "source" to source,
+                "rawState" to resolved.rawState,
+                "aodOwned" to true,
+            )
+            true
+        } else {
+            deactivateAodRuntime("renderer-attach-failed")
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "aodRenderer",
+                state = "unavailable",
+                "source" to source,
+                "reason" to failure,
+                "fallback" to "native-aod",
+            )
+            false
         }
     }
 
@@ -3442,8 +3428,8 @@ class GyModule : XposedModule() {
         aodRendererAttached = false
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
-        ControlCenterTransitionOwner.detach("hotReload-oldGeneration")
-        ControlCenterRenderSession.detach(
+        CcTransitionOwner.detach("hotReload-oldGeneration")
+        CcRenderSession.detach(
             source = "hotReload-oldGeneration",
             releaseNativePresentation = !continuousHandoff,
         )
@@ -3561,8 +3547,8 @@ class GyModule : XposedModule() {
         )
         refreshMobilePresentation()
 
-        when (
-            val stableSession = StatusBarStableSession.attach(
+        val stableFailure =
+            StatusBarStableSession.attach(
                 host = host,
                 onEvent = { event ->
                     if (detailedDiagnosticsEnabled) {
@@ -3570,27 +3556,23 @@ class GyModule : XposedModule() {
                     }
                 },
             )
-        ) {
-            StatusBarStableSession.AttachResult.Ready -> {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "session.attach",
-                    component = "stableStatus",
-                    state = "ready",
-                    "source" to source,
-                )
-            }
-
-            is StatusBarStableSession.AttachResult.Failure -> {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "session.attach",
-                    component = "stableStatus",
-                    state = "unavailable",
-                    "reason" to stableSession.reason,
-                    "source" to source,
-                )
-            }
+        if (stableFailure == null) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "session.attach",
+                component = "stableStatus",
+                state = "ready",
+                "source" to source,
+            )
+        } else {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "session.attach",
+                component = "stableStatus",
+                state = "unavailable",
+                "reason" to stableFailure,
+                "source" to source,
+            )
         }
 
         when (
@@ -3645,8 +3627,8 @@ class GyModule : XposedModule() {
                 )
             }
 
-        when (
-            val renderSession = HomeRenderSession.attach(
+        val renderFailure =
+            HomeRenderSession.attach(
                 host = host,
                 onEvent = { event ->
                     if (detailedDiagnosticsEnabled) {
@@ -3662,27 +3644,23 @@ class GyModule : XposedModule() {
                     onHomeReadyChanged(host, ready, source)
                 },
             )
-        ) {
-            HomeRenderSession.AttachResult.Ready -> {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "renderer",
-                    state = "ready",
-                    "source" to source,
-                )
-            }
-
-            is HomeRenderSession.AttachResult.Failure -> {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "renderer",
-                    state = "unavailable",
-                    "reason" to renderSession.reason,
-                    "source" to source,
-                )
-            }
+        if (renderFailure == null) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "renderer",
+                state = "ready",
+                "source" to source,
+            )
+        } else {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "renderer",
+                state = "unavailable",
+                "reason" to renderFailure,
+                "source" to source,
+            )
         }
 
         scheduleNativeSlotProbe(host = host, source = source)
@@ -3984,8 +3962,6 @@ class GyModule : XposedModule() {
                                 state = "blocked",
                                 "source" to source,
                                 "reason" to "master-switch-disabled",
-                                "nativeActive" to false,
-                                "overlayActive" to false,
                                 "networkSuppression" to networkSuppression.summary,
                                 "batterySuppression" to batterySuppression.summary,
                             )
@@ -4006,8 +3982,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "fallback",
                                     "source" to source,
-                                    "nativeActive" to false,
-                                    "overlayActive" to true,
                                     "networkSuppression" to "not-attempted",
                                     "batterySuppression" to batterySuppression.summary,
                                 )
@@ -4044,8 +4018,6 @@ class GyModule : XposedModule() {
                                         component = "nativeCombinedParticipant",
                                         state = "fallback",
                                         "source" to source,
-                                        "nativeActive" to false,
-                                        "overlayActive" to true,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batteryRollback.summary,
                                     )
@@ -4058,8 +4030,6 @@ class GyModule : XposedModule() {
                                         component = "nativeCombinedParticipant",
                                         state = "active",
                                         "source" to source,
-                                        "nativeActive" to true,
-                                        "overlayActive" to false,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batterySuppression.summary,
                                     )
@@ -4081,8 +4051,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "active",
                                     "source" to source,
-                                    "nativeActive" to true,
-                                    "overlayActive" to false,
                                     "networkSuppression" to "kept-active",
                                     "batterySuppression" to batterySuppression.summary,
                                 )
@@ -4099,8 +4067,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "fallback",
                                     "source" to source,
-                                    "nativeActive" to false,
-                                    "overlayActive" to true,
                                     "networkSuppression" to networkSuppression.summary,
                                     "batterySuppression" to batterySuppression.summary,
                                 )
@@ -4118,7 +4084,6 @@ class GyModule : XposedModule() {
                     state = "ready",
                     "source" to source,
                     "slot" to NativeCombinedParticipant.SLOT,
-                    "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
                     "rootVisibility" to nativeCombined.rootVisibility,
@@ -4143,7 +4108,6 @@ class GyModule : XposedModule() {
                     state = "unavailable",
                     "source" to source,
                     "reason" to nativeCombined.reason,
-                    "visible" to false,
                 )
             }
         }
@@ -4286,9 +4250,6 @@ class GyModule : XposedModule() {
                 event = "runtimePreferences.bind",
                 component = "featureSettings",
                 state = "unavailable",
-                "combinedStatusEnabled" to false,
-                "keyguardEnabled" to false,
-                "aodEnabled" to false,
                 "reason" to (error.message ?: error.javaClass.simpleName),
                 "fallback" to "native-systemui",
             )
@@ -4338,7 +4299,7 @@ class GyModule : XposedModule() {
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
-        ControlCenterRenderSession.onFeatureCfgChanged(cfg)
+        CcRenderSession.onFeatureCfgChanged(cfg)
 
         if (!cfg.enabled) {
             releaseFeatureOwnership("feature-disabled")
@@ -4386,9 +4347,9 @@ class GyModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardCcLeaseActive = false
-        ControlCenterRenderSession.setSceneEligible(false)
-        ControlCenterTransitionOwner.setSceneEligible(false)
-        SysUiPresentationOwner.deactivateControlCenter(source)
+        CcRenderSession.setSceneEligible(false)
+        CcTransitionOwner.setSceneEligible(false)
+        SysUiPresentationOwner.deactivateCc(source)
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
@@ -4463,7 +4424,7 @@ class GyModule : XposedModule() {
 
         HomeRenderSession.onVisualCfgChanged(visual)
         KeyguardRenderSession.onVisualCfgChanged(visual)
-        ControlCenterRenderSession.onVisualCfgChanged(visual)
+        CcRenderSession.onVisualCfgChanged(visual)
         SysUiPresentationOwner.onVisualCfgChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
