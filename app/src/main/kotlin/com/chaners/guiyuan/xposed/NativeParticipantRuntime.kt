@@ -8,7 +8,7 @@ import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
 // Owns controller observation and the one pending activation; native geometry stays elsewhere.
-internal object NativeParticipantRuntimeOwner {
+internal object NativeParticipantRuntime {
     private const val CONTROLLER_IMPL =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val ADD_ICON_GROUP = "addIconGroup"

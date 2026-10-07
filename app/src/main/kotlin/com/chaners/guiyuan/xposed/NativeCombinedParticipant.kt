@@ -22,7 +22,7 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.WeakHashMap
 
-internal object NativeCombinedParticipantOwner {
+internal object NativeCombinedParticipant {
     const val SLOT = "combined_status"
 
     private const val CONTROLLER_IMPL =
@@ -1621,7 +1621,7 @@ internal object NativeCombinedParticipantOwner {
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     removePendingPreDraw()
-                    synchronized(this@NativeCombinedParticipantOwner) {
+                    synchronized(this@NativeCombinedParticipant) {
                         try {
                             if (
                             rootRef?.get() !== root ||

@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeNetworkSuppressionPolicy {
+internal object NetworkSuppressionPolicy {
     // Pure suppression/tint decisions stay here; the owner keeps slot identity and View lifecycle.
     fun suppressMobile(
         airplaneMode: Boolean?,

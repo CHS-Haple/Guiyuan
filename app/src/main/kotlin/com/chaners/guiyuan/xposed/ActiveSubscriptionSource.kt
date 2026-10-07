@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.content.Context
 import android.telephony.SubscriptionManager
 
-internal object SystemActiveSubscriptionSource {
+internal object ActiveSubscriptionSource {
     fun current(context: Context): Set<Int>? {
         val manager =
             context.getSystemService(SubscriptionManager::class.java)

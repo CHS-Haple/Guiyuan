@@ -41,6 +41,13 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Home native-AOD fallback is one phase; candidate and active never overlap.
+    private enum class HomeAodFallback {
+        NONE,
+        CANDIDATE,
+        ACTIVE,
+    }
+
     private var islandSourceInstalled = false
     private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
@@ -53,8 +60,7 @@ class GyModule : XposedModule() {
     private var aodWindow: AodWindow? = null
     // Non-null only while Keyguard is taking over the native AOD boundary.
     private var boundaryHandoff: BoundaryHandoff? = null
-    private var homeAodFallbackCandidate = false
-    private var homeAodFallbackActive = false
+    private var homeAodFallback = HomeAodFallback.NONE
     private var homeAodOriginPending = false
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
@@ -101,7 +107,7 @@ class GyModule : XposedModule() {
             return
         }
 
-        val compatibility = SystemUiCompatibilityProbe.inspect(param.classLoader)
+        val compatibility = SysUiCompatibilityProbe.inspect(param.classLoader)
         log(Log.INFO, TAG, compatibility.summary)
         val statusHostAvailable = compatibility.isAvailable("statusHost")
         logDiagnostic(
@@ -206,7 +212,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkRuntime.installedHookCount +
                 SysUiPresentationRuntime.installedHookCount +
                 SysUiPresentationOwner.installedHookCount +
-                NativeNetworkSuppressionOwner.installedHookCount +
+                NativeNetworkSuppressor.installedHookCount +
                 if (islandSourceInstalled) {
                     SysUiIslandSource.HOOK_COUNT
                 } else {
@@ -296,8 +302,7 @@ class GyModule : XposedModule() {
                 ScenePolicy.StableKeyguardAodScene.UNKNOWN
             aodWindow = null
             clearBoundaryHandoff()
-                homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             ccExpansion = 0f
@@ -308,7 +313,7 @@ class GyModule : XposedModule() {
             SysUiPresentationRuntime.resetRuntimeState()
             SysUiKeyguardHostResolver.resetRuntimeState()
             SysUiPresentationOwner.resetRuntimeState("hotReload")
-            NativeNetworkSuppressionOwner.resetRuntimeState("hotReload")
+            NativeNetworkSuppressor.resetRuntimeState("hotReload")
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
@@ -628,7 +633,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeCombinedParticipantOwner.install(
+            NativeCombinedParticipant.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -681,7 +686,7 @@ class GyModule : XposedModule() {
                 component = "nativeCombinedParticipant",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeCombinedParticipantOwner.installedHookCount,
+                "hooks" to NativeCombinedParticipant.installedHookCount,
                 "visible" to false,
             )
         } else {
@@ -701,7 +706,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeNetworkSuppressionOwner.install(
+            NativeNetworkSuppressor.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -729,7 +734,7 @@ class GyModule : XposedModule() {
                 component = "nativeNetworkSuppression",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeNetworkSuppressionOwner.installedHookCount,
+                "hooks" to NativeNetworkSuppressor.installedHookCount,
             )
         } else {
             logDiagnostic(
@@ -748,7 +753,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeBatterySuppressionOwner.install(
+            NativeBatterySuppressor.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -757,7 +762,7 @@ class GyModule : XposedModule() {
                     }
                 },
                 onNativeLayoutHideChanged = { hidden ->
-                    NativeCombinedParticipantOwner
+                    NativeCombinedParticipant
                         .onNativeBatteryLayoutHideChanged(hidden)
                 },
             )
@@ -768,7 +773,7 @@ class GyModule : XposedModule() {
                 component = "nativeBatterySuppression",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeBatterySuppressionOwner.installedHookCount,
+                "hooks" to NativeBatterySuppressor.installedHookCount,
                 "contract" to
                     "MiuiStatusBatteryContainer.setIsHideBattery(Boolean):native-layout-authority+visual-mask",
             )
@@ -789,7 +794,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeParticipantRuntimeOwner.installControllerObserver(
+            NativeParticipantRuntime.installControllerObserver(
                 module = this,
                 classLoader = classLoader,
                 onEvent = { event ->
@@ -805,7 +810,7 @@ class GyModule : XposedModule() {
                 component = "nativeParticipantControllerObserver",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeParticipantRuntimeOwner.installedHookCount,
+                "hooks" to NativeParticipantRuntime.installedHookCount,
             )
         } else {
             logDiagnostic(
@@ -857,7 +862,7 @@ class GyModule : XposedModule() {
                     }
                 },
                 onMobileSignalWillApply = { image ->
-                    NativeNetworkSuppressionOwner.preMaskMobileSignal(image)
+                    NativeNetworkSuppressor.preMaskMobileSignal(image)
                 },
                 onPresentationChanged = {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
@@ -1601,13 +1606,14 @@ class GyModule : XposedModule() {
                         null
                     },
             )
-        }.onSuccess { result ->
+        }.onSuccess { hooks ->
+            val ready = hooks == SysUiBatterySource.HOOK_COUNT
             logDiagnostic(
-                level = if (result.ready) Log.INFO else Log.WARN,
+                level = if (ready) Log.INFO else Log.WARN,
                 event = "source.install",
                 component = "batteryState",
-                state = if (result.ready) "ready" else "partial",
-                "hooks" to result.hooks,
+                state = if (ready) "ready" else "partial",
+                "hooks" to hooks,
                 "expectedHooks" to SysUiBatterySource.HOOK_COUNT,
                 "source" to source,
                 "authority" to
@@ -1801,7 +1807,7 @@ class GyModule : XposedModule() {
     }
 
     private fun refreshStatusIconObservation(source: String) {
-        NativeNetworkSuppressionOwner.refreshObservation(source)
+        NativeNetworkSuppressor.refreshObservation(source)
     }
 
     private fun onStatusPresentationChanged(
@@ -1847,7 +1853,7 @@ class GyModule : XposedModule() {
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
-            NativeNetworkSuppressionOwner.currentAppliedStatusIconTint()
+            NativeNetworkSuppressor.currentAppliedStatusIconTint()
         val resolvedState =
             TintAuthority.resolveBatteryEvent(
                 batteryState = update.state,
@@ -1903,7 +1909,7 @@ class GyModule : XposedModule() {
                 homeCarrierPresentationVisible = homeCarrierVisibleAtStart,
             )
         ) {
-            homeAodFallbackCandidate = true
+            homeAodFallback = HomeAodFallback.CANDIDATE
         }
         homeAodOriginPending =
             settings.enabled &&
@@ -1936,8 +1942,8 @@ class GyModule : XposedModule() {
                     "status-icons-alpha-fallback"
                 },
             "homeOriginLatched" to homeAodOriginPending,
-            "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-            "homeNativeAodFallbackActive" to homeAodFallbackActive,
+            "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+            "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
             "homePresentationOwnedAtStart" to homeOwnedAtStart,
             "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
         )
@@ -1967,10 +1973,11 @@ class GyModule : XposedModule() {
             homeAodTargetPrearmPending = false
         }
         if (target == true) {
-            homeAodFallbackActive = false
+            if (homeAodFallback == HomeAodFallback.ACTIVE) {
+                homeAodFallback = HomeAodFallback.NONE
+            }
         } else if (target == null) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
 
         logDiagnostic(
@@ -1987,8 +1994,8 @@ class GyModule : XposedModule() {
             "authority" to "native-mToLockScreen",
             "visualBoundaryPending" to (aodWindow?.boundaryPending == true),
             "homeOriginLatched" to homeAodOriginPending,
-            "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-            "homeNativeAodFallbackActive" to homeAodFallbackActive,
+            "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+            "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
         )
 
         val releaseTransientHomeKeyguard =
@@ -1997,13 +2004,12 @@ class GyModule : XposedModule() {
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
                 homeNativeAodFallbackCandidate =
-                    homeAodFallbackCandidate,
+                    (homeAodFallback == HomeAodFallback.CANDIDATE),
                 homePresentationOwnedAtFullAodStart = homeOwnedAtStart,
                 nativeToLockScreenTarget = target,
             )
         if (releaseTransientHomeKeyguard) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = true
+            homeAodFallback = HomeAodFallback.ACTIVE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             clearBoundaryHandoff()
@@ -2064,8 +2070,7 @@ class GyModule : XposedModule() {
                             is AodWindow.Waiting -> null
                             null -> null
                         }
-                    homeAodFallbackCandidate = false
-                    homeAodFallbackActive = false
+                    homeAodFallback = HomeAodFallback.NONE
                     homeAodOriginPending = false
                     homeAodTargetPrearmPending = false
                     return
@@ -2166,7 +2171,7 @@ class GyModule : XposedModule() {
                 aodEnabled = settings.aod,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget = nativeToLockScreenTarget,
-                homeNativeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         if (!eligible) return false
 
@@ -2199,7 +2204,7 @@ class GyModule : XposedModule() {
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
-                homeNativeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         boundaryHandoff =
             BoundaryHandoff(
@@ -2242,14 +2247,14 @@ class GyModule : XposedModule() {
             val result =
                 SysUiPresentationOwner.commitKeyguardDeferredLayoutOwnership()
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 onBoundaryPrelayoutReady(
                     result = result,
                     source = source + ":precommit-ready",
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(true)
                 logDiagnostic(
@@ -2264,19 +2269,19 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 onKeyguardRuntimeFailure(result.reason)
                 deactivateKeyguardRuntime("boundary-prelayout-commit-failed")
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> {
+            is SysUiPresentationOwner.Result.Inactive -> {
                 deactivateKeyguardRuntime("boundary-prelayout-session-missing")
             }
         }
     }
 
     private fun onBoundaryPrelayoutReady(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val handoff = boundaryHandoff
@@ -2361,7 +2366,7 @@ class GyModule : XposedModule() {
             val result =
                 SysUiPresentationOwner.commitKeyguardDeferredLayoutOwnership()
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 completeKeyguardCutover(
                     result = result,
                     source = source + ":compact-ready",
@@ -2369,7 +2374,7 @@ class GyModule : XposedModule() {
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
@@ -2386,13 +2391,13 @@ class GyModule : XposedModule() {
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 onKeyguardRuntimeFailure(result.reason)
                 deactivateKeyguardRuntime("boundary-layout-commit-failed")
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> {
+            is SysUiPresentationOwner.Result.Inactive -> {
                 deactivateKeyguardRuntime("boundary-layout-session-missing")
                 true
             }
@@ -2482,7 +2487,7 @@ class GyModule : XposedModule() {
         val settings = FeaturePrefsOwner.current()
         val activateHomeNativeAodFallback =
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
-                candidateActive = homeAodFallbackCandidate,
+                candidateActive = (homeAodFallback == HomeAodFallback.CANDIDATE),
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
@@ -2490,8 +2495,7 @@ class GyModule : XposedModule() {
                 isAodAnimate = update.isAodAnimate,
             )
         if (activateHomeNativeAodFallback) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = true
+            homeAodFallback = HomeAodFallback.ACTIVE
             clearBoundaryHandoff()
             deactivateKeyguardRuntime("home-aod-disabled-native-transition")
             logDiagnostic(
@@ -2512,8 +2516,7 @@ class GyModule : XposedModule() {
                 isAodAnimate = update.isAodAnimate,
             )
         if (aodWindow !is AodWindow.Running && stableAod) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             if (boundaryHandoff != null) {
@@ -2528,8 +2531,7 @@ class GyModule : XposedModule() {
             !update.toAod &&
             steadyStatusSourceScene == SourceScene.KEYGUARD
         ) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
         if (update.blocksProjection) {
             releaseKeyguardCcLease(
@@ -2575,8 +2577,8 @@ class GyModule : XposedModule() {
                         null -> "none"
                     },
                 "homeOriginLatched" to homeAodOriginPending,
-                "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-                "homeNativeAodFallbackActive" to homeAodFallbackActive,
+                "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+                "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         }
     }
@@ -2597,7 +2599,9 @@ class GyModule : XposedModule() {
         }
         if (sourceScene == SourceScene.HOME) {
             if (aodWindow !is AodWindow.Running) {
-                homeAodFallbackActive = false
+                if (homeAodFallback == HomeAodFallback.ACTIVE) {
+                    homeAodFallback = HomeAodFallback.NONE
+                }
             }
             // UNLOCKED_STATUS_BAR + Home ancestry is the authoritative unlock
             // boundary. A Keyguard Control Center lease must never outlive it:
@@ -2778,7 +2782,7 @@ class GyModule : XposedModule() {
             fullAodVisualBoundary = fullAodVisualBoundary,
             homeAodTransitionOrigin = homeAodOriginPending,
             homeAodTargetPrearm = homeAodTargetPrearmPending,
-            homeNativeAodFallbackActive = homeAodFallbackActive,
+            homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
         )
     }
 
@@ -3078,7 +3082,7 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 if (visualOnlyBoundary && boundaryHandoff?.precommit == true) {
                     onBoundaryPrelayoutReady(
                         result = result,
@@ -3092,7 +3096,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 if (visualOnlyBoundary && boundaryHandoff?.precommit == true) {
                     keyguardRuntimeReady = false
                     KeyguardRenderSession.setNativeHandoffActive(true)
@@ -3136,7 +3140,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivateKeyguard("activation-failed")
@@ -3152,7 +3156,7 @@ class GyModule : XposedModule() {
                 refreshCcSourceEligibility("keyguard-activation-failed")
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
@@ -3165,7 +3169,7 @@ class GyModule : XposedModule() {
     }
 
     private fun completeKeyguardCutover(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val settings = FeaturePrefsOwner.current()
@@ -3290,14 +3294,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 completeAodCutover(
                     result = result,
                     source = source,
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 KeyguardRenderSession.setAodNativeHandoffActive(true)
                 logDiagnostic(
                     level = Log.INFO,
@@ -3318,7 +3322,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 KeyguardRenderSession.setAodNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivateAod("activation-failed")
                 logDiagnostic(
@@ -3332,7 +3336,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
@@ -3342,7 +3346,7 @@ class GyModule : XposedModule() {
     }
 
     private fun completeAodCutover(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val settings = FeaturePrefsOwner.current()
@@ -3451,7 +3455,7 @@ class GyModule : XposedModule() {
                 requestLayout =
                     !continuousHandoff,
             )
-        NativeNetworkSuppressionOwner.deactivate("hotReload-oldGeneration")
+        NativeNetworkSuppressor.deactivate("hotReload-oldGeneration")
         StatusBarStableSession.detach()
         SysUiCoreRuntime.detach()
         SysUiPresentationRuntime.resetRuntimeState()
@@ -3591,12 +3595,12 @@ class GyModule : XposedModule() {
 
         when (
             val observation =
-                NativeNetworkSuppressionOwner.attachObserver(
+                NativeNetworkSuppressor.attachObserver(
                     host = host,
                     source = source,
                 )
         ) {
-            is NativeNetworkSuppressionOwner.StateResult.Active -> {
+            is NativeNetworkSuppressor.Result.Active -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3606,7 +3610,7 @@ class GyModule : XposedModule() {
                     "mode" to "observation-only",
                 )
             }
-            is NativeNetworkSuppressionOwner.StateResult.Pending -> {
+            is NativeNetworkSuppressor.Result.Pending -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3617,7 +3621,7 @@ class GyModule : XposedModule() {
                     "trigger" to "home-dark-icon-manager-registration",
                 )
             }
-            is NativeNetworkSuppressionOwner.StateResult.Failure -> {
+            is NativeNetworkSuppressor.Result.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "source.attach",
@@ -3628,7 +3632,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is NativeNetworkSuppressionOwner.StateResult.Inactive -> Unit
+            is NativeNetworkSuppressor.Result.Inactive -> Unit
         }
 
         val rendererInitialTintState =
@@ -3636,7 +3640,7 @@ class GyModule : XposedModule() {
                 TintAuthority.rebaseTransferred(
                     transferred = transferred,
                     liveStatusIconTint =
-                        NativeNetworkSuppressionOwner
+                        NativeNetworkSuppressor
                             .currentAppliedStatusIconTint(),
                 )
             }
@@ -3709,7 +3713,7 @@ class GyModule : XposedModule() {
         }
 
         when (val result = SysUiPresentationOwner.activate(host)) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 HomeRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
                     level = Log.INFO,
@@ -3722,7 +3726,7 @@ class GyModule : XposedModule() {
                     "islandMotion" to "inherited-from-system_icon_area",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 HomeRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivate("unexpected-prepared")
                 logDiagnostic(
@@ -3735,7 +3739,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 HomeRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivate("activation-failed")
                 logDiagnostic(
@@ -3748,7 +3752,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
@@ -3769,7 +3773,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeParticipantRuntimeOwner.schedule(
+            NativeParticipantRuntime.schedule(
                 host = host,
                 onReady = { readyHost ->
                     attachCombinedParticipant(
@@ -3952,7 +3956,7 @@ class GyModule : XposedModule() {
     ) {
         when (
             val nativeCombined =
-                NativeCombinedParticipantOwner.attachHidden(
+                NativeCombinedParticipant.attachHidden(
                     host = host,
                     onHandoffStateChanged = { active ->
                         val presentation =
@@ -3965,11 +3969,11 @@ class GyModule : XposedModule() {
                             !FeaturePrefsOwner.current().enabled
                         ) {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressor.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
                             val networkSuppression =
-                                NativeNetworkSuppressionOwner.deactivate(
+                                NativeNetworkSuppressor.deactivate(
                                     "feature-disabled-native-handoff",
                                 )
                             HomeRenderSession.setNativeHandoffActive(false)
@@ -3988,13 +3992,13 @@ class GyModule : XposedModule() {
                             false
                         } else if (active) {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.activate(
+                                NativeBatterySuppressor.activate(
                                     host = host,
                                     source = "native-handoff:" + source,
                                 )
                             if (
                                 batterySuppression is
-                                    NativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressor.Result.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4010,7 +4014,7 @@ class GyModule : XposedModule() {
                                 false
                             } else {
                                 val networkSuppression =
-                                    NativeNetworkSuppressionOwner.activate(
+                                    NativeNetworkSuppressor.activate(
                                         host = host,
                                         suppressWifi =
                                             SysUiNetworkRuntime.wifiReady &&
@@ -4020,7 +4024,7 @@ class GyModule : XposedModule() {
                                                         connectivity = presentation.connectivity,
                                                     ),
                                         suppressMobile =
-                                            NativeNetworkSuppressionPolicy.suppressMobile(
+                                            NetworkSuppressionPolicy.suppressMobile(
                                                 airplaneMode = state.airplaneMode,
                                                 presentation = presentation.mobilePresentation,
                                                 wasSuppressed = false,
@@ -4028,10 +4032,10 @@ class GyModule : XposedModule() {
                                     )
                                 if (
                                     networkSuppression is
-                                        NativeNetworkSuppressionOwner.StateResult.Failure
+                                        NativeNetworkSuppressor.Result.Failure
                                 ) {
                                     val batteryRollback =
-                                        NativeBatterySuppressionOwner.deactivate(
+                                        NativeBatterySuppressor.deactivate(
                                             "native-handoff-rollback",
                                         )
                                     logDiagnostic(
@@ -4044,16 +4048,6 @@ class GyModule : XposedModule() {
                                         "overlayActive" to true,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batteryRollback.summary,
-                                        "nativeGeometryWrites" to
-                                            if (
-                                                batteryRollback is
-                                                    NativeBatterySuppressionOwner.StateResult.Inactive &&
-                                                batteryRollback.changed
-                                            ) {
-                                                1
-                                            } else {
-                                                0
-                                            },
                                     )
                                     false
                                 } else {
@@ -4068,28 +4062,18 @@ class GyModule : XposedModule() {
                                         "overlayActive" to false,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batterySuppression.summary,
-                                        "nativeGeometryWrites" to
-                                            if (
-                                                batterySuppression is
-                                                    NativeBatterySuppressionOwner.StateResult.Active &&
-                                                batterySuppression.changed
-                                            ) {
-                                                1
-                                            } else {
-                                                0
-                                            },
                                     )
                                     true
                                 }
                             }
                         } else {
                             val batterySuppression =
-                                NativeBatterySuppressionOwner.deactivate(
+                                NativeBatterySuppressor.deactivate(
                                     "native-handoff-fallback",
                                 )
                             if (
                                 batterySuppression is
-                                    NativeBatterySuppressionOwner.StateResult.Failure
+                                    NativeBatterySuppressor.Result.Failure
                             ) {
                                 logDiagnostic(
                                     level = Log.WARN,
@@ -4105,7 +4089,7 @@ class GyModule : XposedModule() {
                                 false
                             } else {
                                 val networkSuppression =
-                                    NativeNetworkSuppressionOwner.deactivate(
+                                    NativeNetworkSuppressor.deactivate(
                                         "native-handoff-fallback",
                                     )
                                 HomeRenderSession.setNativeHandoffActive(false)
@@ -4119,16 +4103,6 @@ class GyModule : XposedModule() {
                                     "overlayActive" to true,
                                     "networkSuppression" to networkSuppression.summary,
                                     "batterySuppression" to batterySuppression.summary,
-                                    "nativeGeometryWrites" to
-                                        if (
-                                            batterySuppression is
-                                                NativeBatterySuppressionOwner.StateResult.Inactive &&
-                                            batterySuppression.changed
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
                                 )
                                 true
                             }
@@ -4136,14 +4110,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is NativeCombinedParticipantOwner.AttachResult.Ready -> {
+            is NativeCombinedParticipant.AttachResult.Ready -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "participant.attach",
                     component = "nativeCombinedParticipant",
                     state = "ready",
                     "source" to source,
-                    "slot" to NativeCombinedParticipantOwner.SLOT,
+                    "slot" to NativeCombinedParticipant.SLOT,
                     "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
@@ -4161,7 +4135,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is NativeCombinedParticipantOwner.AttachResult.Failure -> {
+            is NativeCombinedParticipant.AttachResult.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "participant.attach",
@@ -4193,7 +4167,7 @@ class GyModule : XposedModule() {
 
 
 
-        SystemUiNativeStatusInventory.schedule(host) { snapshot ->
+        NativeStatusInventory.schedule(host) { snapshot ->
             log(Log.INFO, TAG, snapshot.summary)
             log(Log.INFO, TAG, snapshot.hostLine)
             snapshot.entries.forEach { entry ->
@@ -4354,14 +4328,13 @@ class GyModule : XposedModule() {
             return
         }
 
-        NativeCombinedParticipantOwner.onFeatureCfgChanged(cfg)
+        NativeCombinedParticipant.onFeatureCfgChanged(cfg)
         if (
             !cfg.enabled ||
             !cfg.keyguard ||
             cfg.aod
         ) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
@@ -4408,8 +4381,7 @@ class GyModule : XposedModule() {
     private fun releaseFeatureOwnership(source: String) {
         aodWindow = null
         clearBoundaryHandoff()
-        homeAodFallbackCandidate = false
-        homeAodFallbackActive = false
+        homeAodFallback = HomeAodFallback.NONE
         homeAodOriginPending = false
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
@@ -4420,8 +4392,8 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        NativeBatterySuppressionOwner.deactivate(source)
-        NativeNetworkSuppressionOwner.deactivate(source)
+        NativeBatterySuppressor.deactivate(source)
+        NativeNetworkSuppressor.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
     }
 

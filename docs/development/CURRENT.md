@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `8cf504c1`, with #248/#249 runtime-plumbing maintenance and #250 coverage-gap audit merged. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `fa0e32c5`, with #248-#251 maintenance and documentation closeout merged. Runtime behavior and Build identity remain unchanged; `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,19 +24,28 @@
 
 ## Active objective
 
-The maintainability coverage-gap audit is closed.
+A bounded residual runtime-plumbing cleanup is active on `refactor/runtime-plumbing-residuals`, based on accepted `dev@fa0e32c5`.
 
-PR #250 was reviewed against accepted `dev@50f5aa2`, passed exact-head Runtime CI #2883, and was squash-merged to `dev` as `8cf504c1`. Integrated `dev` validation #2884 then passed the signed Canary path, including target-profile verification, unit tests, APK build, Modern Xposed metadata, Haple signature and non-debuggable checks.
+The pass targets only concrete maintainability residue left after #248/#250 rather than reopening a broad cleanup. Current branch changes:
 
-The audit used #217 and #228-#248 changed-files plus intervening merged feature/fix work to identify only genuinely uncovered or invalidated areas. It found three bounded issues: an unused active-subscription result shell, unconditional `ready` wording in a compatibility summary, and one self-proof duplicate geometry test. Caller-level review excluded the remaining candidates where their complexity or abstraction carried a real process, transition, optical-geometry, protocol or runtime-observation contract.
+- remove remaining synthetic/self-proof handoff write reporting and an unreachable battery restore failure branch;
+- keep Battery/Network suppression results state-only while retaining real detailed observations at the operation site;
+- fold two tiny Battery geometry Policy files into one cohesive geometry helper;
+- remove the generic `PresentationPolicy` shell and keep stable-model/tint rules with their actual owners/domain type;
+- replace the mutually exclusive Home native-AOD fallback booleans with one explicit `NONE / CANDIDATE / ACTIVE` phase;
+- shorten internal names where scope already carries the missing context, including native suppressors/participant runtime, active-subscription source, native-status inventory, Wi-Fi optical reference and `SysUi` compatibility/parser types;
+- rename the private ignored-slot lifetime enum to the shorter `IgnoreScope.CALL / SESSION`;
+- add a CONTRIBUTING rule forbidding success/failure contracts when no real failure source exists.
 
-No device validation is required: no renderer, geometry, Hook, ownership, transition timing or fail-native behavior changed, and both exact-head and integrated-dev automated validation passed.
+Review deliberately keeps independent Home-AOD prearm/origin facts and Keyguard readiness/lease facts as separate booleans. It also keeps larger transition, slot-reservation, runtime-access and install-result types where they carry real domain, lifecycle, partial-readiness or fail-native contracts.
+
+Pre-PR source review caught and fixed one malformed Boolean-to-enum replacement and restored an accidental file-mode change before validation. No display-version, Build, dependency, Hook-count contract, geometry constant, transition clock or native writer change is intended.
 
 Current priorities:
 
-1. start the next coherent task from current `dev@8cf504c1`;
-2. do not reopen the coverage-gap audit just to chase shorter names, fewer classes, zero warnings or stylistic uniformity;
-3. continue treating synthetic metrics / fixed self-proof diagnostics as high-priority defects if newly introduced;
+1. finish exact-head Runtime validation for the current branch;
+2. merge to `dev` only if target-profile checks, Kotlin compilation, unit tests and APK/metadata checks are green;
+3. require device testing only if validation or review leaves a real device-only runtime question;
 4. keep `main` unchanged until a separate dev-to-main promotion is explicitly chosen.
 
 ## Non-negotiable bounds
@@ -51,8 +60,8 @@ Current priorities:
 
 ## Immediate next
 
-- Treat Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Use accepted `dev@8cf504c1` as the integration base; #250 is merged and its maintainability coverage-gap audit is closed.
-- Do not reopen the rejected alpha-layer experiment or continue runtime-plumbing cleanup without a concrete maintenance or compatibility problem.
+- Keep Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
+- Use accepted `dev@fa0e32c5` as the integration base until this residual-plumbing PR is accepted.
+- Do not expand this pass into a broad rename or abstraction purge; the remaining longer names and independent booleans were reviewed and retained where they carry real meaning.
 - Keep comments concise and natural; explain lifecycle or platform constraints, not obvious code.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.

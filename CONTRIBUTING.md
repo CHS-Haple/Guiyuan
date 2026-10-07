@@ -118,6 +118,7 @@ Optimize for the next human maintainer. Prefer the clearest concise name or stru
 ### Refactor discipline
 - Maintainability refactors are behavior-neutral by default. A behavior change should be isolated and reviewed as a behavior change rather than hidden inside cleanup.
 - Do not add a type or helper just to name an obvious boolean expression, pass a value through, or wrap a single caller. Keep an abstraction only when it makes the caller simpler or carries a real lifecycle, ownership, compatibility, or domain contract.
+- Do not model an operation as success/failure when it has no real failure source. A failure branch must come from an observable contract, exception, validation result, or other actual runtime outcome; do not manufacture an unreachable failure path for symmetry.
 - When several fields describe one lifecycle and can form invalid combinations, prefer one explicit state over a wall of `pending/ready/active` booleans. Keep independent facts independent; do not force unrelated flags into a state machine just for symmetry.
 - Work in coherent, reviewable batches: large enough to keep related type/file/test changes together, but not so large that a reviewer cannot reason about the base→HEAD diff.
 - Keep adjacent behavior-neutral cleanup with the same review and validation boundary in one branch/PR when it remains easy to review. Do not split one cleanup objective into serial rename-only PRs merely to checkpoint progress.

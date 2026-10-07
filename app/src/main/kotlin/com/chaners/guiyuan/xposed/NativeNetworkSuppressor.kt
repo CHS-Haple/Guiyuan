@@ -12,7 +12,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object NativeNetworkSuppressionOwner {
+internal object NativeNetworkSuppressor {
     private const val WIFI_BINDING_CLASS =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
     private const val MOBILE_BINDING_CLASS =
@@ -267,10 +267,10 @@ internal object NativeNetworkSuppressionOwner {
     fun attachObserver(
         host: Any,
         source: String = "observerAttach",
-    ): StateResult {
+    ): Result {
         val hostView =
             host as? View
-                ?: return StateResult.Failure("host-not-view")
+                ?: return Result.Failure("host-not-view")
         val manager =
             NativeParticipantRuntimeAccess.managerFor(hostView)
                 ?: run {
@@ -280,15 +280,15 @@ internal object NativeNetworkSuppressionOwner {
                     // authoritative StatusBarIconControllerImpl.addIconGroup registration.
                     pendingObservationHost = WeakReference(hostView)
                     pendingObservationSource = source
-                    return StateResult.Pending("home-dark-icon-manager-registration")
+                    return Result.Pending("home-dark-icon-manager-registration")
                 }
         pendingObservationHost = null
         pendingObservationSource = null
         val group =
             NativeParticipantRuntimeAccess.groupFor(hostView)
-                ?: return StateResult.Failure("status-icon-group-missing")
+                ?: return Result.Failure("status-icon-group-missing")
         if (manager.javaClass.name != HOME_MANAGER_CLASS) {
-            return StateResult.Failure("home-manager-mismatch")
+            return Result.Failure("home-manager-mismatch")
         }
 
         if (
@@ -318,13 +318,7 @@ internal object NativeNetworkSuppressionOwner {
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name,
         )
-        return StateResult.Active(
-            bindings = 0,
-            slots = emptyList(),
-            wifiSuppressed = false,
-            mobileSuppressed = false,
-            mobileVisualMasks = 0,
-        )
+        return Result.Active
     }
 
     @Synchronized
@@ -339,9 +333,9 @@ internal object NativeNetworkSuppressionOwner {
         host: Any,
         suppressWifi: Boolean,
         suppressMobile: Boolean,
-    ): StateResult {
+    ): Result {
         if (installedHandles.size != EXPECTED_HOOK_COUNT) {
-            return StateResult.Failure("hooks-not-ready")
+            return Result.Failure("hooks-not-ready")
         }
 
         val handles =
@@ -349,11 +343,11 @@ internal object NativeNetworkSuppressionOwner {
                 is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
                     resolution.handles
                 is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
-                    return StateResult.Failure(resolution.reason)
+                    return Result.Failure(resolution.reason)
             }
 
         if (handles.manager.javaClass.name != HOME_MANAGER_CLASS) {
-            return StateResult.Failure("home-manager-mismatch")
+            return Result.Failure("home-manager-mismatch")
         }
 
         activeManager = handles.manager
@@ -367,17 +361,11 @@ internal object NativeNetworkSuppressionOwner {
         val snapshot = refreshBindingsLocked("handoff")
         if (snapshot.failureReason != null) {
             clearSessionLocked(requestLayout = true)
-            return StateResult.Failure(snapshot.failureReason)
+            return Result.Failure(snapshot.failureReason)
         }
 
         eventSink?.invoke(snapshot.logLine)
-        return StateResult.Active(
-            bindings = snapshot.bindingCount,
-            slots = snapshot.slots,
-            wifiSuppressed = snapshot.wifiSuppressed,
-            mobileSuppressed = snapshot.mobileSuppressed,
-            mobileVisualMasks = snapshot.mobileVisualMaskCount,
-        )
+        return Result.Active
     }
 
     @Synchronized
@@ -386,7 +374,7 @@ internal object NativeNetworkSuppressionOwner {
         suppressMobile: Boolean,
         source: String,
         forceRevalidate: Boolean = false,
-    ): StateResult? {
+    ): Result? {
         val policyChanged =
             wifiSuppressionEnabled != suppressWifi ||
                 mobileSuppressionEnabled != suppressMobile
@@ -405,21 +393,15 @@ internal object NativeNetworkSuppressionOwner {
         val snapshot = refreshBindingsLocked(source)
         if (snapshot.failureReason != null) {
             clearSessionLocked(requestLayout = true)
-            return StateResult.Failure(snapshot.failureReason)
+            return Result.Failure(snapshot.failureReason)
         }
 
         eventSink?.invoke(snapshot.logLine)
-        return StateResult.Active(
-            bindings = snapshot.bindingCount,
-            slots = snapshot.slots,
-            wifiSuppressed = snapshot.wifiSuppressed,
-            mobileSuppressed = snapshot.mobileSuppressed,
-            mobileVisualMasks = snapshot.mobileVisualMaskCount,
-        )
+        return Result.Active
     }
 
     @Synchronized
-    fun deactivate(source: String): StateResult {
+    fun deactivate(source: String): Result {
         pendingObservationHost = null
         pendingObservationSource = null
         val group = activeGroup?.get()
@@ -437,7 +419,7 @@ internal object NativeNetworkSuppressionOwner {
                     " restoredMobileVisualMasks=" + restoredVisualMasks,
             )
         }
-        return StateResult.Inactive(previousCount)
+        return Result.Inactive
     }
 
     @Synchronized
@@ -536,7 +518,7 @@ internal object NativeNetworkSuppressionOwner {
                                     source = pendingSource ?: "homeManagerRegistered",
                                 )
                         ) {
-                            is StateResult.Active -> {
+                            is Result.Active -> {
                                 observationAttachedSink?.invoke(
                                     pendingSource ?: "homeManagerRegistered",
                                 )
@@ -546,14 +528,14 @@ internal object NativeNetworkSuppressionOwner {
                                         " trigger=homeManagerRegistered",
                                 )
                             }
-                            is StateResult.Failure ->
+                            is Result.Failure ->
                                 eventSink?.invoke(
                                     "statusIconObservation unavailable " +
                                         "source=" + (pendingSource ?: "homeManagerRegistered") +
                                         " reason=" + state.reason,
                                 )
-                            is StateResult.Pending,
-                            is StateResult.Inactive,
+                            is Result.Pending,
+                            is Result.Inactive,
                             -> Unit
                         }
                     }
@@ -923,7 +905,7 @@ internal object NativeNetworkSuppressionOwner {
             )
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
-        return NativeNetworkSuppressionPolicy.statusIconTint(
+        return NetworkSuppressionPolicy.statusIconTint(
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
             managerFallbackTint = managerFallbackTint,
@@ -963,7 +945,7 @@ internal object NativeNetworkSuppressionOwner {
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
         val appliedTint =
-            NativeNetworkSuppressionPolicy.statusIconTint(
+            NetworkSuppressionPolicy.statusIconTint(
                 locationAwareTint = locationAwareTint,
                 peerAppliedTint = peerTint,
                 managerFallbackTint = managerFallbackTint,
@@ -1085,7 +1067,7 @@ internal object NativeNetworkSuppressionOwner {
                 ?: return null
         val iconTint =
             readIntField(dispatcher, "mIconTint")
-                ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
                 ?: return null
         val tintAreas =
             readObjectField(dispatcher, "mTintAreas")
@@ -1111,7 +1093,7 @@ internal object NativeNetworkSuppressionOwner {
                 } ?: return@runCatching null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
-                ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
         }.getOrNull()
     }
 
@@ -1119,14 +1101,14 @@ internal object NativeNetworkSuppressionOwner {
         manager ?: return null
 
         readIntField(manager, "mColor")
-            ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
             ?.let { return it }
 
         val dispatcher =
             readObjectField(manager, "mDarkIconDispatcher")
                 ?: return null
         return readIntField(dispatcher, "mIconTint")
-            ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
     }
 
     private fun resolveTintAnchorView(group: ViewGroup): View? {
@@ -1389,7 +1371,7 @@ internal object NativeNetworkSuppressionOwner {
         mobileVisualMasks.forEach { state ->
             val view = state.view.get() ?: return@forEach
             val targetAlpha =
-                NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+                NetworkSuppressionPolicy.mobileVisualMaskAlpha(
                     nativeAlpha = state.nativeAlpha,
                     suppressionActive = true,
                 )
@@ -1411,7 +1393,7 @@ internal object NativeNetworkSuppressionOwner {
     fun preMaskMobileSignal(image: ImageView): Boolean {
         val homeGroup = activeGroup?.get()
         if (
-            !NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+            !NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
                 suppressionActive =
                     activeManager != null &&
                         mobileSuppressionEnabled,
@@ -1628,42 +1610,27 @@ internal object NativeNetworkSuppressionOwner {
         }
     }
 
-    internal sealed interface StateResult {
+    internal sealed interface Result {
         val summary: String
 
-        data class Active(
-            val bindings: Int,
-            val slots: List<String>,
-            val wifiSuppressed: Boolean,
-            val mobileSuppressed: Boolean,
-            val mobileVisualMasks: Int,
-        ) : StateResult {
-            override val summary: String
-                get() =
-                    "active:bindings=" + bindings +
-                        ",slots=" + slots.joinToString(",") +
-                        ",wifiSuppressed=" + wifiSuppressed +
-                        ",mobileSuppressed=" + mobileSuppressed +
-                        ",mobileVisualMasks=" + mobileVisualMasks
+        data object Active : Result {
+            override val summary = "active"
         }
 
         data class Pending(
             val reason: String,
-        ) : StateResult {
+        ) : Result {
             override val summary: String
                 get() = "pending:" + reason
         }
 
-        data class Inactive(
-            val restoredBindings: Int,
-        ) : StateResult {
-            override val summary: String
-                get() = "inactive:restoredBindings=" + restoredBindings
+        data object Inactive : Result {
+            override val summary = "inactive"
         }
 
         data class Failure(
             val reason: String,
-        ) : StateResult {
+        ) : Result {
             override val summary: String
                 get() = "failed:" + reason
         }

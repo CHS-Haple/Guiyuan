@@ -21,11 +21,7 @@ internal class RenderController(
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
             )
         val previous = stableModel
-        val model =
-            PresentationPolicy.resolveModel(
-                previous = previous,
-                candidate = candidate,
-            )
+        val model = candidate ?: previous
 
         if (model != previous) {
             stableModel = model
@@ -49,13 +45,13 @@ internal class RenderController(
 
     fun updateTint(state: TintState): TintUpdate {
         val previous = stableTint
+        val validCandidate = state.isVisible
         val resolved =
-            PresentationPolicy.resolveTint(
-                previous = previous,
-                candidate = state,
-            )
-        val validCandidate =
-            PresentationPolicy.isValidTint(state)
+            if (validCandidate) {
+                state
+            } else {
+                previous
+            }
 
         if (resolved != null && resolved != previous) {
             stableTint = resolved

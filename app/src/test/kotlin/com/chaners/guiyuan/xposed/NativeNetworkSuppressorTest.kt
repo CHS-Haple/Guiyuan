@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class NativeNetworkSuppressionOwnerTest {
+class NativeNetworkSuppressorTest {
 
 
 
@@ -13,7 +13,7 @@ class NativeNetworkSuppressionOwnerTest {
     fun observedNoSimCanBecomeSuppressedInTheSameVisibilityEvent() {
         assertEquals(
             true,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "no_sim",
                 airplaneSuppressionActive = false,
                 noSimSuppressionActive = true,
@@ -26,7 +26,7 @@ class NativeNetworkSuppressionOwnerTest {
     fun staticSystemSlotsAreSuppressedOnlyWhenTheirReplacementIsReady() {
         assertEquals(
             true,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "airplane",
                 airplaneSuppressionActive = true,
                 noSimSuppressionActive = false,
@@ -35,7 +35,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "airplane",
                 airplaneSuppressionActive = false,
                 noSimSuppressionActive = false,
@@ -44,7 +44,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             true,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "no_sim",
                 airplaneSuppressionActive = false,
                 noSimSuppressionActive = true,
@@ -53,7 +53,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "no_sim",
                 airplaneSuppressionActive = false,
                 noSimSuppressionActive = false,
@@ -62,7 +62,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "alarm_clock",
                 airplaneSuppressionActive = true,
                 noSimSuppressionActive = true,
@@ -71,7 +71,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "airplane",
                 airplaneSuppressionActive = true,
                 noSimSuppressionActive = true,
@@ -80,7 +80,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.shouldSuppressStaticSlot(
+            NativeNetworkSuppressor.shouldSuppressStaticSlot(
                 slot = "no_sim",
                 airplaneSuppressionActive = true,
                 noSimSuppressionActive = true,
@@ -96,7 +96,7 @@ class NativeNetworkSuppressionOwnerTest {
         listOf("combined_status", "wifi", "mobile", "stacked_mobile", "airplane", "no_sim").forEach { slot ->
             assertEquals(
                 false,
-                NativeNetworkSuppressionOwner.isTintAuthorityCandidate(
+                NativeNetworkSuppressor.isTintAuthorityCandidate(
                     slot = slot,
                     visible = true,
                     width = 75,
@@ -110,7 +110,7 @@ class NativeNetworkSuppressionOwnerTest {
     fun visibleNonRepresentedPeerCanAnchorHomeTint() {
         assertEquals(
             true,
-            NativeNetworkSuppressionOwner.isTintAuthorityCandidate(
+            NativeNetworkSuppressor.isTintAuthorityCandidate(
                 slot = "vpn",
                 visible = true,
                 width = 75,
@@ -119,7 +119,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.isTintAuthorityCandidate(
+            NativeNetworkSuppressor.isTintAuthorityCandidate(
                 slot = "vpn",
                 visible = false,
                 width = 75,
@@ -128,7 +128,7 @@ class NativeNetworkSuppressionOwnerTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionOwner.isTintAuthorityCandidate(
+            NativeNetworkSuppressor.isTintAuthorityCandidate(
                 slot = "vpn",
                 visible = true,
                 width = 0,

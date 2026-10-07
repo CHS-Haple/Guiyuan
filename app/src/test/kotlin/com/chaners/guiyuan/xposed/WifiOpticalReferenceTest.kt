@@ -6,12 +6,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class NativeWifiOpticalReferencePolicyTest {
+class WifiOpticalReferenceTest {
     @Test
     fun connectedResourceKeepsItsOwnLevelReference() {
         assertEquals(
             "stat_sys_wifi_signal_3",
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_wifi_signal_3",
             ),
         )
@@ -21,7 +21,7 @@ class NativeWifiOpticalReferencePolicyTest {
     fun unavailableResourceMapsToConnectedPeerAtSameLevel() {
         assertEquals(
             "stat_sys_wifi_signal_2",
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_wifi_signal_unavailable_2",
             ),
         )
@@ -31,7 +31,7 @@ class NativeWifiOpticalReferencePolicyTest {
     fun hotspotResourceMapsToConnectedPeerAtSameLevel() {
         assertEquals(
             "stat_sys_wifi_signal_1",
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_hotspot_signal_1",
             ),
         )
@@ -41,7 +41,7 @@ class NativeWifiOpticalReferencePolicyTest {
     fun qualifiedUnavailableResourceMapsToConnectedPeer() {
         assertEquals(
             "stat_sys_wifi_signal_3",
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_unavailable_3",
             ),
         )
@@ -51,7 +51,7 @@ class NativeWifiOpticalReferencePolicyTest {
     fun tintLikeConnectedVariantMapsBackToBaseReference() {
         assertEquals(
             "stat_sys_wifi_signal_2",
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_wifi_signal_2_tint",
             ),
         )
@@ -60,7 +60,7 @@ class NativeWifiOpticalReferencePolicyTest {
     @Test
     fun nonWifiResourceHasNoReference() {
         assertNull(
-            NativeWifiOpticalReferencePolicy.connectedReferenceEntry(
+            WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_signal_4",
             ),
         )
@@ -69,7 +69,7 @@ class NativeWifiOpticalReferencePolicyTest {
     @Test
     fun referenceViewportMustMatchExactly() {
         assertTrue(
-            NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+            WifiOpticalReference.canShareReferenceViewport(
                 currentWidth = 24,
                 currentHeight = 24,
                 referenceWidth = 24,
@@ -77,7 +77,7 @@ class NativeWifiOpticalReferencePolicyTest {
             ),
         )
         assertFalse(
-            NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+            WifiOpticalReference.canShareReferenceViewport(
                 currentWidth = 24,
                 currentHeight = 20,
                 referenceWidth = 24,

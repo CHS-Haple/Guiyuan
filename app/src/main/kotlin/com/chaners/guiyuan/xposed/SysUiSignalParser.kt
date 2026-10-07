@@ -16,7 +16,7 @@ internal sealed interface SignalStrength {
         }
 }
 
-internal object SystemUiSignalParser {
+internal object SysUiSignalParser {
     private val mobileLevelPattern = Regex("^stat_sys_signal_([0-4])$")
     private val wifiLevelPattern = Regex("^stat_sys_wifi_signal_([0-3])$")
     private val hotspotWifiLevelPattern =

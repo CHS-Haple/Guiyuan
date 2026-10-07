@@ -170,7 +170,7 @@ internal object HomeRenderSession {
         liveState: () -> TintState?,
     ): InitialTintSeed? {
         val transferredValid =
-            transferred?.takeIf(PresentationPolicy::isValidTint)
+            transferred?.takeIf { it.isVisible }
         if (transferredValid != null) {
             return InitialTintSeed(
                 state = transferredValid,
@@ -183,7 +183,7 @@ internal object HomeRenderSession {
 
         val liveValid =
             liveState()
-                ?.takeIf(PresentationPolicy::isValidTint)
+                ?.takeIf { it.isVisible }
                 ?: return null
         return InitialTintSeed(
             state = liveValid,

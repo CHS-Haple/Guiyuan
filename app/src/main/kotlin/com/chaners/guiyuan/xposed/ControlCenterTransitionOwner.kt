@@ -1682,7 +1682,7 @@ internal object ControlCenterTransitionOwner {
 
         private fun refreshNativePeerTint() {
             val peerTint =
-                NativeNetworkSuppressionOwner
+                NativeNetworkSuppressor
                     .currentStatusIconTint(fakeStatusIcons)
             val resolved =
                 ControlCenterTransitionPolicy.selectNativeTransitionTint(

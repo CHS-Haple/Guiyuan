@@ -814,9 +814,9 @@ internal object SysUiNetworkSource {
             state =
                 StatusStateStore.WifiState.Visible(
                     iconResId = modelResId,
-                    signal = SystemUiSignalParser.wifi(modelResourceName),
+                    signal = SysUiSignalParser.wifi(modelResourceName),
                     internetValidated =
-                        SystemUiSignalParser.wifiInternetValidated(
+                        SysUiSignalParser.wifiInternetValidated(
                             modelResourceName,
                         ),
                 ),
@@ -888,9 +888,9 @@ internal object SysUiNetworkSource {
                         state =
                             StatusStateStore.WifiState.Visible(
                                 iconResId = taggedResId,
-                                signal = SystemUiSignalParser.wifi(taggedResource),
+                                signal = SysUiSignalParser.wifi(taggedResource),
                                 internetValidated =
-                                    SystemUiSignalParser.wifiInternetValidated(
+                                    SysUiSignalParser.wifiInternetValidated(
                                         taggedResource,
                                     ),
                             ),
@@ -946,7 +946,7 @@ internal object SysUiNetworkSource {
         semanticState == StatusStateStore.WifiState.Hidden &&
             taggedResId != null &&
             taggedResId != previousTaggedResId &&
-            SystemUiSignalParser.isHotspotWifiResource(taggedResource)
+            SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
     private fun mobileBindHooker(
         subscriptionIdMethod: Method,
@@ -1055,7 +1055,7 @@ internal object SysUiNetworkSource {
                                 signal = if (
                                     kind == StatusStateStore.MobileIconKind.SIGNAL
                                 ) {
-                                    SystemUiSignalParser.mobile(resourceName)
+                                    SysUiSignalParser.mobile(resourceName)
                                 } else {
                                     null
                                 },
