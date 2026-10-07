@@ -1609,13 +1609,14 @@ class GyModule : XposedModule() {
                         null
                     },
             )
-        }.onSuccess { result ->
+        }.onSuccess { hooks ->
+            val ready = hooks == SysUiBatterySource.HOOK_COUNT
             logDiagnostic(
-                level = if (result.ready) Log.INFO else Log.WARN,
+                level = if (ready) Log.INFO else Log.WARN,
                 event = "source.install",
                 component = "batteryState",
-                state = if (result.ready) "ready" else "partial",
-                "hooks" to result.hooks,
+                state = if (ready) "ready" else "partial",
+                "hooks" to hooks,
                 "expectedHooks" to SysUiBatterySource.HOOK_COUNT,
                 "source" to source,
                 "authority" to
@@ -2249,14 +2250,14 @@ class GyModule : XposedModule() {
             val result =
                 SysUiPresentationOwner.commitKeyguardDeferredLayoutOwnership()
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 onBoundaryPrelayoutReady(
                     result = result,
                     source = source + ":precommit-ready",
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(true)
                 logDiagnostic(
@@ -2271,19 +2272,19 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 onKeyguardRuntimeFailure(result.reason)
                 deactivateKeyguardRuntime("boundary-prelayout-commit-failed")
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> {
+            is SysUiPresentationOwner.Result.Inactive -> {
                 deactivateKeyguardRuntime("boundary-prelayout-session-missing")
             }
         }
     }
 
     private fun onBoundaryPrelayoutReady(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val handoff = boundaryHandoff
@@ -2368,7 +2369,7 @@ class GyModule : XposedModule() {
             val result =
                 SysUiPresentationOwner.commitKeyguardDeferredLayoutOwnership()
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 completeKeyguardCutover(
                     result = result,
                     source = source + ":compact-ready",
@@ -2376,7 +2377,7 @@ class GyModule : XposedModule() {
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
@@ -2393,13 +2394,13 @@ class GyModule : XposedModule() {
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 onKeyguardRuntimeFailure(result.reason)
                 deactivateKeyguardRuntime("boundary-layout-commit-failed")
                 true
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> {
+            is SysUiPresentationOwner.Result.Inactive -> {
                 deactivateKeyguardRuntime("boundary-layout-session-missing")
                 true
             }
@@ -3084,7 +3085,7 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 if (visualOnlyBoundary && boundaryHandoff?.precommit == true) {
                     onBoundaryPrelayoutReady(
                         result = result,
@@ -3098,7 +3099,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 if (visualOnlyBoundary && boundaryHandoff?.precommit == true) {
                     keyguardRuntimeReady = false
                     KeyguardRenderSession.setNativeHandoffActive(true)
@@ -3142,7 +3143,7 @@ class GyModule : XposedModule() {
                 }
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 keyguardRuntimeReady = false
                 KeyguardRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivateKeyguard("activation-failed")
@@ -3158,7 +3159,7 @@ class GyModule : XposedModule() {
                 refreshCcSourceEligibility("keyguard-activation-failed")
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
@@ -3171,7 +3172,7 @@ class GyModule : XposedModule() {
     }
 
     private fun completeKeyguardCutover(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val settings = FeaturePrefsOwner.current()
@@ -3296,14 +3297,14 @@ class GyModule : XposedModule() {
                     },
                 )
         ) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 completeAodCutover(
                     result = result,
                     source = source,
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 KeyguardRenderSession.setAodNativeHandoffActive(true)
                 logDiagnostic(
                     level = Log.INFO,
@@ -3324,7 +3325,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 KeyguardRenderSession.setAodNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivateAod("activation-failed")
                 logDiagnostic(
@@ -3338,7 +3339,7 @@ class GyModule : XposedModule() {
                 )
             }
 
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
@@ -3348,7 +3349,7 @@ class GyModule : XposedModule() {
     }
 
     private fun completeAodCutover(
-        result: SysUiPresentationOwner.StateResult.Active,
+        result: SysUiPresentationOwner.Result.Active,
         source: String,
     ) {
         val settings = FeaturePrefsOwner.current()
@@ -3715,7 +3716,7 @@ class GyModule : XposedModule() {
         }
 
         when (val result = SysUiPresentationOwner.activate(host)) {
-            is SysUiPresentationOwner.StateResult.Active -> {
+            is SysUiPresentationOwner.Result.Active -> {
                 HomeRenderSession.setNativeHandoffActive(false)
                 logDiagnostic(
                     level = Log.INFO,
@@ -3728,7 +3729,7 @@ class GyModule : XposedModule() {
                     "islandMotion" to "inherited-from-system_icon_area",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Prepared -> {
+            is SysUiPresentationOwner.Result.Prepared -> {
                 HomeRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivate("unexpected-prepared")
                 logDiagnostic(
@@ -3741,7 +3742,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Failure -> {
+            is SysUiPresentationOwner.Result.Failure -> {
                 HomeRenderSession.setNativeHandoffActive(true)
                 SysUiPresentationOwner.deactivate("activation-failed")
                 logDiagnostic(
@@ -3754,7 +3755,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is SysUiPresentationOwner.StateResult.Inactive -> Unit
+            is SysUiPresentationOwner.Result.Inactive -> Unit
         }
     }
 
