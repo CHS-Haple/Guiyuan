@@ -523,7 +523,6 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "mode" to generationHandoff,
                 "layoutCommit" to "single-main-thread-turn",
-                "intermediateRequestLayout" to false,
             )
 
             SysUiCcSource.restoreHomeEligibility(
@@ -660,7 +659,6 @@ class GyModule : XposedModule() {
                                 "viewOnlySynced" to slotOrder.viewOnlySynced,
                                 "originalOrderPreserved" to
                                     slotOrder.originalOrderPreserved,
-                                "visible" to false,
                             )
                         }
 
@@ -673,7 +671,6 @@ class GyModule : XposedModule() {
                                 "source" to source,
                                 "mode" to "controller-pre-init",
                                 "reason" to slotOrder.reason,
-                                "visible" to false,
                             )
                         }
                     }
@@ -687,7 +684,6 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "source" to source,
                 "hooks" to NativeCombinedParticipant.installedHookCount,
-                "visible" to false,
             )
         } else {
             logDiagnostic(
@@ -4118,7 +4114,6 @@ class GyModule : XposedModule() {
                     state = "ready",
                     "source" to source,
                     "slot" to NativeCombinedParticipant.SLOT,
-                    "visible" to false,
                     "registryRestored" to nativeCombined.registryRestored,
                     "root" to nativeCombined.rootClass,
                     "rootVisibility" to nativeCombined.rootVisibility,
@@ -4143,7 +4138,6 @@ class GyModule : XposedModule() {
                     state = "unavailable",
                     "source" to source,
                     "reason" to nativeCombined.reason,
-                    "visible" to false,
                 )
             }
         }

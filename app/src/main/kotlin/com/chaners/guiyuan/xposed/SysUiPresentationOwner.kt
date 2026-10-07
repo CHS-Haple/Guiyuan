@@ -1483,8 +1483,7 @@ internal object SysUiPresentationOwner {
                 onEvent(
                     eventPrefix +
                         " visualHandoff active=true maskedViews=" + masked +
-                        " nativeLayoutOwnership=deferred" +
-                        " ignoredSlotsWrites=0 paddingWrites=0",
+                        " nativeLayoutOwnership=deferred",
                 )
                 return masked
             }
@@ -2473,8 +2472,8 @@ internal object SysUiPresentationOwner {
             mirrorIslandSuppressionLogged = true
             onEvent(
                 eventPrefix +
-                    " steadyPeerMirror fakeIslandShowing native=true exposed=false" +
-                    " authority=home-native-island-state nativeFieldWrites=0",
+                    " steadyPeerMirror islandSuppressed" +
+                    " authority=home-native-island-state",
             )
         }
 

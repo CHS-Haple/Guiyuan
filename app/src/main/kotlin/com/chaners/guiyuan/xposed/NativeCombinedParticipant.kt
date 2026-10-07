@@ -771,9 +771,7 @@ internal object NativeCombinedParticipant {
         failureReason = null
         eventSink?.invoke(
             "nativeCombinedParticipant hotReloadAdopt slot=" + SLOT +
-                " viewReady=true managerEntriesRefreshed=true " +
-                "clearedManagerEntries=" + cleared +
-                "",
+                " clearedManagerEntries=" + cleared,
         )
         return HotReloadAdoptResult.Ready(
             clearedManagerEntries = cleared,
@@ -1051,17 +1049,13 @@ internal object NativeCombinedParticipant {
         if (update?.model != null && update.candidateComplete) {
             modelReady = true
         }
-        if (
-            update?.model != null &&
-            !modelReadyLogged
-        ) {
+        if (modelReady && !modelReadyLogged) {
             modelReadyLogged = true
             val render = renderViewRef?.get()
             val root = rootRef?.get()
             eventSink?.invoke(
                 "nativeCombinedParticipant rendererReady " +
-                    "modelReady=true" +
-                    " candidateComplete=" + update.candidateComplete +
+                    "candidateComplete=" + update.candidateComplete +
                     " render=" +
                     (render?.measuredWidth ?: -1) + "x" +
                     (render?.measuredHeight ?: -1) +
@@ -1109,8 +1103,7 @@ internal object NativeCombinedParticipant {
                 " batteryBounds=" + battery.left + "-" + battery.right +
                 " adjacentGap=" + (battery.left - statusIcons.right) +
                 " rootVisibility=" +
-                (rootRef?.get()?.let { visibilityName(it.visibility) } ?: "none") +
-                " visible=false ",
+                (rootRef?.get()?.let { visibilityName(it.visibility) } ?: "none"),
         )
     }
 
@@ -1214,8 +1207,7 @@ internal object NativeCombinedParticipant {
             if (!suppressionCommitted) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
-                        "source=feature-enabled reason=suppression-transaction-failed " +
-                        "failNative=true ",
+                        "source=feature-enabled reason=suppression-transaction-failed",
                 )
                 return false
             }
@@ -1227,8 +1219,7 @@ internal object NativeCombinedParticipant {
                 requestNativeLayout(root)
                 eventSink?.invoke(
                     "nativeCombinedParticipant handoffResumeFail " +
-                        "source=feature-enabled reason=set-remove-failed " +
-                        "failNative=true ",
+                        "source=feature-enabled reason=set-remove-failed",
                 )
                 return false
             }
@@ -1242,8 +1233,7 @@ internal object NativeCombinedParticipant {
             )
             eventSink?.invoke(
                 "nativeCombinedParticipant handoffResume " +
-                    "source=feature-enabled validated=true " +
-                    "mode=native-remove-lifecycle rootShown=" + root.isShown +
+                    "source=feature-enabled mode=native-remove-lifecycle rootShown=" + root.isShown +
                     " visibilityAuthority=binding+removeFlag" +
                     " nativeRemoveFlag=" + readNativeRemoveFlag(root),
             )
@@ -1467,8 +1457,7 @@ internal object NativeCombinedParticipant {
             if (wasCommitted && handoffSink?.invoke(false) != true) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant featureGateFail source=" + source +
-                        " reason=native-restore-transaction-failed " +
-                        "failNative=true ",
+                        " reason=native-restore-transaction-failed",
                 )
                 return
             }
@@ -1613,8 +1602,7 @@ internal object NativeCombinedParticipant {
                 " tintReady=" + tintReady +
                 " scene=" + currentSurface.name +
                 " mode=" + handoffMode.name +
-                " rootShownBefore=" + root.isShown +
-                " bootstrapVisibilityRelease=true ",
+                " rootShownBefore=" + root.isShown,
         )
 
         val listener =
@@ -1692,8 +1680,7 @@ internal object NativeCombinedParticipant {
                                 requestNativeLayout(root)
                                 eventSink?.invoke(
                                     "nativeCombinedParticipant handoffRollback " +
-                                        "reason=suppression-transaction-failed " +
-                                        "failNative=true ",
+                                        "reason=suppression-transaction-failed",
                                 )
                                 return@synchronized
                             }
@@ -1722,9 +1709,8 @@ internal object NativeCombinedParticipant {
                                     (parent?.clipChildren ?: true) +
                                     " bridge=preserved-native-battery-slot " +
                                     "shellLayoutWidth=" +
-                                    (root.layoutParams?.width ?: Int.MIN_VALUE) + " " +
-                                    "iconVisible=true overlayActive=false " +
-                                    "",
+                                    (root.layoutParams?.width ?: Int.MIN_VALUE) +
+                                    " iconVisible=" + iconVisible,
                             )
                         } else {
                             bindingState.visible = false
@@ -1751,8 +1737,7 @@ internal object NativeCombinedParticipant {
                                     (render?.right ?: Int.MIN_VALUE) +
                                     " parentClipChildren=" +
                                     (parent?.clipChildren ?: true) +
-                                    " bridgeReady=" + bridgeReady +
-                                    " overlayActive=true ",
+                                    " bridgeReady=" + bridgeReady,
                             )
                         }
                         } finally {
