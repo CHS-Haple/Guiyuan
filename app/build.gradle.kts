@@ -4,9 +4,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val combinedStatusVersionName = providers.gradleProperty("combinedStatus.versionName").get()
-val combinedStatusVersionCode = providers.gradleProperty("combinedStatus.versionCode").get().toInt()
-val combinedStatusBuildId = providers.gradleProperty("combinedStatus.buildId").get()
+val appVersionName = providers.gradleProperty("combinedStatus.versionName").get()
+val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get().toInt()
+val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
 val libxposedVersion = "102.0.0"
@@ -41,10 +41,10 @@ android {
         applicationId = "com.chaners.guiyuan"
         minSdk = 33
         targetSdk = 37
-        versionCode = combinedStatusVersionCode
-        versionName = combinedStatusVersionName
+        versionCode = appVersionCode
+        versionName = appVersionName
 
-        buildConfigField("String", "BUILD_ID", "\"$combinedStatusBuildId\"")
+        buildConfigField("String", "BUILD_ID", "\"$buildId\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
         buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
