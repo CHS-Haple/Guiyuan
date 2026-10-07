@@ -1,6 +1,6 @@
 ## Summary
 
-Describe the problem or engineering need and the final bounded change.
+Describe the problem or engineering need, the resulting change, and its boundaries.
 
 > CI success is validation evidence, not merge approval. Final acceptance is a maintainer decision, and runtime-sensitive changes may require maintainer-side device validation.
 
@@ -10,7 +10,7 @@ Describe the problem or engineering need and the final bounded change.
 - Intended target: dev / main
 - Objective:
 - Explicitly unchanged:
-- Why this is one change boundary:
+- Why these changes belong together:
 
 > Normal product/runtime contributions target `dev`. Promotion and hotfix pull requests are maintainer-managed.
 
@@ -30,7 +30,7 @@ Complete only when runtime-sensitive:
 - Device scenario(s) and tested build/SHA when applicable:
 - Changelog: updated / not required
 
-## Maintainer-only release boundary
+## Maintainer-only release section
 
 Complete only for promotion or hotfix pull requests.
 
@@ -42,7 +42,7 @@ For promotion:
 
 For hotfix:
 - Source main SHA:
-- Dev back-propagation plan:
+- Dev sync-back plan:
 
 ## Known limitations
 

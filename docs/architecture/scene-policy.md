@@ -1,6 +1,6 @@
 # Scene capability policy
 
-This document defines current scene capability and presentation ownership. Shared geometry belongs in [layout-policy.md](layout-policy.md).
+This document defines current scene capabilities and presentation ownership. Shared geometry belongs in [layout-policy.md](layout-policy.md).
 
 Build chronology, rejected candidates and one-off device investigations do not belong here.
 
@@ -11,7 +11,7 @@ A scene capability may define:
 - whether Guiyuan may render on the surface;
 - whether rendering is projected from verified native geometry;
 - who owns motion;
-- the source-code evidence classification.
+- the source evidence classification.
 
 It must not define per-scene size formulas, correction offsets or independent gesture timing.
 
@@ -60,7 +60,7 @@ A transition source must resolve to a currently eligible projected source:
 
 AOD is never a Control Center transition source.
 
-Conflicting native source witnesses must be reconciled from current lifecycle/family state; an unknown source fails native rather than guessing.
+Conflicting native source witnesses must be reconciled from current lifecycle/family state; an unknown source falls back to native presentation rather than guessing.
 
 ### Transition bridge
 
@@ -158,7 +158,7 @@ No current scene grants Guiyuan ownership of native motion. Any future module-ow
 
 Changing a scene from `NATIVE_ONLY` to `PROJECTED`, or adding a new native geometry/motion write, requires:
 
-1. exact target-SystemUI evidence;
+1. exact target SystemUI evidence;
 2. runtime host/lifecycle verification;
 3. single-writer analysis;
 4. fail-native behavior;

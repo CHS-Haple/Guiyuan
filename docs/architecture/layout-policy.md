@@ -34,9 +34,9 @@ Guiyuan owns:
 - replacement-slot intent;
 - bounded represented-slot exclusion;
 - reversible presentation masks;
-- one conflict-detected end reservation.
+- one conflict-checked end reservation.
 
-Guiyuan must not write native Battery measured/layout width, native peer translation, native peer alpha or native peer visibility.
+Guiyuan must not write native Battery measurement/layout width, native peer translation, native peer alpha, or native peer visibility.
 
 ## Render modes
 
@@ -84,7 +84,7 @@ The resolver keeps separate:
 - stable source bounds;
 - motion ownership.
 
-Native transition progress, native duration/interpolators and target-View translation remain outside this layout resolver.
+Native transition progress, native duration/interpolators, and target View translation remain outside this layout resolver.
 
 ### Home carrier width
 
@@ -96,7 +96,7 @@ The full Battery root width is not a safe replacement-width authority because ch
 
 Represented Wi-Fi/mobile/airplane/no-SIM slots may be excluded only through the verified native status-icon contract.
 
-For temporary native-call scope:
+For a temporary native call scope:
 
 1. read the existing ignored-slot set;
 2. add only missing Guiyuan-owned entries;
@@ -139,7 +139,7 @@ The reservation must:
 - react only to bounded state/layout events;
 - reject a competing writer;
 - restore only the exact module-applied state;
-- fail native if carrier, width, hide state or writer ownership is ambiguous.
+- fall back to native presentation if carrier, width, hide state, or writer ownership is ambiguous.
 
 ## QS_FAKE capacity lease
 
@@ -152,7 +152,7 @@ This is a capacity lease, not motion:
 - never animate carrier width as gesture motion;
 - keep `paddingEnd` as the sole per-progress layout reservation writer;
 - release the width lease at the native visible-to-hidden boundary;
-- treat an unexpected live width change as a competing writer and fail native.
+- treat an unexpected live width change as a competing writer and fall back to native presentation.
 
 Transition geometry must not interpret leased capacity as carrier displacement.
 
@@ -203,7 +203,7 @@ They must not introduce:
 - translation compensation;
 - duplicate native slot writers.
 
-If a requested size cannot fit a verified host safely, the affected capability should fail native rather than conceal the mismatch with a correction chain.
+If a requested size cannot fit a verified host safely, the affected capability should fall back to native presentation rather than conceal the mismatch with a correction chain.
 
 ## Prohibited ownership patterns
 

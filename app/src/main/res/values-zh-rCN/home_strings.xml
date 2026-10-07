@@ -19,13 +19,13 @@
     <string name="home_runtime_checking">正在检查</string>
     <string name="home_runtime_checking_summary">正在确认 SystemUI 运行状态</string>
     <string name="home_runtime_reloading">正在重载</string>
-    <string name="home_runtime_reloading_summary">正在刷新 SystemUI 模块运行状态</string>
+    <string name="home_runtime_reloading_summary">正在 SystemUI 中热重载归元</string>
 
     <string name="section_home_preview_sandbox">预览沙盒</string>
     <string name="home_preview_sandbox_title">预览沙盒</string>
-    <string name="home_preview_sandbox_summary">所有调整仅用于模拟显示，不会修改真实系统。</string>
+    <string name="home_preview_sandbox_summary">所有调整仅用于预览，不会改变实际系统状态。</string>
     <string name="home_preview_open_title">预览沙盒</string>
-    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不会修改真实系统。</string>
+    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不会改变实际系统状态。</string>
     <string name="home_preview_live_title">实时预览</string>
     <string name="home_preview_section_preview">预览</string>
     <string name="home_preview_section_network">网络</string>
@@ -53,12 +53,10 @@
     <string name="home_preview_mobile_disabled_airplane">飞行模式下不可调节</string>
 
     <string name="home_preview_wifi_state_title">Wi‑Fi 状态</string>
-    <string name="home_preview_wifi_off">关闭</string>
     <string name="home_preview_wifi_connected">已连接</string>
     <string name="home_preview_wifi_no_internet">无网络</string>
     <string name="home_preview_wifi_hotspot">热点</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi 信号</string>
-    <string name="home_preview_wifi_disabled">开启一种 Wi‑Fi 状态后可调节信号</string>
 
     <string name="home_preview_signal_none">无</string>
     <string name="home_preview_signal_level">%1$d 格</string>

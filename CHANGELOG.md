@@ -8,6 +8,21 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
+### Changed
+- Unified the README, app, About page, and Xposed module description around one concise Guiyuan project summary.
+- Refined English and Simplified Chinese UI text so labels and explanations match the implemented behavior more closely.
+- Consolidated public repository documentation around current architecture, durable decisions, and reusable SystemUI contracts.
+- Promoted the accepted repository-wide maintainability cleanup without changing the established runtime ownership model.
+
+### Removed
+- Removed obsolete string resources left behind by superseded preview, settings, and diagnostics surfaces.
+
+### Engineering
+- Added an artifact-only signed release-APK path so a release build can be produced for validation without publishing a GitHub Release.
+- Kept version/build, documentation, changelog, and public repository status aligned on the 0.3.0 baseline.
+
 ## [0.2.1] - 2026-10-06
 
 ### Fixed

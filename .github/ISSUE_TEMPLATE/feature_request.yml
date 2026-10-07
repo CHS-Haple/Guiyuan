@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Feature requests are evaluated against Guiyuan's standardized, lightweight, modern, and fail-native design principles. A requested mechanism may be adjusted or rejected if a safer native integration exists.
+        Feature requests are evaluated against Guiyuan's architecture, maintainability, and fail-native safety principles. A proposed mechanism may be adjusted or rejected when a safer native integration exists.
   - type: textarea
     id: problem
     attributes:
@@ -28,7 +28,7 @@ body:
         - Home status bar
         - Notification shade
         - Control Center
-        - Lock screen / keyguard
+        - Lock screen / Keyguard
         - AOD
         - Charging
         - Network / SIM behavior
@@ -40,10 +40,10 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: Runtime evidence or reference
+      label: Runtime evidence or references
       description: Optional. Include SystemUI behavior, screenshots, recordings, or other technical context when they materially help explain the request.
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives considered
-      description: Optional. Mention simpler/native approaches you have considered.
+      description: Optional. Mention simpler or more native approaches you have considered.
