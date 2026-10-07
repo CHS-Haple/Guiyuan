@@ -92,6 +92,14 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
 
+## Diagnostics refresh is gesture-owned
+
+**Decision:** the diagnostics page exposes only MIUIX pull-to-refresh. Initial capture and diagnostics-level reload are silent; there is no toolbar refresh action.
+
+**Why:** MIUIX intentionally shows its refresh header when `isRefreshing` becomes true programmatically. Treating initial loading as refreshing causes the entry flash and duplicates the refresh affordance.
+
+**Consequence:** keep the MIUIX refresh host mounted, but drive its refreshing state only from an actual pull gesture. Do not reintroduce a manual refresh button or use refresh animation to represent ordinary loading.
+
 ## Hot Reload is a generation handoff
 
 **Decision:** Hot Reload replaces one bounded runtime generation with another rather than stacking hooks/owners or intentionally returning through an intermediate native cycle.
