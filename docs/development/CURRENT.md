@@ -3,7 +3,7 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`).
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `c6748e6a`; default-branch Canary now accepts trusted `refactor/*` PRs through #259.
 - Integration `dev`: Guiyuan 0.2.1 / Build 746 at `6812a2b1`, with Canary workflow support for `refactor/*` merged through PR #258 after Full CI #2929. PR #257 was previously integrated after Runtime CI #2925.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
@@ -31,7 +31,7 @@ Accepted cleanup boundaries:
 - diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
 - inline single-caller helper types when the separate abstraction does not earn a boundary.
 
-The active work branch is `refactor/repo-maintainability-sweep` from current `dev`. It extends the earlier Xposed audit to the companion UI, settings, system/diagnostics, unit tests, tools and CI. The 44 non-Xposed Kotlin main sources and 63 unit-test files have had a first-pass structural/placeholder sweep; targeted semantic review is ongoing. Current work is limited to internal app-layer naming and clear type-safety improvements. Runtime behavior remains frozen unless a concrete defect is found.
+Draft PR #260 (`refactor/repo-maintainability-sweep` -> `dev`) extends the earlier Xposed audit to the companion UI, settings, system/diagnostics, unit tests, tooling and build scripts. The 44 non-Xposed Kotlin main sources and all 63 unit-test files have been screened, flagged areas have had targeted semantic review, and implementation is now frozen pending final Full CI plus a maintainer-requested Canary spot check. Runtime/SystemUI behavior remains unchanged.
 
 ## Non-negotiable bounds
 
@@ -45,7 +45,7 @@ The active work branch is `refactor/repo-maintainability-sweep` from current `de
 
 ## Immediate next
 
-- Finish targeted review of flagged app/UI/diagnostics files beyond the first-pass repository sweep.
-- Prioritize app UI/settings, diagnostics/system code, tests, build tooling and CI scripts.
-- Change only deterministic issues with a clear maintenance benefit; do not create churn for uniformity.
-- Use one coherent work branch/PR and run one suitable validation checkpoint after complete base-to-HEAD review.
+- Keep PR #260 implementation frozen.
+- Run final Full CI on the complete base-to-HEAD diff.
+- Build one exact-head Work Branch Canary for maintainer spot testing.
+- If validation and the spot check remain clean, record the durable result in DEVLOG and merge #260 to `dev`.
