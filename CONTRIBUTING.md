@@ -228,9 +228,9 @@ For an active work-branch PR, synchronize the PR title to the exact next CI-trig
 Pull-request validation must remain safe for untrusted forks. Secret-independent checks are allowed; signing credentials and project-signed artifacts stay on trusted maintainer/default-branch workflows and must never be exposed to contributor-controlled workflow definitions.
 
 ### Work-branch Canary
-Signed Canary is demand-driven. When device evidence is needed, the repository owner may request /canary on any open same-repository feat/* or fix/* PR, including Draft. The trusted default-branch workflow resolves the exact head SHA and independently performs target-profile checks, unit tests, Canary build, metadata/signature validation, and non-debuggable verification.
+Signed Canary is demand-driven. When device evidence is needed, the repository owner may request /canary on any open same-repository feat/*, fix/* or refactor/* PR, including Draft. The trusted default-branch workflow resolves the exact head SHA and independently performs target-profile checks, unit tests, Canary build, metadata/signature validation, and non-debuggable verification.
 
-A prior ready-state Runtime build is not required. Manual workflow dispatch for a trusted same-repository feat/* or fix/* branch remains the fallback.
+A prior ready-state Runtime build is not required. Manual workflow dispatch for a trusted same-repository feat/*, fix/* or refactor/* branch remains the fallback.
 
 ### Device-test trigger
 Request real-device testing when its result can change an engineering decision or acceptance state: first meaningful runtime checkpoint, competing hypotheses, ownership/lifecycle/scene/transition/geometry change, integrated dev validation, or a runtime-affecting stable candidate.
