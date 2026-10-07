@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +58,7 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import top.yukonga.miuix.kmp.basic.Badge
@@ -72,6 +74,8 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
+import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -81,11 +85,16 @@ import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DiagnosticsScreen(onBack: () -> Unit) {
+internal fun DiagnosticsScreen(
+    onBack: () -> Unit,
+    cachedSnapshot: DiagSnapshot?,
+    onSnapshot: (DiagSnapshot) -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val navTransition = LocalNavTransitionScope.current
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -95,8 +104,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             initial = DiagSettings(level = diagRepo.current()),
         )
 
-    var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
-    var loading by remember { mutableStateOf(true) }
+    var snapshot by remember { mutableStateOf(cachedSnapshot) }
+    var loading by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,7 +135,9 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     suspend fun captureSnapshot() {
         try {
-            snapshot = DiagSnapshot.capture(context.applicationContext)
+            val captured = DiagSnapshot.capture(context.applicationContext)
+            snapshot = captured
+            onSnapshot(captured)
             expandedKey = null
             viewCleared = false
         } finally {
@@ -182,7 +193,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         }
 
     LaunchedEffect(Unit) {
-        captureSnapshot()
+        snapshotFlow { navTransition.role == NavRole.Top && !navTransition.isRunning }
+            .first { it }
+        if (!loading) {
+            loading = true
+            refreshing = true
+            captureSnapshot()
+        }
     }
 
     val reportEnabled =
@@ -327,7 +344,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
-        // Keep the MIUIX refresh host mounted from the first frame; swapping it after load flashes the page.
+        // Keep one MIUIX refresh host across entry and refresh.
         pullToRefresh =
             SettingsPullToRefresh(
                 refreshing = refreshing,
@@ -344,8 +361,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            loading && snapshot == null -> {
-                // Initial capture is silent; only a pull gesture owns refresh feedback.
+            snapshot == null -> {
+                // First entry stays empty until the MIUIX refresh begins.
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {

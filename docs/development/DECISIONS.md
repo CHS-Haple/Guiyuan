@@ -92,13 +92,13 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
 
-## Diagnostics refresh is gesture-owned
+## Diagnostics refresh follows navigation
 
-**Decision:** the diagnostics page exposes only MIUIX pull-to-refresh. Initial capture and diagnostics-level reload are silent; there is no toolbar refresh action.
+**Decision:** diagnostics uses MIUIX pull-to-refresh as its only refresh surface. Entry may reuse the last in-process snapshot; without one, content stays empty. The initial MIUIX refresh starts only after the diagnostics entry settles.
 
-**Why:** MIUIX intentionally shows its refresh header when `isRefreshing` becomes true programmatically. Treating initial loading as refreshing causes the entry flash and duplicates the refresh affordance.
+**Why:** mounting fresh logs during the page transition looks like a flash, while starting the refresh indicator during that transition makes two animations compete.
 
-**Consequence:** keep the MIUIX refresh host mounted, but drive its refreshing state only from an actual pull gesture. Do not reintroduce a manual refresh button or use refresh animation to represent ordinary loading.
+**Consequence:** keep the last completed snapshot only in `GyApp` memory. Follow `LocalNavTransitionScope` instead of a fixed delay, keep manual pull-to-refresh unchanged, and do not reintroduce a toolbar refresh action.
 
 ## Hot Reload is a generation handoff
 
