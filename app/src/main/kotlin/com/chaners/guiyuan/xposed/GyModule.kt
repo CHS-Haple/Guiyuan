@@ -2890,52 +2890,47 @@ class GyModule : XposedModule() {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         source: String,
     ): Boolean {
-        return when (
-            val result =
-                KeyguardRenderSession.attach(
-                    resolved = resolved,
-                    sceneEligible = true,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
-                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onPresentationReadinessChanged = { ready ->
-                        onKeyguardReadyChanged(
-                            ready = ready,
-                            source = source,
-                        )
-                    },
-                )
-        ) {
-            KeyguardRenderSession.AttachResult.Ready -> {
-                aodRendererAttached = false
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "keyguardRenderer",
-                    state = "ready",
-                    "source" to source,
-                    "rawState" to resolved.rawState,
-                    "aodOwned" to false,
-                )
-                true
-            }
-
-            is KeyguardRenderSession.AttachResult.Failure -> {
-                deactivateKeyguardRuntime("renderer-attach-failed")
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "keyguardRenderer",
-                    state = "unavailable",
-                    "source" to source,
-                    "reason" to result.reason,
-                    "fallback" to "native-keyguard",
-                )
-                false
-            }
+        val failure =
+            KeyguardRenderSession.attach(
+                resolved = resolved,
+                sceneEligible = true,
+                onEvent = { event ->
+                    if (detailedDiagnosticsEnabled) {
+                        log(Log.INFO, TAG, event)
+                    }
+                },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                onPresentationReadinessChanged = { ready ->
+                    onKeyguardReadyChanged(
+                        ready = ready,
+                        source = source,
+                    )
+                },
+            )
+        return if (failure == null) {
+            aodRendererAttached = false
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "keyguardRenderer",
+                state = "ready",
+                "source" to source,
+                "rawState" to resolved.rawState,
+                "aodOwned" to false,
+            )
+            true
+        } else {
+            deactivateKeyguardRuntime("renderer-attach-failed")
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "keyguardRenderer",
+                state = "unavailable",
+                "source" to source,
+                "reason" to failure,
+                "fallback" to "native-keyguard",
+            )
+            false
         }
     }
 
@@ -2943,52 +2938,47 @@ class GyModule : XposedModule() {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         source: String,
     ): Boolean {
-        return when (
-            val result =
-                KeyguardRenderSession.attachAod(
-                    resolved = resolved,
-                    sceneEligible = true,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
-                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                    onPresentationReadinessChanged = { ready ->
-                        onAodReadyChanged(
-                            ready = ready,
-                            source = source,
-                        )
-                    },
-                )
-        ) {
-            KeyguardRenderSession.AttachResult.Ready -> {
-                aodRendererAttached = true
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "aodRenderer",
-                    state = "ready",
-                    "source" to source,
-                    "rawState" to resolved.rawState,
-                    "aodOwned" to true,
-                )
-                true
-            }
-
-            is KeyguardRenderSession.AttachResult.Failure -> {
-                deactivateAodRuntime("renderer-attach-failed")
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "aodRenderer",
-                    state = "unavailable",
-                    "source" to source,
-                    "reason" to result.reason,
-                    "fallback" to "native-aod",
-                )
-                false
-            }
+        val failure =
+            KeyguardRenderSession.attachAod(
+                resolved = resolved,
+                sceneEligible = true,
+                onEvent = { event ->
+                    if (detailedDiagnosticsEnabled) {
+                        log(Log.INFO, TAG, event)
+                    }
+                },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                onPresentationReadinessChanged = { ready ->
+                    onAodReadyChanged(
+                        ready = ready,
+                        source = source,
+                    )
+                },
+            )
+        return if (failure == null) {
+            aodRendererAttached = true
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "aodRenderer",
+                state = "ready",
+                "source" to source,
+                "rawState" to resolved.rawState,
+                "aodOwned" to true,
+            )
+            true
+        } else {
+            deactivateAodRuntime("renderer-attach-failed")
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "aodRenderer",
+                state = "unavailable",
+                "source" to source,
+                "reason" to failure,
+                "fallback" to "native-aod",
+            )
+            false
         }
     }
 
@@ -3557,8 +3547,8 @@ class GyModule : XposedModule() {
         )
         refreshMobilePresentation()
 
-        when (
-            val stableSession = StatusBarStableSession.attach(
+        val stableFailure =
+            StatusBarStableSession.attach(
                 host = host,
                 onEvent = { event ->
                     if (detailedDiagnosticsEnabled) {
@@ -3566,27 +3556,23 @@ class GyModule : XposedModule() {
                     }
                 },
             )
-        ) {
-            StatusBarStableSession.AttachResult.Ready -> {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "session.attach",
-                    component = "stableStatus",
-                    state = "ready",
-                    "source" to source,
-                )
-            }
-
-            is StatusBarStableSession.AttachResult.Failure -> {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "session.attach",
-                    component = "stableStatus",
-                    state = "unavailable",
-                    "reason" to stableSession.reason,
-                    "source" to source,
-                )
-            }
+        if (stableFailure == null) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "session.attach",
+                component = "stableStatus",
+                state = "ready",
+                "source" to source,
+            )
+        } else {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "session.attach",
+                component = "stableStatus",
+                state = "unavailable",
+                "reason" to stableFailure,
+                "source" to source,
+            )
         }
 
         when (
@@ -3641,8 +3627,8 @@ class GyModule : XposedModule() {
                 )
             }
 
-        when (
-            val renderSession = HomeRenderSession.attach(
+        val renderFailure =
+            HomeRenderSession.attach(
                 host = host,
                 onEvent = { event ->
                     if (detailedDiagnosticsEnabled) {
@@ -3658,27 +3644,23 @@ class GyModule : XposedModule() {
                     onHomeReadyChanged(host, ready, source)
                 },
             )
-        ) {
-            HomeRenderSession.AttachResult.Ready -> {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "renderer.attach",
-                    component = "renderer",
-                    state = "ready",
-                    "source" to source,
-                )
-            }
-
-            is HomeRenderSession.AttachResult.Failure -> {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "renderer.attach",
-                    component = "renderer",
-                    state = "unavailable",
-                    "reason" to renderSession.reason,
-                    "source" to source,
-                )
-            }
+        if (renderFailure == null) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "renderer.attach",
+                component = "renderer",
+                state = "ready",
+                "source" to source,
+            )
+        } else {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "renderer.attach",
+                component = "renderer",
+                state = "unavailable",
+                "reason" to renderFailure,
+                "source" to source,
+            )
         }
 
         scheduleNativeSlotProbe(host = host, source = source)
