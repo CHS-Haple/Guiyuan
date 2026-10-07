@@ -11,6 +11,8 @@ import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule

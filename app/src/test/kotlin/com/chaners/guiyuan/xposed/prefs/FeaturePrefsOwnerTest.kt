@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.prefs
 
 import com.chaners.guiyuan.settings.isFeatureKey
 import org.junit.Assert.assertEquals

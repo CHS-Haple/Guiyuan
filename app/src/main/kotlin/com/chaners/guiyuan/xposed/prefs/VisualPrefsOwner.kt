@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.VisualCfg
