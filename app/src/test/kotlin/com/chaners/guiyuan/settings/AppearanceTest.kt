@@ -114,24 +114,24 @@ class AppearanceTest {
     @Test
     fun firstLiquidSelectionDefaultsToIconAndText() {
         assertEquals(
-            NavContent.IconAndText,
-            defaultNavContentFor(NavStyle.Liquid, null),
+            true,
+            shouldDefaultToLabels(NavStyle.Liquid, null),
         )
         assertEquals(
-            null,
-            defaultNavContentFor(NavStyle.Glass, null),
+            false,
+            shouldDefaultToLabels(NavStyle.Glass, null),
         )
     }
 
     @Test
     fun liquidSelectionKeepsPreviouslyChosenContent() {
         assertEquals(
-            null,
-            defaultNavContentFor(NavStyle.Liquid, NavContent.IconOnly.name),
+            false,
+            shouldDefaultToLabels(NavStyle.Liquid, NavContent.IconOnly.name),
         )
         assertEquals(
-            null,
-            defaultNavContentFor(NavStyle.Liquid, NavContent.IconAndText.name),
+            false,
+            shouldDefaultToLabels(NavStyle.Liquid, NavContent.IconAndText.name),
         )
     }
 
