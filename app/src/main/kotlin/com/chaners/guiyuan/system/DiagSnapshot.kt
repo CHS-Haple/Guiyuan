@@ -11,7 +11,7 @@ internal data class DiagSnapshot(
     val env: RuntimeEnv,
     val level: DiagLevel,
     val log: DiagLogReader.Snapshot,
-    val health: RuntimeHealthSnapshot,
+    val runtimeEvents: RuntimeEventSnapshot,
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
 ) {
@@ -26,13 +26,13 @@ internal data class DiagSnapshot(
                 withContext(Dispatchers.Default) {
                     log.sessionLines.map(DiagLogParser::parse)
                 }
-            val health = RuntimeHealthSnapshot.fromLines(log.sessionLines)
+            val runtimeEvents = RuntimeEventSnapshot.fromLines(log.sessionLines)
 
             return DiagSnapshot(
                 env = env,
                 level = level,
                 log = log,
-                health = health,
+                runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
             )

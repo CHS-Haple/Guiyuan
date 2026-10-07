@@ -20,18 +20,18 @@ internal object DiagReport {
                 RELEASE_LINES
             }
         val lines = log.sessionLines
-        val health = snapshot.health
+        val runtimeEvents = snapshot.runtimeEvents
         val logLines = lines.takeLast(limit)
         val requested = level.name.lowercase()
-        val runtime = health.component("diagnostics")
-        val effective = runtime?.fields?.get("level")
+        val diagnostics = runtimeEvents.component("diagnostics")
+        val effective = diagnostics?.fields?.get("level")
         val syncState =
             when {
                 !BuildConfig.RUNTIME_DIAGNOSTICS && !BuildConfig.DEVELOPMENT_PROBES ->
                     "not-applicable"
-                runtime == null ||
-                    runtime.state == "unknown" ||
-                    runtime.state == "unavailable" ->
+                diagnostics == null ||
+                    diagnostics.state == "unknown" ||
+                    diagnostics.state == "unavailable" ->
                     "unavailable"
                 BuildConfig.DEVELOPMENT_PROBES ->
                     if (effective == "detailed") {
@@ -68,8 +68,8 @@ internal object DiagReport {
             appendLine("requestedLevel=" + requested)
             appendLine("effectiveRuntimeLevel=" + (effective ?: "unavailable"))
             appendLine("syncState=" + syncState)
-            appendLine("schemaVersion=" + health.schemaVersion)
-            appendLine("sessionId=" + (health.sessionId ?: "legacy-or-unavailable"))
+            appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
+            appendLine("sessionId=" + (runtimeEvents.sessionId ?: "legacy-or-unavailable"))
             appendLine()
             appendLine("[Device]")
             appendLine("manufacturer=" + env.manufacturer)
@@ -85,9 +85,9 @@ internal object DiagReport {
                     (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
-            appendLine("[Runtime health]")
+            appendLine("[Runtime snapshot]")
             appendLine("source=structured-runtime-events")
-            health.reportLines().forEach(::appendLine)
+            runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)

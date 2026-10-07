@@ -25,15 +25,6 @@ internal object CenterTransitionPolicy {
             CenterIndicator.Empty -> Family.EMPTY
         }
 
-    fun shouldAnimate(
-        previous: CenterIndicator?,
-        current: CenterIndicator?,
-    ): Boolean {
-        val previousFamily = family(previous) ?: return false
-        val currentFamily = family(current) ?: return false
-        return previousFamily != currentFamily
-    }
-
     fun decide(
         previous: CenterIndicator?,
         current: CenterIndicator?,
