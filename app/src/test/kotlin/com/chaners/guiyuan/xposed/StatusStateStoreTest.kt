@@ -13,13 +13,9 @@ class StatusStateStoreTest {
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 1,
-                signal = SignalStrength.Level(4),
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Level(4),
         )
 
         val snapshot =
@@ -28,7 +24,6 @@ class StatusStateStoreTest {
 
         assertTrue(snapshot.mobileRecoveryPending)
         assertTrue(snapshot.mobile[4]?.signal is SignalStrength.Unknown)
-        assertNull(snapshot.mobile[4]?.signalResId)
     }
 
     @Test
@@ -36,13 +31,9 @@ class StatusStateStoreTest {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 2,
-                signal = SignalStrength.Unavailable,
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Unavailable,
         )
 
         val completed =
@@ -98,13 +89,9 @@ class StatusStateStoreTest {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
         StatusStateStore.updateAirplaneMode(false)
-        StatusStateStore.updateMobile(
-            StatusStateStore.MobileIconUpdate(
-                subscriptionId = 4,
-                kind = StatusStateStore.MobileIconKind.SIGNAL,
-                resourceId = 3,
-                signal = SignalStrength.Level(3),
-            ),
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 4,
+            signal = SignalStrength.Level(3),
         )
 
         val completed =
