@@ -213,6 +213,13 @@ jobs:
           import re
 
           version = os.environ["VERSION_NAME"]
+          major = version.split(".", 1)[0]
+          if not major.isdigit() or int(major) < 1:
+              raise SystemExit(
+                  f"Stable releases require version 1.0.0 or later; {version} is a pre-1.0 checkpoint. "
+                  "Use the test channel for an explicit pre-1.0 prerelease."
+              )
+
           changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
           heading = re.compile(
               rf"^## \\[{re.escape(version)}\\] - \\d{{4}}-\\d{{2}}-\\d{{2}}$",

@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`), with the behavior-neutral maintainability cleanup promoted through PR #247 after exact-head Full validation.
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `9799dc50`; runtime behavior remains unchanged, with #254 adding a validated release-workflow safety gate. `main` is still at the PR #247 stable checkpoint.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `77b2490c`; runtime behavior remains the validated `9799dc50` state, with #255 adding documentation-only closeout. `main` is still at the PR #247 stable checkpoint.
 - PR #221 is merged after exact-head Runtime CI, Work-branch Canary, focused maintainer device validation, and integrated `dev` validation.
 - PR #223 is merged as repository / exact-target compatibility-contract maintenance without changing runtime behavior or Build identity.
 - PR #224 / Build 745 was a bounded Control Center alpha-layer performance experiment. Device validation exposed mobile-signal clipping, so the PR was closed unmerged and the experiment is rejected.
@@ -24,26 +24,20 @@
 
 ## Active objective
 
-Phase 5 / 1.0.0 qualification is active.
+Phase 5 / 1.0.0 qualification continues on `ci/formal-release-version-boundary`, based on `dev@77b2490c`.
 
-The first release-safety blocker is closed. PR #254 adds a stable-only preflight that rejects both an existing GitHub Release and an existing exact remote `v$VERSION_NAME` tag before publishing. This prevents `gh release create` from silently reusing a stale/manual tag instead of creating the version tag from the prepared `main` commit.
+The first release-safety gate is already integrated: #254 prevents stable publishing from reusing an existing bare version tag.
 
-Validation:
+The next confirmed policy mismatch is the formal-release version boundary. README and CHANGELOG consistently define 1.0.0 as the first planned formal release, while CONTRIBUTING treats the stable channel as the formal stable-release path. The current stable workflow still accepts a prepared 0.x `main` version if its changelog section exists.
 
-- exact-head Full CI #2908 passed on `adae300e`;
-- PR #254 squash-merged to `dev` as `9799dc50`;
-- integrated `dev` Full CI #2909 passed target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload.
-
-The broader Phase 5 source audit has also confirmed that README/PRIVACY/SECURITY/THIRD_PARTY_NOTICES, manifest network policy, Root entry points, direct dependency versions, Gradle Wrapper identity, CODEOWNERS/Dependabot and signing-file ignore rules materially match the current implementation. Private Vulnerability Reporting account state is still not verified because the available repository connector does not expose that setting.
-
-The next release-boundary question is whether the stable channel should explicitly reject pre-1.0 version names. Project documentation consistently treats 1.0.0 as the first planned formal release, while the current stable workflow otherwise accepts any prepared `main` version with a dated changelog section. Review that boundary separately rather than folding it into #254.
+This branch keeps pre-1.0 publishing available through the existing `test` channel/prerelease path, but rejects `stable` when the version major is below 1. It does not change the current 0.2.1 version, Build identity, test-release behavior, runtime/APK code, signing certificate, or device behavior.
 
 Current priorities:
 
-1. verify the formal-release version boundary before changing it;
-2. continue Phase 5 only from concrete release/compatibility/security evidence;
-3. keep stale historical branches classified as cleanup candidates, but do not restore their old implementation routes;
-4. keep `main` unchanged until an explicit dev-to-main promotion is chosen.
+1. run Full validation for the stable version-boundary change;
+2. merge only if workflow/build validation stays green;
+3. continue Phase 5 from concrete compatibility/security/release evidence;
+4. keep `main` unchanged until the maintainer explicitly chooses a formal promotion.
 
 ## Non-negotiable bounds
 
@@ -57,8 +51,8 @@ Current priorities:
 
 ## Immediate next
 
-- Review whether stable GitHub releases must require version 1.0.0 or later, consistent with the current first-formal-release policy.
+- Validate the stable major-version gate on `ci/formal-release-version-boundary`.
 - Keep Build 744 as the accepted runtime-behavior baseline; Build 746 remains the current 0.2.1 build identity.
-- Use `dev@9799dc50` as the current integration base.
-- Do not add release/privacy/security documents merely to fill a checklist; verify existing claims against source and workflow behavior.
+- Use `dev@77b2490c` as the current integration head and `9799dc50` as the latest non-documentation validated state.
+- Keep pre-1.0 explicit publishing on the test/prerelease channel; do not promote 0.x through formal stable release automation.
 - External version remains 0.2.1 until the maintainer explicitly authorizes another display-version bump.
