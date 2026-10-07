@@ -378,15 +378,15 @@ internal object CcTransitionOwner {
                         for (index in 0 until limit) {
                             val child = group.getChildAt(index)
                             val slot =
-                                NativeParticipantRuntimeAccess.slotOf(child)
-                                    ?: NativeParticipantRuntimeAccess.resourceEntryName(child)
+                                NativeParticipantAccess.slotOf(child)
+                                    ?: NativeParticipantAccess.resourceEntryName(child)
                                     ?: child.javaClass.simpleName
                             add(
                                 slot +
                                     "(state=" +
-                                    (NativeParticipantRuntimeAccess.visibleState(child) ?: -1) +
+                                    (NativeParticipantAccess.visibleState(child) ?: -1) +
                                     ",icon=" +
-                                    (NativeParticipantRuntimeAccess.iconVisible(child)?.toString()
+                                    (NativeParticipantAccess.iconVisible(child)?.toString()
                                         ?: "unknown") +
                                     ",v=" + child.visibility +
                                     ",a=" + child.alpha +
@@ -408,7 +408,7 @@ internal object CcTransitionOwner {
         private fun fakeCarrierHierarchySummary(): String {
             fun token(view: View): String {
                 val entry =
-                    NativeParticipantRuntimeAccess.resourceEntryName(view)
+                    NativeParticipantAccess.resourceEntryName(view)
                         ?: "no-id"
                 return view.javaClass.simpleName + ":" + entry +
                     "(l=" + view.left +
@@ -2645,7 +2645,7 @@ internal object CcTransitionOwner {
                     val value = view.text?.toString().orEmpty()
                     val digits = value.filter(Char::isDigit)
                     val entry =
-                        NativeParticipantRuntimeAccess.resourceEntryName(view)
+                        NativeParticipantAccess.resourceEntryName(view)
                             ?.lowercase()
                             .orEmpty()
                     var score = 0
@@ -2856,7 +2856,7 @@ internal object CcTransitionOwner {
 
             fun viewToken(view: View): String {
                 val entry =
-                    NativeParticipantRuntimeAccess.resourceEntryName(view)
+                    NativeParticipantAccess.resourceEntryName(view)
                         ?: "no-id"
                 val base =
                     view.javaClass.simpleName + ":" + entry +
@@ -2881,7 +2881,7 @@ internal object CcTransitionOwner {
             fun collect(view: View, depth: Int) {
                 if (descendants.size >= BATTERY_NUMBER_PROBE_MAX_VIEWS) return
                 val entry =
-                    NativeParticipantRuntimeAccess.resourceEntryName(view)
+                    NativeParticipantAccess.resourceEntryName(view)
                         ?.lowercase()
                         .orEmpty()
                 if (
@@ -3116,7 +3116,7 @@ internal object CcTransitionOwner {
             root: View,
             entryName: String,
         ): View? {
-            if (NativeParticipantRuntimeAccess.resourceEntryName(root) == entryName) {
+            if (NativeParticipantAccess.resourceEntryName(root) == entryName) {
                 return root
             }
             val group = root as? ViewGroup ?: return null
@@ -3286,7 +3286,7 @@ internal object CcTransitionOwner {
                         ":" +
                         (
                             opticalView?.let { view ->
-                                (NativeParticipantRuntimeAccess.resourceEntryName(view)
+                                (NativeParticipantAccess.resourceEntryName(view)
                                     ?: view.javaClass.simpleName) +
                                     ":" + view.width + "x" + view.height
                             } ?: "none"
@@ -3463,7 +3463,7 @@ internal object CcTransitionOwner {
                 val result = ArrayList<View>()
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    if (NativeParticipantRuntimeAccess.slotOf(child) == slot) {
+                    if (NativeParticipantAccess.slotOf(child) == slot) {
                         result += child
                     }
                 }

@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class NativeParticipantRuntimeAccessTest {
+class NativeParticipantAccessTest {
     @Test
     fun classifiesHyperOsContentSlotResourceSetter() {
         val method =
@@ -16,8 +16,8 @@ class NativeParticipantRuntimeAccessTest {
             )
 
         assertEquals(
-            NativeParticipantRuntimeAccess.ResourceSetIconMode.CONTENT_SLOT_RES,
-            NativeParticipantRuntimeAccess.classifyResourceSetIcon(method),
+            NativeParticipantAccess.ResourceSetIconMode.CONTENT_SLOT_RES,
+            NativeParticipantAccess.classifyResourceSetIcon(method),
         )
     }
 
@@ -32,8 +32,8 @@ class NativeParticipantRuntimeAccessTest {
             )
 
         assertEquals(
-            NativeParticipantRuntimeAccess.ResourceSetIconMode.SLOT_RES_CONTENT,
-            NativeParticipantRuntimeAccess.classifyResourceSetIcon(method),
+            NativeParticipantAccess.ResourceSetIconMode.SLOT_RES_CONTENT,
+            NativeParticipantAccess.classifyResourceSetIcon(method),
         )
     }
 
@@ -47,8 +47,8 @@ class NativeParticipantRuntimeAccessTest {
             )
 
         assertEquals(
-            NativeParticipantRuntimeAccess.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
-            NativeParticipantRuntimeAccess.classifyRemoval(method),
+            NativeParticipantAccess.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
+            NativeParticipantAccess.classifyRemoval(method),
         )
     }
 
@@ -62,8 +62,8 @@ class NativeParticipantRuntimeAccessTest {
             )
 
         assertEquals(
-            NativeParticipantRuntimeAccess.RemovalMode.REMOVE_TAGGED,
-            NativeParticipantRuntimeAccess.classifyRemoval(method),
+            NativeParticipantAccess.RemovalMode.REMOVE_TAGGED,
+            NativeParticipantAccess.classifyRemoval(method),
         )
     }
 
@@ -76,10 +76,10 @@ class NativeParticipantRuntimeAccessTest {
             )
 
         assertNull(
-            NativeParticipantRuntimeAccess.classifyResourceSetIcon(method),
+            NativeParticipantAccess.classifyResourceSetIcon(method),
         )
         assertNull(
-            NativeParticipantRuntimeAccess.classifyRemoval(method),
+            NativeParticipantAccess.classifyRemoval(method),
         )
     }
 

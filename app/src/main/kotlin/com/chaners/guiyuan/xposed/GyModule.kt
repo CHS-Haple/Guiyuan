@@ -4280,9 +4280,6 @@ class GyModule : XposedModule() {
                 event = "runtimePreferences.bind",
                 component = "featureSettings",
                 state = "unavailable",
-                "combinedStatusEnabled" to false,
-                "keyguardEnabled" to false,
-                "aodEnabled" to false,
                 "reason" to (error.message ?: error.javaClass.simpleName),
                 "fallback" to "native-systemui",
             )

@@ -2,13 +2,13 @@ package com.chaners.guiyuan.xposed
 
 internal object ParticipantContractProbe {
     fun inspect(host: Any): Snapshot {
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = NativeParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
 
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return Snapshot.unavailable(resolution.reason)
             }
 
@@ -24,50 +24,50 @@ internal object ParticipantContractProbe {
             managerClass.name.endsWith("DarkIconManager") ||
                 managerClass.name.endsWith("IconManager")
         val groupMatches =
-            NativeParticipantRuntimeAccess.resourceEntryName(handles.group) ==
+            NativeParticipantAccess.resourceEntryName(handles.group) ==
                 "statusIcons"
 
         val setIconSignatures =
-            NativeParticipantRuntimeAccess.methodSignatures(
+            NativeParticipantAccess.methodSignatures(
                 clazz = controllerClass,
                 names = setOf("setIcon"),
             )
         val setIconHolder =
-            NativeParticipantRuntimeAccess.setIconHolderAvailable(
+            NativeParticipantAccess.setIconHolderAvailable(
                 controllerClass,
             )
         val resourceSetter =
-            NativeParticipantRuntimeAccess.resourceSetter(
+            NativeParticipantAccess.resourceSetter(
                 controllerClass,
             )
         val setIconVisibility =
-            NativeParticipantRuntimeAccess.visibilityMethod(
+            NativeParticipantAccess.visibilityMethod(
                 controllerClass,
             ) != null
         val removal =
-            NativeParticipantRuntimeAccess.removal(
+            NativeParticipantAccess.removal(
                 controllerClass,
             )
         val removeSignatures =
-            NativeParticipantRuntimeAccess.methodSignatures(
+            NativeParticipantAccess.methodSignatures(
                 clazz = controllerClass,
                 names = setOf("removeIcon", "removeAllIconsForSlot"),
             )
 
         val addIconGroup =
-            NativeParticipantRuntimeAccess.hasMethodSignature(
+            NativeParticipantAccess.hasMethodSignature(
                 clazz = controllerClass,
                 name = "addIconGroup",
                 parameterTypes = listOf(managerClass.name),
             )
         val removeIconGroup =
-            NativeParticipantRuntimeAccess.hasMethodSignature(
+            NativeParticipantAccess.hasMethodSignature(
                 clazz = controllerClass,
                 name = "removeIconGroup",
                 parameterTypes = listOf(managerClass.name),
             )
         val addHolder =
-            NativeParticipantRuntimeAccess.hasMethodSignature(
+            NativeParticipantAccess.hasMethodSignature(
                 clazz = managerClass,
                 name = "addHolder",
                 parameterTypes =
@@ -75,12 +75,12 @@ internal object ParticipantContractProbe {
                         "int",
                         "java.lang.String",
                         "boolean",
-                        NativeParticipantRuntimeAccess.ICON_HOLDER,
+                        NativeParticipantAccess.ICON_HOLDER,
                     ),
             )
 
         val holderFactories =
-            NativeParticipantRuntimeAccess.holderFactories(
+            NativeParticipantAccess.holderFactories(
                 holderClass,
             )
         val holderFactoryReady = holderFactories.isNotEmpty()
@@ -118,7 +118,7 @@ internal object ParticipantContractProbe {
             managerClass = managerClass.name,
             groupClass = handles.group.javaClass.name,
             groupResource =
-                NativeParticipantRuntimeAccess.resourceEntryName(
+                NativeParticipantAccess.resourceEntryName(
                     handles.group,
                 ),
             controllerClass = controllerClass.name,
@@ -144,7 +144,7 @@ internal object ParticipantContractProbe {
             removeSignatures = removeSignatures,
             holderFactorySignatures =
                 holderFactories.map(
-                    NativeParticipantRuntimeAccess::methodSignature,
+                    NativeParticipantAccess::methodSignature,
                 ),
         )
     }

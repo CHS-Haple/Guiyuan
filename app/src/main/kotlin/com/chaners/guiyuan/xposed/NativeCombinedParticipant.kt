@@ -639,14 +639,14 @@ internal object NativeCombinedParticipant {
         }
 
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+            when (val resolution = NativeParticipantAccess.resolve(host)) {
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return HotReloadAdoptResult.Failure(resolution.reason)
             }
         val holder =
-            NativeParticipantRuntimeAccess.iconHolder(
+            NativeParticipantAccess.iconHolder(
                 handles = handles,
                 slot = SLOT,
             ) ?: return HotReloadAdoptResult.NotPresent
@@ -664,7 +664,7 @@ internal object NativeCombinedParticipant {
             fieldOrNull(holder, "isVisible")
                 ?: return HotReloadAdoptResult.Failure("native-visible-field-missing")
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            NativeParticipantAccess.removal(handles.controller.javaClass)
                 ?: return HotReloadAdoptResult.Failure("removal-contract-missing")
         val iconList =
             readField(handles.controller, "mStatusBarIconList")
@@ -680,7 +680,7 @@ internal object NativeCombinedParticipant {
 
         val removed =
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                NativeParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
@@ -692,14 +692,14 @@ internal object NativeCombinedParticipant {
         }
 
         val cleared =
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            NativeParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
             )
         if (
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null ||
-            NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) != null
+            NativeParticipantAccess.findSlotView(handles.group, SLOT) != null ||
+            NativeParticipantAccess.iconHolder(handles, SLOT) != null
         ) {
             return HotReloadAdoptResult.Failure("native-removal-verification-failed")
         }
@@ -734,23 +734,23 @@ internal object NativeCombinedParticipant {
                 initializerField.set(holder, creator)
                 slotField.set(holder, SLOT)
                 visibleField.setBoolean(holder, true)
-                NativeParticipantRuntimeAccess.invokeSetIconHolder(
+                NativeParticipantAccess.invokeSetIconHolder(
                     handles = handles,
                     slot = SLOT,
                     holder = holder,
                 )
-                NativeParticipantRuntimeAccess.iconHolder(handles, SLOT) === holder &&
-                    NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) != null
+                NativeParticipantAccess.iconHolder(handles, SLOT) === holder &&
+                    NativeParticipantAccess.findSlotView(handles.group, SLOT) != null
             }.getOrDefault(false)
         if (!rebound) {
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(
+                NativeParticipantAccess.invokeRemoval(
                     handles = handles,
                     removal = removal,
                     slot = SLOT,
                 )
             }
-            NativeParticipantRuntimeAccess.clearBindableEntries(
+            NativeParticipantAccess.clearBindableEntries(
                 handles = handles,
                 slot = SLOT,
                 expectedHolder = holder,
@@ -781,17 +781,17 @@ internal object NativeCombinedParticipant {
         if (!injected) {
             return AttachResult.Failure(failureReason ?: "participant-not-injected")
         }
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = NativeParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return AttachResult.Failure(resolution.reason)
             }
 
         val root =
-            NativeParticipantRuntimeAccess.findSlotView(handles.group, SLOT) as? FrameLayout
+            NativeParticipantAccess.findSlotView(handles.group, SLOT) as? FrameLayout
                 ?: return AttachResult.Failure("native-root-missing")
         val bindingState =
             bindingStates[root]
@@ -813,7 +813,7 @@ internal object NativeCombinedParticipant {
         val stableSlotMetrics =
             StatusBarStableSession.currentSlotMetrics(host)
         val stableStatusIconsWidth =
-            NativeStatusBarSlotGeometry.resolveCapturedOrLiveChildWidth(
+            NativeSlotGeometry.resolveCapturedOrLiveChildWidth(
                 capturedWidth = stableSlotMetrics?.statusIconsWidth,
                 layoutWidth = statusIcons.width,
                 measuredWidth = statusIcons.measuredWidth,
@@ -822,14 +822,14 @@ internal object NativeCombinedParticipant {
             privacy
                 ?.takeIf { view -> view.visibility == View.VISIBLE }
                 ?.let { view ->
-                    NativeStatusBarSlotGeometry.resolveStableChildWidth(
+                    NativeSlotGeometry.resolveStableChildWidth(
                         layoutWidth = view.width,
                         measuredWidth = view.measuredWidth,
                     )
                 }
                 ?: 0
         val slotGeometry =
-            NativeStatusBarSlotGeometry.resolve(
+            NativeSlotGeometry.resolve(
                 containerWidth =
                     batteryContainer.width
                         .takeIf { width -> width > 0 }
@@ -1020,7 +1020,7 @@ internal object NativeCombinedParticipant {
             registryRestored = registryRestored,
             rootClass = root.javaClass.name,
             rootVisibility = visibilityName(root.visibility),
-            iconVisible = NativeParticipantRuntimeAccess.iconVisible(root),
+            iconVisible = NativeParticipantAccess.iconVisible(root),
             layoutWidth = root.layoutParams?.width ?: Int.MIN_VALUE,
             layoutHeight = root.layoutParams?.height ?: Int.MIN_VALUE,
             renderWidth = render.measuredWidth,
@@ -1056,7 +1056,7 @@ internal object NativeCombinedParticipant {
                     " rootVisibility=" +
                     (root?.let { visibilityName(it.visibility) } ?: "none") +
                     " iconVisible=" +
-                    (root?.let { NativeParticipantRuntimeAccess.iconVisible(it) } ?: "none") +
+                    (root?.let { NativeParticipantAccess.iconVisible(it) } ?: "none") +
                     " visible=" + handoffCommitted,
             )
         }
@@ -1423,7 +1423,7 @@ internal object NativeCombinedParticipant {
             if (child === root) {
                 continue
             }
-            val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+            val slot = NativeParticipantAccess.slotOf(child) ?: continue
             if (slot == "wifi" || slot == "mobile" || slot == "stacked_mobile") {
                 tracked += TransitionDiagnosticProbe.TrackedView.create(slot, child)
             }
@@ -1612,7 +1612,7 @@ internal object NativeCombinedParticipant {
                         }
 
                         val iconVisible =
-                            NativeParticipantRuntimeAccess.iconVisible(root) == true
+                            NativeParticipantAccess.iconVisible(root) == true
                         val render = renderViewRef?.get()
                         val battery = batteryRef?.get()
                         val parent = root.parent as? ViewGroup
@@ -1945,12 +1945,12 @@ internal object NativeCombinedParticipant {
         }.getOrNull()
     }
 
-    private fun resolveCurrentHandles(): NativeParticipantRuntimeAccess.Handles? {
+    private fun resolveCurrentHandles(): NativeParticipantAccess.Handles? {
         val host = hostRef?.get() ?: return null
-        return when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-            is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+        return when (val resolution = NativeParticipantAccess.resolve(host)) {
+            is NativeParticipantAccess.ResolveResult.Ready ->
                 resolution.handles
-            is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+            is NativeParticipantAccess.ResolveResult.Failure ->
                 null
         }
     }

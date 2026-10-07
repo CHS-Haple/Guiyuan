@@ -4,37 +4,37 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class SystemUiBatterySemanticPolicyTest {
+class BatterySemanticPolicyTest {
     @Test
     fun mapsNativeProgressStatusesWithoutReconstructingPriority() {
         assertEquals(
             BatterySemanticState.CHARGING,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("QUICK_CHARGING"),
+            BatterySemanticPolicy.fromNativeProgressStatus("QUICK_CHARGING"),
         )
         assertEquals(
             BatterySemanticState.CHARGING,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("PERF_CHARGE_MODE"),
+            BatterySemanticPolicy.fromNativeProgressStatus("PERF_CHARGE_MODE"),
         )
         assertEquals(
             BatterySemanticState.POWER_SAVE,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("POWER_SAVE"),
+            BatterySemanticPolicy.fromNativeProgressStatus("POWER_SAVE"),
         )
         assertEquals(
             BatterySemanticState.SUPER_POWER_SAVE,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("SUPER_POWER_SAVE"),
+            BatterySemanticPolicy.fromNativeProgressStatus("SUPER_POWER_SAVE"),
         )
         assertEquals(
             BatterySemanticState.PERFORMANCE,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("PERFORMANCE_MODE"),
+            BatterySemanticPolicy.fromNativeProgressStatus("PERFORMANCE_MODE"),
         )
         assertEquals(
             BatterySemanticState.LOW,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("LOW"),
+            BatterySemanticPolicy.fromNativeProgressStatus("LOW"),
         )
         assertEquals(
             BatterySemanticState.NORMAL,
-            SystemUiBatterySemanticPolicy.fromNativeProgressStatus("NORMAL_DARK"),
+            BatterySemanticPolicy.fromNativeProgressStatus("NORMAL_DARK"),
         )
-        assertNull(SystemUiBatterySemanticPolicy.fromNativeProgressStatus("UNKNOWN"))
+        assertNull(BatterySemanticPolicy.fromNativeProgressStatus("UNKNOWN"))
     }
 }

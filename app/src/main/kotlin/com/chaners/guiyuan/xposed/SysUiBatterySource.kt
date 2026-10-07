@@ -83,7 +83,7 @@ internal object SysUiBatterySource {
                     (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
                 }.getOrNull()
             val semanticState =
-                SystemUiBatterySemanticPolicy.fromNativeProgressStatus(
+                BatterySemanticPolicy.fromNativeProgressStatus(
                     nativeStatusName,
                 )
             val miuiOptimizationEnabled =

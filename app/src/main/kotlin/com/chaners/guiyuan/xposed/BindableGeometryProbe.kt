@@ -33,13 +33,13 @@ internal object BindableGeometryProbe {
             return Snapshot.unavailable("battery-geometry-not-ready")
         }
 
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = NativeParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
 
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return Snapshot.unavailable(resolution.reason)
             }
 

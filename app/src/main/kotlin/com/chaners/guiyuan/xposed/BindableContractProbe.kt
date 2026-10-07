@@ -20,13 +20,13 @@ internal object BindableContractProbe {
     private const val MAX_SLOT_ORDER_ENTRIES = 40
 
     fun inspect(host: Any): Snapshot {
-        val resolution = NativeParticipantRuntimeAccess.resolve(host)
+        val resolution = NativeParticipantAccess.resolve(host)
         val handles =
             when (resolution) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready ->
+                is NativeParticipantAccess.ResolveResult.Ready ->
                     resolution.handles
 
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure ->
+                is NativeParticipantAccess.ResolveResult.Failure ->
                     return Snapshot.unavailable(resolution.reason)
             }
 
@@ -159,7 +159,7 @@ internal object BindableContractProbe {
                             ",class=" + child.javaClass.name +
                             ",visibility=" + visibilityName(child.visibility) +
                             ",iconVisible=" +
-                            (NativeParticipantRuntimeAccess.iconVisible(child)
+                            (NativeParticipantAccess.iconVisible(child)
                                 ?.toString() ?: "unknown") +
                             ",bounds=" +
                             child.left + "," + child.top + "-" +

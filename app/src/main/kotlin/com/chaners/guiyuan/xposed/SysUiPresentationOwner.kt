@@ -348,7 +348,7 @@ internal object SysUiPresentationOwner {
             return Result.Failure("home-host-mismatch")
         }
         val statusIcons =
-            NativeParticipantRuntimeAccess.groupFor(host)
+            NativeParticipantAccess.groupFor(host)
                 ?: return Result.Failure("status-icon-group-missing")
         if (statusIcons.javaClass.name != STATUS_ICON_CONTAINER) {
             return Result.Failure("status-icon-group-type-mismatch")
@@ -974,13 +974,13 @@ internal object SysUiPresentationOwner {
     @Synchronized
     fun cleanupLegacyParticipant(host: Any): LegacyCleanupResult {
         val group =
-            NativeParticipantRuntimeAccess.groupFor(host)
+            NativeParticipantAccess.groupFor(host)
                 ?: return LegacyCleanupResult.Failure("status-icon-group-missing")
-        val legacyView = NativeParticipantRuntimeAccess.findSlotView(group, LEGACY_SLOT)
+        val legacyView = NativeParticipantAccess.findSlotView(group, LEGACY_SLOT)
         val handles =
-            when (val resolution = NativeParticipantRuntimeAccess.resolve(host)) {
-                is NativeParticipantRuntimeAccess.ResolveResult.Ready -> resolution.handles
-                is NativeParticipantRuntimeAccess.ResolveResult.Failure -> {
+            when (val resolution = NativeParticipantAccess.resolve(host)) {
+                is NativeParticipantAccess.ResolveResult.Ready -> resolution.handles
+                is NativeParticipantAccess.ResolveResult.Failure -> {
                     return if (legacyView == null) {
                         LegacyCleanupResult.NotPresent
                     } else {
@@ -988,19 +988,19 @@ internal object SysUiPresentationOwner {
                     }
                 }
             }
-        val holder = NativeParticipantRuntimeAccess.iconHolder(handles, LEGACY_SLOT)
+        val holder = NativeParticipantAccess.iconHolder(handles, LEGACY_SLOT)
         if (legacyView == null && holder == null) {
             return LegacyCleanupResult.NotPresent
         }
         val removal =
-            NativeParticipantRuntimeAccess.removal(handles.controller.javaClass)
+            NativeParticipantAccess.removal(handles.controller.javaClass)
                 ?: return LegacyCleanupResult.Failure("legacy-removal-contract-missing")
         val removed =
             runCatching {
-                NativeParticipantRuntimeAccess.invokeRemoval(handles, removal, LEGACY_SLOT)
-                NativeParticipantRuntimeAccess.clearBindableEntries(handles, LEGACY_SLOT)
-                NativeParticipantRuntimeAccess.findSlotView(group, LEGACY_SLOT) == null &&
-                    NativeParticipantRuntimeAccess.iconHolder(handles, LEGACY_SLOT) == null
+                NativeParticipantAccess.invokeRemoval(handles, removal, LEGACY_SLOT)
+                NativeParticipantAccess.clearBindableEntries(handles, LEGACY_SLOT)
+                NativeParticipantAccess.findSlotView(group, LEGACY_SLOT) == null &&
+                    NativeParticipantAccess.iconHolder(handles, LEGACY_SLOT) == null
             }.getOrDefault(false)
         return if (removed) {
             LegacyCleanupResult.Removed
@@ -1404,7 +1404,7 @@ internal object SysUiPresentationOwner {
             return clipStates
                 .mapNotNull { state ->
                     state.view.get()
-                        ?.let(NativeParticipantRuntimeAccess::slotOf)
+                        ?.let(NativeParticipantAccess::slotOf)
                         ?.takeIf(representedSlots::contains)
                 }
                 .toSet()
@@ -2419,7 +2419,7 @@ internal object SysUiPresentationOwner {
                 buildSet {
                     for (index in 0 until group.childCount) {
                         val child = group.getChildAt(index)
-                        val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+                        val slot = NativeParticipantAccess.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
                             NativeNetworkSuppressor
@@ -2481,7 +2481,7 @@ internal object SysUiPresentationOwner {
             if (steadyPeerMirrorActive) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
+                    val slot = NativeParticipantAccess.slotOf(child) ?: continue
                     if (slot !in representedSlots && slot in steadyPeerMirrorHiddenSlots) {
                         targets += child
                     }
@@ -2529,7 +2529,7 @@ internal object SysUiPresentationOwner {
             targets += batteryView
             for (index in 0 until group.childCount) {
                 val child = group.getChildAt(index)
-                if (NativeParticipantRuntimeAccess.slotOf(child) in representedSlots) {
+                if (NativeParticipantAccess.slotOf(child) in representedSlots) {
                     targets += child
                 }
             }

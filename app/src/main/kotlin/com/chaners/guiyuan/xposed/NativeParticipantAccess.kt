@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object NativeParticipantRuntimeAccess {
+internal object NativeParticipantAccess {
     const val PHONE_STATUS_BAR_VIEW =
         "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"
     const val ICON_HOLDER =
