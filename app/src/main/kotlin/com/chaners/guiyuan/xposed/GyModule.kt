@@ -61,12 +61,15 @@ class GyModule : XposedModule() {
     // Non-null only while Keyguard is taking over the native AOD boundary.
     private var boundaryHandoff: BoundaryHandoff? = null
     private var homeAodFallback = HomeAodFallback.NONE
+    // Origin evidence and target prearm have different lifetimes; neither is the fallback phase.
     private var homeAodOriginPending = false
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
+    // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
     private var keyguardReadyObserved = false
+    // CC can keep this lease while a Keyguard readiness edge is being handed off.
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()

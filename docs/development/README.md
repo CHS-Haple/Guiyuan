@@ -10,7 +10,7 @@ Writing/synchronization rules live directly in [CONTRIBUTING.md](../../CONTRIBUT
 
 ## Daily workflow
 
-Start with CONTRIBUTING + CURRENT. Read ROADMAP, architecture/reference material, or historical DEVLOG entries only when the active task needs them.
+Start with CONTRIBUTING + CURRENT. Read ROADMAP, architecture/reference material, or historical DEVLOG entries only when the active task needs them. Before a non-trivial code commit or CI checkpoint, run the maintainability/naturalness review required by CONTRIBUTING.
 
 Do not synchronize every fact everywhere:
 - CURRENT changes when baseline, active objective, blocker, validation state, or next step materially changes.
