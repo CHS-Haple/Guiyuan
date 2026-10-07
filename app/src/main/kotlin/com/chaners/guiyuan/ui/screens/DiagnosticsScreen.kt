@@ -97,10 +97,9 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(true) }
+    var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var refreshGen by rememberSaveable { mutableIntStateOf(0) }
     var reportBusy by rememberSaveable { mutableStateOf(false) }
     var exportOpen by rememberSaveable { mutableStateOf(false) }
     var levelFilter by rememberSaveable {
@@ -125,11 +124,28 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_refresh_complete),
         )
 
-    fun requestRefresh(fromPull: Boolean = false) {
+    suspend fun captureSnapshot() {
+        try {
+            snapshot = DiagSnapshot.capture(context.applicationContext)
+            expandedKey = null
+            viewCleared = false
+        } finally {
+            loading = false
+            pullRefreshing = false
+        }
+    }
+
+    fun reloadSnapshot() {
         if (loading) return
         loading = true
-        pullRefreshing = fromPull
-        refreshGen += 1
+        scope.launch { captureSnapshot() }
+    }
+
+    fun refreshFromPull() {
+        if (loading) return
+        loading = true
+        pullRefreshing = true
+        scope.launch { captureSnapshot() }
     }
 
     fun withReport(onReady: suspend (String) -> Unit) {
@@ -165,16 +181,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             }
         }
 
-    LaunchedEffect(refreshGen) {
-        loading = true
-        try {
-            snapshot = DiagSnapshot.capture(context.applicationContext)
-            expandedKey = null
-            viewCleared = false
-        } finally {
-            loading = false
-            pullRefreshing = false
-        }
+    LaunchedEffect(Unit) {
+        captureSnapshot()
     }
 
     val reportEnabled =
@@ -299,7 +307,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 onDiagLevelChange = { level ->
                     if (level != diagSettings.level) {
                         diagRepo.setLevel(level)
-                        requestRefresh()
+                        reloadSnapshot()
                     }
                 },
                 onScrollTop = {
@@ -323,7 +331,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         pullToRefresh =
             SettingsPullToRefresh(
                 refreshing = pullRefreshing,
-                onRefresh = { requestRefresh(fromPull = true) },
+                onRefresh = ::refreshFromPull,
                 texts = refreshTexts,
             ),
     ) {
@@ -337,7 +345,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 }
             }
             loading && snapshot == null -> {
-                // Initial capture is silent; explicit refresh actions own refresh feedback.
+                // Initial capture is silent; only a pull gesture owns refresh feedback.
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {
