@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
@@ -72,6 +73,7 @@ internal fun AppearanceScreen(
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
+    onLiquidModeChange: (LiquidMode) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -91,6 +93,11 @@ internal fun AppearanceScreen(
         listOf(
             stringResource(R.string.floating_navigation_content_icon_only),
             stringResource(R.string.floating_navigation_content_icon_and_text),
+        )
+    val liquidModeOptions =
+        listOf(
+            stringResource(R.string.floating_navigation_liquid_mode_blur),
+            stringResource(R.string.floating_navigation_liquid_mode_clear),
         )
 
     SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
@@ -166,6 +173,27 @@ internal fun AppearanceScreen(
                         }
                     },
                 )
+                AnimatedPreferenceGroup(visible = appearance.navStyle == NavStyle.Liquid) {
+                    OverlayDropdownPreference(
+                        items = liquidModeOptions,
+                        selectedIndex = appearance.liquidMode.ordinal,
+                        title = stringResource(R.string.floating_navigation_liquid_mode),
+                        summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_style,
+                            )
+                        },
+                        showValue = true,
+                        onSelectedIndexChange = { index ->
+                            LiquidMode.entries.getOrNull(index)?.let { mode ->
+                                if (mode != appearance.liquidMode) {
+                                    onLiquidModeChange(mode)
+                                }
+                            }
+                        },
+                    )
+                }
                 OverlayDropdownPreference(
                     items = floatingContentOptions,
                     selectedIndex = appearance.navContent.ordinal,
@@ -260,6 +288,7 @@ private fun AppearanceMiniPreview(
                     floating = appearance.navEnabled,
                     style = appearance.navStyle,
                     content = appearance.navContent,
+                    liquidMode = appearance.liquidMode,
                     dark = dark,
                 )
             }
@@ -452,6 +481,7 @@ private fun MiniNavigationPreview(
     floating: Boolean,
     style: NavStyle,
     content: NavContent,
+    liquidMode: LiquidMode,
     dark: Boolean,
 ) {
     val miuixMaterialActive =
@@ -558,6 +588,7 @@ private fun MiniNavigationPreview(
                         backdrop = liquidBackdrop,
                         tabsCount = labels.size,
                         dark = dark,
+                        mode = liquidMode,
                         interactive = false,
                         modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                     ) {

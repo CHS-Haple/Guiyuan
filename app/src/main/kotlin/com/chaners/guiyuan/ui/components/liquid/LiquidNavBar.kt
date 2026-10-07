@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -80,6 +81,31 @@ internal object LiquidNavSpec {
     val sidePadding = 36.dp
 }
 
+private data class LiquidParams(
+    val blur: Dp,
+    val refractionHeight: Dp,
+    val refractionAmount: Dp,
+    val surfaceAlpha: Float,
+)
+
+private fun LiquidMode.params(): LiquidParams =
+    when (this) {
+        LiquidMode.Blur ->
+            LiquidParams(
+                blur = 8.dp,
+                refractionHeight = 24.dp,
+                refractionAmount = 24.dp,
+                surfaceAlpha = 0.40f,
+            )
+        LiquidMode.Clear ->
+            LiquidParams(
+                blur = 2.dp,
+                refractionHeight = 12.dp,
+                refractionAmount = 24.dp,
+                surfaceAlpha = 0.18f,
+            )
+    }
+
 @Composable
 internal fun liquidNavBottomPadding(): Dp {
     val inset =
@@ -97,6 +123,7 @@ internal fun LiquidNavBar(
     backdrop: Backdrop,
     tabsCount: Int,
     dark: Boolean,
+    mode: LiquidMode = LiquidMode.Clear,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
@@ -105,11 +132,12 @@ internal fun LiquidNavBar(
 
     val accentColor =
         if (dark) Color(0xFF0091FF) else Color(0xFF0088FF)
+    val params = mode.params()
     val containerColor =
         if (dark) {
-            Color(0xFF121212).copy(alpha = 0.40f)
+            Color(0xFF121212).copy(alpha = params.surfaceAlpha)
         } else {
-            Color(0xFFFAFAFA).copy(alpha = 0.40f)
+            Color(0xFFFAFAFA).copy(alpha = params.surfaceAlpha)
         }
     val tabsBackdrop = rememberLayerBackdrop()
 
@@ -223,8 +251,11 @@ internal fun LiquidNavBar(
                         shape = { Capsule() },
                         effects = {
                             vibrancy()
-                            blur(8.dp.toPx())
-                            lens(24.dp.toPx(), 24.dp.toPx())
+                            blur(params.blur.toPx())
+                            lens(
+                                params.refractionHeight.toPx(),
+                                params.refractionAmount.toPx(),
+                            )
                         },
                         layerBlock = {
                             val progress = motion.pressProgress
@@ -269,10 +300,10 @@ internal fun LiquidNavBar(
                             effects = {
                                 val progress = motion.pressProgress
                                 vibrancy()
-                                blur(8.dp.toPx())
+                                blur(params.blur.toPx())
                                 lens(
-                                    24.dp.toPx() * progress,
-                                    24.dp.toPx() * progress,
+                                    params.refractionHeight.toPx() * progress,
+                                    params.refractionAmount.toPx() * progress,
                                 )
                             },
                             highlight = {

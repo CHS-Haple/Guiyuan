@@ -20,6 +20,7 @@ import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.AppearanceRepo
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.GyApp
@@ -97,6 +98,9 @@ class MainActivity : ComponentActivity() {
                 },
                 onNavContentChange = { content: NavContent ->
                     scope.launch { repo.setNavContent(content) }
+                },
+                onLiquidModeChange = { mode: LiquidMode ->
+                    scope.launch { repo.setLiquidMode(mode) }
                 },
                 onSwipeBackChange = { enabled ->
                     scope.launch { repo.setSwipeBack(enabled) }

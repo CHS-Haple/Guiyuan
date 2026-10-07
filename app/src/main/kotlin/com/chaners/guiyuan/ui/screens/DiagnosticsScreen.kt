@@ -76,6 +76,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
@@ -118,6 +119,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
+    val refreshTitle = stringResource(R.string.diagnostics_refresh)
     val refreshTexts =
         listOf(
             stringResource(R.string.diagnostics_pull_to_refresh),
@@ -236,6 +238,14 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         actions = {
+            TooltipBox(text = refreshTitle) {
+                IconButton(
+                    onClick = { requestRefresh() },
+                    enabled = !loading && !exportOpen,
+                ) {
+                    Icon(MiuixIcons.Refresh, contentDescription = refreshTitle)
+                }
+            }
             TooltipBox(text = shareTitle) {
                 IconButton(
                     onClick = {
@@ -338,13 +348,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 }
             }
             loading && snapshot == null -> {
-                item(key = "diagnostics-state-loading") {
-                    LogStateCard(
-                        text = stringResource(R.string.diagnostics_log_loading),
-                        loading = true,
-                        modifier = Modifier.animateItem(),
-                    )
-                }
+                // Initial capture is silent; explicit refresh actions own refresh feedback.
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {

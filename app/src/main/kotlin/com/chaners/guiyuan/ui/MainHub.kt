@@ -185,6 +185,7 @@ internal fun MainHub(
                             backdrop = liquidBackdrop,
                             tabsCount = items.size,
                             dark = dark,
+                            mode = appearance.liquidMode,
                             modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                         ) {
                             items.forEachIndexed { index, item ->
