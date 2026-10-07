@@ -2428,7 +2428,7 @@ internal object SysUiPresentationOwner {
                         val slot = NativeParticipantRuntimeAccess.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
-                            NativeNetworkSuppressionOwner
+                            NativeNetworkSuppressor
                                 .readIslandVisibilityState(group, child)
                                 ?: continue
                         if (

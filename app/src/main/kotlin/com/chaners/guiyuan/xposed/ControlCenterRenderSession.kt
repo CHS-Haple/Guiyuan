@@ -775,7 +775,7 @@ internal object ControlCenterRenderSession {
         ) {
             val peerTint =
                 statusIcons.get()?.let(
-                    NativeNetworkSuppressionOwner::currentStatusIconTint,
+                    NativeNetworkSuppressor::currentStatusIconTint,
                 )
             val resolved =
                 TintAuthority.resolveBatteryEvent(
