@@ -302,10 +302,7 @@ class GyModule : XposedModule() {
                 ScenePolicy.StableKeyguardAodScene.UNKNOWN
             aodWindow = null
             clearBoundaryHandoff()
-                (homeAodFallback == HomeAodFallback.CANDIDATE) = false
-            if (homeAodFallback == HomeAodFallback.ACTIVE) {
-                homeAodFallback = HomeAodFallback.NONE
-            }
+            homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             ccExpansion = 0f
