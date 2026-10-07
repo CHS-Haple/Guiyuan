@@ -12,8 +12,8 @@ Guiyuan is free and open-source software. If the project is useful to you and yo
     <th>Alipay / 支付宝</th>
   </tr>
   <tr>
-    <td align="center"><img src="./assets/donate/wechat.png" width="240" alt="WeChat Pay QR code"></td>
-    <td align="center"><img src="./assets/donate/alipay.png" width="240" alt="Alipay QR code"></td>
+    <td align="center"><img src="./assets/donate/wechat.svg" width="240" alt="WeChat Pay QR code"></td>
+    <td align="center"><img src="./assets/donate/alipay.svg" width="240" alt="Alipay QR code"></td>
   </tr>
 </table>
 
