@@ -212,9 +212,7 @@ class GyModule : XposedModule() {
                     0
                 } +
                 if (ccSourceInstalled) {
-                    SysUiCcSource.expectedHookCount(
-                        BuildConfig.RUNTIME_DIAGNOSTICS,
-                    )
+                    SysUiCcSource.HOOK_COUNT
                 } else {
                     0
                 }
@@ -862,27 +860,23 @@ class GyModule : XposedModule() {
             )
         }.onSuccess { result ->
             refreshStatusIconObservation("network-source:" + source)
+            val hookCount = SysUiNetworkRuntime.installedHookCount
             val fullyReady =
                 result.wifiReady &&
                     result.mobileReady &&
-                    SysUiNetworkRuntime.installedHookCount == SysUiNetworkSource.HOOK_COUNT
-            val state =
+                    hookCount == SysUiNetworkSource.HOOK_COUNT
+            val (level, state) =
                 when {
-                    fullyReady -> "ready"
-                    SysUiNetworkRuntime.installedHookCount > 0 -> "partial"
-                    else -> "error"
+                    fullyReady -> Log.INFO to "ready"
+                    hookCount > 0 -> Log.WARN to "partial"
+                    else -> Log.ERROR to "error"
                 }
             logDiagnostic(
-                level =
-                    when (state) {
-                        "ready" -> Log.INFO
-                        "partial" -> Log.WARN
-                        else -> Log.ERROR
-                    },
+                level = level,
                 event = "source.install",
                 component = "network",
                 state = state,
-                "hooks" to SysUiNetworkRuntime.installedHookCount,
+                "hooks" to hookCount,
                 "expectedHooks" to SysUiNetworkSource.HOOK_COUNT,
                 "wifi" to if (result.wifiReady) "ready" else "error",
                 "mobile" to if (result.mobileReady) "ready" else "error",
@@ -981,13 +975,10 @@ class GyModule : XposedModule() {
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
-                includeDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
             )
         }.onSuccess { handles ->
             val expectedHooks =
-                SysUiCcSource.expectedHookCount(
-                    BuildConfig.RUNTIME_DIAGNOSTICS,
-                )
+                SysUiCcSource.HOOK_COUNT
             ccSourceInstalled = handles.size == expectedHooks
             // Home yields Control Center only after the projected native
             // carrier is structurally ready.
