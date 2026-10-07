@@ -1,3 +1,39 @@
+## 2026-10-07 — Repository-wide maintainability sweep complete
+
+**Type:** behavior-neutral maintainability / companion app / diagnostics / tooling
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Integration commit:** `844eb1f3`
+**Validation:** Full CI #2943 passed; exact-head Work Branch Canary #794 passed; maintainer spot test reported no issues
+
+### Result
+
+PR #260 completed the second maintainability pass after the Xposed/runtime cleanup in #257, extending review to the companion app, settings, diagnostics/system code, unit tests, build scripts and tooling.
+
+Accepted changes remained selective rather than mechanical:
+
+- shortened app-local names where file/package context already carried the domain;
+- removed the fake `batteryColorPresetForMissingKey(hadPreviousVisualSchema)` compatibility helper and its redundant test; the real missing-key default is directly `HYPEROS`;
+- compared `DiagLevel` by enum identity instead of stringifying the enum name;
+- replaced loosely coupled Battery Color detail/create pending fields with complete request values;
+- reduced restart-dialog state while preserving the original independent save/non-save lifecycle boundaries;
+- reused the existing target-profile source-constant parser instead of repeating local regex extraction;
+- removed `DiagShareStore`, whose debug SharedPreferences log was written but never read, exported or shown;
+- removed dead diagnostics-health resources and aligned privacy/current-state text with the actual structured runtime snapshot;
+- removed legacy product wording from local Gradle variables while preserving established `combinedStatus.*` property keys and other compatibility identities.
+
+All 44 non-Xposed Kotlin main-source files and all 63 unit-test source files were screened. No placeholder assertions such as `assertTrue(true)` were found. Large UI files and independent Boolean facts were not refactored merely for uniformity.
+
+### Review correction
+
+Final base-to-HEAD review caught an over-aggressive first version of the restart state enum. The initial rewrite would have made a transient post-dialog handoff state saveable across Activity recreation. It was corrected before validation: only the mutually-exclusive confirm/failure dialogs share `RestartDialog?`; restart execution and post-dismiss handoff remain separate facts with their original lifecycle semantics.
+
+### Boundary
+
+Persisted setting keys, resource identities, Hook IDs, runtime preference names, package names, established Gradle property keys and other compatibility contracts were intentionally preserved. No SystemUI/Xposed ownership, hooks, renderer, geometry, motion, transition semantics, fail-native behavior, display version or Build identity changed.
+
+This state is integrated on `dev` only. Promotion to `main` is intentionally deferred until explicitly requested.
+
 ## 2026-10-07 — Residual runtime plumbing maintainability cleanup
 
 **Type:** behavior-neutral maintainability / runtime plumbing
