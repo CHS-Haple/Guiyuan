@@ -31,6 +31,8 @@ jobs:
     environment: release
     env:
       RELEASE_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.channel || 'test' }}
+      MIUIX_GITHUB_ACTOR: ${{ github.repository_owner }}
+      MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
     permissions:
       contents: write
 
