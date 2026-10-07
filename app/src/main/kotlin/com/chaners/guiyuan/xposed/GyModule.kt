@@ -83,15 +83,6 @@ class GyModule : XposedModule() {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
-        log(
-            Log.INFO,
-            TAG,
-            "Module loaded in " + param.processName +
-                " build=" + BuildConfig.BUILD_ID +
-                " channel=" + BuildConfig.BUILD_CHANNEL +
-                " diagnostics=" + if (detailedDiagnosticsEnabled) "detailed" else "general" +
-                " with Xposed API " + apiVersion,
-        )
         logDiagnostic(
             level = Log.INFO,
             event = "module.loaded",
@@ -548,7 +539,21 @@ class GyModule : XposedModule() {
                 "hostIdentity" to capture.identity,
                 "wifiRoots" to bindings.wifiRoots,
                 "mobileRoots" to bindings.mobileRoots,
-                "state" to restoredSnapshot.logLine,
+                "batteryPercent" to restoredSnapshot.battery?.percent,
+                "batteryCharging" to restoredSnapshot.battery?.charging,
+                "wifiState" to
+                    when (restoredSnapshot.wifi) {
+                        StatusStateStore.WifiState.Unknown -> "unknown"
+                        StatusStateStore.WifiState.Hidden -> "hidden"
+                        is StatusStateStore.WifiState.Visible -> "visible"
+                    },
+                "wifiSignal" to
+                    (restoredSnapshot.wifi as? StatusStateStore.WifiState.Visible)
+                        ?.signal
+                        ?.logToken,
+                "mobileSubs" to restoredSnapshot.mobile.keys.joinToString(","),
+                "airplane" to restoredSnapshot.airplaneMode,
+                "mobileRecoveryPending" to restoredSnapshot.mobileRecoveryPending,
                 "homePresentation" to "native-carrier-lifecycle",
                 "controlCenterHomeEligible" to
                     (restored.controlCenterHomeEligible ?: "unknown"),
@@ -895,17 +900,6 @@ class GyModule : XposedModule() {
                     "source" to source,
                 )
             }
-            log(
-                if (fullyReady) Log.INFO else Log.WARN,
-                TAG,
-                "networkSource state=" + state +
-                    " hooks=" + SysUiNetworkRuntime.installedHookCount +
-                    "/" + SysUiNetworkSource.HOOK_COUNT +
-                    " wifi=" + result.wifiReady +
-                    " mobile=" + result.mobileReady +
-                    " source=" + source +
-                    " rebindRequired=" + (source == "hotReload"),
-            )
         }.onFailure { error ->
             SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
@@ -950,14 +944,6 @@ class GyModule : XposedModule() {
                 "hooks" to handles.size,
                 "expectedHooks" to SysUiIslandSource.HOOK_COUNT,
                 "source" to source,
-            )
-            log(
-                Log.INFO,
-                TAG,
-                "islandMotionSource hooks=ready count=" + handles.size +
-                    " source=" + source +
-                    " authority=island-status diagnostics=" +
-                    BuildConfig.RUNTIME_DIAGNOSTICS,
             )
         }.onFailure { error ->
             islandSourceInstalled = false
@@ -1716,7 +1702,6 @@ class GyModule : XposedModule() {
         if (changed != null || recoveryCompleted != null) {
             val presentationTrace = markPresentationCommitted(trace)
             if (detailedDiagnosticsEnabled && changed != null) {
-                log(Log.INFO, TAG, presentation.logLine)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.resolve",
@@ -1724,13 +1709,17 @@ class GyModule : XposedModule() {
                     state = "ready",
                     "mode" to presentation.mode.name,
                     "boundRoots" to presentation.boundRoots,
+                    "activeBoundRoots" to presentation.activeBoundRoots,
                     "visibleRoots" to presentation.visibleRoots,
+                    "activeSubAuthority" to presentation.activeSubscriptionAuthority,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
                     "presentationRootSubId" to presentation.presentationRootSubscriptionId,
                     "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
                     "networkTypeSubId" to presentation.networkTypeSubscriptionId,
                     "networkType" to presentation.networkType?.label,
                     "enhanced" to presentation.networkType?.enhanced,
+                    "networkTypeSource" to presentation.networkType?.source?.name,
+                    "nativeMobileReplacementReady" to presentation.nativeMobileReplacementReady,
                 )
             }
             if (detailedDiagnosticsEnabled && recoveryCompleted != null) {

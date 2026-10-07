@@ -296,45 +296,7 @@ internal object StatusStateStore {
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     ) {
-        val logLine: String
-            get() {
-                val batteryText = battery?.let { state ->
-                    state.percent.toString() + ":" +
-                        (if (state.charging) "charging" else "discharging")
-                } ?: "unknown"
 
-                val wifiText = when (val state = wifi) {
-                    WifiState.Unknown -> "unknown"
-                    WifiState.Hidden -> "hidden"
-                    is WifiState.Visible ->
-                        "visible:" + state.signal.logToken +
-                            ":internet=" +
-                            (
-                                state.internetValidated
-                                    ?.let { validated ->
-                                        if (validated) "validated" else "no-internet"
-                                    }
-                                    ?: "unknown"
-                            ) +
-                            ":res=" + (state.iconResId ?: 0)
-                }
-
-                val mobileText = mobile.entries.joinToString(
-                    prefix = "[",
-                    postfix = "]",
-                    separator = ";",
-                ) { (subscriptionId, state) ->
-                    subscriptionId.toString() +
-                        ":signal=" + state.signal.logToken + ":res=" + (state.signalResId ?: 0) +
-                        ",volte=" + (state.volteResId ?: 0) +
-                        ",vowifi=" + (state.vowifiResId ?: 0)
-                }
-
-                return "battery=$batteryText wifi=$wifiText mobile=$mobileText " +
-                    "airplane=" + (airplaneMode?.toString() ?: "unknown") +
-                    " mobileRecovery=" +
-                    (if (mobileRecoveryPending) "searching" else "ready")
-            }
     }
 
     internal data class BatteryState(

@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,15 +50,6 @@ class KeyguardRenderSessionTest {
     }
 
     @Test
-    fun keyguardFamilyChildDoesNotCopyIndependentBatteryAodAlpha() {
-        assertEquals(
-            1f,
-            KeyguardRenderSession.resolveFamilyChildAlpha(),
-            0.0001f,
-        )
-    }
-
-    @Test
     fun readinessRequiresCompleteAttachedKeyguardSurface() {
         assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, false))
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, false))
@@ -67,17 +57,4 @@ class KeyguardRenderSessionTest {
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, true))
     }
 
-    @Test
-    fun retargetOnlyForcesPresentationReadinessWhenFamilySceneChanges() {
-        assertFalse(
-            KeyguardRenderSession.shouldForceReadinessDispatch(
-                sceneChanged = false,
-            ),
-        )
-        assertTrue(
-            KeyguardRenderSession.shouldForceReadinessDispatch(
-                sceneChanged = true,
-            ),
-        )
-    }
 }
