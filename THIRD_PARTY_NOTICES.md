@@ -13,7 +13,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.1.2 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-5c91d5e5-SNAPSHOT (`5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-0657575a-SNAPSHOT (`0657575a0259f89b3863166ec2cef4223ea01156`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
 | Kyant Shapes | 1.2.1 | Capsule geometry used by the Liquid Glass navigation bar | Apache-2.0 |
 | kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache-2.0 |
