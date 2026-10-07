@@ -181,7 +181,7 @@ internal fun AppearanceScreen(
                         summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
                         startAction = {
                             SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_style,
+                                iconRes = R.drawable.ic_material_symbol_blur_circular,
                             )
                         },
                         showValue = true,
