@@ -201,7 +201,6 @@ class GyModule : XposedModule() {
                 "mobileRoots" to prepared.mobileRoots,
                 "restartScope" to true,
             )
-            log(Log.WARN, TAG, "Hot reload declined reason=" + prepared.reason)
             return false
         }
 
@@ -239,13 +238,6 @@ class GyModule : XposedModule() {
             "tintTransfer" to if (prepared.tintTransferred) "ready" else "native-fallback",
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
-        log(
-            Log.INFO,
-            TAG,
-            "Hot reload preparing build=" + BuildConfig.BUILD_ID +
-                " hooks=" + hookCount +
-                " transfer=classloader-neutral",
-        )
 
         logDiagnostic(
             level = Log.INFO,
@@ -278,11 +270,6 @@ class GyModule : XposedModule() {
                 state = "error",
                 "reason" to "status-host-hook-missing",
                 "restartScope" to true,
-            )
-            log(
-                Log.ERROR,
-                TAG,
-                "Hot reload incomplete reason=status-host-hook-missing restartScope=true",
             )
             return
         }
@@ -903,15 +890,6 @@ class GyModule : XposedModule() {
                     "errorType" to failure.errorType,
                     "reason" to failure.reason,
                     "source" to source,
-                )
-                log(
-                    Log.ERROR,
-                    TAG,
-                    "Network branch installation failed component=" + failure.component +
-                        " stage=" + failure.stage +
-                        " errorType=" + failure.errorType +
-                        " reason=" + failure.reason +
-                        " source=" + source,
                 )
             }
             log(
@@ -3454,7 +3432,7 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "runtime.teardown",
             component = "runtimeSession",
-            state = "ready",
+            state = "released",
             "source" to "hotReload.oldGeneration",
             "homePresentationRestoredViews" to restoredPresentationViews,
             "continuousHandoff" to continuousHandoff,
@@ -3802,7 +3780,6 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val nativeParticipant = ParticipantContractProbe.inspect(host)
-        log(Log.INFO, TAG, nativeParticipant.logLine)
         logDiagnostic(
             level =
                 if (nativeParticipant.registrationContractReady) {
@@ -3846,7 +3823,6 @@ class GyModule : XposedModule() {
         if (nativeParticipant.registrationContractReady) {
             val bindableParticipant =
                 BindableContractProbe.inspect(host)
-            log(Log.INFO, TAG, bindableParticipant.logLine)
             val bindableProbeReady =
                 bindableParticipant.staticContractReady &&
                     bindableParticipant.managerBindableMapReady &&
@@ -3889,7 +3865,6 @@ class GyModule : XposedModule() {
 
             val visualGeometry =
                 BindableGeometryProbe.inspect(host)
-            log(Log.INFO, TAG, visualGeometry.logLine)
             logDiagnostic(
                 level = if (visualGeometry.ready) Log.INFO else Log.WARN,
                 event = "contract.probe",
@@ -4153,15 +4128,8 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "host.capture",
             component = "statusHost",
-            state = "ready",
             "identity" to capture.identity,
             "replacement" to capture.replacement,
-        )
-        log(
-            Log.INFO,
-            TAG,
-            "statusHost captured id=" + capture.identity +
-                " replacement=" + capture.replacement,
         )
         attachHostRuntime(
             host = capture.host,
@@ -4422,7 +4390,6 @@ class GyModule : XposedModule() {
                 level = Log.INFO,
                 event = "visualSettings.changed",
                 component = "renderer",
-                state = "ready",
                 "layout" to visual.layout.persistedValue,
                 "combinedScale" to visual.combinedScale,
                 "wifiSizeScale" to visual.wifiScale,
@@ -4467,7 +4434,6 @@ class GyModule : XposedModule() {
                 level = Log.INFO,
                 event = "diagnostics.level",
                 component = "diagnostics",
-                state = "ready",
                 "level" to if (detailedDiagnosticsEnabled) "detailed" else "general",
             )
         }
