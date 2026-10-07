@@ -71,6 +71,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -130,8 +131,7 @@ internal fun LiquidNavBar(
 ) {
     require(tabsCount > 0)
 
-    val accentColor =
-        if (dark) Color(0xFF0091FF) else Color(0xFF0088FF)
+    val selectedColor = MiuixTheme.colorScheme.primary
     val params = mode.params()
     val containerColor =
         if (dark) {
@@ -318,7 +318,7 @@ internal fun LiquidNavBar(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp)
                         .graphicsLayer(
-                            colorFilter = ColorFilter.tint(accentColor),
+                            colorFilter = ColorFilter.tint(selectedColor),
                         ),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content,

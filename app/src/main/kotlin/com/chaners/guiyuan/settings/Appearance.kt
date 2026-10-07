@@ -161,6 +161,9 @@ internal class AppearanceRepo(context: Context) {
     suspend fun setNavStyle(style: NavStyle) {
         store.edit { prefs ->
             prefs[navStyleKey] = style.name
+            if (style == NavStyle.Liquid && prefs[navContentKey] == null) {
+                prefs[navContentKey] = NavContent.IconAndText.name
+            }
             prefs.remove(legacyNavBlurKey)
             prefs.remove(legacyGlassKey)
             prefs.remove(legacyBlurKey)

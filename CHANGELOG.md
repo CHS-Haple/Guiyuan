@@ -8,6 +8,10 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Fixed
+- Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
+- First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
+
 ## [0.4.0] - 2026-10-07
 
 ### Added
