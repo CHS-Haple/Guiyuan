@@ -3,8 +3,8 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main` and integration `dev`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `9ee18c3` after the accepted maintenance state was promoted through PR #261.
-- Active maintenance branch: `refactor/code-naturalness` / PR #262, based on current `dev`. The work is behavior-neutral and focuses on residual machine-like structure in diagnostics, failure flow, naming, comments and local abstractions.
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `9ee18c3`.
+- Integration `dev`: PR #262 is merged at runtime checkpoint `e077d08`; version remains Guiyuan 0.2.1 / Build 746.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
 
@@ -31,7 +31,9 @@ Accepted cleanup boundaries:
 - diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
 - inline single-caller helper types when the separate abstraction does not earn a boundary.
 
-PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtime plumbing. All 44 non-Xposed Kotlin main sources and 63 unit-test files were screened, flagged areas received targeted semantic review, and the accepted cleanup is now integrated on `dev`. Runtime/SystemUI behavior remains unchanged.
+PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtime plumbing. All 44 non-Xposed Kotlin main sources and 63 unit-test files were screened, flagged areas received targeted semantic review, and the accepted cleanup is integrated on `dev`.
+
+PR #262 completed the residual maintainability pass with the same behavior-neutral boundary. It simplified diagnostic state/logging, removed string-driven retry policy and proof-only helpers, shortened remaining ceremonial naming, clarified independent lifecycle facts, and added the mandatory pre-commit maintainability/naturalness review. Runtime CI #2955 passed after the final compile-boundary correction; no device-only evidence is currently required.
 
 ## Non-negotiable bounds
 
@@ -45,6 +47,6 @@ PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtim
 
 ## Immediate next
 
-- Finish the PR #262 repository-wide residual maintainability review without changing accepted runtime behavior.
-- Review the complete `dev` -> PR diff, fix deterministic findings, then run the appropriate automated validation once the batch is coherent.
-- Keep version 0.2.1 / Build 746 unchanged. Request a device Canary only if the final diff crosses a runtime behavior boundary that automated review cannot settle.
+- Treat the current maintainability pass as integrated on `dev`; do not reopen cleanup without a concrete maintainability finding.
+- Keep `main` at the existing stable checkpoint until a separate promotion is explicitly requested.
+- Keep version 0.2.1 / Build 746 unchanged. Request a device Canary only when future changes cross a runtime behavior boundary that automated review cannot settle.
