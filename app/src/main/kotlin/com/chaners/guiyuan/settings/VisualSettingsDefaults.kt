@@ -193,7 +193,7 @@ internal fun topTextUiScaleDefault(
 ): Float =
     when (layout) {
         ContentLayout.NETWORK_CENTER -> 1.2f
-        ContentLayout.BATTERY_CENTER -> 1.4f
+        ContentLayout.BATTERY_CENTER -> 1.3f
     }
 
 internal fun mobileTypeScaleDefault(
@@ -209,7 +209,7 @@ internal fun topChargingIconUiScaleDefault(
 ): Float =
     when (layout) {
         ContentLayout.NETWORK_CENTER -> 1f
-        ContentLayout.BATTERY_CENTER -> 1.2f
+        ContentLayout.BATTERY_CENTER -> 1.1f
     }
 
 internal fun topTextScaleDefault(

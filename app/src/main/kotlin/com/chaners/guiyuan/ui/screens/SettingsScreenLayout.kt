@@ -31,7 +31,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -64,12 +63,6 @@ internal fun SemanticLeadingIcon(
     }
 }
 
-internal data class SettingsPullToRefresh(
-    val refreshing: Boolean,
-    val onRefresh: () -> Unit,
-    val texts: List<String>,
-)
-
 @Composable
 internal fun SettingsPage(
     title: String,
@@ -79,7 +72,6 @@ internal fun SettingsPage(
     actions: @Composable RowScope.() -> Unit = {},
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     listState: LazyListState? = null,
-    pullToRefresh: SettingsPullToRefresh? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -143,20 +135,7 @@ internal fun SettingsPage(
                 )
             }
 
-            if (pullToRefresh != null) {
-                PullToRefresh(
-                    isRefreshing = pullToRefresh.refreshing,
-                    onRefresh = pullToRefresh.onRefresh,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding,
-                    topAppBarScrollBehavior = scrollBehavior,
-                    refreshTexts = pullToRefresh.texts,
-                ) {
-                    SettingsList()
-                }
-            } else {
-                SettingsList()
-            }
+            SettingsList()
         }
     }
 }

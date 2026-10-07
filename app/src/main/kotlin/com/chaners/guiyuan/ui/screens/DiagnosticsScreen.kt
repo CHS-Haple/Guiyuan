@@ -98,7 +98,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGen by rememberSaveable { mutableIntStateOf(0) }
@@ -118,18 +117,9 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
-    val refreshTexts =
-        listOf(
-            stringResource(R.string.diagnostics_pull_to_refresh),
-            stringResource(R.string.diagnostics_release_to_refresh),
-            stringResource(R.string.diagnostics_refreshing),
-            stringResource(R.string.diagnostics_refresh_complete),
-        )
-
     fun requestRefresh() {
         if (loading) return
         loading = true
-        pullRefreshing = true
         refreshGen += 1
     }
 
@@ -174,7 +164,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             viewCleared = false
         } finally {
             loading = false
-            pullRefreshing = false
         }
     }
 
@@ -322,14 +311,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
-        pullToRefresh =
-            snapshot?.let {
-                SettingsPullToRefresh(
-                    refreshing = pullRefreshing,
-                    onRefresh = ::requestRefresh,
-                    texts = refreshTexts,
-                )
-            },
     ) {
         when {
             viewCleared -> {

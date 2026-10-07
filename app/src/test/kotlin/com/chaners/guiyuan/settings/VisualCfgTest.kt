@@ -350,24 +350,24 @@ class VisualCfgTest {
     @Test
     fun batteryCenteredProfileUsesRequestedTopDefaults() {
         assertEquals(
-            1.4f,
+            1.3f,
             topTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
-            1.2f,
+            1.1f,
             topChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
             0.0001f,
         )
         assertEquals(
-            1.4f,
+            1.3f,
             topTextUiScale(
                 topTextScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
             0.0001f,
         )
         assertEquals(
-            1.2f,
+            1.1f,
             topChargingIconUiScale(
                 topChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
             ),
@@ -389,12 +389,12 @@ class VisualCfgTest {
             )
 
         assertEquals(
-            1.4f,
+            1.3f,
             topTextUiScale(settings.topTextScale),
             0.0001f,
         )
         assertEquals(
-            1.2f,
+            1.1f,
             topChargingIconUiScale(settings.topChargingIconScale),
             0.0001f,
         )

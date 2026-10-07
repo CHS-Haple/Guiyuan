@@ -231,10 +231,6 @@
     <string name="diagnostics_filter_done">完成</string>
     <string name="diagnostics_filter_empty">暂无符合筛选条件的事件</string>
     <string name="diagnostics_refresh">刷新诊断</string>
-    <string name="diagnostics_pull_to_refresh">下拉刷新</string>
-    <string name="diagnostics_release_to_refresh">松开刷新</string>
-    <string name="diagnostics_refreshing">正在刷新</string>
-    <string name="diagnostics_refresh_complete">刷新完成</string>
     <string name="diagnostics_scroll_top">滚动到顶部</string>
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_view">清空视图</string>
