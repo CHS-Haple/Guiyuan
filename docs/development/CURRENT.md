@@ -26,10 +26,15 @@ Repository-wide maintainability review is considered complete unless a concrete 
 Current rules:
 - prefer concise, scope-appropriate names over modifier/suffix stacking;
 - keep abstractions only when they carry real ownership, lifecycle, compatibility, reuse or policy value;
+- group crowded runtime code by stable problem domain, not by suffix/technical role;
+- keep source paths aligned with Kotlin packages and move cohesive areas incrementally;
+- keep cross-domain orchestration in the root package when a narrower owner would be artificial;
 - model one mutually exclusive lifecycle as one state rather than a wall of invalid boolean combinations;
 - keep genuinely independent facts independent;
 - diagnostics report observed facts rather than invented proof fields, pass rates or symmetry-only events;
 - preserve compatibility identities when they are externally consumed.
+
+The first accepted package split is now complete: `xposed.battery`, `xposed.prefs`, and `xposed.network` contain the clearest cohesive domains. Do not continue splitting the remaining root `xposed` code merely for directory symmetry; create another subpackage only when a stable maintenance boundary is evident.
 
 ## Guardrails
 
