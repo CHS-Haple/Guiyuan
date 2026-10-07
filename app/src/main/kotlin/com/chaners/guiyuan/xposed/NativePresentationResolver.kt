@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed
 
+import android.content.Context
 import android.graphics.drawable.Drawable
+import android.telephony.SubscriptionManager
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -32,7 +34,7 @@ internal object NativePresentationResolver {
                 .firstOrNull()
                 ?.root
                 ?.context
-                ?.let(ActiveSubscriptionSource::current)
+                ?.let(::activeSubscriptionIds)
         val resolvedActive =
             resolveActiveSubIds(
                 boundSubscriptionIds =
@@ -288,6 +290,21 @@ internal object NativePresentationResolver {
         val enhanced: Boolean,
         val source: NetworkTypeSource,
     )
+
+
+    private fun activeSubscriptionIds(context: Context): Set<Int>? {
+        val manager =
+            context.getSystemService(SubscriptionManager::class.java)
+                ?: return null
+
+        // null means the platform source is unavailable; an empty set is still authoritative.
+        return runCatching {
+            manager.activeSubscriptionInfoList
+                ?.map { info -> info.subscriptionId }
+                ?.filter { subscriptionId -> subscriptionId >= 0 }
+                ?.toSet()
+        }.getOrNull()
+    }
 
     internal data class Snapshot(
         val mode: Mode,
