@@ -177,35 +177,6 @@ internal object ParticipantContractProbe {
         val removeSignatures: List<String>,
         val holderFactorySignatures: List<String>,
     ) {
-        val logLine: String
-            get() =
-                "nativeParticipantContract available=" + available +
-                    " reason=" + (reason ?: "none") +
-                    " manager=" + (managerClass ?: "none") +
-                    " group=" + (groupClass ?: "none") +
-                    " groupRes=" + (groupResource ?: "none") +
-                    " controller=" + (controllerClass ?: "none") +
-                    " controllerSource=" + (controllerSource ?: "none") +
-                    " controllerMatches=" + controllerMatches +
-                    " managerMatches=" + managerMatches +
-                    " groupMatches=" + groupMatches +
-                    " setIconHolder=" + setIconHolder +
-                    " resourceSetIconMode=" + resourceSetIconMode +
-                    " setIconVisibility=" + setIconVisibility +
-                    " removalReady=" + removalReady +
-                    " removalMode=" + (removalMode ?: "none") +
-                    " addIconGroup=" + addIconGroup +
-                    " removeIconGroup=" + removeIconGroup +
-                    " addHolder=" + addHolder +
-                    " holderFactoryReady=" + holderFactoryReady +
-                    " statusIconDisplayable=" + iconViewDisplayable +
-                    " slotAccessor=" + iconViewSlotAccessor +
-                    " systemManagedCreationReady=" + systemManagedCreationReady +
-                    " registrationReady=" + registrationContractReady +
-                    " setIconSignatures=" + setIconSignatures.joinToString("|") +
-                    " removeSignatures=" + removeSignatures.joinToString("|") +
-                    " holderFactories=" + holderFactorySignatures.joinToString("|")
-
         companion object {
             fun unavailable(reason: String): Snapshot =
                 Snapshot(

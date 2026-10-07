@@ -91,8 +91,11 @@ internal object NativeCombinedParticipant {
     private var modelReady = false
     private var tintReady = false
     private var currentSurface = SysUiSceneSource.Surface.UNKNOWN
+    // Re-entry guard: suppression callbacks can synchronously re-enter reconciliation.
     private var handoffPending = false
+    // Current visible handoff ownership; this may be released while validation stays valid.
     private var handoffCommitted = false
+    // Sticky runtime proof that the native set/remove contract has succeeded at least once.
     private var handoffValidated = false
     private var modelReadyLogged = false
     private var unlockedGeometryLogged = false

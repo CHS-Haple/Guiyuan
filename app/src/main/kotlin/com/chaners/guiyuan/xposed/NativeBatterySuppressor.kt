@@ -207,12 +207,10 @@ internal object NativeBatterySuppressor {
             return Result.Failure(mask.failureReason)
         }
 
-        val effectiveHide = resolveNativeLayoutHide(nativeRequestedHide)
         val visualChanged = mask.alphaWrites > 0 || mask.visibilityWrites > 0
         eventSink?.invoke(
             "nativeBatterySuppression active source=" + source +
                 " nativeRequestedHide=" + nativeRequestedHide +
-                " effectiveHide=" + effectiveHide +
                 " maskedChildren=" + mask.maskedChildren +
                 " visualChanged=" + visualChanged,
         )
@@ -529,11 +527,6 @@ internal object NativeBatterySuppressor {
         }
         return null
     }
-
-    internal fun resolveNativeLayoutHide(
-        nativeRequestedHide: Boolean,
-    ): Boolean =
-        nativeRequestedHide
 
     internal fun resolvePresentationChildAlpha(
         nativeAlpha: Float,

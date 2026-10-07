@@ -3,12 +3,12 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class NativeCenterResourceVariantPolicyTest {
+class NativeCenterTintVariantTest {
     @Test
     fun baseResourceMapsToTintVariant() {
         assertEquals(
             "stat_sys_wifi_signal_3_tint",
-            NativeCenterResourceVariantPolicy.tintEntryName(
+            nativeCenterTintEntryName(
                 "stat_sys_wifi_signal_3",
             ),
         )
@@ -18,7 +18,7 @@ class NativeCenterResourceVariantPolicyTest {
     fun darkResourceNormalizesBeforeTintSelection() {
         assertEquals(
             "stat_sys_wifi_signal_3_tint",
-            NativeCenterResourceVariantPolicy.tintEntryName(
+            nativeCenterTintEntryName(
                 "stat_sys_wifi_signal_3_darkmode",
             ),
         )
@@ -28,7 +28,7 @@ class NativeCenterResourceVariantPolicyTest {
     fun existingTintResourceRemainsStable() {
         assertEquals(
             "stat_sys_wifi_signal_unavailable_2_tint",
-            NativeCenterResourceVariantPolicy.tintEntryName(
+            nativeCenterTintEntryName(
                 "stat_sys_wifi_signal_unavailable_2_tint",
             ),
         )
@@ -38,7 +38,7 @@ class NativeCenterResourceVariantPolicyTest {
     fun alreadyDarkModeInputStillResolvesOpaqueTintMask() {
         assertEquals(
             "stat_sys_wifi_signal_1_tint",
-            NativeCenterResourceVariantPolicy.tintEntryName(
+            nativeCenterTintEntryName(
                 "stat_sys_wifi_signal_1_darkmode",
             ),
         )
@@ -48,7 +48,7 @@ class NativeCenterResourceVariantPolicyTest {
     fun hotspotFamilyUsesSamePresentationSuffixContract() {
         assertEquals(
             "stat_sys_hotspot_signal_3_tint",
-            NativeCenterResourceVariantPolicy.tintEntryName(
+            nativeCenterTintEntryName(
                 "stat_sys_hotspot_signal_3",
             ),
         )
