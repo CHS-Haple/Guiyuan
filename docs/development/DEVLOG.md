@@ -1,3 +1,30 @@
+## 2026-10-07 — Second full-repository maintainability audit
+
+**Type:** behavior-neutral maintainability / runtime / tests / tooling  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746`
+
+### Scope and findings
+
+A second independent pass re-screened all 119 Kotlin main-source files and all 63 unit-test files, then extended the same maintainability/naturalness review to the active GitHub workflows, Gradle configuration, signing helper and pinned-target verification tooling.
+
+The pass found a small set of concrete residuals rather than reopening broad cleanup:
+
+- removed unused transition state/geometry snapshot APIs from `NativeNetworkSuppressor`, including the serializer chain and reflective fields that existed only for those unconsumed snapshots; the live island-visibility path keeps only `visibleState` and `inIslandState`;
+- removed unused Control Center anchor/fake-presentation snapshots and their reflection-only fields from `SysUiCcSource`;
+- removed the no-op `includeDiagnostics` hook-count path where diagnostic hook count was permanently zero; `HOOK_COUNT` now represents the four actual runtime hooks directly;
+- removed proof-only tests that only demonstrated the no-op hook-count parameter or echoed fields written into a data class;
+- stopped deriving a network-install log level by comparing a locally generated string state;
+- replaced target-profile `N/N` self-ratios with direct verified counts because the old numerator and denominator came from the same already-validated set;
+- shortened a few remaining internal Control Center names and proxy debug labels where `Cc` / `Gy` are already established project abbreviations;
+- tightened CONTRIBUTING so self-proving `N/N`, 100%, pass-rate or coverage-looking values are explicitly forbidden when both sides come from the same validated set.
+
+### Boundary
+
+The review intentionally kept large orchestration/rendering functions together where they share one live session context; file size alone was not used as a reason to create more owners, policies or wrappers. Independent readiness facts were not forced into enums. Compatibility Hook IDs, runtime preference names, Gradle property keys, resource/slot identities, structured log contracts and reflection targets were preserved.
+
+No SystemUI/Xposed ownership, renderer geometry, transition timing, fail-native behavior, settings semantics, display version or Build identity is intentionally changed by this audit.
+
 ## 2026-10-07 — Repository-wide maintainability sweep complete
 
 **Type:** behavior-neutral maintainability / companion app / diagnostics / tooling
