@@ -1147,7 +1147,7 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet())
         session.stop("fail-native:" + reason)
         eventSink?.invoke(
-            "homePresentation failNative reason=" + reason + " restoredNative=true",
+            "homePresentation failNative reason=" + reason,
         )
         failNativeSink?.invoke(reason)
     }
@@ -1160,8 +1160,7 @@ internal object SysUiPresentationOwner {
         keyguardFamilySurface = null
         session.stop("fail-native:" + reason)
         keyguardFamilyEventSink?.invoke(
-            surface.eventPrefix + " failNative reason=" + reason +
-                " restoredNative=true",
+            surface.eventPrefix + " failNative reason=" + reason,
         )
         keyguardFamilyFailNativeSink?.invoke(reason)
         keyguardFamilyEventSink = null
@@ -1239,8 +1238,7 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent = null
         session.stop("fail-native:" + reason)
         controlCenterEventSink?.invoke(
-            "controlCenterPresentation failNative reason=" + reason +
-                " restoredNative=true",
+            "controlCenterPresentation failNative reason=" + reason,
         )
         controlCenterFailNativeSink?.invoke(reason)
         controlCenterEventSink = null
@@ -1482,7 +1480,7 @@ internal object SysUiPresentationOwner {
                 val masked = refreshClipMasks()
                 onEvent(
                     eventPrefix +
-                        " visualHandoff active=true maskedViews=" + masked +
+                        " visualHandoff maskedViews=" + masked +
                         " nativeLayoutOwnership=deferred",
                 )
                 return masked
@@ -1506,8 +1504,7 @@ internal object SysUiPresentationOwner {
                 layoutReadyCallback = null
                 onEvent(
                     eventPrefix + " layoutReady source=existing-native-status-icons-layout" +
-                        " maskedViews=" + masked +
-                        " compactLayoutReady=true",
+                        " maskedViews=" + masked,
                 )
                 return masked
             }
@@ -1525,7 +1522,6 @@ internal object SysUiPresentationOwner {
                 onEvent(
                     eventPrefix + " preLayoutVisualMask active=" + preMasked +
                         " maskedViews=" + masked +
-                        " compactLayoutReady=false" +
                         " fallbackVisual=" +
                         if (preMasked) {
                             "outgoing-guiyuan-or-masked-native-until-layout"
@@ -1906,8 +1902,7 @@ internal object SysUiPresentationOwner {
                                 batteryWidthUnavailable = true
                                 onEvent(
                                     eventPrefix +
-                                        " endReservation deferred reason=battery-live-width-unavailable" +
-                                        " compactLayoutReady=true",
+                                        " endReservation deferred reason=battery-live-width-unavailable",
                                 )
                             }
                             return true

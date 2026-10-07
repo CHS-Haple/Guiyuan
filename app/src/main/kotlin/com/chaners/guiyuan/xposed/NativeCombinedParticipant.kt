@@ -549,8 +549,7 @@ internal object NativeCombinedParticipant {
                                 onEvent?.invoke(
                                     "nativeCombinedParticipant injected slot=" + SLOT +
                                         " registryOriginal=" + original.size +
-                                        " registryExtended=" + extended.size +
-                                        " visible=false ",
+                                        " registryExtended=" + extended.size,
                                 )
                                 result
                             } finally {
@@ -1055,8 +1054,7 @@ internal object NativeCombinedParticipant {
             val root = rootRef?.get()
             eventSink?.invoke(
                 "nativeCombinedParticipant rendererReady " +
-                    "candidateComplete=" + update.candidateComplete +
-                    " render=" +
+                    "render=" +
                     (render?.measuredWidth ?: -1) + "x" +
                     (render?.measuredHeight ?: -1) +
                     " rootVisibility=" +
@@ -1526,7 +1524,6 @@ internal object NativeCombinedParticipant {
             ) {
                 eventSink?.invoke(
                     "nativeCombinedParticipant featureGate source=" + source +
-                        " enabled=false" +
                         " previousHandoff=" + wasCommitted +
                         " visibilityAuthority=" +
                         (

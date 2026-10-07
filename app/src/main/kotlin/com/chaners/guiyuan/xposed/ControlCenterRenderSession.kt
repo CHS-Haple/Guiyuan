@@ -593,8 +593,7 @@ internal object ControlCenterRenderSession {
                 onProjectionReadinessChanged(false)
             }
             emitEvent {
-                "controlCenterProjection cleanup source=" + source +
-                    " nativeCompactRestored=true"
+                "controlCenterProjection cleanup source=" + source
             }
         }
 
@@ -713,8 +712,7 @@ internal object ControlCenterRenderSession {
             emitEvent {
                 "controlCenterProjection compact ready=" + ready +
                     " source=" + source +
-                    " maskedViews=" + maskedViews +
-                    " stableBatterySlot=true batteryWidthDiffConsumed=false"
+                    " maskedViews=" + maskedViews
             }
             dispatchReadiness("compact:" + source)
         }

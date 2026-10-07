@@ -195,7 +195,7 @@ internal object SysUiCcSource {
                                     dispatchRuntimeCallback(
                                         callback = {
                                             onEvent(
-                                                "controlCenterFakeLifecycle attached=true " +
+                                                "controlCenterFakeLifecycle attached " +
                                                     "root=" + root.javaClass.name +
                                                     " attachedToWindow=" +
                                                     root.isAttachedToWindow +

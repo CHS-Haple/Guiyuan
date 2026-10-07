@@ -589,7 +589,6 @@ internal object SysUiNetworkSource {
                         "root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " vm=" + viewModel.javaClass.simpleName +
-                        " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
                         "",
@@ -978,7 +977,6 @@ internal object SysUiNetworkSource {
                         " locationVm=" + locationViewModel.javaClass.simpleName +
                         " subId=" + subscriptionId +
                         " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
-                        " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
                         ""
@@ -1015,8 +1013,7 @@ internal object SysUiNetworkSource {
             }.onFailure { error ->
                 onEvent?.invoke(
                     "networkPipeline mobile preMask failed " +
-                        "error=" + error.javaClass.simpleName +
-                        " failNative=true",
+                        "error=" + error.javaClass.simpleName,
                 )
             }
         }
