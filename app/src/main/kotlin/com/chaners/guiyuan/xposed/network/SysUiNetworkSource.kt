@@ -141,7 +141,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
+        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -157,7 +157,7 @@ internal object SysUiNetworkSource {
             installMobile(
                 module = module,
                 classLoader = classLoader,
-                onMobileIcon = onMobileIcon,
+                onMobileSignal = onMobileSignal,
                 onMobileSignalWillApply = onMobileSignalWillApply,
                 onPresentationChanged = onPresentationChanged,
                 onEvent = onEvent,
@@ -301,7 +301,7 @@ internal object SysUiNetworkSource {
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
-        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
+        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -387,8 +387,9 @@ internal object SysUiNetworkSource {
                             mobileSignalHooker(
                                 mobileImageField = mobileImageField,
                                 mobileClassIdField = mobileClassIdField,
-                                onMobileIcon = onMobileIcon,
+                                onMobileSignal = onMobileSignal,
                                 onMobileSignalWillApply = onMobileSignalWillApply,
+                                onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
                             ),
                         )
@@ -995,8 +996,9 @@ internal object SysUiNetworkSource {
     private fun mobileSignalHooker(
         mobileImageField: Field,
         mobileClassIdField: Field,
-        onMobileIcon: (StatusStateStore.MobileIconUpdate) -> Unit,
+        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
+        onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
     ): Hooker = Hooker { chain ->
         val emitter = chain.thisObject
@@ -1038,27 +1040,13 @@ internal object SysUiNetworkSource {
                         ?.toInt()
                         ?.takeIf { it != 0 }
                     val resourceName = resourceId?.let { id -> resourceName(image, id) }
-                    val kind = when (classId) {
-                        0 -> StatusStateStore.MobileIconKind.SIGNAL
-                        1 -> StatusStateStore.MobileIconKind.VOLTE
-                        2 -> StatusStateStore.MobileIconKind.VOWIFI
-                        else -> null
-                    }
-                    if (kind != null) {
-                        onMobileIcon(
-                            StatusStateStore.MobileIconUpdate(
-                                subscriptionId = subscriptionId,
-                                kind = kind,
-                                resourceId = resourceId,
-                                signal = if (
-                                    kind == StatusStateStore.MobileIconKind.SIGNAL
-                                ) {
-                                    SysUiSignalParser.mobile(resourceName)
-                                } else {
-                                    null
-                                },
-                            ),
-                        )
+                    when (classId) {
+                        0 ->
+                            onMobileSignal(
+                                subscriptionId,
+                                SysUiSignalParser.mobile(resourceName),
+                            )
+                        1, 2 -> onPresentationChanged?.invoke()
                     }
 
                     eventLog =

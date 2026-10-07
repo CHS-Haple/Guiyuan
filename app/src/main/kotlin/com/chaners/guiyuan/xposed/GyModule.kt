@@ -842,9 +842,13 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
-                onMobileIcon = { update ->
+                onMobileSignal = { subscriptionId, signal ->
                     val trace = beginRenderTrace("mobile")
-                    val changed = StatusStateStore.updateMobile(update)
+                    val changed =
+                        StatusStateStore.updateMobileSignal(
+                            subscriptionId = subscriptionId,
+                            signal = signal,
+                        )
                     val stateTrace =
                         if (changed != null) {
                             markStateCommitted(trace)
