@@ -303,16 +303,16 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         remember {
             listOf(
                 AboutDependency(
-                    name = "JUnit 4",
-                    version = BuildConfig.JUNIT_VERSION,
-                    license = "EPL-1.0",
-                    upstreamUrl = "https://github.com/junit-team/junit4",
-                ),
-                AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/gradle/gradle",
+                ),
+                AboutDependency(
+                    name = "JUnit 4",
+                    version = BuildConfig.JUNIT_VERSION,
+                    license = "EPL-1.0",
+                    upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
             )
         }
