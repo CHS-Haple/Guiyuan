@@ -56,26 +56,19 @@ internal object NativeParticipantAccess {
             ?: return ResolveResult.Failure("dark-icon-manager-missing")
         val group = manager.readField("mGroup") as? ViewGroup
             ?: return ResolveResult.Failure("status-icon-group-missing")
-        val controllerResolution =
+        val controller =
             resolveStatusBarIconController(
                 classLoader = classLoader,
                 manager = manager,
-            )
-        val controller =
-            when (controllerResolution) {
-                is ControllerResolution.Ready -> controllerResolution.controller
-                is ControllerResolution.Failure ->
-                    return ResolveResult.Failure(controllerResolution.reason)
-            }
+            ) ?: return ResolveResult.Failure("status-icon-controller-missing")
 
         return ResolveResult.Ready(
             Handles(
                 statusBarView = statusBarView,
                 manager = manager,
                 group = group,
-                controller = controller,
-                controllerSource =
-                    (controllerResolution as ControllerResolution.Ready).source,
+                controller = controller.value,
+                controllerSource = controller.source,
                 classLoader = classLoader,
                 holderClass = classOrNull(ICON_HOLDER, classLoader),
                 iconViewClass = classOrNull(STATUS_BAR_ICON_VIEW, classLoader),
@@ -529,12 +522,12 @@ internal object NativeParticipantAccess {
     private fun resolveStatusBarIconController(
         classLoader: ClassLoader,
         manager: Any,
-    ): ControllerResolution {
+    ): ControllerRef? {
         val observedController =
             NativeParticipantRuntime.controllerFor(manager)
         if (observedController != null) {
-            return ControllerResolution.Ready(
-                controller = observedController,
+            return ControllerRef(
+                value = observedController,
                 source = "add-icon-group-observer",
             )
         }
@@ -563,8 +556,8 @@ internal object NativeParticipantAccess {
                             getMethod.invoke(null, controllerType)
                         }.getOrNull()
                     if (controller != null) {
-                        return ControllerResolution.Ready(
-                            controller = controller,
+                        return ControllerRef(
+                            value = controller,
                             source = "dependency",
                         )
                     }
@@ -574,15 +567,13 @@ internal object NativeParticipantAccess {
 
         val legacyController = manager.readField("mController")
         if (legacyController != null) {
-            return ControllerResolution.Ready(
-                controller = legacyController,
+            return ControllerRef(
+                value = legacyController,
                 source = "manager-field",
             )
         }
 
-        return ControllerResolution.Failure(
-            "status-icon-controller-missing",
-        )
+        return null
     }
 
     private fun classOrNull(
@@ -615,16 +606,10 @@ internal object NativeParticipantAccess {
         ) : ResolveResult
     }
 
-    private sealed interface ControllerResolution {
-        data class Ready(
-            val controller: Any,
-            val source: String,
-        ) : ControllerResolution
-
-        data class Failure(
-            val reason: String,
-        ) : ControllerResolution
-    }
+    private data class ControllerRef(
+        val value: Any,
+        val source: String,
+    )
 
     internal data class ResourceSetter(
         val method: Method,

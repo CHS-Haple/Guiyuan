@@ -3980,8 +3980,6 @@ class GyModule : XposedModule() {
                                 state = "blocked",
                                 "source" to source,
                                 "reason" to "master-switch-disabled",
-                                "nativeActive" to false,
-                                "overlayActive" to false,
                                 "networkSuppression" to networkSuppression.summary,
                                 "batterySuppression" to batterySuppression.summary,
                             )
@@ -4002,8 +4000,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "fallback",
                                     "source" to source,
-                                    "nativeActive" to false,
-                                    "overlayActive" to true,
                                     "networkSuppression" to "not-attempted",
                                     "batterySuppression" to batterySuppression.summary,
                                 )
@@ -4040,8 +4036,6 @@ class GyModule : XposedModule() {
                                         component = "nativeCombinedParticipant",
                                         state = "fallback",
                                         "source" to source,
-                                        "nativeActive" to false,
-                                        "overlayActive" to true,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batteryRollback.summary,
                                     )
@@ -4054,8 +4048,6 @@ class GyModule : XposedModule() {
                                         component = "nativeCombinedParticipant",
                                         state = "active",
                                         "source" to source,
-                                        "nativeActive" to true,
-                                        "overlayActive" to false,
                                         "networkSuppression" to networkSuppression.summary,
                                         "batterySuppression" to batterySuppression.summary,
                                     )
@@ -4077,8 +4069,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "active",
                                     "source" to source,
-                                    "nativeActive" to true,
-                                    "overlayActive" to false,
                                     "networkSuppression" to "kept-active",
                                     "batterySuppression" to batterySuppression.summary,
                                 )
@@ -4095,8 +4085,6 @@ class GyModule : XposedModule() {
                                     component = "nativeCombinedParticipant",
                                     state = "fallback",
                                     "source" to source,
-                                    "nativeActive" to false,
-                                    "overlayActive" to true,
                                     "networkSuppression" to networkSuppression.summary,
                                     "batterySuppression" to batterySuppression.summary,
                                 )
