@@ -105,6 +105,7 @@
     <string name="floating_navigation_style_standard">标准</string>
     <string name="floating_navigation_style_blur">模糊</string>
     <string name="floating_navigation_style_glass">玻璃</string>
+    <string name="floating_navigation_style_liquid">液态玻璃</string>
     <string name="floating_navigation_content">悬浮导航栏内容</string>
     <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>
     <string name="floating_navigation_content_icon_only">仅图标</string>

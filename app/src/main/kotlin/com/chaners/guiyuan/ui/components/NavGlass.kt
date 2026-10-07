@@ -24,7 +24,7 @@ internal fun Modifier.floatingNavMaterial(
     dark: Boolean,
     style: NavStyle,
 ): Modifier {
-    if (style == NavStyle.Standard) return this
+    if (!style.requiresTextureBackdrop) return this
 
     return textureBlur(
         backdrop = backdrop,

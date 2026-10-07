@@ -250,6 +250,12 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
+                    name = "Backdrop",
+                    version = BuildConfig.BACKDROP_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/AndroidLiquidGlass",
+                ),
+                AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",

@@ -29,6 +29,19 @@ class AppearanceTest {
     }
 
     @Test
+    fun storedLiquidStyleRoundTrips() {
+        val result =
+            decodeNavStyle(
+                storedStyle = "Liquid",
+                storedFloatingBlurEnabled = null,
+                legacyBlurEnabled = null,
+                legacyGlassEnabled = null,
+            )
+
+        assertEquals(NavStyle.Liquid, result)
+    }
+
+    @Test
     fun currentBlurBooleanMigratesToPreviousGlassAppearance() {
         assertEquals(
             NavStyle.Glass,

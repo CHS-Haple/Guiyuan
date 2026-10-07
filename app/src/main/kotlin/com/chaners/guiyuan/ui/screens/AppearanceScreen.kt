@@ -33,6 +33,11 @@ import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquidNavMaterial
+import com.chaners.guiyuan.ui.components.liquidNavSupported
+import com.chaners.guiyuan.ui.components.rememberLiquidNavBackdrop
+import com.chaners.guiyuan.ui.components.requiresLiquidBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
@@ -78,6 +83,7 @@ internal fun AppearanceScreen(
             stringResource(R.string.floating_navigation_style_standard),
             stringResource(R.string.floating_navigation_style_blur),
             stringResource(R.string.floating_navigation_style_glass),
+            stringResource(R.string.floating_navigation_style_liquid),
         )
     val floatingContentOptions =
         listOf(
@@ -446,13 +452,17 @@ private fun MiniNavigationPreview(
     content: NavContent,
     dark: Boolean,
 ) {
-    val materialActive =
+    val miuixMaterialActive =
         floating &&
             style.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
+    val liquidMaterialActive =
+        floating &&
+            style.requiresLiquidBackdrop &&
+            liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val backdrop =
-        if (materialActive) {
+    val miuixBackdrop =
+        if (miuixMaterialActive) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -460,16 +470,28 @@ private fun MiniNavigationPreview(
         } else {
             null
         }
-    val floatingModifier =
-        if (backdrop != null) {
-            Modifier.floatingNavMaterial(
-                backdrop = backdrop,
-                dark = dark,
-                style = style,
-            )
+    val liquidBackdrop =
+        if (liquidMaterialActive) {
+            rememberLiquidNavBackdrop(surfaceColor)
         } else {
-            Modifier
+            null
         }
+    val floatingModifier =
+        when {
+            liquidBackdrop != null ->
+                Modifier.liquidNavMaterial(
+                    backdrop = liquidBackdrop,
+                    dark = dark,
+                )
+            miuixBackdrop != null ->
+                Modifier.floatingNavMaterial(
+                    backdrop = miuixBackdrop,
+                    dark = dark,
+                    style = style,
+                )
+            else -> Modifier
+        }
+    val transparentNav = liquidBackdrop != null || miuixBackdrop != null
 
     Box(
         modifier =
@@ -483,8 +505,15 @@ private fun MiniNavigationPreview(
                 Modifier
                     .fillMaxSize()
                     .then(
-                        if (backdrop != null) {
-                            Modifier.layerBackdrop(backdrop)
+                        if (miuixBackdrop != null) {
+                            Modifier.layerBackdrop(miuixBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .then(
+                        if (liquidBackdrop != null) {
+                            Modifier.liquidNavBackdropSource(liquidBackdrop)
                         } else {
                             Modifier
                         },
@@ -511,7 +540,7 @@ private fun MiniNavigationPreview(
                 FloatingNavigationBar(
                     modifier = floatingModifier,
                     color =
-                        if (backdrop != null) {
+                        if (transparentNav) {
                             Color.Transparent
                         } else {
                             MiuixTheme.colorScheme.surfaceContainer

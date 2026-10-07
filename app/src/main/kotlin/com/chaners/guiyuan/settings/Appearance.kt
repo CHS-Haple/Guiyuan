@@ -23,6 +23,7 @@ internal enum class NavStyle {
     Standard,
     Blur,
     Glass,
+    Liquid,
 }
 
 internal enum class NavContent {

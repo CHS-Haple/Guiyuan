@@ -27,6 +27,11 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquidNavMaterial
+import com.chaners.guiyuan.ui.components.liquidNavSupported
+import com.chaners.guiyuan.ui.components.rememberLiquidNavBackdrop
+import com.chaners.guiyuan.ui.components.requiresLiquidBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
@@ -75,17 +80,27 @@ internal fun MainHub(
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val scope = rememberCoroutineScope()
     var hotReloadInProgress by remember { mutableStateOf(false) }
-    val floatingMaterialActive =
+    val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
+    val liquidMaterialActive =
+        appearance.navEnabled &&
+            appearance.navStyle.requiresLiquidBackdrop &&
+            liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val backdrop =
-        if (floatingMaterialActive) {
+    val miuixBackdrop =
+        if (miuixMaterialActive) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
             }
+        } else {
+            null
+        }
+    val liquidBackdrop =
+        if (liquidMaterialActive) {
+            rememberLiquidNavBackdrop(surfaceColor)
         } else {
             null
         }
@@ -122,15 +137,21 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (backdrop != null) {
-            Modifier.floatingNavMaterial(
-                backdrop = backdrop,
-                dark = dark,
-                style = appearance.navStyle,
-            )
-        } else {
-            Modifier
+        when {
+            liquidBackdrop != null ->
+                Modifier.liquidNavMaterial(
+                    backdrop = liquidBackdrop,
+                    dark = dark,
+                )
+            miuixBackdrop != null ->
+                Modifier.floatingNavMaterial(
+                    backdrop = miuixBackdrop,
+                    dark = dark,
+                    style = appearance.navStyle,
+                )
+            else -> Modifier
         }
+    val transparentNav = liquidBackdrop != null || miuixBackdrop != null
 
     Scaffold(
         bottomBar = {
@@ -138,7 +159,7 @@ internal fun MainHub(
                 FloatingNavigationBar(
                     modifier = navigationBarModifier,
                     color =
-                        if (backdrop != null) {
+                        if (transparentNav) {
                             Color.Transparent
                         } else {
                             MiuixTheme.colorScheme.surfaceContainer
@@ -175,8 +196,15 @@ internal fun MainHub(
                 Modifier
                     .fillMaxSize()
                     .then(
-                        if (backdrop != null) {
-                            Modifier.layerBackdrop(backdrop)
+                        if (miuixBackdrop != null) {
+                            Modifier.layerBackdrop(miuixBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .then(
+                        if (liquidBackdrop != null) {
+                            Modifier.liquidNavBackdropSource(liquidBackdrop)
                         } else {
                             Modifier
                         },
