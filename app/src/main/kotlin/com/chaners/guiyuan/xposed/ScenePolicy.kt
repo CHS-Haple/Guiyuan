@@ -81,7 +81,7 @@ internal object ScenePolicy {
 
     fun capability(scene: StatusScene): SceneCapability =
         requireNotNull(capabilities[scene]) {
-            "Missing CombinedStatus scene capability: $scene"
+            "Missing scene capability: $scene"
         }
 
     fun all(): List<SceneCapability> =
