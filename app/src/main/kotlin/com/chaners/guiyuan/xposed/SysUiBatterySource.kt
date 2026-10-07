@@ -66,6 +66,19 @@ internal object SysUiBatterySource {
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
 
+        fun readChargingIconId(iconView: View): Int? {
+            var parent = iconView.parent
+            while (parent is View) {
+                if (meterClass.isInstance(parent)) {
+                    return runCatching { chargingIconMethod.invoke(parent) as? Int }
+                        .getOrNull()
+                        ?.takeIf { it != 0 }
+                }
+                parent = parent.parent
+            }
+            return null
+        }
+
         fun readState(iconView: View): StatusStateStore.BatteryState? {
             val level =
                 runCatching { levelField.getInt(iconView) }
@@ -111,11 +124,47 @@ internal object SysUiBatterySource {
                 systemSemanticColor = systemSemanticColor,
                 chargingIconResId =
                     if (charging) {
-                        lastChargingIconResId
+                        lastChargingIconResId ?: readChargingIconId(iconView)
                     } else {
                         null
                     },
             )
+        }
+
+        fun publish(
+            iconView: View,
+            sourceMethod: String,
+        ) {
+            val state = readState(iconView) ?: return
+            val changed =
+                synchronized(this) {
+                    if (state.charging) {
+                        if (lastChargingIconResId == null) {
+                            lastChargingIconResId = state.chargingIconResId
+                        }
+                    } else {
+                        lastChargingIconResId = null
+                    }
+                    if (lastState == state) {
+                        false
+                    } else {
+                        lastState = state
+                        true
+                    }
+                }
+            if (!changed) return
+            onBatteryState(state)
+            onEvent?.invoke(
+                "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
+                    " percent=" + state.percent +
+                    " charging=" + state.charging +
+                    " semantic=" + (state.semanticState?.name ?: "unavailable") +
+                    " systemColor=" +
+                    (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
+                    " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
+                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
+            )
+
         }
 
         fun publishChargingGlyph(
@@ -149,53 +198,6 @@ internal object SysUiBatterySource {
                     " resourceId=" + iconId +
                     " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
             )
-        }
-
-        fun publish(
-            iconView: View,
-            sourceMethod: String,
-        ) {
-            val state = readState(iconView) ?: return
-            val changed =
-                synchronized(this) {
-                    if (!state.charging) {
-                        lastChargingIconResId = null
-                    }
-                    if (lastState == state) {
-                        false
-                    } else {
-                        lastState = state
-                        true
-                    }
-                }
-            if (changed) {
-                onBatteryState(state)
-                onEvent?.invoke(
-                    "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
-                        " percent=" + state.percent +
-                        " charging=" + state.charging +
-                        " semantic=" + (state.semanticState?.name ?: "unavailable") +
-                        " systemColor=" +
-                        (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
-                        " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
-                        " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
-                )
-            }
-
-            // Battery callbacks can arrive without updateChargeAndText after Hot Reload.
-            if (state.charging) {
-                var parent = iconView.parent
-                while (parent is View) {
-                    if (meterClass.isInstance(parent)) {
-                        publishChargingGlyph(
-                            meterView = parent,
-                            sourceMethod = "MiuiBatteryMeterIconView." + sourceMethod,
-                        )
-                        break
-                    }
-                    parent = parent.parent
-                }
-            }
         }
 
         fun hook(
