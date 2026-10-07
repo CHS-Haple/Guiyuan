@@ -7,6 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
+import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
+import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
     fun resolve(

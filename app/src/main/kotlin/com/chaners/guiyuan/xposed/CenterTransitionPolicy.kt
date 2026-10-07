@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+
 internal object CenterTransitionPolicy {
     internal enum class Family {
         WIFI,

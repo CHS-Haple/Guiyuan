@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.drawable.Drawable
+import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
 
 internal object SysUiPresentationRuntime {

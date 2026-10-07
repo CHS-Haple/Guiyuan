@@ -1,5 +1,8 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
+import com.chaners.guiyuan.xposed.NativePresentationResolver
+import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.StatusStateStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

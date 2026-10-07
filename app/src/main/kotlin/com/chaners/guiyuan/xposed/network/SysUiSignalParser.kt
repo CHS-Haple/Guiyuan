@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
 internal sealed interface SignalStrength {
     data object Unknown : SignalStrength

@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
+
 internal object PresentationStore {
     @Volatile
     private var current = Snapshot()

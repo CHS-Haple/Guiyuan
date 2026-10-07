@@ -1,4 +1,6 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
+
+import com.chaners.guiyuan.xposed.NativePresentationResolver
 
 internal object NetworkSuppressionPolicy {
     // Pure suppression/tint decisions stay here; the owner keeps slot identity and View lifecycle.

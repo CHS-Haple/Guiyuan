@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.os.Bundle
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object StatusStateStore {
     @Volatile

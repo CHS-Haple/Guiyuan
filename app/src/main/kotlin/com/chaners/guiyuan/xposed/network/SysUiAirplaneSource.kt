@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
 import android.content.ContentResolver
 import android.content.Context

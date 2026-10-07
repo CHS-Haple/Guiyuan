@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.network
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
