@@ -1318,9 +1318,14 @@ internal object SysUiPresentationOwner {
         private var fakeCarrierParentWidth: Int? = null
         private var appliedFakeCarrierWidthPx: Int? = null
         private var fakeCarrierCapacityDeltaPx: Int? = null
+        private enum class LeasePhase {
+            PREARM,
+            VISIBLE,
+            SUPPRESSED,
+        }
+
         private var capacityLeaseAwaitingLayout = false
-        private var capacityLeaseSuppressed = false
-        private var fakeCarrierVisibleCycleActive = false
+        private var leasePhase = LeasePhase.PREARM
         private var pendingNativeCarrierWidth: Int? = null
         private var batteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
@@ -1613,8 +1618,7 @@ internal object SysUiPresentationOwner {
             layoutReadyCallback = null
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
-            capacityLeaseSuppressed = false
-            fakeCarrierVisibleCycleActive = false
+            leasePhase = LeasePhase.PREARM
             pendingNativeCarrierWidth = null
             deferVisualMaskUntilLayout = false
             host.get()?.removeOnAttachStateChangeListener(this)
@@ -1821,10 +1825,10 @@ internal object SysUiPresentationOwner {
         fun onCcVisibilityChanged(visible: Boolean): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (visible) {
-                if (fakeCarrierVisibleCycleActive && !capacityLeaseSuppressed) {
+                if (leasePhase == LeasePhase.VISIBLE) {
                     return true
                 }
-                capacityLeaseSuppressed = false
+                leasePhase = LeasePhase.PREARM
 
                 // The first visible edge is the ownership handoff from hidden/prearm
                 // to the visible QS_FAKE cycle. Reconcile while hidden ownership is
@@ -1833,12 +1837,11 @@ internal object SysUiPresentationOwner {
                 if (!syncEndReservation()) {
                     return false
                 }
-                fakeCarrierVisibleCycleActive = true
+                leasePhase = LeasePhase.VISIBLE
                 return true
             }
 
-            fakeCarrierVisibleCycleActive = false
-            if (capacityLeaseSuppressed) return true
+            if (leasePhase == LeasePhase.SUPPRESSED) return true
 
             // Close the transition reservation while native layout writes are
             // still allowed. Only then suppress/release the capacity lease.
@@ -1847,7 +1850,7 @@ internal object SysUiPresentationOwner {
             if (!clearTransitionReservation("visible-cycle-hidden")) {
                 return false
             }
-            capacityLeaseSuppressed = true
+            leasePhase = LeasePhase.SUPPRESSED
             return releaseCapacityLeaseAtHidden()
         }
 
@@ -1881,7 +1884,7 @@ internal object SysUiPresentationOwner {
             }
             if (
                 surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                capacityLeaseSuppressed
+                leasePhase == LeasePhase.SUPPRESSED
             ) {
                 return true
             }
@@ -2121,7 +2124,7 @@ internal object SysUiPresentationOwner {
             if (existingAppliedWidthPx != null) {
                 when (
                     FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
-                        visibleCycleActive = fakeCarrierVisibleCycleActive,
+                        visibleCycleActive = leasePhase == LeasePhase.VISIBLE,
                         liveWidthPx = params.width,
                         appliedWidthPx = existingAppliedWidthPx,
                         currentParentContentWidthPx = parentContentWidthPx,
