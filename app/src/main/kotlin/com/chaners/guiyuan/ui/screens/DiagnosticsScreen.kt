@@ -66,7 +66,6 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
@@ -76,7 +75,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
@@ -99,7 +97,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(false) }
+    var pullRefreshing by remember { mutableStateOf(true) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGen by rememberSaveable { mutableIntStateOf(0) }
@@ -119,7 +117,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
-    val refreshTitle = stringResource(R.string.diagnostics_refresh)
     val refreshTexts =
         listOf(
             stringResource(R.string.diagnostics_pull_to_refresh),
@@ -238,14 +235,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         actions = {
-            TooltipBox(text = refreshTitle) {
-                IconButton(
-                    onClick = { requestRefresh() },
-                    enabled = !loading && !exportOpen,
-                ) {
-                    Icon(MiuixIcons.Refresh, contentDescription = refreshTitle)
-                }
-            }
             TooltipBox(text = shareTitle) {
                 IconButton(
                     onClick = {
@@ -791,7 +780,6 @@ private fun LogCard(
 @Composable
 private fun LogStateCard(
     text: String,
-    loading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -807,12 +795,6 @@ private fun LogStateCard(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (loading) {
-                InfiniteProgressIndicator(
-                    color = MiuixTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-            }
             Text(
                 text = text,
                 style = MiuixTheme.textStyles.body2,
