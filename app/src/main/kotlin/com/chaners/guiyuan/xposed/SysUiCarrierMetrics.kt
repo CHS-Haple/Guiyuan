@@ -25,7 +25,7 @@ internal object SysUiCarrierMetrics {
 
     // Width can be transient mid-layout, so use the stable native child width.
     fun resolveWidthPx(carrier: View): Int? =
-        NativeStatusBarSlotGeometry.resolveStableChildWidth(
+        NativeSlotGeometry.resolveStableChildWidth(
             layoutWidth = carrier.width,
             measuredWidth = carrier.measuredWidth,
         )

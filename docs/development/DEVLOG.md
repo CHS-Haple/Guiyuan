@@ -1,3 +1,70 @@
+## 2026-10-07 — Repository-wide maintainability sweep complete
+
+**Type:** behavior-neutral maintainability / companion app / diagnostics / tooling
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Integration commit:** `844eb1f3`
+**Validation:** Full CI #2943 passed; exact-head Work Branch Canary #794 passed; maintainer spot test reported no issues
+
+### Result
+
+PR #260 completed the second maintainability pass after the Xposed/runtime cleanup in #257, extending review to the companion app, settings, diagnostics/system code, unit tests, build scripts and tooling.
+
+Accepted changes remained selective rather than mechanical:
+
+- shortened app-local names where file/package context already carried the domain;
+- removed the fake `batteryColorPresetForMissingKey(hadPreviousVisualSchema)` compatibility helper and its redundant test; the real missing-key default is directly `HYPEROS`;
+- compared `DiagLevel` by enum identity instead of stringifying the enum name;
+- replaced loosely coupled Battery Color detail/create pending fields with complete request values;
+- reduced restart-dialog state while preserving the original independent save/non-save lifecycle boundaries;
+- reused the existing target-profile source-constant parser instead of repeating local regex extraction;
+- removed `DiagShareStore`, whose debug SharedPreferences log was written but never read, exported or shown;
+- removed dead diagnostics-health resources and aligned privacy/current-state text with the actual structured runtime snapshot;
+- removed legacy product wording from local Gradle variables while preserving established `combinedStatus.*` property keys and other compatibility identities.
+
+All 44 non-Xposed Kotlin main-source files and all 63 unit-test source files were screened. No placeholder assertions such as `assertTrue(true)` were found. Large UI files and independent Boolean facts were not refactored merely for uniformity.
+
+### Review correction
+
+Final base-to-HEAD review caught an over-aggressive first version of the restart state enum. The initial rewrite would have made a transient post-dialog handoff state saveable across Activity recreation. It was corrected before validation: only the mutually-exclusive confirm/failure dialogs share `RestartDialog?`; restart execution and post-dismiss handoff remain separate facts with their original lifecycle semantics.
+
+### Boundary
+
+Persisted setting keys, resource identities, Hook IDs, runtime preference names, package names, established Gradle property keys and other compatibility contracts were intentionally preserved. No SystemUI/Xposed ownership, hooks, renderer, geometry, motion, transition semantics, fail-native behavior, display version or Build identity changed.
+
+This state is integrated on `dev` only. Promotion to `main` is intentionally deferred until explicitly requested.
+
+## 2026-10-07 — Residual runtime plumbing maintainability cleanup
+
+**Type:** behavior-neutral maintainability / runtime plumbing
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746`
+**Integration commit:** `af976eb1`
+**Validation:** exact-head Runtime CI #2925 passed on PR #257
+
+### Result
+
+PR #257 completed a full sweep of the current Xposed/SystemUI runtime package for the recurring maintainability patterns identified during the post-0.2.1 audit.
+
+The accepted changes were deliberately selective rather than mechanical:
+
+- shortened internal names where package/receiver context already carried the domain, including the Control Center `Cc*` runtime path;
+- collapsed duplicate nested result wrappers and several empty-success / reason-only attach result types;
+- kept real multi-state results where success carries independent data, rollback ownership, pending state or another useful contract;
+- replaced `Session.active + started` storage booleans with one explicit `CREATED / RUNNING / STOPPED` lifecycle while preserving the old reachable semantics;
+- replaced fake-carrier visible/suppressed boolean combinations with `PREARM / VISIBLE / SUPPRESSED` lease phases while keeping layout-awaiting as an independent fact;
+- removed hard-coded diagnostic proof fields and repeated booleans that restated an already-recorded state instead of observing runtime behavior;
+- removed a single-caller `ActiveSubscriptionSource` helper whose separate Source abstraction had no independent lifecycle, reuse or compatibility boundary;
+- retained model/tint/layout/native-readiness booleans where they are genuinely parallel facts rather than one state machine.
+
+During final base-to-HEAD review, the initial lifecycle enum translation was found to make STOPPED report `started=false`, unlike the original reachable `active=false, started=true` state. That semantic drift was corrected before the merge gate. A suspected Control Center slot/resource fallback change was also investigated and confirmed to be only diff alignment around the `NativeParticipantAccess` rename.
+
+### Durable rule
+
+Maintainability cleanup is not a request to force every boolean into an enum, every helper into one file, or every long domain term into an abbreviation. A separate type or state representation must earn its cost through real ownership, lifecycle, reuse, compatibility, policy or caller simplification. Diagnostics must be based on observed facts rather than synthetic proof fields.
+
+No SystemUI ownership, hooks, rendering, geometry, motion, transition semantics, state authority, fail-native behavior, settings behavior, external version or Build identity changed in this work.
+
 ## 2026-10-06 — Guiyuan 0.2.1 stable promotion complete
 
 **Type:** stable promotion / repository state
@@ -5101,3 +5168,179 @@ Build 746 changes version/release metadata only. Its runtime code is the accepte
 - keep Build 744 device evidence applicable because no APK/runtime behavior changes are introduced by this checkpoint;
 - require the normal dev-to-main Full stable-promotion validation before merge.
 
+## 2026-10-07 — Build 746: runtime plumbing maintainability pass
+
+**Type:** behavior-neutral maintainability / runtime plumbing
+**Display version:** 0.2.1
+**Build:** 746 / `20261006-746` unchanged
+**Branch:** `refactor/runtime-plumbing`
+
+### Why this batch exists
+
+The previous cleanup reduced several long names and extracted some rules, but a second review still found concrete maintenance problems in SystemUI glue code: multiple booleans describing one lifecycle, one-line Policy wrappers around obvious expressions, duplicated sealed result hierarchies, success/failure wrappers with no useful success payload, very long plumbing names, and diagnostic fields that were hard-coded rather than observed.
+
+This batch fixes those specific problems. It is not a general rewrite and does not continue splitting files just to make them smaller.
+
+### Structural cleanup
+
+- fold the full-AOD transition window and Keyguard boundary handoff into explicit local state instead of independent Pending/Active/Ready booleans;
+- keep Home→AOD fallback flags separate where they are genuinely independent across different native callbacks;
+- remove trivial presentation policies and inline obvious one-line conditions;
+- simplify internal install/attach APIs to `String?` where callers only need success or a failure reason;
+- merge the duplicate Control Center presentation result hierarchy into the existing shared presentation state result;
+- remove the unused native combined-participant detach API and its unused result type;
+- consolidate owned-list bookkeeping under one `OwnedEntries` helper;
+- shorten probe/source/runtime names where the surrounding scope already provides the domain context, without keeping compatibility aliases for dead internal names.
+
+### Diagnostics rule
+
+Synthetic metrics are now explicitly forbidden by CONTRIBUTING. A diagnostic field presented as a metric, readiness input, health signal or observed value must come from a real runtime read or calculation.
+
+The branch removes hard-coded self-proof fields such as `nativeGeometryWrites=0`, `suppressionWriters=0`, `hookDelta=0`, fixed `eventDriven/readOnly/stable/mainThread` tags, and similar detached/installed claims that were not backed by a measurement. Real geometry, hook counts, runtime state, failure reasons and protocol control fields remain.
+
+### Review boundary
+
+No display-version or Build bump is made. The accepted ownership model, native geometry authority, fail-native boundaries, transition timing and stable Build 746 identity remain the target behavior.
+
+The full-AOD state refactor received a direct old-vs-new lifecycle review. One subtle missing-host difference was found during review and corrected before CI: when the Keyguard host cannot be resolved, the cached Home-at-start ownership snapshot is invalidated just as in the previous implementation.
+
+### Closeout
+
+- PR #248 passed exact-head Full CI #2879 at head `c5fe296`: target-profile verification, Kotlin compilation, unit tests, required APK variants, Modern Xposed metadata and non-debuggable validation all passed.
+- Compiler warnings match the existing Build 746 baseline; this batch did not introduce a new warning class.
+- PR #248 was squash-merged to `dev` as `6f7c3a1`.
+- No Canary/device gate is required because the remaining questions were resolved by source-level lifecycle comparison and automated validation.
+- `main` remains unchanged; version 0.2.1 and Build 746 are not bumped by this maintenance batch.
+
+## 2026-10-07 — Build 746: close maintainability coverage gaps
+
+**Type:** behavior-neutral maintainability / coverage-gap audit  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `refactor/maintainability-gap-audit`
+
+### Coverage method
+
+This pass starts from accepted `dev@50f5aa2` and uses maintenance-PR changed-files as the coverage map instead of scanning already-reviewed areas again. #217 and #228-#248 were unioned first, then merged functional PRs between those checkpoints were checked for later changes that could invalidate an earlier review.
+
+The remaining uncovered set was 15 production Kotlin files plus 11 test/tooling/workflow entries. Intermediate feature/fix work did not expose an additional post-review gap: the affected Home/UI/target-profile paths were subsequently covered by later maintenance PRs.
+
+### Confirmed gaps
+
+- `SystemActiveSubscriptionSource` carried an unused `Snapshot + Authority + reason` shell even though every caller consumed only the nullable subscription-ID set. The source now returns that set directly. `null` still means the platform authority is unavailable; an empty set remains an authoritative no-active-subscription result.
+- `SystemUiCompatibilityProbe.summary` unconditionally said `SystemUI ready` even on a partial structural match. The summary is now neutral; the actual diagnostic ready/unavailable state remains derived from the observed status-host marker.
+- `NativeStatusBarSlotGeometryTest` had two equivalent cases, one named as if it proved transient battery expansion even though no battery-expansion input existed. The self-proof duplicate is removed.
+
+### False positives retained
+
+- `RootShell.Result` represents real timeout / exit / error outcomes rather than a success/failure wrapper.
+- `CenterTransitionPolicy` protects a real three-family transition rule.
+- `WifiOpticalReference.canShareReferenceViewport` is shared by two optical-geometry paths, so inlining it would duplicate the same invariant.
+- render-latency samples, native-status inventory counts and runtime-health state are based on actual runtime timestamps/events/view scans, not synthetic metrics.
+- workflow validation is based on real diffs, exact source SHAs, build outputs, signatures and metadata checks; no fixed health/readiness evidence was found.
+
+### Boundary
+
+No version or Build bump. No geometry constant, native writer, transition clock, ownership boundary, fail-native path or device-specific compensation is changed. One coherent Runtime CI checkpoint is sufficient unless it leaves a device-only uncertainty.
+
+### Closeout
+
+- PR #250 exact-head Runtime CI #2883 passed on `7ae45292`: target-profile verification, Kotlin compilation, unit tests, debug APK build and Modern Xposed metadata checks succeeded.
+- PR #250 was squash-merged to `dev` as `8cf504c1`.
+- Integrated `dev` Runtime validation #2884 passed the signed Canary path, including Haple signing, metadata and non-debuggable validation.
+- No new warning class came from the touched files; existing warnings remain in previously reviewed runtime areas and are not reopened by this audit.
+- No Canary/device gate is required beyond the automatic integrated-dev artifact because the batch is behavior-neutral and leaves no device-only engineering question.
+- External version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
+
+
+## 2026-10-07 — Build 746: residual runtime-plumbing cleanup
+
+**Type:** behavior-neutral maintainability / runtime plumbing  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `refactor/runtime-plumbing-residuals`
+
+### Why
+
+The broad maintainability and coverage-gap passes were already closed, but a focused review of the remaining plumbing still found a few concrete cases matching the project's own maintenance rules: redundant owner/policy wording, one mutually exclusive Boolean pair, result objects carrying fields only to reconstruct logs, a synthetic handoff write metric, and an unreachable failure branch around an operation that always succeeded.
+
+### Net cleanup
+
+- `NativeBatterySuppressionOwner` / `NativeNetworkSuppressionOwner` become the shorter `NativeBatterySuppressor` / `NativeNetworkSuppressor`; `NativeCombinedParticipantOwner` becomes `NativeCombinedParticipant`; `NativeParticipantRuntimeOwner` becomes `NativeParticipantRuntime`.
+- Home native-AOD fallback candidate/active booleans become one explicit phase. Independent Home origin/prearm and Keyguard readiness/lease facts remain separate.
+- Battery and network suppression success results no longer carry duplicate diagnostic payload; detailed runtime observations stay at the operation that measured them.
+- the synthetic handoff write count and the unreachable battery restore failure path are removed.
+- `BatteryArcPolicy` and `BatteryTopLayoutPolicy` are folded into `BatteryGeometry`; the thin `PresentationPolicy` shell is removed.
+- internal source/reference names are shortened where context already carries the domain: `ActiveSubscriptionSource`, `NativeStatusInventory`, `WifiOpticalReference`, `NetworkSuppressionPolicy`, `SysUiCompatibilityProbe`, and `SysUiSignalParser`.
+- private ignored-slot lifetime naming is reduced to `IgnoreScope.CALL / SESSION`.
+- CONTRIBUTING now explicitly rejects success/failure contracts without a real failure source.
+
+### Review boundary
+
+This pass does not intentionally change rendering geometry, transition timing, Hook ownership/count contracts, native alpha/translation/visibility ownership, fail-native policy, display version or Build identity.
+
+Full base-to-head review caught two cleanup defects before CI: an accidental executable-bit change on `tools/verify_target_profile.py`, and one malformed Home-AOD enum reset produced by an earlier mechanical replacement. Both were corrected before validation.
+
+### Validation and closeout
+
+- Full CI #2903 reached Kotlin compilation after target-profile success and exposed one incomplete internal rename: `ControlCenterRenderSession` still referenced `SysUiPresentationOwner.StateResult`. The five stale references were updated to `Result`; no behavior or state contract changed.
+- exact-head Full CI #2904 passed on `5dcf8814`: target-profile verification, Kotlin compilation, unit tests, Debug APK build, Modern Xposed metadata and non-debuggable verification all succeeded.
+- PR #252 was squash-merged to `dev` as `06635a7e`.
+- integrated `dev` Full CI #2905 passed the signed Canary path, including target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload.
+- existing Kotlin warnings remain in reflection/Java-interop areas; this pass does not reopen them merely to reach zero warnings.
+- no separate device gate is required because the accepted diff is behavior-neutral and leaves no unresolved device-only question.
+- external version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
+
+## 2026-10-07 — Build 746: fail closed on pre-existing stable tags
+
+**Type:** release safety / 1.0.0 qualification  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `ci/stable-tag-boundary`
+
+### Problem
+
+Stable release automation rejected an existing GitHub Release for `v$VERSION_NAME` but did not reject an existing bare remote tag with the same name. `gh release create --target ...` creates a tag from the requested target only when the matching tag does not already exist, so a stale/manual bare tag could bypass the intended prepared-main tag creation boundary.
+
+### Change
+
+- keep the existing stable Release existence check;
+- also query the exact remote `refs/tags/$RELEASE_TAG` before publishing;
+- fail stable publishing if that tag already exists instead of reusing it;
+- leave test-release behavior unchanged.
+
+### Boundary
+
+No runtime/APK behavior, version, Build, dependency, signing identity, changelog content or device contract changes. This is a release-workflow safety change and therefore requires Full automated validation but no device gate.
+
+### Validation and closeout
+
+- exact-head Full CI #2908 passed on `adae300e`: target-profile verification, Kotlin compilation, unit tests, Debug build, Modern Xposed metadata and non-debuggable verification succeeded;
+- PR #254 was squash-merged to `dev` as `9799dc50`;
+- integrated `dev` Full CI #2909 passed the signed Canary path, including target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload;
+- no device gate is required;
+- external version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
+
+## 2026-10-07 — Build 746: reserve formal stable releases for 1.0+
+
+**Type:** release policy / 1.0.0 qualification  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `ci/formal-release-version-boundary`
+
+### Problem
+
+Project policy consistently treats 1.0.0 as the first planned formal release and the stable release channel as the formal publishing path. The workflow nevertheless accepted any prepared `main` version with a dated changelog section, including the current 0.x development checkpoints.
+
+### Change
+
+- stable release validation now rejects a version whose numeric major component is below 1;
+- the existing `test` channel remains available for explicit pre-1.0 prereleases;
+- the current display version is not changed.
+
+### Boundary
+
+No runtime/APK behavior, Build identity, dependency, signing identity, tag naming, test-release behavior or device contract changes. This release-workflow change requires Full automated validation and no device gate.

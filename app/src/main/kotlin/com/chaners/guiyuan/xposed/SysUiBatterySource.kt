@@ -83,7 +83,7 @@ internal object SysUiBatterySource {
                     (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
                 }.getOrNull()
             val semanticState =
-                SystemUiBatterySemanticPolicy.fromNativeProgressStatus(
+                BatterySemanticPolicy.fromNativeProgressStatus(
                     nativeStatusName,
                 )
             val miuiOptimizationEnabled =
@@ -146,7 +146,7 @@ internal object SysUiBatterySource {
                     " systemColor=" +
                     (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
                     " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()" +
-                    " eventDriven=true",
+                    "",
             )
         }
 
@@ -185,7 +185,7 @@ internal object SysUiBatterySource {
                     " charging=" + charging +
                     " resourceId=" + (resourceId ?: 0) +
                     " authority=MiuiBatteryMeterView.getHollowChargingIconId()" +
-                    " eventDriven=true",
+                    "",
             )
         }
 

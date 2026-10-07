@@ -2,6 +2,7 @@ package com.chaners.guiyuan.system
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RuntimeDiagnosticsProtocolTest {
@@ -43,7 +44,7 @@ class RuntimeDiagnosticsProtocolTest {
     }
 
     @Test
-    fun healthSnapshotUsesLatestEventForEachComponent() {
+    fun eventSnapshotUsesLatestEventForEachComponent() {
         val lines =
             listOf(
                 RuntimeDiagnosticsProtocol.format(
@@ -60,17 +61,18 @@ class RuntimeDiagnosticsProtocolTest {
             )
 
         val network =
-            RuntimeHealthSnapshot
-                .fromLines(lines)
-                .components
-                .first { it.component == "network" }
+            requireNotNull(
+                RuntimeEventSnapshot
+                    .fromLines(lines)
+                    .component("network"),
+            )
 
         assertEquals("ready", network.state)
         assertEquals("4", network.fields["hooks"])
     }
 
     @Test
-    fun healthSnapshotScopesToLatestRuntimeSession() {
+    fun eventSnapshotScopesToLatestRuntimeSession() {
         val lines =
             listOf(
                 RuntimeDiagnosticsProtocol.format(
@@ -120,7 +122,7 @@ class RuntimeDiagnosticsProtocolTest {
                 ),
             )
 
-        val snapshot = RuntimeHealthSnapshot.fromLines(lines)
+        val snapshot = RuntimeEventSnapshot.fromLines(lines)
         val network = requireNotNull(snapshot.component("network"))
 
         assertEquals("new", snapshot.sessionId)
@@ -133,7 +135,7 @@ class RuntimeDiagnosticsProtocolTest {
     }
 
     @Test
-    fun metricEventsDoNotReplaceHealthState() {
+    fun excludedMetricEventsDoNotReplaceComponentSnapshot() {
         val lines =
             listOf(
                 RuntimeDiagnosticsProtocol.format(
@@ -156,7 +158,7 @@ class RuntimeDiagnosticsProtocolTest {
 
         val network =
             requireNotNull(
-                RuntimeHealthSnapshot
+                RuntimeEventSnapshot
                     .fromLines(lines)
                     .component("network"),
             )
@@ -167,79 +169,9 @@ class RuntimeDiagnosticsProtocolTest {
     }
 
     @Test
-    fun completeHotReloadGenerationReportsHealthy() {
-        val coreComponents =
-            listOf(
-                "module",
-                "diagnostics",
-                "compatibility",
-                "statusHostHook",
-                "statusHost",
-                "network",
-                "airplane",
-                "presentationRuntime",
-                "stableStatus",
-                "renderer",
-                "runtimeSession",
-            )
-        val lines =
-            coreComponents.mapIndexed { index, component ->
-                RuntimeDiagnosticsProtocol.format(
-                    event = "hotReload.test",
-                    component = component,
-                    state = "ready",
-                    fields =
-                        mapOf(
-                            "sessionId" to "hot",
-                            "sequence" to (index + 1).toString(),
-                        ),
-                )
-            }
-
-        val snapshot = RuntimeHealthSnapshot.fromLines(lines)
-
-        assertEquals("healthy", snapshot.overall)
-        assertEquals("hot", snapshot.sessionId)
-    }
-
-    @Test
-    fun unobservedTintAndSceneDoNotDegradeReadyPresentationOwner() {
-        val coreComponents =
-            listOf(
-                "module",
-                "diagnostics",
-                "compatibility",
-                "statusHostHook",
-                "statusHost",
-                "network",
-                "airplane",
-                "presentationRuntime",
-                "stableStatus",
-                "renderer",
-                "runtimeSession",
-            )
-        val lines =
-            coreComponents.mapIndexed { index, component ->
-                RuntimeDiagnosticsProtocol.format(
-                    event = "source.ready",
-                    component = component,
-                    state = "ready",
-                    fields = mapOf("sequence" to (index + 1).toString()),
-                )
-            }
-
-        val snapshot = RuntimeHealthSnapshot.fromLines(lines)
-
-        assertEquals("healthy", snapshot.overall)
-        assertEquals("ready", requireNotNull(snapshot.component("presentationRuntime")).state)
-        assertEquals("unknown", requireNotNull(snapshot.component("tint")).state)
-        assertEquals("unknown", requireNotNull(snapshot.component("scene")).state)
-    }
-
-    @Test
-    fun missingCoreComponentsNeverReportHealthy() {
+    fun unobservedComponentsAreNotInvented() {
         val snapshot =
-            RuntimeHealthSnapshot.fromLines(
+            RuntimeEventSnapshot.fromLines(
                 listOf(
                     RuntimeDiagnosticsProtocol.format(
                         event = "module.loaded",
@@ -249,10 +181,7 @@ class RuntimeDiagnosticsProtocolTest {
                 ),
             )
 
-        assertEquals("degraded", snapshot.overall)
-        assertEquals(
-            "unknown",
-            snapshot.components.first { it.component == "renderer" }.state,
-        )
+        assertEquals(1, snapshot.events.size)
+        assertNull(snapshot.component("renderer"))
     }
 }

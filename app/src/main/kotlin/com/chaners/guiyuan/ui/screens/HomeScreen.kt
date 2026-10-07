@@ -113,7 +113,7 @@ internal fun HomeScreen(
         application.xposedStatus.collectAsState()
     val previewResources =
         remember(context.applicationContext) {
-            PreviewSystemUiResourceResolver(context.applicationContext)
+            PreviewSysUiResources(context.applicationContext)
         }
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -305,7 +305,7 @@ private fun HomeRuntimeStatusCard(
 @Composable
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
-    resources: PreviewSystemUiResourceResolver,
+    resources: PreviewSysUiResources,
     visual: VisualCfg,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,

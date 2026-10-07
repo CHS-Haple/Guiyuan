@@ -526,7 +526,7 @@ internal object SysUiNetworkSource {
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
             }
             mobileRoots.forEach { (root, subscriptionId) ->
@@ -536,7 +536,7 @@ internal object SysUiNetworkSource {
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
             }
         }
@@ -589,10 +589,9 @@ internal object SysUiNetworkSource {
                         "root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " vm=" + viewModel.javaClass.simpleName +
-                        " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0",
+                        "",
                 )
                 readWifiSeed(
                     root = root,
@@ -814,9 +813,9 @@ internal object SysUiNetworkSource {
             state =
                 StatusStateStore.WifiState.Visible(
                     iconResId = modelResId,
-                    signal = SystemUiSignalParser.wifi(modelResourceName),
+                    signal = SysUiSignalParser.wifi(modelResourceName),
                     internetValidated =
-                        SystemUiSignalParser.wifiInternetValidated(
+                        SysUiSignalParser.wifiInternetValidated(
                             modelResourceName,
                         ),
                 ),
@@ -888,9 +887,9 @@ internal object SysUiNetworkSource {
                         state =
                             StatusStateStore.WifiState.Visible(
                                 iconResId = taggedResId,
-                                signal = SystemUiSignalParser.wifi(taggedResource),
+                                signal = SysUiSignalParser.wifi(taggedResource),
                                 internetValidated =
-                                    SystemUiSignalParser.wifiInternetValidated(
+                                    SysUiSignalParser.wifiInternetValidated(
                                         taggedResource,
                                     ),
                             ),
@@ -946,7 +945,7 @@ internal object SysUiNetworkSource {
         semanticState == StatusStateStore.WifiState.Hidden &&
             taggedResId != null &&
             taggedResId != previousTaggedResId &&
-            SystemUiSignalParser.isHotspotWifiResource(taggedResource)
+            SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
     private fun mobileBindHooker(
         subscriptionIdMethod: Method,
@@ -978,10 +977,9 @@ internal object SysUiNetworkSource {
                         " locationVm=" + locationViewModel.javaClass.simpleName +
                         " subId=" + subscriptionId +
                         " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
-                        " nativeSlotCandidate=true " +
                         " parentChain=" + parentChain(root) +
                         " layout=" + layoutToken(root) +
-                        " geometryWrites=0"
+                        ""
             }
         }
 
@@ -1015,8 +1013,7 @@ internal object SysUiNetworkSource {
             }.onFailure { error ->
                 onEvent?.invoke(
                     "networkPipeline mobile preMask failed " +
-                        "error=" + error.javaClass.simpleName +
-                        " failNative=true geometryWrites=0",
+                        "error=" + error.javaClass.simpleName,
                 )
             }
         }
@@ -1055,7 +1052,7 @@ internal object SysUiNetworkSource {
                                 signal = if (
                                     kind == StatusStateStore.MobileIconKind.SIGNAL
                                 ) {
-                                    SystemUiSignalParser.mobile(resourceName)
+                                    SysUiSignalParser.mobile(resourceName)
                                 } else {
                                     null
                                 },

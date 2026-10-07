@@ -60,7 +60,6 @@ internal object DiagFiles {
                         "cleanup transport=mediaStore result=failed " +
                             "error=${error.javaClass.simpleName}"
                     Log.w(LOG_TAG, message)
-                    DiagShareStore.append(context, message)
                 }
             }
 
@@ -109,10 +108,9 @@ internal object DiagFiles {
                 }
 
                 val message =
-                    "prepare transport=mediaStore managed=true scheme=${uri.scheme} " +
+                    "prepare transport=mediaStore scheme=${uri.scheme} " +
                         "authority=${uri.authority} relativePath=$SHARE_PATH $probe"
                 Log.i(LOG_TAG, message)
-                DiagShareStore.append(context, message)
             }
 
             ShareFile(uri = uri)
@@ -125,7 +123,6 @@ internal object DiagFiles {
                     "prepare transport=mediaStore result=failed " +
                         "error=${error.javaClass.simpleName} message=${error.message.orEmpty()}"
                 Log.e(LOG_TAG, message)
-                DiagShareStore.append(context, message)
             }
         }.getOrNull()
     }
@@ -143,7 +140,6 @@ internal object DiagFiles {
             "intent action=${intent.action} type=${intent.type} flags=0x${intent.flags.toString(16)} " +
                 "clipItems=${intent.clipData?.itemCount ?: 0} uriAuthority=${uri.authority}"
         Log.i(LOG_TAG, message)
-        DiagShareStore.append(context, message)
     }
 
     fun logChooser(
@@ -166,7 +162,6 @@ internal object DiagFiles {
         } else {
             Log.e(LOG_TAG, message)
         }
-        DiagShareStore.append(context, message)
     }
 
     fun discard(

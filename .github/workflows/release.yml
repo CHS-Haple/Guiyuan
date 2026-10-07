@@ -213,6 +213,13 @@ jobs:
           import re
 
           version = os.environ["VERSION_NAME"]
+          major = version.split(".", 1)[0]
+          if not major.isdigit() or int(major) < 1:
+              raise SystemExit(
+                  f"Stable releases require version 1.0.0 or later; {version} is a pre-1.0 checkpoint. "
+                  "Use the test channel for an explicit pre-1.0 prerelease."
+              )
+
           changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
           heading = re.compile(
               rf"^## \\[{re.escape(version)}\\] - \\d{{4}}-\\d{{2}}-\\d{{2}}$",
@@ -244,7 +251,7 @@ jobs:
           pathlib.Path("release-notes.md").write_text(release_notes + "\\n", encoding="utf-8")
           PY
 
-      - name: Check stable tag
+      - name: Check stable release identity
         if: inputs.channel == 'stable'
         shell: bash
         env:
@@ -252,6 +259,12 @@ jobs:
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "A stable release already exists for $RELEASE_TAG. Increase versionName before publishing another stable release."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --refs origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "A remote tag already exists for $RELEASE_TAG without a reusable stable-release contract."
+            echo "Stable publishing must create the version tag from the prepared main commit."
             exit 1
           fi
 

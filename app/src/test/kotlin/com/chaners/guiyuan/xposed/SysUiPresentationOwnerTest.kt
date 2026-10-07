@@ -7,7 +7,7 @@ class SysUiPresentationOwnerTest {
     @Test
     fun controlCenterPresentationFailureIsNoOpWithoutActiveSession() {
         assertFalse(
-            SysUiPresentationOwner.failControlCenterPresentation(
+            SysUiPresentationOwner.failCcPresentation(
                 "unit-test-no-session",
             ),
         )

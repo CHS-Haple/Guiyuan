@@ -80,7 +80,7 @@ class BatteryColorSchemeLibraryTest {
     fun legacyCustomWithoutStoredValueFallsBackToItsPresetSource() {
         assertEquals(
             BatteryColorSchemeSource.IOS,
-            batteryColorSchemeSourceFromLegacy(
+            schemeSourceFromLegacy(
                 mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = false,
                 presetSource = BatteryColorSchemeSource.IOS,
@@ -88,7 +88,7 @@ class BatteryColorSchemeLibraryTest {
         )
         assertEquals(
             BatteryColorSchemeSource.CUSTOM,
-            batteryColorSchemeSourceFromLegacy(
+            schemeSourceFromLegacy(
                 mode = BatteryColorMode.CUSTOM,
                 hasStoredCustom = true,
                 presetSource = BatteryColorSchemeSource.IOS,
@@ -96,7 +96,7 @@ class BatteryColorSchemeLibraryTest {
         )
         assertEquals(
             BatteryColorSchemeSource.FOLLOW_SYSTEM,
-            batteryColorSchemeSourceFromLegacy(
+            schemeSourceFromLegacy(
                 mode = BatteryColorMode.FOLLOW_SYSTEM,
                 hasStoredCustom = true,
                 presetSource = BatteryColorSchemeSource.IOS,
@@ -114,17 +114,17 @@ class BatteryColorSchemeLibraryTest {
     fun customSchemeNameLimitIsSharedAndUnicodeCodePointSafe() {
         assertEquals(
             "123456789012345678901234",
-            limitBatteryCustomSchemeNameInput("1234567890123456789012345"),
+            limitCustomSchemeName("1234567890123456789012345"),
         )
         val emoji = "\uD83D\uDE80"
         val twentyFourEmoji = emoji.repeat(BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS)
         assertEquals(
             twentyFourEmoji,
-            limitBatteryCustomSchemeNameInput(twentyFourEmoji + emoji),
+            limitCustomSchemeName(twentyFourEmoji + emoji),
         )
         assertEquals(
             "Custom style",
-            normalizeBatteryCustomSchemeName("  Custom style  "),
+            normalizeCustomSchemeName("  Custom style  "),
         )
     }
 

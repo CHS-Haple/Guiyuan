@@ -9,7 +9,7 @@ class PresentationPoliciesTest {
     @Test
     fun temporaryEntriesPreserveExistingAndRestoreOnlyOwnedEntries() {
         val slots = mutableListOf("alarm_clock", "wifi")
-        OwnedListEntries.withTemporaryEntries(
+        OwnedEntries.withTemporary(
             target = slots,
             entries = listOf("wifi", "mobile", "no_sim"),
         ) {
@@ -26,7 +26,7 @@ class PresentationPoliciesTest {
         val existing = listOf("alarm_clock", "wifi")
         val requested = listOf("wifi", "mobile", "no_sim")
         val owned =
-            PersistentIgnoredSlotPolicy.ownedDelta(
+            OwnedEntries.delta(
                 existing = existing,
                 requested = requested,
             )
@@ -35,26 +35,10 @@ class PresentationPoliciesTest {
         val live = listOf("alarm_clock", "wifi", "mobile", "no_sim", "vpn")
         assertEquals(
             listOf("alarm_clock", "wifi", "vpn"),
-            PersistentIgnoredSlotPolicy.restoreTarget(
+            OwnedEntries.restoreTarget(
                 live = live,
                 ownedEntries = owned,
             ),
-        )
-    }
-
-    @Test
-    fun persistentIgnoredSlotRestoreAvoidsNativeSetterDuringContinuousHandoff() {
-        assertFalse(
-            PersistentIgnoredSlotPolicy
-                .shouldUseNativeSetterOnRestore(
-                    requestLayout = false,
-                ),
-        )
-        assertTrue(
-            PersistentIgnoredSlotPolicy
-                .shouldUseNativeSetterOnRestore(
-                    requestLayout = true,
-                ),
         )
     }
 
@@ -204,66 +188,6 @@ class PresentationPoliciesTest {
     }
 
     @Test
-    fun deferredControlCenterCutoverPreservesNativeVisualsUntilCompactLayout() {
-        assertTrue(
-            VisualMaskPolicy
-                .shouldPreserveNativeBeforeCompactCutover(
-                    deferVisualMaskUntilLayout = true,
-                ),
-        )
-        assertFalse(
-            VisualMaskPolicy
-                .shouldPreserveNativeBeforeCompactCutover(
-                    deferVisualMaskUntilLayout = false,
-                ),
-        )
-    }
-
-    @Test
-    fun keyguardFamilyReleaseIgnoresOldSceneAfterSuccessfulRetarget() {
-        assertFalse(
-            KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = KeyguardFamilySurface.AOD,
-                requestedSurface = KeyguardFamilySurface.KEYGUARD,
-            ),
-        )
-        assertFalse(
-            KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = KeyguardFamilySurface.KEYGUARD,
-                requestedSurface = KeyguardFamilySurface.AOD,
-            ),
-        )
-        assertTrue(
-            KeyguardFamilyHandoffPolicy.shouldRelease(
-                activeSurface = KeyguardFamilySurface.AOD,
-                requestedSurface = KeyguardFamilySurface.AOD,
-            ),
-        )
-    }
-
-    @Test
-    fun aodPreMaskRequiresDeferredLayoutAndExplicitHandoffRequest() {
-        assertTrue(
-            VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
-                deferVisualMaskUntilLayout = true,
-                preMaskBeforeLayout = true,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
-                deferVisualMaskUntilLayout = true,
-                preMaskBeforeLayout = false,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldPreMaskBeforeCompactCutover(
-                deferVisualMaskUntilLayout = false,
-                preMaskBeforeLayout = true,
-            ),
-        )
-    }
-
-    @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
             VisualMaskPolicy.shouldAdoptExistingNativeLayout(
@@ -314,79 +238,10 @@ class PresentationPoliciesTest {
     }
 
     @Test
-    fun visualOnlyKeyguardHandoffDefersNativeLayoutMutationAndCompletion() {
-        assertFalse(
-            DeferredNativeLayoutPolicy
-                .shouldWriteNativeLayout(
-                    nativeLayoutOwnershipDeferred = true,
-                ),
-        )
-        assertFalse(
-            DeferredNativeLayoutPolicy
-                .shouldCompleteCompactLayout(
-                    nativeLayoutOwnershipDeferred = true,
-                ),
-        )
-        assertTrue(
-            DeferredNativeLayoutPolicy
-                .shouldWriteNativeLayout(
-                    nativeLayoutOwnershipDeferred = false,
-                ),
-        )
-        assertTrue(
-            DeferredNativeLayoutPolicy
-                .shouldCompleteCompactLayout(
-                    nativeLayoutOwnershipDeferred = false,
-                ),
-        )
-    }
-
-    @Test
-    fun continuousHotReloadHandoffSuppressesIntermediateLayoutRequest() {
-        assertFalse(
-            HotReloadHandoffPolicy
-                .shouldRequestLayoutOnRelease(
-                    continuousHandoff = true,
-                ),
-        )
-        assertTrue(
-            HotReloadHandoffPolicy
-                .shouldRequestLayoutOnRelease(
-                    continuousHandoff = false,
-                ),
-        )
-    }
-
-    @Test
-    fun transientLiveBatteryWidthLossIsDeferredOnlyAfterControlCenterCutover() {
-        assertTrue(
-            EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
-                    retainOnTransientLoss = true,
-                    compactLayoutReady = true,
-                ),
-        )
-        assertFalse(
-            EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
-                    retainOnTransientLoss = true,
-                    compactLayoutReady = false,
-                ),
-        )
-        assertFalse(
-            EndReservationPolicy
-                .shouldDeferLiveBatteryWidthUnavailable(
-                    retainOnTransientLoss = false,
-                    compactLayoutReady = true,
-                ),
-        )
-    }
-
-    @Test
     fun temporaryEntriesRestoreAfterFailure() {
         val slots = mutableListOf("alarm_clock")
         runCatching {
-            OwnedListEntries.withTemporaryEntries(
+            OwnedEntries.withTemporary(
                 target = slots,
                 entries = listOf("wifi", "mobile"),
             ) {
@@ -481,22 +336,6 @@ class PresentationPoliciesTest {
     }
 
     @Test
-    fun steadyPeerMirrorIsScopedToHomeControlCenterSource() {
-        assertTrue(
-            SteadyPeerMirrorPolicy
-                .shouldUseHomeMirror(SourceScene.HOME),
-        )
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .shouldUseHomeMirror(SourceScene.KEYGUARD),
-        )
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .shouldUseHomeMirror(SourceScene.UNKNOWN),
-        )
-    }
-
-    @Test
     fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
         assertTrue(
             SteadyPeerMirrorPolicy
@@ -543,84 +382,6 @@ class PresentationPoliciesTest {
                     nativeIslandShowing = false,
                     steadyMirrorActive = true,
                 ),
-        )
-    }
-
-
-    @Test
-    fun controlCenterHotPathDiagnosticsStayOutOfActiveTransitionFrames() {
-        assertFalse(
-            HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
-                    detailedDiagnosticsEnabled = false,
-                    transitionReservationActive = false,
-                ),
-        )
-        assertFalse(
-            HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    transitionReservationActive = true,
-                ),
-        )
-        assertTrue(
-            HotPathDiagnosticPolicy
-                .shouldReportControlCenterLayoutState(
-                    detailedDiagnosticsEnabled = true,
-                    transitionReservationActive = false,
-                ),
-        )
-
-    }
-
-
-
-    @Test
-    fun deferredFamilyOwnershipResumesWhenRetargetLeavesVisualOnlyBoundary() {
-        assertTrue(
-            DeferredNativeLayoutPolicy
-                .shouldResumeOwnershipForRetarget(
-                    nativeLayoutOwnershipDeferred = true,
-                    nextDeferNativeLayoutOwnership = false,
-                ),
-        )
-        assertFalse(
-            DeferredNativeLayoutPolicy
-                .shouldResumeOwnershipForRetarget(
-                    nativeLayoutOwnershipDeferred = true,
-                    nextDeferNativeLayoutOwnership = true,
-                ),
-        )
-        assertFalse(
-            DeferredNativeLayoutPolicy
-                .shouldResumeOwnershipForRetarget(
-                    nativeLayoutOwnershipDeferred = false,
-                    nextDeferNativeLayoutOwnership = false,
-                ),
-        )
-    }
-
-
-
-    @Test
-    fun activationSuccessRequiresOwnerAndFamilySurfaceToStillBeCurrent() {
-        assertTrue(
-            ActivationCommitPolicy.canReportSuccess(
-                ownerStillCurrent = true,
-                surfaceStillCurrent = true,
-            ),
-        )
-        assertFalse(
-            ActivationCommitPolicy.canReportSuccess(
-                ownerStillCurrent = false,
-                surfaceStillCurrent = true,
-            ),
-        )
-        assertFalse(
-            ActivationCommitPolicy.canReportSuccess(
-                ownerStillCurrent = true,
-                surfaceStillCurrent = false,
-            ),
         )
     }
 

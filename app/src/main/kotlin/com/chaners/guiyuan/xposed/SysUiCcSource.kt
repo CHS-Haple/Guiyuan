@@ -195,11 +195,11 @@ internal object SysUiCcSource {
                                     dispatchRuntimeCallback(
                                         callback = {
                                             onEvent(
-                                                "controlCenterFakeLifecycle attached=true " +
+                                                "controlCenterFakeLifecycle attached " +
                                                     "root=" + root.javaClass.name +
                                                     " attachedToWindow=" +
                                                     root.isAttachedToWindow +
-                                                    " readOnly=true nativeGeometryWrites=0",
+                                                    "",
                                             )
                                             describeFakeIslandContractOnce(root)?.let(onEvent)
                                         },
@@ -411,7 +411,7 @@ internal object SysUiCcSource {
         return "controlCenterFakeIslandContract root=" + root.javaClass.name +
             " candidates=" + contractViews.size +
             " entries=[" + contractViews.joinToString("|") +
-            "] readOnly=true bounded=true nativeGeometryWrites=0"
+            "]"
     }
 
     internal fun dispatchRuntimeCallback(
@@ -588,7 +588,7 @@ internal object SysUiCcSource {
                         sourceSceneSummary +
                         batteryIslandSummary +
                         " authority=hyperos-native-callback" +
-                        " nativeGeometryWrites=0",
+                        "",
                 )
             },
         )
@@ -683,7 +683,7 @@ internal object SysUiCcSource {
         private val callbackOuterField: Field,
         private val statusBarAnchorField: Field,
         private val normalStatusBarTranslationXField: Field,
-        private val normalStatusIconsTranslationXField: Field,
+        private val statusIconsTranslationXField: Field,
         private val batteryWidthDiffField: Field,
         private val addBatteryIslandField: Field,
         private val expandingField: Field,
@@ -829,7 +829,7 @@ internal object SysUiCcSource {
                 normalStatusBarTranslationX =
                     readInt(normalStatusBarTranslationXField, header),
                 normalStatusIconsTranslationX =
-                    readInt(normalStatusIconsTranslationXField, header),
+                    readInt(statusIconsTranslationXField, header),
                 batteryWidthDiff = readInt(batteryWidthDiffField, header),
                 addBatteryIsland = readBoolean(addBatteryIslandField, header),
                 expanding =
@@ -903,7 +903,7 @@ internal object SysUiCcSource {
                             headerClass
                                 .getDeclaredField("normalControlStatusBarTranslationX")
                                 .accessible(),
-                        normalStatusIconsTranslationXField =
+                        statusIconsTranslationXField =
                             headerClass
                                 .getDeclaredField("normalControlStatusIconsTranslationX")
                                 .accessible(),

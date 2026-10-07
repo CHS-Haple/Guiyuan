@@ -253,7 +253,7 @@ internal object SysUiTintSource {
                         semanticTints.joinToString(",") { colorHex(it) }
                     }
                 ) +
-                " readOnly=true eventDriven=true",
+                "",
         )
     }
 
@@ -356,7 +356,7 @@ internal object SysUiTintSource {
     fun currentState(sourceView: View): TintState? {
         val cached =
             lastStates[sourceView]
-                ?.takeIf(PresentationPolicy::isValidTint)
+                ?.takeIf { it.isVisible }
         val field = batteryPercentViewField
         val refreshed =
             field?.let { percentField ->
@@ -367,7 +367,7 @@ internal object SysUiTintSource {
             }
         if (
             refreshed != null &&
-            PresentationPolicy.isValidTint(refreshed)
+            refreshed.isVisible
         ) {
             lastStates[sourceView] = refreshed
             return refreshed

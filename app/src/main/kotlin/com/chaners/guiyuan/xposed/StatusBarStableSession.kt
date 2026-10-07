@@ -18,18 +18,18 @@ internal object StatusBarStableSession {
     fun attach(
         host: Any,
         onEvent: (String) -> Unit,
-    ): AttachResult {
+    ): String? {
         val hostView = host as? ViewGroup
-            ?: return AttachResult.Failure("host-not-view-group")
+            ?: return "host-not-view-group"
 
         val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
-            ?: return AttachResult.Failure("battery-container-missing")
+            ?: return "battery-container-missing"
         val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
-            ?: return AttachResult.Failure("battery-view-missing")
+            ?: return "battery-view-missing"
 
         val existing = current
         if (existing?.matches(hostView, batteryContainer, batteryView) == true) {
-            return AttachResult.Ready
+            return null
         }
 
         existing?.stop()
@@ -43,7 +43,7 @@ internal object StatusBarStableSession {
         current = session
         session.start()
 
-        return AttachResult.Ready
+        return null
     }
 
     @Synchronized
@@ -219,14 +219,6 @@ internal object StatusBarStableSession {
 
     }
 
-    internal sealed interface AttachResult {
-        data object Ready : AttachResult
-
-        data class Failure(
-            val reason: String,
-        ) : AttachResult
-    }
-
     internal data class Anchor(
         val source: String,
         val hostIdentity: Int,
@@ -242,8 +234,7 @@ internal object StatusBarStableSession {
                 "stableStatus anchor source=$source hostId=$hostIdentity " +
                     "containerIndex=$batteryContainerIndex batteryIndex=$batteryIndex " +
                     "batterySize=${batteryWidth}x$batteryHeight " +
-                    "batteryMeasured=${batteryMeasuredWidth}x$batteryMeasuredHeight " +
-                    "nativeGeometryWrites=0"
+                    "batteryMeasured=${batteryMeasuredWidth}x$batteryMeasuredHeight "
     }
 
     internal data class SlotMetrics(
@@ -280,8 +271,7 @@ internal object StatusBarStableSession {
                     "statusIconsWidth=$statusIconsWidth statusIconsRight=$statusIconsRight " +
                     "batteryBounds=$batteryLeft-$batteryRight adjacentGap=$adjacentGap " +
                     "clipChildren=$batteryClipChildren,$containerClipChildren " +
-                    "rtl=$layoutRtl translationX=$batteryTranslationX " +
-                    "nativeGeometryWrites=0"
+                    "rtl=$layoutRtl translationX=$batteryTranslationX "
     }
 
 }

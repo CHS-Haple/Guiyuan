@@ -164,7 +164,7 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
 
-internal class BatteryColorSchemeLibraryRepository(context: Context) {
+internal class BatterySchemeRepo(context: Context) {
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
@@ -230,7 +230,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         val custom =
             BatteryCustomColorScheme(
                 id = id,
-                name = normalizeBatteryCustomSchemeName(name),
+                name = normalizeCustomSchemeName(name),
                 baseTemplate = baseTemplate,
                 entries = entries,
             )
@@ -249,7 +249,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         name: String,
     ) {
         updateCustom(id) { scheme ->
-            scheme.copy(name = normalizeBatteryCustomSchemeName(name))
+            scheme.copy(name = normalizeCustomSchemeName(name))
         }
     }
 
@@ -547,7 +547,7 @@ internal class BatteryColorSchemeLibraryRepository(context: Context) {
         BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
             val source =
-                batteryColorSchemeSourceFromLegacy(
+                schemeSourceFromLegacy(
                     mode = visual.batteryColorModes.modeFor(slot),
                     hasStoredCustom = storedCustom != null,
                     presetSource = preset,
@@ -610,7 +610,7 @@ private fun customColorKey(
     customPrefix(id) + "color." + slot.name.lowercase()
 
 
-internal fun limitBatteryCustomSchemeNameInput(value: String): String {
+internal fun limitCustomSchemeName(value: String): String {
     val codePointCount = value.codePointCount(0, value.length)
     if (codePointCount <= BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS) return value
     val endIndex =
@@ -621,11 +621,11 @@ internal fun limitBatteryCustomSchemeNameInput(value: String): String {
     return value.substring(0, endIndex)
 }
 
-internal fun normalizeBatteryCustomSchemeName(value: String): String =
-    limitBatteryCustomSchemeNameInput(value.trim())
+internal fun normalizeCustomSchemeName(value: String): String =
+    limitCustomSchemeName(value.trim())
 
 
-internal fun batteryColorSchemeSourceFromLegacy(
+internal fun schemeSourceFromLegacy(
     mode: BatteryColorMode,
     hasStoredCustom: Boolean,
     presetSource: BatteryColorSchemeSource,

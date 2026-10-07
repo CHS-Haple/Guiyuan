@@ -60,7 +60,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibraryRepository
+import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
@@ -114,13 +114,13 @@ internal fun FeaturesScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val batteryColorSchemeRepository =
+    val schemeRepo =
         remember(context.applicationContext) {
-            BatteryColorSchemeLibraryRepository(context.applicationContext)
+            BatterySchemeRepo(context.applicationContext)
         }
-    val batteryColorSchemeLibrary by
-        batteryColorSchemeRepository.library.collectAsState(
-            initial = batteryColorSchemeRepository.current(),
+    val schemeLibrary by
+        schemeRepo.library.collectAsState(
+            initial = schemeRepo.current(),
         )
     val layoutOptions =
         listOf(
@@ -243,7 +243,7 @@ internal fun FeaturesScreen(
         tertiarySectionTitle = stringResource(R.string.section_battery),
         tertiaryContent = {
             BatteryColorPreference(
-                library = batteryColorSchemeLibrary,
+                library = schemeLibrary,
                 enabled = featureCfg.enabled,
                 holdDownState = showBatteryColorSheet,
                 onClick = {
@@ -378,8 +378,8 @@ internal fun FeaturesScreen(
         overlay = {
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
-                library = batteryColorSchemeLibrary,
-                repository = batteryColorSchemeRepository,
+                library = schemeLibrary,
+                repository = schemeRepo,
                 onDismiss = {
                     showBatteryColorSheet = false
                 },
@@ -506,6 +506,11 @@ internal fun FeaturesScreen(
     }
 }
 
+private enum class RestartDialog {
+    CONFIRM,
+    FAILURE,
+}
+
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
@@ -523,8 +528,7 @@ internal fun SettingsHubScreen(
         stringResource(R.string.language_simplified_chinese),
     )
     val scope = rememberCoroutineScope()
-    var showRestartDialog by rememberSaveable { mutableStateOf(false) }
-    var showRestartFailure by rememberSaveable { mutableStateOf(false) }
+    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
     var restartInProgress by rememberSaveable { mutableStateOf(false) }
     var restartAfterDialogDismiss by remember { mutableStateOf(false) }
 
@@ -567,17 +571,17 @@ internal fun SettingsHubScreen(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_summary),
                 enabled = !restartInProgress,
-                onClick = { showRestartDialog = true },
+                onClick = { restartDialog = RestartDialog.CONFIRM },
             )
         },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.restart_scope),
                 summary = stringResource(R.string.restart_scope_dialog_summary),
-                show = showRestartDialog,
+                show = restartDialog == RestartDialog.CONFIRM,
                 onDismissRequest = {
                     restartAfterDialogDismiss = false
-                    showRestartDialog = false
+                    restartDialog = null
                 },
                 onDismissFinished = {
                     if (restartAfterDialogDismiss && !restartInProgress) {
@@ -587,7 +591,7 @@ internal fun SettingsHubScreen(
                             val success = SysUiScope.restart()
                             restartInProgress = false
                             if (!success) {
-                                showRestartFailure = true
+                                restartDialog = RestartDialog.FAILURE
                             }
                         }
                     }
@@ -602,7 +606,7 @@ internal fun SettingsHubScreen(
                         modifier = Modifier.weight(1f),
                         onClick = {
                             restartAfterDialogDismiss = false
-                            showRestartDialog = false
+                            restartDialog = null
                         },
                     )
                     Spacer(Modifier.width(20.dp))
@@ -612,7 +616,7 @@ internal fun SettingsHubScreen(
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         onClick = {
                             restartAfterDialogDismiss = true
-                            showRestartDialog = false
+                            restartDialog = null
                         },
                     )
                 }
@@ -621,14 +625,14 @@ internal fun SettingsHubScreen(
             OverlayDialog(
                 title = stringResource(R.string.restart_scope_failed),
                 summary = stringResource(R.string.restart_scope_failed_summary),
-                show = showRestartFailure,
-                onDismissRequest = { showRestartFailure = false },
+                show = restartDialog == RestartDialog.FAILURE,
+                onDismissRequest = { restartDialog = null },
             ) {
                 TextButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = { showRestartFailure = false },
+                    onClick = { restartDialog = null },
                 )
             }
         },
