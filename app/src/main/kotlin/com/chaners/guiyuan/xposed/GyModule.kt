@@ -4170,7 +4170,7 @@ class GyModule : XposedModule() {
 
 
 
-        SystemUiNativeStatusInventory.schedule(host) { snapshot ->
+        NativeStatusInventory.schedule(host) { snapshot ->
             log(Log.INFO, TAG, snapshot.summary)
             log(Log.INFO, TAG, snapshot.hostLine)
             snapshot.entries.forEach { entry ->

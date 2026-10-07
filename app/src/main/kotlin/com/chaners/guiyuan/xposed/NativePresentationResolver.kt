@@ -32,7 +32,7 @@ internal object NativePresentationResolver {
                 .firstOrNull()
                 ?.root
                 ?.context
-                ?.let(SystemActiveSubscriptionSource::current)
+                ?.let(ActiveSubscriptionSource::current)
         val resolvedActive =
             resolveActiveSubIds(
                 boundSubscriptionIds =

@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-internal object NativeWifiOpticalReferencePolicy {
+internal object WifiOpticalReference {
     fun connectedReferenceEntry(resourceName: String?): String? {
         if (!SystemUiSignalParser.isWifiFamilyResource(resourceName)) {
             return null

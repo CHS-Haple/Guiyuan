@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.view.View
 import android.view.ViewGroup
 
-internal object SystemUiNativeStatusInventory {
+internal object NativeStatusInventory {
     const val MOBILE_NETWORK_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
     const val WIFI_VIEW_CLASS_NAME =

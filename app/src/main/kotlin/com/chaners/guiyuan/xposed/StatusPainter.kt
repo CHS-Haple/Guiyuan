@@ -905,7 +905,7 @@ internal class StatusPainter(
                     nativeCenterAsset(presentationReference)
                 }
                 ?.takeIf { reference ->
-                    NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+                    WifiOpticalReference.canShareReferenceViewport(
                         currentWidth = asset.intrinsicWidth,
                         currentHeight = asset.intrinsicHeight,
                         referenceWidth = reference.intrinsicWidth,
@@ -2372,7 +2372,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val referenceEntry =
-                        NativeWifiOpticalReferencePolicy.connectedReferenceEntry(entryName)
+                        WifiOpticalReference.connectedReferenceEntry(entryName)
                             ?: return@runCatching 0
                     drawableContext.resources.getIdentifier(
                         referenceEntry,
@@ -2552,7 +2552,7 @@ internal class StatusPainter(
                     nativeCenterAsset(presentationReference)
                 }
                 ?.takeIf { reference ->
-                    NativeWifiOpticalReferencePolicy.canShareReferenceViewport(
+                    WifiOpticalReference.canShareReferenceViewport(
                         currentWidth = asset.intrinsicWidth,
                         currentHeight = asset.intrinsicHeight,
                         referenceWidth = reference.intrinsicWidth,
