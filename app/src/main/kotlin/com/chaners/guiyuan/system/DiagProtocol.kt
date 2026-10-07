@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.system
 
-internal data class RuntimeDiagnosticEvent(
+internal data class DiagEvent(
     val schemaVersion: Int,
     val event: String,
     val component: String,
@@ -11,9 +11,9 @@ internal data class RuntimeDiagnosticEvent(
 internal data class RuntimeEventSnapshot(
     val schemaVersion: Int,
     val sessionId: String?,
-    val events: List<RuntimeDiagnosticEvent>,
+    val events: List<DiagEvent>,
 ) {
-    fun component(name: String): RuntimeDiagnosticEvent? =
+    fun component(name: String): DiagEvent? =
         events.firstOrNull { event -> event.component == name }
 
     fun reportLines(): List<String> =
@@ -91,7 +91,7 @@ internal data class RuntimeEventSnapshot(
                     }
                 }
 
-            val latest = linkedMapOf<String, RuntimeDiagnosticEvent>()
+            val latest = linkedMapOf<String, DiagEvent>()
             scopedEvents
                 .filterNot { event ->
                     event.fields[SnapshotExcludeField].equals("false", ignoreCase = true)
@@ -156,7 +156,7 @@ internal object DiagProtocol {
                 }
         }
 
-    fun parse(line: String): RuntimeDiagnosticEvent? {
+    fun parse(line: String): DiagEvent? {
         val markerIndex = line.indexOf(Marker)
         if (markerIndex < 0) {
             return null
@@ -181,7 +181,7 @@ internal object DiagProtocol {
         val component = values["component"] ?: return null
         val state = values["state"]
 
-        return RuntimeDiagnosticEvent(
+        return DiagEvent(
             schemaVersion = values["schema"]?.toIntOrNull() ?: 0,
             event = event,
             component = component,

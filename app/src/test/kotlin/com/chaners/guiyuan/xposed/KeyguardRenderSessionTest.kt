@@ -56,5 +56,4 @@ class KeyguardRenderSessionTest {
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, false))
         assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, true))
     }
-
 }
