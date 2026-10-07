@@ -3,11 +3,45 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class BatteryTopLayoutPolicyTest {
+class BatteryGeometryTest {
+    @Test
+    fun emptyBatteryUsesOnlyInactiveArc() {
+        val result = arc(0)
+
+        assertEquals(0f, result.activeSweep, 0.001f)
+        assertEquals(150f, result.inactiveStart, 0.001f)
+        assertEquals(240f, result.inactiveSweep, 0.001f)
+    }
+
+    @Test
+    fun halfBatteryPartitionsTheRingWithoutOverlap() {
+        val result = arc(50)
+
+        assertEquals(120f, result.activeSweep, 0.001f)
+        assertEquals(270f, result.inactiveStart, 0.001f)
+        assertEquals(120f, result.inactiveSweep, 0.001f)
+        assertEquals(240f, result.activeSweep + result.inactiveSweep, 0.001f)
+    }
+
+    @Test
+    fun fullBatteryUsesOnlyActiveArc() {
+        val result = arc(100)
+
+        assertEquals(240f, result.activeSweep, 0.001f)
+        assertEquals(390f, result.inactiveStart, 0.001f)
+        assertEquals(0f, result.inactiveSweep, 0.001f)
+    }
+
+    @Test
+    fun percentIsClampedBeforePartitioning() {
+        assertEquals(0f, arc(-10).activeSweep, 0.001f)
+        assertEquals(240f, arc(140).activeSweep, 0.001f)
+    }
+
     @Test
     fun opticalDefaultKeepsDesignPlacementIndependentFromClipping() {
         val base =
-            BatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
+            batteryTopBaseCenterY(
                 preferredCenterY = 16f,
                 defaultOpticalRise = 1.5f,
             )
@@ -18,7 +52,7 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun uiZeroKeepsAcceptedRawPlusThreePosition() {
         val center =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            batteryTopCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = 3f,
             )
@@ -29,7 +63,7 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun positiveOffsetRemainsLiteralInsteadOfFlatteningAtOldSafeTop() {
         val center =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            batteryTopCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = 13f,
             )
@@ -40,7 +74,7 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun negativeOffsetRemainsLiteralDownwardTravel() {
         val center =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            batteryTopCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = -7f,
             )
@@ -51,7 +85,7 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun overflowIsZeroWhenVisibleInkStaysInsideLogicalViewport() {
         val overflow =
-            BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+            batteryTopOverflowPx(
                 transformScale = 0.875f,
                 transformOffsetY = 1.5f,
                 contentTopY = 2f,
@@ -63,7 +97,7 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun overflowExpandsPhysicalSurfaceInsteadOfClampingRequestedY() {
         val overflow =
-            BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+            batteryTopOverflowPx(
                 transformScale = 0.875f,
                 transformOffsetY = 1.5f,
                 contentTopY = -8f,
@@ -75,11 +109,19 @@ class BatteryTopLayoutPolicyTest {
     @Test
     fun nonFiniteManualOffsetFallsBackToOpticalBase() {
         val center =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            batteryTopCenterY(
                 baseCenterY = 14.5f,
                 requestedOffset = Float.NaN,
             )
 
         assertEquals(14.5f, center, 0.0001f)
     }
+
+    private fun arc(percent: Int) =
+        batteryArcSegments(
+            batteryPercent = percent,
+            startDegrees = 150f,
+            maxSweep = 240f,
+            degreesPerPercent = 2.4f,
+        )
 }

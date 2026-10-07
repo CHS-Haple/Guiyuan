@@ -200,7 +200,7 @@ internal class StatusPainter(
                     nativeTransform = nativeTransform,
                 )?.groupOpticalBounds
             } ?: return 0
-        return BatteryTopLayoutPolicy.resolveRequiredTopOverflowPx(
+        return batteryTopOverflowPx(
             transformScale = scale,
             transformOffsetY = offsetY,
             contentTopY = topBounds.top,
@@ -1434,7 +1434,7 @@ internal class StatusPainter(
             }
         } else if (topContentAvoidance == null) {
             val segments =
-                BatteryArcPolicy.resolve(
+                batteryArcSegments(
                     batteryPercent = model.batteryPercent,
                     startDegrees = BATTERY_START_DEGREES,
                     maxSweep = BATTERY_MAX_SWEEP,
@@ -1652,12 +1652,12 @@ internal class StatusPainter(
             )
 
         val groupBaseCenterY =
-            BatteryTopLayoutPolicy.resolveOpticalBaseCenterY(
+            batteryTopBaseCenterY(
                 preferredCenterY = batteryReadoutPreferredCenterY(visual),
                 defaultOpticalRise = BATTERY_TOP_DEFAULT_OPTICAL_RISE,
             )
         val groupCenterY =
-            BatteryTopLayoutPolicy.resolveCenterY(
+            batteryTopCenterY(
                 baseCenterY = groupBaseCenterY,
                 requestedOffset =
                     TopInfoOffsetPolicy.readoutRequestedOffset(
