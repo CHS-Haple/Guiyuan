@@ -38,7 +38,7 @@ internal object SysUiBatterySource {
         module: XposedModule,
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int?) -> Unit,
+        onChargingIconResource: (Int) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         val iconClass =
@@ -62,9 +62,6 @@ internal object SysUiBatterySource {
         val lowColorField = iconClass.requiredField("mBatteryLowColor")
         val miuiOptimizationField =
             iconClass.requiredField("mMiuiOptimizationEnabled")
-        val batteryIsChargingMethod =
-            meterClass.getDeclaredMethod("getBatteryIsCharging")
-                .apply { isAccessible = true }
         val chargingIconMethod =
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
@@ -128,6 +125,9 @@ internal object SysUiBatterySource {
             val state = readState(iconView) ?: return
             val changed =
                 synchronized(this) {
+                    if (!state.charging) {
+                        lastChargingIconResId = null
+                    }
                     if (lastState == state) {
                         false
                     } else {
@@ -155,36 +155,31 @@ internal object SysUiBatterySource {
             meterView: View,
             sourceMethod: String,
         ) {
-            val charging =
+            val nativeId =
                 runCatching {
-                    batteryIsChargingMethod.invoke(meterView) as? Boolean
-                }.getOrNull() ?: return
-            val resourceId =
-                if (charging) {
-                    runCatching {
-                        (chargingIconMethod.invoke(meterView) as? Int)
-                            ?.takeIf { it != 0 }
-                    }.getOrNull()
-                } else {
-                    null
-                }
-
-            val changed =
+                    chargingIconMethod.invoke(meterView) as? Int
+                }.getOrNull()
+            val iconId =
                 synchronized(this) {
-                    if (lastChargingIconResId == resourceId) {
-                        false
-                    } else {
-                        lastChargingIconResId = resourceId
-                        true
+                    val charging = lastState?.charging
+                    val nextId =
+                        resolveChargingIconId(
+                            charging = charging,
+                            nativeId = nativeId,
+                            lastId = lastChargingIconResId,
+                        )
+                    if (lastChargingIconResId == nextId) {
+                        return@synchronized null
                     }
-                }
-            if (!changed) return
+                    lastChargingIconResId = nextId
+                    nextId.takeIf { charging == true }
+                } ?: return
 
-            onChargingIconResource(resourceId)
+            onChargingIconResource(iconId)
             onEvent?.invoke(
                 "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
-                    " charging=" + charging +
-                    " resourceId=" + (resourceId ?: 0) +
+                    " charging=true" +
+                    " resourceId=" + iconId +
                     " authority=MiuiBatteryMeterView.getHollowChargingIconId()" +
                     "",
             )
@@ -266,6 +261,17 @@ internal object SysUiBatterySource {
             hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID),
             chargingGlyphHook,
         )
+    }
+
+    internal fun resolveChargingIconId(
+        charging: Boolean?,
+        nativeId: Int?,
+        lastId: Int?,
+    ): Int? {
+        if (charging == false) return null
+
+        // A missing glyph sample is not a charging-state transition.
+        return nativeId?.takeIf { it != 0 } ?: lastId?.takeIf { it != 0 }
     }
 
     private fun semanticColor(
