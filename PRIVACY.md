@@ -32,7 +32,6 @@ A report may contain:
 - Guiyuan version, build, package, build channel, and diagnostics state;
 - device model/codename, Android version, HyperOS information, and SystemUI version;
 - Guiyuan runtime health and module log entries;
-- Guiyuan's own bounded share-diagnostics entries.
 
 Guiyuan does not intentionally collect unrelated third-party application logs for diagnostic reports.
 
