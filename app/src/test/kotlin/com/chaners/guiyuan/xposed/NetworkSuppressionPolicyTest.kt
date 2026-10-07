@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class NativeNetworkSuppressionPolicyTest {
+class NetworkSuppressionPolicyTest {
     @Test
     fun duplicateRootDualSeparateWindowRetainsExistingSuppression() {
         val presentation =
@@ -18,7 +18,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertTrue(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = true,
@@ -38,7 +38,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertFalse(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = true,
@@ -58,7 +58,7 @@ class NativeNetworkSuppressionPolicyTest {
             )
 
         assertFalse(
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = presentation,
                 wasSuppressed = false,
@@ -95,7 +95,7 @@ class NativeNetworkSuppressionPolicyTest {
     fun activeMobileVisualMaskMakesNativeSignalContainerTransparent() {
         assertEquals(
             0f,
-            NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+            NetworkSuppressionPolicy.mobileVisualMaskAlpha(
                 nativeAlpha = 1f,
                 suppressionActive = true,
             ),
@@ -106,7 +106,7 @@ class NativeNetworkSuppressionPolicyTest {
     fun inactiveMobileVisualMaskPreservesNativeAlpha() {
         assertEquals(
             0.65f,
-            NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+            NetworkSuppressionPolicy.mobileVisualMaskAlpha(
                 nativeAlpha = 0.65f,
                 suppressionActive = false,
             ),
@@ -117,7 +117,7 @@ class NativeNetworkSuppressionPolicyTest {
     fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
         assertEquals(
             true,
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = true,
                 presentation = null,
                 wasSuppressed = false,
@@ -141,7 +141,7 @@ class NativeNetworkSuppressionPolicyTest {
 
         assertEquals(
             true,
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = unknown,
                 wasSuppressed = true,
@@ -149,7 +149,7 @@ class NativeNetworkSuppressionPolicyTest {
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = unknown,
                 wasSuppressed = false,
@@ -173,7 +173,7 @@ class NativeNetworkSuppressionPolicyTest {
 
         assertEquals(
             false,
-            NativeNetworkSuppressionPolicy.suppressMobile(
+            NetworkSuppressionPolicy.suppressMobile(
                 airplaneMode = false,
                 presentation = dualSeparate,
                 wasSuppressed = true,
@@ -185,7 +185,7 @@ class NativeNetworkSuppressionPolicyTest {
     fun locationAwareTintWinsOverPeerManagerAndCachedFallback() {
         assertEquals(
             0xe6ffffff.toInt(),
-            NativeNetworkSuppressionPolicy.statusIconTint(
+            NetworkSuppressionPolicy.statusIconTint(
                 locationAwareTint = 0xe6ffffff.toInt(),
                 peerAppliedTint = 0xbf000000.toInt(),
                 managerFallbackTint = 0xbf000000.toInt(),
@@ -198,7 +198,7 @@ class NativeNetworkSuppressionPolicyTest {
     fun peerTintWinsWhenLocationAwareTintIsUnavailable() {
         assertEquals(
             0xfff2f2f2.toInt(),
-            NativeNetworkSuppressionPolicy.statusIconTint(
+            NetworkSuppressionPolicy.statusIconTint(
                 locationAwareTint = null,
                 peerAppliedTint = 0xfff2f2f2.toInt(),
                 managerFallbackTint = 0xdee5e5e5.toInt(),
@@ -207,7 +207,7 @@ class NativeNetworkSuppressionPolicyTest {
         )
         assertEquals(
             0xdee5e5e5.toInt(),
-            NativeNetworkSuppressionPolicy.statusIconTint(
+            NetworkSuppressionPolicy.statusIconTint(
                 locationAwareTint = null,
                 peerAppliedTint = 0x00ffffff,
                 managerFallbackTint = 0xdee5e5e5.toInt(),
@@ -220,21 +220,21 @@ class NativeNetworkSuppressionPolicyTest {
     fun mobilePreMaskRequiresActiveHomeOwnership() {
         assertEquals(
             true,
-            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
                 suppressionActive = true,
                 belongsToActiveHomeGroup = true,
             ),
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
                 suppressionActive = true,
                 belongsToActiveHomeGroup = false,
             ),
         )
         assertEquals(
             false,
-            NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
                 suppressionActive = false,
                 belongsToActiveHomeGroup = true,
             ),

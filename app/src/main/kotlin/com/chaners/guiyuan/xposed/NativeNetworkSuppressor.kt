@@ -905,7 +905,7 @@ internal object NativeNetworkSuppressor {
             )
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
-        return NativeNetworkSuppressionPolicy.statusIconTint(
+        return NetworkSuppressionPolicy.statusIconTint(
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
             managerFallbackTint = managerFallbackTint,
@@ -945,7 +945,7 @@ internal object NativeNetworkSuppressor {
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
         val appliedTint =
-            NativeNetworkSuppressionPolicy.statusIconTint(
+            NetworkSuppressionPolicy.statusIconTint(
                 locationAwareTint = locationAwareTint,
                 peerAppliedTint = peerTint,
                 managerFallbackTint = managerFallbackTint,
@@ -1067,7 +1067,7 @@ internal object NativeNetworkSuppressor {
                 ?: return null
         val iconTint =
             readIntField(dispatcher, "mIconTint")
-                ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
                 ?: return null
         val tintAreas =
             readObjectField(dispatcher, "mTintAreas")
@@ -1093,7 +1093,7 @@ internal object NativeNetworkSuppressor {
                 } ?: return@runCatching null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
-                ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
         }.getOrNull()
     }
 
@@ -1101,14 +1101,14 @@ internal object NativeNetworkSuppressor {
         manager ?: return null
 
         readIntField(manager, "mColor")
-            ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
             ?.let { return it }
 
         val dispatcher =
             readObjectField(manager, "mDarkIconDispatcher")
                 ?: return null
         return readIntField(dispatcher, "mIconTint")
-            ?.takeIf(NativeNetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
     }
 
     private fun resolveTintAnchorView(group: ViewGroup): View? {
@@ -1371,7 +1371,7 @@ internal object NativeNetworkSuppressor {
         mobileVisualMasks.forEach { state ->
             val view = state.view.get() ?: return@forEach
             val targetAlpha =
-                NativeNetworkSuppressionPolicy.mobileVisualMaskAlpha(
+                NetworkSuppressionPolicy.mobileVisualMaskAlpha(
                     nativeAlpha = state.nativeAlpha,
                     suppressionActive = true,
                 )
@@ -1393,7 +1393,7 @@ internal object NativeNetworkSuppressor {
     fun preMaskMobileSignal(image: ImageView): Boolean {
         val homeGroup = activeGroup?.get()
         if (
-            !NativeNetworkSuppressionPolicy.shouldPreMaskMobileSignal(
+            !NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
                 suppressionActive =
                     activeManager != null &&
                         mobileSuppressionEnabled,

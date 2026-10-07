@@ -4027,7 +4027,7 @@ class GyModule : XposedModule() {
                                                         connectivity = presentation.connectivity,
                                                     ),
                                         suppressMobile =
-                                            NativeNetworkSuppressionPolicy.suppressMobile(
+                                            NetworkSuppressionPolicy.suppressMobile(
                                                 airplaneMode = state.airplaneMode,
                                                 presentation = presentation.mobilePresentation,
                                                 wasSuppressed = false,
