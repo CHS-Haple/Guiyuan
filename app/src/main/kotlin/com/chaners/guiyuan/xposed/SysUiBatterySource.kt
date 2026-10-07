@@ -190,7 +190,7 @@ internal object SysUiBatterySource {
 
             onChargingIconResource(iconId)
             onEvent?.invoke(
-                "batteryChargingGlyph source=" + sourceMethod +
+                "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
                     " charging=true" +
                     " resourceId=" + iconId +
                     " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
@@ -259,7 +259,7 @@ internal object SysUiBatterySource {
                             ?: return@Hooker result
                         publishChargingGlyph(
                             meterView = meterView,
-                            sourceMethod = "MiuiBatteryMeterView." + updateChargeAndTextMethod.name,
+                            sourceMethod = updateChargeAndTextMethod.name,
                         )
                         result
                     },
