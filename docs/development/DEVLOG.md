@@ -5255,3 +5255,25 @@ No runtime/APK behavior, version, Build, dependency, signing identity, changelog
 - integrated `dev` Full CI #2909 passed the signed Canary path, including target-profile verification, tests, Debug/Canary builds, Modern Xposed metadata, Haple signature, non-debuggable verification and artifact upload;
 - no device gate is required;
 - external version remains 0.2.1 and Build remains 746 / `20261006-746`.
+
+
+## 2026-10-07 — Build 746: reserve formal stable releases for 1.0+
+
+**Type:** release policy / 1.0.0 qualification  
+**Display version:** 0.2.1  
+**Build:** 746 / `20261006-746` unchanged  
+**Branch:** `ci/formal-release-version-boundary`
+
+### Problem
+
+Project policy consistently treats 1.0.0 as the first planned formal release and the stable release channel as the formal publishing path. The workflow nevertheless accepted any prepared `main` version with a dated changelog section, including the current 0.x development checkpoints.
+
+### Change
+
+- stable release validation now rejects a version whose numeric major component is below 1;
+- the existing `test` channel remains available for explicit pre-1.0 prereleases;
+- the current display version is not changed.
+
+### Boundary
+
+No runtime/APK behavior, Build identity, dependency, signing identity, tag naming, test-release behavior or device contract changes. This release-workflow change requires Full automated validation and no device gate.
