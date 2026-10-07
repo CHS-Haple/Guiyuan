@@ -71,7 +71,7 @@ The project is still under active development, so wider device, system-version, 
 
 ### Support
 
-If Guiyuan is useful to you and you would like to support ongoing development and maintenance, see [Support Guiyuan](docs/SUPPORT.md). Support is entirely voluntary and does not affect feature access, issue priority, or the project license.
+If Guiyuan is useful to you and you would like to support ongoing development and maintenance, WeChat Pay and Alipay are available. See [Support Guiyuan](docs/SUPPORT.md). Support is entirely voluntary and does not affect feature access, issue priority, or the project license.
 
 ### License
 
@@ -138,7 +138,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 支持项目
 
-如果归元对你有所帮助，并且你愿意支持项目的持续开发与维护，可查看 [支持归元](docs/SUPPORT.md)。支持完全自愿，不影响功能获取、问题处理优先级或项目的开源许可。
+如果归元对你有所帮助，并且你愿意支持项目的持续开发与维护，可通过微信支付或支付宝自愿支持，详见 [支持归元](docs/SUPPORT.md)。支持完全自愿，不影响功能获取、问题处理优先级或项目的开源许可。
 
 ### 许可证
 
