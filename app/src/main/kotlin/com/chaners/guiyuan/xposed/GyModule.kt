@@ -41,6 +41,13 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Home native-AOD fallback is one phase; candidate and active never overlap.
+    private enum class HomeAodFallback {
+        NONE,
+        CANDIDATE,
+        ACTIVE,
+    }
+
     private var islandSourceInstalled = false
     private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
@@ -53,8 +60,7 @@ class GyModule : XposedModule() {
     private var aodWindow: AodWindow? = null
     // Non-null only while Keyguard is taking over the native AOD boundary.
     private var boundaryHandoff: BoundaryHandoff? = null
-    private var homeAodFallbackCandidate = false
-    private var homeAodFallbackActive = false
+    private var homeAodFallback = HomeAodFallback.NONE
     private var homeAodOriginPending = false
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
@@ -296,8 +302,10 @@ class GyModule : XposedModule() {
                 ScenePolicy.StableKeyguardAodScene.UNKNOWN
             aodWindow = null
             clearBoundaryHandoff()
-                homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+                (homeAodFallback == HomeAodFallback.CANDIDATE) = false
+            if (homeAodFallback == HomeAodFallback.ACTIVE) {
+                homeAodFallback = HomeAodFallback.NONE
+            }
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             ccExpansion = 0f
@@ -1903,7 +1911,7 @@ class GyModule : XposedModule() {
                 homeCarrierPresentationVisible = homeCarrierVisibleAtStart,
             )
         ) {
-            homeAodFallbackCandidate = true
+            homeAodFallback = HomeAodFallback.CANDIDATE
         }
         homeAodOriginPending =
             settings.enabled &&
@@ -1936,8 +1944,8 @@ class GyModule : XposedModule() {
                     "status-icons-alpha-fallback"
                 },
             "homeOriginLatched" to homeAodOriginPending,
-            "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-            "homeNativeAodFallbackActive" to homeAodFallbackActive,
+            "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+            "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
             "homePresentationOwnedAtStart" to homeOwnedAtStart,
             "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
         )
@@ -1967,10 +1975,11 @@ class GyModule : XposedModule() {
             homeAodTargetPrearmPending = false
         }
         if (target == true) {
-            homeAodFallbackActive = false
+            if (homeAodFallback == HomeAodFallback.ACTIVE) {
+                homeAodFallback = HomeAodFallback.NONE
+            }
         } else if (target == null) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
 
         logDiagnostic(
@@ -1987,8 +1996,8 @@ class GyModule : XposedModule() {
             "authority" to "native-mToLockScreen",
             "visualBoundaryPending" to (aodWindow?.boundaryPending == true),
             "homeOriginLatched" to homeAodOriginPending,
-            "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-            "homeNativeAodFallbackActive" to homeAodFallbackActive,
+            "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+            "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
         )
 
         val releaseTransientHomeKeyguard =
@@ -1997,13 +2006,12 @@ class GyModule : XposedModule() {
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
                 homeNativeAodFallbackCandidate =
-                    homeAodFallbackCandidate,
+                    (homeAodFallback == HomeAodFallback.CANDIDATE),
                 homePresentationOwnedAtFullAodStart = homeOwnedAtStart,
                 nativeToLockScreenTarget = target,
             )
         if (releaseTransientHomeKeyguard) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = true
+            homeAodFallback = HomeAodFallback.ACTIVE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             clearBoundaryHandoff()
@@ -2064,8 +2072,7 @@ class GyModule : XposedModule() {
                             is AodWindow.Waiting -> null
                             null -> null
                         }
-                    homeAodFallbackCandidate = false
-                    homeAodFallbackActive = false
+                    homeAodFallback = HomeAodFallback.NONE
                     homeAodOriginPending = false
                     homeAodTargetPrearmPending = false
                     return
@@ -2166,7 +2173,7 @@ class GyModule : XposedModule() {
                 aodEnabled = settings.aod,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget = nativeToLockScreenTarget,
-                homeNativeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         if (!eligible) return false
 
@@ -2199,7 +2206,7 @@ class GyModule : XposedModule() {
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
-                homeNativeAodFallbackActive = homeAodFallbackActive,
+                homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         boundaryHandoff =
             BoundaryHandoff(
@@ -2482,7 +2489,7 @@ class GyModule : XposedModule() {
         val settings = FeaturePrefsOwner.current()
         val activateHomeNativeAodFallback =
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
-                candidateActive = homeAodFallbackCandidate,
+                candidateActive = (homeAodFallback == HomeAodFallback.CANDIDATE),
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
@@ -2490,8 +2497,7 @@ class GyModule : XposedModule() {
                 isAodAnimate = update.isAodAnimate,
             )
         if (activateHomeNativeAodFallback) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = true
+            homeAodFallback = HomeAodFallback.ACTIVE
             clearBoundaryHandoff()
             deactivateKeyguardRuntime("home-aod-disabled-native-transition")
             logDiagnostic(
@@ -2512,8 +2518,7 @@ class GyModule : XposedModule() {
                 isAodAnimate = update.isAodAnimate,
             )
         if (aodWindow !is AodWindow.Running && stableAod) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
             if (boundaryHandoff != null) {
@@ -2528,8 +2533,7 @@ class GyModule : XposedModule() {
             !update.toAod &&
             steadyStatusSourceScene == SourceScene.KEYGUARD
         ) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
         if (update.blocksProjection) {
             releaseKeyguardCcLease(
@@ -2575,8 +2579,8 @@ class GyModule : XposedModule() {
                         null -> "none"
                     },
                 "homeOriginLatched" to homeAodOriginPending,
-                "homeNativeAodFallbackCandidate" to homeAodFallbackCandidate,
-                "homeNativeAodFallbackActive" to homeAodFallbackActive,
+                "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
+                "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         }
     }
@@ -2597,7 +2601,9 @@ class GyModule : XposedModule() {
         }
         if (sourceScene == SourceScene.HOME) {
             if (aodWindow !is AodWindow.Running) {
-                homeAodFallbackActive = false
+                if (homeAodFallback == HomeAodFallback.ACTIVE) {
+                    homeAodFallback = HomeAodFallback.NONE
+                }
             }
             // UNLOCKED_STATUS_BAR + Home ancestry is the authoritative unlock
             // boundary. A Keyguard Control Center lease must never outlive it:
@@ -2778,7 +2784,7 @@ class GyModule : XposedModule() {
             fullAodVisualBoundary = fullAodVisualBoundary,
             homeAodTransitionOrigin = homeAodOriginPending,
             homeAodTargetPrearm = homeAodTargetPrearmPending,
-            homeNativeAodFallbackActive = homeAodFallbackActive,
+            homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
         )
     }
 
@@ -4330,8 +4336,7 @@ class GyModule : XposedModule() {
             !cfg.keyguard ||
             cfg.aod
         ) {
-            homeAodFallbackCandidate = false
-            homeAodFallbackActive = false
+            homeAodFallback = HomeAodFallback.NONE
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
@@ -4378,8 +4383,7 @@ class GyModule : XposedModule() {
     private fun releaseFeatureOwnership(source: String) {
         aodWindow = null
         clearBoundaryHandoff()
-        homeAodFallbackCandidate = false
-        homeAodFallbackActive = false
+        homeAodFallback = HomeAodFallback.NONE
         homeAodOriginPending = false
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
