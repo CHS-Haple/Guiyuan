@@ -21,11 +21,12 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ### Fixed
 - Kept the charging glyph visible while SystemUI still reports charging, so a transient missing glyph sample no longer clears the charging presentation.
 - Preserved mobile presentation refresh timing and adjacent-generation Hot Reload compatibility while removing unused native resource persistence.
+- Internal test builds now show the gated project-entry notice through the MIUIX Scaffold host instead of silently ignoring the tap.
 
 ### Engineering
 - Added AndroidLiquidGlass/Backdrop and Kyant Shapes notices and dependency metadata.
 - Added a non-debuggable internal test variant and unified work-branch APK workflow; internal builds may gate the project-home link without changing Xposed runtime behavior.
-- Kept the 0.4.0 repository, documentation, and build identity aligned on Build 748.
+- Kept the 0.4.0 repository, documentation, and build identity aligned on Build 749.
 
 ## [0.3.0] - 2026-10-07
 
