@@ -1,32 +1,31 @@
-# Documentation map
+# Documentation
 
-Guiyuan keeps daily development recovery intentionally small.
+Guiyuan keeps current policy, current development state, durable decisions, and platform evidence separate.
 
-## Start here
-
-For normal development, read only:
+For normal development, start with:
 
 1. [CONTRIBUTING.md](../CONTRIBUTING.md) — engineering and workflow rules.
-2. [development/CURRENT.md](development/CURRENT.md) — accepted baseline, active objective, blockers, and next step.
+2. [development/CURRENT.md](development/CURRENT.md) — the current recovery point.
 
-Then load task-specific material only when needed:
-- [development/ROADMAP.md](development/ROADMAP.md) — future phases, prerequisites, deferred work, and 1.0.0 direction.
-- [architecture/README.md](architecture/README.md) — reusable ownership/lifecycle/scene/layout contracts.
-- [reference/README.md](reference/README.md) — reusable SystemUI/upstream evidence.
-- [development/DEVLOG.md](development/DEVLOG.md) — historical decisions, rejected routes, root causes, and meaningful device evidence.
-- [CHANGELOG.md](../CHANGELOG.md) — durable net project/release state.
+Load the rest only when the task needs it:
 
-## Authority by purpose
+- [development/ROADMAP.md](development/ROADMAP.md) — future direction and release exit criteria.
+- [development/DECISIONS.md](development/DECISIONS.md) — durable engineering decisions and the reasons behind them.
+- [architecture/README.md](architecture/README.md) — current runtime ownership and scene/layout policy.
+- [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target-SystemUI evidence and integration constraints.
+- [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
 
-| Need | Source |
+## Authority
+
+| Question | Source |
 | --- | --- |
-| Engineering/contribution rules | CONTRIBUTING.md |
-| Day-to-day current truth | development/CURRENT.md |
-| Future direction | development/ROADMAP.md |
-| Reusable architecture policy | architecture/ |
-| Reusable platform evidence | reference/ |
-| Historical engineering decisions | development/DEVLOG.md |
-| Durable release/net changes | CHANGELOG.md |
-| Display/build identity | Gradle project configuration |
+| How should code/workflow be handled? | `CONTRIBUTING.md` |
+| What is true right now? | `development/CURRENT.md` |
+| What is planned next? | `development/ROADMAP.md` |
+| Why is a durable architecture choice in place? | `development/DECISIONS.md` |
+| What is the current runtime ownership/layout policy? | `architecture/` |
+| What target-SystemUI behavior has been verified? | `reference/systemui-contracts.md` |
+| What changed for users/releases? | `CHANGELOG.md` |
+| What version/build is authoritative? | Gradle project configuration |
 
-Historical DEVLOG entries remain evidence after supersession. Confirm old routes against CURRENT and current architecture before reuse.
+Do not copy the same fact into several documents. Current source and verified runtime evidence override stale prose; when a durable rule changes, update the one document that owns that rule.
