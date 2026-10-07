@@ -4,7 +4,7 @@
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
 - Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`).
-- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `af976eb1`, with PR #257 merged after exact-head Runtime CI #2925.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `6812a2b1`, with Canary workflow support for `refactor/*` merged through PR #258 after Full CI #2929. PR #257 was previously integrated after Runtime CI #2925.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
 
@@ -31,7 +31,7 @@ Accepted cleanup boundaries:
 - diagnostics must report observed runtime facts, not hard-coded proof fields or symmetric success events;
 - inline single-caller helper types when the separate abstraction does not earn a boundary.
 
-The next maintainability pass expands this audit beyond the Xposed package to the rest of the repository. Runtime behavior remains frozen unless a concrete defect is found.
+The active work branch is `refactor/repo-maintainability-sweep` from current `dev`. It extends the earlier Xposed audit to the companion UI, settings, system/diagnostics, unit tests, tools and CI. The 44 non-Xposed Kotlin main sources and 63 unit-test files have had a first-pass structural/placeholder sweep; targeted semantic review is ongoing. Current work is limited to internal app-layer naming and clear type-safety improvements. Runtime behavior remains frozen unless a concrete defect is found.
 
 ## Non-negotiable bounds
 
@@ -45,7 +45,7 @@ The next maintainability pass expands this audit beyond the Xposed package to th
 
 ## Immediate next
 
-- Audit the rest of the repository for the same maintainability problems already addressed in Xposed/runtime plumbing.
+- Finish targeted review of flagged app/UI/diagnostics files beyond the first-pass repository sweep.
 - Prioritize app UI/settings, diagnostics/system code, tests, build tooling and CI scripts.
 - Change only deterministic issues with a clear maintenance benefit; do not create churn for uniformity.
 - Use one coherent work branch/PR and run one suitable validation checkpoint after complete base-to-HEAD review.
