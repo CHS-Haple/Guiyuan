@@ -256,6 +256,12 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/Kyant0/AndroidLiquidGlass",
                 ),
                 AboutDependency(
+                    name = "Kyant Shapes",
+                    version = BuildConfig.SHAPES_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/Shapes",
+                ),
+                AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",

@@ -106,7 +106,7 @@
     <string name="floating_navigation_style_standard">Standard</string>
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
-    <string name="floating_navigation_style_liquid">Liquid glass</string>
+    <string name="floating_navigation_style_liquid">Liquid Glass</string>
     <string name="floating_navigation_content">Floating navigation content</string>
     <string name="floating_navigation_content_summary">Choose whether floating navigation items show icons only or icons with labels</string>
     <string name="floating_navigation_content_icon_only">Icons only</string>

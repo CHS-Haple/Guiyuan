@@ -15,6 +15,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-5c91d5e5-SNAPSHOT (`5c91d5e5ce1a2fc7e8bdc1258a881c555102bbca`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
+| Kyant Shapes | 1.2.1 | Capsule geometry used by the Liquid Glass navigation bar | Apache-2.0 |
 | kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache-2.0 |
 
 ## Embedded icon assets
@@ -44,6 +45,7 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 - AndroidX: https://github.com/androidx/androidx
 - MIUIX: https://github.com/compose-miuix-ui/miuix
 - Backdrop: https://github.com/Kyant0/AndroidLiquidGlass
+- Kyant Shapes: https://github.com/Kyant0/Shapes
 - Material Symbols: https://github.com/google/material-design-icons
 - kotlinx.serialization: https://github.com/Kotlin/kotlinx.serialization
 - JUnit 4: https://github.com/junit-team/junit4

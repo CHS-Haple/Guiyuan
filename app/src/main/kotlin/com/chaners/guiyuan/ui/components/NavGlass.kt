@@ -16,7 +16,7 @@ internal const val NAV_BLUR_RADIUS = 25f
 internal const val NAV_BLEND_ALPHA = 0.6f
 
 internal val NavStyle.requiresTextureBackdrop: Boolean
-    get() = this != NavStyle.Standard
+    get() = this == NavStyle.Blur || this == NavStyle.Glass
 
 @Composable
 internal fun Modifier.floatingNavMaterial(

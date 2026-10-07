@@ -33,11 +33,11 @@ import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
-import com.chaners.guiyuan.ui.components.liquidNavBackdropSource
-import com.chaners.guiyuan.ui.components.liquidNavMaterial
-import com.chaners.guiyuan.ui.components.liquidNavSupported
-import com.chaners.guiyuan.ui.components.rememberLiquidNavBackdrop
-import com.chaners.guiyuan.ui.components.requiresLiquidBackdrop
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
+import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
@@ -458,7 +458,7 @@ private fun MiniNavigationPreview(
             isRuntimeShaderSupported()
     val liquidMaterialActive =
         floating &&
-            style.requiresLiquidBackdrop &&
+            style == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val miuixBackdrop =
@@ -477,21 +477,15 @@ private fun MiniNavigationPreview(
             null
         }
     val floatingModifier =
-        when {
-            liquidBackdrop != null ->
-                Modifier.liquidNavMaterial(
-                    backdrop = liquidBackdrop,
-                    dark = dark,
-                )
-            miuixBackdrop != null ->
-                Modifier.floatingNavMaterial(
-                    backdrop = miuixBackdrop,
-                    dark = dark,
-                    style = style,
-                )
-            else -> Modifier
+        if (miuixBackdrop != null) {
+            Modifier.floatingNavMaterial(
+                backdrop = miuixBackdrop,
+                dark = dark,
+                style = style,
+            )
+        } else {
+            Modifier
         }
-    val transparentNav = liquidBackdrop != null || miuixBackdrop != null
 
     Box(
         modifier =
@@ -537,37 +531,70 @@ private fun MiniNavigationPreview(
 
         if (floating) {
             MiniNavViewport {
-                FloatingNavigationBar(
-                    modifier = floatingModifier,
-                    color =
-                        if (transparentNav) {
-                            Color.Transparent
-                        } else {
-                            MiuixTheme.colorScheme.surfaceContainer
-                        },
-                    defaultWindowInsetsPadding = false,
-                ) {
-                    NavContentItem(
-                        content = content,
-                        selected = false,
-                        onClick = {},
-                        icon = MiuixIcons.Normal.Home,
-                        label = stringResource(R.string.nav_home),
-                    )
-                    NavContentItem(
-                        content = content,
-                        selected = false,
-                        onClick = {},
-                        icon = MiuixIcons.Normal.Tune,
-                        label = stringResource(R.string.nav_features),
-                    )
-                    NavContentItem(
-                        content = content,
-                        selected = true,
-                        onClick = {},
-                        icon = MiuixIcons.Medium.Settings,
-                        label = stringResource(R.string.nav_settings),
-                    )
+                if (liquidBackdrop != null) {
+                    val labels =
+                        listOf(
+                            stringResource(R.string.nav_home),
+                            stringResource(R.string.nav_features),
+                            stringResource(R.string.nav_settings),
+                        )
+                    val icons =
+                        listOf(
+                            MiuixIcons.Normal.Home,
+                            MiuixIcons.Normal.Tune,
+                            MiuixIcons.Normal.Settings,
+                        )
+                    LiquidNavBar(
+                        selectedIndex = { 2 },
+                        onSelected = {},
+                        backdrop = liquidBackdrop,
+                        tabsCount = labels.size,
+                        dark = dark,
+                        modifier = Modifier.padding(horizontal = 36.dp),
+                    ) {
+                        labels.indices.forEach { index ->
+                            LiquidNavEntry(
+                                contentMode = content,
+                                onClick = {},
+                                icon = icons[index],
+                                label = labels[index],
+                                dark = dark,
+                            )
+                        }
+                    }
+                } else {
+                    FloatingNavigationBar(
+                        modifier = floatingModifier,
+                        color =
+                            if (miuixBackdrop != null) {
+                                Color.Transparent
+                            } else {
+                                MiuixTheme.colorScheme.surfaceContainer
+                            },
+                        defaultWindowInsetsPadding = false,
+                    ) {
+                        NavContentItem(
+                            content = content,
+                            selected = false,
+                            onClick = {},
+                            icon = MiuixIcons.Normal.Home,
+                            label = stringResource(R.string.nav_home),
+                        )
+                        NavContentItem(
+                            content = content,
+                            selected = false,
+                            onClick = {},
+                            icon = MiuixIcons.Normal.Tune,
+                            label = stringResource(R.string.nav_features),
+                        )
+                        NavContentItem(
+                            content = content,
+                            selected = true,
+                            onClick = {},
+                            icon = MiuixIcons.Medium.Settings,
+                            label = stringResource(R.string.nav_settings),
+                        )
+                    }
                 }
             }
         } else {
