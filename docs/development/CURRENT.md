@@ -3,8 +3,9 @@
 ## Repository / build
 
 - Product / stable checkpoint: Guiyuan 0.2.1.
-- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `9ee18c3`.
-- Integration `dev`: PR #262 is merged at runtime checkpoint `e077d08`; version remains Guiyuan 0.2.1 / Build 746.
+- Stable `main`: Guiyuan 0.2.1 / Build 746 (`20261006-746`) at `50b042e`; PR #264 adds project-support documentation/assets only.
+- Integration `dev`: Guiyuan 0.2.1 / Build 746 at `d6cd1d85` after PR #267 completed the second full-repository maintainability audit.
+- `main` and `dev` are historically diverged because the accepted support entry was committed separately through #264 and synced to `dev` through #265. The five support files are blob-identical across both branches; this is not a runtime/content conflict.
 - PR #224 / Build 745 remains a rejected Control Center alpha-layer experiment and must not be restored without new exact-target evidence.
 - Historical PR #197 remains superseded.
 
@@ -33,7 +34,9 @@ Accepted cleanup boundaries:
 
 PR #260 completed the repository-wide maintainability sweep beyond Xposed/runtime plumbing. All 44 non-Xposed Kotlin main sources and 63 unit-test files were screened, flagged areas received targeted semantic review, and the accepted cleanup is integrated on `dev`.
 
-PR #262 completed the residual maintainability pass with the same behavior-neutral boundary. It simplified diagnostic state/logging, removed string-driven retry policy and proof-only helpers, shortened remaining ceremonial naming, clarified independent lifecycle facts, and added the mandatory pre-commit maintainability/naturalness review. Runtime CI #2955 passed after the final compile-boundary correction; no device-only evidence is currently required.
+PR #262 completed the residual maintainability pass with the same behavior-neutral boundary. It simplified diagnostic state/logging, removed string-driven retry policy and proof-only helpers, shortened remaining ceremonial naming, clarified independent lifecycle facts, and added the mandatory pre-commit maintainability/naturalness review. Runtime CI #2955 passed after the final compile-boundary correction.
+
+PR #267 completed a second independent full-repository review across all 119 Kotlin main-source files, all 63 unit-test files, active workflows, Gradle configuration, signing tooling and pinned-target verification. It removed two unconsumed diagnostic/reflection chains, no-op Control Center diagnostic hook-count plumbing, proof-only tests and self-proving `N/N` verifier output, while preserving runtime ownership/geometry/transition behavior. Runtime CI #2968 passed; no device-only evidence is currently required.
 
 ## Non-negotiable bounds
 
@@ -47,6 +50,6 @@ PR #262 completed the residual maintainability pass with the same behavior-neutr
 
 ## Immediate next
 
-- Treat the current maintainability pass as integrated on `dev`; do not reopen cleanup without a concrete maintainability finding.
-- Keep `main` at the existing stable checkpoint until a separate promotion is explicitly requested.
+- Treat the second full-repository maintainability audit as integrated on `dev`; do not reopen broad cleanup without a concrete maintainability finding.
+- Keep `main` at its current support-only stable checkpoint until a separate runtime promotion is explicitly requested. Do not attempt to reconcile #264/#265 support history as a content conflict.
 - Keep version 0.2.1 / Build 746 unchanged. Request a device Canary only when future changes cross a runtime behavior boundary that automated review cannot settle.
