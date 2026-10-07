@@ -183,34 +183,34 @@ internal object NativeParticipantRuntime {
         private val onReady: (Any) -> Unit,
         private val onFailure: (String) -> Unit,
     ) : View.OnAttachStateChangeListener, Runnable {
-        private var listeningForAttach = false
-        private var readyPosted = false
+        private var attachListenerRegistered = false
+        private var readyCallbackPosted = false
 
         fun start(): Boolean {
             return if (hostView.isAttachedToWindow) {
                 armForController()
             } else {
                 hostView.addOnAttachStateChangeListener(this)
-                listeningForAttach = true
+                attachListenerRegistered = true
                 true
             }
         }
 
         fun cancel() {
-            if (listeningForAttach) {
+            if (attachListenerRegistered) {
                 hostView.removeOnAttachStateChangeListener(this)
-                listeningForAttach = false
+                attachListenerRegistered = false
             }
-            if (readyPosted) {
+            if (readyCallbackPosted) {
                 hostView.removeCallbacks(this)
-                readyPosted = false
+                readyCallbackPosted = false
             }
         }
 
         override fun onViewAttachedToWindow(view: View) {
-            if (listeningForAttach) {
+            if (attachListenerRegistered) {
                 view.removeOnAttachStateChangeListener(this)
-                listeningForAttach = false
+                attachListenerRegistered = false
             }
             if (!armForController() && complete(this)) {
                 onFailure("native-controller-readiness-rejected")
@@ -220,7 +220,7 @@ internal object NativeParticipantRuntime {
         override fun onViewDetachedFromWindow(view: View) = Unit
 
         fun onControllerObserved(manager: Any) {
-            if (readyPosted) {
+            if (readyCallbackPosted) {
                 return
             }
             val targetManager =
@@ -245,15 +245,15 @@ internal object NativeParticipantRuntime {
         }
 
         private fun postReady(): Boolean {
-            if (readyPosted) {
+            if (readyCallbackPosted) {
                 return true
             }
-            readyPosted = hostView.post(this)
-            return readyPosted
+            readyCallbackPosted = hostView.post(this)
+            return readyCallbackPosted
         }
 
         override fun run() {
-            readyPosted = false
+            readyCallbackPosted = false
             if (!complete(this)) {
                 return
             }

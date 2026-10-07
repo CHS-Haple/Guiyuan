@@ -334,21 +334,7 @@ internal object NativePresentationResolver {
                     -> false
                 }
 
-        val logLine: String
-            get() =
-                "mobilePresentation mode=" + mode.name +
-                    " boundRoots=" + boundRoots +
-                    " activeBoundRoots=" + activeBoundRoots +
-                    " visibleRoots=" + visibleRoots +
-                    " activeSubAuthority=" + activeSubscriptionAuthority +
-                    " activeSubIds=" + activeSubscriptionIds.joinToString(",", prefix = "[", postfix = "]") +
-                    " presentationRootSubId=" + (presentationRootSubscriptionId ?: -1) +
-                    " effectiveDataSubId=" + (effectiveDataSubscriptionId ?: -1) +
-                    " networkTypeSubId=" + (networkTypeSubscriptionId ?: -1) +
-                    " networkType=" + (networkType?.label ?: "unknown") +
-                    " enhanced=" + (networkType?.enhanced ?: false) +
-                    " typeSource=" + (networkType?.source?.name ?: "none") +
-                    " nativeMobileReplacementReady=" + nativeMobileReplacementReady
+
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"

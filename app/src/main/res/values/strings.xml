@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Guiyuan</string>
-    <string name="app_description">Combines battery, mobile network, and Wi-Fi into one compact HyperOS status-bar indicator</string>
+    <string name="app_description">An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.</string>
 
     <string name="home_title">Guiyuan</string>
-    <string name="hot_reload">Hot reload SystemUI module</string>
+    <string name="hot_reload">Hot reload Guiyuan</string>
     <string name="nav_home">Home</string>
     <string name="nav_features">Features</string>
     <string name="nav_settings">Settings</string>
@@ -18,19 +18,17 @@
     <string name="content_layout_network_center">Network centered</string>
     <string name="content_layout_battery_center">Battery centered</string>
     <string name="battery_charging_icon">Show charging icon</string>
-    <string name="battery_charging_icon_summary">Use the HyperOS charging glyph; fast charging switches to the matching system resource</string>
+    <string name="battery_charging_icon_summary">Use the native HyperOS charging icon for the current charging state</string>
     <string name="battery_text_follow_battery_color">Match battery number color to ring</string>
-    <string name="battery_text_follow_battery_color_summary">When off, use the current status-bar foreground tint</string>
+    <string name="battery_text_follow_battery_color_summary">When off, use the native status-bar foreground tint</string>
     <string name="charging_icon_follow_battery_color">Match charging icon color to ring</string>
-    <string name="charging_icon_follow_battery_color_summary">When off, use the current status-bar foreground tint</string>
+    <string name="charging_icon_follow_battery_color_summary">When off, use the native status-bar foreground tint</string>
     <string name="top_info_vertical_offset">Top information vertical offset</string>
     <string name="settings_title">Settings</string>
     <string name="section_appearance_interaction">Appearance &amp; interaction</string>
     <string name="section_app">App</string>
     <string name="section_diagnostics_maintenance">Diagnostics &amp; maintenance</string>
     <string name="section_other">Other</string>
-    <string name="project_address_title">Project address</string>
-    <string name="project_address_summary">This project is open source under GPL-3.0-only</string>
     <string name="language_title">Language</string>
     <string name="language_summary">Use the system language or choose an app language</string>
     <string name="language_system">System default</string>
@@ -38,17 +36,10 @@
     <string name="language_simplified_chinese">Simplified Chinese</string>
     <string name="hide_launcher_icon">Hide launcher icon</string>
     <string name="hide_launcher_icon_summary">Hide the launcher icon while keeping the app available from system app details and other entry points</string>
-    <string name="preview_title">Status preview</string>
-    <string name="preview_value">▂▄▆█   Wi‑Fi   87%</string>
-    <string name="preview_label">Sample</string>
-
-    <string name="section_hyperos_display">System UI</string>
-    <string name="section_color_linkage">Color linkage</string>
-    <string name="section_battery_top_readout">Battery top readout</string>
     <string name="battery_fill_follow_retract">Battery fill follows retraction</string>
-    <string name="battery_fill_follow_retract_summary">Move the solid battery fill with the retract endpoint, then shrink it after the hollow segment is exhausted</string>
-    <string name="battery_top_readout">Show battery percentage</string>
-    <string name="battery_top_readout_summary">Show battery percentage; the ring clears space automatically</string>
+    <string name="battery_fill_follow_retract_summary">Move the solid battery segment with the retract endpoint, then shorten it when the remaining ring is too short</string>
+    <string name="battery_top_readout">Show battery level</string>
+    <string name="battery_top_readout_summary">Show the current battery level as a number; the ring makes room automatically</string>
     <string name="battery_top_text_size">Number size</string>
     <string name="battery_top_text_weight">Number weight</string>
     <string name="battery_top_vertical_offset">Vertical offset (+ up / − down)</string>
@@ -56,31 +47,23 @@
     <string name="battery_top_scale_value">%1$d%%</string>
     <string name="battery_top_weight_value">%1$d</string>
     <string name="battery_top_offset_value">%1$d</string>
-    <string name="combined_status_feature_title">Combined status indicator</string>
-    <string name="combined_status_feature_summary">Master switch for the unified status indicator across all supported SystemUI scenes. Turning it off restores native status icons.</string>
     <string name="keyguard_combined_status_title">Show on lock screen</string>
     <string name="keyguard_combined_status_summary">Show in the lock-screen status bar</string>
     <string name="aod_combined_status_title">Show on AOD</string>
-    <string name="aod_combined_status_summary">Show in stable Always-on Display; native SystemUI keeps AOD enter/exit transitions</string>
+    <string name="aod_combined_status_summary">Show on AOD while keeping enter and exit transitions native</string>
     <string name="mobile_follow_battery_color">Match mobile signal color to battery ring</string>
     <string name="mobile_follow_battery_color_summary">Signal dots and the unavailable mark follow the battery ring color</string>
     <string name="center_follow_battery_color">Match network status color to battery ring</string>
     <string name="center_follow_battery_color_summary">Wi-Fi, hotspot, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
     <string name="appearance_title">Appearance</string>
     <string name="appearance_summary">Theme and interface effects</string>
-    <string name="status_bar_title">Status bar</string>
-    <string name="status_bar_summary">Combined indicator and status-bar behavior</string>
-    <string name="keyguard_aod_title">Lock screen &amp; AOD</string>
-    <string name="keyguard_aod_summary">Lock-screen and AOD display</string>
-    <string name="charging_title">Charging</string>
-    <string name="charging_summary">Charging and super-charging styles</string>
     <string name="about_title">About</string>
     <string name="about_summary">Version, project, and runtime environment</string>
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_summary">View Guiyuan runtime logs</string>
     <string name="restart_scope">Restart SystemUI</string>
-    <string name="restart_scope_summary">Restart SystemUI to reload the module</string>
-    <string name="restart_scope_dialog_summary">Root access is required. SystemUI will restart to reload the module. The device will not reboot.</string>
+    <string name="restart_scope_summary">Restart SystemUI to reload Guiyuan</string>
+    <string name="restart_scope_dialog_summary">Root access is required. SystemUI will restart to reload Guiyuan. The device will not reboot.</string>
     <string name="restart_scope_failed">Restart failed</string>
     <string name="restart_scope_failed_summary">Check Root access and confirm SystemUI can restart normally, then try again</string>
     <string name="restart">Restart</string>
@@ -90,8 +73,8 @@
     <string name="combined_size">Overall size</string>
     <string name="outer_weight">Outer weight</string>
     <string name="outer_weight_summary">Adjusts the ring, signal dots, and unavailable mark together</string>
-    <string name="control_center_tint_transition">Pull-down tint transition</string>
-    <string name="control_center_tint_transition_summary">While opening Control Center, smoothly return colorized elements to the system status-bar tint</string>
+    <string name="control_center_tint_transition">Control Center color transition</string>
+    <string name="control_center_tint_transition_summary">When opening Control Center, smoothly transition battery-colored elements to the native icon tint</string>
     <string name="wifi_size">Wi-Fi size</string>
     <string name="airplane_size">Airplane mode size</string>
     <string name="no_sim_size">No SIM size</string>
@@ -105,7 +88,7 @@
 
     <string name="section_theme">Theme</string>
     <string name="theme_mode">Theme mode</string>
-    <string name="theme_mode_summary">Set the app\'s light or dark appearance</string>
+    <string name="theme_mode_summary">Follow the system theme or choose light or dark appearance</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -129,32 +112,11 @@
     <string name="floating_navigation_content_icon_and_text">Icons &amp; labels</string>
     <string name="swipe_back">Page swipe back</string>
     <string name="swipe_back_summary">Swipe horizontally on a page to go back</string>
-
-    <string name="section_hyperos_systemui">Display and transitions</string>
-    <string name="enable_combined_icon">Combined indicator</string>
-    <string name="enable_combined_icon_summary">Preview the combined indicator in the status bar</string>
-    <string name="transition_effects">Transition effects</string>
-    <string name="transition_effects_summary">Preview status bar and Control Center transitions</string>
-
-    <string name="section_hyperos_display_scope">Display scope</string>
-    <string name="show_on_lock_screen">Show on lock screen</string>
-    <string name="show_on_lock_screen_summary">Preview lock-screen display</string>
-    <string name="show_on_aod">Show on AOD</string>
-    <string name="show_on_aod_summary">Preview always-on display</string>
-
-    <string name="section_hyperos_charging">Charging</string>
-    <string name="show_charging_state">Charging indicator</string>
-    <string name="show_charging_state_summary">Preview the charging indicator</string>
-    <string name="distinguish_super_charging">Super charging indicator</string>
-    <string name="distinguish_super_charging_summary">Use a separate icon for super charging in the preview</string>
-
-    <string name="section_current_build">Version information</string>
-    <string name="section_diagnostics_app">App</string>
     <string name="section_about_project">Project</string>
     <string name="about_project_home_title">Project homepage</string>
     <string name="about_project_home_summary">View source code and project information</string>
     <string name="about_open_source_license_title">Open-source license</string>
-    <string name="about_open_source_license_summary">GNU GPL v3.0</string>
+    <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">Third-party dependencies</string>
     <string name="about_third_party_summary">View open-source components and licenses</string>
     <string name="section_runtime_dependencies">Runtime and interface</string>
@@ -184,8 +146,6 @@
     <string name="runtime_scope_summary">SystemUI｜com.android.systemui</string>
     <string name="runtime_target_title">Compatibility baseline</string>
     <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
-    <string name="runtime_inventory_title">Native status probe</string>
-    <string name="runtime_inventory_summary">Enabled · one-shot status-bar structure and geometry snapshot</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>
@@ -197,7 +157,7 @@
     <string name="diagnostics_log_category_module">Module</string>
     <string name="diagnostics_log_category_network">Network</string>
     <string name="diagnostics_log_category_display">Display</string>
-    <string name="diagnostics_log_category_native">Native handoff</string>
+    <string name="diagnostics_log_category_native">Native integration</string>
     <string name="diagnostics_log_category_transition">Transition</string>
     <string name="diagnostics_log_category_performance">Performance</string>
     <string name="diagnostics_log_category_settings">Settings &amp; maintenance</string>
@@ -214,9 +174,9 @@
     <string name="diagnostics_log_event_host_capture">Status host captured</string>
     <string name="diagnostics_log_event_host_restore">Status host restored</string>
     <string name="diagnostics_log_event_session_attach">Render session attached</string>
-    <string name="diagnostics_log_event_presentation_cutover">Presentation cutover</string>
-    <string name="diagnostics_log_event_presentation_resolve">Presentation resolved</string>
-    <string name="diagnostics_log_event_fail_native">Failed native</string>
+    <string name="diagnostics_log_event_presentation_cutover">Presentation handoff</string>
+    <string name="diagnostics_log_event_presentation_resolve">Presentation state resolved</string>
+    <string name="diagnostics_log_event_fail_native">Native fallback</string>
     <string name="diagnostics_log_event_renderer_attach">Renderer attached</string>
     <string name="diagnostics_log_event_diagnostics_snapshot">Diagnostics snapshot</string>
     <string name="diagnostics_log_event_diagnostics_level">Diagnostics level changed</string>
@@ -224,7 +184,7 @@
     <string name="diagnostics_log_event_visual_settings">Appearance settings updated</string>
     <string name="diagnostics_log_event_feature_settings">Feature settings updated</string>
     <string name="diagnostics_log_event_hot_reload">Hot reload completed</string>
-    <string name="diagnostics_log_event_hot_reload_prepare">Hot reload preparing</string>
+    <string name="diagnostics_log_event_hot_reload_prepare">Preparing hot reload</string>
     <string name="diagnostics_log_event_hot_reload_handoff">Hot reload generation handoff</string>
     <string name="diagnostics_log_event_hot_reload_migration">Hot reload migration</string>
     <string name="diagnostics_log_event_hot_reload_restore">Hot reload restored</string>
@@ -236,9 +196,9 @@
     <string name="diagnostics_log_event_wifi_icon">Wi-Fi icon state updated</string>
     <string name="diagnostics_log_event_status_icon_presentation">Status icon presentation</string>
     <string name="diagnostics_log_event_tint_commit">Tint committed</string>
-    <string name="diagnostics_log_event_home_tint">Home tint updated</string>
+    <string name="diagnostics_log_event_home_tint">Home status-bar tint updated</string>
     <string name="diagnostics_log_event_generic">Log event</string>
-    <string name="diagnostics_log_summary_validated">Validated</string>
+    <string name="diagnostics_log_summary_validated">Network validated</string>
     <string name="diagnostics_log_summary_internet">Internet available</string>
     <string name="diagnostics_log_summary_mobile_data_on">Mobile data on</string>
     <string name="diagnostics_log_summary_mobile_data_off">Mobile data off</string>
@@ -281,7 +241,7 @@
     <string name="diagnostics_clear_view">Clear view</string>
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
     <string name="section_diagnostics_events">Key events</string>
-    <string name="diagnostics_events_summary">This run, %1$d key events</string>
+    <string name="diagnostics_events_summary">%1$d key events in this run</string>
     <string name="diagnostics_component_module">Module</string>
     <string name="diagnostics_component_compatibility">Compatibility</string>
     <string name="diagnostics_component_status_host">Status bar host</string>
@@ -353,12 +313,12 @@
     <string name="battery_color_brightness">Brightness</string>
     <string name="battery_color_precise_input">Precise input</string>
     <string name="battery_color_hex">HEX</string>
-    <string name="battery_color_follow_inversion">Follow inversion</string>
+    <string name="battery_color_follow_inversion">Follow system tint</string>
     <string name="battery_color_no_fixed_color">No fixed color</string>
-    <string name="battery_color_no_fixed_color_summary">Choose a fixed color source, or set a custom color, to adjust these controls</string>
+    <string name="battery_color_no_fixed_color_summary">Choose a fixed color source or set a custom color before adjusting these controls</string>
     <string name="battery_color_settings">Color settings</string>
     <string name="battery_color_edit_auto_custom">Editing any value switches this mode to Custom</string>
-    <string name="battery_color_restore_from_scheme">Restore the %1$s source for this mode</string>
+    <string name="battery_color_restore_from_scheme">Restore this mode to the %1$s scheme color</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s color</string>
     <string name="battery_custom_scheme_new">New custom style</string>
@@ -367,10 +327,10 @@
     <string name="battery_custom_scheme_default_name">Custom style %1$d</string>
     <string name="battery_custom_scheme_name">Style name</string>
     <string name="battery_custom_scheme_create">Create</string>
-    <string name="battery_custom_scheme_manage">Manage custom style</string>
+    <string name="battery_custom_scheme_manage">Manage custom styles</string>
     <string name="battery_custom_scheme_rename">Rename</string>
     <string name="battery_custom_scheme_copy">Duplicate</string>
     <string name="battery_custom_scheme_delete">Delete</string>
-    <string name="battery_custom_scheme_delete_summary">Delete “%1$s”? If it is active, Guiyuan returns to its base built-in scheme.</string>
+    <string name="battery_custom_scheme_delete_summary">Delete “%1$s”? If it is active, Guiyuan switches back to the built-in scheme this style was based on.</string>
 
 </resources>

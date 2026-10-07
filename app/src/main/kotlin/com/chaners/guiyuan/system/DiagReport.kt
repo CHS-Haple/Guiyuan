@@ -26,26 +26,6 @@ internal object DiagReport {
         val requested = level.name.lowercase()
         val diagnostics = runtimeEvents.component("diagnostics")
         val effective = diagnostics?.fields?.get("level")
-        val syncState =
-            when {
-                !BuildConfig.RUNTIME_DIAGNOSTICS && !BuildConfig.DEVELOPMENT_PROBES ->
-                    "not-applicable"
-                diagnostics == null ||
-                    diagnostics.state == "unknown" ||
-                    diagnostics.state == "unavailable" ->
-                    "unavailable"
-                BuildConfig.DEVELOPMENT_PROBES ->
-                    if (effective == "detailed") {
-                        "development-forced"
-                    } else {
-                        "mismatch"
-                    }
-                effective == requested ->
-                    "matched"
-                else ->
-                    "mismatch"
-            }
-
         return buildString {
             appendLine("Guiyuan Diagnostic Report")
             appendLine()
@@ -67,10 +47,9 @@ internal object DiagReport {
             appendLine()
             appendLine("[Diagnostics state]")
             appendLine("requestedLevel=" + requested)
-            appendLine("effectiveRuntimeLevel=" + (effective ?: "unavailable"))
-            appendLine("syncState=" + syncState)
+            appendLine("runtimeLevel=" + (effective ?: "unavailable"))
             appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
-            appendLine("sessionId=" + (runtimeEvents.sessionId ?: "legacy-or-unavailable"))
+            appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
             appendLine()
             appendLine("[Device]")
             appendLine("manufacturer=" + env.manufacturer)

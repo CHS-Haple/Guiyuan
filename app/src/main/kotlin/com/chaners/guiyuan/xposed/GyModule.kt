@@ -11,7 +11,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
-import com.chaners.guiyuan.system.RuntimeDiagnosticsProtocol
+import com.chaners.guiyuan.system.DiagProtocol
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -61,12 +61,15 @@ class GyModule : XposedModule() {
     // Non-null only while Keyguard is taking over the native AOD boundary.
     private var boundaryHandoff: BoundaryHandoff? = null
     private var homeAodFallback = HomeAodFallback.NONE
+    // Origin evidence and target prearm have different lifetimes; neither is the fallback phase.
     private var homeAodOriginPending = false
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
+    // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
     private var keyguardReadyObserved = false
+    // CC can keep this lease while a Keyguard readiness edge is being handed off.
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()
@@ -80,15 +83,6 @@ class GyModule : XposedModule() {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
-        log(
-            Log.INFO,
-            TAG,
-            "Module loaded in " + param.processName +
-                " build=" + BuildConfig.BUILD_ID +
-                " channel=" + BuildConfig.BUILD_CHANNEL +
-                " diagnostics=" + if (detailedDiagnosticsEnabled) "detailed" else "general" +
-                " with Xposed API " + apiVersion,
-        )
         logDiagnostic(
             level = Log.INFO,
             event = "module.loaded",
@@ -201,7 +195,6 @@ class GyModule : XposedModule() {
                 "mobileRoots" to prepared.mobileRoots,
                 "restartScope" to true,
             )
-            log(Log.WARN, TAG, "Hot reload declined reason=" + prepared.reason)
             return false
         }
 
@@ -219,9 +212,7 @@ class GyModule : XposedModule() {
                     0
                 } +
                 if (ccSourceInstalled) {
-                    SysUiCcSource.expectedHookCount(
-                        BuildConfig.RUNTIME_DIAGNOSTICS,
-                    )
+                    SysUiCcSource.HOOK_COUNT
                 } else {
                     0
                 }
@@ -238,13 +229,6 @@ class GyModule : XposedModule() {
             "mobileRoots" to prepared.mobileRoots,
             "tintTransfer" to if (prepared.tintTransferred) "ready" else "native-fallback",
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
-        )
-        log(
-            Log.INFO,
-            TAG,
-            "Hot reload preparing build=" + BuildConfig.BUILD_ID +
-                " hooks=" + hookCount +
-                " transfer=classloader-neutral",
         )
 
         logDiagnostic(
@@ -278,11 +262,6 @@ class GyModule : XposedModule() {
                 state = "error",
                 "reason" to "status-host-hook-missing",
                 "restartScope" to true,
-            )
-            log(
-                Log.ERROR,
-                TAG,
-                "Hot reload incomplete reason=status-host-hook-missing restartScope=true",
             )
             return
         }
@@ -558,7 +537,21 @@ class GyModule : XposedModule() {
                 "hostIdentity" to capture.identity,
                 "wifiRoots" to bindings.wifiRoots,
                 "mobileRoots" to bindings.mobileRoots,
-                "state" to restoredSnapshot.logLine,
+                "batteryPercent" to restoredSnapshot.battery?.percent,
+                "batteryCharging" to restoredSnapshot.battery?.charging,
+                "wifiState" to
+                    when (restoredSnapshot.wifi) {
+                        StatusStateStore.WifiState.Unknown -> "unknown"
+                        StatusStateStore.WifiState.Hidden -> "hidden"
+                        is StatusStateStore.WifiState.Visible -> "visible"
+                    },
+                "wifiSignal" to
+                    (restoredSnapshot.wifi as? StatusStateStore.WifiState.Visible)
+                        ?.signal
+                        ?.logToken,
+                "mobileSubs" to restoredSnapshot.mobile.keys.joinToString(","),
+                "airplane" to restoredSnapshot.airplaneMode,
+                "mobileRecoveryPending" to restoredSnapshot.mobileRecoveryPending,
                 "homePresentation" to "native-carrier-lifecycle",
                 "controlCenterHomeEligible" to
                     (restored.controlCenterHomeEligible ?: "unknown"),
@@ -867,27 +860,23 @@ class GyModule : XposedModule() {
             )
         }.onSuccess { result ->
             refreshStatusIconObservation("network-source:" + source)
+            val hookCount = SysUiNetworkRuntime.installedHookCount
             val fullyReady =
                 result.wifiReady &&
                     result.mobileReady &&
-                    SysUiNetworkRuntime.installedHookCount == SysUiNetworkSource.HOOK_COUNT
-            val state =
+                    hookCount == SysUiNetworkSource.HOOK_COUNT
+            val (level, state) =
                 when {
-                    fullyReady -> "ready"
-                    SysUiNetworkRuntime.installedHookCount > 0 -> "partial"
-                    else -> "error"
+                    fullyReady -> Log.INFO to "ready"
+                    hookCount > 0 -> Log.WARN to "partial"
+                    else -> Log.ERROR to "error"
                 }
             logDiagnostic(
-                level =
-                    when (state) {
-                        "ready" -> Log.INFO
-                        "partial" -> Log.WARN
-                        else -> Log.ERROR
-                    },
+                level = level,
                 event = "source.install",
                 component = "network",
                 state = state,
-                "hooks" to SysUiNetworkRuntime.installedHookCount,
+                "hooks" to hookCount,
                 "expectedHooks" to SysUiNetworkSource.HOOK_COUNT,
                 "wifi" to if (result.wifiReady) "ready" else "error",
                 "mobile" to if (result.mobileReady) "ready" else "error",
@@ -904,27 +893,7 @@ class GyModule : XposedModule() {
                     "reason" to failure.reason,
                     "source" to source,
                 )
-                log(
-                    Log.ERROR,
-                    TAG,
-                    "Network branch installation failed component=" + failure.component +
-                        " stage=" + failure.stage +
-                        " errorType=" + failure.errorType +
-                        " reason=" + failure.reason +
-                        " source=" + source,
-                )
             }
-            log(
-                if (fullyReady) Log.INFO else Log.WARN,
-                TAG,
-                "networkSource state=" + state +
-                    " hooks=" + SysUiNetworkRuntime.installedHookCount +
-                    "/" + SysUiNetworkSource.HOOK_COUNT +
-                    " wifi=" + result.wifiReady +
-                    " mobile=" + result.mobileReady +
-                    " source=" + source +
-                    " rebindRequired=" + (source == "hotReload"),
-            )
         }.onFailure { error ->
             SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
@@ -970,14 +939,6 @@ class GyModule : XposedModule() {
                 "expectedHooks" to SysUiIslandSource.HOOK_COUNT,
                 "source" to source,
             )
-            log(
-                Log.INFO,
-                TAG,
-                "islandMotionSource hooks=ready count=" + handles.size +
-                    " source=" + source +
-                    " authority=island-status diagnostics=" +
-                    BuildConfig.RUNTIME_DIAGNOSTICS,
-            )
         }.onFailure { error ->
             islandSourceInstalled = false
             logDiagnostic(
@@ -1014,13 +975,10 @@ class GyModule : XposedModule() {
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
-                includeDiagnostics = BuildConfig.RUNTIME_DIAGNOSTICS,
             )
         }.onSuccess { handles ->
             val expectedHooks =
-                SysUiCcSource.expectedHookCount(
-                    BuildConfig.RUNTIME_DIAGNOSTICS,
-                )
+                SysUiCcSource.HOOK_COUNT
             ccSourceInstalled = handles.size == expectedHooks
             // Home yields Control Center only after the projected native
             // carrier is structurally ready.
@@ -1265,7 +1223,7 @@ class GyModule : XposedModule() {
                 incomingKeyguardReadyForCc()
         if (
             keyguardCcLeaseActive ||
-            !ScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            !ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = ccExpansion,
@@ -1300,7 +1258,7 @@ class GyModule : XposedModule() {
                 ?: true
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
-        return ScenePolicy.shouldRetainKeyguardControlCenterLease(
+        return ScenePolicy.shouldRetainKeyguardCcLease(
             leaseActive = keyguardCcLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -1372,8 +1330,8 @@ class GyModule : XposedModule() {
 
     private fun reconcileCcForKeyguard(authority: String) {
         if (
-            !ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = controlCenterSceneVisible,
+            !ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = controlCenterSceneVisible,
                 nativeFraction = ccExpansion,
                 leaseActive = keyguardCcLeaseActive,
             )
@@ -1402,11 +1360,11 @@ class GyModule : XposedModule() {
                 component = "controlCenterProjection",
                 state = "fallback",
                 "source" to "hot-reload-transfer",
-                "reason" to failure,
+                "reason" to failure.reason,
                 "next" to "first-native-layout-prearm",
             )
             onCcFakeAttached(host)
-            return "fallback-first-native-layout:" + failure
+            return "fallback-first-native-layout:" + failure.reason
         }
 
         val compactReady =
@@ -1489,11 +1447,11 @@ class GyModule : XposedModule() {
                 component = "controlCenterProjection",
                 state = "unavailable",
                 "source" to source,
-                "reason" to failure,
+                "reason" to failure.reason,
                 "fallback" to "native-qs-fake",
             )
         }
-        return failure
+        return failure?.reason
     }
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
@@ -1735,7 +1693,6 @@ class GyModule : XposedModule() {
         if (changed != null || recoveryCompleted != null) {
             val presentationTrace = markPresentationCommitted(trace)
             if (detailedDiagnosticsEnabled && changed != null) {
-                log(Log.INFO, TAG, presentation.logLine)
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.resolve",
@@ -1743,13 +1700,17 @@ class GyModule : XposedModule() {
                     state = "ready",
                     "mode" to presentation.mode.name,
                     "boundRoots" to presentation.boundRoots,
+                    "activeBoundRoots" to presentation.activeBoundRoots,
                     "visibleRoots" to presentation.visibleRoots,
+                    "activeSubAuthority" to presentation.activeSubscriptionAuthority,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
                     "presentationRootSubId" to presentation.presentationRootSubscriptionId,
                     "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
                     "networkTypeSubId" to presentation.networkTypeSubscriptionId,
                     "networkType" to presentation.networkType?.label,
                     "enhanced" to presentation.networkType?.enhanced,
+                    "networkTypeSource" to presentation.networkType?.source?.name,
+                    "nativeMobileReplacementReady" to presentation.nativeMobileReplacementReady,
                 )
             }
             if (detailedDiagnosticsEnabled && recoveryCompleted != null) {
@@ -3454,7 +3415,7 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "runtime.teardown",
             component = "runtimeSession",
-            state = "ready",
+            state = "released",
             "source" to "hotReload.oldGeneration",
             "homePresentationRestoredViews" to restoredPresentationViews,
             "continuousHandoff" to continuousHandoff,
@@ -3802,7 +3763,6 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val nativeParticipant = ParticipantContractProbe.inspect(host)
-        log(Log.INFO, TAG, nativeParticipant.logLine)
         logDiagnostic(
             level =
                 if (nativeParticipant.registrationContractReady) {
@@ -3812,12 +3772,6 @@ class GyModule : XposedModule() {
                 },
             event = "contract.probe",
             component = "nativeParticipant",
-            state =
-                if (nativeParticipant.registrationContractReady) {
-                    "ready"
-                } else {
-                    "observed"
-                },
             "available" to nativeParticipant.available,
             "reason" to nativeParticipant.reason,
             "manager" to nativeParticipant.managerClass,
@@ -3852,7 +3806,6 @@ class GyModule : XposedModule() {
         if (nativeParticipant.registrationContractReady) {
             val bindableParticipant =
                 BindableContractProbe.inspect(host)
-            log(Log.INFO, TAG, bindableParticipant.logLine)
             val bindableProbeReady =
                 bindableParticipant.staticContractReady &&
                     bindableParticipant.managerBindableMapReady &&
@@ -3861,7 +3814,6 @@ class GyModule : XposedModule() {
                 level = if (bindableProbeReady) Log.INFO else Log.WARN,
                 event = "contract.probe",
                 component = "nativeBindableParticipant",
-                state = if (bindableProbeReady) "ready" else "observed",
                 "source" to source,
                 "available" to bindableParticipant.available,
                 "reason" to bindableParticipant.reason,
@@ -3896,12 +3848,10 @@ class GyModule : XposedModule() {
 
             val visualGeometry =
                 BindableGeometryProbe.inspect(host)
-            log(Log.INFO, TAG, visualGeometry.logLine)
             logDiagnostic(
                 level = if (visualGeometry.ready) Log.INFO else Log.WARN,
                 event = "contract.probe",
                 component = "nativeBindableVisualGeometry",
-                state = if (visualGeometry.ready) "ready" else "observed",
                 "source" to source,
                 "available" to visualGeometry.available,
                 "reason" to visualGeometry.reason,
@@ -4146,8 +4096,7 @@ class GyModule : XposedModule() {
                     level = Log.INFO,
                     event = "slot.probe",
                     component = "nativeSlot",
-                    state = "observed",
-                    "source" to source,
+                            "source" to source,
                     "root" to subtree.rootClassName,
                     "children" to subtree.rootChildCount,
                     "nodes" to subtree.entries.size,
@@ -4162,15 +4111,8 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "host.capture",
             component = "statusHost",
-            state = "ready",
             "identity" to capture.identity,
             "replacement" to capture.replacement,
-        )
-        log(
-            Log.INFO,
-            TAG,
-            "statusHost captured id=" + capture.identity +
-                " replacement=" + capture.replacement,
         )
         attachHostRuntime(
             host = capture.host,
@@ -4431,7 +4373,6 @@ class GyModule : XposedModule() {
                 level = Log.INFO,
                 event = "visualSettings.changed",
                 component = "renderer",
-                state = "ready",
                 "layout" to visual.layout.persistedValue,
                 "combinedScale" to visual.combinedScale,
                 "wifiSizeScale" to visual.wifiScale,
@@ -4476,7 +4417,6 @@ class GyModule : XposedModule() {
                 level = Log.INFO,
                 event = "diagnostics.level",
                 component = "diagnostics",
-                state = "ready",
                 "level" to if (detailedDiagnosticsEnabled) "detailed" else "general",
             )
         }
@@ -4516,7 +4456,6 @@ class GyModule : XposedModule() {
             level = Log.INFO,
             event = "pipeline.latency",
             component = "renderLatency",
-            state = "observed",
             "traceId" to sample.traceId,
             "source" to sample.source,
             "sourceToStateUs" to sample.sourceToStateUs,
@@ -4544,6 +4483,25 @@ class GyModule : XposedModule() {
         state: String,
         vararg fields: Pair<String, Any?>,
     ) {
+        writeDiagnostic(level, event, component, state, fields)
+    }
+
+    private fun logDiagnostic(
+        level: Int,
+        event: String,
+        component: String,
+        vararg fields: Pair<String, Any?>,
+    ) {
+        writeDiagnostic(level, event, component, null, fields)
+    }
+
+    private fun writeDiagnostic(
+        level: Int,
+        event: String,
+        component: String,
+        state: String?,
+        fields: Array<out Pair<String, Any?>>,
+    ) {
         val values =
             buildMap {
                 fields.forEach { (key, value) ->
@@ -4558,7 +4516,7 @@ class GyModule : XposedModule() {
         log(
             level,
             TAG,
-            RuntimeDiagnosticsProtocol.format(
+            DiagProtocol.format(
                 event = event,
                 component = component,
                 state = state,

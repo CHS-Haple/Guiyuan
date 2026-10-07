@@ -1,8 +1,8 @@
 # Architecture
 
-This directory defines Guiyuan's current runtime ownership and scene/layout contracts.
+This directory defines Guiyuan's current runtime ownership, scene, and layout contracts.
 
-Historical experiments and Build-by-Build evidence do not belong here. Current execution state lives in [CURRENT.md](../development/CURRENT.md); durable rationale lives in [DECISIONS.md](../development/DECISIONS.md).
+Historical experiments and build-by-build evidence do not belong here. Current execution state lives in [CURRENT.md](../development/CURRENT.md); durable rationale lives in [DECISIONS.md](../development/DECISIONS.md).
 
 ## Current model
 
@@ -15,7 +15,7 @@ Current boundaries:
 - Control Center remains native at the fully expanded endpoint; a bounded QS_FAKE bridge may project Guiyuan during the native transition.
 - SystemUI remains authoritative for native scene state, layout, appearance, alpha, visibility, translation and motion timing.
 - Guiyuan owns only its renderer plus bounded represented-slot suppression/masking, verified reservation state and transition-only projection geometry.
-- Ambiguity in host, lifecycle, writer ownership or compatibility fails native for the smallest affected surface.
+- Any ambiguity in host, lifecycle, writer ownership, or compatibility triggers fail-native behavior for the smallest affected surface.
 
 The steady Home hierarchy is:
 
@@ -26,8 +26,8 @@ The logical viewport is independent from transparent drawing overflow. Enlarging
 ## Documents
 
 - [layout-policy.md](layout-policy.md) — geometry, occupancy, masking, reservation, motion and drawing-surface ownership.
-- [scene-policy.md](scene-policy.md) — scene capability, Keyguard/AOD family ownership and Control Center transition boundaries.
-- [../reference/systemui-contracts.md](../reference/systemui-contracts.md) — reusable target-SystemUI evidence. Evidence does not grant write ownership by itself.
+- [scene-policy.md](scene-policy.md) — scene capabilities, Keyguard/AOD family ownership, and Control Center transition boundaries.
+- [../reference/systemui-contracts.md](../reference/systemui-contracts.md) — reusable target SystemUI evidence. Evidence does not grant write ownership by itself.
 
 ## Authority
 

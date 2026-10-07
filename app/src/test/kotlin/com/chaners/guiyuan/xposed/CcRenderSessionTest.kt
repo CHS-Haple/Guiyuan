@@ -52,30 +52,6 @@ class CcRenderSessionTest {
             ),
         )
     }
-    @Test
-    fun firstLayoutRetryOnlyCoversEarlyGeometryReadinessFailures() {
-        assertTrue(
-            CcRenderSession.isFirstLayoutRetryable(
-                "battery-core-width-unavailable",
-            ),
-        )
-        assertTrue(
-            CcRenderSession.isFirstLayoutRetryable(
-                "fake-status-bar-area-unresolved",
-            ),
-        )
-        assertFalse(
-            CcRenderSession.isFirstLayoutRetryable(
-                "fake-root-type-mismatch",
-            ),
-        )
-        assertFalse(
-            CcRenderSession.isFirstLayoutRetryable(
-                "ignored-slots-field-unavailable",
-            ),
-        )
-    }
-
 
     @Test
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {

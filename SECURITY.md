@@ -1,6 +1,6 @@
 # Security Policy
 
-Guiyuan is currently in pre-release development. Security reports are accepted for the current `main` baseline and active `dev` development line.
+Guiyuan is currently in pre-release development. Security reports may target the current `main` baseline or the active `dev` line.
 
 ## Reporting a vulnerability
 
@@ -10,7 +10,7 @@ Please report security-sensitive issues through GitHub's private vulnerability r
 
 Do not publish credentials, signing material, exploit details, private diagnostic data, or other sensitive information in a public issue.
 
-Useful reports include:
+A useful report includes:
 
 - affected Guiyuan version/build/channel;
 - Android, HyperOS, and SystemUI version;
@@ -36,4 +36,4 @@ Ordinary visual defects, compatibility problems, and SystemUI crashes without a 
 
 Please allow maintainers time to reproduce and address a confirmed vulnerability before public disclosure.
 
-Supported-version policy will be expanded after the first formal release.
+A broader supported-version policy will be defined with the first formal release.

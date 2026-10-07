@@ -109,7 +109,7 @@ internal object BindableGeometryProbe {
                     when (method.name) {
                         "getShouldIconBeVisible" -> false
                         "isCollecting" -> true
-                        "toString" -> "CombinedStatusVisualGeometryBinding"
+                        "toString" -> "GyVisualGeometryBinding"
                         "hashCode" -> System.identityHashCode(proxy)
                         "equals" -> proxy === args?.firstOrNull()
                         else -> defaultValue(method.returnType)
@@ -122,7 +122,7 @@ internal object BindableGeometryProbe {
                 ) { proxy, method, args ->
                     when (method.name) {
                         "invoke" -> binding
-                        "toString" -> "CombinedStatusVisualGeometryBindingFactory"
+                        "toString" -> "GyVisualGeometryBindingFactory"
                         "hashCode" -> System.identityHashCode(proxy)
                         "equals" -> proxy === args?.firstOrNull()
                         else -> defaultValue(method.returnType)
@@ -282,28 +282,6 @@ internal object BindableGeometryProbe {
                     renderMeasuredWidth == visualWidth &&
                     renderMeasuredHeight == visualHeight &&
                     projectedFitsGroup
-
-        val logLine: String
-            get() =
-                "nativeBindableVisualGeometry available=" + available +
-                    " reason=" + (reason ?: "none") +
-                    " reference=" + (referenceClass ?: "none") +
-                    " referenceBounds=" + (referenceBounds ?: "none") +
-                    " referenceLayout=" +
-                    referenceLayoutWidth + "x" + referenceLayoutHeight +
-                    " groupHeight=" + groupHeight +
-                    " groupClipChildren=" + groupClipChildren +
-                    " groupClipToPadding=" + groupClipToPadding +
-                    " visual=" + visualWidth + "x" + visualHeight +
-                    " shellMeasured=" +
-                    shellMeasuredWidth + "x" + shellMeasuredHeight +
-                    " shellClipChildren=" + shellClipChildren +
-                    " renderMeasured=" +
-                    renderMeasuredWidth + "x" + renderMeasuredHeight +
-                    " renderBounds=" + (renderBounds ?: "none") +
-                    " projected=" + projectedTop + "-" + projectedBottom +
-                    " projectedFitsGroup=" + projectedFitsGroup +
-                    " ready=" + ready
 
         companion object {
             fun unavailable(reason: String): Snapshot =
