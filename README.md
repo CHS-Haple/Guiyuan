@@ -69,6 +69,10 @@ The project is still under active development, so wider device, system-version, 
 - [docs/development/README.md](docs/development/README.md) — current state, roadmap, engineering history, and lightweight development workflow.
 - [docs/architecture](docs/architecture) — architecture policy and scene/layout boundaries.
 
+### Support
+
+If Guiyuan is useful to you and you would like to support ongoing development and maintenance, see [Support Guiyuan](docs/SUPPORT.md). Support is entirely voluntary and does not affect feature access, issue priority, or the project license.
+
 ### License
 
 Guiyuan is free software licensed under version 3 of the GNU General Public License as published by the Free Software Foundation (`GPL-3.0-only`). See [LICENSE](LICENSE).
@@ -131,6 +135,10 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 - [docs/README.md](docs/README.md) — 文档导航与权威关系说明。
 - [docs/development/README.md](docs/development/README.md) — 当前状态、路线图、工程历史与精简开发流程说明。
 - [docs/architecture](docs/architecture) — 架构策略与场景/布局边界。
+
+### 支持项目
+
+如果归元对你有所帮助，并且你愿意支持项目的持续开发与维护，可查看 [支持归元](docs/SUPPORT.md)。支持完全自愿，不影响功能获取、问题处理优先级或项目的开源许可。
 
 ### 许可证
 
