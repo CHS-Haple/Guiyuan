@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.battery
 
 import kotlin.math.ceil
 

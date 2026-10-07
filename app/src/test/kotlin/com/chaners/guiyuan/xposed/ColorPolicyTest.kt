@@ -3,6 +3,7 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.settings.BatteryColorPreset
 import com.chaners.guiyuan.settings.HyperOsBatteryPalette
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

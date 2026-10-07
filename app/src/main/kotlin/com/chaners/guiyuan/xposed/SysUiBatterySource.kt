@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.view.View
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule

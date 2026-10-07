@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.battery
 
 internal enum class BatterySemanticState {
     NORMAL,
