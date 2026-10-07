@@ -118,39 +118,6 @@ internal object SysUiBatterySource {
             )
         }
 
-        fun publish(
-            iconView: View,
-            sourceMethod: String,
-        ) {
-            val state = readState(iconView) ?: return
-            val changed =
-                synchronized(this) {
-                    if (!state.charging) {
-                        lastChargingIconResId = null
-                    }
-                    if (lastState == state) {
-                        false
-                    } else {
-                        lastState = state
-                        true
-                    }
-                }
-            if (!changed) {
-                return
-            }
-            onBatteryState(state)
-            onEvent?.invoke(
-                "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
-                    " percent=" + state.percent +
-                    " charging=" + state.charging +
-                    " semantic=" + (state.semanticState?.name ?: "unavailable") +
-                    " systemColor=" +
-                    (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
-                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()" +
-                    "",
-            )
-        }
-
         fun publishChargingGlyph(
             meterView: View,
             sourceMethod: String,
@@ -177,12 +144,58 @@ internal object SysUiBatterySource {
 
             onChargingIconResource(iconId)
             onEvent?.invoke(
-                "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
+                "batteryChargingGlyph source=" + sourceMethod +
                     " charging=true" +
                     " resourceId=" + iconId +
-                    " authority=MiuiBatteryMeterView.getHollowChargingIconId()" +
-                    "",
+                    " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
             )
+        }
+
+        fun publish(
+            iconView: View,
+            sourceMethod: String,
+        ) {
+            val state = readState(iconView) ?: return
+            val changed =
+                synchronized(this) {
+                    if (!state.charging) {
+                        lastChargingIconResId = null
+                    }
+                    if (lastState == state) {
+                        false
+                    } else {
+                        lastState = state
+                        true
+                    }
+                }
+            if (changed) {
+                onBatteryState(state)
+                onEvent?.invoke(
+                    "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
+                        " percent=" + state.percent +
+                        " charging=" + state.charging +
+                        " semantic=" + (state.semanticState?.name ?: "unavailable") +
+                        " systemColor=" +
+                        (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
+                        " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
+                        " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
+                )
+            }
+
+            // Battery callbacks can arrive without updateChargeAndText after Hot Reload.
+            if (state.charging) {
+                var parent = iconView.parent
+                while (parent is View) {
+                    if (meterClass.isInstance(parent)) {
+                        publishChargingGlyph(
+                            meterView = parent,
+                            sourceMethod = "MiuiBatteryMeterIconView." + sourceMethod,
+                        )
+                        break
+                    }
+                    parent = parent.parent
+                }
+            }
         }
 
         fun hook(
@@ -247,7 +260,7 @@ internal object SysUiBatterySource {
                             ?: return@Hooker result
                         publishChargingGlyph(
                             meterView = meterView,
-                            sourceMethod = updateChargeAndTextMethod.name,
+                            sourceMethod = "MiuiBatteryMeterView." + updateChargeAndTextMethod.name,
                         )
                         result
                     },
