@@ -3,13 +3,8 @@ package com.chaners.guiyuan.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
@@ -39,7 +34,9 @@ import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
@@ -156,13 +153,7 @@ internal fun MainHub(
         } else {
             Modifier
         }
-    val navInset =
-        WindowInsets.navigationBars
-            .only(WindowInsetsSides.Bottom)
-            .asPaddingValues()
-            .calculateBottomPadding()
-    val liquidBottomPadding =
-        if (navInset != 0.dp) 26.dp + navInset else 36.dp
+    val liquidBottomPadding = liquidNavBottomPadding()
 
     Scaffold(
         bottomBar = {
@@ -194,7 +185,7 @@ internal fun MainHub(
                             backdrop = liquidBackdrop,
                             tabsCount = items.size,
                             dark = dark,
-                            modifier = Modifier.padding(horizontal = 36.dp),
+                            modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                         ) {
                             items.forEachIndexed { index, item ->
                                 LiquidNavEntry(

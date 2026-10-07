@@ -35,7 +35,9 @@ import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
@@ -476,6 +478,12 @@ private fun MiniNavigationPreview(
         } else {
             null
         }
+    val liquidBottomSpace =
+        if (liquidBackdrop != null) {
+            liquidNavBottomPadding()
+        } else {
+            0.dp
+        }
     val floatingModifier =
         if (miuixBackdrop != null) {
             Modifier.floatingNavMaterial(
@@ -491,7 +499,7 @@ private fun MiniNavigationPreview(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(MiniNavigationViewportHeight),
+                .height(MiniNavigationViewportHeight + liquidBottomSpace),
         contentAlignment = Alignment.TopCenter,
     ) {
         Box(
@@ -530,7 +538,7 @@ private fun MiniNavigationPreview(
         }
 
         if (floating) {
-            MiniNavViewport {
+            MiniNavViewport(bottomPadding = liquidBottomSpace) {
                 if (liquidBackdrop != null) {
                     val labels =
                         listOf(
@@ -550,7 +558,8 @@ private fun MiniNavigationPreview(
                         backdrop = liquidBackdrop,
                         tabsCount = labels.size,
                         dark = dark,
-                        modifier = Modifier.padding(horizontal = 36.dp),
+                        interactive = false,
+                        modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                     ) {
                         labels.indices.forEach { index ->
                             LiquidNavEntry(
@@ -559,6 +568,7 @@ private fun MiniNavigationPreview(
                                 icon = icons[index],
                                 label = labels[index],
                                 dark = dark,
+                                interactive = false,
                             )
                         }
                     }
@@ -615,6 +625,7 @@ private fun MiniNavigationPreview(
 
 @Composable
 private fun MiniNavViewport(
+    bottomPadding: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     Layout(
@@ -628,10 +639,13 @@ private fun MiniNavViewport(
                     maxHeight = Constraints.Infinity,
                 ),
             )
+        val bottomPx = bottomPadding.roundToPx()
         layout(constraints.maxWidth, constraints.maxHeight) {
             placeable.placeRelative(
                 x = ((constraints.maxWidth - placeable.width) / 2).coerceAtLeast(0),
-                y = (constraints.maxHeight - placeable.height).coerceAtLeast(0),
+                y =
+                    (constraints.maxHeight - placeable.height - bottomPx)
+                        .coerceAtLeast(0),
             )
         }
     }

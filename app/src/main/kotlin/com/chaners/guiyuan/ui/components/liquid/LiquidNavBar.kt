@@ -11,9 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -40,6 +45,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +75,21 @@ import kotlin.math.sign
 
 // Adapted from AndroidLiquidGlass catalog's LiquidBottomTabs/LiquidBottomTab
 // (Apache-2.0). Guiyuan only supplies its own tab content and app theme state.
+internal object LiquidNavSpec {
+    val height = 64.dp
+    val sidePadding = 36.dp
+}
+
+@Composable
+internal fun liquidNavBottomPadding(): Dp {
+    val inset =
+        WindowInsets.navigationBars
+            .only(WindowInsetsSides.Bottom)
+            .asPaddingValues()
+            .calculateBottomPadding()
+    return if (inset != 0.dp) 26.dp + inset else 36.dp
+}
+
 @Composable
 internal fun LiquidNavBar(
     selectedIndex: () -> Int,
@@ -76,6 +97,7 @@ internal fun LiquidNavBar(
     backdrop: Backdrop,
     tabsCount: Int,
     dark: Boolean,
+    interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -220,7 +242,7 @@ internal fun LiquidNavBar(
                         },
                     )
                     .then(highlight.modifier)
-                    .height(64.dp)
+                    .height(LiquidNavSpec.height)
                     .fillMaxWidth()
                     .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -286,8 +308,8 @@ internal fun LiquidNavBar(
                                     panelOffset
                             }
                     }
-                    .then(highlight.gestureModifier)
-                    .then(motion.modifier)
+                    .then(if (interactive) highlight.gestureModifier else Modifier)
+                    .then(if (interactive) motion.modifier else Modifier)
                     .drawBackdrop(
                         backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
                         shape = { Capsule() },
@@ -352,6 +374,7 @@ private val LocalLiquidItemScale =
 @Composable
 internal fun RowScope.LiquidNavItem(
     onClick: () -> Unit,
+    interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -360,11 +383,17 @@ internal fun RowScope.LiquidNavItem(
         modifier =
             modifier
                 .clip(Capsule())
-                .clickable(
-                    interactionSource = null,
-                    indication = null,
-                    role = Role.Tab,
-                    onClick = onClick,
+                .then(
+                    if (interactive) {
+                        Modifier.clickable(
+                            interactionSource = null,
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = onClick,
+                        )
+                    } else {
+                        Modifier.clearAndSetSemantics {}
+                    },
                 )
                 .fillMaxHeight()
                 .weight(1f)
@@ -386,9 +415,10 @@ internal fun RowScope.LiquidNavEntry(
     icon: ImageVector,
     label: String,
     dark: Boolean,
+    interactive: Boolean = true,
 ) {
     val contentColor = if (dark) Color.White else Color.Black
-    LiquidNavItem(onClick = onClick) {
+    LiquidNavItem(onClick = onClick, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =

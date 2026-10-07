@@ -98,6 +98,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var pullRefreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGen by rememberSaveable { mutableIntStateOf(0) }
@@ -117,9 +118,18 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
-    fun requestRefresh() {
+    val refreshTexts =
+        listOf(
+            stringResource(R.string.diagnostics_pull_to_refresh),
+            stringResource(R.string.diagnostics_release_to_refresh),
+            stringResource(R.string.diagnostics_refreshing),
+            stringResource(R.string.diagnostics_refresh_complete),
+        )
+
+    fun requestRefresh(fromPull: Boolean = false) {
         if (loading) return
         loading = true
+        pullRefreshing = fromPull
         refreshGen += 1
     }
 
@@ -164,6 +174,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             viewCleared = false
         } finally {
             loading = false
+            pullRefreshing = false
         }
     }
 
@@ -283,7 +294,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagMenu(
                 title = menuTitle,
                 diagnosticsLevel = diagSettings.level,
-                refreshEnabled = !loading && !exportOpen,
                 canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
                 canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
                 canClear = snapshot != null && !viewCleared,
@@ -293,7 +303,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                         requestRefresh()
                     }
                 },
-                onRefresh = ::requestRefresh,
                 onScrollTop = {
                     scope.launch { listState.animateScrollToItem(0) }
                 },
@@ -311,6 +320,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
+        // Keep the MIUIX refresh host mounted from the first frame; swapping it after load flashes the page.
+        pullToRefresh =
+            SettingsPullToRefresh(
+                refreshing = pullRefreshing,
+                onRefresh = { requestRefresh(fromPull = true) },
+                texts = refreshTexts,
+            ),
     ) {
         when {
             viewCleared -> {
@@ -585,12 +601,10 @@ private fun LogFilterMenu(
 private fun DiagMenu(
     title: String,
     diagnosticsLevel: DiagLevel,
-    refreshEnabled: Boolean,
     canScrollTop: Boolean,
     canScrollBottom: Boolean,
     canClear: Boolean,
     onDiagLevelChange: (DiagLevel) -> Unit,
-    onRefresh: () -> Unit,
     onScrollTop: () -> Unit,
     onScrollBottom: () -> Unit,
     onClear: () -> Unit,
@@ -627,11 +641,6 @@ private fun DiagMenu(
                             text = stringResource(R.string.diagnostics_mode_title),
                             summary = currentLevelLabel,
                             children = levelItems,
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_refresh),
-                            enabled = refreshEnabled,
-                            onClick = onRefresh,
                         ),
                     ),
             ),
