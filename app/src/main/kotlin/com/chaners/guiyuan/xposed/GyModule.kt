@@ -1223,7 +1223,7 @@ class GyModule : XposedModule() {
                 incomingKeyguardReadyForCc()
         if (
             keyguardCcLeaseActive ||
-            !ScenePolicy.shouldAcquireKeyguardControlCenterLease(
+            !ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = ccExpansion,
@@ -1258,7 +1258,7 @@ class GyModule : XposedModule() {
                 ?: true
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
-        return ScenePolicy.shouldRetainKeyguardControlCenterLease(
+        return ScenePolicy.shouldRetainKeyguardCcLease(
             leaseActive = keyguardCcLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -1330,8 +1330,8 @@ class GyModule : XposedModule() {
 
     private fun reconcileCcForKeyguard(authority: String) {
         if (
-            !ScenePolicy.shouldReconcileControlCenterForKeyguardLifecycle(
-                controlCenterVisible = controlCenterSceneVisible,
+            !ScenePolicy.shouldReconcileCcForKeyguard(
+                ccVisible = controlCenterSceneVisible,
                 nativeFraction = ccExpansion,
                 leaseActive = keyguardCcLeaseActive,
             )
