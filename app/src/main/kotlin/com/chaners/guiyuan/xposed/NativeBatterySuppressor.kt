@@ -179,9 +179,7 @@ internal object NativeBatterySuppressor {
             !sameSession &&
             (activeContainer?.get() != null || activeBatteryView?.get() != null)
         ) {
-            if (!restorePreviousLocked()) {
-                return Result.Failure("previous-session-restore-failed")
-            }
+            restorePreviousLocked()
         }
 
         val nativeRequestedHide =
@@ -346,10 +344,9 @@ internal object NativeBatterySuppressor {
         }
 
     @Synchronized
-    private fun restorePreviousLocked(): Boolean {
+    private fun restorePreviousLocked() {
         restorePresentationMasksLocked()
         clearOwnedStateLocked()
-        return true
     }
 
     private fun applyPresentationMaskLocked(
