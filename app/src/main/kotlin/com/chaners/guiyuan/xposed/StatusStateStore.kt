@@ -21,17 +21,11 @@ internal object StatusStateStore {
     }
 
     @Synchronized
-    fun updateBatteryChargingIcon(resourceId: Int?): Snapshot? {
+    fun updateBatteryChargingIcon(resourceId: Int): Snapshot? {
         val battery = current.battery ?: return null
-        val next =
-            battery.copy(
-                chargingIconResId =
-                    if (battery.charging) {
-                        resourceId?.takeIf { it != 0 }
-                    } else {
-                        null
-                    },
-            )
+        if (!battery.charging || resourceId == 0) return null
+
+        val next = battery.copy(chargingIconResId = resourceId)
         if (battery == next) {
             return null
         }
