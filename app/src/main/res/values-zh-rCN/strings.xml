@@ -105,6 +105,11 @@
     <string name="floating_navigation_style_standard">标准</string>
     <string name="floating_navigation_style_blur">模糊</string>
     <string name="floating_navigation_style_glass">玻璃</string>
+    <string name="floating_navigation_style_liquid">液态玻璃</string>
+    <string name="floating_navigation_liquid_mode">玻璃质感</string>
+    <string name="floating_navigation_liquid_mode_summary">选择模糊或通透的玻璃观感</string>
+    <string name="floating_navigation_liquid_mode_blur">模糊</string>
+    <string name="floating_navigation_liquid_mode_clear">通透</string>
     <string name="floating_navigation_content">悬浮导航栏内容</string>
     <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>
     <string name="floating_navigation_content_icon_only">仅图标</string>
@@ -114,6 +119,8 @@
     <string name="section_about_project">项目</string>
     <string name="about_project_home_title">项目主页</string>
     <string name="about_project_home_summary">查看源代码与项目说明</string>
+    <string name="about_repo_unavailable_title">项目入口暂未开放</string>
+    <string name="about_repo_unavailable_summary">当前为限额内测版本，暂不提供项目地址入口。后续开放后可从这里访问。</string>
     <string name="about_open_source_license_title">开源许可</string>
     <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">第三方依赖</string>
@@ -230,7 +237,6 @@
     <string name="diagnostics_filter_reset">重置筛选</string>
     <string name="diagnostics_filter_done">完成</string>
     <string name="diagnostics_filter_empty">暂无符合筛选条件的事件</string>
-    <string name="diagnostics_refresh">刷新诊断</string>
     <string name="diagnostics_pull_to_refresh">下拉刷新</string>
     <string name="diagnostics_release_to_refresh">松开刷新</string>
     <string name="diagnostics_refreshing">正在刷新</string>

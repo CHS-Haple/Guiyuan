@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test

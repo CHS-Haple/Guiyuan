@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
+import com.chaners.guiyuan.xposed.network.SysUiAirplaneSource
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
+import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 
 internal object SysUiCoreRuntime {
     internal data class AttachResult(

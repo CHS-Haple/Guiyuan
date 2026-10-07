@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 
 internal class RenderController(
     private val view: RenderView,

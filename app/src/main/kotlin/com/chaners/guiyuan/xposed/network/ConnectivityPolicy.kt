@@ -1,0 +1,184 @@
+package com.chaners.guiyuan.xposed.network
+
+import com.chaners.guiyuan.xposed.NativePresentationResolver
+import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.StatusStateStore
+
+internal object ConnectivityPolicy {
+    fun resolve(
+        wifi: StatusStateStore.WifiState,
+        airplaneMode: Boolean,
+        connectivity: SysUiConnectivitySource.State,
+        mobileType: NativePresentationResolver.NetworkType?,
+        noSimIcon: PresentationStore.NativeIconResource? = null,
+    ): CenterIndicator? {
+        val wifiVisible =
+            wifi as? StatusStateStore.WifiState.Visible
+        val wifiSegments =
+            when (val signal = wifiVisible?.signal) {
+                null -> null
+                SignalStrength.Unknown -> null
+                SignalStrength.Unavailable -> null
+                is SignalStrength.Level -> wifiSegments(signal.value)
+            }
+
+        if (
+            wifiVisible != null &&
+            (wifiVisible.iconResId != null || wifiSegments != null)
+        ) {
+            resolvedWifiInternet(
+                wifi = wifiVisible,
+                connectivity = connectivity,
+            )?.let { internet ->
+                return CenterIndicator.Wifi(
+                    segments = wifiSegments ?: 0,
+                    internet = internet,
+                    nativeResourceId = wifiVisible.iconResId,
+                )
+            }
+        }
+
+        if (!connectivity.known) {
+            if (airplaneMode) {
+                return CenterIndicator.Airplane
+            }
+            if (noSimIcon != null) {
+                return CenterIndicator.NoSim(noSimIcon)
+            }
+            return mobileType?.let {
+                CenterIndicator.MobileType(
+                    label = it.label,
+                    enhanced = it.enhanced,
+                    internet = InternetState.UNKNOWN,
+                )
+            }
+        }
+
+        if (airplaneMode) {
+            return CenterIndicator.Airplane
+        }
+        if (noSimIcon != null) {
+            return CenterIndicator.NoSim(noSimIcon)
+        }
+
+        return when (connectivity.transport) {
+            SysUiConnectivitySource.Transport.CELLULAR ->
+                if (connectivity.mobileDataEnabled == false) {
+                    CenterIndicator.Empty
+                } else {
+                    mobileType?.let {
+                        CenterIndicator.MobileType(
+                            label = it.label,
+                            enhanced = it.enhanced,
+                            internet = connectivity.internetState(),
+                        )
+                    } ?: CenterIndicator.Empty
+                }
+
+            SysUiConnectivitySource.Transport.VPN ->
+                if (wifi == StatusStateStore.WifiState.Hidden) {
+                    mobileType?.let {
+                        CenterIndicator.MobileType(
+                            label = it.label,
+                            enhanced = it.enhanced,
+                            internet = connectivity.internetState(),
+                        )
+                    } ?: CenterIndicator.Empty
+                } else {
+                    null
+                }
+
+            SysUiConnectivitySource.Transport.OTHER ->
+                if (connectivity.mobileDataEnabled == true && mobileType != null) {
+                    CenterIndicator.MobileType(
+                        label = mobileType.label,
+                        enhanced = mobileType.enhanced,
+                        internet = connectivity.internetState(),
+                    )
+                } else {
+                    CenterIndicator.Empty
+                }
+
+            SysUiConnectivitySource.Transport.NONE ->
+                CenterIndicator.Empty
+
+            SysUiConnectivitySource.Transport.WIFI ->
+                null
+        }
+    }
+
+    fun wifiReplacementReady(
+        wifi: StatusStateStore.WifiState,
+        connectivity: SysUiConnectivitySource.State,
+    ): Boolean =
+        when (wifi) {
+            StatusStateStore.WifiState.Unknown -> false
+            StatusStateStore.WifiState.Hidden -> true
+            is StatusStateStore.WifiState.Visible ->
+                (
+                    wifi.iconResId != null ||
+                        wifi.signal is SignalStrength.Level
+                ) &&
+                    resolvedWifiInternet(
+                        wifi = wifi,
+                        connectivity = connectivity,
+                    ) != null
+        }
+
+    private fun resolvedWifiInternet(
+        wifi: StatusStateStore.WifiState.Visible,
+        connectivity: SysUiConnectivitySource.State,
+    ): InternetState? =
+        when (wifi.internetValidated) {
+            true -> InternetState.VALIDATED
+            false -> InternetState.NO_INTERNET
+            null ->
+                if (
+                    connectivity.known &&
+                    connectivity.transport ==
+                        SysUiConnectivitySource.Transport.WIFI
+                ) {
+                    connectivity.internetState()
+                } else {
+                    null
+                }
+        }
+
+    private fun SysUiConnectivitySource.State.internetState(): InternetState =
+        if (validated && hasInternetCapability) {
+            InternetState.VALIDATED
+        } else {
+            InternetState.NO_INTERNET
+        }
+
+    private fun wifiSegments(level: Int): Int =
+        level.coerceIn(0, 3)
+}
+
+internal enum class InternetState {
+    UNKNOWN,
+    VALIDATED,
+    NO_INTERNET,
+}
+
+internal sealed interface CenterIndicator {
+    data class Wifi(
+        val segments: Int,
+        val internet: InternetState,
+        val nativeResourceId: Int? = null,
+    ) : CenterIndicator
+
+    data class MobileType(
+        val label: String,
+        val enhanced: Boolean,
+        val internet: InternetState,
+    ) : CenterIndicator
+
+    data object Airplane : CenterIndicator
+
+    data class NoSim(
+        val nativeResource: PresentationStore.NativeIconResource,
+    ) : CenterIndicator
+
+    data object Empty : CenterIndicator
+}

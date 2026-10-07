@@ -13,7 +13,7 @@ internal object SysUiBatteryRuntime {
         module: XposedModule,
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int?) -> Unit,
+        onChargingIconResource: (Int) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Int {
         hooks =

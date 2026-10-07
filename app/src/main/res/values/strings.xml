@@ -106,6 +106,11 @@
     <string name="floating_navigation_style_standard">Standard</string>
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
+    <string name="floating_navigation_style_liquid">Liquid Glass</string>
+    <string name="floating_navigation_liquid_mode">Glass finish</string>
+    <string name="floating_navigation_liquid_mode_summary">Choose a blurred or clearer glass look</string>
+    <string name="floating_navigation_liquid_mode_blur">Blurred</string>
+    <string name="floating_navigation_liquid_mode_clear">Clear</string>
     <string name="floating_navigation_content">Floating navigation content</string>
     <string name="floating_navigation_content_summary">Choose whether floating navigation items show icons only or icons with labels</string>
     <string name="floating_navigation_content_icon_only">Icons only</string>
@@ -115,6 +120,8 @@
     <string name="section_about_project">Project</string>
     <string name="about_project_home_title">Project homepage</string>
     <string name="about_project_home_summary">View source code and project information</string>
+    <string name="about_repo_unavailable_title">Project link unavailable</string>
+    <string name="about_repo_unavailable_summary">This limited test build does not provide the project link yet. It will be available here later.</string>
     <string name="about_open_source_license_title">Open-source license</string>
     <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">Third-party dependencies</string>
@@ -231,7 +238,6 @@
     <string name="diagnostics_filter_reset">Reset filters</string>
     <string name="diagnostics_filter_done">Done</string>
     <string name="diagnostics_filter_empty">No events match the current filters</string>
-    <string name="diagnostics_refresh">Refresh diagnostics</string>
     <string name="diagnostics_pull_to_refresh">Pull down to refresh</string>
     <string name="diagnostics_release_to_refresh">Release to refresh</string>
     <string name="diagnostics_refreshing">Refreshing</string>

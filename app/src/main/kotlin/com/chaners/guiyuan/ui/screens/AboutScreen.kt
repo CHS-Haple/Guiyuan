@@ -7,14 +7,18 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -30,12 +34,16 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
+private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val ABOUT_VALUE_SEPARATOR = "｜"
 
 private data class AboutDependency(
@@ -52,6 +60,7 @@ internal fun AboutScreen(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    var showRepoUnavailable by rememberSaveable { mutableStateOf(false) }
     val env by
         produceState(
             initialValue = RuntimeEnv.basic(),
@@ -113,7 +122,13 @@ internal fun AboutScreen(
                         iconRes = R.drawable.ic_material_symbol_folder_code,
                     )
                 },
-                onClick = { uriHandler.openUri(ABOUT_PROJECT_URL) },
+                onClick = {
+                    if (BuildConfig.REPO_LINK_ENABLED) {
+                        uriHandler.openUri(ABOUT_PROJECT_URL)
+                    } else {
+                        showRepoUnavailable = true
+                    }
+                },
             )
             ArrowPreference(
                 title = stringResource(R.string.about_open_source_license_title),
@@ -123,7 +138,11 @@ internal fun AboutScreen(
                         iconRes = R.drawable.ic_material_symbol_license,
                     )
                 },
-                onClick = { uriHandler.openUri(ABOUT_LICENSE_URL) },
+                onClick = {
+                    uriHandler.openUri(
+                        if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
+                    )
+                },
             )
             ArrowPreference(
                 title = stringResource(R.string.about_third_party_title),
@@ -234,6 +253,20 @@ internal fun AboutScreen(
             )
         }
     }
+
+    OverlayDialog(
+        title = stringResource(R.string.about_repo_unavailable_title),
+        summary = stringResource(R.string.about_repo_unavailable_summary),
+        show = showRepoUnavailable,
+        onDismissRequest = { showRepoUnavailable = false },
+    ) {
+        TextButton(
+            text = stringResource(R.string.confirm),
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+            onClick = { showRepoUnavailable = false },
+        )
+    }
 }
 
 @Composable
@@ -248,6 +281,18 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     version = miuixVersion,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
+                ),
+                AboutDependency(
+                    name = "AndroidLiquidGlass (Backdrop)",
+                    version = BuildConfig.BACKDROP_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/AndroidLiquidGlass",
+                ),
+                AboutDependency(
+                    name = "Kyant Shapes",
+                    version = BuildConfig.SHAPES_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kyant0/Shapes",
                 ),
                 AboutDependency(
                     name = "libxposed API",
@@ -291,16 +336,16 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         remember {
             listOf(
                 AboutDependency(
-                    name = "JUnit 4",
-                    version = BuildConfig.JUNIT_VERSION,
-                    license = "EPL-1.0",
-                    upstreamUrl = "https://github.com/junit-team/junit4",
-                ),
-                AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/gradle/gradle",
+                ),
+                AboutDependency(
+                    name = "JUnit 4",
+                    version = BuildConfig.JUNIT_VERSION,
+                    license = "EPL-1.0",
+                    upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
             )
         }

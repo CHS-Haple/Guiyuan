@@ -9,6 +9,8 @@ val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get(
 val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
+val backdropVersion = providers.gradleProperty("backdrop.version").get()
+val shapesVersion = providers.gradleProperty("shapes.version").get()
 val libxposedVersion = "102.0.0"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.1.2"
@@ -47,6 +49,8 @@ android {
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
         buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
+        buildConfigField("String", "BACKDROP_VERSION", "\"$backdropVersion\"")
+        buildConfigField("String", "SHAPES_VERSION", "\"$shapesVersion\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
@@ -82,6 +86,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
@@ -90,6 +95,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
@@ -108,6 +114,16 @@ android {
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
+        create("internal") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+            versionNameSuffix = "-internal"
+            buildConfigField("String", "BUILD_CHANNEL", "\"internal\"")
+            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
+            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", "false")
+        }
     }
 
     compileOptions {
@@ -118,7 +134,7 @@ android {
     packaging {
         resources {
             // Modern Xposed metadata is loaded directly by the framework and must survive
-            // optimized Canary/Release packaging even when dependency graphs change.
+            // optimized non-debug packaging even when dependency graphs change.
             merges += "META-INF/xposed/**"
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -139,5 +155,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
+    implementation("io.github.kyant0:backdrop:$backdropVersion")
+    implementation("io.github.kyant0:shapes:$shapesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
 }

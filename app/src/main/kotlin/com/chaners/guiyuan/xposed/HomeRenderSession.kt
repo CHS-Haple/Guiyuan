@@ -6,6 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import java.lang.ref.WeakReference
 
 internal object HomeRenderSession {

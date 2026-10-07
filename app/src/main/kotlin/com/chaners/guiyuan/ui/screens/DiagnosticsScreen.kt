@@ -66,7 +66,6 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
@@ -98,7 +97,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(false) }
+    var pullRefreshing by remember { mutableStateOf(true) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshGen by rememberSaveable { mutableIntStateOf(0) }
@@ -126,10 +125,10 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_refresh_complete),
         )
 
-    fun requestRefresh() {
+    fun requestRefresh(fromPull: Boolean = false) {
         if (loading) return
         loading = true
-        pullRefreshing = true
+        pullRefreshing = fromPull
         refreshGen += 1
     }
 
@@ -294,7 +293,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             DiagMenu(
                 title = menuTitle,
                 diagnosticsLevel = diagSettings.level,
-                refreshEnabled = !loading && !exportOpen,
                 canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
                 canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
                 canClear = snapshot != null && !viewCleared,
@@ -304,7 +302,6 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                         requestRefresh()
                     }
                 },
-                onRefresh = ::requestRefresh,
                 onScrollTop = {
                     scope.launch { listState.animateScrollToItem(0) }
                 },
@@ -322,14 +319,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
+        // Keep the MIUIX refresh host mounted from the first frame; swapping it after load flashes the page.
         pullToRefresh =
-            snapshot?.let {
-                SettingsPullToRefresh(
-                    refreshing = pullRefreshing,
-                    onRefresh = ::requestRefresh,
-                    texts = refreshTexts,
-                )
-            },
+            SettingsPullToRefresh(
+                refreshing = pullRefreshing,
+                onRefresh = { requestRefresh(fromPull = true) },
+                texts = refreshTexts,
+            ),
     ) {
         when {
             viewCleared -> {
@@ -341,13 +337,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 }
             }
             loading && snapshot == null -> {
-                item(key = "diagnostics-state-loading") {
-                    LogStateCard(
-                        text = stringResource(R.string.diagnostics_log_loading),
-                        loading = true,
-                        modifier = Modifier.animateItem(),
-                    )
-                }
+                // Initial capture is silent; explicit refresh actions own refresh feedback.
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {
@@ -604,12 +594,10 @@ private fun LogFilterMenu(
 private fun DiagMenu(
     title: String,
     diagnosticsLevel: DiagLevel,
-    refreshEnabled: Boolean,
     canScrollTop: Boolean,
     canScrollBottom: Boolean,
     canClear: Boolean,
     onDiagLevelChange: (DiagLevel) -> Unit,
-    onRefresh: () -> Unit,
     onScrollTop: () -> Unit,
     onScrollBottom: () -> Unit,
     onClear: () -> Unit,
@@ -646,11 +634,6 @@ private fun DiagMenu(
                             text = stringResource(R.string.diagnostics_mode_title),
                             summary = currentLevelLabel,
                             children = levelItems,
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_refresh),
-                            enabled = refreshEnabled,
-                            onClick = onRefresh,
                         ),
                     ),
             ),
@@ -797,7 +780,6 @@ private fun LogCard(
 @Composable
 private fun LogStateCard(
     text: String,
-    loading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -813,12 +795,6 @@ private fun LogStateCard(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (loading) {
-                InfiniteProgressIndicator(
-                    color = MiuixTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-            }
             Text(
                 text = text,
                 style = MiuixTheme.textStyles.body2,
