@@ -97,7 +97,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 
     var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(false) }
+    var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var reportBusy by rememberSaveable { mutableStateOf(false) }
@@ -131,7 +131,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             viewCleared = false
         } finally {
             loading = false
-            pullRefreshing = false
+            refreshing = false
         }
     }
 
@@ -141,10 +141,10 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         scope.launch { captureSnapshot() }
     }
 
-    fun refreshFromPull() {
+    fun refresh() {
         if (loading) return
         loading = true
-        pullRefreshing = true
+        refreshing = true
         scope.launch { captureSnapshot() }
     }
 
@@ -330,8 +330,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
         // Keep the MIUIX refresh host mounted from the first frame; swapping it after load flashes the page.
         pullToRefresh =
             SettingsPullToRefresh(
-                refreshing = pullRefreshing,
-                onRefresh = ::refreshFromPull,
+                refreshing = refreshing,
+                onRefresh = ::refresh,
                 texts = refreshTexts,
             ),
     ) {
