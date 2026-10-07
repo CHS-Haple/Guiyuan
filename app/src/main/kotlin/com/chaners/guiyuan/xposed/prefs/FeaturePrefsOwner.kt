@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.xposed
+package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import android.os.SystemClock
