@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Stable product line: Guiyuan 0.4.0 / Build 748 (`20261007-748`).
+- Stable product line: Guiyuan 0.4.0 / Build 749 (`20261007-749`).
 - Stable `main`: accepted 0.4.0 Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
@@ -44,7 +44,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final Control Center appearance.
 - Do not weaken exact restoration or fail-native behavior.
-- Keep version 0.4.0 / Build 748 unchanged unless a version/build change is explicitly part of the task.
+- Keep version 0.4.0 / Build 749 unchanged unless a version/build change is explicitly part of the task.
 
 ## Next
 

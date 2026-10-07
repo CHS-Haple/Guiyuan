@@ -72,6 +72,21 @@ internal fun AboutScreen(
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
+        overlay = {
+            OverlayDialog(
+                title = stringResource(R.string.about_repo_unavailable_title),
+                summary = stringResource(R.string.about_repo_unavailable_summary),
+                show = showRepoUnavailable,
+                onDismissRequest = { showRepoUnavailable = false },
+            ) {
+                TextButton(
+                    text = stringResource(R.string.confirm),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = { showRepoUnavailable = false },
+                )
+            }
+        },
     ) {
         Section(R.string.section_app) {
             BasicComponent(
@@ -254,19 +269,6 @@ internal fun AboutScreen(
         }
     }
 
-    OverlayDialog(
-        title = stringResource(R.string.about_repo_unavailable_title),
-        summary = stringResource(R.string.about_repo_unavailable_summary),
-        show = showRepoUnavailable,
-        onDismissRequest = { showRepoUnavailable = false },
-    ) {
-        TextButton(
-            text = stringResource(R.string.confirm),
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.textButtonColorsPrimary(),
-            onClick = { showRepoUnavailable = false },
-        )
-    }
 }
 
 @Composable
