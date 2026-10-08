@@ -22,11 +22,11 @@ internal data class DiagSnapshot(
             val env = RuntimeEnv.resolve(appCtx)
             val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read()
-            val entries =
+            val (entries, runtimeEvents) =
                 withContext(Dispatchers.Default) {
-                    log.sessionLines.map(DiagLogParser::parse)
+                    val lines = log.sessionLines
+                    lines.map(DiagLogParser::parse) to RuntimeEventSnapshot.fromLines(lines)
                 }
-            val runtimeEvents = RuntimeEventSnapshot.fromLines(log.sessionLines)
 
             return DiagSnapshot(
                 env = env,
