@@ -41,11 +41,8 @@ internal object BatteryNumberFollowerPolicy {
     private const val CHARGING_TARGET_REVEAL_START = 0.85f
     private const val CHARGING_TARGET_REVEAL_COMPLETE = 0.90f
 
-    private const val chargingHideStartProgress = 0f
     private val chargingHideEndProgress =
         firstProgressAtOrAboveRingLifetime(CHARGING_HIDE_COMPLETE_RING_LIFETIME)
-    private val chargingTargetRevealComplete =
-        CHARGING_TARGET_REVEAL_COMPLETE
 
     fun chargingVisibleFraction(
         progress: Float,
@@ -57,13 +54,13 @@ internal object BatteryNumberFollowerPolicy {
         val reveal =
             (
                 (progress.coerceIn(0f, 1f) - CHARGING_TARGET_REVEAL_START) /
-                    (chargingTargetRevealComplete - CHARGING_TARGET_REVEAL_START)
+                    (CHARGING_TARGET_REVEAL_COMPLETE - CHARGING_TARGET_REVEAL_START)
             ).coerceIn(0f, 1f)
         return smooth(reveal)
     }
 
     internal fun chargingSourceVisibleFraction(progress: Float): Float {
-        val ringLifetime = chargingRingLifetimeProgress(progress)
+        val ringLifetime = BatteryRingTransitionPolicy.transitionProgress(progress)
         return (
             1f -
                 ringLifetime /
@@ -86,26 +83,12 @@ internal object BatteryNumberFollowerPolicy {
         return smooth(hiddenTravel)
     }
 
-    internal fun chargingRingLifetimeProgress(progress: Float): Float =
-        BatteryRingTransitionPolicy.transitionProgress(progress)
-
-    internal fun chargingRingRemaining(progress: Float): Float =
-        BatteryRingTransitionPolicy.remainingFraction(
-            chargingRingLifetimeProgress(progress),
-        )
-
-    internal fun sourceHideWindow(): Pair<Float, Float> =
-        Pair(chargingHideStartProgress, chargingHideEndProgress)
-
-    internal fun targetRevealWindow(): Pair<Float, Float> =
-        Pair(CHARGING_TARGET_REVEAL_START, chargingTargetRevealComplete)
-
     private fun firstProgressAtOrAboveRingLifetime(threshold: Float): Float {
         var low = 0f
         var high = 1f
         repeat(12) {
             val mid = (low + high) / 2f
-            if (chargingRingLifetimeProgress(mid) >= threshold) {
+            if (BatteryRingTransitionPolicy.transitionProgress(mid) >= threshold) {
                 high = mid
             } else {
                 low = mid
