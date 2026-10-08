@@ -25,7 +25,10 @@ internal object DiagReport {
         val logLines = lines.takeLast(limit)
         val requested = level.name.lowercase()
         val diagnostics = runtimeEvents.component("diagnostics")
-        val effective = diagnostics?.fields?.get("level")
+        val effective =
+            diagnostics?.fields?.get("level")
+                ?: diagnostics?.state?.takeIf { it == "unavailable" || it == "disabled" }
+                ?: "not-observed"
         return buildString {
             appendLine("Guiyuan Diagnostic Report")
             appendLine()
@@ -47,7 +50,7 @@ internal object DiagReport {
             appendLine()
             appendLine("[Diagnostics state]")
             appendLine("requestedLevel=" + requested)
-            appendLine("runtimeLevel=" + (effective ?: "unavailable"))
+            appendLine("runtimeLevel=" + effective)
             appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
             appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
             appendLine()
