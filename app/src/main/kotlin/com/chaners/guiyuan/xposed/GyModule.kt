@@ -451,7 +451,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkSource.restoreHotReloadBindings(restored.bindings)
             SysUiNetworkSource.seedRestoredWifiState(
                 onEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                    if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
                         ::onNetworkPipelineEvent
                     } else {
                         null
@@ -870,6 +870,7 @@ class GyModule : XposedModule() {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
                 },
                 onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onNetworkPipelineEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { result ->
             refreshStatusIconObservation("network-source:" + source)
@@ -1622,6 +1623,7 @@ class GyModule : XposedModule() {
                     )
                 },
                 onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onTintSourceEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onSceneSourceEvent else null,
                 onKeyguardAodEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
@@ -2617,7 +2619,7 @@ class GyModule : XposedModule() {
             )
         }
 
-        if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
             SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
         }
 

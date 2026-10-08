@@ -43,6 +43,7 @@ internal object SysUiTintSource {
         classLoader: ClassLoader,
         onTintState: (TintUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val batteryClass =
             Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
@@ -85,37 +86,39 @@ internal object SysUiTintSource {
                                 percentField = percentField,
                                 onTintState = onTintState,
                             )
-                        probeBatteryIconAuthority(
-                            sourceView = sourceView,
-                            iconField = iconField,
-                            source = UPDATE_TINT_METHOD_NAME,
-                            onEvent = onEvent,
-                        )
-
-                        val shouldLog =
-                            synchronized(this) {
-                                firstEventLogged.put(sourceView, Unit) == null
-                            }
-                        if (shouldLog && state != null) {
-                            val darkIntensity =
-                                (chain.getArg(1) as? Number)?.toFloat()
-                                    ?: Float.NaN
-                            val lightColor =
-                                (chain.getArg(3) as? Number)?.toInt() ?: 0
-                            val darkColor =
-                                (chain.getArg(4) as? Number)?.toInt() ?: 0
-                            val useTint =
-                                chain.getArg(5) as? Boolean ?: false
-                            onEvent?.invoke(
-                                "tintSource receiver=" +
-                                    sourceView.javaClass.simpleName +
-                                    " batteryApplied=" + colorHex(state.appliedTint) +
-                                    " authority=battery-anchor-fallback" +
-                                    " intensity=" + darkIntensity +
-                                    " light=" + colorHex(lightColor) +
-                                    " dark=" + colorHex(darkColor) +
-                                    " useTint=" + useTint,
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            probeBatteryIconAuthority(
+                                sourceView = sourceView,
+                                iconField = iconField,
+                                source = UPDATE_TINT_METHOD_NAME,
+                                onEvent = onEvent,
                             )
+                            if (
+                                state != null &&
+                                synchronized(this) {
+                                    firstEventLogged.put(sourceView, Unit) == null
+                                }
+                            ) {
+                                val darkIntensity =
+                                    (chain.getArg(1) as? Number)?.toFloat()
+                                        ?: Float.NaN
+                                val lightColor =
+                                    (chain.getArg(3) as? Number)?.toInt() ?: 0
+                                val darkColor =
+                                    (chain.getArg(4) as? Number)?.toInt() ?: 0
+                                val useTint =
+                                    chain.getArg(5) as? Boolean ?: false
+                                onEvent(
+                                    "tintSource receiver=" +
+                                        sourceView.javaClass.simpleName +
+                                        " batteryApplied=" + colorHex(state.appliedTint) +
+                                        " authority=battery-anchor-fallback" +
+                                        " intensity=" + darkIntensity +
+                                        " light=" + colorHex(lightColor) +
+                                        " dark=" + colorHex(darkColor) +
+                                        " useTint=" + useTint,
+                                )
+                            }
                         }
 
                         result
@@ -136,12 +139,14 @@ internal object SysUiTintSource {
                             percentField = percentField,
                             onTintState = onTintState,
                         )
-                        probeBatteryIconAuthority(
-                            sourceView = sourceView,
-                            iconField = iconField,
-                            source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
-                            onEvent = onEvent,
-                        )
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            probeBatteryIconAuthority(
+                                sourceView = sourceView,
+                                iconField = iconField,
+                                source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
+                                onEvent = onEvent,
+                            )
+                        }
                         result
                     },
                 )
@@ -177,12 +182,8 @@ internal object SysUiTintSource {
         sourceView: View,
         iconField: Field,
         source: String,
-        onEvent: ((String) -> Unit)?,
+        onEvent: (String) -> Unit,
     ) {
-        if (onEvent == null) {
-            return
-        }
-
         val iconView =
             runCatching {
                 iconField.get(sourceView) as? View
@@ -228,7 +229,7 @@ internal object SysUiTintSource {
             return
         }
 
-        onEvent.invoke(
+        onEvent(
             "batteryIconProbe source=" + source +
                 " iconClass=" + iconView.javaClass.name +
                 " imageView=" + (iconView is ImageView) +

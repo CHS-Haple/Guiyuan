@@ -65,6 +65,7 @@ internal object SysUiPresentationRuntime {
         onKeyguardStatusIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
         onSceneEvent: ((String) -> Unit)?,
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
@@ -74,6 +75,7 @@ internal object SysUiPresentationRuntime {
                 classLoader = classLoader,
                 onTintState = onTintState,
                 onEvent = onTintEvent,
+                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             ).size
         val keyguardAodHooks =
             runCatching {
