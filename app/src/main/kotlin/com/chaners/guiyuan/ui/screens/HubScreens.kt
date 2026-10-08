@@ -168,7 +168,6 @@ internal fun FeaturesScreen(
                     )
                 }
             }
-
         },
     ) {
         Section(R.string.section_display_transition) {
@@ -196,7 +195,7 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCcTintTransition,
             )
-            }
+        }
         Section(R.string.section_layout_size) {
             OverlayDropdownPreference(
                 items = layoutOptions,
@@ -270,8 +269,7 @@ internal fun FeaturesScreen(
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
-
-            }
+        }
         Section(R.string.section_network) {
             SliderPreference(
                 value = visual.wifiScale,
@@ -383,7 +381,6 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
             )
-
         }
         Section(R.string.section_battery) {
             BatteryColorPreference(
@@ -517,8 +514,6 @@ internal fun FeaturesScreen(
                         visualRepo::setTopChargingIconFollowsBatteryColor,
                 )
             }
-
-
         }
         Section(R.string.section_management) {
             BasicComponent(
@@ -622,7 +617,6 @@ internal fun SettingsHubScreen(
                     onClick = { restartDialog = null },
                 )
             }
-
         },
     ) {
         Section(R.string.section_appearance_interaction) {
@@ -647,7 +641,7 @@ internal fun SettingsHubScreen(
                 checked = swipeBackEnabled,
                 onCheckedChange = onSwipeBackChange,
             )
-            }
+        }
         Section(R.string.section_app) {
             OverlayDropdownPreference(
                 items = languageOptions,
@@ -675,7 +669,6 @@ internal fun SettingsHubScreen(
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
             )
-
         }
         Section(R.string.section_diagnostics_maintenance) {
             ArrowPreference(
