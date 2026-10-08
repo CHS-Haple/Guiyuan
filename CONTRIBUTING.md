@@ -177,6 +177,14 @@ For Material Symbols:
 - use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
 - review neighboring glyphs in light and dark themes.
 
+### Version and build identity
+
+The external `versionName` changes only when a version promotion is explicitly requested. Internal Build identifies a **materially different installable APK**, not a commit, CI run, or byte-for-byte archive.
+
+Increment `buildId` and Android `versionCode` together when an APK changes meaningfully in behavior, visible UI/assets, compatibility, or another user-relevant property. Two APKs with no substantive difference may keep the same Build despite different Git SHAs or incidental binary/build variations.
+
+Do not bump Build for docs, governance, CI reruns, non-behavioral refactors, or rebuilds without a substantive APK change. Assign a fresh unique Build before distributing a materially changed APK; check parallel branches to avoid reusing a Build for different behavior. Keep the exact Git SHA in build evidence for source traceability.
+
 ## Git workflow
 
 Branch roles:
