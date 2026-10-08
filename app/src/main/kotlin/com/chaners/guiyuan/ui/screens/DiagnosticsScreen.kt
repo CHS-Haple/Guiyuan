@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -42,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +62,7 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -108,6 +111,7 @@ internal fun DiagnosticsScreen(
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
     var animateUpdates by remember { mutableStateOf(false) }
+    var enteringKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
     var loading by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -139,7 +143,15 @@ internal fun DiagnosticsScreen(
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
-            // Existing records on first load are not new log events.
+            val oldKeys = snapshot?.entries?.mapTo(hashSetOf()) { it.key }.orEmpty()
+            enteringKeys =
+                captured.entries
+                    .asSequence()
+                    .filter(::isRuntimeLog)
+                    .filter { it.key !in oldKeys }
+                    .take(MAX_EVENTS)
+                    .map { it.key }
+                    .toSet()
             animateUpdates = snapshot != null
             snapshot = captured
             onSnapshot(captured)
@@ -424,7 +436,21 @@ internal fun DiagnosticsScreen(
                     itemsIndexed(
                         items = visibleEntries,
                         key = { _, entry -> entry.key },
-                    ) { _, entry ->
+                    ) { index, entry ->
+                        var shown by rememberSaveable(entry.key) {
+                            mutableStateOf(entry.key !in enteringKeys)
+                        }
+                        LaunchedEffect(shown) {
+                            if (!shown) {
+                                delay(index.coerceAtMost(MAX_ENTRY_STAGGER) * ENTRY_STAGGER_MS)
+                                shown = true
+                            }
+                        }
+                        val opacity by animateFloatAsState(
+                            targetValue = if (shown) 1f else 0f,
+                            animationSpec = itemFade,
+                            label = "Log entry",
+                        )
                         LogCard(
                             context = context,
                             entry = entry,
@@ -438,11 +464,13 @@ internal fun DiagnosticsScreen(
                                     }
                             },
                             modifier =
-                                Modifier.animateItem(
-                                    fadeInSpec = itemFade,
-                                    placementSpec = if (animateUpdates) itemMove else null,
-                                    fadeOutSpec = itemFade,
-                                ),
+                                Modifier
+                                    .animateItem(
+                                        fadeInSpec = null,
+                                        placementSpec = if (animateUpdates) itemMove else null,
+                                        fadeOutSpec = itemFade,
+                                    )
+                                    .graphicsLayer { alpha = opacity },
                         )
                     }
                 }
@@ -468,6 +496,8 @@ internal fun DiagnosticsScreen(
 }
 
 private const val MAX_EVENTS = 40
+private const val MAX_ENTRY_STAGGER = 8
+private const val ENTRY_STAGGER_MS = 40L
 
 private const val LEVEL_INFO = 1 shl 0
 private const val LEVEL_WARN = 1 shl 1

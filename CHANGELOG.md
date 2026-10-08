@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
-- Diagnostics keeps cached logs visible, crossfades a cold-load placeholder into real entries with Folme, and preserves native MIUIX pull-to-refresh.
+- Diagnostics retains cached logs and MIUIX pull-to-refresh while real log entries fade in with a brief, bounded top-down Folme sequence instead of appearing together.
 - Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
 - First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
 - Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.
