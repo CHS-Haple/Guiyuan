@@ -87,6 +87,7 @@ internal fun BatteryColorPreference(
 ) {
     ArrowPreference(
         title = stringResource(R.string.battery_colors),
+        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_palette, enabled) },
         summary =
             stringResource(
                 R.string.battery_color_scheme_summary,

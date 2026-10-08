@@ -140,6 +140,7 @@ internal fun FeaturesScreen(
                 value = visual.wifiScale,
                 onValueChange = visualRepo::setWifiScale,
                 title = stringResource(R.string.wifi_size),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -156,6 +157,7 @@ internal fun FeaturesScreen(
                 value = visual.airplaneScale,
                 onValueChange = visualRepo::setAirplaneScale,
                 title = stringResource(R.string.airplane_size),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -172,6 +174,7 @@ internal fun FeaturesScreen(
                 value = visual.noSimScale,
                 onValueChange = visualRepo::setNoSimScale,
                 title = stringResource(R.string.no_sim_size),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -188,6 +191,7 @@ internal fun FeaturesScreen(
                 value = visual.mobileTypeScale,
                 onValueChange = visualRepo::setMobileTypeScale,
                 title = stringResource(R.string.mobile_type_size),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -211,6 +215,7 @@ internal fun FeaturesScreen(
                     visualRepo.setMobileTypeWeight(value.roundToInt())
                 },
                 title = stringResource(R.string.mobile_type_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                 valueText =
                     stringResource(
                         R.string.integer_value,
@@ -227,6 +232,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
                 summary = stringResource(R.string.mobile_follow_battery_color_summary),
                 checked = visual.mobileFollowsBatteryColor,
                 enabled = featureCfg.enabled,
@@ -234,6 +240,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.center_follow_battery_color),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
                 summary = stringResource(R.string.center_follow_battery_color_summary),
                 checked = visual.centerFollowsBatteryColor,
                 enabled = featureCfg.enabled,
@@ -252,6 +259,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_fill_follow_retract),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
                 summary = stringResource(R.string.battery_fill_follow_retract_summary),
                 checked = visual.fillFollowsRetract,
                 enabled = featureCfg.enabled,
@@ -259,6 +267,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled) },
                 summary = stringResource(R.string.battery_top_readout_summary),
                 checked = visual.showTopReadout,
                 enabled = featureCfg.enabled,
@@ -273,6 +282,7 @@ internal fun FeaturesScreen(
                     value = textUiScale,
                     onValueChange = visualRepo::setTopTextScale,
                     title = stringResource(R.string.battery_top_text_size),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                     valueText =
                         stringResource(
                             R.string.battery_top_scale_value,
@@ -298,6 +308,7 @@ internal fun FeaturesScreen(
                         visualRepo.setTopTextWeight(value.roundToInt())
                     },
                     title = stringResource(R.string.battery_top_text_weight),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                     valueText =
                         stringResource(
                             R.string.battery_top_weight_value,
@@ -314,6 +325,7 @@ internal fun FeaturesScreen(
                 )
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
                     checked = visual.topTextFollowsBatteryColor,
                     enabled = featureCfg.enabled,
@@ -323,6 +335,7 @@ internal fun FeaturesScreen(
 
             SwitchPreference(
                 title = stringResource(R.string.battery_charging_icon),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
                 summary = stringResource(R.string.battery_charging_icon_summary),
                 checked = visual.showTopChargingIcon,
                 enabled = featureCfg.enabled,
@@ -337,6 +350,7 @@ internal fun FeaturesScreen(
                     value = chargingIconUiScale,
                     onValueChange = visualRepo::setTopChargingIconScale,
                     title = stringResource(R.string.battery_top_charging_icon_size),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                     valueText =
                         stringResource(
                             R.string.battery_top_scale_value,
@@ -358,6 +372,7 @@ internal fun FeaturesScreen(
                 )
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
                     checked = visual.topChargingIconFollowsBatteryColor,
                     enabled = featureCfg.enabled,
@@ -371,6 +386,7 @@ internal fun FeaturesScreen(
         quaternaryContent = {
             BasicComponent(
                 title = stringResource(R.string.restore_feature_defaults),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
                 summary = stringResource(R.string.restore_feature_defaults_summary),
                 onClick = { showResetDialog = true },
             )
@@ -416,6 +432,7 @@ internal fun FeaturesScreen(
     ) {
         SwitchPreference(
             title = stringResource(R.string.keyguard_combined_status_title),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
             summary = stringResource(R.string.keyguard_combined_status_summary),
             checked = featureCfg.keyguard,
             enabled = featureCfg.enabled,
@@ -423,6 +440,7 @@ internal fun FeaturesScreen(
         )
         SwitchPreference(
             title = stringResource(R.string.aod_combined_status_title),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
             summary = stringResource(R.string.aod_combined_status_summary),
             checked = featureCfg.aod,
             enabled = featureCfg.enabled,
@@ -432,6 +450,7 @@ internal fun FeaturesScreen(
             items = layoutOptions,
             selectedIndex = visual.layout.ordinal,
             title = stringResource(R.string.content_layout_title),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
             summary = stringResource(R.string.content_layout_summary),
             showValue = true,
             enabled = featureCfg.enabled,
@@ -449,6 +468,7 @@ internal fun FeaturesScreen(
             value = topInfoVerticalOffsetUi,
             onValueChange = visualRepo::setTopOffsetY,
             title = stringResource(R.string.top_info_vertical_offset),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
             valueText =
                 stringResource(
                     R.string.battery_top_offset_value,
@@ -467,6 +487,7 @@ internal fun FeaturesScreen(
             value = visual.combinedScale,
             onValueChange = visualRepo::setCombinedScale,
             title = stringResource(R.string.combined_size),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
             valueText =
                 stringResource(
                     R.string.percent_value,
@@ -483,6 +504,7 @@ internal fun FeaturesScreen(
             value = visual.outerWeightScale,
             onValueChange = visualRepo::setOuterWeightScale,
             title = stringResource(R.string.outer_weight),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
             summary = stringResource(R.string.outer_weight_summary),
             valueText =
                 stringResource(
@@ -498,6 +520,7 @@ internal fun FeaturesScreen(
         )
         SwitchPreference(
             title = stringResource(R.string.control_center_tint_transition),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
             summary = stringResource(R.string.control_center_tint_transition_summary),
             checked = visual.ccTintTransition,
             enabled = featureCfg.enabled,
@@ -542,6 +565,11 @@ internal fun SettingsHubScreen(
                 items = languageOptions,
                 selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_language,
+                    )
+                },
                 summary = stringResource(R.string.language_summary),
                 showValue = true,
                 onSelectedIndexChange = { index ->
@@ -550,6 +578,11 @@ internal fun SettingsHubScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.hide_launcher_icon),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_visibility_off,
+                    )
+                },
                 summary = stringResource(R.string.hide_launcher_icon_summary),
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
@@ -559,16 +592,32 @@ internal fun SettingsHubScreen(
         tertiaryContent = {
             ArrowPreference(
                 title = stringResource(R.string.about_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_info,
+                    )
+                },
                 summary = stringResource(R.string.about_summary),
                 onClick = { onNavigate(AppRoute.About) },
             )
             ArrowPreference(
                 title = stringResource(R.string.diagnostics_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
+                    )
+                },
                 summary = stringResource(R.string.diagnostics_summary),
                 onClick = { onNavigate(AppRoute.Diagnostics) },
             )
             BasicComponent(
                 title = stringResource(R.string.restart_scope),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_restart_alt,
+                        enabled = !restartInProgress,
+                    )
+                },
                 summary = stringResource(R.string.restart_scope_summary),
                 enabled = !restartInProgress,
                 onClick = { restartDialog = RestartDialog.CONFIRM },
@@ -639,11 +688,21 @@ internal fun SettingsHubScreen(
     ) {
         ArrowPreference(
             title = stringResource(R.string.appearance_title),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_style,
+                )
+            },
             summary = stringResource(R.string.appearance_summary),
             onClick = { onNavigate(AppRoute.Appearance) },
         )
         SwitchPreference(
             title = stringResource(R.string.swipe_back),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_swipe,
+                )
+            },
             summary = stringResource(R.string.swipe_back_summary),
             checked = swipeBackEnabled,
             onCheckedChange = onSwipeBackChange,
