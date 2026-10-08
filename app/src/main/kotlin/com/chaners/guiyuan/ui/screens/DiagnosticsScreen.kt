@@ -9,11 +9,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +66,7 @@ import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -360,26 +363,64 @@ internal fun DiagnosticsScreen(
             }
             snapshot == null || visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
-                    Text(
-                        text =
-                            if (snapshot == null) {
-                                stringResource(R.string.diagnostics_events_loading)
-                            } else {
-                                stringResource(
-                                    R.string.diagnostics_events_summary,
-                                    visibleEntries.size,
-                                )
-                            },
+                    Row(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp),
-                        style = MiuixTheme.textStyles.subtitle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
+                                .heightIn(min = 32.dp)
+                                .padding(horizontal = 20.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier.size(20.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (snapshot == null || loading) {
+                                CircularProgressIndicator(size = 18.dp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Crossfade(
+                            targetState =
+                                when {
+                                    snapshot == null -> 0
+                                    loading -> 1
+                                    else -> 2
+                                },
+                            animationSpec = itemFade,
+                            label = "Diagnostic summary",
+                        ) { state ->
+                            Text(
+                                text =
+                                    when (state) {
+                                        0 -> stringResource(R.string.diagnostics_events_loading)
+                                        1 -> stringResource(R.string.diagnostics_log_loading)
+                                        else ->
+                                            stringResource(
+                                                R.string.diagnostics_events_summary,
+                                                visibleEntries.size,
+                                            )
+                                    },
+                                style = MiuixTheme.textStyles.subtitle,
+                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                            )
+                        }
+                    }
                 }
-                if (snapshot != null) {
+                if (snapshot == null) {
+                    repeat(4) { index ->
+                        item(key = "diagnostics-placeholder-$index") {
+                            LogPlaceholder(
+                                modifier =
+                                    Modifier.animateItem(
+                                        fadeInSpec = itemFade,
+                                        placementSpec = null,
+                                        fadeOutSpec = itemFade,
+                                    ),
+                            )
+                        }
+                    }
+                } else {
                     itemsIndexed(
                         items = visibleEntries,
                         key = { _, entry -> entry.key },
@@ -397,15 +438,11 @@ internal fun DiagnosticsScreen(
                                     }
                             },
                             modifier =
-                                if (animateUpdates) {
-                                    Modifier.animateItem(
-                                        fadeInSpec = itemFade,
-                                        placementSpec = itemMove,
-                                        fadeOutSpec = itemFade,
-                                    )
-                                } else {
-                                    Modifier
-                                },
+                                Modifier.animateItem(
+                                    fadeInSpec = itemFade,
+                                    placementSpec = if (animateUpdates) itemMove else null,
+                                    fadeOutSpec = itemFade,
+                                ),
                         )
                     }
                 }
@@ -806,6 +843,41 @@ private fun LogCard(
                         LogDetail(label = key, value = value)
                     }
             }
+        }
+    }
+}
+
+@Composable
+private fun LogPlaceholder(modifier: Modifier = Modifier) {
+    val shade = MiuixTheme.colorScheme.secondaryContainerVariant.copy(alpha = 0.5f)
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 6.dp)
+                .heightIn(min = 86.dp),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                Modifier
+                    .fillMaxWidth(0.35f)
+                    .height(12.dp)
+                    .background(shade, RoundedCornerShape(5.dp)),
+            )
+            Box(
+                Modifier
+                    .fillMaxWidth(0.72f)
+                    .height(14.dp)
+                    .background(shade, RoundedCornerShape(5.dp)),
+            )
+            Box(
+                Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(11.dp)
+                    .background(shade, RoundedCornerShape(5.dp)),
+            )
         }
     }
 }
