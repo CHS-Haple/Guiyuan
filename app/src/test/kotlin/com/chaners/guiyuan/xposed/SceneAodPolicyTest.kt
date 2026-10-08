@@ -7,15 +7,7 @@ import org.junit.Test
 
 class SceneAodPolicyTest {
     @Test
-    fun keyguardAndStableAodAreIndependentProjectedCandidates() {
-        val keyguard = ScenePolicy.capability(StatusScene.KEYGUARD)
-        assertEquals(RenderMode.PROJECTED, keyguard.renderMode)
-        assertEquals(MotionOwnership.SYSTEM_UI, keyguard.motionOwnership)
-
-        val aod = ScenePolicy.capability(StatusScene.AOD)
-        assertEquals(RenderMode.PROJECTED, aod.renderMode)
-        assertEquals(MotionOwnership.SYSTEM_UI, aod.motionOwnership)
-
+    fun aodProjectionRequiresEnabledStableOrPrearmedTarget() {
         assertTrue(
             ScenePolicy.aodProjectionEligible(
                 featureEnabled = true,

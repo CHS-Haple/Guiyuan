@@ -13,69 +13,13 @@ internal data class TransitionSourceWitness(
     val representedSlots: Set<String>,
 )
 
-internal enum class StatusScene {
-    HOME_STABLE,
-    NOTIFICATION_SHADE_TRANSITION,
-    CONTROL_CENTER,
-    KEYGUARD,
-    AOD,
-}
-
 internal enum class SourceScene {
     HOME,
     KEYGUARD,
     UNKNOWN,
 }
 
-internal data class SceneCapability(
-    val scene: StatusScene,
-    val renderMode: RenderMode,
-    val motionOwnership: MotionOwnership,
-)
-
 internal object ScenePolicy {
-    private val capabilities =
-        mapOf(
-            StatusScene.HOME_STABLE to
-                SceneCapability(
-                    scene = StatusScene.HOME_STABLE,
-                    renderMode = RenderMode.PROJECTED,
-                    motionOwnership = MotionOwnership.NONE,
-                ),
-            StatusScene.NOTIFICATION_SHADE_TRANSITION to
-                SceneCapability(
-                    scene = StatusScene.NOTIFICATION_SHADE_TRANSITION,
-                    renderMode = RenderMode.NATIVE_ONLY,
-                    motionOwnership = MotionOwnership.SYSTEM_UI,
-                ),
-            StatusScene.CONTROL_CENTER to
-                SceneCapability(
-                    scene = StatusScene.CONTROL_CENTER,
-                    renderMode = RenderMode.NATIVE_ONLY,
-                    motionOwnership = MotionOwnership.SYSTEM_UI,
-                ),
-            StatusScene.KEYGUARD to
-                SceneCapability(
-                    scene = StatusScene.KEYGUARD,
-                    renderMode = RenderMode.PROJECTED,
-                    motionOwnership = MotionOwnership.SYSTEM_UI,
-                ),
-            StatusScene.AOD to
-                SceneCapability(
-                    scene = StatusScene.AOD,
-                    renderMode = RenderMode.PROJECTED,
-                    motionOwnership = MotionOwnership.SYSTEM_UI,
-                ),
-        )
-
-    fun capability(scene: StatusScene): SceneCapability =
-        requireNotNull(capabilities[scene]) {
-            "Missing scene capability: $scene"
-        }
-
-    fun all(): List<SceneCapability> =
-        StatusScene.entries.map(::capability)
-
     fun shouldAcquireKeyguardCcLease(
         sourceScene: SourceScene,
         keyguardPresentationReady: Boolean,
@@ -142,9 +86,7 @@ internal object ScenePolicy {
     ): Boolean =
         featureEnabled &&
             aodEnabled &&
-            (stableAod || homeTransitionPrearm) &&
-            capability(StatusScene.AOD).renderMode ==
-                RenderMode.PROJECTED
+            (stableAod || homeTransitionPrearm)
 
     enum class KeyguardAodProjection {
         NATIVE,
@@ -599,15 +541,8 @@ internal object ScenePolicy {
     ): Boolean =
         featureEnabled &&
             when (sourceScene) {
-            SourceScene.HOME ->
-                capability(StatusScene.HOME_STABLE).renderMode ==
-                    RenderMode.PROJECTED
-
-            SourceScene.KEYGUARD ->
-                keyguardEnabled &&
-                    capability(StatusScene.KEYGUARD).renderMode ==
-                    RenderMode.PROJECTED
-
-            SourceScene.UNKNOWN -> false
-        }
+                SourceScene.HOME -> true
+                SourceScene.KEYGUARD -> keyguardEnabled
+                SourceScene.UNKNOWN -> false
+            }
 }

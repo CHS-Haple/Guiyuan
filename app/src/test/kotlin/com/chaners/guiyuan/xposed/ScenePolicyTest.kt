@@ -7,46 +7,6 @@ import org.junit.Test
 
 class ScenePolicyTest {
     @Test
-    fun everySceneHasExactlyOneCapability() {
-        val capabilities = ScenePolicy.all()
-
-        assertEquals(StatusScene.entries.size, capabilities.size)
-        assertEquals(
-            StatusScene.entries.toSet(),
-            capabilities.map { it.scene }.toSet(),
-        )
-    }
-
-    @Test
-    fun homeStableUsesProjectedOverlayWithoutNativeSlotMutation() {
-        val home = ScenePolicy.capability(StatusScene.HOME_STABLE)
-
-        assertEquals(RenderMode.PROJECTED, home.renderMode)
-        assertEquals(MotionOwnership.NONE, home.motionOwnership)
-    }
-
-    @Test
-    fun nativeShadeAndControlCenterKeepNativeVisuals() {
-        assertEquals(
-            RenderMode.NATIVE_ONLY,
-            ScenePolicy.capability(StatusScene.NOTIFICATION_SHADE_TRANSITION).renderMode,
-        )
-        assertEquals(
-            RenderMode.NATIVE_ONLY,
-            ScenePolicy.capability(StatusScene.CONTROL_CENTER).renderMode,
-        )
-    }
-
-    @Test
-    fun chargingIsNotModeledAsAnIndependentScene() {
-        assertTrue(
-            StatusScene.entries.none {
-                it.name.contains("CHARG", ignoreCase = true)
-            },
-        )
-    }
-
-    @Test
     fun retainedTransitionSourceWitnessSurvivesPresentationHandoff() {
         assertTrue(
             ScenePolicy.retainedTransitionSourceWitnessAvailable(
