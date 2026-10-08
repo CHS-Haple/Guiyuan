@@ -15,6 +15,8 @@ class VisualCfgTest {
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
         assertEquals(900, settings.mobileTypeWeight)
         assertEquals(true, settings.ccTintTransition)
+        assertEquals(true, settings.fillFollowsRetract)
+        assertEquals(false, settings.showTopReadout)
 
         val normalized =
             settings.copy(
@@ -151,6 +153,7 @@ class VisualCfgTest {
             topOffsetYRaw(0f),
             0.0001f,
         )
+        assertEquals(8f, topOffsetYRaw(5f), 0.0001f)
     }
 
     @Test

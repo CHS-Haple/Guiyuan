@@ -910,7 +910,7 @@ private fun LogLevelTag(level: LogLevel) {
                 text = levelLabel(level),
                 style =
                     MiuixTheme.textStyles.footnote2.copy(
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                     ),
                 color = contentColor,
                 maxLines = 1,

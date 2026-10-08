@@ -80,10 +80,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -132,10 +130,147 @@ internal fun FeaturesScreen(
 
     HubPage(
         title = stringResource(R.string.features_title),
-        sectionTitle = stringResource(R.string.section_global),
         bottomContentPadding = bottomContentPadding,
-        secondarySectionTitle = stringResource(R.string.section_network),
-        secondaryContent = {
+        overlay = {
+            BatteryColorBottomSheet(
+                show = showBatteryColorSheet,
+                library = schemeLibrary,
+                repository = schemeRepo,
+                onDismiss = {
+                    showBatteryColorSheet = false
+                },
+            )
+            OverlayDialog(
+                title = stringResource(R.string.restore_feature_defaults),
+                summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
+                show = showResetDialog,
+                onDismissRequest = { showResetDialog = false },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        onClick = { showResetDialog = false },
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.restore),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        onClick = {
+                            showResetDialog = false
+                            featureRepo.reset()
+                            visualRepo.resetToDefaults()
+                        },
+                    )
+                }
+            }
+        },
+    ) {
+        Section(R.string.section_display_transition) {
+            SwitchPreference(
+                title = stringResource(R.string.keyguard_combined_status_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
+                summary = stringResource(R.string.keyguard_combined_status_summary),
+                checked = featureCfg.keyguard,
+                enabled = featureCfg.enabled,
+                onCheckedChange = featureRepo::setKeyguard,
+            )
+            SwitchPreference(
+                title = stringResource(R.string.aod_combined_status_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
+                summary = stringResource(R.string.aod_combined_status_summary),
+                checked = featureCfg.aod,
+                enabled = featureCfg.enabled,
+                onCheckedChange = featureRepo::setAod,
+            )
+            SwitchPreference(
+                title = stringResource(R.string.control_center_tint_transition),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
+                summary = stringResource(R.string.control_center_tint_transition_summary),
+                checked = visual.ccTintTransition,
+                enabled = featureCfg.enabled,
+                onCheckedChange = visualRepo::setCcTintTransition,
+            )
+        }
+        Section(R.string.section_layout_size) {
+            OverlayDropdownPreference(
+                items = layoutOptions,
+                selectedIndex = visual.layout.ordinal,
+                title = stringResource(R.string.content_layout_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
+                summary = stringResource(R.string.content_layout_summary),
+                showValue = true,
+                enabled = featureCfg.enabled,
+                onSelectedIndexChange = { index ->
+                    ContentLayout.entries
+                        .getOrNull(index)
+                        ?.let(visualRepo::setLayout)
+                },
+            )
+            SliderPreference(
+                value = visual.combinedScale,
+                onValueChange = visualRepo::setCombinedScale,
+                title = stringResource(R.string.combined_size),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
+                valueText =
+                    stringResource(
+                        R.string.percent_value,
+                        (visual.combinedScale * 100f).roundToInt(),
+                    ),
+                valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
+                steps = 7,
+                showKeyPoints = true,
+                keyPoints = listOf(COMBINED_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            SliderPreference(
+                value = visual.outerWeightScale,
+                onValueChange = visualRepo::setOuterWeightScale,
+                title = stringResource(R.string.outer_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                summary = stringResource(R.string.outer_weight_summary),
+                valueText =
+                    stringResource(
+                        R.string.percent_value,
+                        (visual.outerWeightScale * 100f).roundToInt(),
+                    ),
+                valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
+                steps = 11,
+                showKeyPoints = true,
+                keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            val topInfoVerticalOffsetUi =
+                topOffsetYUi(
+                    visual.topOffsetY,
+                )
+            SliderPreference(
+                value = topInfoVerticalOffsetUi,
+                onValueChange = visualRepo::setTopOffsetY,
+                title = stringResource(R.string.top_info_vertical_offset),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
+                valueText =
+                    stringResource(
+                        R.string.battery_top_offset_value,
+                        topInfoVerticalOffsetUi.roundToInt(),
+                    ),
+                valueRange =
+                    BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
+                        BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                steps = 19,
+                showKeyPoints = true,
+                keyPoints = listOf(0f),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+        }
+        Section(R.string.section_network) {
             SliderPreference(
                 value = visual.wifiScale,
                 onValueChange = visualRepo::setWifiScale,
@@ -246,9 +381,8 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
             )
-        },
-        tertiarySectionTitle = stringResource(R.string.section_battery),
-        tertiaryContent = {
+        }
+        Section(R.string.section_battery) {
             BatteryColorPreference(
                 library = schemeLibrary,
                 enabled = featureCfg.enabled,
@@ -380,152 +514,16 @@ internal fun FeaturesScreen(
                         visualRepo::setTopChargingIconFollowsBatteryColor,
                 )
             }
-
-        },
-        quaternarySectionTitle = stringResource(R.string.section_management),
-        quaternaryContent = {
+        }
+        Section(R.string.section_management) {
             BasicComponent(
                 title = stringResource(R.string.restore_feature_defaults),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
                 summary = stringResource(R.string.restore_feature_defaults_summary),
                 onClick = { showResetDialog = true },
             )
-        },
-        overlay = {
-            BatteryColorBottomSheet(
-                show = showBatteryColorSheet,
-                library = schemeLibrary,
-                repository = schemeRepo,
-                onDismiss = {
-                    showBatteryColorSheet = false
-                },
-            )
-            OverlayDialog(
-                title = stringResource(R.string.restore_feature_defaults),
-                summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
-                show = showResetDialog,
-                onDismissRequest = { showResetDialog = false },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        onClick = { showResetDialog = false },
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
-                        text = stringResource(R.string.restore),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                        onClick = {
-                            showResetDialog = false
-                            featureRepo.reset()
-                            visualRepo.resetToDefaults()
-                        },
-                    )
-                }
-            }
-        },
-    ) {
-        SwitchPreference(
-            title = stringResource(R.string.keyguard_combined_status_title),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
-            summary = stringResource(R.string.keyguard_combined_status_summary),
-            checked = featureCfg.keyguard,
-            enabled = featureCfg.enabled,
-            onCheckedChange = featureRepo::setKeyguard,
-        )
-        SwitchPreference(
-            title = stringResource(R.string.aod_combined_status_title),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
-            summary = stringResource(R.string.aod_combined_status_summary),
-            checked = featureCfg.aod,
-            enabled = featureCfg.enabled,
-            onCheckedChange = featureRepo::setAod,
-        )
-        OverlayDropdownPreference(
-            items = layoutOptions,
-            selectedIndex = visual.layout.ordinal,
-            title = stringResource(R.string.content_layout_title),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
-            summary = stringResource(R.string.content_layout_summary),
-            showValue = true,
-            enabled = featureCfg.enabled,
-            onSelectedIndexChange = { index ->
-                ContentLayout.entries
-                    .getOrNull(index)
-                    ?.let(visualRepo::setLayout)
-            },
-        )
-        val topInfoVerticalOffsetUi =
-            topOffsetYUi(
-                visual.topOffsetY,
-            )
-        SliderPreference(
-            value = topInfoVerticalOffsetUi,
-            onValueChange = visualRepo::setTopOffsetY,
-            title = stringResource(R.string.top_info_vertical_offset),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
-            valueText =
-                stringResource(
-                    R.string.battery_top_offset_value,
-                    topInfoVerticalOffsetUi.roundToInt(),
-                ),
-            valueRange =
-                BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
-                    BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
-            steps = 19,
-            showKeyPoints = true,
-            keyPoints = listOf(0f),
-            magnetThreshold = 0.035f,
-            enabled = featureCfg.enabled,
-        )
-        SliderPreference(
-            value = visual.combinedScale,
-            onValueChange = visualRepo::setCombinedScale,
-            title = stringResource(R.string.combined_size),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-            valueText =
-                stringResource(
-                    R.string.percent_value,
-                    (visual.combinedScale * 100f).roundToInt(),
-                ),
-            valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
-            steps = 7,
-            showKeyPoints = true,
-            keyPoints = listOf(COMBINED_SCALE_DEFAULT),
-            magnetThreshold = 0.035f,
-            enabled = featureCfg.enabled,
-        )
-        SliderPreference(
-            value = visual.outerWeightScale,
-            onValueChange = visualRepo::setOuterWeightScale,
-            title = stringResource(R.string.outer_weight),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-            summary = stringResource(R.string.outer_weight_summary),
-            valueText =
-                stringResource(
-                    R.string.percent_value,
-                    (visual.outerWeightScale * 100f).roundToInt(),
-                ),
-            valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
-            steps = 11,
-            showKeyPoints = true,
-            keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
-            magnetThreshold = 0.035f,
-            enabled = featureCfg.enabled,
-        )
-        SwitchPreference(
-            title = stringResource(R.string.control_center_tint_transition),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
-            summary = stringResource(R.string.control_center_tint_transition_summary),
-            checked = visual.ccTintTransition,
-            enabled = featureCfg.enabled,
-            onCheckedChange = visualRepo::setCcTintTransition,
-        )
+
+        }
     }
 }
 
@@ -557,72 +555,7 @@ internal fun SettingsHubScreen(
 
     HubPage(
         title = stringResource(R.string.settings_title),
-        sectionTitle = stringResource(R.string.section_appearance_interaction),
         bottomContentPadding = bottomContentPadding,
-        secondarySectionTitle = stringResource(R.string.section_app),
-        secondaryContent = {
-            OverlayDropdownPreference(
-                items = languageOptions,
-                selectedIndex = lang.ordinal,
-                title = stringResource(R.string.language_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_language,
-                    )
-                },
-                summary = stringResource(R.string.language_summary),
-                showValue = true,
-                onSelectedIndexChange = { index ->
-                    AppLang.entries.getOrNull(index)?.let(onLangChange)
-                },
-            )
-            SwitchPreference(
-                title = stringResource(R.string.hide_launcher_icon),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_visibility_off,
-                    )
-                },
-                summary = stringResource(R.string.hide_launcher_icon_summary),
-                checked = iconHidden,
-                onCheckedChange = onIconHiddenChange,
-            )
-        },
-        tertiarySectionTitle = stringResource(R.string.section_diagnostics_maintenance),
-        tertiaryContent = {
-            ArrowPreference(
-                title = stringResource(R.string.about_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_info,
-                    )
-                },
-                summary = stringResource(R.string.about_summary),
-                onClick = { onNavigate(AppRoute.About) },
-            )
-            ArrowPreference(
-                title = stringResource(R.string.diagnostics_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
-                    )
-                },
-                summary = stringResource(R.string.diagnostics_summary),
-                onClick = { onNavigate(AppRoute.Diagnostics) },
-            )
-            BasicComponent(
-                title = stringResource(R.string.restart_scope),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_restart_alt,
-                        enabled = !restartInProgress,
-                    )
-                },
-                summary = stringResource(R.string.restart_scope_summary),
-                enabled = !restartInProgress,
-                onClick = { restartDialog = RestartDialog.CONFIRM },
-            )
-        },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.restart_scope),
@@ -686,27 +619,92 @@ internal fun SettingsHubScreen(
             }
         },
     ) {
-        ArrowPreference(
-            title = stringResource(R.string.appearance_title),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_style,
-                )
-            },
-            summary = stringResource(R.string.appearance_summary),
-            onClick = { onNavigate(AppRoute.Appearance) },
-        )
-        SwitchPreference(
-            title = stringResource(R.string.swipe_back),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_swipe,
-                )
-            },
-            summary = stringResource(R.string.swipe_back_summary),
-            checked = swipeBackEnabled,
-            onCheckedChange = onSwipeBackChange,
-        )
+        Section(R.string.section_appearance_interaction) {
+            ArrowPreference(
+                title = stringResource(R.string.appearance_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_style,
+                    )
+                },
+                summary = stringResource(R.string.appearance_summary),
+                onClick = { onNavigate(AppRoute.Appearance) },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.swipe_back),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_swipe,
+                    )
+                },
+                summary = stringResource(R.string.swipe_back_summary),
+                checked = swipeBackEnabled,
+                onCheckedChange = onSwipeBackChange,
+            )
+        }
+        Section(R.string.section_app) {
+            OverlayDropdownPreference(
+                items = languageOptions,
+                selectedIndex = lang.ordinal,
+                title = stringResource(R.string.language_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_language,
+                    )
+                },
+                summary = stringResource(R.string.language_summary),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    AppLang.entries.getOrNull(index)?.let(onLangChange)
+                },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.hide_launcher_icon),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_visibility_off,
+                    )
+                },
+                summary = stringResource(R.string.hide_launcher_icon_summary),
+                checked = iconHidden,
+                onCheckedChange = onIconHiddenChange,
+            )
+        }
+        Section(R.string.section_diagnostics_maintenance) {
+            ArrowPreference(
+                title = stringResource(R.string.about_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_info,
+                    )
+                },
+                summary = stringResource(R.string.about_summary),
+                onClick = { onNavigate(AppRoute.About) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.diagnostics_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
+                    )
+                },
+                summary = stringResource(R.string.diagnostics_summary),
+                onClick = { onNavigate(AppRoute.Diagnostics) },
+            )
+            BasicComponent(
+                title = stringResource(R.string.restart_scope),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_restart_alt,
+                        enabled = !restartInProgress,
+                    )
+                },
+                summary = stringResource(R.string.restart_scope_summary),
+                enabled = !restartInProgress,
+                onClick = { restartDialog = RestartDialog.CONFIRM },
+            )
+
+        }
     }
 }
 
@@ -727,16 +725,9 @@ internal fun AnimatedPreferenceGroup(
 @Composable
 private fun HubPage(
     title: String,
-    sectionTitle: String,
     bottomContentPadding: Dp,
-    secondarySectionTitle: String? = null,
-    secondaryContent: (@Composable ColumnScope.() -> Unit)? = null,
-    tertiarySectionTitle: String? = null,
-    tertiaryContent: (@Composable ColumnScope.() -> Unit)? = null,
-    quaternarySectionTitle: String? = null,
-    quaternaryContent: (@Composable ColumnScope.() -> Unit)? = null,
     overlay: @Composable () -> Unit = {},
-    content: @Composable ColumnScope.() -> Unit,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
@@ -771,53 +762,8 @@ private fun HubPage(
                     outerBottomPadding = bottomContentPadding,
                     extraBottom = 12.dp,
                 ),
-            ) {
-                item {
-                    SmallTitle(sectionTitle)
-                    Card(
-                        modifier = Modifier
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp),
-                        content = content,
-                    )
-                }
-
-                if (secondarySectionTitle != null && secondaryContent != null) {
-                    item {
-                        SmallTitle(secondarySectionTitle)
-                        Card(
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                            content = secondaryContent,
-                        )
-                    }
-                }
-
-                if (tertiarySectionTitle != null && tertiaryContent != null) {
-                    item {
-                        SmallTitle(tertiarySectionTitle)
-                        Card(
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                            content = tertiaryContent,
-                        )
-                    }
-                }
-
-                if (quaternarySectionTitle != null && quaternaryContent != null) {
-                    item {
-                        SmallTitle(quaternarySectionTitle)
-                        Card(
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                            content = quaternaryContent,
-                        )
-                    }
-                }
-            }
+                content = content,
+            )
         }
 
         overlay()

@@ -8,10 +8,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+internal const val FEATURE_KEYGUARD_DEFAULT = true
+internal const val FEATURE_AOD_DEFAULT = true
+
 internal data class FeatureCfg(
     val enabled: Boolean = true,
-    val keyguard: Boolean = false,
-    val aod: Boolean = false,
+    val keyguard: Boolean = FEATURE_KEYGUARD_DEFAULT,
+    val aod: Boolean = FEATURE_AOD_DEFAULT,
 )
 
 internal class FeatureRepo(context: Context) {
@@ -44,8 +47,8 @@ internal class FeatureRepo(context: Context) {
     fun current(): FeatureCfg =
         FeatureCfg(
             enabled = prefs.getBoolean(FEATURE_ENABLED_KEY, true),
-            keyguard = prefs.getBoolean(FEATURE_KEYGUARD_KEY, false),
-            aod = prefs.getBoolean(FEATURE_AOD_KEY, false),
+            keyguard = prefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
+            aod = prefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
         )
 
     fun setEnabled(enabled: Boolean) {
