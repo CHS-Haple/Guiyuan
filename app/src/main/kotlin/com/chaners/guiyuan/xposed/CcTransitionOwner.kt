@@ -265,6 +265,9 @@ internal object CcTransitionOwner {
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
+        // Main-thread render scratch; returned geometries remain independent.
+        private val sampleMatrix = Matrix()
+        private val sampleValues = FloatArray(9)
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -528,8 +531,8 @@ internal object CcTransitionOwner {
                             root = rootView,
                         ) ?: return
                     CcTransitionPolicy.composeSourceGeometry(
-                        positionAuthority = sourcePositionSample.geometry,
-                        basisAuthority = sourceBasisSample.geometry,
+                        positionAuthority = sourcePositionSample,
+                        basisAuthority = sourceBasisSample,
                     )
                 } else {
                     null
@@ -549,7 +552,7 @@ internal object CcTransitionOwner {
                     sample(
                         view = fakeStatusIcons,
                         root = rootView,
-                    )?.geometry?.let { fullCurrentCarrier ->
+                    )?.let { fullCurrentCarrier ->
                         val currentCarrier =
                             CcTransitionPolicy.endAnchoredMotionCarrierGeometry(
                                 carrierGeometry = fullCurrentCarrier,
@@ -2224,7 +2227,7 @@ internal object CcTransitionOwner {
                 if (snapshot != null && visualSample != null) {
                     val envelope = snapshot.envelope
                     CcTransitionPolicy.componentGeometry(
-                        parentGeometry = visualSample.geometry,
+                        parentGeometry = visualSample,
                         parentWidth = visualView.width,
                         parentHeight = visualView.height,
                         bounds =
@@ -2251,7 +2254,7 @@ internal object CcTransitionOwner {
                     return resolvedTargetOpticalBounds
                         ?.let { bounds ->
                             CcTransitionPolicy.componentGeometry(
-                                parentGeometry = opticalSample.geometry,
+                                parentGeometry = opticalSample,
                                 parentWidth = opticalView.width,
                                 parentHeight = opticalView.height,
                                 bounds =
@@ -2263,7 +2266,7 @@ internal object CcTransitionOwner {
                                     ),
                             )
                         }
-                        ?: opticalSample.geometry
+                        ?: opticalSample
                 }
 
                 syntheticOpticalGeometry(
@@ -2314,11 +2317,11 @@ internal object CcTransitionOwner {
                         contentBounds
                     }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = slotSample.geometry,
+                parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
                 bounds = targetBounds,
-            ) ?: slotSample.geometry
+            ) ?: slotSample
         }
 
         private fun mobileTargetBars(
@@ -2382,7 +2385,7 @@ internal object CcTransitionOwner {
                     )
                 }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = imageSample.geometry,
+                parentGeometry = imageSample,
                 parentWidth = image.width,
                 parentHeight = image.height,
                 bounds = localBounds,
@@ -2445,7 +2448,7 @@ internal object CcTransitionOwner {
                     )
                 }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = slotSample.geometry,
+                parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
                 bounds = localBounds,
@@ -3121,29 +3124,26 @@ internal object CcTransitionOwner {
         private fun sample(
             view: View,
             root: View,
-        ): Sample? {
+        ): FloatArray? {
             if (!view.isAttachedToWindow || view.width <= 0 || view.height <= 0) {
                 return null
             }
-            val matrix = Matrix()
-            view.transformMatrixToGlobal(matrix)
-            root.transformMatrixToLocal(matrix)
-            val values = FloatArray(9)
-            matrix.getValues(values)
-            return Sample(
-                geometry =
-                    floatArrayOf(
-                        ((values[Matrix.MSCALE_X] * view.width) +
-                            (values[Matrix.MSKEW_X] * view.height)) / 2f +
-                            values[Matrix.MTRANS_X],
-                        ((values[Matrix.MSKEW_Y] * view.width) +
-                            (values[Matrix.MSCALE_Y] * view.height)) / 2f +
-                            values[Matrix.MTRANS_Y],
-                        values[Matrix.MSCALE_X] * view.width,
-                        values[Matrix.MSKEW_Y] * view.width,
-                        values[Matrix.MSKEW_X] * view.height,
-                        values[Matrix.MSCALE_Y] * view.height,
-                    ),
+            sampleMatrix.reset()
+            view.transformMatrixToGlobal(sampleMatrix)
+            root.transformMatrixToLocal(sampleMatrix)
+            sampleMatrix.getValues(sampleValues)
+            val values = sampleValues
+            return floatArrayOf(
+                ((values[Matrix.MSCALE_X] * view.width) +
+                    (values[Matrix.MSKEW_X] * view.height)) / 2f +
+                    values[Matrix.MTRANS_X],
+                ((values[Matrix.MSKEW_Y] * view.width) +
+                    (values[Matrix.MSCALE_Y] * view.height)) / 2f +
+                    values[Matrix.MTRANS_Y],
+                values[Matrix.MSCALE_X] * view.width,
+                values[Matrix.MSKEW_Y] * view.width,
+                values[Matrix.MSKEW_X] * view.height,
+                values[Matrix.MSCALE_Y] * view.height,
             )
         }
 
@@ -3177,34 +3177,9 @@ internal object CcTransitionOwner {
             return Matrix().apply { setValues(values) }
         }
 
-        private fun matrixForGeometry(
-            geometry: FloatArray,
-            width: Int,
-            height: Int,
-        ): Matrix? {
-            if (geometry.size != 6 || width <= 0 || height <= 0) return null
-            val values = FloatArray(9)
-            values[Matrix.MSCALE_X] = geometry[2] / width
-            values[Matrix.MSKEW_X] = geometry[4] / height
-            values[Matrix.MTRANS_X] =
-                geometry[0] - ((geometry[2] + geometry[4]) / 2f)
-            values[Matrix.MSKEW_Y] = geometry[3] / width
-            values[Matrix.MSCALE_Y] = geometry[5] / height
-            values[Matrix.MTRANS_Y] =
-                geometry[1] - ((geometry[3] + geometry[5]) / 2f)
-            values[Matrix.MPERSP_0] = 0f
-            values[Matrix.MPERSP_1] = 0f
-            values[Matrix.MPERSP_2] = 1f
-            return Matrix().apply { setValues(values) }
-        }
-
         private data class TargetCacheKey(
             val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
-        )
-
-        private data class Sample(
-            val geometry: FloatArray,
         )
 
         private data class CarrierFrames(

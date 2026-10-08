@@ -2338,7 +2338,10 @@ internal object NativeCombinedParticipant {
                     }
                     if (
                         currentGeneration == generation &&
-                        SystemClock.uptimeMillis() - startedAt >= FOLLOW_DURATION_MS
+                        (
+                            samples >= MAX_SAMPLES ||
+                                SystemClock.uptimeMillis() - startedAt >= FOLLOW_DURATION_MS
+                        )
                     ) {
                         stop()
                     }
