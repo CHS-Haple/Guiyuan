@@ -42,9 +42,13 @@ internal data class Appearance(
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
+    val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Clear,
     val swipeBack: Boolean = true,
-)
+) {
+    val activeNavContent: NavContent
+        get() = if (navStyle == NavStyle.Liquid) liquidContent else navContent
+}
 
 internal data class ThemeChoice(
     val mode: ThemeMode,
@@ -75,10 +79,13 @@ internal fun decodeNavStyle(
     }
 }
 
-internal fun decodeNavContent(storedContent: String?): NavContent =
+internal fun decodeNavContent(
+    storedContent: String?,
+    default: NavContent = NavContent.IconOnly,
+): NavContent =
     NavContent.entries
         .firstOrNull { it.name == storedContent }
-        ?: NavContent.IconOnly
+        ?: default
 
 internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
     LiquidMode.entries
@@ -120,18 +127,25 @@ internal class AppearanceRepo(context: Context) {
                     storedMode = prefs[themeKey],
                     storedDynamicColorEnabled = prefs[dynamicKey],
                 )
+            val style =
+                decodeNavStyle(
+                    storedStyle = prefs[navStyleKey],
+                    storedFloatingBlurEnabled = prefs[legacyNavBlurKey],
+                    legacyBlurEnabled = prefs[legacyBlurKey],
+                    legacyGlassEnabled = prefs[legacyGlassKey],
+                )
             Appearance(
                 theme = theme.mode,
                 dynamicColor = theme.dynamicColor,
                 navEnabled = prefs[navEnabledKey] ?: true,
-                navStyle =
-                    decodeNavStyle(
-                        storedStyle = prefs[navStyleKey],
-                        storedFloatingBlurEnabled = prefs[legacyNavBlurKey],
-                        legacyBlurEnabled = prefs[legacyBlurKey],
-                        legacyGlassEnabled = prefs[legacyGlassKey],
-                    ),
+                navStyle = style,
                 navContent = decodeNavContent(prefs[navContentKey]),
+                liquidContent =
+                    decodeNavContent(
+                        prefs[liquidContentKey]
+                            ?: if (style == NavStyle.Liquid) prefs[navContentKey] else null,
+                        NavContent.IconAndText,
+                    ),
                 liquidMode = decodeLiquidMode(prefs[liquidModeKey]),
                 swipeBack = prefs[swipeBackKey] ?: true,
             )
@@ -160,10 +174,16 @@ internal class AppearanceRepo(context: Context) {
 
     suspend fun setNavStyle(style: NavStyle) {
         store.edit { prefs ->
-            prefs[navStyleKey] = style.name
-            if (style == NavStyle.Liquid && prefs[navContentKey] == null) {
-                prefs[navContentKey] = NavContent.IconAndText.name
+            // The old key also held Liquid's choice; save it before switching away.
+            if (prefs[liquidContentKey] == null) {
+                if (prefs[navStyleKey] == NavStyle.Liquid.name) {
+                    prefs[liquidContentKey] =
+                        prefs[navContentKey] ?: NavContent.IconAndText.name
+                } else if (style == NavStyle.Liquid) {
+                    prefs[liquidContentKey] = NavContent.IconAndText.name
+                }
             }
+            prefs[navStyleKey] = style.name
             prefs.remove(legacyNavBlurKey)
             prefs.remove(legacyGlassKey)
             prefs.remove(legacyBlurKey)
@@ -172,7 +192,10 @@ internal class AppearanceRepo(context: Context) {
 
     suspend fun setNavContent(content: NavContent) {
         store.edit { prefs ->
-            prefs[navContentKey] = content.name
+            val key =
+                if (prefs[navStyleKey] == NavStyle.Liquid.name) liquidContentKey
+                else navContentKey
+            prefs[key] = content.name
         }
     }
 
@@ -196,6 +219,7 @@ internal class AppearanceRepo(context: Context) {
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
         val navStyleKey = stringPreferencesKey("floating_navigation_style")
         val navContentKey = stringPreferencesKey("floating_navigation_content")
+        val liquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
         val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")

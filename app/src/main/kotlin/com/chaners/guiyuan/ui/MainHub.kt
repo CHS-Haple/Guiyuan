@@ -190,7 +190,7 @@ internal fun MainHub(
                         ) {
                             items.forEachIndexed { index, item ->
                                 LiquidNavEntry(
-                                    contentMode = appearance.navContent,
+                                    contentMode = appearance.activeNavContent,
                                     onClick = { selectPage(index) },
                                     icon = item.icon,
                                     label = item.label,
@@ -214,7 +214,7 @@ internal fun MainHub(
                         items.forEachIndexed { index, item ->
                             val selected = pagerState.currentPage == index
                             NavContentItem(
-                                content = appearance.navContent,
+                                content = appearance.activeNavContent,
                                 selected = selected,
                                 onClick = { selectPage(index) },
                                 icon = if (selected) item.selectedIcon else item.icon,
