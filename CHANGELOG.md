@@ -8,12 +8,21 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-08
+
+### Added
+- Gave Liquid floating navigation its own saved icon/text preference, while Standard, Blur and Glass share the original preference.
+
+### Changed
+- Grouped Features settings by display/transition, layout, network, battery and management without changing their controls.
+- Improved Diagnostics log entry presentation and refined semantic leading icons and level label weights.
+- Updated first-use Keyguard, AOD, battery fill and top-readout defaults, preserving existing user choices.
+
 ### Fixed
-- Diagnostics keeps MIUIX pull-to-refresh and cached logs; after refresh, entries appear in a short, solid top-down Folme slide without duplicate indicators.
+- Diagnostics retains MIUIX navigation smoothness while displaying real loading state and bounded sequential log motion.
 - Charging readout seeds its native lightning ID on host binding, synchronizes active render sessions, and retains the ID across callback gaps and Hot Reload; unavailable drawables no longer reserve empty space.
-- Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
-- First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
-- Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.
+- Liquid Glass navigation derives its selected-state tint from the active MIUIX theme, including Monet dynamic color.
+- Home runtime status transitions smoothly across neutral/success/warning/error accent and background changes.
 
 ## [0.4.0] - 2026-10-07
 
