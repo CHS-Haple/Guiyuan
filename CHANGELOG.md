@@ -10,6 +10,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Fixed
 - Diagnostics keeps MIUIX pull-to-refresh and cached logs; after refresh, entries appear in a short, solid top-down Folme slide without duplicate indicators.
+- Charging readout seeds its native lightning ID on host binding, synchronizes active render sessions, and retains the ID across callback gaps and Hot Reload; unavailable drawables no longer reserve empty space.
 - Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
 - First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
 - Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.
