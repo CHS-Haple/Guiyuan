@@ -9,14 +9,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -97,7 +96,6 @@ internal fun DiagnosticsScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val itemFade = remember { folmeSpring<Float>(damping = 1f, response = 0.3f) }
     val itemMove = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
     val diagRepo =
         remember(context.applicationContext) {
@@ -109,8 +107,7 @@ internal fun DiagnosticsScreen(
         )
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
-    var animateUpdates by remember { mutableStateOf(false) }
-    var enteringKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var revealRound by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -142,17 +139,7 @@ internal fun DiagnosticsScreen(
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
-            val oldKeys = snapshot?.entries?.mapTo(hashSetOf()) { it.key }.orEmpty()
-            enteringKeys =
-                captured.entries
-                    .asReversed()
-                    .asSequence()
-                    .filter(::isRuntimeLog)
-                    .filter { it.key !in oldKeys }
-                    .take(MAX_EVENTS)
-                    .map { it.key }
-                    .toSet()
-            animateUpdates = snapshot != null
+            if (snapshot == null || refreshing) revealRound++
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
@@ -375,61 +362,43 @@ internal fun DiagnosticsScreen(
             }
             snapshot == null || visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
-                    Crossfade(
-                        targetState = snapshot == null,
+                    Text(
+                        text =
+                            if (snapshot == null) {
+                                stringResource(R.string.diagnostics_events_loading)
+                            } else {
+                                stringResource(
+                                    R.string.diagnostics_events_summary,
+                                    visibleEntries.size,
+                                )
+                            },
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp),
-                        animationSpec = itemFade,
-                        label = "Diagnostic summary",
-                    ) { isLoading ->
-                        Text(
-                            text =
-                                if (isLoading) {
-                                    stringResource(R.string.diagnostics_events_loading)
-                                } else {
-                                    stringResource(
-                                        R.string.diagnostics_events_summary,
-                                        visibleEntries.size,
-                                    )
-                                },
-                            style = MiuixTheme.textStyles.subtitle,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        )
-                    }
+                        style = MiuixTheme.textStyles.subtitle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
                 }
-                if (snapshot == null) {
-                    repeat(4) { index ->
-                        item(key = "diagnostics-placeholder-$index") {
-                            LogPlaceholder(
-                                modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec = itemFade,
-                                        placementSpec = null,
-                                        fadeOutSpec = itemFade,
-                                    ),
-                            )
-                        }
-                    }
-                } else {
+                if (snapshot != null) {
                     itemsIndexed(
                         items = visibleEntries,
                         key = { _, entry -> entry.key },
                     ) { index, entry ->
-                        var shown by rememberSaveable(entry.key) {
-                            mutableStateOf(entry.key !in enteringKeys)
+                        var shown by rememberSaveable(entry.key, revealRound) {
+                            mutableStateOf(revealRound == 0)
                         }
-                        LaunchedEffect(shown) {
+                        LaunchedEffect(entry.key, revealRound) {
                             if (!shown) {
                                 delay(index.coerceAtMost(MAX_ENTRY_STAGGER) * ENTRY_STAGGER_MS)
                                 shown = true
                             }
                         }
-                        val opacity by animateFloatAsState(
-                            targetValue = if (shown) 1f else 0f,
-                            animationSpec = itemFade,
+                        val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
+                        val offset by animateIntOffsetAsState(
+                            targetValue = if (shown) IntOffset.Zero else IntOffset(0, lift),
+                            animationSpec = itemMove,
                             label = "Log entry",
                         )
                         LogCard(
@@ -448,10 +417,13 @@ internal fun DiagnosticsScreen(
                                 Modifier
                                     .animateItem(
                                         fadeInSpec = null,
-                                        placementSpec = if (animateUpdates) itemMove else null,
-                                        fadeOutSpec = itemFade,
+                                        placementSpec = itemMove,
+                                        fadeOutSpec = null,
                                     )
-                                    .graphicsLayer { alpha = opacity },
+                                    .graphicsLayer {
+                                        alpha = if (shown) 1f else 0f
+                                        translationY = offset.y.toFloat()
+                                    },
                         )
                     }
                 }
@@ -854,41 +826,6 @@ private fun LogCard(
                         LogDetail(label = key, value = value)
                     }
             }
-        }
-    }
-}
-
-@Composable
-private fun LogPlaceholder(modifier: Modifier = Modifier) {
-    val shade = MiuixTheme.colorScheme.secondaryContainerVariant.copy(alpha = 0.5f)
-    Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 6.dp)
-                .heightIn(min = 86.dp),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(
-                Modifier
-                    .fillMaxWidth(0.35f)
-                    .height(12.dp)
-                    .background(shade, RoundedCornerShape(5.dp)),
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth(0.72f)
-                    .height(14.dp)
-                    .background(shade, RoundedCornerShape(5.dp)),
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth(0.55f)
-                    .height(11.dp)
-                    .background(shade, RoundedCornerShape(5.dp)),
-            )
         }
     }
 }
