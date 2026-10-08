@@ -542,6 +542,11 @@ internal fun SettingsHubScreen(
                 items = languageOptions,
                 selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_language,
+                    )
+                },
                 summary = stringResource(R.string.language_summary),
                 showValue = true,
                 onSelectedIndexChange = { index ->
@@ -550,6 +555,11 @@ internal fun SettingsHubScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.hide_launcher_icon),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_visibility_off,
+                    )
+                },
                 summary = stringResource(R.string.hide_launcher_icon_summary),
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
@@ -559,16 +569,32 @@ internal fun SettingsHubScreen(
         tertiaryContent = {
             ArrowPreference(
                 title = stringResource(R.string.about_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_info,
+                    )
+                },
                 summary = stringResource(R.string.about_summary),
                 onClick = { onNavigate(AppRoute.About) },
             )
             ArrowPreference(
                 title = stringResource(R.string.diagnostics_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_manage_search,
+                    )
+                },
                 summary = stringResource(R.string.diagnostics_summary),
                 onClick = { onNavigate(AppRoute.Diagnostics) },
             )
             BasicComponent(
                 title = stringResource(R.string.restart_scope),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_restart_alt,
+                        enabled = !restartInProgress,
+                    )
+                },
                 summary = stringResource(R.string.restart_scope_summary),
                 enabled = !restartInProgress,
                 onClick = { restartDialog = RestartDialog.CONFIRM },
@@ -639,11 +665,21 @@ internal fun SettingsHubScreen(
     ) {
         ArrowPreference(
             title = stringResource(R.string.appearance_title),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_style,
+                )
+            },
             summary = stringResource(R.string.appearance_summary),
             onClick = { onNavigate(AppRoute.Appearance) },
         )
         SwitchPreference(
             title = stringResource(R.string.swipe_back),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_swipe_right_alt,
+                )
+            },
             summary = stringResource(R.string.swipe_back_summary),
             checked = swipeBackEnabled,
             onCheckedChange = onSwipeBackChange,
