@@ -24,9 +24,26 @@ internal object DiagReport {
         val runtimeEvents = snapshot.runtimeEvents
         val logLines = lines.takeLast(limit)
         val requested = level.name.lowercase()
-        val diagnostics = runtimeEvents.component("diagnostics")
-        val runtimeLevel = diagnostics?.fields?.get("level") ?: "not-observed"
-        val runtimeBinding = diagnostics?.state ?: "not-observed"
+        // Level changes do not carry binding state; keep their observations separate.
+        val diagnostics =
+            snapshot.entries
+                .asReversed()
+                .filter { entry ->
+                    entry.structured &&
+                        entry.component == "diagnostics" &&
+                        (runtimeEvents.sessionId == null ||
+                            entry.fields["sessionId"] == runtimeEvents.sessionId)
+                }
+        val runtimeLevel =
+            diagnostics.firstNotNullOfOrNull { it.fields["level"] } ?: "not-observed"
+        val runtimeBinding =
+            diagnostics.firstNotNullOfOrNull { entry ->
+                if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
+                    entry.state
+                } else {
+                    null
+                }
+            } ?: "not-observed"
         return buildString {
             appendLine("Guiyuan Diagnostic Report")
             appendLine()

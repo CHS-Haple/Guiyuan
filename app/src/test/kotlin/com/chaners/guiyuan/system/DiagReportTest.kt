@@ -63,8 +63,46 @@ class DiagReportTest {
         assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
-    private fun report(line: String): String {
-        val lines = listOf(line)
+    @Test
+    fun levelChangeRetainsObservedBinding() {
+        val report = report(
+            DiagProtocol.format(
+                event = "diagnostics.bind",
+                component = "diagnostics",
+                state = "ready",
+                fields = mapOf("level" to "general", "sessionId" to "current"),
+            ),
+            DiagProtocol.format(
+                event = "diagnostics.level",
+                component = "diagnostics",
+                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+            ),
+        )
+        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains("runtimeBinding=ready"))
+    }
+
+    @Test
+    fun earlierSessionDoesNotSupplyBinding() {
+        val report = report(
+            DiagProtocol.format(
+                event = "diagnostics.bind",
+                component = "diagnostics",
+                state = "ready",
+                fields = mapOf("level" to "general", "sessionId" to "previous"),
+            ),
+            DiagProtocol.format(
+                event = "diagnostics.level",
+                component = "diagnostics",
+                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+            ),
+        )
+        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains("runtimeBinding=not-observed"))
+    }
+
+    private fun report(vararg lines: String): String {
+        val recorded = lines.toList()
         return DiagReport.build(
             DiagSnapshot(
                 env = RuntimeEnv(
@@ -81,12 +119,12 @@ class DiagReportTest {
                 level = DiagLevel.Detailed,
                 log = DiagLogReader.Snapshot(
                     source = DiagLogReader.Source.LspModules,
-                    result = RootShell.Result(0, line, false, null),
-                    lines = lines,
-                    sessionLines = lines,
+                    result = RootShell.Result(0, recorded.joinToString("\n"), false, null),
+                    lines = recorded,
+                    sessionLines = recorded,
                 ),
-                runtimeEvents = RuntimeEventSnapshot.fromLines(lines),
-                entries = emptyList(),
+                runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
+                entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
             ),
         )
