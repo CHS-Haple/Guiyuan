@@ -85,6 +85,59 @@ class StatusStateStoreTest {
     }
 
     @Test
+    fun chargingSampleWithoutIconKeepsCommittedGlyph() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 42),
+        )
+
+        assertNull(
+            StatusStateStore.updateBattery(
+                StatusStateStore.BatteryState(percent = 80, charging = true),
+            ),
+        )
+        assertEquals(42, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
+    fun freshGlyphReplacesPreviousResource() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 7),
+        )
+        StatusStateStore.updateBatteryChargingIcon(42)
+
+        assertEquals(42, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
+    fun chargingExitClearsGlyph() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 42),
+        )
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = false),
+        )
+
+        assertNull(StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
+    fun chargingStateRefreshKeepsLastGlyph() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 42),
+        )
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 81, charging = true),
+        )
+
+        assertEquals(81, StatusStateStore.snapshot().battery?.percent)
+        assertEquals(42, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
     fun freshSignalAndMobileTypeFinishAirplaneRecovery() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)

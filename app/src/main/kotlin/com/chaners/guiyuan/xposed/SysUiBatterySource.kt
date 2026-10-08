@@ -38,7 +38,7 @@ internal object SysUiBatterySource {
         module: XposedModule,
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int) -> Unit,
+        onChargingIconResource: (Int) -> Boolean,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         val iconClass =
@@ -124,7 +124,7 @@ internal object SysUiBatterySource {
                 systemSemanticColor = systemSemanticColor,
                 chargingIconResId =
                     if (charging) {
-                        lastChargingIconResId ?: readChargingIconId(iconView)
+                        readChargingIconId(iconView) ?: lastChargingIconResId
                     } else {
                         null
                     },
@@ -168,33 +168,20 @@ internal object SysUiBatterySource {
             meterView: View,
             sourceMethod: String,
         ) {
-            val nativeId =
-                runCatching {
-                    chargingIconMethod.invoke(meterView) as? Int
-                }.getOrNull()
             val iconId =
-                synchronized(this) {
-                    val charging = lastState?.charging
-                    val nextId =
-                        resolveChargingIconId(
-                            charging = charging,
-                            nativeId = nativeId,
-                            lastId = lastChargingIconResId,
-                        )
-                    if (lastChargingIconResId == nextId) {
-                        return@synchronized null
-                    }
-                    lastChargingIconResId = nextId
-                    nextId.takeIf { charging == true }
-                } ?: return
+                runCatching { chargingIconMethod.invoke(meterView) as? Int }
+                    .getOrNull()
+                    ?.takeIf { it != 0 }
+                    ?: return
 
-            onChargingIconResource(iconId)
-            onEvent?.invoke(
-                "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
-                    " charging=true" +
-                    " resourceId=" + iconId +
-                    " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
-            )
+            synchronized(this) { lastChargingIconResId = iconId }
+            if (onChargingIconResource(iconId)) {
+                onEvent?.invoke(
+                    "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
+                        " resourceId=" + iconId +
+                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
+                )
+            }
         }
 
         fun hook(
@@ -273,17 +260,6 @@ internal object SysUiBatterySource {
             hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID),
             chargingGlyphHook,
         )
-    }
-
-    internal fun resolveChargingIconId(
-        charging: Boolean?,
-        nativeId: Int?,
-        lastId: Int?,
-    ): Int? {
-        if (charging == false) return null
-
-        // A missing glyph sample is not a charging-state transition.
-        return nativeId?.takeIf { it != 0 } ?: lastId?.takeIf { it != 0 }
     }
 
     private fun semanticColor(
