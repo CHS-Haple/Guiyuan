@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.DiagLevel
@@ -59,6 +60,7 @@ import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import kotlinx.coroutines.launch
 import java.util.Locale
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
@@ -91,6 +93,8 @@ internal fun DiagnosticsScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val itemFade = remember { folmeSpring<Float>(damping = 1f, response = 0.3f) }
+    val itemMove = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -387,6 +391,11 @@ internal fun DiagnosticsScreen(
                             ),
                         modifier =
                             Modifier
+                                .animateItem(
+                                    fadeInSpec = itemFade,
+                                    placementSpec = itemMove,
+                                    fadeOutSpec = itemFade,
+                                )
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp),
@@ -410,7 +419,12 @@ internal fun DiagnosticsScreen(
                                     entry.key
                                 }
                         },
-                        modifier = Modifier,
+                        modifier =
+                            Modifier.animateItem(
+                                fadeInSpec = itemFade,
+                                placementSpec = itemMove,
+                                fadeOutSpec = itemFade,
+                            ),
                     )
                 }
             }

@@ -98,7 +98,7 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
 
-**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture, automatic reads do not start the pull indicator, and there are no per-row entry animations or timing patches.
+**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture or start the pull indicator. Compose lazy items use MIUIX Folme spring specs to animate insertion and placement without per-item delays or custom motion.
 
 ## Hot Reload is a generation handoff
 
