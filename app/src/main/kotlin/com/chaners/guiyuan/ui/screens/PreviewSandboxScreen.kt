@@ -273,7 +273,12 @@ internal fun PreviewSandboxScreen(
                             if (state.mobileOptionsVisible) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.home_preview_mobile_network_title),
-                                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
+                                    startAction = {
+                                        SemanticLeadingIcon(
+                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                            detailRes = R.drawable.ic_material_symbol_category,
+                                        )
+                                    },
                                     items = mobileNetworkChoices.map { it.second },
                                     selectedIndex =
                                         mobileNetworkChoices.indexOfFirst {
@@ -317,6 +322,7 @@ internal fun PreviewSandboxScreen(
                             SandboxSegmentedField(
                                 title = stringResource(R.string.home_preview_wifi_state_title),
                                 iconRes = R.drawable.ic_material_symbol_wifi,
+                                detailRes = R.drawable.ic_material_symbol_swap_horiz,
                                 options = wifiOptions,
                                 selectedIndex = state.wifiState.ordinal,
                                 onSelected = { index ->
@@ -386,7 +392,8 @@ internal fun PreviewSandboxScreen(
                         )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_battery_mode_title),
-                            iconRes = R.drawable.ic_material_symbol_tune,
+                            iconRes = R.drawable.ic_material_symbol_battery_5_bar,
+                            detailRes = R.drawable.ic_material_symbol_tune,
                             options = batteryModeOptions,
                             selectedIndex = state.batteryMode.ordinal,
                             onSelected = { index ->
@@ -444,6 +451,7 @@ private fun PreviewStatusLine(
 private fun SandboxSegmentedField(
     title: String,
     @DrawableRes iconRes: Int,
+    @DrawableRes detailRes: Int? = null,
     options: List<String>,
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
@@ -452,7 +460,7 @@ private fun SandboxSegmentedField(
 ) {
     BasicComponent(
         title = title,
-        startAction = { SemanticLeadingIcon(iconRes) },
+        startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
         modifier = modifier,
         insideMargin = SandboxPreferenceInsideMargin,
         bottomAction = {
