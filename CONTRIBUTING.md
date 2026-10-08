@@ -133,6 +133,8 @@ Work in coherent reviewable batches. Before a non-trivial commit, review the com
 
 Every non-trivial code batch gets a separate maintainability review before the final commit/CI checkpoint.
 
+Actively identify AI-style code smells: inflated names, repetitive boilerplate, unnecessary wrappers or state, speculative abstractions, templated comments, and invented diagnostics or test evidence. Trace how the code is actually used, then simplify patterns that make it harder for a human to read or maintain. Do not mistake legitimate complexity for a problem solely because it looks unusual.
+
 Check touched code and relevant adjacent call sites for:
 - unnecessarily long or suffix-stacked names;
 - boolean/nullable fields that actually encode one lifecycle;
