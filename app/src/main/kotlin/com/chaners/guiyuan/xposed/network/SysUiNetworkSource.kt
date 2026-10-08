@@ -794,7 +794,7 @@ internal object SysUiNetworkSource {
                 state = StatusStateStore.WifiState.Hidden,
                 resourceId = null,
                 resourceName = null,
-                valueType = value?.javaClass?.simpleName ?: "null",
+                valueType = value.javaClass.simpleName,
             )
         }
 
@@ -859,22 +859,21 @@ internal object SysUiNetworkSource {
             runCatching {
                 wifiImageField.get(emitter) as? ImageView
             }.getOrNull()
-        val bound = image != null && findWifiBinding(image)
         val semantic =
-            if (bound && image != null) {
-                decodeWifiSemantic(
-                    value = value,
-                    sourceView = image,
-                    wifiVisibleIconField = wifiVisibleIconField,
-                    iconResourceIdAccessor = iconResourceIdAccessor,
-                )
-            } else {
-                null
-            }
+            image
+                ?.takeIf(::findWifiBinding)
+                ?.let { boundImage ->
+                    decodeWifiSemantic(
+                        value = value,
+                        sourceView = boundImage,
+                        wifiVisibleIconField = wifiVisibleIconField,
+                        iconResourceIdAccessor = iconResourceIdAccessor,
+                    )
+                }
 
         val result = chain.proceed()
 
-        if (image != null && bound && semantic != null) {
+        if (image != null && semantic != null) {
             val taggedResId =
                 (image.tag as? Number)
                     ?.toInt()
