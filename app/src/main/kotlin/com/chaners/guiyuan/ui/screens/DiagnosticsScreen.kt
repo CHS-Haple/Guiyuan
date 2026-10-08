@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -27,7 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,8 +42,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -108,6 +111,14 @@ internal fun DiagnosticsScreen(
         )
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
+    val initialSnapshot = remember { cachedSnapshot }
+    val rise = remember(snapshot) {
+        Animatable(if (snapshot == null || snapshot === initialSnapshot) 1f else 0f)
+    }
+    LaunchedEffect(rise) {
+        rise.animateTo(1f, folmeSpring(damping = 1f, response = 0.5f))
+    }
+    val risePx = with(LocalDensity.current) { 12.dp.toPx() }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -364,15 +375,16 @@ internal fun DiagnosticsScreen(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp),
+                                .padding(top = 6.dp, bottom = 8.dp)
+                                .graphicsLayer { translationY = logLift(rise.value, 0, risePx) },
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
                 }
-                items(
+                itemsIndexed(
                     items = visibleEntries,
-                    key = { it.key },
-                ) { entry ->
+                    key = { _, entry -> entry.key },
+                ) { index, entry ->
                     LogCard(
                         context = context,
                         entry = entry,
@@ -391,7 +403,10 @@ internal fun DiagnosticsScreen(
                                     fadeInSpec = null,
                                     placementSpec = placementSpec,
                                     fadeOutSpec = null,
-                                ),
+                                )
+                                .graphicsLayer {
+                                    translationY = logLift(rise.value, index, risePx)
+                                },
                     )
                 }
             }
@@ -416,6 +431,13 @@ internal fun DiagnosticsScreen(
 }
 
 private const val MAX_EVENTS = 40
+
+private fun logLift(progress: Float, index: Int, rise: Float): Float {
+    // Limit staggering to nearby rows; off-screen cards should not wait.
+    val start = index.coerceAtMost(7) * 0.07f
+    val shown = ((progress - start) / (1f - start)).coerceIn(0f, 1f)
+    return rise * (1f - shown)
+}
 
 private const val LEVEL_INFO = 1 shl 0
 private const val LEVEL_WARN = 1 shl 1
