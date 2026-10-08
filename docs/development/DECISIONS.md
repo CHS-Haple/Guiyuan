@@ -98,7 +98,7 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
 
-**Consequence:** retain one completed snapshot in `GyApp` memory. The summary shows the real event count or cold-entry loading text, without an extra spinner. After first loading or a manual refresh, cards appear in a short, top-down sequence: each moves upward by 12 dp with a MIUIX Folme spring, fully opaque, without expanding row heights or delaying log capture. Cached entries remain visible while refreshing.
+**Consequence:** retain one completed snapshot in `GyApp` memory. The summary is absent before the first capture, then rises with the first log card, using the same Folme spring and reveal state; no transient loading label or extra spinner. After first loading or a manual refresh, cards appear in a short, top-down sequence: each moves upward by 12 dp with a MIUIX Folme spring, fully opaque, without expanding row heights or delaying log capture. Cached entries remain visible while refreshing.
 
 ## Hot Reload is a generation handoff
 

@@ -248,7 +248,6 @@
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
     <string name="section_diagnostics_events">Key events</string>
     <string name="diagnostics_events_summary">%1$d key events in this run</string>
-    <string name="diagnostics_events_loading">Reading current logs…</string>
     <string name="diagnostics_component_module">Module</string>
     <string name="diagnostics_component_compatibility">Compatibility</string>
     <string name="diagnostics_component_status_host">Status bar host</string>

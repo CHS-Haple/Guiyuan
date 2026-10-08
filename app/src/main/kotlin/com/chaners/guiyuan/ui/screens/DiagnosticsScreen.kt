@@ -108,6 +108,7 @@ internal fun DiagnosticsScreen(
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
     var revealRound by remember { mutableIntStateOf(0) }
+    var leadShown by rememberSaveable(revealRound) { mutableStateOf(revealRound == 0) }
     var loading by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -195,6 +196,10 @@ internal fun DiagnosticsScreen(
                 }
             }
         }
+
+    LaunchedEffect(revealRound) {
+        leadShown = true
+    }
 
     LaunchedEffect(Unit) {
         loading = true
@@ -360,23 +365,29 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
-            snapshot == null || visibleEntries.isNotEmpty() -> {
+            snapshot == null -> {}
+            visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
+                    val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
+                    val offset by animateIntOffsetAsState(
+                        targetValue = if (leadShown) IntOffset.Zero else IntOffset(0, lift),
+                        animationSpec = itemMove,
+                        label = "Log summary",
+                    )
                     Text(
-                        text =
-                            if (snapshot == null) {
-                                stringResource(R.string.diagnostics_events_loading)
-                            } else {
-                                stringResource(
-                                    R.string.diagnostics_events_summary,
-                                    visibleEntries.size,
-                                )
-                            },
+                        text = stringResource(
+                            R.string.diagnostics_events_summary,
+                            visibleEntries.size,
+                        ),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp),
+                                .padding(top = 6.dp, bottom = 8.dp)
+                                .graphicsLayer {
+                                    alpha = if (leadShown) 1f else 0f
+                                    translationY = offset.y.toFloat()
+                                },
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
@@ -395,9 +406,10 @@ internal fun DiagnosticsScreen(
                                 shown = true
                             }
                         }
+                        val entryShown = if (index == 0) leadShown else shown
                         val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
                         val offset by animateIntOffsetAsState(
-                            targetValue = if (shown) IntOffset.Zero else IntOffset(0, lift),
+                            targetValue = if (entryShown) IntOffset.Zero else IntOffset(0, lift),
                             animationSpec = itemMove,
                             label = "Log entry",
                         )
@@ -421,7 +433,7 @@ internal fun DiagnosticsScreen(
                                         fadeOutSpec = null,
                                     )
                                     .graphicsLayer {
-                                        alpha = if (shown) 1f else 0f
+                                        alpha = if (entryShown) 1f else 0f
                                         translationY = offset.y.toFloat()
                                     },
                         )
