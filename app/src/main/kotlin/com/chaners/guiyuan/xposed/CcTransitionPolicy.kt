@@ -10,9 +10,6 @@ internal object CcTransitionPolicy {
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 
-    fun motionProgress(raw: Float): Float =
-        geometryProgress(raw)
-
     fun handoffMotionProgress(
         expansionProgress: Float,
         finalAppearanceAlpha: Float,

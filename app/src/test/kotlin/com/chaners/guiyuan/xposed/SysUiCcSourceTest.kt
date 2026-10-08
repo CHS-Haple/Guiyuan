@@ -132,20 +132,7 @@ class SysUiCcSourceTest {
     }
 
     @Test
-    fun transitionMotionAndMobileMorphUseNativeExpansion() {
-        assertEquals(0f, CcTransitionPolicy.motionProgress(0f))
-        assertEquals(
-            0.41f,
-            CcTransitionPolicy.motionProgress(0.41f),
-            0.0001f,
-        )
-        assertEquals(
-            0.82f,
-            CcTransitionPolicy.motionProgress(0.82f),
-            0.0001f,
-        )
-        assertEquals(1f, CcTransitionPolicy.motionProgress(1f))
-
+    fun mobileSignalMorphFollowsQuadraticCurve() {
         assertEquals(
             0f,
             CcTransitionPolicy.mobileSignalShapeProgress(0f),
