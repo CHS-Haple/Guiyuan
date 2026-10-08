@@ -71,12 +71,12 @@ internal data class RuntimeRenderLatencySample(
                 committedOnMainThread = committedOnMainThread,
             )
 
+        // Keep the sign: an out-of-order stage is not a zero-latency stage.
         private fun durationUs(
             startNanos: Long,
             endNanos: Long,
         ): Long =
-            (endNanos - startNanos)
-                .coerceAtLeast(0L) / NANOS_PER_MICROSECOND
+            (endNanos - startNanos) / NANOS_PER_MICROSECOND
 
         private const val NANOS_PER_MICROSECOND = 1_000L
     }

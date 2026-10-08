@@ -1265,7 +1265,7 @@ private fun reasonLabel(
     }
 
 private fun formatMicros(micros: Long): String =
-    if (micros >= 1_000L) {
+    if (micros >= 1_000L || micros <= -1_000L) {
         String.format(Locale.US, "%.2f ms", micros / 1_000.0)
     } else {
         "$micros μs"
