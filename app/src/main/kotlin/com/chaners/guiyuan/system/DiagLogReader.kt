@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.system
 
+import android.content.Context
 import com.chaners.guiyuan.BuildConfig
 
 internal object DiagLogReader {
@@ -28,9 +29,10 @@ internal object DiagLogReader {
         val sessionLines: List<String>,
     )
 
-    suspend fun read(): Snapshot {
+    suspend fun read(context: Context): Snapshot {
         val lspResult =
             RootShell.execute(
+                context = context,
                 command = LSP_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
@@ -47,6 +49,7 @@ internal object DiagLogReader {
 
         val logcatResult =
             RootShell.execute(
+                context = context,
                 command = LOGCAT_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
