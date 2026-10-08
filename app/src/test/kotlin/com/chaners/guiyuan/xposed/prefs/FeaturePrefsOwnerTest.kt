@@ -16,11 +16,11 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun defaultsFailNative() {
+    fun defaultScenesAreEnabled() {
         val cfg = com.chaners.guiyuan.settings.FeatureCfg()
         assertEquals(true, cfg.enabled)
-        assertEquals(false, cfg.keyguard)
-        assertEquals(false, cfg.aod)
+        assertEquals(true, cfg.keyguard)
+        assertEquals(true, cfg.aod)
     }
 
     @Test

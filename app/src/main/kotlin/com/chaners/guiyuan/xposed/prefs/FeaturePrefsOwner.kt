@@ -2,9 +2,11 @@ package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import android.os.SystemClock
+import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
@@ -63,6 +65,7 @@ internal object FeaturePrefsOwner {
             FeatureCfg(
                 enabled = false,
                 keyguard = false,
+                aod = false,
             )
     }
 
@@ -99,7 +102,7 @@ internal object FeaturePrefsOwner {
     private fun resolve(source: SharedPreferences): FeatureCfg =
         FeatureCfg(
             enabled = source.getBoolean(FEATURE_ENABLED_KEY, true),
-            keyguard = source.getBoolean(FEATURE_KEYGUARD_KEY, false),
-            aod = source.getBoolean(FEATURE_AOD_KEY, false),
+            keyguard = source.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
+            aod = source.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
         )
 }

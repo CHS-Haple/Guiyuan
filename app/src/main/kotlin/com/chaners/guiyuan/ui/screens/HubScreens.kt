@@ -211,29 +211,6 @@ internal fun FeaturesScreen(
                         ?.let(visualRepo::setLayout)
                 },
             )
-            val topInfoVerticalOffsetUi =
-                topOffsetYUi(
-                    visual.topOffsetY,
-                )
-            SliderPreference(
-                value = topInfoVerticalOffsetUi,
-                onValueChange = visualRepo::setTopOffsetY,
-                title = stringResource(R.string.top_info_vertical_offset),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
-                valueText =
-                    stringResource(
-                        R.string.battery_top_offset_value,
-                        topInfoVerticalOffsetUi.roundToInt(),
-                    ),
-                valueRange =
-                    BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
-                        BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
-                enabled = featureCfg.enabled,
-            )
             SliderPreference(
                 value = visual.combinedScale,
                 onValueChange = visualRepo::setCombinedScale,
@@ -266,6 +243,29 @@ internal fun FeaturesScreen(
                 steps = 11,
                 showKeyPoints = true,
                 keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            val topInfoVerticalOffsetUi =
+                topOffsetYUi(
+                    visual.topOffsetY,
+                )
+            SliderPreference(
+                value = topInfoVerticalOffsetUi,
+                onValueChange = visualRepo::setTopOffsetY,
+                title = stringResource(R.string.top_info_vertical_offset),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
+                valueText =
+                    stringResource(
+                        R.string.battery_top_offset_value,
+                        topInfoVerticalOffsetUi.roundToInt(),
+                    ),
+                valueRange =
+                    BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
+                        BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                steps = 19,
+                showKeyPoints = true,
+                keyPoints = listOf(0f),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
