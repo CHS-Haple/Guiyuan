@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CcTransitionIslandTest {
     @Test
-    fun batteryIslandRingExitUsesLogicalStartWhileNativeTargetRowReflows() {
+    fun batteryIslandExitFollowsLogicalStart() {
         val direction =
             CcTransitionPolicy
                 .batteryRingExitDirection(
@@ -36,7 +36,7 @@ class CcTransitionIslandTest {
     }
 
     @Test
-    fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
+    fun nonBatteryIslandKeepsLiveExitDirection() {
         BatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
             assertEquals(
                 live,

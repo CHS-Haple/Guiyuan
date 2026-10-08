@@ -1,13 +1,12 @@
 package com.chaners.guiyuan.xposed
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScenePolicyTest {
     @Test
-    fun retainedTransitionSourceWitnessSurvivesPresentationHandoff() {
+    fun retainedSourceRequiresSizeAndAttachedHost() {
         assertTrue(
             ScenePolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 105,
