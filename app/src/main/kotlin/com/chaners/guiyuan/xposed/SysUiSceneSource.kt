@@ -169,8 +169,7 @@ internal object SysUiSceneSource {
                 " raw=" + rawState +
                 " batteryState=" + update.surface.name +
                 " authority=battery-status-state-readonly" +
-                " homeVisibilityAuthority=host+panel-coordinator" +
-                "",
+                " homeVisibilityAuthority=host+panel-coordinator",
         )
     }
 

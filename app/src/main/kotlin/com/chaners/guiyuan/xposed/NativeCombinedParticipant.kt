@@ -278,8 +278,7 @@ internal object NativeCombinedParticipant {
                 " iconState=" + resolvedStateIcon +
                 " dotState=" + resolvedStateDot +
                 " hiddenState=" + resolvedStateHidden +
-                " removeLifecycle=setRemove(boolean)+getRemoveFlag() " +
-                "",
+                " removeLifecycle=setRemove(boolean)+getRemoveFlag() ",
         )
 
         val constructor =
@@ -2335,8 +2334,7 @@ internal object NativeCombinedParticipant {
                                 " elapsedMs=" +
                                 (SystemClock.uptimeMillis() - startedAt) +
                                 " " + snapshot +
-                                " sample=" + samples + "/" + MAX_SAMPLES +
-                                "",
+                                " sample=" + samples + "/" + MAX_SAMPLES,
                         )
                     }
                     if (

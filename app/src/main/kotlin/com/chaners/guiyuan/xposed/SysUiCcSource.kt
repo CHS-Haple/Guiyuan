@@ -187,8 +187,7 @@ internal object SysUiCcSource {
                                                 "controlCenterFakeLifecycle attached " +
                                                     "root=" + root.javaClass.name +
                                                     " attachedToWindow=" +
-                                                    root.isAttachedToWindow +
-                                                    "",
+                                                    root.isAttachedToWindow,
                                             )
                                             describeFakeIslandContractOnce(root)?.let(onEvent)
                                         },
@@ -566,8 +565,7 @@ internal object SysUiCcSource {
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
                         sourceSceneSummary +
                         batteryIslandSummary +
-                        " authority=hyperos-native-callback" +
-                        "",
+                        " authority=hyperos-native-callback",
                 )
             },
         )

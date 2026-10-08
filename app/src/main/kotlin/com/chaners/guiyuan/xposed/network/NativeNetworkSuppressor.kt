@@ -1230,8 +1230,7 @@ internal object NativeNetworkSuppressor {
                     "view=" + image.javaClass.simpleName +
                     " nativeAlpha=" + state.nativeAlpha +
                     " appliedAlpha=" + container.alpha +
-                    " source=mobile-signal-beforeProceed " +
-                    "",
+                    " source=mobile-signal-beforeProceed ",
             )
         }
         return container.alpha == 0f

@@ -490,8 +490,7 @@ internal object HomeRenderSession {
                                     ?.toString(16)
                                     ?.padStart(8, '0')
                                     ?: "none"
-                            ) +
-                            ""
+                            )
                     }
                 }
             }

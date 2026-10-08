@@ -527,8 +527,7 @@ internal object SysUiNetworkSource {
                     "nativeSlot binding=wifi root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
             }
             mobileRoots.forEach { (root, subscriptionId) ->
@@ -537,8 +536,7 @@ internal object SysUiNetworkSource {
                         " root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
             }
         }
@@ -592,8 +590,7 @@ internal object SysUiNetworkSource {
                         " rootId=" + resourceId(root) +
                         " vm=" + viewModel.javaClass.simpleName +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
                 readWifiSeed(
                     root = root,
@@ -980,8 +977,7 @@ internal object SysUiNetworkSource {
                         " subId=" + subscriptionId +
                         " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        ""
+                        " layout=" + layoutToken(root)
             }
         }
 

@@ -252,8 +252,7 @@ internal object SysUiTintSource {
                     } else {
                         semanticTints.joinToString(",") { colorHex(it) }
                     }
-                ) +
-                "",
+                ),
         )
     }
 
