@@ -2,14 +2,14 @@
 
 ## Baseline
 
-- Development baseline: Guiyuan 0.4.0 / Build 752 (`20261007-752`).
+- Development integration: Guiyuan 0.4.0 / Build 760 (`20261008-760`); focused device acceptance of the combined changes remains pending.
 - Stable `main`: Guiyuan 0.4.0 / Build 749; accepted Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
 - Liquid Glass selected-state tint follows the active MIUIX theme color, including Monet dynamic color.
 - First-time Liquid Glass selection defaults navigation content to icons and text without overriding an existing user choice.
 - Home runtime status keeps its existing state semantics while all accent/background color changes use one short transition.
-- Reported blocker: native charging lightning can disappear despite charging state; PR #304 is under device validation.
+- Charging lightning sampling and Diagnostics entry motion are integrated in `dev`, with combined Home/Keyguard/refresh device validation still outstanding.
 
 ## Accepted runtime contract
 
@@ -47,7 +47,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final Control Center appearance.
 - Do not weaken exact restoration or fail-native behavior.
-- Keep version 0.4.0 / Build 752 unchanged unless a version/build change is explicitly part of the task.
+- Keep version 0.4.0 / Build 760 unchanged unless a version/build change is explicitly part of the task.
 
 ## Next
 

@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -40,11 +41,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.DiagLevel
@@ -57,8 +61,10 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
@@ -81,11 +87,16 @@ import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DiagnosticsScreen(onBack: () -> Unit) {
+internal fun DiagnosticsScreen(
+    onBack: () -> Unit,
+    cachedSnapshot: DiagSnapshot?,
+    onSnapshot: (DiagSnapshot) -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val itemMove = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -95,12 +106,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             initial = DiagSettings(level = diagRepo.current()),
         )
 
-    var snapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    var pullRefreshing by remember { mutableStateOf(true) }
+    var snapshot by remember { mutableStateOf(cachedSnapshot) }
+    var revealRound by remember { mutableIntStateOf(0) }
+    var leadShown by rememberSaveable(revealRound) { mutableStateOf(revealRound == 0) }
+    var loading by remember { mutableStateOf(false) }
+    var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var refreshGen by rememberSaveable { mutableIntStateOf(0) }
     var reportBusy by rememberSaveable { mutableStateOf(false) }
     var exportOpen by rememberSaveable { mutableStateOf(false) }
     var levelFilter by rememberSaveable {
@@ -125,11 +137,31 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_refresh_complete),
         )
 
-    fun requestRefresh(fromPull: Boolean = false) {
+    suspend fun captureSnapshot() {
+        try {
+            val captured = DiagSnapshot.capture(context.applicationContext)
+            if (snapshot == null || refreshing) revealRound++
+            snapshot = captured
+            onSnapshot(captured)
+            expandedKey = null
+            viewCleared = false
+        } finally {
+            loading = false
+            refreshing = false
+        }
+    }
+
+    fun reloadSnapshot() {
         if (loading) return
         loading = true
-        pullRefreshing = fromPull
-        refreshGen += 1
+        scope.launch { captureSnapshot() }
+    }
+
+    fun refresh() {
+        if (loading) return
+        loading = true
+        refreshing = true
+        scope.launch { captureSnapshot() }
     }
 
     fun withReport(onReady: suspend (String) -> Unit) {
@@ -165,16 +197,13 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             }
         }
 
-    LaunchedEffect(refreshGen) {
+    LaunchedEffect(revealRound) {
+        leadShown = true
+    }
+
+    LaunchedEffect(Unit) {
         loading = true
-        try {
-            snapshot = DiagSnapshot.capture(context.applicationContext)
-            expandedKey = null
-            viewCleared = false
-        } finally {
-            loading = false
-            pullRefreshing = false
-        }
+        captureSnapshot()
     }
 
     val reportEnabled =
@@ -299,7 +328,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 onDiagLevelChange = { level ->
                     if (level != diagSettings.level) {
                         diagRepo.setLevel(level)
-                        requestRefresh()
+                        reloadSnapshot()
                     }
                 },
                 onScrollTop = {
@@ -319,11 +348,11 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
             )
         },
         listState = listState,
-        // Keep the MIUIX refresh host mounted from the first frame; swapping it after load flashes the page.
+        // Keep one MIUIX refresh host across entry and refresh.
         pullToRefresh =
             SettingsPullToRefresh(
-                refreshing = pullRefreshing,
-                onRefresh = { requestRefresh(fromPull = true) },
+                refreshing = refreshing,
+                onRefresh = ::refresh,
                 texts = refreshTexts,
             ),
     ) {
@@ -332,14 +361,86 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                 item(key = "diagnostics-state-cleared") {
                     LogStateCard(
                         text = stringResource(R.string.diagnostics_view_cleared),
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier,
                     )
                 }
             }
-            loading && snapshot == null -> {
-                // Initial capture is silent; explicit refresh actions own refresh feedback.
+            snapshot == null -> {}
+            visibleEntries.isNotEmpty() -> {
+                item(key = "diagnostics-summary") {
+                    val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
+                    val offset by animateIntOffsetAsState(
+                        targetValue = if (leadShown) IntOffset.Zero else IntOffset(0, lift),
+                        animationSpec = itemMove,
+                        label = "Log summary",
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_events_summary,
+                            visibleEntries.size,
+                        ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 6.dp, bottom = 8.dp)
+                                .graphicsLayer {
+                                    alpha = if (leadShown) 1f else 0f
+                                    translationY = offset.y.toFloat()
+                                },
+                        style = MiuixTheme.textStyles.subtitle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+                if (snapshot != null) {
+                    itemsIndexed(
+                        items = visibleEntries,
+                        key = { _, entry -> entry.key },
+                    ) { index, entry ->
+                        var shown by rememberSaveable(entry.key, revealRound) {
+                            mutableStateOf(revealRound == 0)
+                        }
+                        LaunchedEffect(entry.key, revealRound) {
+                            if (!shown) {
+                                delay(index.coerceAtMost(MAX_ENTRY_STAGGER) * ENTRY_STAGGER_MS)
+                                shown = true
+                            }
+                        }
+                        val entryShown = if (index == 0) leadShown else shown
+                        val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
+                        val offset by animateIntOffsetAsState(
+                            targetValue = if (entryShown) IntOffset.Zero else IntOffset(0, lift),
+                            animationSpec = itemMove,
+                            label = "Log entry",
+                        )
+                        LogCard(
+                            context = context,
+                            entry = entry,
+                            expanded = expandedKey == entry.key,
+                            onToggle = {
+                                expandedKey =
+                                    if (expandedKey == entry.key) {
+                                        null
+                                    } else {
+                                        entry.key
+                                    }
+                            },
+                            modifier =
+                                Modifier
+                                    .animateItem(
+                                        fadeInSpec = null,
+                                        placementSpec = itemMove,
+                                        fadeOutSpec = null,
+                                    )
+                                    .graphicsLayer {
+                                        alpha = if (entryShown) 1f else 0f
+                                        translationY = offset.y.toFloat()
+                                    },
+                        )
+                    }
+                }
             }
-            visibleEntries.isEmpty() -> {
+            else -> {
                 item(key = "diagnostics-state-empty") {
                     LogStateCard(
                         text =
@@ -350,45 +451,7 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
                                     R.string.diagnostics_events_empty
                                 },
                             ),
-                        modifier = Modifier.animateItem(),
-                    )
-                }
-            }
-            else -> {
-                item(key = "diagnostics-summary") {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.diagnostics_events_summary,
-                                visibleEntries.size,
-                            ),
-                        modifier =
-                            Modifier
-                                .animateItem()
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp),
-                        style = MiuixTheme.textStyles.subtitle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-                itemsIndexed(
-                    items = visibleEntries,
-                    key = { _, entry -> entry.key },
-                ) { _, entry ->
-                    LogCard(
-                        context = context,
-                        entry = entry,
-                        expanded = expandedKey == entry.key,
-                        onToggle = {
-                            expandedKey =
-                                if (expandedKey == entry.key) {
-                                    null
-                                } else {
-                                    entry.key
-                                }
-                        },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier,
                     )
                 }
             }
@@ -398,6 +461,8 @@ internal fun DiagnosticsScreen(onBack: () -> Unit) {
 }
 
 private const val MAX_EVENTS = 40
+private const val MAX_ENTRY_STAGGER = 8
+private const val ENTRY_STAGGER_MS = 40L
 
 private const val LEVEL_INFO = 1 shl 0
 private const val LEVEL_WARN = 1 shl 1

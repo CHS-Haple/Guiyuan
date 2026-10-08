@@ -4,16 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
@@ -56,6 +58,7 @@ internal fun GyApp(
         themeMode = appearance.theme,
         dynamicColorEnabled = appearance.dynamicColor,
     ) {
+        var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
         var previewNetworkModeIndex by rememberSaveable {
@@ -221,7 +224,11 @@ internal fun GyApp(
                 AboutThirdPartyScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.Diagnostics>(swipeDismiss = swipeBackDirection) {
-                DiagnosticsScreen(onBack = ::navigateBack)
+                DiagnosticsScreen(
+                    onBack = ::navigateBack,
+                    cachedSnapshot = lastDiagSnapshot,
+                    onSnapshot = { lastDiagSnapshot = it },
+                )
             }
         }
     }
