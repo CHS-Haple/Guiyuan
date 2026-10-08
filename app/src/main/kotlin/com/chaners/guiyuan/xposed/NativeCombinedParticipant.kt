@@ -1462,7 +1462,7 @@ internal object NativeCombinedParticipant {
 
             val bindingVisibilityChanged = bindingState?.visible == true
             if (bindingVisibilityChanged) {
-                bindingState?.visible = false
+                bindingState.visible = false
             }
 
             val nativeRemoveFlag =
@@ -2450,10 +2450,10 @@ internal object NativeCombinedParticipant {
 
                 private fun Class<*>.boxed(): Class<*> =
                     when (this) {
-                        Integer.TYPE -> Integer::class.java
-                        java.lang.Long.TYPE -> java.lang.Long::class.java
-                        java.lang.Short.TYPE -> java.lang.Short::class.java
-                        java.lang.Byte.TYPE -> java.lang.Byte::class.java
+                        Integer.TYPE -> Int::class.javaObjectType
+                        java.lang.Long.TYPE -> Long::class.javaObjectType
+                        java.lang.Short.TYPE -> Short::class.javaObjectType
+                        java.lang.Byte.TYPE -> Byte::class.javaObjectType
                         else -> this
                     }
             }

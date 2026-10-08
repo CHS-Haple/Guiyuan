@@ -128,7 +128,7 @@ internal fun DiagnosticsScreen(
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var reportBusy by rememberSaveable { mutableStateOf(false) }
+    var reportBusy by remember { mutableStateOf(false) }
     var exportOpen by rememberSaveable { mutableStateOf(false) }
     var levelFilter by rememberSaveable {
         mutableIntStateOf(LEVEL_ALL)

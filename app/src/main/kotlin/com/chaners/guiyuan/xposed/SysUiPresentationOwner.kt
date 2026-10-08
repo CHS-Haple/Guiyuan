@@ -169,7 +169,7 @@ internal object SysUiPresentationOwner {
                 .mapNotNull { clazz ->
                     clazz.declaredFields.firstOrNull { candidate ->
                         candidate.name == "ignoredSlots" &&
-                            java.util.List::class.java.isAssignableFrom(candidate.type)
+                            List::class.java.isAssignableFrom(candidate.type)
                     }
                 }
                 .firstOrNull()
@@ -180,7 +180,7 @@ internal object SysUiPresentationOwner {
                 .filter { method ->
                     method.name == "addIgnoredSlots" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.util.List::class.java),
+                            arrayOf(List::class.java),
                         ) &&
                         method.returnType == Void.TYPE
                 }
@@ -192,7 +192,7 @@ internal object SysUiPresentationOwner {
                 .filter { method ->
                     method.name == "setIgnoredSlots" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.util.List::class.java),
+                            arrayOf(List::class.java),
                         ) &&
                         method.returnType == Void.TYPE
                 }
@@ -221,7 +221,7 @@ internal object SysUiPresentationOwner {
                 .firstOrNull { method ->
                     method.name == "setIsHideBattery" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.lang.Boolean::class.java),
+                            arrayOf(Boolean::class.javaObjectType),
                         ) &&
                         method.returnType == Void.TYPE
                 }

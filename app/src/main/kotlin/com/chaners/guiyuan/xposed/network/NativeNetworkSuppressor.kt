@@ -866,7 +866,7 @@ internal object NativeNetworkSuppressor {
                     method.name == "getTint" &&
                         method.parameterCount == 3 &&
                         View::class.java.isAssignableFrom(
-                            method.parameterTypes.getOrNull(1),
+                            method.parameterTypes[1],
                         ) &&
                         method.parameterTypes.getOrNull(2) ==
                             Int::class.javaPrimitiveType

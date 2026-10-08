@@ -551,7 +551,7 @@ internal fun SettingsHubScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
-    var restartInProgress by rememberSaveable { mutableStateOf(false) }
+    var restartInProgress by remember { mutableStateOf(false) }
     var restartAfterDialogDismiss by remember { mutableStateOf(false) }
 
     HubPage(
