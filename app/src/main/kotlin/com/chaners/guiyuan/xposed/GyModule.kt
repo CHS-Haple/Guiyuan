@@ -3542,7 +3542,9 @@ class GyModule : XposedModule() {
             if (StatusStateStore.snapshot().battery?.charging == true) {
                 val iconId = SysUiBatterySource.readHostChargingIconId(host)
                 if (iconId != null) {
-                    StatusStateStore.updateBatteryChargingIcon(iconId)
+                    StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
+                        onCombinedStateChanged(snapshot)
+                    }
                 }
                 logDiagnostic(
                     level = Log.INFO,
