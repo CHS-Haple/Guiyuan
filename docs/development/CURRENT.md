@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.4.0 / Build 761 (`20261008-761`); Preview Sandbox semantic leading icons have been accepted. Earlier combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Development integration: Guiyuan 0.4.0 / Build 769 (`20261008-769`); accepted Preview Sandbox and Keyguard/AOD leading icons, Diagnostics entry/list motion, Feature grouping and defaults. Combined Home/Keyguard/refresh acceptance remains tracked separately.
 - Stable `main`: Guiyuan 0.4.0 / Build 749; accepted Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
@@ -51,4 +51,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Focused device review: [PR #311](https://github.com/CHS-Haple/Guiyuan/pull/311) uses official Outlined W500 leading icons for the Keyguard and AOD preference rows (Build 762 Canary); keep it separate from `dev` until accepted. Otherwise choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete reported defect/feature request.
+Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Validate remaining combined Home/Keyguard/refresh scenarios before the next runtime stable promotion.
