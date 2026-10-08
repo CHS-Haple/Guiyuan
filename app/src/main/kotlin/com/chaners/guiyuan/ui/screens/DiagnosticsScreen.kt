@@ -96,7 +96,7 @@ internal fun DiagnosticsScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val itemMove = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
+    val placementSpec = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -384,7 +384,7 @@ internal fun DiagnosticsScreen(
                             Modifier
                                 .animateItem(
                                     fadeInSpec = null,
-                                    placementSpec = itemMove,
+                                    placementSpec = placementSpec,
                                     fadeOutSpec = null,
                                 ),
                     )
