@@ -38,8 +38,8 @@ internal class StatusPainter(
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets = LinkedHashMap<String, NativeCenterAsset>(NATIVE_CENTER_CACHE_SIZE, 0.75f, true)
-    private val nativeTintVariantIds = HashMap<String, Int>()
-    private val nativeWifiReferenceIds = HashMap<String, Int>()
+    private val nativeTintVariantIds = HashMap<Int, Int>()
+    private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
     private var cachedBatteryTopTextWeight: Int = Int.MIN_VALUE
@@ -2358,9 +2358,8 @@ internal class StatusPainter(
             return null
         }
 
-        val key = resource.packageName + ":" + resource.resourceId
         val referenceId =
-            nativeWifiReferenceIds.getOrPut(key) {
+            nativeWifiReferenceIds.getOrPut(resource.resourceId) {
                 runCatching {
                     val drawableContext =
                         if (resource.packageName == context.packageName) {
@@ -2392,9 +2391,8 @@ internal class StatusPainter(
             return null
         }
 
-        val key = resource.packageName + ":" + resource.resourceId
         val tintResourceId =
-            nativeTintVariantIds.getOrPut(key) {
+            nativeTintVariantIds.getOrPut(resource.resourceId) {
                 runCatching {
                     val drawableContext =
                         context.createPackageContext(resource.packageName, 0)
