@@ -1,4 +1,4 @@
-<!-- Google Material Symbols Outlined W400 24px: colorize; Apache-2.0; source: google/material-design-icons -->
+<!-- Google Material Symbols Outlined W500 24px: colorize; Apache-2.0; source: google/material-design-icons -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -7,6 +7,6 @@
     <group android:translateY="960">
         <path
             android:fillColor="#FF000000"
-            android:pathData="M120-120v-190l358-358-58-56 58-56 76 76 124-124q5-5 12.5-8t15.5-3q8 0 15 3t13 8l94 94q5 6 8 13t3 15q0 8-3 15.5t-8 12.5L705-555l76 78-57 57-56-58-358 358H120Zm80-80h78l332-334-76-76-334 332v78Zm447-410 96-96-37-37-96 96 37 37Zm0 0-37-37 37 37Z" />
+            android:pathData="M111.87-111.87v-201.48L466.52-668l-58.24-56L478-791.48l76 76 118.02-118.5q6.44-6.43 15.37-9.91 8.94-3.48 18.61-3.24 9.43 0 18.11 3.6 8.67 3.6 15.87 10.03l93.52 93.52q6.43 7.2 10.03 15.87 3.6 8.68 3.6 18.11.24 9.67-3.24 18.61-3.48 8.93-9.91 15.37L716.24-554.76l76 78L724-408.52l-56-58-354.65 354.65H111.87Zm91-91h73.93L605.93-534 534-605.93 202.87-276.8v73.93Zm447.72-409.76L744.2-706 706-744.2l-93.37 93.61 37.96 37.96Zm0 0-37.96-37.96 37.96 37.96Z" />
     </group>
 </vector>
