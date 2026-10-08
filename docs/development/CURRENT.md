@@ -25,7 +25,7 @@
 
 ## Maintainability baseline
 
-Repository-wide maintainability review is considered complete unless a concrete new finding appears.
+A source-wide static screening has been performed, but its inventory is not proof of a completed line-by-line audit. Continue evidence-based review of actual code and call paths; do not rewrite stable features to satisfy a file-count or style target.
 
 Current rules:
 - prefer concise, scope-appropriate names over modifier/suffix stacking;

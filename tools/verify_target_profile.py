@@ -39,7 +39,8 @@ def validate_artifact(name: str, artifact: dict) -> None:
 
 def source_string_constant(source_text: str, constant_name: str, label: str) -> str:
     match = re.search(
-        rf'\b{re.escape(constant_name)}\s*=\s*"([^"]+)"',
+        rf'(?m)^[ \t]*(?:(?:private|internal|public)\s+)?const[ \t]+val[ \t]+'
+        rf'{re.escape(constant_name)}[ \t]*=[ \t\r\n]*"([^"]+)"',
         source_text,
     )
     if not match:
@@ -348,23 +349,13 @@ if not set(native_status_views.values()).issubset(verified_systemui):
 
 inventory_text = NATIVE_STATUS_INVENTORY_PATH.read_text(encoding="utf-8")
 inventory_constants = {
-    "mobileNetwork": re.search(
-        r'MOBILE_NETWORK_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
-    "wifi": re.search(
-        r'WIFI_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
-    "battery": re.search(
-        r'BATTERY_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
+    "mobileNetwork": "MOBILE_NETWORK_VIEW_CLASS_NAME",
+    "wifi": "WIFI_VIEW_CLASS_NAME",
+    "battery": "BATTERY_VIEW_CLASS_NAME",
 }
-for role, match in inventory_constants.items():
-    if not match:
-        fail(f"native status inventory constant is missing: {role}")
-    if match.group(1) != native_status_views[role]:
+for role, name in inventory_constants.items():
+    source_class = source_string_constant(inventory_text, name, "native status inventory")
+    if source_class != native_status_views[role]:
         fail(f"native status inventory class drifted from profile: {role}")
 
 native_status_containers = profile.get("nativeStatusContainers", {})
@@ -375,25 +366,14 @@ if not set(native_status_containers.values()).issubset(verified_systemui):
     fail("native status container classes are not all listed in the pinned SystemUI profile")
 
 container_constants = {
-    "miuiStatusIcons": re.search(
-        r'(?m)^\s*const val MIUI_STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
-    "statusIcons": re.search(
-        r'(?m)^\s*const val STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
-    "batteryContainer": re.search(
-        r'(?m)^\s*const val BATTERY_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
-        inventory_text,
-    ),
+    "miuiStatusIcons": "MIUI_STATUS_ICON_CONTAINER_CLASS_NAME",
+    "statusIcons": "STATUS_ICON_CONTAINER_CLASS_NAME",
+    "batteryContainer": "BATTERY_CONTAINER_CLASS_NAME",
 }
-for role, match in container_constants.items():
-    if not match:
-        fail(f"native status container constant is missing: {role}")
-    if match.group(1) != native_status_containers[role]:
+for role, name in container_constants.items():
+    source_class = source_string_constant(inventory_text, name, "native status container")
+    if source_class != native_status_containers[role]:
         fail(f"native status container class drifted from profile: {role}")
-
 
 print(f"Pinned target profile: {profile['profileId']}")
 print(
