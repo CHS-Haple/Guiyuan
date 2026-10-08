@@ -751,6 +751,8 @@ private fun LogCard(
     val title = logTitle(context, entry)
     val summary = logSummary(context, entry)
     val category = categoryLabel(context, entry.category)
+    val warning = entry.level == LogLevel.Warning ||
+        entry.level == LogLevel.Error || entry.level == LogLevel.Fatal
 
     Card(
         modifier =
@@ -808,7 +810,7 @@ private fun LogCard(
                 modifier = Modifier.animateContentSize(),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = if (expanded) 2 else 1,
+                maxLines = if (expanded) 3 else if (warning) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -821,18 +823,18 @@ private fun LogCard(
             Column {
                 Spacer(modifier = Modifier.height(10.dp))
                 LogDetail(
-                    label = "Event",
+                    label = stringResource(R.string.diagnostics_log_detail_event),
                     value = entry.event ?: "—",
                 )
                 entry.component?.let { component ->
                     LogDetail(
-                        label = "Component",
+                        label = stringResource(R.string.diagnostics_log_detail_component),
                         value = component,
                     )
                 }
                 entry.state?.let { state ->
                     LogDetail(
-                        label = "State",
+                        label = stringResource(R.string.diagnostics_log_detail_state),
                         value = state,
                     )
                 }
@@ -840,8 +842,20 @@ private fun LogCard(
                 entry.fields
                     .filterKeys { key -> key !in LOG_META_FIELDS }
                     .forEach { (key, value) ->
-                        LogDetail(label = key, value = value)
+                        LogDetail(
+                            label = when (key) {
+                                "source" -> stringResource(R.string.diagnostics_log_detail_source)
+                                "reason" -> stringResource(R.string.diagnostics_log_detail_reason)
+                                "level" -> stringResource(R.string.diagnostics_log_detail_level)
+                                else -> key
+                            },
+                            value = value,
+                        )
                     }
+                LogDetail(
+                    label = stringResource(R.string.diagnostics_log_detail_raw),
+                    value = entry.raw,
+                )
             }
         }
     }
@@ -1068,107 +1082,166 @@ private fun logSummary(
     context: Context,
     entry: LogEntry,
 ): String {
-    // Structured events already have a title; their raw protocol is not a summary.
+    // The compact line adds meaning beyond the title; the raw event stays available in details.
     val fallback = if (entry.structured) "" else entry.message
+    val fields = entry.fields
+    val separator = context.getString(R.string.diagnostics_log_summary_separator)
+    fun join(vararg parts: String?): String =
+        parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
+
     if (entry.event == "connectivity") {
         return buildList {
-            entry.fields["transport"]?.let { add(sourceLabel(context, it)) }
-            if (entry.fields["validated"] == "true") {
+            fields["transport"]?.let { add(sourceLabel(context, it)) }
+            if (fields["validated"] == "true") {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
-            if (entry.fields["internetCapability"] == "true") {
+            if (fields["internetCapability"] == "true") {
                 add(context.getString(R.string.diagnostics_log_summary_internet))
             }
-            entry.fields["mobileDataEnabled"]?.let { enabled ->
-                add(
-                    context.getString(
-                        if (enabled == "true") {
-                            R.string.diagnostics_log_summary_mobile_data_on
-                        } else {
-                            R.string.diagnostics_log_summary_mobile_data_off
-                        },
-                    ),
-                )
-            }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
+            val mobileState =
+                when (fields["mobileDataEnabled"]) {
+                    "true" -> R.string.diagnostics_log_summary_mobile_data_on
+                    "false" -> R.string.diagnostics_log_summary_mobile_data_off
+                    else -> null
+                }
+            mobileState?.let { add(context.getString(it)) }
+        }.joinToString(separator).ifBlank { fallback }
     }
 
     if (entry.event == "pipeline.latency") {
-        return buildList {
-            entry.fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
-                add(
-                    context.getString(
-                        R.string.diagnostics_log_summary_total_time,
-                        formatMicros(micros),
-                    ),
-                )
-            }
-            entry.fields["source"]?.let { source ->
-                add(
-                    context.getString(
-                        R.string.diagnostics_log_summary_source,
-                        sourceLabel(context, source),
-                    ),
-                )
-            }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
+        return join(
+            fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
+                context.getString(R.string.diagnostics_log_summary_total_time, formatMicros(micros))
+            },
+            fields["source"]?.let {
+                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
+            },
+        ).ifBlank { fallback }
     }
 
-    if (entry.event in setOf("tintCommit", "homeRenderTint")) {
-        return buildList {
-            (entry.fields["applied"] ?: entry.fields["statusIcon"])?.let(::add)
-            entry.fields["source"]?.let { source ->
-                add(
-                    context.getString(
-                        R.string.diagnostics_log_summary_source,
-                        sourceLabel(context, source),
-                    ),
-                )
-            }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
+    if (entry.event == "tintCommit" || entry.event == "homeRenderTint") {
+        return join(
+            fields["applied"] ?: fields["statusIcon"],
+            fields["source"]?.let {
+                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
+            },
+        ).ifBlank { fallback }
     }
 
-    val routineReady =
-        entry.level == LogLevel.Info &&
-            entry.state.equals("ready", ignoreCase = true) &&
-            entry.fields["reason"].isNullOrBlank()
+    val state = entry.state?.let { stateLabel(context, it) }
+    val reason = fields["reason"]?.takeIf(String::isNotBlank)?.let { reasonLabel(context, it) }
+    val problem = entry.level == LogLevel.Warning ||
+        entry.level == LogLevel.Error || entry.level == LogLevel.Fatal
+    val source = fields["source"]?.let { sourceLabel(context, it) }
+
     val summary =
-        buildList {
-            if (!routineReady) {
-                entry.state?.let { add(stateLabel(context, it)) }
+        when (entry.event) {
+            "featureSettings.changed" -> join(
+                switchLabel(context, R.string.diagnostics_log_setting_combined, fields["combinedStatusEnabled"]),
+                switchLabel(context, R.string.diagnostics_log_setting_keyguard, fields["keyguardEnabled"]),
+                switchLabel(context, R.string.diagnostics_log_setting_aod, fields["aodEnabled"]),
+                reason,
+            ).ifBlank { join(state, reason) }
+
+            "visualSettings.changed" -> join(state, reason)
+
+            "diagnostics.level" -> join(
+                when (fields["level"]) {
+                    "detailed" -> context.getString(R.string.diagnostics_mode_detailed)
+                    "general" -> context.getString(R.string.diagnostics_mode_basic)
+                    else -> fields["level"]
+                },
+                reason,
+            )
+
+            "scene.stableFamily" -> {
+                val previous = fields["previous"]?.takeUnless { it.equals("UNKNOWN", true) }
+                val change =
+                    if (previous != null && state != null) {
+                        stateLabel(context, previous) + " → " + state
+                    } else {
+                        state
+                    }
+                join(change, reason)
             }
-            entry.fields["source"]
-                ?.takeUnless { source ->
-                    routineReady &&
-                        (source.equals("hotReload", ignoreCase = true) ||
-                            source.equals("hotReloadRestore", ignoreCase = true))
-                }?.let { source ->
-                    add(
-                        context.getString(
-                            R.string.diagnostics_log_summary_source,
-                            sourceLabel(context, source),
-                        ),
-                    )
-                }
-            entry.fields["reason"]?.takeIf(String::isNotBlank)?.let { add(it) }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator))
+
+            "presentation.failNative" -> join(reason)
+
+            "aod.state", "aod.target", "presentation.cutover",
+            "compatibility.probe", "compatibility.revalidated",
+            "hook.install", "hook.replace", "source.install", "source.attach",
+            -> join(state, reason)
+
+            else -> {
+                val alreadyTold =
+                    !problem && reason == null &&
+                        when (entry.event) {
+                            "module.loaded", "module.reloaded", "runtime.attach",
+                            "runtimePreferences.bind", "diagnostics.bind",
+                            "host.restore", "session.attach", "renderer.attach",
+                            "hotReload.restore", "hotReload.complete",
+                            "hotReload.generationHandoff", "mobile.recovery",
+                            -> entry.state.equals("ready", true)
+                            "runtime.teardown" -> entry.state.equals("released", true)
+                            "hotReload.prepare" -> entry.state.equals("preparing", true)
+                            else -> false
+                        }
+                join(
+                    if (alreadyTold) null else state,
+                    reason,
+                    if (problem && reason == null) {
+                        source?.let { context.getString(R.string.diagnostics_log_summary_source, it) }
+                    } else null,
+                )
+            }
+        }
 
     return summary.ifBlank { fallback }
+}
+
+private fun switchLabel(
+    context: Context,
+    name: Int,
+    value: String?,
+): String? {
+    val state =
+        when (value) {
+            "true" -> R.string.diagnostics_log_switch_on
+            "false" -> R.string.diagnostics_log_switch_off
+            else -> return null
+        }
+    return context.getString(
+        R.string.diagnostics_log_switch_value,
+        context.getString(name),
+        context.getString(state),
+    )
 }
 
 private fun stateLabel(
     context: Context,
     state: String,
 ): String =
-    when (state.lowercase()) {
+    when (state.lowercase(Locale.ROOT)) {
         "ready" -> context.getString(R.string.diagnostics_log_state_ready)
         "observed" -> context.getString(R.string.diagnostics_log_state_observed)
+        "enabled" -> context.getString(R.string.diagnostics_log_state_enabled)
         "disabled" -> context.getString(R.string.diagnostics_log_state_disabled)
         "unavailable" -> context.getString(R.string.diagnostics_log_state_unavailable)
         "partial" -> context.getString(R.string.diagnostics_log_state_partial)
         "error" -> context.getString(R.string.diagnostics_log_state_error)
         "scheduled" -> context.getString(R.string.diagnostics_log_state_scheduled)
         "restart-required" -> context.getString(R.string.diagnostics_log_state_restart_required)
+        "pending" -> context.getString(R.string.diagnostics_log_state_pending)
+        "prepared" -> context.getString(R.string.diagnostics_log_state_prepared)
+        "released" -> context.getString(R.string.diagnostics_log_state_released)
+        "native" -> context.getString(R.string.diagnostics_log_state_native)
+        "combined" -> context.getString(R.string.diagnostics_log_state_combined)
+        "keyguard" -> context.getString(R.string.diagnostics_log_state_keyguard)
+        "aod" -> context.getString(R.string.diagnostics_log_state_aod)
+        "home" -> context.getString(R.string.diagnostics_log_state_home)
+        "aod-stable" -> context.getString(R.string.diagnostics_log_state_aod_stable)
+        "native-transition" -> context.getString(R.string.diagnostics_log_state_native_transition)
+        "keyguard-eligible" -> context.getString(R.string.diagnostics_log_state_keyguard_eligible)
         else -> state
     }
 
@@ -1180,9 +1253,22 @@ private fun sourceLabel(
         "wifi" -> "Wi-Fi"
         "mobile" -> context.getString(R.string.diagnostics_log_source_mobile)
         "native" -> context.getString(R.string.diagnostics_log_source_native)
+        "coldstart" -> context.getString(R.string.diagnostics_log_source_cold_start)
         "hotreload" -> context.getString(R.string.diagnostics_log_source_hot_reload)
         "hotreloadrestore" -> context.getString(R.string.diagnostics_log_source_hot_reload_restore)
         "hotreloadtransfer" -> context.getString(R.string.diagnostics_log_source_hot_reload_transfer)
+        else -> value
+    }
+
+private fun reasonLabel(
+    context: Context,
+    value: String,
+): String =
+    when (value) {
+        "saved-state-missing-or-unsupported-generation" ->
+            context.getString(R.string.diagnostics_log_reason_saved_state)
+        "main-thread-dispatch-failed" ->
+            context.getString(R.string.diagnostics_log_reason_dispatch)
         else -> value
     }
 
