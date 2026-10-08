@@ -45,22 +45,39 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun SemanticLeadingIcon(
     @DrawableRes iconRes: Int,
     enabled: Boolean = true,
+    @DrawableRes detailRes: Int? = null,
 ) {
+    val tint =
+        ColorFilter.tint(
+            MiuixTheme.colorScheme.onSurfaceContainer.copy(
+                alpha = if (enabled) 1f else 0.38f,
+            ),
+        )
     Box(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            colorFilter =
-                ColorFilter.tint(
-                    MiuixTheme.colorScheme.onSurfaceContainer.copy(
-                        alpha = if (enabled) 1f else 0.38f,
-                    ),
-                ),
-        )
+        if (detailRes == null) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                colorFilter = tint,
+            )
+        } else {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.align(Alignment.TopStart).size(18.dp),
+                colorFilter = tint,
+            )
+            Image(
+                painter = painterResource(detailRes),
+                contentDescription = null,
+                modifier = Modifier.align(Alignment.BottomEnd).size(10.dp),
+                colorFilter = tint,
+            )
+        }
     }
 }
 

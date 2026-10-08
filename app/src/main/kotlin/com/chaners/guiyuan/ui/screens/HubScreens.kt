@@ -140,7 +140,7 @@ internal fun FeaturesScreen(
                 value = visual.wifiScale,
                 onValueChange = visualRepo::setWifiScale,
                 title = stringResource(R.string.wifi_size),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -157,7 +157,7 @@ internal fun FeaturesScreen(
                 value = visual.airplaneScale,
                 onValueChange = visualRepo::setAirplaneScale,
                 title = stringResource(R.string.airplane_size),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -174,7 +174,7 @@ internal fun FeaturesScreen(
                 value = visual.noSimScale,
                 onValueChange = visualRepo::setNoSimScale,
                 title = stringResource(R.string.no_sim_size),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -191,7 +191,7 @@ internal fun FeaturesScreen(
                 value = visual.mobileTypeScale,
                 onValueChange = visualRepo::setMobileTypeScale,
                 title = stringResource(R.string.mobile_type_size),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                 valueText =
                     stringResource(
                         R.string.percent_value,
@@ -215,7 +215,7 @@ internal fun FeaturesScreen(
                     visualRepo.setMobileTypeWeight(value.roundToInt())
                 },
                 title = stringResource(R.string.mobile_type_weight),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_bold, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_format_bold) },
                 valueText =
                     stringResource(
                         R.string.integer_value,
@@ -232,7 +232,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_invert_colors, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, featureCfg.enabled, R.drawable.ic_material_symbol_palette) },
                 summary = stringResource(R.string.mobile_follow_battery_color_summary),
                 checked = visual.mobileFollowsBatteryColor,
                 enabled = featureCfg.enabled,
@@ -240,7 +240,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.center_follow_battery_color),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_color_fill, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_palette) },
                 summary = stringResource(R.string.center_follow_battery_color_summary),
                 checked = visual.centerFollowsBatteryColor,
                 enabled = featureCfg.enabled,
@@ -282,7 +282,7 @@ internal fun FeaturesScreen(
                     value = textUiScale,
                     onValueChange = visualRepo::setTopTextScale,
                     title = stringResource(R.string.battery_top_text_size),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_size, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                     valueText =
                         stringResource(
                             R.string.battery_top_scale_value,
@@ -308,7 +308,7 @@ internal fun FeaturesScreen(
                         visualRepo.setTopTextWeight(value.roundToInt())
                     },
                     title = stringResource(R.string.battery_top_text_weight),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_bold, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_format_bold) },
                     valueText =
                         stringResource(
                             R.string.battery_top_weight_value,
@@ -325,7 +325,7 @@ internal fun FeaturesScreen(
                 )
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_color_text, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_palette) },
                     summary = stringResource(R.string.battery_text_follow_battery_color_summary),
                     checked = visual.topTextFollowsBatteryColor,
                     enabled = featureCfg.enabled,
@@ -350,7 +350,7 @@ internal fun FeaturesScreen(
                     value = chargingIconUiScale,
                     onValueChange = visualRepo::setTopChargingIconScale,
                     title = stringResource(R.string.battery_top_charging_icon_size),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                     valueText =
                         stringResource(
                             R.string.battery_top_scale_value,
@@ -372,7 +372,7 @@ internal fun FeaturesScreen(
                 )
                 SwitchPreference(
                     title = stringResource(R.string.charging_icon_follow_battery_color),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_colorize, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_palette) },
                     summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
                     checked = visual.topChargingIconFollowsBatteryColor,
                     enabled = featureCfg.enabled,
@@ -487,7 +487,7 @@ internal fun FeaturesScreen(
             value = visual.combinedScale,
             onValueChange = visualRepo::setCombinedScale,
             title = stringResource(R.string.combined_size),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_aspect_ratio, featureCfg.enabled) },
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
             valueText =
                 stringResource(
                     R.string.percent_value,
