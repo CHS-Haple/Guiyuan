@@ -212,6 +212,11 @@
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
     <string name="diagnostics_log_summary_source">来源：%1$s</string>
     <string name="diagnostics_log_summary_separator">，</string>
+    <string name="diagnostics_log_source_mobile">移动网络</string>
+    <string name="diagnostics_log_source_native">原生</string>
+    <string name="diagnostics_log_source_hot_reload">热重载</string>
+    <string name="diagnostics_log_source_hot_reload_restore">热重载恢复</string>
+    <string name="diagnostics_log_source_hot_reload_transfer">热重载交接</string>
     <string name="diagnostics_log_state_ready">就绪</string>
     <string name="diagnostics_log_state_observed">已观测</string>
     <string name="diagnostics_log_state_disabled">已禁用</string>

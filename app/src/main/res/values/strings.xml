@@ -213,6 +213,11 @@
     <string name="diagnostics_log_summary_total_time">Total %1$s</string>
     <string name="diagnostics_log_summary_source">Source: %1$s</string>
     <string name="diagnostics_log_summary_separator">, </string>
+    <string name="diagnostics_log_source_mobile">Mobile</string>
+    <string name="diagnostics_log_source_native">Native</string>
+    <string name="diagnostics_log_source_hot_reload">Hot reload</string>
+    <string name="diagnostics_log_source_hot_reload_restore">Hot reload restore</string>
+    <string name="diagnostics_log_source_hot_reload_transfer">Hot reload transfer</string>
     <string name="diagnostics_log_state_ready">Ready</string>
     <string name="diagnostics_log_state_observed">Observed</string>
     <string name="diagnostics_log_state_disabled">Disabled</string>

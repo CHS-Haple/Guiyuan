@@ -1072,7 +1072,7 @@ private fun logSummary(
     val fallback = if (entry.structured) "" else entry.message
     if (entry.event == "connectivity") {
         return buildList {
-            entry.fields["transport"]?.let { add(transportLabel(it)) }
+            entry.fields["transport"]?.let { add(sourceLabel(context, it)) }
             if (entry.fields["validated"] == "true") {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
@@ -1107,7 +1107,7 @@ private fun logSummary(
                 add(
                     context.getString(
                         R.string.diagnostics_log_summary_source,
-                        transportLabel(source),
+                        sourceLabel(context, source),
                     ),
                 )
             }
@@ -1121,27 +1121,37 @@ private fun logSummary(
                 add(
                     context.getString(
                         R.string.diagnostics_log_summary_source,
-                        source,
+                        sourceLabel(context, source),
                     ),
                 )
             }
         }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
     }
 
+    val routineReady =
+        entry.level == LogLevel.Info &&
+            entry.state.equals("ready", ignoreCase = true) &&
+            entry.fields["reason"].isNullOrBlank()
     val summary =
         buildList {
-            entry.state?.let { add(stateLabel(context, it)) }
-            entry.fields["source"]?.let { source ->
-                add(
-                    context.getString(
-                        R.string.diagnostics_log_summary_source,
-                        transportLabel(source),
-                    ),
-                )
+            if (!routineReady) {
+                entry.state?.let { add(stateLabel(context, it)) }
             }
-            entry.fields["reason"]?.let { add(it) }
-        }.take(3)
-            .joinToString(context.getString(R.string.diagnostics_log_summary_separator))
+            entry.fields["source"]
+                ?.takeUnless { source ->
+                    routineReady &&
+                        (source.equals("hotReload", ignoreCase = true) ||
+                            source.equals("hotReloadRestore", ignoreCase = true))
+                }?.let { source ->
+                    add(
+                        context.getString(
+                            R.string.diagnostics_log_summary_source,
+                            sourceLabel(context, source),
+                        ),
+                    )
+                }
+            entry.fields["reason"]?.takeIf(String::isNotBlank)?.let { add(it) }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator))
 
     return summary.ifBlank { fallback }
 }
@@ -1162,13 +1172,17 @@ private fun stateLabel(
         else -> state
     }
 
-private fun transportLabel(value: String): String =
-    when (value.lowercase()) {
+private fun sourceLabel(
+    context: Context,
+    value: String,
+): String =
+    when (value.lowercase(Locale.ROOT)) {
         "wifi" -> "Wi-Fi"
-        "mobile" -> "Mobile"
-        "hotreload",
-        "hotreloadrestore",
-        -> "Hot Reload"
+        "mobile" -> context.getString(R.string.diagnostics_log_source_mobile)
+        "native" -> context.getString(R.string.diagnostics_log_source_native)
+        "hotreload" -> context.getString(R.string.diagnostics_log_source_hot_reload)
+        "hotreloadrestore" -> context.getString(R.string.diagnostics_log_source_hot_reload_restore)
+        "hotreloadtransfer" -> context.getString(R.string.diagnostics_log_source_hot_reload_transfer)
         else -> value
     }
 
