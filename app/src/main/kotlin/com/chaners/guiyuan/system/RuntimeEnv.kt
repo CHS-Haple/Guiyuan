@@ -139,7 +139,13 @@ internal data class RuntimeEnv(
                 val process = ProcessBuilder("/system/bin/getprop", key)
                     .redirectErrorStream(true)
                     .start()
-                process.inputStream.bufferedReader().use { it.readLine().orEmpty().trim() }
+                try {
+                    process.inputStream.bufferedReader().use {
+                        it.readLine().orEmpty().trim()
+                    }
+                } finally {
+                    process.destroy()
+                }
             }.getOrDefault("")
         }
     }

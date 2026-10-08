@@ -336,8 +336,6 @@ internal object NativePresentationResolver {
                     Mode.UNKNOWN,
                     -> false
                 }
-
-
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"
