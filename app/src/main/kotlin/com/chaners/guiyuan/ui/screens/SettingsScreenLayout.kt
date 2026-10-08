@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -31,7 +32,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -99,7 +99,7 @@ internal fun SemanticLeadingIcon(
                             // Clear the badge's silhouette from the base, not the MIUIX surface.
                             drawImage(
                                 image = cutout,
-                                topLeft = IntOffset(11.dp.roundToPx(), 11.dp.roundToPx()),
+                                topLeft = Offset(11.dp.toPx(), 11.dp.toPx()),
                                 blendMode = BlendMode.DstOut,
                             )
                         },
