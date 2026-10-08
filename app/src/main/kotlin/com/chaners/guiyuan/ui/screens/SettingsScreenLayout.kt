@@ -94,7 +94,7 @@ internal fun SemanticLeadingIcon(
                     context,
                     detailRes,
                     with(density) { 11.dp.roundToPx() },
-                    with(density) { 9.dp.roundToPx() },
+                    with(density) { 10.dp.roundToPx() },
                 )
             }
             val gap = with(density) { 1.dp.roundToPx() }
