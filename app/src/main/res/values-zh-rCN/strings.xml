@@ -212,13 +212,6 @@
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
     <string name="diagnostics_log_summary_source">来源：%1$s</string>
     <string name="diagnostics_log_summary_separator">，</string>
-    <string name="diagnostics_log_detail_event">事件</string>
-    <string name="diagnostics_log_detail_component">组件</string>
-    <string name="diagnostics_log_detail_state">状态</string>
-    <string name="diagnostics_log_detail_source">来源</string>
-    <string name="diagnostics_log_detail_reason">原因</string>
-    <string name="diagnostics_log_detail_level">等级</string>
-    <string name="diagnostics_log_detail_raw">原始记录</string>
     <string name="diagnostics_log_setting_combined">三合一</string>
     <string name="diagnostics_log_setting_keyguard">锁屏</string>
     <string name="diagnostics_log_setting_aod">AOD</string>

@@ -823,18 +823,18 @@ private fun LogCard(
             Column {
                 Spacer(modifier = Modifier.height(10.dp))
                 LogDetail(
-                    label = stringResource(R.string.diagnostics_log_detail_event),
+                    label = "event",
                     value = entry.event ?: "—",
                 )
                 entry.component?.let { component ->
                     LogDetail(
-                        label = stringResource(R.string.diagnostics_log_detail_component),
+                        label = "component",
                         value = component,
                     )
                 }
                 entry.state?.let { state ->
                     LogDetail(
-                        label = stringResource(R.string.diagnostics_log_detail_state),
+                        label = "state",
                         value = state,
                     )
                 }
@@ -842,18 +842,10 @@ private fun LogCard(
                 entry.fields
                     .filterKeys { key -> key !in LOG_META_FIELDS }
                     .forEach { (key, value) ->
-                        LogDetail(
-                            label = when (key) {
-                                "source" -> stringResource(R.string.diagnostics_log_detail_source)
-                                "reason" -> stringResource(R.string.diagnostics_log_detail_reason)
-                                "level" -> stringResource(R.string.diagnostics_log_detail_level)
-                                else -> key
-                            },
-                            value = value,
-                        )
+                        LogDetail(label = key, value = value)
                     }
                 LogDetail(
-                    label = stringResource(R.string.diagnostics_log_detail_raw),
+                    label = "raw",
                     value = entry.raw,
                 )
             }

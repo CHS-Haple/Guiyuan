@@ -213,13 +213,6 @@
     <string name="diagnostics_log_summary_total_time">Total %1$s</string>
     <string name="diagnostics_log_summary_source">Source: %1$s</string>
     <string name="diagnostics_log_summary_separator">, </string>
-    <string name="diagnostics_log_detail_event">Event</string>
-    <string name="diagnostics_log_detail_component">Component</string>
-    <string name="diagnostics_log_detail_state">State</string>
-    <string name="diagnostics_log_detail_source">Source</string>
-    <string name="diagnostics_log_detail_reason">Reason</string>
-    <string name="diagnostics_log_detail_level">Level</string>
-    <string name="diagnostics_log_detail_raw">Raw log</string>
     <string name="diagnostics_log_setting_combined">Combined</string>
     <string name="diagnostics_log_setting_keyguard">Lock screen</string>
     <string name="diagnostics_log_setting_aod">AOD</string>
