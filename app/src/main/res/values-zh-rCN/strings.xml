@@ -240,6 +240,7 @@
     <string name="diagnostics_pull_to_refresh">下拉刷新</string>
     <string name="diagnostics_release_to_refresh">松开刷新</string>
     <string name="diagnostics_refreshing">正在刷新</string>
+    <string name="diagnostics_loading">正在读取运行日志…</string>
     <string name="diagnostics_refresh_complete">刷新完成</string>
     <string name="diagnostics_scroll_top">滚动到顶部</string>
     <string name="diagnostics_scroll_bottom">滚动到底部</string>

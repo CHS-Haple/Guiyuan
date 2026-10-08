@@ -9,7 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateIntOffsetAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -37,9 +37,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
@@ -61,13 +63,14 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -84,6 +87,8 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
+import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -93,10 +98,11 @@ internal fun DiagnosticsScreen(
     onSnapshot: (DiagSnapshot) -> Unit,
 ) {
     val context = LocalContext.current
+    val navScope = LocalNavTransitionScope.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val itemMove = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
+    val placementSpec = remember { folmeSpring<IntOffset>(damping = 1f, response = 0.3f) }
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -107,9 +113,18 @@ internal fun DiagnosticsScreen(
         )
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
-    var revealRound by remember { mutableIntStateOf(0) }
-    var leadShown by rememberSaveable(revealRound) { mutableStateOf(revealRound == 0) }
-    var loading by remember { mutableStateOf(false) }
+    val initialSnapshot = remember { cachedSnapshot }
+    val rise = remember(snapshot) {
+        Animatable(if (snapshot == null || snapshot === initialSnapshot) 1f else 0f)
+    }
+    LaunchedEffect(rise) {
+        if (rise.value == 0f) {
+            withFrameNanos { } // Paint the initial position before the spring starts.
+            rise.animateTo(1f, folmeSpring(damping = 1f, response = 0.55f))
+        }
+    }
+    val risePx = with(LocalDensity.current) { 28.dp.toPx() }
+    var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -137,10 +152,14 @@ internal fun DiagnosticsScreen(
             stringResource(R.string.diagnostics_refresh_complete),
         )
 
+    suspend fun awaitNavIdle() {
+        snapshotFlow { navScope.role == NavRole.Top && !navScope.isRunning }.first { it }
+    }
+
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
-            if (snapshot == null || refreshing) revealRound++
+            awaitNavIdle()
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
@@ -197,12 +216,9 @@ internal fun DiagnosticsScreen(
             }
         }
 
-    LaunchedEffect(revealRound) {
-        leadShown = true
-    }
-
     LaunchedEffect(Unit) {
-        loading = true
+        // Wait for the native page transition before starting root log capture.
+        awaitNavIdle()
         captureSnapshot()
     }
 
@@ -211,30 +227,17 @@ internal fun DiagnosticsScreen(
             !loading &&
             !reportBusy &&
             !exportOpen
-    val entries =
-        if (viewCleared) {
-            emptyList()
-        } else {
-            snapshot
-                ?.entries
-                .orEmpty()
-                .asSequence()
-                .filter(::isRuntimeLog)
-                .toList()
-                .asReversed()
-        }
-    val visibleEntries =
+    val entries = remember(snapshot, viewCleared) {
+        if (viewCleared) emptyList()
+        else snapshot?.entries.orEmpty().asReversed().filter(::isRuntimeLog)
+    }
+    val visibleEntries = remember(entries, levelFilter, categoryFilter) {
         entries
             .asSequence()
-            .filter { entry ->
-                matchesFilter(
-                    entry = entry,
-                    levelMask = levelFilter,
-                    categoryMask = categoryFilter,
-                )
-            }
+            .filter { matchesFilter(it, levelFilter, categoryFilter) }
             .take(MAX_EVENTS)
             .toList()
+    }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
@@ -365,15 +368,28 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
-            snapshot == null -> {}
+            snapshot == null -> {
+                item(key = "diagnostics-loading") {
+                    if (loading) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                text = stringResource(R.string.diagnostics_loading),
+                                style = MiuixTheme.textStyles.subtitle,
+                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                            )
+                        }
+                    } else {
+                        LogStateCard(text = stringResource(R.string.diagnostics_events_empty))
+                    }
+                }
+            }
             visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
-                    val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
-                    val offset by animateIntOffsetAsState(
-                        targetValue = if (leadShown) IntOffset.Zero else IntOffset(0, lift),
-                        animationSpec = itemMove,
-                        label = "Log summary",
-                    )
                     Text(
                         text = stringResource(
                             R.string.diagnostics_events_summary,
@@ -385,59 +401,43 @@ internal fun DiagnosticsScreen(
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp)
                                 .graphicsLayer {
-                                    alpha = if (leadShown) 1f else 0f
-                                    translationY = offset.y.toFloat()
+                                    val shown = logProgress(rise.value, 0)
+                                    translationY = risePx * (1f - shown)
+                                    alpha = shown
                                 },
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
                 }
-                if (snapshot != null) {
-                    itemsIndexed(
-                        items = visibleEntries,
-                        key = { _, entry -> entry.key },
-                    ) { index, entry ->
-                        var shown by rememberSaveable(entry.key, revealRound) {
-                            mutableStateOf(revealRound == 0)
-                        }
-                        LaunchedEffect(entry.key, revealRound) {
-                            if (!shown) {
-                                delay(index.coerceAtMost(MAX_ENTRY_STAGGER) * ENTRY_STAGGER_MS)
-                                shown = true
-                            }
-                        }
-                        val entryShown = if (index == 0) leadShown else shown
-                        val lift = with(LocalDensity.current) { 12.dp.roundToPx() }
-                        val offset by animateIntOffsetAsState(
-                            targetValue = if (entryShown) IntOffset.Zero else IntOffset(0, lift),
-                            animationSpec = itemMove,
-                            label = "Log entry",
-                        )
-                        LogCard(
-                            context = context,
-                            entry = entry,
-                            expanded = expandedKey == entry.key,
-                            onToggle = {
-                                expandedKey =
-                                    if (expandedKey == entry.key) {
-                                        null
-                                    } else {
-                                        entry.key
-                                    }
-                            },
-                            modifier =
-                                Modifier
-                                    .animateItem(
-                                        fadeInSpec = null,
-                                        placementSpec = itemMove,
-                                        fadeOutSpec = null,
-                                    )
-                                    .graphicsLayer {
-                                        alpha = if (entryShown) 1f else 0f
-                                        translationY = offset.y.toFloat()
-                                    },
-                        )
-                    }
+                itemsIndexed(
+                    items = visibleEntries,
+                    key = { _, entry -> entry.key },
+                ) { index, entry ->
+                    LogCard(
+                        context = context,
+                        entry = entry,
+                        expanded = expandedKey == entry.key,
+                        onToggle = {
+                            expandedKey =
+                                if (expandedKey == entry.key) {
+                                    null
+                                } else {
+                                    entry.key
+                                }
+                        },
+                        modifier =
+                            Modifier
+                                .animateItem(
+                                    fadeInSpec = null,
+                                    placementSpec = placementSpec,
+                                    fadeOutSpec = null,
+                                )
+                                .graphicsLayer {
+                                    val shown = logProgress(rise.value, index)
+                                    translationY = risePx * (1f - shown)
+                                    alpha = shown
+                                },
+                    )
                 }
             }
             else -> {
@@ -461,8 +461,12 @@ internal fun DiagnosticsScreen(
 }
 
 private const val MAX_EVENTS = 40
-private const val MAX_ENTRY_STAGGER = 8
-private const val ENTRY_STAGGER_MS = 40L
+
+private fun logProgress(progress: Float, index: Int): Float {
+    // Off-screen rows share the last visible row's start.
+    val start = index.coerceAtMost(7) * 0.07f
+    return ((progress - start) / (1f - start)).coerceIn(0f, 1f)
+}
 
 private const val LEVEL_INFO = 1 shl 0
 private const val LEVEL_WARN = 1 shl 1
