@@ -96,7 +96,7 @@ A compatibility failure should fail native for the smallest affected surface.
 
 Optimize for the next human maintainer. Prefer concise scope-aware names and structures; avoid both modifier-heavy verbosity and cryptic shortening.
 
-When a package becomes crowded, group files by problem domain rather than technical role. Keep source paths aligned with Kotlin packages and move cohesive areas incrementally instead of churning unrelated code.
+When a package becomes crowded, group files by problem domain rather than technical role. Keep code that normally changes together close together: splitting should make one feature easier to understand and edit, not force a maintainer through a chain of small Owner/Policy/Resolver/Helper files. File length alone is not a reason to split. Keep source paths aligned with Kotlin packages and move cohesive areas incrementally instead of churning unrelated code.
 
 ### Naming
 
