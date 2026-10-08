@@ -33,13 +33,13 @@ def validate_artifact(name: str, artifact: dict) -> None:
             fail(f"{name}.{key} is not a normalized {length}-character hex digest")
     for key in ("sizeBytes", "dexCount", "classCount"):
         value = artifact.get(key)
-        if not isinstance(value, int) or value <= 0:
+        if type(value) is not int or value <= 0:
             fail(f"{name}.{key} must be a positive integer")
 
 
 def source_string_constant(source_text: str, constant_name: str, label: str) -> str:
     match = re.search(
-        rf'{re.escape(constant_name)}\s*=\s*\n?\s*"([^"]+)"',
+        rf'\b{re.escape(constant_name)}\s*=\s*"([^"]+)"',
         source_text,
     )
     if not match:

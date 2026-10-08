@@ -52,39 +52,13 @@ Guiyuan does not replace the surface. SystemUI retains presentation and motion o
 
 Notification Shade and the fully expanded Control Center are native-only.
 
-## Resolved layout contract
+## Steady slot geometry
 
-The shared resolver may consume Guiyuan presentation intent:
+`SteadyLayoutResolver` reads the live host width, host height, carrier width and layout direction. It rejects non-positive dimensions, clamps the carrier to the host width, and returns the carrier bounds: at the host end in LTR or at the host start in RTL. Its visual-width hint is the smaller of carrier width and host height.
 
-- canonical visual size;
-- user visual scale;
-- neighbor optical gap;
-- per-glyph scale;
-- bounded optical adjustment.
+The resolver does not decide scene eligibility, scale glyphs or write native layout. Callers establish presentation eligibility and fail native if the geometry is unavailable. User scaling and optical adjustments stay in presentation/rendering logic; `CompactReservationPolicy` computes the centered visual-shrink reservation separately.
 
-A host adapter may supply verified native facts:
-
-- host height;
-- end anchor;
-- stable carrier width;
-- scene capability;
-- motion owner;
-- source geometry needed by a projection layer.
-
-The resolver keeps separate:
-
-- render eligibility;
-- visual bounds;
-- requested optical gap;
-- requested replacement-slot width;
-- applied carrier width;
-- visual-to-slot relationship;
-- per-glyph scale;
-- optical adjustment;
-- stable source bounds;
-- motion ownership.
-
-Native transition progress, native duration/interpolators, and target View translation remain outside this layout resolver.
+Transition endpoints and motion timing remain under their existing native and transition owners.
 
 ### Home carrier width
 
