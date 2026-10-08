@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,8 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -61,6 +65,8 @@ internal fun PreviewSandboxScreen(
     onBatteryPercentChange: (Int) -> Unit,
     onBatteryModeChange: (PreviewBatteryMode) -> Unit,
     onChargingStateChange: (PreviewChargingState) -> Unit,
+    dark: Boolean,
+    onToggleTheme: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -146,6 +152,25 @@ internal fun PreviewSandboxScreen(
                                 Icon(
                                     MiuixIcons.Back,
                                     contentDescription = stringResource(R.string.back),
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        val title = stringResource(
+                            if (dark) R.string.home_preview_switch_light
+                            else R.string.home_preview_switch_dark,
+                        )
+                        TooltipBox(text = title) {
+                            IconButton(onClick = onToggleTheme) {
+                                Image(
+                                    painter = painterResource(
+                                        if (dark) R.drawable.ic_material_symbol_light_mode
+                                        else R.drawable.ic_material_symbol_dark_mode,
+                                    ),
+                                    contentDescription = title,
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
                                 )
                             }
                         }

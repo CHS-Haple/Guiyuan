@@ -183,36 +183,45 @@ internal fun GyApp(
                 )
             }
             entry<AppRoute.PreviewSandbox>(swipeDismiss = swipeBackDirection) {
-                PreviewSandboxScreen(
-                    state = previewState,
-                    onSimPresentChange = { previewSimPresent = it },
-                    onAirplaneModeChange = { previewAirplaneMode = it },
-                    onNetworkModeChange = {
-                        previewNetworkModeIndex = it.ordinal
-                    },
-                    onMobileNetworkChange = {
-                        previewMobileNetworkIndex = it.ordinal
-                    },
-                    onMobileSignalLevelChange = {
-                        previewMobileSignalLevel = it
-                    },
-                    onWifiStateChange = {
-                        previewWifiStateIndex = it.ordinal
-                    },
-                    onWifiSignalLevelChange = {
-                        previewWifiSignalLevel = it
-                    },
-                    onBatteryPercentChange = {
-                        previewBatteryPercent = it
-                    },
-                    onBatteryModeChange = {
-                        previewBatteryModeIndex = it.ordinal
-                    },
-                    onChargingStateChange = {
-                        previewChargingStateIndex = it.ordinal
-                    },
-                    onBack = ::navigateBack,
-                )
+                var sandboxDark by remember { mutableStateOf<Boolean?>(null) }
+                val previewDark = sandboxDark ?: dark
+                GyTheme(
+                    themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
+                    dynamicColorEnabled = appearance.dynamicColor,
+                ) {
+                    PreviewSandboxScreen(
+                        state = previewState,
+                        onSimPresentChange = { previewSimPresent = it },
+                        onAirplaneModeChange = { previewAirplaneMode = it },
+                        onNetworkModeChange = {
+                            previewNetworkModeIndex = it.ordinal
+                        },
+                        onMobileNetworkChange = {
+                            previewMobileNetworkIndex = it.ordinal
+                        },
+                        onMobileSignalLevelChange = {
+                            previewMobileSignalLevel = it
+                        },
+                        onWifiStateChange = {
+                            previewWifiStateIndex = it.ordinal
+                        },
+                        onWifiSignalLevelChange = {
+                            previewWifiSignalLevel = it
+                        },
+                        onBatteryPercentChange = {
+                            previewBatteryPercent = it
+                        },
+                        onBatteryModeChange = {
+                            previewBatteryModeIndex = it.ordinal
+                        },
+                        onChargingStateChange = {
+                            previewChargingStateIndex = it.ordinal
+                        },
+                        dark = previewDark,
+                        onToggleTheme = { sandboxDark = !previewDark },
+                        onBack = ::navigateBack,
+                    )
+                }
             }
             entry<AppRoute.About>(swipeDismiss = swipeBackDirection) {
                 AboutScreen(
