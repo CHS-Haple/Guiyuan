@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Trusted same-repository feat/*, fix/* or refactor/* branch to validate'
+        description: 'Trusted same-repository feat/*, fix/*, refactor/* or hotfix/* branch to validate'
         required: true
         type: string
       variant:
@@ -69,8 +69,8 @@ jobs:
             workflow_dispatch)
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
-              if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
-                echo "::error::Manual APK source must be a feat/*, fix/* or refactor/* branch, got: $branch"
+              if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
+                echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
                 exit 1
               fi
               if [[ "$variant" != "canary" && "$variant" != "internal" ]]; then
@@ -118,8 +118,8 @@ jobs:
               ;;
           esac
 
-          if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* ]]; then
-            echo "::error::APK source must be a feat/*, fix/* or refactor/* branch, got: $branch"
+          if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
+            echo "::error::APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
