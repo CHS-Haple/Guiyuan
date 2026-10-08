@@ -146,6 +146,8 @@ Check touched code and relevant adjacent call sites for:
 
 Keep an unusual structure when a real platform/maintenance constraint justifies it; otherwise simplify it. Add only the smallest useful explanation for a necessary non-obvious structure.
 
+Record each applicable pre-commit check with the touched code/call path, validation method, concrete evidence and conclusion. Explain non-applicable or unverified checks. For a failed check, state the root cause, fix and recheck evidence; resolve deterministic findings before committing. A bare `PASS`, unrun test or invented metric is not evidence.
+
 Prefer deleting proven dead code/indirection over renaming it. Do not run CI for every micro-edit; validate meaningful checkpoints. Device evidence is required only when runtime behavior can plausibly change.
 
 ## Diagnostics and UI
