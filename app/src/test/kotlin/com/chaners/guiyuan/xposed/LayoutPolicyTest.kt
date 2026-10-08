@@ -10,7 +10,7 @@ class LayoutPolicyTest {
         val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
         assertEquals(482, layout.left)
         assertEquals(587, layout.right)
-        assertEquals(105, layout.carrierWidth)
+        assertEquals(105, layout.right - layout.left)
         assertEquals(105, layout.visualWidth)
     }
 
@@ -26,14 +26,14 @@ class LayoutPolicyTest {
         val layout = requireNotNull(SteadyLayoutResolver.resolve(80, 108, 105, false))
         assertEquals(0, layout.left)
         assertEquals(80, layout.right)
-        assertEquals(80, layout.carrierWidth)
+        assertEquals(80, layout.right - layout.left)
     }
 
     @Test
     fun shortHostLimitsVisualButNotCarrierWidth() {
         val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 64, 105, false))
         assertEquals(64, layout.visualWidth)
-        assertEquals(105, layout.carrierWidth)
+        assertEquals(105, layout.right - layout.left)
         assertEquals(482, layout.left)
         assertEquals(587, layout.right)
     }

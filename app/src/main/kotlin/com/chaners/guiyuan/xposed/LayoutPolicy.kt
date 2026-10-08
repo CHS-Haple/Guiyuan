@@ -11,7 +11,6 @@ internal data class SteadyLayout(
     val left: Int,
     val right: Int,
     val visualWidth: Int,
-    val carrierWidth: Int,
 )
 
 internal object SteadyLayoutResolver {
@@ -31,7 +30,6 @@ internal object SteadyLayoutResolver {
             right = right,
             // The visual is capped by host height; the native carrier is not.
             visualWidth = minOf(carrier, hostHeightPx),
-            carrierWidth = carrier,
         )
     }
 }
