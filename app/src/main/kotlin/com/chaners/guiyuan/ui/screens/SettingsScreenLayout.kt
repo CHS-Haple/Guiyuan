@@ -15,6 +15,12 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.ColorFilter
@@ -68,13 +74,29 @@ internal fun SemanticLeadingIcon(
             Image(
                 painter = painterResource(iconRes),
                 contentDescription = null,
-                modifier = Modifier.align(Alignment.TopStart).size(18.dp),
+                modifier =
+                    Modifier
+                        .size(22.dp)
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            drawContent()
+                            // Cut the base glyph, not the preference background.
+                            drawCircle(
+                                color = Color.Transparent,
+                                radius = 7.dp.toPx(),
+                                center = Offset(
+                                    size.width - 4.5.dp.toPx(),
+                                    size.height - 4.5.dp.toPx(),
+                                ),
+                                blendMode = BlendMode.Clear,
+                            )
+                        },
                 colorFilter = tint,
             )
             Image(
                 painter = painterResource(detailRes),
                 contentDescription = null,
-                modifier = Modifier.align(Alignment.BottomEnd).size(10.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).size(11.dp),
                 colorFilter = tint,
             )
         }
