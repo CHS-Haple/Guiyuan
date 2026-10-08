@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.Canvas as BitmapCanvas
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
@@ -14,19 +16,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -71,6 +76,17 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
         } else {
+            val context = LocalContext.current
+            val density = LocalDensity.current
+            val cutout = remember(context, density.density, detailRes) {
+                val px = with(density) { 13.dp.roundToPx() }
+                val bitmap = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+                requireNotNull(context.getDrawable(detailRes)).apply {
+                    setBounds(0, 0, px, px)
+                    draw(BitmapCanvas(bitmap))
+                }
+                bitmap.asImageBitmap()
+            }
             Image(
                 painter = painterResource(iconRes),
                 contentDescription = null,
@@ -80,15 +96,11 @@ internal fun SemanticLeadingIcon(
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
                             drawContent()
-                            // Cut the base glyph, not the preference background.
-                            drawCircle(
-                                color = Color.Transparent,
-                                radius = 7.dp.toPx(),
-                                center = Offset(
-                                    size.width - 4.5.dp.toPx(),
-                                    size.height - 4.5.dp.toPx(),
-                                ),
-                                blendMode = BlendMode.Clear,
+                            // Clear the badge's silhouette from the base, not the MIUIX surface.
+                            drawImage(
+                                image = cutout,
+                                topLeft = IntOffset(11.dp.roundToPx(), 11.dp.roundToPx()),
+                                blendMode = BlendMode.DstOut,
                             )
                         },
                 colorFilter = tint,
