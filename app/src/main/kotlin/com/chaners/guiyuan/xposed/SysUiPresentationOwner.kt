@@ -1949,7 +1949,7 @@ internal object SysUiPresentationOwner {
                 return false
             }
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = hostView.width,
                     hostHeightPx = hostView.height,
                     baseCarrierWidthPx = stableCarrierWidthPx,
@@ -1957,7 +1957,7 @@ internal object SysUiPresentationOwner {
                 ) ?: run { onFailNative(surfaceName + "-layout-unavailable"); return false }
             val compactSlotWidthPx =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
-                    baseSlotWidthPx = resolved.requestedSlotWidthPx.toInt(),
+                    baseSlotWidthPx = resolved.visualWidth,
                     userScale = VisualPrefsOwner.current().combinedScale,
                 )
             val requestedSlotWidthPx =

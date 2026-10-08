@@ -1,134 +1,59 @@
 package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LayoutPolicyTest {
     @Test
-    fun scalingKeepsTheEndAnchorFixed() {
-        val small = resolve(scale = 1f)
-        val large = resolve(scale = 1.2f)
-
-        assertEquals(587f, small.visualRightPx, 0.001f)
-        assertEquals(587f, large.visualRightPx, 0.001f)
-        assertTrue(large.visualLeftPx < small.visualLeftPx)
-        assertTrue(large.requestedSlotWidthPx > small.requestedSlotWidthPx)
-        assertTrue(large.neighborGapPx > small.neighborGapPx)
+    fun ltrSlotAnchorsToHostEnd() {
+        val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
+        assertEquals(482, layout.left)
+        assertEquals(587, layout.right)
+        assertEquals(105, layout.carrierWidth)
+        assertEquals(105, layout.visualWidth)
     }
 
     @Test
-    fun projectedSceneKeepsNativeSlotButReusesTheSameVisualRule() {
-        val projected = resolve(scale = 1.2f)
-
-        assertEquals(105f, projected.appliedSlotWidthPx, 0.001f)
-        assertTrue(projected.requestedSlotWidthPx > projected.appliedSlotWidthPx)
-        assertEquals(587f, projected.visualRightPx, 0.001f)
+    fun rtlSlotAnchorsToHostStart() {
+        val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, true))
+        assertEquals(0, layout.left)
+        assertEquals(105, layout.right)
     }
 
     @Test
-    fun nativeOnlySceneDoesNotRenderCombinedVisuals() {
-        val layout = resolve(
-            scale = 1f,
-            renderMode = RenderMode.NATIVE_ONLY,
-            motionOwnership = MotionOwnership.SYSTEM_UI,
-        )
-
-        assertFalse(layout.renderCombined)
-        assertEquals(105f, layout.appliedSlotWidthPx, 0.001f)
-        assertEquals(MotionOwnership.SYSTEM_UI, layout.motionOwnership)
+    fun carrierWidthIsClampedByHost() {
+        val layout = requireNotNull(SteadyLayoutResolver.resolve(80, 108, 105, false))
+        assertEquals(0, layout.left)
+        assertEquals(80, layout.right)
+        assertEquals(80, layout.carrierWidth)
     }
 
     @Test
-    fun sharedPolicyDoesNotChangeIdealGeometryBySceneCapability() {
-        val projected = resolve(scale = 0.9f)
-        val nativeOnly = resolve(
-            scale = 0.9f,
-            renderMode = RenderMode.NATIVE_ONLY,
-            motionOwnership = MotionOwnership.SYSTEM_UI,
-        )
-
-        assertEquals(projected.visualSidePx, nativeOnly.visualSidePx, 0.001f)
-        assertEquals(projected.neighborGapPx, nativeOnly.neighborGapPx, 0.001f)
-        assertEquals(projected.requestedSlotWidthPx, nativeOnly.requestedSlotWidthPx, 0.001f)
-        assertEquals(projected.visualLeftPx, nativeOnly.visualLeftPx, 0.001f)
-        assertEquals(projected.visualRightPx, nativeOnly.visualRightPx, 0.001f)
-        assertTrue(projected.renderCombined)
+    fun shortHostLimitsVisualButNotCarrierWidth() {
+        val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 64, 105, false))
+        assertEquals(64, layout.visualWidth)
+        assertEquals(105, layout.carrierWidth)
+        assertEquals(482, layout.left)
+        assertEquals(587, layout.right)
     }
 
     @Test
-    fun centeredShrinkReservationTracksTheVisibleLeadingEdge() {
+    fun invalidHostOrCarrierCannotClaimLayout() {
+        assertNull(SteadyLayoutResolver.resolve(0, 108, 105, false))
+        assertNull(SteadyLayoutResolver.resolve(587, 0, 105, false))
+        assertNull(SteadyLayoutResolver.resolve(587, 108, 0, false))
+    }
+
+    @Test
+    fun centeredShrinkReservationTracksVisibleLeadingEdge() {
         assertEquals(
             105,
-            CompactReservationPolicy.resolveCenteredVisualWidth(
-                baseSlotWidthPx = 105,
-                userScale = 1f,
-            ),
+            CompactReservationPolicy.resolveCenteredVisualWidth(105, 1f),
         )
         assertEquals(
             92,
-            CompactReservationPolicy.resolveCenteredVisualWidth(
-                baseSlotWidthPx = 105,
-                userScale = 0.75f,
-            ),
+            CompactReservationPolicy.resolveCenteredVisualWidth(105, 0.75f),
         )
     }
-
-    @Test
-    fun homeResolverKeepsCurrentCarrierWidthAndHostHeightSeparated() {
-        val layout =
-            requireNotNull(
-                HomeLayoutResolver.resolve(
-                    hostWidthPx = 587,
-                    hostHeightPx = 108,
-                    baseCarrierWidthPx = 105,
-                    isRtl = false,
-                ),
-            )
-
-        assertEquals(105f, layout.requestedSlotWidthPx, 0.001f)
-        assertEquals(105f, layout.appliedSlotWidthPx, 0.001f)
-        assertEquals(482f, layout.slotLeftPx, 0.001f)
-        assertEquals(587f, layout.slotRightPx, 0.001f)
-        assertEquals(MotionOwnership.SYSTEM_UI, layout.motionOwnership)
-    }
-
-    @Test
-    fun homeResolverUsesStableBaseSlotInsteadOfChargingInflatedWidth() {
-        val layout =
-            requireNotNull(
-                HomeLayoutResolver.resolve(
-                    hostWidthPx = 587,
-                    hostHeightPx = 108,
-                    baseCarrierWidthPx = 105,
-                    isRtl = false,
-                ),
-            )
-
-        assertEquals(105f, layout.requestedSlotWidthPx, 0.001f)
-        assertEquals(482f, layout.slotLeftPx, 0.001f)
-        assertEquals(587f, layout.slotRightPx, 0.001f)
-    }
-
-    private fun resolve(
-        scale: Float,
-        renderMode: RenderMode = RenderMode.PROJECTED,
-        motionOwnership: MotionOwnership =
-            MotionOwnership.NONE,
-    ): ResolvedLayout =
-        LayoutPolicy.resolve(
-            settings = LayoutConfig(
-                baseVisualSidePx = 105f,
-                baseNeighborGapPx = 6f,
-                userScale = scale,
-            ),
-            host = HostLayout(
-                hostHeightPx = 108f,
-                endAnchorPx = 587f,
-                nativeSlotWidthPx = 105f,
-                renderMode = renderMode,
-                motionOwnership = motionOwnership,
-            ),
-        )
 }

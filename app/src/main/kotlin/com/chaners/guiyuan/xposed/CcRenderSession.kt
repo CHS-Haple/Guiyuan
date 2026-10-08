@@ -799,20 +799,19 @@ internal object CcRenderSession {
                 SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = statusArea.width,
                     hostHeightPx = statusArea.height,
                     baseCarrierWidthPx = carrierWidth,
                     isRtl = statusArea.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return markLayoutUnavailable()
-            if (!resolved.renderCombined) return markLayoutUnavailable()
 
             hostView.getLocationInWindow(hostLocationScratch)
             statusArea.getLocationInWindow(statusAreaLocationScratch)
             val offsetX = statusAreaLocationScratch[0] - hostLocationScratch[0]
             val offsetY = statusAreaLocationScratch[1] - hostLocationScratch[1]
-            val left = offsetX + resolved.slotLeftPx.toInt()
-            val right = offsetX + resolved.slotRightPx.toInt()
+            val left = offsetX + resolved.left
+            val right = offsetX + resolved.right
             val top = offsetY
             val bottom = offsetY + statusArea.height
             anchorRect.set(left, top, right, bottom)

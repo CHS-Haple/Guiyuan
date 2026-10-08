@@ -7,84 +7,31 @@ internal enum class RenderMode {
     NATIVE_ONLY,
 }
 
-internal enum class MotionOwnership {
-    NONE,
-    COMBINED_STATUS,
-    SYSTEM_UI,
-}
-
-internal data class LayoutConfig(
-    val baseVisualSidePx: Float,
-    val baseNeighborGapPx: Float,
-    val userScale: Float,
-) {
-    init {
-        require(baseVisualSidePx > 0f && baseVisualSidePx.isFinite())
-        require(baseNeighborGapPx >= 0f && baseNeighborGapPx.isFinite())
-        require(userScale > 0f && userScale.isFinite())
-    }
-}
-
-internal data class HostLayout(
-    val hostHeightPx: Float,
-    val endAnchorPx: Float,
-    val nativeSlotWidthPx: Float,
-    val renderMode: RenderMode,
-    val motionOwnership: MotionOwnership,
-) {
-    init {
-        require(hostHeightPx > 0f && hostHeightPx.isFinite())
-        require(endAnchorPx.isFinite())
-        require(nativeSlotWidthPx >= 0f && nativeSlotWidthPx.isFinite())
-    }
-}
-
-internal data class ResolvedLayout(
-    val renderCombined: Boolean,
-    val visualSidePx: Float,
-    val neighborGapPx: Float,
-    val requestedSlotWidthPx: Float,
-    val appliedSlotWidthPx: Float,
-    val visualLeftPx: Float,
-    val visualTopPx: Float,
-    val visualRightPx: Float,
-    val visualBottomPx: Float,
-    val slotLeftPx: Float,
-    val slotRightPx: Float,
-    val motionOwnership: MotionOwnership,
+internal data class SteadyLayout(
+    val left: Int,
+    val right: Int,
+    val visualWidth: Int,
+    val carrierWidth: Int,
 )
 
-internal object LayoutPolicy {
+internal object SteadyLayoutResolver {
     fun resolve(
-        settings: LayoutConfig,
-        host: HostLayout,
-    ): ResolvedLayout {
-        val visualSide = settings.baseVisualSidePx * settings.userScale
-        val neighborGap = settings.baseNeighborGapPx * settings.userScale
-        val requestedSlotWidth = visualSide + neighborGap
-
-        val appliedSlotWidth = host.nativeSlotWidthPx
-
-        val visualRight = host.endAnchorPx
-        val visualLeft = visualRight - visualSide
-        val visualTop = (host.hostHeightPx - visualSide) / 2f
-        val visualBottom = visualTop + visualSide
-        val slotRight = host.endAnchorPx
-        val slotLeft = slotRight - appliedSlotWidth
-
-        return ResolvedLayout(
-            renderCombined = host.renderMode != RenderMode.NATIVE_ONLY,
-            visualSidePx = visualSide,
-            neighborGapPx = neighborGap,
-            requestedSlotWidthPx = requestedSlotWidth,
-            appliedSlotWidthPx = appliedSlotWidth,
-            visualLeftPx = visualLeft,
-            visualTopPx = visualTop,
-            visualRightPx = visualRight,
-            visualBottomPx = visualBottom,
-            slotLeftPx = slotLeft,
-            slotRightPx = slotRight,
-            motionOwnership = host.motionOwnership,
+        hostWidthPx: Int,
+        hostHeightPx: Int,
+        baseCarrierWidthPx: Int,
+        isRtl: Boolean,
+    ): SteadyLayout? {
+        if (hostWidthPx <= 0 || hostHeightPx <= 0 || baseCarrierWidthPx <= 0) {
+            return null
+        }
+        val carrier = baseCarrierWidthPx.coerceAtMost(hostWidthPx)
+        val right = if (isRtl) carrier else hostWidthPx
+        return SteadyLayout(
+            left = right - carrier,
+            right = right,
+            // The visual is capped by host height; the native carrier is not.
+            visualWidth = minOf(carrier, hostHeightPx),
+            carrierWidth = carrier,
         )
     }
 }
@@ -109,50 +56,5 @@ internal object CompactReservationPolicy {
         return ceil(base * (1f + scale) / 2f)
             .toInt()
             .coerceIn(0, base)
-    }
-}
-
-internal object HomeLayoutResolver {
-    fun resolve(
-        hostWidthPx: Int,
-        hostHeightPx: Int,
-        baseCarrierWidthPx: Int,
-        isRtl: Boolean,
-    ): ResolvedLayout? =
-        SteadyLayoutResolver.resolve(
-            hostWidthPx = hostWidthPx,
-            hostHeightPx = hostHeightPx,
-            baseCarrierWidthPx = baseCarrierWidthPx,
-            isRtl = isRtl,
-        )
-}
-
-internal object SteadyLayoutResolver {
-    fun resolve(
-        hostWidthPx: Int,
-        hostHeightPx: Int,
-        baseCarrierWidthPx: Int,
-        isRtl: Boolean,
-    ): ResolvedLayout? {
-        if (hostWidthPx <= 0 || hostHeightPx <= 0 || baseCarrierWidthPx <= 0) {
-            return null
-        }
-        val carrierWidth = baseCarrierWidthPx.coerceAtMost(hostWidthPx)
-        return LayoutPolicy.resolve(
-            settings =
-                LayoutConfig(
-                    baseVisualSidePx = minOf(carrierWidth, hostHeightPx).toFloat(),
-                    baseNeighborGapPx = 0f,
-                    userScale = 1f,
-                ),
-            host =
-                HostLayout(
-                    hostHeightPx = hostHeightPx.toFloat(),
-                    endAnchorPx = if (isRtl) carrierWidth.toFloat() else hostWidthPx.toFloat(),
-                    nativeSlotWidthPx = carrierWidth.toFloat(),
-                    renderMode = RenderMode.PROJECTED,
-                    motionOwnership = MotionOwnership.SYSTEM_UI,
-                ),
-        )
     }
 }

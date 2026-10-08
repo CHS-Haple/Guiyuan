@@ -662,31 +662,14 @@ internal object HomeRenderSession {
                 return false
             }
 
-            val rtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = hostWidth,
                     hostHeightPx = hostHeight,
                     baseCarrierWidthPx = baseCarrierWidth,
-                    isRtl = rtl,
+                    isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return false
-            if (!resolved.renderCombined) {
-                return false
-            }
-
-            val left =
-                if (rtl) {
-                    0
-                } else {
-                    resolved.slotLeftPx.toInt()
-                }
-            val right =
-                if (rtl) {
-                    resolved.slotRightPx.toInt()
-                } else {
-                    resolved.slotRightPx.toInt()
-                }
-            out.set(left, 0, right, hostHeight)
+            out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }
 

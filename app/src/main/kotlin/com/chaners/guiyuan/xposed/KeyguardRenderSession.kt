@@ -614,12 +614,11 @@ internal object KeyguardRenderSession {
                     baseCarrierWidthPx = baseCarrierWidth,
                     isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return false
-            if (!resolved.renderCombined) return false
 
             out.set(
-                resolved.slotLeftPx.toInt(),
+                resolved.left,
                 0,
-                resolved.slotRightPx.toInt(),
+                resolved.right,
                 hostHeight,
             )
             return out.width() > 0 && out.height() > 0
