@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -12,25 +13,37 @@ internal object RootShell {
         timeoutSeconds: Long,
     ): Result = withContext(Dispatchers.IO) {
         coroutineScope {
+            var process: Process? = null
             try {
-                val process = ProcessBuilder(
+                val running = ProcessBuilder(
                     "su",
                     "-c",
                     command,
                 )
                     .redirectErrorStream(true)
                     .start()
+                process = running
 
                 val output = async(Dispatchers.IO) {
-                    process.inputStream.bufferedReader().use { it.readText() }
+                    running.inputStream.bufferedReader().use { it.readText() }
+                }
+                val finished = async(Dispatchers.IO) {
+                    running.waitFor(timeoutSeconds, TimeUnit.SECONDS)
                 }
 
-                if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                    process.destroy()
-                    if (!process.waitFor(1, TimeUnit.SECONDS)) {
-                        process.destroyForcibly()
+                if (!finished.await()) {
+                    running.destroy()
+                    if (!running.waitFor(1, TimeUnit.SECONDS)) {
+                        running.destroyForcibly()
                     }
-                    val captured = runCatching { output.await() }.getOrDefault("")
+                    val captured =
+                        try {
+                            output.await()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            ""
+                        }
                     return@coroutineScope Result(
                         exitCode = null,
                         output = captured,
@@ -40,18 +53,25 @@ internal object RootShell {
                 }
 
                 Result(
-                    exitCode = process.exitValue(),
+                    exitCode = running.exitValue(),
                     output = output.await(),
                     timedOut = false,
                     error = null,
                 )
-            } catch (error: Throwable) {
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
                 Result(
                     exitCode = null,
                     output = "",
                     timedOut = false,
                     error = error.javaClass.simpleName,
                 )
+            } finally {
+                // Release the root process when diagnostics/restart fails or is cancelled.
+                process?.let { running ->
+                    if (running.isAlive) running.destroyForcibly()
+                }
             }
         }
     }
