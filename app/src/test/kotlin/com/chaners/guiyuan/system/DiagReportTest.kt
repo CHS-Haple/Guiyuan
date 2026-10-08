@@ -18,6 +18,7 @@ class DiagReportTest {
         )
         assertTrue(report.contains("requestedLevel=detailed"))
         assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 
     @Test
@@ -31,6 +32,7 @@ class DiagReportTest {
             ),
         )
         assertTrue(report.contains("runtimeLevel=general"))
+        assertTrue(report.contains("runtimeBinding=ready"))
     }
 
     @Test
@@ -43,7 +45,22 @@ class DiagReportTest {
                 fields = mapOf("sessionId" to "test-session"),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=unavailable"))
+        assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains("runtimeBinding=unavailable"))
+    }
+
+    @Test
+    fun unavailableSnapshotRetainsObservedLevelAndFailure() {
+        val report = report(
+            DiagProtocol.format(
+                event = "diagnostics.snapshot",
+                component = "diagnostics",
+                state = "unavailable",
+                fields = mapOf("level" to "detailed", "sessionId" to "test-session"),
+            ),
+        )
+        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
     private fun report(line: String): String {
