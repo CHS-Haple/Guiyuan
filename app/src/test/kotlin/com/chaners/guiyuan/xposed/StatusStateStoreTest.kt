@@ -111,6 +111,19 @@ class StatusStateStoreTest {
     }
 
     @Test
+    fun freshBatterySampleReplacesCachedGlyph() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 7),
+        )
+        StatusStateStore.updateBattery(
+            StatusStateStore.BatteryState(percent = 80, charging = true, chargingIconResId = 42),
+        )
+
+        assertEquals(42, StatusStateStore.snapshot().battery?.chargingIconResId)
+    }
+
+    @Test
     fun chargingExitClearsGlyph() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateBattery(

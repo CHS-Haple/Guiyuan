@@ -38,7 +38,7 @@ internal object SysUiBatterySource {
         module: XposedModule,
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int) -> Boolean,
+        onChargingIconResource: (Int) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         val iconClass =
@@ -140,7 +140,7 @@ internal object SysUiBatterySource {
                 synchronized(this) {
                     if (!state.charging) {
                         lastChargingIconResId = null
-                    } else if (lastChargingIconResId == null) {
+                    } else if (state.chargingIconResId != null) {
                         lastChargingIconResId = state.chargingIconResId
                     }
                     if (lastState == state) {
@@ -174,8 +174,15 @@ internal object SysUiBatterySource {
                     ?.takeIf { it != 0 }
                     ?: return
 
-            synchronized(this) { lastChargingIconResId = iconId }
-            if (onChargingIconResource(iconId)) {
+            val changed =
+                synchronized(this) {
+                    val changed = lastChargingIconResId != iconId
+                    lastChargingIconResId = iconId
+                    changed
+                }
+            // Repeated samples still reconcile the state store after Hot Reload.
+            onChargingIconResource(iconId)
+            if (changed) {
                 onEvent?.invoke(
                     "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
                         " resourceId=" + iconId +

@@ -1553,14 +1553,14 @@ class GyModule : XposedModule() {
                     }
                 },
                 onChargingIconResource = { resourceId ->
-                    val snapshot = StatusStateStore.updateBatteryChargingIcon(resourceId)
-                    if (snapshot != null) {
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("battery-charging-glyph")),
-                        )
-                    }
-                    snapshot != null
+                    val trace = beginRenderTrace("battery-charging-glyph")
+                    StatusStateStore.updateBatteryChargingIcon(resourceId)
+                        ?.let { snapshot ->
+                            onCombinedStateChanged(
+                                snapshot = snapshot,
+                                trace = markStateCommitted(trace),
+                            )
+                        }
                 },
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
