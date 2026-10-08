@@ -1949,16 +1949,6 @@ internal object NativeCombinedParticipant {
         }.getOrNull()
     }
 
-    private fun resolveCurrentHandles(): NativeParticipantAccess.Handles? {
-        val host = hostRef?.get() ?: return null
-        return when (val resolution = NativeParticipantAccess.resolve(host)) {
-            is NativeParticipantAccess.ResolveResult.Ready ->
-                resolution.handles
-            is NativeParticipantAccess.ResolveResult.Failure ->
-                null
-        }
-    }
-
     private fun removePendingPreDraw() {
         val root = pendingPreDrawRoot?.get()
         val listener = pendingPreDrawListener
