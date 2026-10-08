@@ -96,7 +96,7 @@ A compatibility failure should fail native for the smallest affected surface.
 
 Optimize for the next human maintainer. Prefer concise scope-aware names and structures; avoid both modifier-heavy verbosity and cryptic shortening.
 
-Keep related code together and split at clear, practical responsibility boundaries. A split should make a feature easier to understand, change and test, not increase file hopping for routine fixes. Neither file length nor architectural symmetry justifies splitting by itself. Keep source paths aligned with Kotlin packages and avoid unrelated moves.
+When a package becomes crowded, group files by problem domain rather than technical role. Keep source paths aligned with Kotlin packages and move cohesive areas incrementally instead of churning unrelated code.
 
 ### Naming
 
@@ -104,7 +104,7 @@ Keep related code together and split at clear, practical responsibility boundari
 - Local/private names may be short when context already carries the meaning; cross-file/architecture names must remain searchable and unambiguous.
 - Familiar forms such as `SysUi`, `Diag`, `Repo`, `Prefs`, `Cfg`, `AOD`, `QS` and `CC` are preferred when they reduce typing without reducing clarity.
 - Remove repeated product/domain wording when the package/file/receiver already establishes it.
-- Use names that naturally express each responsibility; avoid redundant qualifiers or naming patterns that add no clarity.
+- Keep `Owner`, `Source`, `Policy`, `Session`, `Contract`, `Probe` or similar suffixes only when they carry real lifecycle, authority, compatibility, reuse or policy meaning.
 - Persisted keys, protocol/log fields, reflection targets, resource identities, Xposed-facing IDs and other externally consumed names are compatibility surfaces; do not rename them as cosmetic cleanup.
 - Prefer semantic compression over mechanical shortening. Do not use broad search-and-replace for a rename without inspecting call sites and same-text uses.
 - Remove dead helpers only after checking reflection, serialization, resources, generated code and other external reachability.
@@ -123,7 +123,7 @@ Do not:
 - add a type/helper merely to name an obvious expression, pass through a value or wrap one caller;
 - invent a success/failure model without a real failure source;
 - stack Result/State wrappers around the same outcome without a real boundary;
-- scatter closely related logic across files without a clear maintenance benefit;
+- split one cohesive operation into ceremonial Source/Owner/Policy/Probe/Resolver layers;
 - flatten one mutually exclusive lifecycle into invalid combinations of `pending/ready/active` booleans;
 - force genuinely independent facts into one state machine for symmetry.
 
@@ -132,8 +132,6 @@ Work in coherent reviewable batches. Before a non-trivial commit, review the com
 ### Pre-commit maintainability review
 
 Every non-trivial code batch gets a separate maintainability review before the final commit/CI checkpoint.
-
-AI-assisted code and logic are welcome, but the final implementation must be natural for a human engineer to write, read and maintain. Actively look for AI-style code smells: inflated names, repetitive boilerplate, unnecessary wrappers or state, speculative abstractions, templated comments, and invented diagnostics or test evidence. Treat these as review signals, not automatic faults: inspect actual usage and call paths, rewrite awkward code where necessary, and retain useful algorithms or justified complexity.
 
 Check touched code and relevant adjacent call sites for:
 - unnecessarily long or suffix-stacked names;
@@ -144,7 +142,7 @@ Check touched code and relevant adjacent call sites for:
 - diagnostics that fill templates rather than report facts;
 - invented metrics, pass rates or proof fields;
 - comments that narrate code or preserve debugging history;
-- structures that make routine changes require unnecessary file hopping.
+- structures that make a small future change require touching unrelated layers.
 
 Keep an unusual structure when a real platform/maintenance constraint justifies it; otherwise simplify it. Add only the smallest useful explanation for a necessary non-obvious structure.
 
