@@ -11,18 +11,25 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [0.5.0] - 2026-10-08
 
 ### Added
-- Gave Liquid floating navigation its own saved icon/text preference, while Standard, Blur and Glass share the original preference.
+- Liquid floating navigation remembers its icon/text content independently; Standard, Blur and Glass continue sharing one content choice. First-time defaults are icons and text for Liquid and icons only for the other styles.
+- Preview Sandbox offers its own dark/light simulation switch and contextual long-press guidance, without changing the device theme.
 
 ### Changed
-- Grouped Features settings by display/transition, layout, network, battery and management without changing their controls.
-- Improved Diagnostics log entry presentation and refined semantic leading icons and level label weights.
-- Updated first-use Keyguard, AOD, battery fill and top-readout defaults, preserving existing user choices.
+- Reorganized Features into display/transitions, layout/size, network icons, battery/charging and management, keeping existing controls and saved choices.
+- Refined semantic leading icons across Features, Keyguard/AOD, and Preview Sandbox, including a clearer relationship between simulation controls and their icons.
+- Diagnostics presents more legible level badges, a real loading indicator, and a coordinated upward entrance for the event summary and log entries.
+- Adjusted initial defaults: Keyguard and AOD display on, battery-fill-follow-retraction on, and top battery percentage off. First enabling the percentage sets the top offset to +5 only when that layout's offset has never been changed; existing user settings are preserved.
+- Moved the top-information vertical offset control beneath outer-ring thickness in Layout & Size.
 
 ### Fixed
-- Diagnostics retains MIUIX navigation smoothness while displaying real loading state and bounded sequential log motion.
-- Charging readout seeds its native lightning ID on host binding, synchronizes active render sessions, and retains the ID across callback gaps and Hot Reload; unavailable drawables no longer reserve empty space.
-- Liquid Glass navigation derives its selected-state tint from the active MIUIX theme, including Monet dynamic color.
-- Home runtime status transitions smoothly across neutral/success/warning/error accent and background changes.
+- Smoothed the Diagnostics secondary-page slide and log-list appearance, keeping cached content on re-entry and retaining MIUIX pull-to-refresh without entry flashing.
+- Preserved charging-lightning visibility across transient native callback gaps, host binding and Hot Reload, avoiding empty icon space.
+- Matched Liquid Glass selected-state coloring to the active MIUIX theme, including dynamic colors.
+- Smoothed Home runtime-status indicator and card-background color changes across their real status states.
+
+### Engineering
+- Kept the app settings and preview tied to a single persistent source for each floating-nav content choice; old saved settings remain compatible where their origin can be determined.
+- Refreshed the pinned MIUIX development snapshot and maintained existing SystemUI/Xposed runtime behavior.
 
 ## [0.4.0] - 2026-10-07
 
