@@ -41,6 +41,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
@@ -69,6 +70,7 @@ import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -116,9 +118,12 @@ internal fun DiagnosticsScreen(
         Animatable(if (snapshot == null || snapshot === initialSnapshot) 1f else 0f)
     }
     LaunchedEffect(rise) {
-        rise.animateTo(1f, folmeSpring(damping = 1f, response = 0.5f))
+        if (rise.value == 0f) {
+            withFrameNanos { } // Paint the initial position before the spring starts.
+            rise.animateTo(1f, folmeSpring(damping = 1f, response = 0.55f))
+        }
     }
-    val risePx = with(LocalDensity.current) { 12.dp.toPx() }
+    val risePx = with(LocalDensity.current) { 28.dp.toPx() }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -363,7 +368,26 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
-            snapshot == null -> {}
+            snapshot == null -> {
+                item(key = "diagnostics-loading") {
+                    if (loading) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                text = stringResource(R.string.diagnostics_loading),
+                                style = MiuixTheme.textStyles.subtitle,
+                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                            )
+                        }
+                    } else {
+                        LogStateCard(text = stringResource(R.string.diagnostics_events_empty))
+                    }
+                }
+            }
             visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
                     Text(
@@ -376,7 +400,11 @@ internal fun DiagnosticsScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .padding(top = 6.dp, bottom = 8.dp)
-                                .graphicsLayer { translationY = logLift(rise.value, 0, risePx) },
+                                .graphicsLayer {
+                                    val shown = logProgress(rise.value, 0)
+                                    translationY = risePx * (1f - shown)
+                                    alpha = shown
+                                },
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
@@ -405,7 +433,9 @@ internal fun DiagnosticsScreen(
                                     fadeOutSpec = null,
                                 )
                                 .graphicsLayer {
-                                    translationY = logLift(rise.value, index, risePx)
+                                    val shown = logProgress(rise.value, index)
+                                    translationY = risePx * (1f - shown)
+                                    alpha = shown
                                 },
                     )
                 }
@@ -432,11 +462,10 @@ internal fun DiagnosticsScreen(
 
 private const val MAX_EVENTS = 40
 
-private fun logLift(progress: Float, index: Int, rise: Float): Float {
-    // Limit staggering to nearby rows; off-screen cards should not wait.
+private fun logProgress(progress: Float, index: Int): Float {
+    // Off-screen rows share the last visible row's start.
     val start = index.coerceAtMost(7) * 0.07f
-    val shown = ((progress - start) / (1f - start)).coerceIn(0f, 1f)
-    return rise * (1f - shown)
+    return ((progress - start) / (1f - start)).coerceIn(0f, 1f)
 }
 
 private const val LEVEL_INFO = 1 shl 0

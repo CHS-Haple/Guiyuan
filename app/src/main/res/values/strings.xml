@@ -241,6 +241,7 @@
     <string name="diagnostics_pull_to_refresh">Pull down to refresh</string>
     <string name="diagnostics_release_to_refresh">Release to refresh</string>
     <string name="diagnostics_refreshing">Refreshing</string>
+    <string name="diagnostics_loading">Reading runtime logs…</string>
     <string name="diagnostics_refresh_complete">Refresh complete</string>
     <string name="diagnostics_scroll_top">Scroll to top</string>
     <string name="diagnostics_scroll_bottom">Scroll to bottom</string>
