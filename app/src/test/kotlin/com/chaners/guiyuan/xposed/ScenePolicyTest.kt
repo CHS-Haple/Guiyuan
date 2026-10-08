@@ -23,19 +23,18 @@ class ScenePolicyTest {
 
         assertEquals(RenderMode.PROJECTED, home.renderMode)
         assertEquals(MotionOwnership.NONE, home.motionOwnership)
-        assertEquals(SceneEvidence.RUNTIME_VERIFIED, home.evidence)
     }
 
     @Test
-    fun systemUiOwnedTransitionsDoNotRequestCombinedSlotMutation() {
-        val systemUiOwned =
-            ScenePolicy.all()
-                .filter { it.motionOwnership == MotionOwnership.SYSTEM_UI }
-
-        assertTrue(systemUiOwned.isNotEmpty())
-        systemUiOwned.forEach { capability ->
-            assertTrue(capability.renderMode in RenderMode.entries)
-        }
+    fun nativeShadeAndControlCenterKeepNativeVisuals() {
+        assertEquals(
+            RenderMode.NATIVE_ONLY,
+            ScenePolicy.capability(StatusScene.NOTIFICATION_SHADE_TRANSITION).renderMode,
+        )
+        assertEquals(
+            RenderMode.NATIVE_ONLY,
+            ScenePolicy.capability(StatusScene.CONTROL_CENTER).renderMode,
+        )
     }
 
     @Test

@@ -21,11 +21,6 @@ internal enum class StatusScene {
     AOD,
 }
 
-internal enum class SceneEvidence {
-    RUNTIME_VERIFIED,
-    STATIC_VERIFIED,
-}
-
 internal enum class SourceScene {
     HOME,
     KEYGUARD,
@@ -36,7 +31,6 @@ internal data class SceneCapability(
     val scene: StatusScene,
     val renderMode: RenderMode,
     val motionOwnership: MotionOwnership,
-    val evidence: SceneEvidence,
 )
 
 internal object ScenePolicy {
@@ -47,35 +41,30 @@ internal object ScenePolicy {
                     scene = StatusScene.HOME_STABLE,
                     renderMode = RenderMode.PROJECTED,
                     motionOwnership = MotionOwnership.NONE,
-                    evidence = SceneEvidence.RUNTIME_VERIFIED,
                 ),
             StatusScene.NOTIFICATION_SHADE_TRANSITION to
                 SceneCapability(
                     scene = StatusScene.NOTIFICATION_SHADE_TRANSITION,
                     renderMode = RenderMode.NATIVE_ONLY,
                     motionOwnership = MotionOwnership.SYSTEM_UI,
-                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
             StatusScene.CONTROL_CENTER to
                 SceneCapability(
                     scene = StatusScene.CONTROL_CENTER,
                     renderMode = RenderMode.NATIVE_ONLY,
                     motionOwnership = MotionOwnership.SYSTEM_UI,
-                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
             StatusScene.KEYGUARD to
                 SceneCapability(
                     scene = StatusScene.KEYGUARD,
                     renderMode = RenderMode.PROJECTED,
                     motionOwnership = MotionOwnership.SYSTEM_UI,
-                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
             StatusScene.AOD to
                 SceneCapability(
                     scene = StatusScene.AOD,
                     renderMode = RenderMode.PROJECTED,
                     motionOwnership = MotionOwnership.SYSTEM_UI,
-                    evidence = SceneEvidence.STATIC_VERIFIED,
                 ),
         )
 

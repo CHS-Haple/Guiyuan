@@ -11,12 +11,10 @@ class SceneAodPolicyTest {
         val keyguard = ScenePolicy.capability(StatusScene.KEYGUARD)
         assertEquals(RenderMode.PROJECTED, keyguard.renderMode)
         assertEquals(MotionOwnership.SYSTEM_UI, keyguard.motionOwnership)
-        assertEquals(SceneEvidence.STATIC_VERIFIED, keyguard.evidence)
 
         val aod = ScenePolicy.capability(StatusScene.AOD)
         assertEquals(RenderMode.PROJECTED, aod.renderMode)
         assertEquals(MotionOwnership.SYSTEM_UI, aod.motionOwnership)
-        assertEquals(SceneEvidence.STATIC_VERIFIED, aod.evidence)
 
         assertTrue(
             ScenePolicy.aodProjectionEligible(
