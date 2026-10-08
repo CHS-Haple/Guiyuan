@@ -3538,6 +3538,25 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "source" to source,
             )
+            // Hot Reload may not be followed by another battery callback.
+            if (StatusStateStore.snapshot().battery?.charging == true) {
+                val iconId = SysUiBatterySource.readHostChargingIconId(host)
+                if (iconId != null) {
+                    StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
+                        onCombinedStateChanged(snapshot)
+                    }
+                }
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "glyph.seed",
+                    component = "batteryState",
+                    state = if (iconId != null) "ready" else "unavailable",
+                    "source" to source,
+                    "chargingIconId" to (iconId ?: "unavailable"),
+                    "storedIconId" to
+                        (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
+                )
+            }
         } else {
             logDiagnostic(
                 level = Log.WARN,

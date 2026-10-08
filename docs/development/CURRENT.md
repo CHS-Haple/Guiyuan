@@ -9,7 +9,7 @@
 - Liquid Glass selected-state tint follows the active MIUIX theme color, including Monet dynamic color.
 - First-time Liquid Glass selection defaults navigation content to icons and text without overriding an existing user choice.
 - Home runtime status keeps its existing state semantics while all accent/background color changes use one short transition.
-- No runtime blocker is currently recorded.
+- Reported blocker: native charging lightning can disappear despite charging state; PR #304 is under device validation.
 
 ## Accepted runtime contract
 

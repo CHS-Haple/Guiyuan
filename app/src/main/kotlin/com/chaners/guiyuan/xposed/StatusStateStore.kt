@@ -12,11 +12,16 @@ internal object StatusStateStore {
 
     @Synchronized
     fun updateBattery(state: BatteryState): Snapshot? {
-        if (current.battery == state) {
-            return null
-        }
+        val previous = current.battery
+        val next =
+            if (state.charging && state.chargingIconResId == null && previous?.charging == true) {
+                state.copy(chargingIconResId = previous.chargingIconResId)
+            } else {
+                state
+            }
+        if (previous == next) return null
 
-        current = current.copy(battery = state)
+        current = current.copy(battery = next)
         return current
     }
 
@@ -180,6 +185,8 @@ internal object StatusStateStore {
             return current
         }
 
+        // Newly installed hooks may report battery changes before the saved state is restored.
+        val observedBattery = current.battery
         val battery =
             if (bundle.getBoolean(KEY_BATTERY_PRESENT, false)) {
                 BatteryState(
@@ -253,6 +260,7 @@ internal object StatusStateStore {
                 mobileRecoveryPending =
                     bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
             )
+        observedBattery?.let(::updateBattery)
         return current
     }
 
