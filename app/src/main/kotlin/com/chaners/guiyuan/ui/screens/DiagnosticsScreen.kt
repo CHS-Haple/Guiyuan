@@ -146,6 +146,7 @@ internal fun DiagnosticsScreen(
             val oldKeys = snapshot?.entries?.mapTo(hashSetOf()) { it.key }.orEmpty()
             enteringKeys =
                 captured.entries
+                    .asReversed()
                     .asSequence()
                     .filter(::isRuntimeLog)
                     .filter { it.key !in oldKeys }
