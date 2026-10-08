@@ -1545,7 +1545,7 @@ internal object CcTransitionOwner {
             val currentReservation =
                 lastReservationWidthPx ?: compactWidth
             val requiredReservation =
-                requiredReservationWidthForVisualEnvelope(witness)
+                reservationWidthForEnvelope(witness)
                     ?: return 0f
 
             val targetWidth =
@@ -1578,7 +1578,7 @@ internal object CcTransitionOwner {
             )
         }
 
-        private fun requiredReservationWidthForVisualEnvelope(
+        private fun reservationWidthForEnvelope(
             witness: TargetWitness,
         ): Int? {
             val source = sourceViewRef.get() ?: return null
@@ -1750,7 +1750,7 @@ internal object CcTransitionOwner {
                     // end frame before measuring the current projected occupancy.
                     lastNativePeerTargetEndOffsetPx = null
                     val targetEndOffsetPx =
-                        resolveBatteryIslandNativePeerTargetEndOffsetPx()
+                        batteryIslandPeerEndOffsetPx()
                             ?: run {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
@@ -1801,7 +1801,7 @@ internal object CcTransitionOwner {
             }
         }
 
-        private fun resolveBatteryIslandNativePeerTargetEndOffsetPx(): Float? {
+        private fun batteryIslandPeerEndOffsetPx(): Float? {
             if (
                 fakeStatusIcons.width <= 0 ||
                 finalBattery.width <= 0 ||
