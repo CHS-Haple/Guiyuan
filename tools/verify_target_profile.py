@@ -217,16 +217,11 @@ progress_signature = (
 )
 if progress_signature not in set(verified_methods.get(battery_semantic_class, [])):
     fail("battery semantic progress method is not listed in the pinned SystemUI profile")
-if (
-    'getDeclaredMethod("getProgressStatus")'
-    not in battery_source_text.replace("\n", " ")
+if not re.search(
+    r'getDeclaredMethod\(\s*"getProgressStatus"\s*\)',
+    battery_source_text,
 ):
-    # The source is formatted across lines; use a whitespace-tolerant check below.
-    if not re.search(
-        r'getDeclaredMethod\(\s*"getProgressStatus"\s*\)',
-        battery_source_text,
-    ):
-        fail("battery semantic source no longer reflects getProgressStatus")
+    fail("battery semantic source no longer reflects getProgressStatus")
 
 battery_semantic_fields = set(battery_semantic_contract.get("fields", []))
 verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
@@ -297,7 +292,6 @@ lifecycle_hook_specs = (
         "(ZZ)V",
     ),
 )
-source_cache = {}
 for (
     hook_name,
     source_path,
@@ -308,10 +302,7 @@ for (
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing lifecycle hook point: {hook_name}")
-    source_text = source_cache.setdefault(
-        source_path,
-        source_path.read_text(encoding="utf-8"),
-    )
+    source_text = source_path.read_text(encoding="utf-8")
     source_class = source_string_constant(
         source_text,
         class_constant,
@@ -329,9 +320,7 @@ for (
     if hook_point.get("descriptor") != expected_descriptor:
         fail(f"lifecycle hook descriptor drifted from profile: {hook_name}")
 
-keyguard_aod_text = source_cache.get(KEYGUARD_AOD_SOURCE_PATH)
-if keyguard_aod_text is None:
-    keyguard_aod_text = KEYGUARD_AOD_SOURCE_PATH.read_text(encoding="utf-8")
+keyguard_aod_text = KEYGUARD_AOD_SOURCE_PATH.read_text(encoding="utf-8")
 keyguard_aod_class = source_string_constant(
     keyguard_aod_text,
     "BATTERY_VIEW_CLASS",
