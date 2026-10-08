@@ -196,7 +196,7 @@ internal fun AppearanceScreen(
                 }
                 OverlayDropdownPreference(
                     items = floatingContentOptions,
-                    selectedIndex = appearance.navContent.ordinal,
+                    selectedIndex = appearance.activeNavContent.ordinal,
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
@@ -207,7 +207,7 @@ internal fun AppearanceScreen(
                     showValue = true,
                     onSelectedIndexChange = { index ->
                         NavContent.entries.getOrNull(index)?.let { content ->
-                            if (content != appearance.navContent) {
+                            if (content != appearance.activeNavContent) {
                                 onNavContentChange(content)
                             }
                         }
@@ -287,7 +287,7 @@ private fun AppearanceMiniPreview(
                 MiniNavigationPreview(
                     floating = appearance.navEnabled,
                     style = appearance.navStyle,
-                    content = appearance.navContent,
+                    content = appearance.activeNavContent,
                     liquidMode = appearance.liquidMode,
                     dark = dark,
                 )
