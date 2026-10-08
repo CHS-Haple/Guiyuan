@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -37,14 +36,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -61,6 +59,7 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -83,6 +82,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -92,6 +92,7 @@ internal fun DiagnosticsScreen(
     onSnapshot: (DiagSnapshot) -> Unit,
 ) {
     val context = LocalContext.current
+    val nav = LocalNavTransitionScope.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
@@ -137,6 +138,8 @@ internal fun DiagnosticsScreen(
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
+            // Keep log list measurement out of the MIUIX page transition.
+            snapshotFlow { !nav.isRunning }.first { it }
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
@@ -214,17 +217,6 @@ internal fun DiagnosticsScreen(
             .take(MAX_EVENTS)
             .toList()
     }
-    // Drive the initial log entrance once, not with a spring and delay per row.
-    val entryOffset by animateIntOffsetAsState(
-        targetValue =
-            if (snapshot == null) {
-                IntOffset(0, with(LocalDensity.current) { 12.dp.roundToPx() })
-            } else {
-                IntOffset.Zero
-            },
-        animationSpec = itemMove,
-        label = "Diagnostic entries",
-    )
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
@@ -367,8 +359,7 @@ internal fun DiagnosticsScreen(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp)
-                                .graphicsLayer { translationY = entryOffset.y.toFloat() },
+                                .padding(top = 6.dp, bottom = 8.dp),
                         style = MiuixTheme.textStyles.subtitle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
@@ -395,8 +386,7 @@ internal fun DiagnosticsScreen(
                                     fadeInSpec = null,
                                     placementSpec = itemMove,
                                     fadeOutSpec = null,
-                                )
-                                .graphicsLayer { translationY = entryOffset.y.toFloat() },
+                                ),
                     )
                 }
             }
