@@ -83,6 +83,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
+import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -92,7 +93,7 @@ internal fun DiagnosticsScreen(
     onSnapshot: (DiagSnapshot) -> Unit,
 ) {
     val context = LocalContext.current
-    val nav = LocalNavTransitionScope.current
+    val navScope = LocalNavTransitionScope.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
@@ -107,7 +108,7 @@ internal fun DiagnosticsScreen(
         )
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
-    var loading by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -135,11 +136,14 @@ internal fun DiagnosticsScreen(
             stringResource(R.string.diagnostics_refresh_complete),
         )
 
+    suspend fun awaitNavIdle() {
+        snapshotFlow { navScope.role == NavRole.Top && !navScope.isRunning }.first { it }
+    }
+
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
-            // Keep log list measurement out of the MIUIX page transition.
-            snapshotFlow { !nav.isRunning }.first { it }
+            awaitNavIdle()
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
@@ -197,7 +201,8 @@ internal fun DiagnosticsScreen(
         }
 
     LaunchedEffect(Unit) {
-        loading = true
+        // Wait for the native page transition before starting root log capture.
+        awaitNavIdle()
         captureSnapshot()
     }
 
