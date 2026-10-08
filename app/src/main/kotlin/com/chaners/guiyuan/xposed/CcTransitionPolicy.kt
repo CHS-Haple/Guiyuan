@@ -145,22 +145,7 @@ internal object CcTransitionPolicy {
             ?: valid(cachedTint)
     }
 
-    fun usesSemanticTransitionReservation(
-        sourceScene: SourceScene,
-        charging: Boolean = false,
-        nativeBatteryIslandActive: Boolean? = null,
-    ): Boolean =
-        when (sourceScene) {
-            SourceScene.HOME,
-            SourceScene.KEYGUARD,
-            -> true
-            SourceScene.UNKNOWN -> false
-        }
-
-    fun allowsNativeTransitionPaddingExpansion(
-        sourceScene: SourceScene,
-        genericIslandShowing: Boolean?,
-    ): Boolean =
+    fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
         when (sourceScene) {
             SourceScene.HOME,
             SourceScene.KEYGUARD,

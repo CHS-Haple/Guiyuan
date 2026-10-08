@@ -203,11 +203,7 @@ internal object CcTransitionOwner {
             nativeAppearance = nativeAppearance,
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
-                CcTransitionPolicy.usesSemanticTransitionReservation(
-                    sourceScene = sourceScene,
-                    charging = sourceSnapshot.model.charging,
-                    nativeBatteryIslandActive = nativeBatteryIslandActive,
-                ),
+                CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
             sourceScene = sourceScene,
             genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
@@ -266,7 +262,6 @@ internal object CcTransitionOwner {
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
-        private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
@@ -343,10 +338,8 @@ internal object CcTransitionOwner {
                 ",reservationMode=" +
                 when {
                     !transitionReservationEnabled -> "native-peer-motion"
-                    genericIslandShowing == true && nativePaddingExpansionAllowed ->
+                    genericIslandShowing == true ->
                         "native-progress-total-padding+native-island-collision"
-                    genericIslandShowing == true -> "native-island-authority"
-                    !nativePaddingExpansionAllowed -> "native-padding-guard"
                     else -> "native-progress-total-padding"
                 } +
                 "}"
@@ -490,11 +483,6 @@ internal object CcTransitionOwner {
             this.genericIslandShowing = genericIslandShowing
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
-            this.nativePaddingExpansionAllowed =
-                CcTransitionPolicy.allowsNativeTransitionPaddingExpansion(
-                    sourceScene = sourceScene,
-                    genericIslandShowing = genericIslandShowing,
-                )
             if (appearanceChanged) {
                 refreshNativePeerTint()
             }
@@ -1777,16 +1765,6 @@ internal object CcTransitionOwner {
                     lastNativePeerTargetEndOffsetPx = null
                     requestedWidth
                 }
-
-            if (!nativePaddingExpansionAllowed) {
-                if (lastNativeReservationWidthPx != null) {
-                    SysUiPresentationOwner.clearCcTransitionReservation(
-                        "transition-island-native-padding-guard",
-                    )
-                    lastNativeReservationWidthPx = null
-                }
-                return
-            }
 
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =

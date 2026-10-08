@@ -51,94 +51,10 @@ class CcTransitionIslandTest {
     }
 
     @Test
-    fun islandScenesKeepSemanticReservationForGuiyuanExpansion() {
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = true,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = false,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = null,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.KEYGUARD,
-                    charging = true,
-                    nativeBatteryIslandActive = true,
-                ),
-        )
-    }
-
-    @Test
-    fun nativeIslandCollisionDoesNotDisableGuiyuanPaddingReflow() {
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = true,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.KEYGUARD,
-                    genericIslandShowing = true,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = false,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = null,
-                ),
-        )
-        assertTrue(
-            !CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.UNKNOWN,
-                    genericIslandShowing = true,
-                ),
-        )
-    }
-
-    @Test
-    fun verifiedSourceScenesKeepSemanticReservationThroughProjection() {
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.HOME),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.KEYGUARD),
-        )
-        assertTrue(
-            !CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.UNKNOWN),
-        )
+    fun semanticReservationRequiresKnownSourceScene() {
+        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.HOME))
+        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.KEYGUARD))
+        assertTrue(!CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.UNKNOWN))
     }
 
     @Test
