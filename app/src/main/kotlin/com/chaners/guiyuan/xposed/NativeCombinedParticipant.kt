@@ -2320,22 +2320,21 @@ internal object NativeCombinedParticipant {
                         return@OnPreDrawListener true
                     }
                     frame += 1
-                    val snapshot =
-                        tracked.joinToString(" ") { item ->
-                            item.snapshot()
+                    if (samples < MAX_SAMPLES) {
+                        val snapshot = tracked.joinToString(" ") { it.snapshot() }
+                        if (snapshot != previous) {
+                            previous = snapshot
+                            samples += 1
+                            onEvent(
+                                "nativeCombinedParticipant transitionSample " +
+                                    "direction=" + direction +
+                                    " frame=" + frame +
+                                    " elapsedMs=" +
+                                    (SystemClock.uptimeMillis() - startedAt) +
+                                    " " + snapshot +
+                                    " sample=" + samples + "/" + MAX_SAMPLES,
+                            )
                         }
-                    if (snapshot != previous && samples < MAX_SAMPLES) {
-                        previous = snapshot
-                        samples += 1
-                        onEvent(
-                            "nativeCombinedParticipant transitionSample " +
-                                "direction=" + direction +
-                                " frame=" + frame +
-                                " elapsedMs=" +
-                                (SystemClock.uptimeMillis() - startedAt) +
-                                " " + snapshot +
-                                " sample=" + samples + "/" + MAX_SAMPLES,
-                        )
                     }
                     if (
                         currentGeneration == generation &&

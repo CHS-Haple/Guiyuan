@@ -204,7 +204,6 @@ internal object CcTransitionOwner {
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
                 CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
-            sourceScene = sourceScene,
             genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
@@ -468,7 +467,6 @@ internal object CcTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            sourceScene: SourceScene,
             genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
@@ -591,7 +589,6 @@ internal object CcTransitionOwner {
                 )
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
-            if (opacity <= 0f) return
 
             val preferredMobileSubId =
                 PresentationStore
@@ -1199,7 +1196,7 @@ internal object CcTransitionOwner {
                                     outerScale = outerSimilarityScale,
                                 ),
                     )
-                val pathGeometry =
+                val geometry =
                     projectedGeometry(
                         source = sourceGeometry,
                         target = targetGeometry,
@@ -1207,7 +1204,6 @@ internal object CcTransitionOwner {
                         scalePolicy = mobileSpec.scalePolicy,
                         carrierFrames = carrierFrames,
                     )
-                val geometry = pathGeometry
                 val matrix =
                     matrixForBoundsGeometry(
                         geometry = geometry,
@@ -1308,7 +1304,7 @@ internal object CcTransitionOwner {
                     sourceGeometry = sourceGeometry,
                     targetOpticalBounds = null,
                 ) ?: return null
-            val pathGeometry =
+            val geometry =
                 projectedGeometry(
                     source = sourceGeometry,
                     target = targetGeometry,
@@ -1316,7 +1312,6 @@ internal object CcTransitionOwner {
                     scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
-            val geometry = pathGeometry
             val revealVisibleFraction =
                 latentRevealVisibleFraction(
                     currentGeometry = geometry,
@@ -1408,7 +1403,7 @@ internal object CcTransitionOwner {
                     sourceGeometry = sourceGeometry,
                     targetOpticalBounds = null,
                 ) ?: return null
-            val pathGeometry =
+            val geometry =
                 projectedGeometry(
                     source = sourceGeometry,
                     target = targetGeometry,
@@ -1416,7 +1411,6 @@ internal object CcTransitionOwner {
                     scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
-            val geometry = pathGeometry
             val revealVisibleFraction =
                 latentRevealVisibleFraction(
                     currentGeometry = geometry,
