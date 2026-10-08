@@ -757,8 +757,7 @@ private fun LogCard(
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .padding(bottom = 6.dp)
-                .heightIn(min = 86.dp),
+                .padding(bottom = 6.dp),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         showIndication = true,
         onClick = onToggle,
@@ -802,15 +801,17 @@ private fun LogCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = summary,
-            modifier = Modifier.animateContentSize(),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = if (expanded) 2 else 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (summary.isNotBlank()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = summary,
+                modifier = Modifier.animateContentSize(),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                maxLines = if (expanded) 2 else 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
 
         AnimatedVisibility(
             visible = expanded,
@@ -1067,6 +1068,8 @@ private fun logSummary(
     context: Context,
     entry: LogEntry,
 ): String {
+    // Structured events already have a title; their raw protocol is not a summary.
+    val fallback = if (entry.structured) "" else entry.message
     if (entry.event == "connectivity") {
         return buildList {
             entry.fields["transport"]?.let { add(transportLabel(it)) }
@@ -1087,7 +1090,7 @@ private fun logSummary(
                     ),
                 )
             }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
     }
 
     if (entry.event == "pipeline.latency") {
@@ -1108,7 +1111,7 @@ private fun logSummary(
                     ),
                 )
             }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
     }
 
     if (entry.event in setOf("tintCommit", "homeRenderTint")) {
@@ -1122,7 +1125,7 @@ private fun logSummary(
                     ),
                 )
             }
-        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { entry.message }
+        }.joinToString(context.getString(R.string.diagnostics_log_summary_separator)).ifBlank { fallback }
     }
 
     val summary =
@@ -1140,14 +1143,7 @@ private fun logSummary(
         }.take(3)
             .joinToString(context.getString(R.string.diagnostics_log_summary_separator))
 
-    if (summary.isNotBlank()) {
-        return summary
-    }
-    return if (entry.structured || entry.event != null) {
-        context.getString(R.string.diagnostics_log_summary_recorded)
-    } else {
-        entry.message
-    }
+    return summary.ifBlank { fallback }
 }
 
 private fun stateLabel(
