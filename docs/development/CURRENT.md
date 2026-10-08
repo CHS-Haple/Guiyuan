@@ -3,7 +3,7 @@
 ## Baseline
 
 - Development integration: Guiyuan 0.5.0 / Build 770 (`20261008-770`); accepted diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences. Combined Home/Keyguard/refresh acceptance remains tracked separately.
-- Stable `main`: Guiyuan 0.4.0 / Build 749; accepted Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
+- Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
 - Liquid Glass selected-state tint follows the active MIUIX theme color, including Monet dynamic color.
@@ -51,4 +51,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Promote the reviewed 0.5.0 checkpoint to `main`; then choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Continue focused device checks for combined Home/Keyguard/refresh scenarios.
+Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Continue focused device checks for combined Home/Keyguard/refresh scenarios.
