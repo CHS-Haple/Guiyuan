@@ -2,11 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import kotlin.math.ceil
 
-internal enum class RenderMode {
-    PROJECTED,
-    NATIVE_ONLY,
-}
-
 internal data class SteadyLayout(
     val left: Int,
     val right: Int,
