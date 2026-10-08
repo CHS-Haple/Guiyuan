@@ -98,7 +98,7 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
 
-**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture or start the pull indicator. Neutral placeholders give way to real log cards with a brief top-down Folme fade; only newly observed entries use a bounded stagger, while existing cards keep their position during refresh. The summary stays mounted, showing actual loading or refreshing state without delaying data capture.
+**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture or start the pull indicator. Neutral placeholders give way to real log cards with a brief top-down Folme fade; only newly observed entries use a bounded stagger, while existing cards keep their position during refresh. The summary shows the captured event count during refresh, with the native MIUIX pull indicator as the only refresh feedback. On cold entry it shows loading text until the first snapshot.
 
 ## Hot Reload is a generation handoff
 

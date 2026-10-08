@@ -69,7 +69,6 @@ import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -376,48 +375,29 @@ internal fun DiagnosticsScreen(
             }
             snapshot == null || visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
-                    Row(
+                    Crossfade(
+                        targetState = snapshot == null,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 32.dp)
-                                .padding(horizontal = 20.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier.size(20.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (snapshot == null || loading) {
-                                CircularProgressIndicator(size = 18.dp)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Crossfade(
-                            targetState =
-                                when {
-                                    snapshot == null -> 0
-                                    loading -> 1
-                                    else -> 2
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 6.dp, bottom = 8.dp),
+                        animationSpec = itemFade,
+                        label = "Diagnostic summary",
+                    ) { isLoading ->
+                        Text(
+                            text =
+                                if (isLoading) {
+                                    stringResource(R.string.diagnostics_events_loading)
+                                } else {
+                                    stringResource(
+                                        R.string.diagnostics_events_summary,
+                                        visibleEntries.size,
+                                    )
                                 },
-                            animationSpec = itemFade,
-                            label = "Diagnostic summary",
-                        ) { state ->
-                            Text(
-                                text =
-                                    when (state) {
-                                        0 -> stringResource(R.string.diagnostics_events_loading)
-                                        1 -> stringResource(R.string.diagnostics_log_loading)
-                                        else ->
-                                            stringResource(
-                                                R.string.diagnostics_events_summary,
-                                                visibleEntries.size,
-                                            )
-                                    },
-                                style = MiuixTheme.textStyles.subtitle,
-                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            )
-                        }
+                            style = MiuixTheme.textStyles.subtitle,
+                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        )
                     }
                 }
                 if (snapshot == null) {
