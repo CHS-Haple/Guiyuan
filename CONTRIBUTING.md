@@ -146,6 +146,8 @@ Check touched code and relevant adjacent call sites for:
 
 Keep an unusual structure when a real platform/maintenance constraint justifies it; otherwise simplify it. Add only the smallest useful explanation for a necessary non-obvious structure.
 
+Record each applicable pre-commit check with the touched code/call path, validation method, concrete evidence and conclusion. Explain non-applicable or unverified checks. For a failed check, state the root cause, fix and recheck evidence; resolve deterministic findings before committing. A bare `PASS`, unrun test or invented metric is not evidence.
+
 Prefer deleting proven dead code/indirection over renaming it. Do not run CI for every micro-edit; validate meaningful checkpoints. Device evidence is required only when runtime behavior can plausibly change.
 
 ## Diagnostics and UI
@@ -176,6 +178,14 @@ For Material Symbols:
 - normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
 - use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
 - review neighboring glyphs in light and dark themes.
+
+### Version and build identity
+
+The external `versionName` changes only when a version promotion is explicitly requested. Internal Build identifies a **materially different installable APK**, not a commit, CI run, or byte-for-byte archive.
+
+Increment `buildId` and Android `versionCode` together when an APK changes meaningfully in behavior, visible UI/assets, compatibility, or another user-relevant property. Two APKs with no substantive difference may keep the same Build despite different Git SHAs or incidental binary/build variations.
+
+Do not bump Build for docs, governance, CI reruns, non-behavioral refactors, or rebuilds without a substantive APK change. Assign a fresh unique Build before distributing a materially changed APK; check parallel branches to avoid reusing a Build for different behavior. Keep the exact Git SHA in build evidence for source traceability.
 
 ## Git workflow
 

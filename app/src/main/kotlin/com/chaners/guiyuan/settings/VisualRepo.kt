@@ -84,10 +84,19 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopReadout(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_READOUT_ENABLED_KEY), enabled)
-            .apply()
+        val layout = preferences.readLayout()
+        val readoutKey = visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY)
+        val offsetKey = visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY)
+        val editor = preferences.edit().putBoolean(readoutKey, enabled)
+        if (
+            enabled &&
+            !preferences.profileBoolean(layout, BATTERY_TOP_READOUT_ENABLED_KEY, false) &&
+            !preferences.contains(offsetKey) &&
+            !preferences.contains(BATTERY_TOP_VERTICAL_OFFSET_KEY)
+        ) {
+            editor.putFloat(offsetKey, topOffsetYRaw(5f))
+        }
+        editor.apply()
     }
 
     fun setTopTextFollowsBatteryColor(enabled: Boolean) {
@@ -393,7 +402,7 @@ internal fun SharedPreferences.readVisualCfg(): VisualCfg {
         fillFollowsRetract =
             getBoolean(
                 BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-                false,
+                true,
             ),
         ccTintTransition =
             getBoolean(

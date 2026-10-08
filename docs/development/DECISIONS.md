@@ -92,6 +92,14 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
 
+## Diagnostics loads on entry
+
+**Decision:** diagnostics starts background capture on entry, retains the last in-process snapshot, and uses only MIUIX pull-to-refresh for manual refresh feedback.
+
+**Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
+
+**Consequence:** retain one completed snapshot in `GyApp` memory. The summary is absent before the first capture, then rises with the first log card, using the same Folme spring and reveal state; no transient loading label or extra spinner. After first loading or a manual refresh, cards appear in a short, top-down sequence: each moves upward by 12 dp with a MIUIX Folme spring, fully opaque, without expanding row heights or delaying log capture. Cached entries remain visible while refreshing.
+
 ## Hot Reload is a generation handoff
 
 **Decision:** Hot Reload replaces one bounded runtime generation with another rather than stacking hooks/owners or intentionally returning through an intermediate native cycle.

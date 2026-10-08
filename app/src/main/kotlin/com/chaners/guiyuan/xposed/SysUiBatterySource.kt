@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.view.View
+import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -13,6 +14,8 @@ internal object SysUiBatterySource {
         "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView"
     const val BATTERY_METER_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
+    private const val BATTERY_CONTAINER_CLASS_NAME =
+        "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     const val BATTERY_LEVEL_METHOD_NAME = "onBatteryLevelChanged"
     const val CHARGE_STATE_METHOD_NAME = "onChargeStateChanged"
     const val POWER_SAVE_METHOD_NAME = "onPowerSaveChanged"
@@ -66,6 +69,19 @@ internal object SysUiBatterySource {
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
 
+        fun readChargingIconId(iconView: View): Int? {
+            var parent = iconView.parent
+            while (parent is View) {
+                if (meterClass.isInstance(parent)) {
+                    return runCatching { chargingIconMethod.invoke(parent) as? Int }
+                        .getOrNull()
+                        ?.takeIf { it != 0 }
+                }
+                parent = parent.parent
+            }
+            return null
+        }
+
         fun readState(iconView: View): StatusStateStore.BatteryState? {
             val level =
                 runCatching { levelField.getInt(iconView) }
@@ -111,7 +127,7 @@ internal object SysUiBatterySource {
                 systemSemanticColor = systemSemanticColor,
                 chargingIconResId =
                     if (charging) {
-                        lastChargingIconResId
+                        readChargingIconId(iconView) ?: lastChargingIconResId
                     } else {
                         null
                     },
@@ -127,6 +143,8 @@ internal object SysUiBatterySource {
                 synchronized(this) {
                     if (!state.charging) {
                         lastChargingIconResId = null
+                    } else if (state.chargingIconResId != null) {
+                        lastChargingIconResId = state.chargingIconResId
                     }
                     if (lastState == state) {
                         false
@@ -135,9 +153,7 @@ internal object SysUiBatterySource {
                         true
                     }
                 }
-            if (!changed) {
-                return
-            }
+            if (!changed) return
             onBatteryState(state)
             onEvent?.invoke(
                 "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
@@ -146,8 +162,8 @@ internal object SysUiBatterySource {
                     " semantic=" + (state.semanticState?.name ?: "unavailable") +
                     " systemColor=" +
                     (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
-                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()" +
-                    "",
+                    " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
+                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
             )
         }
 
@@ -155,34 +171,27 @@ internal object SysUiBatterySource {
             meterView: View,
             sourceMethod: String,
         ) {
-            val nativeId =
-                runCatching {
-                    chargingIconMethod.invoke(meterView) as? Int
-                }.getOrNull()
             val iconId =
-                synchronized(this) {
-                    val charging = lastState?.charging
-                    val nextId =
-                        resolveChargingIconId(
-                            charging = charging,
-                            nativeId = nativeId,
-                            lastId = lastChargingIconResId,
-                        )
-                    if (lastChargingIconResId == nextId) {
-                        return@synchronized null
-                    }
-                    lastChargingIconResId = nextId
-                    nextId.takeIf { charging == true }
-                } ?: return
+                runCatching { chargingIconMethod.invoke(meterView) as? Int }
+                    .getOrNull()
+                    ?.takeIf { it != 0 }
+                    ?: return
 
+            val changed =
+                synchronized(this) {
+                    val changed = lastChargingIconResId != iconId
+                    lastChargingIconResId = iconId
+                    changed
+                }
+            // Repeated samples still reconcile the state store after Hot Reload.
             onChargingIconResource(iconId)
-            onEvent?.invoke(
-                "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
-                    " charging=true" +
-                    " resourceId=" + iconId +
-                    " authority=MiuiBatteryMeterView.getHollowChargingIconId()" +
-                    "",
-            )
+            if (changed) {
+                onEvent?.invoke(
+                    "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
+                        " resourceId=" + iconId +
+                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
+                )
+            }
         }
 
         fun hook(
@@ -263,15 +272,25 @@ internal object SysUiBatterySource {
         )
     }
 
-    internal fun resolveChargingIconId(
-        charging: Boolean?,
-        nativeId: Int?,
-        lastId: Int?,
-    ): Int? {
-        if (charging == false) return null
+    fun readHostChargingIconId(host: Any): Int? {
+        val root = host as? ViewGroup ?: return null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
+            ?: return null
+        return runCatching {
+            battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
+                isAccessible = true
+            }.invoke(battery) as? Int
+        }.getOrNull()?.takeIf { it != 0 }
+    }
 
-        // A missing glyph sample is not a charging-state transition.
-        return nativeId?.takeIf { it != 0 } ?: lastId?.takeIf { it != 0 }
+    private fun ViewGroup.directChild(className: String): View? {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            if (child.javaClass.name == className) return child
+        }
+        return null
     }
 
     private fun semanticColor(

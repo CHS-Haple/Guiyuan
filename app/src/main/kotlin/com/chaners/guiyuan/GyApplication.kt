@@ -6,10 +6,12 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS
+import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
@@ -197,12 +199,12 @@ class GyApplication :
         val keyguard =
             featurePrefs.getBoolean(
                 FEATURE_KEYGUARD_KEY,
-                false,
+                FEATURE_KEYGUARD_DEFAULT,
             )
         val aod =
             featurePrefs.getBoolean(
                 FEATURE_AOD_KEY,
-                false,
+                FEATURE_AOD_DEFAULT,
             )
         val featureChangedAtNs =
             featurePrefs.getLong(

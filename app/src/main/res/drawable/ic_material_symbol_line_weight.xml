@@ -1,0 +1,12 @@
+<!-- Google Material Symbols Outlined W500 24px: line_weight; Apache-2.0; source: google/material-design-icons -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M111.87-141.59v-50.28h736.26v50.28H111.87Zm0-126.69v-91h736.26v91H111.87Zm0-167.42v-123.58h736.26v123.58H111.87Zm0-200v-182.71h736.26v182.71H111.87Z" />
+    </group>
+</vector>

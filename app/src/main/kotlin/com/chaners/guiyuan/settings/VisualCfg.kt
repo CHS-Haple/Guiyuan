@@ -178,7 +178,7 @@ internal data class VisualCfg(
     val topTextFollowsBatteryColor: Boolean = true,
     val showTopChargingIcon: Boolean = true,
     val topChargingIconFollowsBatteryColor: Boolean = true,
-    val fillFollowsRetract: Boolean = false,
+    val fillFollowsRetract: Boolean = true,
     val ccTintTransition: Boolean = true,
     val topTextScale: Float = topTextScaleDefault(layout),
     val topTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,

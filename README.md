@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.4.0**, adding Liquid Glass navigation and promoting the latest runtime-state ownership and maintainability fixes on the verified 0.3.0 baseline. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.5.0**, refining Liquid Glass navigation settings, diagnostics, icons and feature grouping. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -88,7 +88,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.4.0**，在 0.3.0 已验证基线上加入液态玻璃导航，并收口最新的运行时状态所有权与可维护性修复。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.5.0**，优化液态玻璃导航设置、诊断日志、功能图标和设置分类。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |

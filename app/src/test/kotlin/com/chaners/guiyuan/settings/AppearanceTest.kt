@@ -13,6 +13,8 @@ class AppearanceTest {
         assertTrue(settings.navEnabled)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconOnly, settings.navContent)
+        assertEquals(NavContent.IconAndText, settings.liquidContent)
+        assertEquals(NavContent.IconOnly, settings.activeNavContent)
         assertEquals(LiquidMode.Clear, settings.liquidMode)
     }
 
@@ -109,6 +111,33 @@ class AppearanceTest {
             NavContent.IconAndText,
             decodeNavContent("IconAndText"),
         )
+    }
+
+    @Test
+    fun liquidAndOtherStylesKeepSeparateContent() {
+        val liquid = Appearance(
+            navStyle = NavStyle.Liquid,
+            navContent = NavContent.IconOnly,
+            liquidContent = NavContent.IconAndText,
+        )
+        assertEquals(NavContent.IconAndText, liquid.activeNavContent)
+        assertEquals(NavContent.IconAndText, Appearance(navStyle = NavStyle.Liquid).activeNavContent)
+        assertEquals(NavContent.IconOnly, liquid.copy(navStyle = NavStyle.Glass).activeNavContent)
+
+        val changed = liquid.copy(
+            liquidContent = NavContent.IconOnly,
+            navContent = NavContent.IconAndText,
+        )
+        assertEquals(NavContent.IconOnly, changed.activeNavContent)
+        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Blur).activeNavContent)
+        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Standard).activeNavContent)
+    }
+
+    @Test
+    fun liquidContentDefaultsToIconsAndText() {
+        assertEquals(NavContent.IconAndText, decodeNavContent(null, NavContent.IconAndText))
+        assertEquals(NavContent.IconOnly, decodeNavContent("IconOnly", NavContent.IconAndText))
+        assertEquals(NavContent.IconAndText, decodeNavContent("Unknown", NavContent.IconAndText))
     }
 
     @Test

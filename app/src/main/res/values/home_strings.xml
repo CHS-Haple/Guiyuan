@@ -23,6 +23,8 @@
 
     <string name="section_home_preview_sandbox">Preview sandbox</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>
+    <string name="home_preview_switch_light">Switch to light mode</string>
+    <string name="home_preview_switch_dark">Switch to dark mode</string>
     <string name="home_preview_sandbox_summary">All adjustments are preview-only and do not change actual system state.</string>
     <string name="home_preview_open_title">Preview sandbox</string>
     <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without changing actual system state.</string>

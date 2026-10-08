@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,8 +20,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -61,6 +66,8 @@ internal fun PreviewSandboxScreen(
     onBatteryPercentChange: (Int) -> Unit,
     onBatteryModeChange: (PreviewBatteryMode) -> Unit,
     onChargingStateChange: (PreviewChargingState) -> Unit,
+    dark: Boolean,
+    onToggleTheme: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -146,6 +153,25 @@ internal fun PreviewSandboxScreen(
                                 Icon(
                                     MiuixIcons.Back,
                                     contentDescription = stringResource(R.string.back),
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        val title = stringResource(
+                            if (dark) R.string.home_preview_switch_light
+                            else R.string.home_preview_switch_dark,
+                        )
+                        TooltipBox(text = title) {
+                            IconButton(onClick = onToggleTheme) {
+                                Image(
+                                    painter = painterResource(
+                                        if (dark) R.drawable.ic_material_symbol_light_mode
+                                        else R.drawable.ic_material_symbol_dark_mode,
+                                    ),
+                                    contentDescription = title,
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
                                 )
                             }
                         }
@@ -247,6 +273,12 @@ internal fun PreviewSandboxScreen(
                             if (state.mobileOptionsVisible) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.home_preview_mobile_network_title),
+                                    startAction = {
+                                        SemanticLeadingIcon(
+                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                            detailRes = R.drawable.ic_material_symbol_category,
+                                        )
+                                    },
                                     items = mobileNetworkChoices.map { it.second },
                                     selectedIndex =
                                         mobileNetworkChoices.indexOfFirst {
@@ -267,6 +299,7 @@ internal fun PreviewSandboxScreen(
                                         onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
                                     },
                                     title = stringResource(R.string.home_preview_mobile_signal_title),
+                                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
                                     valueText = signalValueText(state.mobileSignalLevel),
                                     insideMargin = SandboxPreferenceInsideMargin,
                                     valueRange = 0f..4f,
@@ -288,6 +321,8 @@ internal fun PreviewSandboxScreen(
                         } else {
                             SandboxSegmentedField(
                                 title = stringResource(R.string.home_preview_wifi_state_title),
+                                iconRes = R.drawable.ic_material_symbol_wifi,
+                                detailRes = R.drawable.ic_material_symbol_swap_horiz,
                                 options = wifiOptions,
                                 selectedIndex = state.wifiState.ordinal,
                                 onSelected = { index ->
@@ -301,6 +336,7 @@ internal fun PreviewSandboxScreen(
                                     onWifiSignalLevelChange(value.roundToInt().coerceIn(0, 3))
                                 },
                                 title = stringResource(R.string.home_preview_wifi_signal_title),
+                                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi) },
                                 valueText = signalValueText(state.wifiSignalLevel),
                                 insideMargin = SandboxPreferenceInsideMargin,
                                 valueRange = 0f..3f,
@@ -312,6 +348,7 @@ internal fun PreviewSandboxScreen(
 
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_sim_title),
+                            iconRes = R.drawable.ic_material_symbol_sim_card,
                             options = simOptions,
                             selectedIndex = if (state.simPresent) 0 else 1,
                             onSelected = { onSimPresentChange(it == 0) },
@@ -322,6 +359,7 @@ internal fun PreviewSandboxScreen(
                             checked = state.airplaneMode,
                             onCheckedChange = onAirplaneModeChange,
                             title = stringResource(R.string.home_preview_airplane_title),
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
                             insideMargin = SandboxPreferenceInsideMargin,
                         )
@@ -343,6 +381,7 @@ internal fun PreviewSandboxScreen(
                                 onBatteryPercentChange(value.roundToInt().coerceIn(0, 100))
                             },
                             title = stringResource(R.string.home_preview_battery_level_title),
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar) },
                             valueText =
                                 stringResource(
                                     R.string.home_preview_battery_percent,
@@ -353,6 +392,8 @@ internal fun PreviewSandboxScreen(
                         )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_battery_mode_title),
+                            iconRes = R.drawable.ic_material_symbol_battery_5_bar,
+                            detailRes = R.drawable.ic_material_symbol_tune,
                             options = batteryModeOptions,
                             selectedIndex = state.batteryMode.ordinal,
                             onSelected = { index ->
@@ -362,6 +403,7 @@ internal fun PreviewSandboxScreen(
                         )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_charging_state_title),
+                            iconRes = R.drawable.ic_material_symbol_bolt,
                             options = chargingOptions,
                             selectedIndex = state.chargingState.ordinal,
                             onSelected = { index ->
@@ -408,6 +450,8 @@ private fun PreviewStatusLine(
 @Composable
 private fun SandboxSegmentedField(
     title: String,
+    @DrawableRes iconRes: Int,
+    @DrawableRes detailRes: Int? = null,
     options: List<String>,
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
@@ -416,6 +460,7 @@ private fun SandboxSegmentedField(
 ) {
     BasicComponent(
         title = title,
+        startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
         modifier = modifier,
         insideMargin = SandboxPreferenceInsideMargin,
         bottomAction = {

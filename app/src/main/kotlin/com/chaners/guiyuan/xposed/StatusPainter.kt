@@ -1587,20 +1587,10 @@ internal class StatusPainter(
                         maxSize = chargingIconSize,
                     )
                 }
-        val chargingOpticalWidth =
-            if (chargingSlotVisible) {
-                chargingOpticalSize?.width ?: chargingIconSize
-            } else {
-                0f
-            }
-        val chargingOpticalHeight =
-            if (chargingSlotVisible) {
-                chargingOpticalSize?.height ?: chargingIconSize
-            } else {
-                0f
-            }
+        val chargingOpticalWidth = chargingOpticalSize?.width ?: 0f
+        val chargingOpticalHeight = chargingOpticalSize?.height ?: 0f
         val chargingInkVisible =
-            chargingSlotVisible && chargingIconSize > 0f
+            chargingOpticalWidth > 0f && chargingOpticalHeight > 0f
         val iconGap =
             if (textVisible && chargingInkVisible) {
                 BATTERY_TOP_ICON_TEXT_GAP
@@ -1735,7 +1725,7 @@ internal class StatusPainter(
             textOpticalBounds = textOpticalBounds,
             groupOpticalBounds = groupOpticalBounds,
             chargingIconOpticalBounds = chargingIconOpticalBounds,
-            chargingIconResourceId = chargingIconResourceId,
+            chargingIconResourceId = chargingIconResourceId.takeIf { chargingInkVisible },
             chargingIconCenterX =
                 if (chargingInkVisible) {
                     val desiredOpticalCenterX =

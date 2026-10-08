@@ -2,11 +2,14 @@
 
 ## Baseline
 
-- Stable product line: Guiyuan 0.4.0 / Build 749 (`20261007-749`).
-- Stable `main`: accepted 0.4.0 Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
+- Development integration: Guiyuan 0.5.0 / Build 770 (`20261008-770`); accepted diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Stable `main`: Guiyuan 0.4.0 / Build 749; accepted Liquid Glass, diagnostics refresh, runtime-state ownership, and maintainability baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
-- No runtime blocker is currently recorded.
+- Liquid Glass selected-state tint follows the active MIUIX theme color, including Monet dynamic color.
+- Liquid Glass has its own saved navigation-content choice, defaulting to icons and text; Standard, Blur and Glass share their original choice, defaulting to icons only. Explicit saved selections are preserved.
+- Home runtime status keeps its existing state semantics while all accent/background color changes use one short transition.
+- Charging lightning sampling and Diagnostics entry motion are integrated in `dev`, with combined Home/Keyguard/refresh device validation still outstanding.
 
 ## Accepted runtime contract
 
@@ -44,8 +47,8 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final Control Center appearance.
 - Do not weaken exact restoration or fail-native behavior.
-- Keep version 0.4.0 / Build 749 unchanged unless a version/build change is explicitly part of the task.
+- Change external versionName only on explicit promotion; current baseline is 0.5.0. Increment Build ID and Android versionCode only for a materially different APK (behavior, UI/assets or compatibility), not for docs, non-behavioral refactors, or repeat CI/builds. The exact Git SHA distinguishes source revisions within a Build.
 
 ## Next
 
-Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete reported defect/feature request. Request a Canary or device check only when the change crosses a runtime boundary that automated review cannot settle.
+Promote the reviewed 0.5.0 checkpoint to `main`; then choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Continue focused device checks for combined Home/Keyguard/refresh scenarios.

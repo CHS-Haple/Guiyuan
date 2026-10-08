@@ -23,6 +23,8 @@
 
     <string name="section_home_preview_sandbox">预览沙盒</string>
     <string name="home_preview_sandbox_title">预览沙盒</string>
+    <string name="home_preview_switch_light">切换到浅色模式</string>
+    <string name="home_preview_switch_dark">切换到深色模式</string>
     <string name="home_preview_sandbox_summary">所有调整仅用于预览，不会改变实际系统状态。</string>
     <string name="home_preview_open_title">预览沙盒</string>
     <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不会改变实际系统状态。</string>

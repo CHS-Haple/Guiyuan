@@ -9,9 +9,10 @@
     <string name="nav_features">Features</string>
     <string name="nav_settings">Settings</string>
     <string name="features_title">Features</string>
-    <string name="section_global">Global</string>
-    <string name="section_network">Network</string>
-    <string name="section_battery">Battery</string>
+    <string name="section_display_transition">Display &amp; transitions</string>
+    <string name="section_layout_size">Layout &amp; size</string>
+    <string name="section_network">Network icons</string>
+    <string name="section_battery">Battery &amp; charging</string>
     <string name="section_management">Management</string>
     <string name="content_layout_title">Content layout</string>
     <string name="content_layout_summary">Each layout remembers its own settings</string>
@@ -241,6 +242,7 @@
     <string name="diagnostics_pull_to_refresh">Pull down to refresh</string>
     <string name="diagnostics_release_to_refresh">Release to refresh</string>
     <string name="diagnostics_refreshing">Refreshing</string>
+    <string name="diagnostics_loading">Reading runtime logs…</string>
     <string name="diagnostics_refresh_complete">Refresh complete</string>
     <string name="diagnostics_scroll_top">Scroll to top</string>
     <string name="diagnostics_scroll_bottom">Scroll to bottom</string>

@@ -8,9 +8,10 @@
     <string name="nav_features">功能</string>
     <string name="nav_settings">设置</string>
     <string name="features_title">功能</string>
-    <string name="section_global">全局</string>
-    <string name="section_network">网络</string>
-    <string name="section_battery">电量</string>
+    <string name="section_display_transition">显示与过渡</string>
+    <string name="section_layout_size">布局与尺寸</string>
+    <string name="section_network">网络图标</string>
+    <string name="section_battery">电量与充电</string>
     <string name="section_management">管理</string>
     <string name="content_layout_title">内容布局</string>
     <string name="content_layout_summary">两种布局分别记忆设置</string>
@@ -240,6 +241,7 @@
     <string name="diagnostics_pull_to_refresh">下拉刷新</string>
     <string name="diagnostics_release_to_refresh">松开刷新</string>
     <string name="diagnostics_refreshing">正在刷新</string>
+    <string name="diagnostics_loading">正在读取运行日志…</string>
     <string name="diagnostics_refresh_complete">刷新完成</string>
     <string name="diagnostics_scroll_top">滚动到顶部</string>
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
