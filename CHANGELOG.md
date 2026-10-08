@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
-- Charging readout now keeps its native lightning identity across callback gaps and Hot Reload state restoration, without reserving space for an unavailable drawable.
+- Charging readout samples the existing native battery view on host binding instead of waiting for another battery callback; keeps its native lightning identity across callback gaps and Hot Reload restoration without reserving an unavailable icon slot.
 - Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
 - First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
 - Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.

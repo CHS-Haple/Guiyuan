@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.view.View
+import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -13,6 +14,8 @@ internal object SysUiBatterySource {
         "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView"
     const val BATTERY_METER_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
+    private const val BATTERY_CONTAINER_CLASS_NAME =
+        "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     const val BATTERY_LEVEL_METHOD_NAME = "onBatteryLevelChanged"
     const val CHARGE_STATE_METHOD_NAME = "onChargeStateChanged"
     const val POWER_SAVE_METHOD_NAME = "onPowerSaveChanged"
@@ -267,6 +270,27 @@ internal object SysUiBatterySource {
             hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID),
             chargingGlyphHook,
         )
+    }
+
+    fun readHostChargingIconId(host: Any): Int? {
+        val root = host as? ViewGroup ?: return null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
+            ?: return null
+        return runCatching {
+            battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
+                isAccessible = true
+            }.invoke(battery) as? Int
+        }.getOrNull()?.takeIf { it != 0 }
+    }
+
+    private fun ViewGroup.directChild(className: String): View? {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            if (child.javaClass.name == className) return child
+        }
+        return null
     }
 
     private fun semanticColor(
