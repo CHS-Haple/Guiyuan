@@ -898,20 +898,20 @@ internal object CcTransitionOwner {
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 drawAdditionalMobileLatent(
-                        canvas = canvas,
-                        rootView = rootView,
-                        sourceParentGeometry = sourceParentGeometry,
-                        sourceWidth = sourceWidth,
-                        sourceHeight = sourceHeight,
-                        model = model,
-                        colors = transitionColors,
-                        mobileSpec = mobileSpec,
-                        preferredMobileSubId = preferredMobileSubId,
-                        motionProgress = motionProgress,
-                        shapeProgress = mobileSignalShapeProgress,
-                        opacity = opacity,
-                        carrierFrames = carrierFrames,
-                    )
+                    canvas = canvas,
+                    rootView = rootView,
+                    sourceParentGeometry = sourceParentGeometry,
+                    sourceWidth = sourceWidth,
+                    sourceHeight = sourceHeight,
+                    model = model,
+                    colors = transitionColors,
+                    mobileSpec = mobileSpec,
+                    preferredMobileSubId = preferredMobileSubId,
+                    motionProgress = motionProgress,
+                    shapeProgress = mobileSignalShapeProgress,
+                    opacity = opacity,
+                    carrierFrames = carrierFrames,
+                )
             }
             drawSupplementalAirplaneReveal(
                 canvas = canvas,
@@ -937,7 +937,6 @@ internal object CcTransitionOwner {
                 opacity = opacity,
                 carrierFrames = carrierFrames,
             )
-
         }
 
         private fun drawAdditionalMobileLatent(
