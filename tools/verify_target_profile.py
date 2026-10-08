@@ -4,6 +4,7 @@ import pathlib
 import re
 import sys
 
+# Checks recorded profile metadata against project sources, not APK bytes.
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROFILE_PATH = ROOT / "compat" / "targets" / "hyperos-17.03.260226.r.json"
 PROBE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiCompatibilityProbe.kt"
@@ -50,7 +51,7 @@ profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
 if profile.get("schemaVersion") != 1:
     fail("unsupported schemaVersion")
 if not profile.get("generatedFromExactApks"):
-    fail("profile must be marked as generated from exact APKs")
+    fail("profile must declare its exact-APK provenance")
 
 artifacts = profile.get("artifacts", {})
 if set(artifacts) != {"systemUi"}:
@@ -84,9 +85,9 @@ for hook_name, hook_point in hook_points.items():
     if hook_point.get("sourceArtifact") != "systemUi":
         fail(f"{hook_name} must originate from the SystemUI APK")
     if hook_class not in verified_systemui:
-        fail(f"{hook_name} class is not verified in the SystemUI APK")
+        fail(f"{hook_name} class is not listed in the pinned SystemUI profile")
     if hook_signature not in set(verified_methods.get(hook_class, [])):
-        fail(f"{hook_name} method is not verified in the SystemUI APK")
+        fail(f"{hook_name} method is not listed in the pinned SystemUI profile")
 
 status_hook = hook_points.get("statusHostInflated")
 if not isinstance(status_hook, dict):
@@ -166,7 +167,7 @@ if scene_method != scene_hook.get("methodName"):
 
 verified_fields = profile.get("verifiedSystemUiFields", {})
 if scene_field not in set(verified_fields.get(scene_class, [])):
-    fail("scene state source field is not verified in the SystemUI APK")
+    fail("scene state source field is not listed in the pinned SystemUI profile")
 
 
 
@@ -205,7 +206,7 @@ battery_semantic_class = battery_semantic_contract.get("className")
 if battery_semantic_class != battery_source_class:
     fail("battery semantic contract class drifted from source")
 if battery_semantic_class not in verified_systemui:
-    fail("battery semantic contract class is not verified in the SystemUI APK")
+    fail("battery semantic contract class is not listed in the pinned SystemUI profile")
 
 progress_status = battery_semantic_contract.get("progressStatusMethod")
 if not isinstance(progress_status, dict):
@@ -215,7 +216,7 @@ progress_signature = (
     f"{progress_status.get('descriptor', '')}"
 )
 if progress_signature not in set(verified_methods.get(battery_semantic_class, [])):
-    fail("battery semantic progress method is not verified in the SystemUI APK")
+    fail("battery semantic progress method is not listed in the pinned SystemUI profile")
 if (
     'getDeclaredMethod("getProgressStatus")'
     not in battery_source_text.replace("\n", " ")
@@ -230,7 +231,7 @@ if (
 battery_semantic_fields = set(battery_semantic_contract.get("fields", []))
 verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
 if not battery_semantic_fields or not battery_semantic_fields.issubset(verified_battery_fields):
-    fail("battery semantic fields are not all verified in the SystemUI APK")
+    fail("battery semantic fields are not all listed in the pinned SystemUI profile")
 source_required_fields = set(
     re.findall(r'requiredField\("([^"]+)"\)', battery_source_text)
 )
@@ -343,7 +344,7 @@ for field_constant in ("TO_AOD_FIELD", "IS_AOD_ANIMATE_FIELD", "ANIM_TO_AOD_FIEL
         "keyguard AOD",
     )
     if field_name not in set(verified_fields.get(keyguard_aod_class, [])):
-        fail(f"keyguard AOD field is not verified in the SystemUI APK: {field_name}")
+        fail(f"keyguard AOD field is not listed in the pinned SystemUI profile: {field_name}")
 
 # The fake Control Center attach seam is deliberately not promoted to the
 # static profile until SystemUI-Reference indexes that method explicitly.
@@ -354,7 +355,7 @@ expected_native_roles = {"mobileNetwork", "wifi", "battery"}
 if set(native_status_views) != expected_native_roles:
     fail("nativeStatusViews must define mobileNetwork, wifi, and battery")
 if not set(native_status_views.values()).issubset(verified_systemui):
-    fail("native status view classes are not all verified in the SystemUI APK")
+    fail("native status view classes are not all listed in the pinned SystemUI profile")
 
 inventory_text = NATIVE_STATUS_INVENTORY_PATH.read_text(encoding="utf-8")
 inventory_constants = {
@@ -382,7 +383,7 @@ expected_native_containers = {"miuiStatusIcons", "statusIcons", "batteryContaine
 if set(native_status_containers) != expected_native_containers:
     fail("nativeStatusContainers must define miuiStatusIcons, statusIcons, and batteryContainer")
 if not set(native_status_containers.values()).issubset(verified_systemui):
-    fail("native status container classes are not all verified in the SystemUI APK")
+    fail("native status container classes are not all listed in the pinned SystemUI profile")
 
 container_constants = {
     "miuiStatusIcons": re.search(
@@ -405,21 +406,21 @@ for role, match in container_constants.items():
         fail(f"native status container class drifted from profile: {role}")
 
 
-print(f"Target profile: {profile['profileId']}")
+print(f"Pinned target profile: {profile['profileId']}")
 print(
-    "SystemUI: "
+    "Recorded SystemUI metadata: "
     f"{artifacts['systemUi']['displayName']} "
     f"md5={artifacts['systemUi']['md5']} "
     f"sha1={artifacts['systemUi']['sha1']} "
     f"dex={artifacts['systemUi']['dexCount']} "
     f"classes={artifacts['systemUi']['classCount']}"
 )
-print(f"Runtime markers verified: {len(runtime_markers)}")
-print(f"Hook points verified: {len(hook_points)}")
+print(f"Runtime marker declarations checked: {len(runtime_markers)}")
+print(f"Hook point declarations checked: {len(hook_points)}")
 print(
-    "Battery semantic contract: "
-    f"{len(battery_semantic_fields)} fields verified, "
-    "progress-status verified"
+    "Battery semantic profile consistency: "
+    f"{len(battery_semantic_fields)} fields, progress-status reference checked"
 )
-print(f"Native status views verified: {len(native_status_views)}")
-print(f"Native status containers verified: {len(native_status_containers)}")
+print(f"Native status view declarations checked: {len(native_status_views)}")
+print(f"Native status container declarations checked: {len(native_status_containers)}")
+print("Check scope: pinned metadata and source consistency only; SystemUI APK bytes not inspected")
