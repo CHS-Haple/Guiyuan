@@ -64,7 +64,6 @@ import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -105,6 +104,7 @@ internal fun DiagnosticsScreen(
         )
 
     var snapshot by remember { mutableStateOf(cachedSnapshot) }
+    var animateUpdates by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
@@ -136,6 +136,8 @@ internal fun DiagnosticsScreen(
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
+            // Existing records on first load are not new log events.
+            animateUpdates = snapshot != null
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
@@ -356,17 +358,59 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
-            snapshot == null -> {
-                item(key = "diagnostics-loading") {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
+            snapshot == null || visibleEntries.isNotEmpty() -> {
+                item(key = "diagnostics-summary") {
+                    Text(
+                        text =
+                            if (snapshot == null) {
+                                stringResource(R.string.diagnostics_events_loading)
+                            } else {
+                                stringResource(
+                                    R.string.diagnostics_events_summary,
+                                    visibleEntries.size,
+                                )
+                            },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(top = 6.dp, bottom = 8.dp),
+                        style = MiuixTheme.textStyles.subtitle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+                if (snapshot != null) {
+                    itemsIndexed(
+                        items = visibleEntries,
+                        key = { _, entry -> entry.key },
+                    ) { _, entry ->
+                        LogCard(
+                            context = context,
+                            entry = entry,
+                            expanded = expandedKey == entry.key,
+                            onToggle = {
+                                expandedKey =
+                                    if (expandedKey == entry.key) {
+                                        null
+                                    } else {
+                                        entry.key
+                                    }
+                            },
+                            modifier =
+                                if (animateUpdates) {
+                                    Modifier.animateItem(
+                                        fadeInSpec = itemFade,
+                                        placementSpec = itemMove,
+                                        fadeOutSpec = itemFade,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                        )
                     }
                 }
             }
-            visibleEntries.isEmpty() -> {
+            else -> {
                 item(key = "diagnostics-state-empty") {
                     LogStateCard(
                         text =
@@ -378,53 +422,6 @@ internal fun DiagnosticsScreen(
                                 },
                             ),
                         modifier = Modifier,
-                    )
-                }
-            }
-            else -> {
-                item(key = "diagnostics-summary") {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.diagnostics_events_summary,
-                                visibleEntries.size,
-                            ),
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = itemFade,
-                                    placementSpec = itemMove,
-                                    fadeOutSpec = itemFade,
-                                )
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp),
-                        style = MiuixTheme.textStyles.subtitle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-                itemsIndexed(
-                    items = visibleEntries,
-                    key = { _, entry -> entry.key },
-                ) { _, entry ->
-                    LogCard(
-                        context = context,
-                        entry = entry,
-                        expanded = expandedKey == entry.key,
-                        onToggle = {
-                            expandedKey =
-                                if (expandedKey == entry.key) {
-                                    null
-                                } else {
-                                    entry.key
-                                }
-                        },
-                        modifier =
-                            Modifier.animateItem(
-                                fadeInSpec = itemFade,
-                                placementSpec = itemMove,
-                                fadeOutSpec = itemFade,
-                            ),
                     )
                 }
             }

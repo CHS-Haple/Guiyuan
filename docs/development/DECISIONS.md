@@ -94,11 +94,11 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 ## Diagnostics loads on entry
 
-**Decision:** diagnostics starts background capture when the page is created, displays the last in-process snapshot when available, and uses MIUIX progress on an uncached first entry. MIUIX pull-to-refresh remains the manual refresh control.
+**Decision:** diagnostics starts background capture when the page is created, displays the last in-process snapshot when available, and keeps the summary row stable while uncached logs load. MIUIX pull-to-refresh remains the manual refresh control.
 
 **Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
 
-**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture or start the pull indicator. Compose lazy items use MIUIX Folme spring specs to animate insertion and placement without per-item delays or custom motion.
+**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture or start the pull indicator. The first batch is rendered without item insertion animation; later log updates use MIUIX Folme spring specs without per-item delays or custom motion.
 
 ## Hot Reload is a generation handoff
 

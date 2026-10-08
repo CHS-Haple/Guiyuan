@@ -247,6 +247,7 @@
     <string name="diagnostics_view_cleared">视图已清空。刷新诊断即可重新读取当前状态。</string>
     <string name="section_diagnostics_events">关键事件</string>
     <string name="diagnostics_events_summary">本次运行共 %1$d 个关键事件</string>
+    <string name="diagnostics_events_loading">正在读取运行日志…</string>
     <string name="diagnostics_component_module">模块</string>
     <string name="diagnostics_component_compatibility">兼容性</string>
     <string name="diagnostics_component_status_host">状态栏宿主</string>

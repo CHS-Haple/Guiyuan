@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
-- Diagnostics loads on entry with its last snapshot, MIUIX cold-load progress, and subtle Folme transitions for inserted log items.
+- Diagnostics loads on entry with its last snapshot and stable loading summary; Folme animates subsequent log updates without flashing the initial batch.
 - Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
 - First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
 - Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.
