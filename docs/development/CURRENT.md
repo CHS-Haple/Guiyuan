@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.5.0 / Build 770 (`20261008-770`); accepted diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Development integration: Guiyuan 0.5.0 / Build 771 (`20261008-771`); diagnostic cards omit empty summaries, with focused visual acceptance pending. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
 - Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
