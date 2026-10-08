@@ -37,7 +37,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,12 +57,12 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -80,8 +79,6 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
-import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
-import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -94,7 +91,6 @@ internal fun DiagnosticsScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val navTransition = LocalNavTransitionScope.current
     val diagRepo =
         remember(context.applicationContext) {
             DiagRepo(context.applicationContext)
@@ -193,13 +189,8 @@ internal fun DiagnosticsScreen(
         }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { navTransition.role == NavRole.Top && !navTransition.isRunning }
-            .first { it }
-        if (!loading) {
-            loading = true
-            refreshing = true
-            captureSnapshot()
-        }
+        loading = true
+        captureSnapshot()
     }
 
     val reportEnabled =
@@ -362,7 +353,14 @@ internal fun DiagnosticsScreen(
                 }
             }
             snapshot == null -> {
-                // First entry stays empty until the MIUIX refresh begins.
+                item(key = "diagnostics-loading") {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
             visibleEntries.isEmpty() -> {
                 item(key = "diagnostics-state-empty") {

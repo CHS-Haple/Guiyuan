@@ -92,13 +92,13 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
 
-## Diagnostics refresh follows navigation
+## Diagnostics loads on entry
 
-**Decision:** diagnostics uses MIUIX pull-to-refresh as its only refresh surface. Entry may reuse the last in-process snapshot; without one, content stays empty. The initial MIUIX refresh starts only after the diagnostics entry settles.
+**Decision:** diagnostics starts background capture when the page is created, displays the last in-process snapshot when available, and uses MIUIX progress on an uncached first entry. MIUIX pull-to-refresh remains the manual refresh control.
 
-**Why:** mounting fresh logs during the page transition looks like a flash, while starting the refresh indicator during that transition makes two animations compete.
+**Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
 
-**Consequence:** keep the last completed snapshot only in `GyApp` memory. Follow `LocalNavTransitionScope` instead of a fixed delay, keep manual pull-to-refresh unchanged, and do not reintroduce a toolbar refresh action.
+**Consequence:** keep the last completed snapshot only in `GyApp` memory. Navigation animation does not gate capture, automatic reads do not start the pull indicator, and there are no per-row entry animations or timing patches.
 
 ## Hot Reload is a generation handoff
 

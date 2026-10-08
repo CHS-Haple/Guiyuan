@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
-- Diagnostics now enters on the last in-process snapshot (or an empty first view) and starts its MIUIX refresh only after navigation settles.
+- Diagnostics reuses its last in-process log snapshot, starts background capture on entry, and shows MIUIX progress only on cold loads.
 - Liquid Glass navigation now derives its selected-state tint from the active MIUIX theme, keeping runtime and preview aligned with Monet dynamic colors.
 - First-time Liquid Glass selection now defaults floating navigation content to icons and text while preserving any content choice the user has already made.
 - Home runtime status now eases all neutral/success/warning/error accent and card-background color changes instead of switching abruptly.
