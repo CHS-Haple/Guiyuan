@@ -47,7 +47,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - No polling, delay/retry repair loops, guessed thresholds or fixed device geometry.
 - Do not take over native translation, alpha, visibility or final Control Center appearance.
 - Do not weaken exact restoration or fail-native behavior.
-- Keep version 0.4.0 / Build 760 unchanged unless a version/build change is explicitly part of the task.
+- Keep external versionName 0.4.0 unchanged unless explicitly requested. Increment Build ID and Android versionCode only for a materially different APK (behavior, UI/assets or compatibility), not for docs, non-behavioral refactors, or repeat CI/builds. The exact Git SHA distinguishes source revisions within a Build.
 
 ## Next
 
