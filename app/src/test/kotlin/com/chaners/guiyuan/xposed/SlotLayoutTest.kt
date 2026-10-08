@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class LayoutPolicyTest {
+class SlotLayoutTest {
     @Test
     fun ltrSlotAnchorsToHostEnd() {
         val layout = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
