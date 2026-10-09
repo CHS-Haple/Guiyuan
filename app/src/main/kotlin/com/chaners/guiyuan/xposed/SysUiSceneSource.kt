@@ -16,7 +16,8 @@ internal object SysUiSceneSource {
 
     private const val HOOK_ID = "combinedstatus.scene.battery.updateState"
 
-    private val states = WeakHashMap<View, SceneUpdate>()
+    // Values must not retain the weak View keys.
+    private val states = WeakHashMap<View, Int>()
 
     @Volatile
     private var statusBarStateField: Field? = null
@@ -113,19 +114,17 @@ internal object SysUiSceneSource {
         }
 
     @Synchronized
-    fun currentState(sourceView: View): SceneUpdate? {
-        states[sourceView]?.let { return it }
-
-        val field = statusBarStateField ?: return null
+    fun currentSurface(sourceView: View): Surface? {
         val rawState =
-            runCatching { field.getInt(sourceView) }
-                .getOrNull()
-                ?: return null
-        return SceneUpdate(
-            sourceView = sourceView,
-            surface = classifyRawState(rawState),
-            rawState = rawState,
-        ).also { states[sourceView] = it }
+            states[sourceView]
+                ?: run {
+                    val field = statusBarStateField ?: return null
+                    runCatching { field.getInt(sourceView) }
+                        .getOrNull()
+                        ?.also { states[sourceView] = it }
+                        ?: return null
+                }
+        return classifyRawState(rawState)
     }
 
     @Synchronized
@@ -149,18 +148,18 @@ internal object SysUiSceneSource {
         onSceneState: (SceneUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ) {
-        val update =
-            synchronized(this) {
-                if (states[sourceView]?.rawState == rawState) {
-                    return
-                }
-                SceneUpdate(
-                    sourceView = sourceView,
-                    surface = classifyRawState(rawState),
-                    rawState = rawState,
-                ).also { states[sourceView] = it }
+        synchronized(this) {
+            if (states[sourceView] == rawState) {
+                return
             }
-
+            states[sourceView] = rawState
+        }
+        val update =
+            SceneUpdate(
+                sourceView = sourceView,
+                surface = classifyRawState(rawState),
+                rawState = rawState,
+            )
         onSceneState(update)
         onEvent?.invoke(
             "sceneState source=" + source +

@@ -23,7 +23,8 @@ internal object SysUiKeyguardAodSource {
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
 
-    private val states = WeakHashMap<View, AodUpdate>()
+    // Stored values must not keep their weak View keys alive.
+    private val states = WeakHashMap<View, StoredState>()
 
     @Volatile private var toAodField: Field? = null
     @Volatile private var isAodAnimateField: Field? = null
@@ -114,9 +115,9 @@ internal object SysUiKeyguardAodSource {
 
     @Synchronized
     fun currentState(sourceView: View): AodUpdate? {
-        states[sourceView]?.let { return it }
+        states[sourceView]?.let { return it.forView(sourceView) }
         return readState(sourceView, "seed")?.also { update ->
-            states[sourceView] = update
+            states[sourceView] = StoredState(update)
         }
     }
 
@@ -149,7 +150,7 @@ internal object SysUiKeyguardAodSource {
     ) {
         val update = readState(sourceView, source) ?: return
         synchronized(this) {
-            states[sourceView] = update
+            states[sourceView] = StoredState(update)
         }
         onAodState(update)
         onEvent?.invoke(
@@ -208,6 +209,35 @@ internal object SysUiKeyguardAodSource {
     private fun isBooleanType(type: Class<*>): Boolean =
         type == Boolean::class.javaPrimitiveType ||
             type == Boolean::class.javaObjectType
+
+    private data class StoredState(
+        val toAod: Boolean,
+        val isAodAnimate: Boolean,
+        val animToAod: Boolean?,
+        val source: String,
+    ) {
+        constructor(update: AodUpdate) : this(
+            update.toAod,
+            update.isAodAnimate,
+            update.animToAod,
+            update.source,
+        )
+
+        fun forView(view: View): AodUpdate =
+            AodUpdate(
+                sourceView = view,
+                toAod = toAod,
+                isAodAnimate = isAodAnimate,
+                animToAod = animToAod,
+                blocksProjection =
+                    SysUiKeyguardAodSource.blocksKeyguardProjection(
+                        toAod = toAod,
+                        isAodAnimate = isAodAnimate,
+                        animToAod = animToAod,
+                    ),
+                source = source,
+            )
+    }
 
     internal data class AodUpdate(
         val sourceView: View,

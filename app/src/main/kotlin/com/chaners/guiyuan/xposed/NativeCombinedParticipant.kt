@@ -1016,7 +1016,7 @@ internal object NativeCombinedParticipant {
                 modelUpdate.candidateComplete
         tintReady = tintUpdate?.resolved != null
         currentSurface =
-            SysUiSceneSource.currentState(battery)?.surface
+            SysUiSceneSource.currentSurface(battery)
                 ?: SysUiSceneSource.Surface.UNKNOWN
         reconcileVisibleHandoff("attach")
 
