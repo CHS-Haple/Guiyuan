@@ -116,11 +116,6 @@ internal object SysUiHotReload {
         val classLoader = hostHandle.executable.declaringClass.classLoader
             ?: return null
 
-        SysUiHostHook.replace(
-            handle = hostHandle,
-            onCaptured = onCaptured,
-        )
-
         var removed = 0
         oldHandles.forEach { handle ->
             if (handle !== hostHandle) {
@@ -131,6 +126,11 @@ internal object SysUiHotReload {
                 removed += 1
             }
         }
+
+        SysUiHostHook.replace(
+            handle = hostHandle,
+            onCaptured = onCaptured,
+        )
 
         return HookTakeover(
             hostHandle = hostHandle,
