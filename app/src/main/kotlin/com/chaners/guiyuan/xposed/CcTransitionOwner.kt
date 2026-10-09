@@ -20,7 +20,7 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
-import java.util.WeakHashMap
+import java.lang.reflect.Field
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -227,7 +227,7 @@ internal object CcTransitionOwner {
             nativeClip = sourceView.clipBounds?.let(::Rect),
             appliedClip = Rect(0, 0, 0, 0),
         )
-        private val mobileSubIdCache = WeakHashMap<View, Int?>()
+        private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private var frozenAirplaneTarget: TargetWitness? = null
@@ -1807,6 +1807,10 @@ internal object CcTransitionOwner {
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
+                            (witness.slot != MOBILE_SLOT && witness.slot != STACKED_MOBILE_SLOT) ||
+                                witness.subscriptionId == readMobileSubId(witness.slotView)
+                        ) &&
+                        (
                             !opticalRequired ||
                                 witness.opticalView?.let(::isReliableSemanticTarget) == true ||
                                 witness.fallbackBounds != null
@@ -2824,23 +2828,25 @@ internal object CcTransitionOwner {
         }
 
         private fun readMobileSubId(view: View): Int? {
-            if (mobileSubIdCache.containsKey(view)) {
-                return mobileSubIdCache[view]
-            }
-            val resolved =
-                generateSequence<Class<*>>(view.javaClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz ->
-                        clazz.declaredFields.firstOrNull { field -> field.name == "subId" }
-                    }
-                    .firstOrNull()
-                    ?.let { field ->
-                        runCatching {
-                            field.isAccessible = true
-                            field.getInt(view)
-                        }.getOrNull()
-                    }
-            mobileSubIdCache[view] = resolved
-            return resolved
+            val viewClass = view.javaClass
+            val field =
+                if (mobileSubIdFields.containsKey(viewClass)) {
+                    mobileSubIdFields[viewClass]
+                } else {
+                    generateSequence<Class<*>>(viewClass) { clazz -> clazz.superclass }
+                        .mapNotNull { clazz ->
+                            clazz.declaredFields.firstOrNull { it.name == "subId" }
+                        }
+                        .firstOrNull()
+                        ?.let { candidate ->
+                            runCatching {
+                                candidate.isAccessible = true
+                                candidate
+                            }.getOrNull()
+                        }
+                        .also { mobileSubIdFields[viewClass] = it }
+                } ?: return null
+            return runCatching { field.getInt(view) }.getOrNull()
         }
 
         private fun selectSlotView(
