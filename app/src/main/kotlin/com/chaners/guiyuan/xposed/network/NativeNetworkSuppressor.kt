@@ -451,6 +451,9 @@ internal object NativeNetworkSuppressor {
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
+        transitionStateAccessorCache.clear()
+        transitionStateAccessorMissing.clear()
+        transitionStateFieldCache.clear()
         tintFieldsByClass.clear()
         tintMethodByManagerClass.clear()
         bindingGetterByClass.clear()
