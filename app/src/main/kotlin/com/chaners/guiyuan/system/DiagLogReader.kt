@@ -2,6 +2,8 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import com.chaners.guiyuan.BuildConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
@@ -29,7 +31,7 @@ internal object DiagLogReader {
         val sessionLines: List<String>,
     )
 
-    suspend fun read(context: Context): Snapshot {
+    suspend fun read(context: Context): Snapshot = withContext(Dispatchers.Default) {
         val lspResult =
             RootShell.execute(
                 context = context,
@@ -39,7 +41,7 @@ internal object DiagLogReader {
         val lspLines = filterModuleLines(lspResult.output)
 
         if (lspLines.isNotEmpty()) {
-            return Snapshot(
+            return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
@@ -54,7 +56,7 @@ internal object DiagLogReader {
                 timeoutSeconds = TIMEOUT_SEC,
             )
         val logcatLines = filterModuleLines(logcatResult.output)
-        return Snapshot(
+        Snapshot(
             source = Source.LogcatFallback,
             result = logcatResult,
             lines = logcatLines,
