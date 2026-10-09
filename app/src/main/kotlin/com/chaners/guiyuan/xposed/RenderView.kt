@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.os.Looper
 import android.os.SystemClock
@@ -269,6 +270,17 @@ internal class RenderView(
         centerTransitionAnimator = null
         previousCenterIndicator = null
         centerTransitionFraction = 1f
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        painter.clearNativeResources()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        painter.clearNativeResources()
+        requestRedraw()
     }
 
     override fun onDetachedFromWindow() {

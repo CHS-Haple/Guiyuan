@@ -45,6 +45,7 @@ internal class StatusPainter(
         )
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
+
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
     private var cachedBatteryTopTextWeight: Int = Int.MIN_VALUE
@@ -81,6 +82,14 @@ internal class StatusPainter(
                 }
             }
         }
+
+    fun clearNativeResources() {
+        nativeCenterAssets.clear()
+        nativeTintVariantIds.clear()
+        nativeWifiReferenceIds.clear()
+        airplaneDrawableResolved = false
+        cachedAirplaneResourceId = 0
+    }
 
     fun draw(
         canvas: Canvas,
