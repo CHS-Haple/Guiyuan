@@ -1,8 +1,12 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.BatteryColorMode
+import com.chaners.guiyuan.settings.BatteryColorModes
+import com.chaners.guiyuan.settings.BatteryColorOverrides
 import com.chaners.guiyuan.settings.BatteryColorPreset
 import com.chaners.guiyuan.settings.HyperOsBatteryPalette
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.network.InternetState
 import com.chaners.guiyuan.xposed.network.CenterIndicator
@@ -158,6 +162,45 @@ class ColorPolicyTest {
         assertEquals(0xff112233.toInt(), colors.centerTint)
         assertEquals(0xff112233.toInt(), colors.mobileTint)
         assertEquals(0xff112233.toInt(), colors.batteryTint)
+    }
+
+    @Test
+    fun cachedPreferencesMatchDirectResolutionAcrossSettingsAndStates() {
+        val configs =
+            listOf(
+                VisualCfg(),
+                VisualCfg(
+                    batteryColorPreset = BatteryColorPreset.IOS_STYLE,
+                    centerFollowsBatteryColor = true,
+                ),
+                VisualCfg(
+                    batteryColorModes =
+                        BatteryColorModes(charging = BatteryColorMode.CUSTOM),
+                    batteryColorOverrides =
+                        BatteryColorOverrides(charging = 0xff36c981.toInt()),
+                    topTextFollowsBatteryColor = false,
+                ),
+            )
+        val tint =
+            TintState(
+                appliedTint = 0xff112233.toInt(),
+                statusIconTint = 0xff445566.toInt(),
+            )
+        for (config in configs) {
+            val preferences = BatteryColorPolicy.preferencesFor(config)
+            for (state in BatterySemanticState.entries) {
+                val model = model(state = state, systemColor = 0xffaabbcc.toInt())
+                assertEquals(
+                    ColorPolicy.resolve(model, tint, config),
+                    ColorPolicy.resolve(
+                        model = model,
+                        tintState = tint,
+                        visualSettings = config,
+                        batteryColorPreferences = preferences,
+                    ),
+                )
+            }
+        }
     }
 
     private fun model(

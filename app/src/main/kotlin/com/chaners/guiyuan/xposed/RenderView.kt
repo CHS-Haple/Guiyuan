@@ -11,6 +11,7 @@ import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 
 internal class RenderView(
@@ -45,6 +46,10 @@ internal class RenderView(
 
     @Volatile
     private var visual = VisualCfg()
+
+    // Color preferences depend on configuration, not on each animation frame.
+    private var colorPrefsSource = visual
+    private var colorPrefs = BatteryColorPolicy.preferencesFor(visual)
 
     @Volatile
     private var logicalViewportWidthPx: Int = 0
@@ -282,6 +287,11 @@ internal class RenderView(
         super.onDraw(canvas)
         val current = model ?: return
         val tint = tintState ?: return
+        val currentVisual = visual
+        if (currentVisual !== colorPrefsSource) {
+            colorPrefs = BatteryColorPolicy.preferencesFor(currentVisual)
+            colorPrefsSource = currentVisual
+        }
         val transitionFraction =
             centerTransitionFraction.coerceIn(0f, 1f)
         val logicalWidth = currentLogicalViewportWidthPx()
@@ -300,10 +310,11 @@ internal class RenderView(
                 ColorPolicy.resolve(
                     model = current,
                     tintState = tint,
-                    visualSettings = visual,
+                    visualSettings = currentVisual,
+                    batteryColorPreferences = colorPrefs,
                 ),
             opacity = 1f,
-            visual = this.visual,
+            visual = currentVisual,
             previousCenterIndicator = previousCenterIndicator,
             centerExitAmount =
                 1f -
