@@ -508,7 +508,7 @@ internal object SysUiNetworkSource {
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
             val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
-            if (root.isAttachedToWindow) {
+            if (root.isAttachedToWindow && subscriptionId >= 0) {
                 mobileRoots[root] = subscriptionId
             }
         }
@@ -1012,10 +1012,11 @@ internal object SysUiNetworkSource {
                 (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
             }.getOrDefault(-1)
 
+            val nextId = subscriptionId.takeIf { it >= 0 }
             val previous = synchronized(this) {
-                mobileRoots.put(root, subscriptionId)
+                if (nextId == null) mobileRoots.remove(root) else mobileRoots.put(root, nextId)
             }
-            bindingChanged = previous == null || previous != subscriptionId
+            bindingChanged = previous != nextId
             if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
                 bindingLog =
                     "networkPipeline mobile bound " +
