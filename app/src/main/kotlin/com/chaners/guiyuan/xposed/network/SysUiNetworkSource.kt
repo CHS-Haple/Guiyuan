@@ -486,9 +486,7 @@ internal object SysUiNetworkSource {
         lastMobileEvents.clear()
 
         val payload = raw as? Array<*>
-            ?: return BindingRestoreResult(wifiRoots = 0, mobileRoots = 0)
-
-        val wifi = payload.getOrNull(0) as? List<*>
+        val wifi = payload?.getOrNull(0) as? List<*>
         wifi.orEmpty().forEach { value ->
             val pair = value as? Array<*>
             val root =
@@ -506,7 +504,7 @@ internal object SysUiNetworkSource {
             }
         }
 
-        val mobile = payload.getOrNull(1) as? List<*>
+        val mobile = payload?.getOrNull(1) as? List<*>
         mobile.orEmpty().forEach { value ->
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
