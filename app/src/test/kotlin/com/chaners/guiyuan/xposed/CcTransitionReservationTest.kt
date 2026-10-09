@@ -389,20 +389,20 @@ class CcTransitionReservationTest {
     }
 
     @Test
-    fun unmatchedComponentsClipOutFastWithoutChangingTheirScale() {
+    fun unmatchedComponentsFadeOutFastWithoutChangingTheirScale() {
         assertEquals(
             1f,
-            CcTransitionPolicy.unmatchedExitVisibleFraction(0f),
+            CcTransitionPolicy.unmatchedExitOpacity(0f),
             0.0001f,
         )
         assertEquals(
             0.125f,
-            CcTransitionPolicy.unmatchedExitVisibleFraction(0.5f),
+            CcTransitionPolicy.unmatchedExitOpacity(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            CcTransitionPolicy.unmatchedExitVisibleFraction(1f),
+            CcTransitionPolicy.unmatchedExitOpacity(1f),
             0.0001f,
         )
     }

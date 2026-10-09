@@ -51,6 +51,10 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - Do not weaken exact restoration or fail-native behavior.
 - Change external versionName only on explicit promotion; current baseline is 0.5.0. Increment Build ID and Android versionCode only for a materially different APK (behavior, UI/assets or compatibility), not for docs, non-behavioral refactors, or repeat CI/builds. The exact Git SHA distinguishes source revisions within a Build.
 
+## Active stacked preview
+
+- Draft PR #339 (Build 839): missing native endpoints fade intact source components without clipping or shape contraction (network type, Wi-Fi, mobile bars, battery ring, top number and other standalone icons). The charging lightning is an intentional exception: its hide uses the existing ring-lifetime clip with or without a native charging target, following the battery number until hidden; native-target reveal runs only with a valid target. Targeted transitions, latent reveals, live data-SIM semantics and native text ink bounds remain unchanged. Build 839's focused mobile-type/charging transition behavior was accepted on-device on 2026-10-09; combined Home/Keyguard/refresh validation remains separate.
+
 ## Next
 
 Continue the evidence-based source audit in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329). Review Hook installation/rollback, Hot Reload cleanup, cache invalidation and the full base→HEAD diff before integration. Combined Home/Keyguard/refresh device acceptance remains outstanding; do not promote the runtime changes on CI evidence alone.

@@ -61,6 +61,17 @@ class CcTransitionOwnerTest {
         assertEquals(0.20f, policy.chargingRingLifetimeProgress(hideMid), 0.001f)
         assertEquals(0.50f, policy.chargingSourceVisibleFraction(hideMid), 0.001f)
         assertEquals(0f, policy.chargingSourceVisibleFraction(hideEnd), 0.001f)
+        // Ring-coupled source hide is the same with or without an endpoint.
+        assertEquals(
+            policy.chargingSourceVisibleFraction(hideMid),
+            policy.chargingVisibleFraction(hideMid, targetAvailable = false),
+            0.0001f,
+        )
+        assertEquals(
+            policy.chargingSourceVisibleFraction(hideMid),
+            policy.chargingVisibleFraction(hideMid, targetAvailable = true),
+            0.0001f,
+        )
         assertEquals(
             1f,
             policy.chargingVisibleFraction(

@@ -7,11 +7,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import java.lang.reflect.Field
+import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
+    private data class DrawableFields(val type: Field?, val enhanced: Field?)
+
+    private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
+
     fun resolve(
         state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
@@ -173,12 +179,7 @@ internal object NativePresentationResolver {
                 val image = view as? ImageView
                 val drawable = image?.drawable
                 val networkType =
-                    normalizeDrawableNetworkType(
-                        rawLabel = drawable?.readStringField(MOBILE_TYPE_FIELD).orEmpty(),
-                        enhanced =
-                            drawable?.readBooleanField(MOBILE_TYPE_ENHANCED_FIELD) == true,
-                        beforeMeasure = drawable != null && drawable === pendingMobileTypeDrawable,
-                    )
+                    drawable?.let { nativeDrawableType(it, it === pendingMobileTypeDrawable) }
                 if (networkType != null) {
                     return networkType
                 }
@@ -197,6 +198,35 @@ internal object NativePresentationResolver {
             }
 
         return null
+    }
+
+    // The visual CC target need not belong to the active data subscription.
+    internal fun nativeTargetType(view: View?): NetworkType? =
+        when (view) {
+            is ImageView -> view.drawable?.let { nativeDrawableType(it, false) }
+            is TextView ->
+                view.text?.toString()?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { NetworkType(it, false, NetworkTypeSource.MOBILE_TYPE_SINGLE) }
+            else -> null
+        }
+
+    private fun nativeDrawableType(drawable: Drawable, beforeMeasure: Boolean): NetworkType? {
+        val fields =
+            drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
+                fun field(name: String): Field? =
+                    runCatching { clazz.getDeclaredField(name).apply { isAccessible = true } }
+                        .getOrNull()
+                DrawableFields(
+                    type = field(MOBILE_TYPE_FIELD),
+                    enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
+                )
+            }
+        // Drawables can change text without replacing their ImageView.
+        val label = runCatching { fields.type?.get(drawable) as? String }.getOrNull()
+        val enhanced =
+            runCatching { fields.enhanced?.getBoolean(drawable) }.getOrNull() == true
+        return normalizeDrawableNetworkType(label.orEmpty(), enhanced, beforeMeasure)
     }
 
     internal fun normalizeDrawableNetworkType(
@@ -256,20 +286,6 @@ internal object NativePresentationResolver {
             view.resources.getResourceEntryName(view.id)
         }.getOrNull()
     }
-
-    private fun Drawable.readStringField(name: String): String? =
-        runCatching {
-            javaClass.getDeclaredField(name)
-                .apply { isAccessible = true }
-                .get(this) as? String
-        }.getOrNull()
-
-    private fun Drawable.readBooleanField(name: String): Boolean? =
-        runCatching {
-            javaClass.getDeclaredField(name)
-                .apply { isAccessible = true }
-                .getBoolean(this)
-        }.getOrNull()
 
     internal data class ActiveBindingResolution(
         val subscriptionIds: Set<Int>,
