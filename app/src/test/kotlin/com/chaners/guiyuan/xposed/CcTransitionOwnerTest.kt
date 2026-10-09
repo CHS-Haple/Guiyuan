@@ -141,6 +141,29 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun chargingGlyphWithoutNativeTargetFadesAsOneWholeIcon() {
+        val policy = BatteryNumberFollowerPolicy
+        val (start, end) = policy.sourceHideWindow()
+        val midpoint = (start + end) / 2f
+
+        assertEquals(
+            1f,
+            policy.chargingVisibleFraction(progress = start, targetAvailable = false),
+            0.0001f,
+        )
+        assertEquals(
+            0.5f,
+            policy.chargingVisibleFraction(progress = midpoint, targetAvailable = false),
+            0.0001f,
+        )
+        assertEquals(
+            0f,
+            policy.chargingVisibleFraction(progress = end, targetAvailable = false),
+            0.0001f,
+        )
+    }
+
+    @Test
     fun chargingGlyphFollowerPreservesItsRelativeGeometryToBatteryNumber() {
         val numberSource =
             transitionGeometry(

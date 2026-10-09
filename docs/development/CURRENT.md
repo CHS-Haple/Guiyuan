@@ -53,7 +53,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Active stacked preview
 
-- PR #339 (Build 837) retains the Build 836 real-text-target and native ink-geometry changes. Based on the 836 device video, unmatched mobile text now fades as a whole glyph instead of being horizontally cut; battery-ring retraction falls back to the native row's direction when the center target is missing, avoiding a reversed contraction. Other native fallbacks, data-SIM semantics, source carrier motion and timing stay unchanged. This remains Draft for device acceptance.
+- Draft PR #339 (Build 838): a missing native transition endpoint now fades the entire source component without clipping or shape contraction, including mobile network text, Wi-Fi, signal bars, battery ring, top number and charging glyph. The charging glyph retains its battery-number follower motion and existing hide timing. Native-targeted transitions and target-only latent reveals are unchanged. The live data-SIM source, native text ink bounds and missing-target ring direction remain as before. Focused device acceptance is still required.
 
 ## Next
 

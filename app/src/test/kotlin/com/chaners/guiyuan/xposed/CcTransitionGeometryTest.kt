@@ -25,21 +25,21 @@ class CcTransitionGeometryTest {
     }
 
     @Test
-    fun unmatchedMobileTextFadesWithoutChangingTheNativeCarrier() {
-        // Missing or differing native text uses the source frame with a whole-glyph fade.
+    fun missingNativeEndpointUsesOneWholeComponentFadeCurve() {
         val policy = CcTransitionPolicy
-        assertEquals(1f, policy.unmatchedExitVisibleFraction(0f), 0f)
-        assertEquals(0.125f, policy.unmatchedExitVisibleFraction(0.5f), 0.0001f)
-        assertEquals(0f, policy.unmatchedExitVisibleFraction(1f), 0f)
-        assertEquals(1f, policy.unmatchedExitVisibleFraction(Float.NaN), 0f)
+        assertEquals(1f, policy.unmatchedExitOpacity(0f), 0f)
+        assertEquals(0.125f, policy.unmatchedExitOpacity(0.5f), 0.0001f)
+        assertEquals(0f, policy.unmatchedExitOpacity(1f), 0f)
+        assertEquals(1f, policy.unmatchedExitOpacity(Float.NaN), 0f)
 
-        val clip = policy.horizontalClipBounds(
-            left = 0f, top = 0f, right = 80f, bottom = 30f,
-            visibleFraction = policy.unmatchedExitVisibleFraction(0.5f),
-            anchorRight = false,
-        )
-        requireNotNull(clip)
-        assertEquals(10f, clip[2], 0.0001f)
+        // No target geometry means the source keeps its native carrier basis.
+        val source = floatArrayOf(120f, 50f, 24f, 0f, 0f, 30f)
+        val carrier = floatArrayOf(100f, 50f, 80f, 0f, 0f, 40f)
+        val moved = carrier.copyOf().apply { this[0] += 20f }
+        val carried = policy.rebaseSourceToCurrentCarrier(source, carrier, moved)
+        assertEquals(140f, carried[0], 0.0001f)
+        assertEquals(24f, carried[2], 0.0001f)
+        assertEquals(30f, carried[5], 0.0001f)
     }
 
     @Test

@@ -85,7 +85,7 @@ internal object CcTransitionPolicy {
         }
     }
 
-    fun unmatchedExitVisibleFraction(rawProgress: Float): Float {
+    fun unmatchedExitOpacity(rawProgress: Float): Float {
         val remaining = 1f - geometryProgress(rawProgress)
         return remaining * remaining * remaining
     }

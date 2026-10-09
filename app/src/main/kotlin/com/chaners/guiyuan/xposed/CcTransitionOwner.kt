@@ -769,7 +769,7 @@ internal object CcTransitionOwner {
                     } else if (matchedTargetGeometry != null) {
                         1f
                     } else {
-                        CcTransitionPolicy.unmatchedExitVisibleFraction(motionProgress)
+                        CcTransitionPolicy.unmatchedExitOpacity(motionProgress)
                     }
                 if (componentVisibleFraction <= 0f || opacity <= 0f) return@forEach
                 val matrixBounds =
@@ -810,20 +810,17 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
-                // A missing mobile text endpoint should not cut through individual glyphs.
-                val fadeMobileText =
-                    spec.component == StatusPainter.TransitionComponent.CENTER &&
-                        model.centerIndicator is CenterIndicator.MobileType &&
-                        matchedTargetGeometry == null
+                // Without a native endpoint, fade the intact component.
+                val hasTarget = matchedTargetGeometry != null
                 val layerOpacity =
-                    opacity * if (fadeMobileText) componentVisibleFraction else 1f
+                    opacity * if (hasTarget) 1f else componentVisibleFraction
                 val save =
                     canvas.saveLayerAlpha(
                         null,
                         (255f * layerOpacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
-                if (componentVisibleFraction < 1f && !fadeMobileText) {
+                if (componentVisibleFraction < 1f && hasTarget) {
                     val clipAnchorRight =
                         if (
                             spec.component ==
@@ -860,15 +857,19 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
-                        when (spec.shapePolicy) {
-                            StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
-                                motionProgress
+                        if (!hasTarget) {
+                            0f
+                        } else {
+                            when (spec.shapePolicy) {
+                                StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
+                                    motionProgress
 
-                            StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
-                                mobileSignalShapeProgress
+                                StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
+                                    mobileSignalShapeProgress
 
-                            StatusPainter.TransitionShapePolicy.RIGID ->
-                                0f
+                                StatusPainter.TransitionShapePolicy.RIGID ->
+                                    0f
+                            }
                         },
                     mobileTargetWidthRatio =
                         if (
