@@ -459,12 +459,16 @@ internal object SysUiNetworkSource {
     fun exportHotReloadBindings(): Array<Any?> {
         val wifi = ArrayList<Any>(wifiRoots.size)
         wifiRoots.forEach { (root, viewModel) ->
-            wifi.add(arrayOf(root, viewModel))
+            if (root.isAttachedToWindow) {
+                wifi.add(arrayOf(root, viewModel))
+            }
         }
 
         val mobile = ArrayList<Any>(mobileRoots.size)
         mobileRoots.forEach { (root, subscriptionId) ->
-            mobile.add(arrayOf(root, subscriptionId))
+            if (root.isAttachedToWindow) {
+                mobile.add(arrayOf(root, subscriptionId))
+            }
         }
 
         return arrayOf(wifi, mobile)
@@ -517,7 +521,8 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun hotReloadBindingCounts(): Pair<Int, Int> =
-        wifiRoots.size to mobileRoots.size
+        wifiRoots.keys.count { it.isAttachedToWindow } to
+            mobileRoots.keys.count { it.isAttachedToWindow }
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
