@@ -5,23 +5,27 @@
     <string name="home_build_line">Build  %1$s</string>
 
     <string name="home_runtime_running">Running</string>
-    <string name="home_runtime_running_summary">Guiyuan is active</string>
-    <string name="home_runtime_unhooked">Not hooked</string>
-    <string name="home_runtime_unhooked_summary">SystemUI scope is not enabled</string>
+    <string name="home_runtime_running_summary">Guiyuan is loaded in SystemUI</string>
+    <string name="home_runtime_unhooked">Scope not enabled</string>
+    <string name="home_runtime_unhooked_summary">SystemUI scope is not enabled\nTap card to request access</string>
     <string name="home_runtime_pending">Pending</string>
-    <string name="home_runtime_restart_summary">Waiting for SystemUI to reload · Tap to restart</string>
+    <string name="home_runtime_restart_summary">Waiting for SystemUI to reload\nTap card to restart</string>
     <string name="home_runtime_restarting">Restarting SystemUI</string>
     <string name="home_runtime_restarting_summary">Reloading Guiyuan through SystemUI</string>
     <string name="home_runtime_disabled">Disabled</string>
     <string name="home_runtime_disabled_summary">Native system status icons are in use</string>
     <string name="home_runtime_framework_unavailable">Not connected</string>
-    <string name="home_runtime_framework_unavailable_summary">Xposed framework service is unavailable</string>
+    <string name="home_runtime_framework_unavailable_summary">Cannot connect to Xposed service\nCheck framework and module setup</string>
     <string name="home_runtime_unknown">Status unavailable</string>
-    <string name="home_runtime_unknown_summary">SystemUI runtime state could not be confirmed</string>
+    <string name="home_runtime_unknown_summary">SystemUI status is unavailable\nTry later or open Diagnostics</string>
     <string name="home_runtime_checking">Checking</string>
     <string name="home_runtime_checking_summary">Confirming SystemUI runtime state</string>
     <string name="home_runtime_reloading">Reloading</string>
-    <string name="home_runtime_reloading_summary">Hot reloading Guiyuan in SystemUI</string>
+    <string name="home_runtime_reloading_summary">Hot reloading Guiyuan</string>
+    <string name="home_runtime_requesting">Requesting access</string>
+    <string name="home_runtime_requesting_summary">Waiting for Xposed scope approval</string>
+    <string name="home_scope_request_failed">Scope request unavailable</string>
+    <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your Xposed manager.</string>
 
     <string name="section_home_preview_sandbox">Preview sandbox</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>

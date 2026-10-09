@@ -5,23 +5,27 @@
     <string name="home_build_line">构建  %1$s</string>
 
     <string name="home_runtime_running">运行中</string>
-    <string name="home_runtime_running_summary">归元正在运行</string>
-    <string name="home_runtime_unhooked">未 Hook</string>
-    <string name="home_runtime_unhooked_summary">SystemUI 作用域未启用</string>
+    <string name="home_runtime_running_summary">归元已加载至 SystemUI</string>
+    <string name="home_runtime_unhooked">作用域未启用</string>
+    <string name="home_runtime_unhooked_summary">SystemUI 作用域未启用\n点击卡片申请启用</string>
     <string name="home_runtime_pending">待生效</string>
-    <string name="home_runtime_restart_summary">等待 SystemUI 重新加载，点击卡片重启</string>
+    <string name="home_runtime_restart_summary">等待 SystemUI 重新加载\n点击卡片重启</string>
     <string name="home_runtime_restarting">正在重启 SystemUI</string>
     <string name="home_runtime_restarting_summary">正在重新加载归元</string>
     <string name="home_runtime_disabled">已关闭</string>
     <string name="home_runtime_disabled_summary">当前使用系统原生状态栏图标</string>
     <string name="home_runtime_framework_unavailable">未连接</string>
-    <string name="home_runtime_framework_unavailable_summary">未连接 Xposed 框架服务</string>
+    <string name="home_runtime_framework_unavailable_summary">无法连接 Xposed 框架服务\n请检查框架及模块启用状态</string>
     <string name="home_runtime_unknown">状态未知</string>
-    <string name="home_runtime_unknown_summary">暂时无法确认 SystemUI 运行状态</string>
+    <string name="home_runtime_unknown_summary">SystemUI 运行状态暂不可用\n请稍后重试或查看诊断</string>
     <string name="home_runtime_checking">正在检查</string>
     <string name="home_runtime_checking_summary">正在确认 SystemUI 运行状态</string>
     <string name="home_runtime_reloading">正在重载</string>
-    <string name="home_runtime_reloading_summary">正在 SystemUI 中热重载归元</string>
+    <string name="home_runtime_reloading_summary">正在热重载归元</string>
+    <string name="home_runtime_requesting">正在申请</string>
+    <string name="home_runtime_requesting_summary">等待 Xposed 作用域授权</string>
+    <string name="home_scope_request_failed">无法申请作用域</string>
+    <string name="home_scope_request_failed_summary">请在 Xposed 管理器中手动启用 SystemUI 作用域。</string>
 
     <string name="section_home_preview_sandbox">预览沙盒</string>
     <string name="home_preview_sandbox_title">预览沙盒</string>
