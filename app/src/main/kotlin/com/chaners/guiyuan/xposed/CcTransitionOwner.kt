@@ -286,7 +286,7 @@ internal object CcTransitionOwner {
                     latest.view === source &&
                     latest.anchorView === sourceAnchor
                 ) {
-                    currentSnapshot = latest
+                    acceptSourceSnapshot(latest)
                 }
                 // Native QS_FAKE peers remain the live tint authority. Their applied
                 // tint can change independently from Guiyuan source stateVersion, so
@@ -339,7 +339,7 @@ internal object CcTransitionOwner {
                 this.nativeAppearance != nativeAppearance ||
                     this.nativeAppearanceAnimated != nativeAppearanceAnimated
             this.progress = progress.coerceIn(0f, 1f)
-            this.currentSnapshot = sourceSnapshot
+            acceptSourceSnapshot(sourceSnapshot)
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
@@ -351,6 +351,26 @@ internal object CcTransitionOwner {
             }
             syncTransitionReservation()
             drawable.invalidateSelf()
+        }
+
+        private fun acceptSourceSnapshot(next: CcRenderSession.TransitionSourceSnapshot) {
+            val previous = currentSnapshot.model
+            val model = next.model
+            // Native battery views can stay attached after their displayed content changes.
+            if (previous.batteryPercent != model.batteryPercent) {
+                targetCache.remove(
+                    TargetCacheKey(StatusPainter.TransitionTarget.BatteryNumber, null),
+                )
+            }
+            if (
+                previous.charging != model.charging ||
+                previous.chargingIconResId != model.chargingIconResId
+            ) {
+                targetCache.remove(
+                    TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
+                )
+            }
+            currentSnapshot = next
         }
 
         fun stop(source: String) {
