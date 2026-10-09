@@ -91,6 +91,7 @@ internal object DiagReport {
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)
             appendLine("collection=" + collectionState(log.result))
+            if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
             appendLine("lines=" + logLines.size)
             if (logLines.isEmpty()) {
                 appendLine("No Guiyuan runtime log entries were available.")

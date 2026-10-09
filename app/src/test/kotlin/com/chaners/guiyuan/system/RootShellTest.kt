@@ -52,6 +52,30 @@ class RootShellTest {
     }
 
     @Test
+    fun largeCaptureRetainsRecentCompleteLines() = runBlocking {
+        val dir = temp.newFolder()
+        val result =
+            withTimeout(5_000) {
+                RootShell.execute(
+                    ProcessBuilder(
+                        "sh",
+                        "-c",
+                        "yes 'old entry' | head -c 2300000; printf '\\nLATEST\\n'",
+                    ),
+                    timeoutSeconds = 3,
+                    cacheDir = dir,
+                )
+            }
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.truncated)
+        assertTrue(result.output.startsWith("old entry\n"))
+        assertTrue(result.output.endsWith("LATEST\n"))
+        assertTrue(result.output.toByteArray(Charsets.UTF_8).size <= 2 * 1024 * 1024)
+        assertTrue(dir.listFiles().isNullOrEmpty())
+    }
+
+    @Test
     fun cancellingCommandStopsItsProcessAndRemovesFile() = runBlocking {
         val dir = temp.newFolder()
         val pidFile = File(dir, "pid")

@@ -101,7 +101,12 @@ class DiagReportTest {
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 
-    private fun report(vararg lines: String): String {
+    @Test
+    fun truncatedCaptureIsDisclosed() {
+        assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
+    }
+
+    private fun report(vararg lines: String, truncated: Boolean = false): String {
         val recorded = lines.toList()
         return DiagReport.build(
             DiagSnapshot(
@@ -119,7 +124,7 @@ class DiagReportTest {
                 level = DiagLevel.Detailed,
                 log = DiagLogReader.Snapshot(
                     source = DiagLogReader.Source.LspModules,
-                    result = RootShell.Result(0, recorded.joinToString("\n"), false, null),
+                    result = RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
                 ),

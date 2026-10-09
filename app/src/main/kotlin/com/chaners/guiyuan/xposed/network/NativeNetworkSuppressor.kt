@@ -988,7 +988,8 @@ internal object NativeNetworkSuppressor {
             tintFields(target.javaClass)
                 .firstOrNull {
                     it.name == name &&
-                        it.type == Int::class.javaPrimitiveType
+                        (it.type == Int::class.javaPrimitiveType ||
+                            it.type == Int::class.javaObjectType)
                 }
                 ?: return null
         return runCatching {

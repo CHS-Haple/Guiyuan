@@ -2,6 +2,7 @@ package com.chaners.guiyuan.system
 
 import android.content.Context
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 internal object RootShell {
+    private const val MAX_OUTPUT_BYTES = 2 * 1024 * 1024
+
     suspend fun execute(
         context: Context,
         command: String,
@@ -48,19 +51,23 @@ internal object RootShell {
                     if (!running.waitFor(1, TimeUnit.SECONDS)) {
                         running.destroyForcibly()
                     }
+                    val captured = readOutput(output)
                     return@coroutineScope Result(
                         exitCode = null,
-                        output = output.readText(),
+                        output = captured.text,
                         timedOut = true,
                         error = null,
+                        truncated = captured.truncated,
                     )
                 }
 
+                val captured = readOutput(output)
                 Result(
                     exitCode = running.exitValue(),
-                    output = output.readText(),
+                    output = captured.text,
                     timedOut = false,
                     error = null,
+                    truncated = captured.truncated,
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -80,11 +87,37 @@ internal object RootShell {
         }
     }
 
+    private data class Capture(val text: String, val truncated: Boolean)
+
+    private fun readOutput(file: File): Capture =
+        RandomAccessFile(file, "r").use { reader ->
+            val size = reader.length()
+            val start = (size - MAX_OUTPUT_BYTES).coerceAtLeast(0L)
+            val truncated = start > 0L
+            val startsOnLine =
+                !truncated ||
+                    run {
+                        reader.seek(start - 1)
+                        reader.read() == '\n'.code
+                    }
+
+            reader.seek(start)
+            val bytes = ByteArray((size - start).toInt())
+            reader.readFully(bytes)
+            val text = bytes.toString(Charsets.UTF_8)
+
+            Capture(
+                text = if (startsOnLine) text else text.substringAfter('\n', ""),
+                truncated = truncated,
+            )
+        }
+
     internal data class Result(
         val exitCode: Int?,
         val output: String,
         val timedOut: Boolean,
         val error: String?,
+        val truncated: Boolean = false,
     ) {
         val isSuccess: Boolean
             get() = exitCode == 0 && !timedOut && error == null
