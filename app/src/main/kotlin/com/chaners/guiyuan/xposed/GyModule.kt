@@ -389,6 +389,17 @@ class GyModule : XposedModule() {
             }
 
             val capture = SysUiHostRegistry.restore(restored.host)
+            if (capture == null) {
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "hotReload.complete",
+                    component = "hotReload",
+                    state = "unavailable",
+                    "reason" to "status-host-replaced-before-restore",
+                    "restartScope" to true,
+                )
+                return@runCatching
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "host.restore",
