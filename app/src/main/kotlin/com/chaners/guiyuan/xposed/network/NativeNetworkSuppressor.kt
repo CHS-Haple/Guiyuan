@@ -994,7 +994,7 @@ internal object NativeNetworkSuppressor {
                 ?: return null
         return runCatching {
             field.isAccessible = true
-            field.getInt(target)
+            (field.get(target) as? Number)?.toInt()
         }.getOrNull()
     }
 
