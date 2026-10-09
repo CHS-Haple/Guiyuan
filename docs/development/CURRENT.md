@@ -51,4 +51,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Continue focused device checks for combined Home/Keyguard/refresh scenarios.
+Continue the evidence-based source audit in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329). Review Hook installation/rollback, Hot Reload cleanup, cache invalidation and the full base→HEAD diff before integration. Combined Home/Keyguard/refresh device acceptance remains outstanding; do not promote the runtime changes on CI evidence alone.
