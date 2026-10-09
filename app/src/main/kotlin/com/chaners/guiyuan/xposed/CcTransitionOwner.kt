@@ -278,6 +278,7 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
                 if (
@@ -287,14 +288,15 @@ internal object CcTransitionOwner {
                 ) {
                     acceptSourceSnapshot(latest)
                 }
-                // Native QS_FAKE peers remain the live tint authority. Their applied
-                // tint can change independently from Guiyuan source stateVersion, so
-                // keep this read on pre-draw; the resolver itself is allocation-free.
+                // Source snapshots and native peer tint can change without panel motion.
                 val previousTint = cachedNativePeerTint
                 refreshNativePeerTint()
                 syncTransitionReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
-                if (cachedNativePeerTint != previousTint) {
+                if (
+                    currentSnapshot !== previousSnapshot ||
+                    cachedNativePeerTint != previousTint
+                ) {
                     drawable.invalidateSelf()
                 }
                 true
