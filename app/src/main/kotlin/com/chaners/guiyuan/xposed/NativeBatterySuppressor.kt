@@ -425,9 +425,7 @@ internal object NativeBatterySuppressor {
 
         presentationMasks =
             next
-                .distinctBy { state ->
-                    state.view.get()?.let(System::identityHashCode)
-                }
+                .distinctByIdentity { state -> state.view.get() }
                 .toTypedArray()
 
         var masked = 0

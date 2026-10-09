@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.distinctByIdentity
 import com.chaners.guiyuan.xposed.PresentationStore
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -1079,7 +1080,7 @@ internal object NativeNetworkSuppressor {
 
         suppressedBindings =
             bindings
-                .distinctBy { binding -> System.identityHashCode(binding) }
+                .distinctByIdentity { it }
                 .map(::WeakReference)
                 .toTypedArray()
 
@@ -1159,9 +1160,7 @@ internal object NativeNetworkSuppressor {
 
         mobileVisualMasks =
             next
-                .distinctBy { state ->
-                    state.view.get()?.let(System::identityHashCode)
-                }
+                .distinctByIdentity { state -> state.view.get() }
                 .toTypedArray()
 
         var masked = 0
@@ -1231,9 +1230,7 @@ internal object NativeNetworkSuppressor {
                                 mobileVisualMasks.asList() +
                                     created
                             )
-                                .distinctBy { mask ->
-                                    mask.view.get()?.let(System::identityHashCode)
-                                }
+                                .distinctByIdentity { mask -> mask.view.get() }
                                 .toTypedArray()
                     }
 
