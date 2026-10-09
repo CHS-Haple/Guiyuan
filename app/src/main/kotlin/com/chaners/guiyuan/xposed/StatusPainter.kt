@@ -37,7 +37,12 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
-    private val nativeCenterAssets = LinkedHashMap<String, NativeCenterAsset>(NATIVE_CENTER_CACHE_SIZE, 0.75f, true)
+    private val nativeCenterAssets =
+        LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
+            NATIVE_CENTER_CACHE_SIZE,
+            0.75f,
+            true,
+        )
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
@@ -2422,8 +2427,7 @@ internal class StatusPainter(
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
-        val key = resource.packageName + ":" + resource.resourceId
-        nativeCenterAssets[key]?.let { return it }
+        nativeCenterAssets[resource]?.let { return it }
 
         val asset =
             runCatching {
@@ -2456,7 +2460,7 @@ internal class StatusPainter(
             }.getOrNull()
                 ?: return null
 
-        nativeCenterAssets[key] = asset
+        nativeCenterAssets[resource] = asset
         if (nativeCenterAssets.size > NATIVE_CENTER_CACHE_SIZE) {
             val eldest = nativeCenterAssets.entries.iterator().next()
             nativeCenterAssets.remove(eldest.key)
