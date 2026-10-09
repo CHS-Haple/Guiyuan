@@ -229,52 +229,7 @@ jobs:
 
       - name: Verify modern Xposed metadata
         shell: bash
-        run: |
-          REQUIRED_ENTRIES=(
-            "META-INF/xposed/java_init.list"
-            "META-INF/xposed/module.prop"
-            "META-INF/xposed/scope.list"
-          )
-
-          for entry in "${REQUIRED_ENTRIES[@]}"; do
-            if ! unzip -Z1 "$APK_PATH" | grep -Fxq "$entry"; then
-              echo "Missing modern Xposed metadata: $entry"
-              exit 1
-            fi
-          done
-
-          if unzip -Z1 "$APK_PATH" | grep -Fxq "assets/xposed_init"; then
-            echo "Legacy Xposed entry metadata must not be packaged."
-            exit 1
-          fi
-
-          if [[ "$(unzip -p "$APK_PATH" META-INF/xposed/scope.list | tr -d '\r\n')" != "com.android.systemui" ]]; then
-            echo "Unexpected Xposed scope."
-            exit 1
-          fi
-
-          if ! unzip -p "$APK_PATH" META-INF/xposed/module.prop | grep -Fxq "targetApiVersion=102"; then
-            echo "Modern Xposed target API 102 metadata is missing."
-            exit 1
-          fi
-
-          if ! unzip -p "$APK_PATH" META-INF/xposed/module.prop | grep -Fxq "autoHotReload=true"; then
-            echo "Modern Xposed hot reload metadata is missing."
-            exit 1
-          fi
-
-          JAVA_ENTRY_COUNT="$(
-            unzip -p "$APK_PATH" META-INF/xposed/java_init.list |
-              tr -d '\r' |
-              sed '/^[[:space:]]*$/d' |
-              wc -l |
-              tr -d ' '
-          )"
-          if [[ "$JAVA_ENTRY_COUNT" != "1" ]]; then
-            echo "Hot reload requires exactly one Java entry class."
-            exit 1
-          fi
-
+        run: bash tools/verify_xposed_metadata.sh "$APK_PATH"
       - name: Verify Haple APK signature
         shell: bash
         env:
