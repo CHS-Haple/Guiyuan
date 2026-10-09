@@ -84,6 +84,7 @@ internal object NativePresentationResolver {
 
         val networkTypeSubscriptionId =
             selectNetworkTypeSubscriptionId(
+                mode = mode,
                 effectiveDataSubscriptionId = effectiveDataSubscriptionId,
                 presentationRootSubscriptionId = target?.subscriptionId,
                 boundSubscriptionIds =
@@ -123,15 +124,22 @@ internal object NativePresentationResolver {
     }
 
     internal fun selectNetworkTypeSubscriptionId(
+        mode: Mode,
         effectiveDataSubscriptionId: Int?,
         presentationRootSubscriptionId: Int?,
         boundSubscriptionIds: List<Int>,
-    ): Int? =
-        effectiveDataSubscriptionId
-            ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
+    ): Int? {
+        // Aggregated mode draws one native mobile root, which may not belong to the data SIM.
+        if (mode == Mode.DUAL_AGGREGATED) {
+            return presentationRootSubscriptionId
+                ?.takeIf { it in boundSubscriptionIds }
+        }
+        return effectiveDataSubscriptionId
+            ?.takeIf { it in boundSubscriptionIds }
             ?: presentationRootSubscriptionId
-                ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
+                ?.takeIf { it in boundSubscriptionIds }
             ?: boundSubscriptionIds.firstOrNull()
+    }
 
     internal fun resolveActiveSubIds(
         boundSubscriptionIds: List<Int>,

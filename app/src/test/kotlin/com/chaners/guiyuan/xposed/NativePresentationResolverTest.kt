@@ -14,20 +14,47 @@ class NativePresentationResolverTest {
                 activeSubscriptionIds = listOf(1, 4),
                 presentationRootSubscriptionId = 1,
                 effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
+                networkTypeSubscriptionId = 1,
                 networkType = null,
             )
 
         assertEquals(1, snapshot.presentationRootSubscriptionId)
         assertEquals(4, snapshot.effectiveDataSubscriptionId)
-        assertEquals(4, snapshot.networkTypeSubscriptionId)
+        assertEquals(1, snapshot.networkTypeSubscriptionId)
     }
 
     @Test
-    fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
+    fun aggregatedNetworkTypeUsesVisibleNativeRoot() {
+        assertEquals(
+            1,
+            NativePresentationResolver.selectNetworkTypeSubscriptionId(
+                mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                effectiveDataSubscriptionId = 4,
+                presentationRootSubscriptionId = 1,
+                boundSubscriptionIds = listOf(1, 4),
+            ),
+        )
+    }
+
+    @Test
+    fun aggregatedNetworkTypeDoesNotFallBackToHiddenRoot() {
+        assertEquals(
+            null,
+            NativePresentationResolver.selectNetworkTypeSubscriptionId(
+                mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                effectiveDataSubscriptionId = 4,
+                presentationRootSubscriptionId = null,
+                boundSubscriptionIds = listOf(1, 4),
+            ),
+        )
+    }
+
+    @Test
+    fun separateDualModeStillPrefersDefaultDataSubscription() {
         assertEquals(
             4,
             NativePresentationResolver.selectNetworkTypeSubscriptionId(
+                mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
                 effectiveDataSubscriptionId = 4,
                 presentationRootSubscriptionId = 1,
                 boundSubscriptionIds = listOf(1, 4),
@@ -40,6 +67,7 @@ class NativePresentationResolverTest {
         assertEquals(
             1,
             NativePresentationResolver.selectNetworkTypeSubscriptionId(
+                mode = NativePresentationResolver.Mode.SINGLE,
                 effectiveDataSubscriptionId = 4,
                 presentationRootSubscriptionId = 1,
                 boundSubscriptionIds = listOf(1),
@@ -110,7 +138,7 @@ class NativePresentationResolverTest {
                 activeSubscriptionIds = listOf(1, 4),
                 presentationRootSubscriptionId = 1,
                 effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
+                networkTypeSubscriptionId = 1,
                 networkType = null,
             )
 
