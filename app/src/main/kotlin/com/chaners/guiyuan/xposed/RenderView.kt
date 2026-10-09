@@ -50,6 +50,7 @@ internal class RenderView(
     // Color preferences depend on configuration, not on each animation frame.
     private var colorPrefsSource = visual
     private var colorPrefs = BatteryColorPolicy.preferencesFor(visual)
+    private var colorCache: ColorCache? = null
 
     @Volatile
     private var logicalViewportWidthPx: Int = 0
@@ -301,18 +302,28 @@ internal class RenderView(
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
         }
+        val colors =
+            colorCache
+                ?.takeIf { cache ->
+                    cache.model === current &&
+                        cache.tint === tint &&
+                        cache.visual === currentVisual
+                }?.colors
+                ?: ColorPolicy.resolve(
+                    model = current,
+                    tintState = tint,
+                    visualSettings = currentVisual,
+                    batteryColorPreferences = colorPrefs,
+                ).also { resolved ->
+                    colorCache = ColorCache(current, tint, currentVisual, resolved)
+                }
+
         painter.draw(
             canvas = canvas,
             width = logicalWidth,
             height = logicalHeight,
             model = current,
-            colors =
-                ColorPolicy.resolve(
-                    model = current,
-                    tintState = tint,
-                    visualSettings = currentVisual,
-                    batteryColorPreferences = colorPrefs,
-                ),
+            colors = colors,
             opacity = 1f,
             visual = currentVisual,
             previousCenterIndicator = previousCenterIndicator,
@@ -352,6 +363,14 @@ internal class RenderView(
             )
         }
     }
+
+    // Only state inputs affect colors; motion interpolators do not.
+    private class ColorCache(
+        val model: RenderModel,
+        val tint: TintState,
+        val visual: VisualCfg,
+        val colors: RenderColors,
+    )
 
     private companion object {
         const val CENTER_TRANSITION_DURATION_MS = 100L
