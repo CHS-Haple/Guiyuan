@@ -294,13 +294,8 @@ internal object SysUiNetworkSource {
                 failure = null,
             )
         } catch (error: InstallStageException) {
-            created.forEach { handle -> runCatching { handle.unhook() } }
             wifiSeedContract = null
-            BranchInstallResult(
-                handles = emptyList(),
-                ready = false,
-                failure = installFailure("wifi", error),
-            )
+            failedBranch("wifi", error, created)
         }
     }
 
@@ -410,12 +405,7 @@ internal object SysUiNetworkSource {
                 failure = null,
             )
         } catch (error: InstallStageException) {
-            created.forEach { handle -> runCatching { handle.unhook() } }
-            BranchInstallResult(
-                handles = emptyList(),
-                ready = false,
-                failure = installFailure("mobile", error),
-            )
+            failedBranch("mobile", error, created)
         }
     }
 
@@ -570,6 +560,27 @@ internal object SysUiNetworkSource {
             stage = error.stage,
             errorType = cause.javaClass.name,
             reason = cause.message ?: cause.javaClass.simpleName,
+        )
+    }
+
+    private fun failedBranch(
+        component: String,
+        error: InstallStageException,
+        handles: List<HookHandle>,
+    ): BranchInstallResult {
+        val remaining = handles.filter { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+        val failure = installFailure(component, error)
+        return BranchInstallResult(
+            handles = remaining,
+            ready = false,
+            failure =
+                if (remaining.isEmpty()) {
+                    failure
+                } else {
+                    failure.copy(reason = failure.reason + "-hook-cleanup-failed")
+                },
         )
     }
 
