@@ -67,7 +67,7 @@ if not isinstance(runtime_markers, dict) or not runtime_markers:
 verified_systemui = set(profile.get("verifiedSystemUiClasses", []))
 missing_verified = set(runtime_markers.values()) - verified_systemui
 if missing_verified:
-    fail("runtime markers not verified in SystemUI APK: " + ", ".join(sorted(missing_verified)))
+    fail("runtime markers missing from pinned SystemUI class list: " + ", ".join(sorted(missing_verified)))
 
 probe_text = PROBE_PATH.read_text(encoding="utf-8")
 probe_markers = dict(re.findall(r'"([^"]+)"\s+to\s+"([^"]+)"', probe_text))
