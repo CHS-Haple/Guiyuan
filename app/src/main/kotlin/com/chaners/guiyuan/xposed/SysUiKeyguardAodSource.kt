@@ -25,6 +25,8 @@ internal object SysUiKeyguardAodSource {
 
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()
+    @Volatile private var hooksReady = false
+    @Volatile private var failedInstallHandles: List<HookHandle> = emptyList()
 
     @Volatile private var toAodField: Field? = null
     @Volatile private var isAodAnimateField: Field? = null
@@ -36,6 +38,8 @@ internal object SysUiKeyguardAodSource {
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
+        check(!hooksReady && failedInstallHandles.isEmpty()) { "keyguard-aod-hooks-already-installed" }
+
         val batteryClass = Class.forName(BATTERY_VIEW_CLASS, false, classLoader)
         val resolvedToAod =
             resolveBooleanField(batteryClass, TO_AOD_FIELD)
@@ -91,13 +95,23 @@ internal object SysUiKeyguardAodSource {
                 module.hook(toggleMethod)
                     .setId(TOGGLE_AOD_HOOK_ID)
                     .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onEvent))
+            hooksReady = true
             return handles
         } catch (error: Throwable) {
-            handles.asReversed().forEach { handle -> runCatching { handle.unhook() } }
+            val remaining = handles.asReversed().filter { handle ->
+                runCatching { handle.unhook() }.isFailure
+            }
+            failedInstallHandles = remaining
             resetRuntimeState()
+            if (remaining.isNotEmpty()) {
+                throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
+            }
             throw error
         }
     }
+
+    val failedInstallHookCount: Int
+        get() = failedInstallHandles.size
 
     private fun aodHooker(
         source: String,
@@ -106,6 +120,7 @@ internal object SysUiKeyguardAodSource {
     ): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
+            if (!hooksReady) return@Hooker result
             val sourceView = chain.thisObject as? View
             if (sourceView != null) {
                 publish(sourceView, source, onAodState, onEvent)
@@ -121,6 +136,7 @@ internal object SysUiKeyguardAodSource {
 
     @Synchronized
     fun resetRuntimeState() {
+        hooksReady = false
         states.clear()
         toAodField = null
         isAodAnimateField = null

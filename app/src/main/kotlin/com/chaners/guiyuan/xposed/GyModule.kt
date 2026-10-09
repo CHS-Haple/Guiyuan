@@ -1609,6 +1609,7 @@ class GyModule : XposedModule() {
                 component = "batteryState",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "hooks" to SysUiBatterySource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Battery state source installation failed", error)
@@ -1691,6 +1692,7 @@ class GyModule : XposedModule() {
                 component = "presentationRuntime",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "tintCleanupRemainingHooks" to SysUiTintSource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Presentation runtime source installation failed", error)

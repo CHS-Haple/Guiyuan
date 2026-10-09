@@ -91,7 +91,7 @@ internal object SysUiPresentationRuntime {
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=native-keyguard",
                 )
-                0
+                SysUiKeyguardAodSource.failedInstallHookCount
             }
         val keyguardFullAodHooks =
             runCatching {
