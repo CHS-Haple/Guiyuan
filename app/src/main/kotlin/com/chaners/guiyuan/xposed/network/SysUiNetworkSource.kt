@@ -476,6 +476,9 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
+        // A new hook can bind a reused root before the old generation hands it over.
+        val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
         wifiRoots.clear()
         mobileRoots.clear()
         lastWifiEvents.clear()
@@ -513,6 +516,8 @@ internal object SysUiNetworkSource {
             }
         }
 
+        wifiRoots.putAll(newWifi)
+        mobileRoots.putAll(newMobile)
         return BindingRestoreResult(
             wifiRoots = wifiRoots.size,
             mobileRoots = mobileRoots.size,
