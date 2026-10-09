@@ -105,9 +105,16 @@ internal object SysUiHotReload {
         val oldHandles = param.oldHookHandles
         val hostHandle = SysUiHostHook.findOwnedHandle(oldHandles)
             ?: run {
-                oldHandles.forEach { handle -> runCatching { handle.unhook() } }
+                val failed = oldHandles.count { handle ->
+                    runCatching { handle.unhook() }.isFailure
+                }
+                if (failed > 0) {
+                    error("status-host-hook-missing-cleanup-failed:$failed")
+                }
                 return null
             }
+        val classLoader = hostHandle.executable.declaringClass.classLoader
+            ?: return null
 
         SysUiHostHook.replace(
             handle = hostHandle,
@@ -125,7 +132,6 @@ internal object SysUiHotReload {
             }
         }
 
-        val classLoader = hostHandle.executable.declaringClass.classLoader ?: return null
         return HookTakeover(
             hostHandle = hostHandle,
             removedHooks = removed,
