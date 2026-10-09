@@ -25,8 +25,8 @@ class CcTransitionGeometryTest {
     }
 
     @Test
-    fun unmatchedMobileTextUsesTheExistingCarrierClip() {
-        // A different native label has no valid text target, even when its slot exists.
+    fun unmatchedMobileTextFadesWithoutChangingTheNativeCarrier() {
+        // Missing or differing native text uses the source frame with a whole-glyph fade.
         val policy = CcTransitionPolicy
         assertEquals(1f, policy.unmatchedExitVisibleFraction(0f), 0f)
         assertEquals(0.125f, policy.unmatchedExitVisibleFraction(0.5f), 0.0001f)
@@ -40,6 +40,46 @@ class CcTransitionGeometryTest {
         )
         requireNotNull(clip)
         assertEquals(10f, clip[2], 0.0001f)
+    }
+
+    @Test
+    fun missingTextDoesNotReverseBatteryRingRetraction() {
+        val none = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.NONE
+        val left = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.LEFT
+        val right = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.RIGHT
+
+        assertEquals(
+            left,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
+        )
+        assertEquals(
+            right,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = true,
+            ),
+        )
+        assertEquals(
+            right,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = right,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
+        )
+        assertEquals(
+            left,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = right,
+                nativeBatteryIslandActive = true,
+                targetRowRtl = false,
+            ),
+        )
     }
 
     @Test

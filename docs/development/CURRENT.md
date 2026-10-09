@@ -53,7 +53,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Active stacked preview
 
-- PR #339 (Build 836) corrects mobile-type handoff when native 5G text is hidden: no guessed text slot endpoint, including cached witnesses. A matched native TextView now contributes its visible glyph bounds instead of its whole layout box. This remains Draft for focused visual acceptance; the data-SIM source and existing unmatched clip are unchanged.
+- PR #339 (Build 837) retains the Build 836 real-text-target and native ink-geometry changes. Based on the 836 device video, unmatched mobile text now fades as a whole glyph instead of being horizontally cut; battery-ring retraction falls back to the native row's direction when the center target is missing, avoiding a reversed contraction. Other native fallbacks, data-SIM semantics, source carrier motion and timing stay unchanged. This remains Draft for device acceptance.
 
 ## Next
 

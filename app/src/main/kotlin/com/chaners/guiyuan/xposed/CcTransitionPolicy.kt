@@ -70,12 +70,14 @@ internal object CcTransitionPolicy {
         nativeBatteryIslandActive: Boolean,
         targetRowRtl: Boolean,
     ): BatteryRingTransitionPolicy.ExitDirection {
-        if (!nativeBatteryIslandActive) return liveCenterDirection
-
-        // During HyperOS Battery-Island expansion the final status row is
-        // itself being reflowed. Its live pixel X is therefore not a stable
-        // direction authority for the ring's first frames. The structural
-        // destination is still toward the status-row logical start.
+        // The ring must retain its exit side when the native center glyph
+        // disappears. Battery-Island reflow also makes the live X unreliable.
+        if (
+            !nativeBatteryIslandActive &&
+            liveCenterDirection != BatteryRingTransitionPolicy.ExitDirection.NONE
+        ) {
+            return liveCenterDirection
+        }
         return if (targetRowRtl) {
             BatteryRingTransitionPolicy.ExitDirection.RIGHT
         } else {

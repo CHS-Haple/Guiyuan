@@ -810,13 +810,20 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
+                // A missing mobile text endpoint should not cut through individual glyphs.
+                val fadeMobileText =
+                    spec.component == StatusPainter.TransitionComponent.CENTER &&
+                        model.centerIndicator is CenterIndicator.MobileType &&
+                        matchedTargetGeometry == null
+                val layerOpacity =
+                    opacity * if (fadeMobileText) componentVisibleFraction else 1f
                 val save =
                     canvas.saveLayerAlpha(
                         null,
-                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                        (255f * layerOpacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
-                if (componentVisibleFraction < 1f) {
+                if (componentVisibleFraction < 1f && !fadeMobileText) {
                     val clipAnchorRight =
                         if (
                             spec.component ==
