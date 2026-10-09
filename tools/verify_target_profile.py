@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Checks recorded SystemUI profile metadata against source, not APK bytes.
 import json
 import pathlib
 import re
@@ -64,7 +65,7 @@ if not isinstance(runtime_markers, dict) or not runtime_markers:
 verified_systemui = set(profile.get("verifiedSystemUiClasses", []))
 missing_verified = set(runtime_markers.values()) - verified_systemui
 if missing_verified:
-    fail("runtime markers not verified in SystemUI APK: " + ", ".join(sorted(missing_verified)))
+    fail("runtime markers not listed in the pinned SystemUI profile: " + ", ".join(sorted(missing_verified)))
 
 probe_text = PROBE_PATH.read_text(encoding="utf-8")
 probe_markers = dict(re.findall(r'"([^"]+)"\s+to\s+"([^"]+)"', probe_text))
@@ -84,9 +85,9 @@ for hook_name, hook_point in hook_points.items():
     if hook_point.get("sourceArtifact") != "systemUi":
         fail(f"{hook_name} must originate from the SystemUI APK")
     if hook_class not in verified_systemui:
-        fail(f"{hook_name} class is not verified in the SystemUI APK")
+        fail(f"{hook_name} class is not listed in the pinned SystemUI profile")
     if hook_signature not in set(verified_methods.get(hook_class, [])):
-        fail(f"{hook_name} method is not verified in the SystemUI APK")
+        fail(f"{hook_name} method is not listed in the pinned SystemUI profile")
 
 status_hook = hook_points.get("statusHostInflated")
 if not isinstance(status_hook, dict):
@@ -166,7 +167,7 @@ if scene_method != scene_hook.get("methodName"):
 
 verified_fields = profile.get("verifiedSystemUiFields", {})
 if scene_field not in set(verified_fields.get(scene_class, [])):
-    fail("scene state source field is not verified in the SystemUI APK")
+    fail("scene state source field is not listed in the pinned SystemUI profile")
 
 
 
@@ -205,7 +206,7 @@ battery_semantic_class = battery_semantic_contract.get("className")
 if battery_semantic_class != battery_source_class:
     fail("battery semantic contract class drifted from source")
 if battery_semantic_class not in verified_systemui:
-    fail("battery semantic contract class is not verified in the SystemUI APK")
+    fail("battery semantic contract class is not listed in the pinned SystemUI profile")
 
 progress_status = battery_semantic_contract.get("progressStatusMethod")
 if not isinstance(progress_status, dict):
@@ -215,17 +216,12 @@ progress_signature = (
     f"{progress_status.get('descriptor', '')}"
 )
 if progress_signature not in set(verified_methods.get(battery_semantic_class, [])):
-    fail("battery semantic progress method is not verified in the SystemUI APK")
-if (
-    'getDeclaredMethod("getProgressStatus")'
-    not in battery_source_text.replace("\n", " ")
+    fail("battery semantic progress method is not listed in the pinned SystemUI profile")
+if not re.search(
+    r'getDeclaredMethod\(\s*"getProgressStatus"\s*\)',
+    battery_source_text,
 ):
-    # The source is formatted across lines; use a whitespace-tolerant check below.
-    if not re.search(
-        r'getDeclaredMethod\(\s*"getProgressStatus"\s*\)',
-        battery_source_text,
-    ):
-        fail("battery semantic source no longer reflects getProgressStatus")
+    fail("battery semantic source no longer reflects getProgressStatus")
 
 battery_semantic_fields = set(battery_semantic_contract.get("fields", []))
 verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
@@ -307,10 +303,9 @@ for (
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing lifecycle hook point: {hook_name}")
-    source_text = source_cache.setdefault(
-        source_path,
-        source_path.read_text(encoding="utf-8"),
-    )
+    if source_path not in source_cache:
+        source_cache[source_path] = source_path.read_text(encoding="utf-8")
+    source_text = source_cache[source_path]
     source_class = source_string_constant(
         source_text,
         class_constant,
@@ -343,7 +338,7 @@ for field_constant in ("TO_AOD_FIELD", "IS_AOD_ANIMATE_FIELD", "ANIM_TO_AOD_FIEL
         "keyguard AOD",
     )
     if field_name not in set(verified_fields.get(keyguard_aod_class, [])):
-        fail(f"keyguard AOD field is not verified in the SystemUI APK: {field_name}")
+        fail(f"keyguard AOD field is not listed in the pinned SystemUI profile: {field_name}")
 
 # The fake Control Center attach seam is deliberately not promoted to the
 # static profile until SystemUI-Reference indexes that method explicitly.
@@ -407,19 +402,23 @@ for role, match in container_constants.items():
 
 print(f"Target profile: {profile['profileId']}")
 print(
-    "SystemUI: "
+    "Recorded SystemUI: "
     f"{artifacts['systemUi']['displayName']} "
     f"md5={artifacts['systemUi']['md5']} "
     f"sha1={artifacts['systemUi']['sha1']} "
     f"dex={artifacts['systemUi']['dexCount']} "
     f"classes={artifacts['systemUi']['classCount']}"
 )
-print(f"Runtime markers verified: {len(runtime_markers)}")
-print(f"Hook points verified: {len(hook_points)}")
+print(f"Recorded runtime markers consistent: {len(runtime_markers)}")
+print(f"Recorded hook point contracts consistent: {len(hook_points)}")
 print(
     "Battery semantic contract: "
-    f"{len(battery_semantic_fields)} fields verified, "
-    "progress-status verified"
+    f"{len(battery_semantic_fields)} recorded fields consistent, "
+    "progress-status contract consistent"
 )
-print(f"Native status views verified: {len(native_status_views)}")
-print(f"Native status containers verified: {len(native_status_containers)}")
+print(f"Recorded native status views consistent: {len(native_status_views)}")
+print(f"Recorded native status containers consistent: {len(native_status_containers)}")
+print(
+    "Check scope: recorded profile metadata and source consistency only; "
+    "SystemUI APK bytes were not inspected"
+)
