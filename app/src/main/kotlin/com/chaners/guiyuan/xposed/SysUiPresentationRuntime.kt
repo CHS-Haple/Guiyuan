@@ -34,6 +34,8 @@ internal object SysUiPresentationRuntime {
         val keyguardAodHooks: Int,
         val keyguardFullAodHooks: Int,
         val keyguardStatusIconHooks: Int,
+        val sceneFailure: String?,
+        val mobileTypeFailure: String?,
     ) {
         val tintReady: Boolean
             get() = tintHooks == SysUiTintSource.HOOK_COUNT
@@ -126,19 +128,31 @@ internal object SysUiPresentationRuntime {
                 )
                 0
             }
+        var sceneFailure: String? = null
         val sceneHooks =
-            SysUiSceneSource.install(
-                module = module,
-                classLoader = classLoader,
-                onSceneState = onSceneState,
-                onEvent = onSceneEvent,
-            ).size
+            runCatching {
+                SysUiSceneSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onSceneState = onSceneState,
+                    onEvent = onSceneEvent,
+                ).size
+            }.getOrElse { error ->
+                sceneFailure = error.message ?: error.javaClass.simpleName
+                0
+            }
+        var mobileTypeFailure: String? = null
         val mobileTypeHooks =
-            SysUiMobileTypeSource.install(
-                module = module,
-                classLoader = classLoader,
-                onChanged = onMobileTypeChanged,
-            ).size
+            runCatching {
+                SysUiMobileTypeSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onChanged = onMobileTypeChanged,
+                ).size
+            }.getOrElse { error ->
+                mobileTypeFailure = error.message ?: error.javaClass.simpleName
+                0
+            }
 
         return AttachResult(
             tintHooks = tintHooks,
@@ -147,6 +161,8 @@ internal object SysUiPresentationRuntime {
             keyguardAodHooks = keyguardAodHooks,
             keyguardFullAodHooks = keyguardFullAodHooks,
             keyguardStatusIconHooks = keyguardStatusIconHooks,
+            sceneFailure = sceneFailure,
+            mobileTypeFailure = mobileTypeFailure,
         ).also { current = it }
     }
 
