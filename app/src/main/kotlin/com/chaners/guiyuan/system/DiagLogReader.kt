@@ -55,7 +55,7 @@ internal object DiagLogReader {
                 command = LOGCAT_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
-        val logcatLines = filterModuleLines(logcatResult.output)
+        val logcatLines = filterLogcatLines(logcatResult.output)
         Snapshot(
             source = Source.LogcatFallback,
             result = logcatResult,
@@ -70,6 +70,20 @@ internal object DiagLogReader {
             .filter { line ->
                 line.contains("com.chaners.guiyuan") &&
                     line.contains("CombinedStatus")
+            }
+            .toList()
+
+    internal fun filterLogcatLines(output: String): List<String> =
+        output
+            .lineSequence()
+            .filter { line ->
+                if ("CombinedStatus" !in line) return@filter false
+                if ("com.chaners.guiyuan" in line) return@filter true
+
+                val entry = DiagLogParser.parse(line)
+                entry.framework == "logcat" &&
+                    entry.tag == "CombinedStatus" &&
+                    entry.structured
             }
             .toList()
 
