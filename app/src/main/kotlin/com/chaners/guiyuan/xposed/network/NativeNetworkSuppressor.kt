@@ -56,6 +56,7 @@ internal object NativeNetworkSuppressor {
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
+    private var diagnosticsEnabled: () -> Boolean = { false }
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
     private var airplaneSlotAccessor: Method? = null
@@ -114,12 +115,14 @@ internal object NativeNetworkSuppressor {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
+        isDetailedDiagnosticsEnabled: () -> Boolean = { false },
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): String? {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             return null
@@ -212,9 +215,9 @@ internal object NativeNetworkSuppressor {
                     .firstOrNull { method ->
                         method.name == "onIconAdded" &&
                             method.parameterCount == 4 &&
-                            method.parameterTypes.getOrNull(0) == Integer.TYPE &&
-                            method.parameterTypes.getOrNull(1) == String::class.java &&
-                            method.parameterTypes.getOrNull(2) == java.lang.Boolean.TYPE
+                            method.parameterTypes[0] == Integer.TYPE &&
+                            method.parameterTypes[1] == String::class.java &&
+                            method.parameterTypes[2] == java.lang.Boolean.TYPE
                     }
                     ?: error("home-icon-manager-onIconAdded-missing")
             onIconAdded.isAccessible = true
@@ -248,6 +251,7 @@ internal object NativeNetworkSuppressor {
             installedHandles.clear()
             installedHandles.addAll(created)
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             null
@@ -267,6 +271,7 @@ internal object NativeNetworkSuppressor {
             pendingObservationHost = null
             pendingObservationSource = null
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             error.message ?: error.javaClass.simpleName
@@ -323,7 +328,7 @@ internal object NativeNetworkSuppressor {
         suppressedBindings = emptyArray()
         refreshStatusPresentationLocked("observerAttach")
 
-        eventSink?.invoke(
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name,
@@ -374,7 +379,7 @@ internal object NativeNetworkSuppressor {
             return Result.Failure(snapshot.failureReason)
         }
 
-        eventSink?.invoke(snapshot.logLine)
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
         return Result.Active
     }
 
@@ -406,7 +411,7 @@ internal object NativeNetworkSuppressor {
             return Result.Failure(snapshot.failureReason)
         }
 
-        eventSink?.invoke(snapshot.logLine)
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
         return Result.Active
     }
 
@@ -423,7 +428,7 @@ internal object NativeNetworkSuppressor {
         )
         group?.requestLayout()
         if (previousCount > 0) {
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "nativeNetworkSuppression inactive source=" + source +
                     " restoredBindings=" + previousCount +
                     " restoredMobileVisualMasks=" + restoredVisualMasks,
@@ -437,6 +442,7 @@ internal object NativeNetworkSuppressor {
         deactivate(source)
         installedHandles.clear()
         eventSink = null
+        diagnosticsEnabled = { false }
         observationAttachedSink = null
         statusPresentationSink = null
         statusIconVisibleAccessor = null
@@ -534,14 +540,14 @@ internal object NativeNetworkSuppressor {
                                 observationAttachedSink?.invoke(
                                     pendingSource ?: "homeManagerRegistered",
                                 )
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "statusIconObservation ready source=" +
                                         (pendingSource ?: "homeManagerRegistered") +
                                         " trigger=homeManagerRegistered",
                                 )
                             }
                             is Result.Failure ->
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "statusIconObservation unavailable " +
                                         "source=" + (pendingSource ?: "homeManagerRegistered") +
                                         " reason=" + state.reason,
@@ -572,10 +578,10 @@ internal object NativeNetworkSuppressor {
                         refreshStatusPresentationLocked("iconAdded:" + slot)
                         if (!observationOnly) {
                             val snapshot = refreshBindingsLocked("iconAdded:" + slot)
-                            eventSink?.invoke(snapshot.logLine)
+                            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
                             if (snapshot.failureReason != null) {
                                 clearSessionLocked(requestLayout = true)
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "nativeNetworkSuppression failNative source=iconAdded:" + slot +
                                         " reason=" + snapshot.failureReason,
                                 )
@@ -756,7 +762,7 @@ internal object NativeNetworkSuppressor {
         if (presentation != lastStatusPresentation) {
             lastStatusPresentation = presentation
             statusPresentationSink?.invoke(presentation)
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "statusIconPresentation source=" + source +
                     " tint=" +
                     (presentation.appliedTint
@@ -1233,7 +1239,7 @@ internal object NativeNetworkSuppressor {
             container.alpha = 0f
         }
         if (changed || existing == null) {
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "nativeNetworkSuppression preMaskMobileSignal " +
                     "view=" + image.javaClass.simpleName +
                     " nativeAlpha=" + state.nativeAlpha +

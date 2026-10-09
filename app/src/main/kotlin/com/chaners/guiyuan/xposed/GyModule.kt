@@ -712,6 +712,7 @@ class GyModule : XposedModule() {
                         log(Log.INFO, TAG, event)
                     }
                 },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
                         level = Log.INFO,
