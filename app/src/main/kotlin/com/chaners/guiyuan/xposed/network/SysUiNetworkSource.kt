@@ -11,6 +11,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiNetworkSource {
     const val WIFI_BINDER_CLASS_NAME =
@@ -182,6 +183,7 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
+        val active = AtomicBoolean(false)
 
         return try {
             val wifiBinderClass =
@@ -263,6 +265,7 @@ internal object SysUiNetworkSource {
                         .setId(WIFI_BIND_HOOK_ID)
                         .intercept(
                             wifiBindHooker(
+                                active = active,
                                 seedContract = seedContract,
                                 onWifiState = onWifiState,
                                 onEvent = onEvent,
@@ -277,6 +280,7 @@ internal object SysUiNetworkSource {
                         .setId(WIFI_ICON_HOOK_ID)
                         .intercept(
                             wifiIconHooker(
+                                active = active,
                                 wifiImageField = wifiIconImageField,
                                 wifiClassIdField = wifiIconClassIdField,
                                 wifiVisibleIconField = wifiVisibleIconField,
@@ -288,12 +292,14 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
                 ready = true,
                 failure = null,
             )
         } catch (error: InstallStageException) {
+            active.set(false)
             wifiSeedContract = null
             failedBranch("wifi", error, created)
         }
@@ -309,6 +315,7 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
+        val active = AtomicBoolean(false)
 
         return try {
             val mobileBinderClass =
@@ -374,6 +381,7 @@ internal object SysUiNetworkSource {
                         .setId(MOBILE_BIND_HOOK_ID)
                         .intercept(
                             mobileBindHooker(
+                                active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
                                 onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
@@ -388,6 +396,7 @@ internal object SysUiNetworkSource {
                         .setId(MOBILE_SIGNAL_HOOK_ID)
                         .intercept(
                             mobileSignalHooker(
+                                active = active,
                                 mobileImageField = mobileImageField,
                                 mobileClassIdField = mobileClassIdField,
                                 onMobileSignal = onMobileSignal,
@@ -399,12 +408,14 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
                 ready = true,
                 failure = null,
             )
         } catch (error: InstallStageException) {
+            active.set(false)
             failedBranch("mobile", error, created)
         }
     }
@@ -587,11 +598,13 @@ internal object SysUiNetworkSource {
     fun matches(handle: HookHandle): Boolean = handle.id in hookIds
 
     private fun wifiBindHooker(
+        active: AtomicBoolean,
         seedContract: WifiSeedContract,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val root = chain.getArg(0) as? ViewGroup
         val viewModel = chain.getArg(1)
 
@@ -847,6 +860,7 @@ internal object SysUiNetworkSource {
     }
 
     private fun wifiIconHooker(
+        active: AtomicBoolean,
         wifiImageField: Field,
         wifiClassIdField: Field,
         wifiVisibleIconField: Field,
@@ -855,6 +869,7 @@ internal object SysUiNetworkSource {
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val value = chain.getArg(0)
         val emitter = chain.thisObject
         val classId =
@@ -971,11 +986,13 @@ internal object SysUiNetworkSource {
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
     private fun mobileBindHooker(
+        active: AtomicBoolean,
         subscriptionIdMethod: Method,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val root = chain.getArg(0) as? ViewGroup
         val locationViewModel = chain.getArg(1)
         val iconViewModel = chain.getArg(2)
@@ -1017,6 +1034,7 @@ internal object SysUiNetworkSource {
     }
 
     private fun mobileSignalHooker(
+        active: AtomicBoolean,
         mobileImageField: Field,
         mobileClassIdField: Field,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
@@ -1025,6 +1043,7 @@ internal object SysUiNetworkSource {
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val emitter = chain.thisObject
         val image = runCatching {
             mobileImageField.get(emitter) as? ImageView
