@@ -152,7 +152,6 @@ internal object SysUiKeyguardAodSource {
     internal fun blocksKeyguardProjection(
         toAod: Boolean,
         isAodAnimate: Boolean,
-        animToAod: Boolean?,
     ): Boolean =
         toAod || isAodAnimate
 
@@ -204,7 +203,6 @@ internal object SysUiKeyguardAodSource {
                 blocksKeyguardProjection(
                     toAod = toAod,
                     isAodAnimate = isAodAnimate,
-                    animToAod = animToAod,
                 ),
         )
     }

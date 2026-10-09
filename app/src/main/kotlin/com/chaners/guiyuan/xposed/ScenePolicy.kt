@@ -193,7 +193,6 @@ internal object ScenePolicy {
             SysUiKeyguardAodSource.blocksKeyguardProjection(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
-                animToAod = null,
             )
         ) {
             return KeyguardAodProjection.NATIVE
