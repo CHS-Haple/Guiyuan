@@ -121,13 +121,6 @@ internal object NativeParticipantRuntime {
     }
 
     @Synchronized
-    fun resetControllerRuntimeState() {
-        cancelPendingLocked()
-        controllersByManager.clear()
-        controllerHook = null
-    }
-
-    @Synchronized
     fun schedule(
         host: Any,
         onReady: (Any) -> Unit,
