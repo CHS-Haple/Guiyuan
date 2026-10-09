@@ -53,7 +53,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Active stacked preview
 
-- Draft PR #339 (Build 838): a missing native transition endpoint now fades the entire source component without clipping or shape contraction, including mobile network text, Wi-Fi, signal bars, battery ring, top number and charging glyph. The charging glyph retains its battery-number follower motion and existing hide timing. Native-targeted transitions and target-only latent reveals are unchanged. The live data-SIM source, native text ink bounds and missing-target ring direction remain as before. Focused device acceptance is still required.
+- Draft PR #339 (Build 839): missing native endpoints fade intact source components without clipping or shape contraction (network type, Wi-Fi, mobile bars, battery ring, top number and other standalone icons). The charging lightning is an intentional exception: its hide uses the existing ring-lifetime clip with or without a native charging target, following the battery number until hidden; native-target reveal runs only with a valid target. Targeted transitions, latent reveals, live data-SIM semantics and native text ink bounds remain unchanged. Focused device acceptance is pending.
 
 ## Next
 

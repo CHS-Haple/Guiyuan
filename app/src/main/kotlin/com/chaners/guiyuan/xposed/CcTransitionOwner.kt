@@ -810,17 +810,20 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
-                // Without a native endpoint, fade the intact component.
+                // The charging glyph hides with the ring even without a native target.
                 val hasTarget = matchedTargetGeometry != null
+                val clipExit =
+                    hasTarget ||
+                        spec.component == StatusPainter.TransitionComponent.CHARGING_ICON
                 val layerOpacity =
-                    opacity * if (hasTarget) 1f else componentVisibleFraction
+                    opacity * if (clipExit) 1f else componentVisibleFraction
                 val save =
                     canvas.saveLayerAlpha(
                         null,
                         (255f * layerOpacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
-                if (componentVisibleFraction < 1f && hasTarget) {
+                if (componentVisibleFraction < 1f && clipExit) {
                     val clipAnchorRight =
                         if (
                             spec.component ==
