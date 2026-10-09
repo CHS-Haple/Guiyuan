@@ -21,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -70,7 +69,6 @@ import com.chaners.guiyuan.settings.topTextUiScale
 import com.chaners.guiyuan.settings.topTextUiScaleDefault
 import com.chaners.guiyuan.settings.topOffsetYUi
 import com.chaners.guiyuan.settings.mobileTypeScaleDefault
-import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -527,17 +525,14 @@ internal fun FeaturesScreen(
     }
 }
 
-private enum class RestartDialog {
-    CONFIRM,
-    FAILURE,
-}
-
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
+    restartInProgress: Boolean,
+    onRestart: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -548,77 +543,9 @@ internal fun SettingsHubScreen(
         stringResource(R.string.language_english),
         stringResource(R.string.language_simplified_chinese),
     )
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
-    var restartInProgress by remember { mutableStateOf(false) }
-    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
-
     HubPage(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
-        overlay = {
-            OverlayDialog(
-                title = stringResource(R.string.restart_scope),
-                summary = stringResource(R.string.restart_scope_dialog_summary),
-                show = restartDialog == RestartDialog.CONFIRM,
-                onDismissRequest = {
-                    restartAfterDialogDismiss = false
-                    restartDialog = null
-                },
-                onDismissFinished = {
-                    if (restartAfterDialogDismiss && !restartInProgress) {
-                        restartAfterDialogDismiss = false
-                        restartInProgress = true
-                        scope.launch {
-                            val success = SysUiScope.restart(context.applicationContext)
-                            restartInProgress = false
-                            if (!success) {
-                                restartDialog = RestartDialog.FAILURE
-                            }
-                        }
-                    }
-                },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            restartAfterDialogDismiss = false
-                            restartDialog = null
-                        },
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
-                        text = stringResource(R.string.restart),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                        onClick = {
-                            restartAfterDialogDismiss = true
-                            restartDialog = null
-                        },
-                    )
-                }
-            }
-
-            OverlayDialog(
-                title = stringResource(R.string.restart_scope_failed),
-                summary = stringResource(R.string.restart_scope_failed_summary),
-                show = restartDialog == RestartDialog.FAILURE,
-                onDismissRequest = { restartDialog = null },
-            ) {
-                TextButton(
-                    text = stringResource(R.string.confirm),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = { restartDialog = null },
-                )
-            }
-        },
     ) {
         Section(R.string.section_appearance_interaction) {
             ArrowPreference(
@@ -702,7 +629,7 @@ internal fun SettingsHubScreen(
                 },
                 summary = stringResource(R.string.restart_scope_summary),
                 enabled = !restartInProgress,
-                onClick = { restartDialog = RestartDialog.CONFIRM },
+                onClick = onRestart,
             )
 
         }

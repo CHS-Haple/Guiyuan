@@ -80,12 +80,15 @@ private data class HomeRuntimeCardState(
     val summaryRes: Int,
     val tone: RuntimeStatusTone,
     val mark: RuntimeStatusMarkKind,
+    val canRestart: Boolean = false,
 )
 
 @Composable
 internal fun HomeScreen(
     bottomContentPadding: Dp,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    onRestart: () -> Unit,
     previewState: PreviewSandboxUiState,
     onHotReload: () -> Unit,
     onOpenPreviewSandbox: () -> Unit,
@@ -165,6 +168,8 @@ internal fun HomeScreen(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
                         hotReloadInProgress = hotReloadInProgress,
+                        restartInProgress = restartInProgress,
+                        onRestart = onRestart,
                         onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
@@ -196,6 +201,8 @@ private fun HomeRuntimeStatusCard(
     enabled: Boolean,
     runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    onRestart: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -241,6 +248,7 @@ private fun HomeRuntimeStatusCard(
                 contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
             ),
         pressFeedbackType = PressFeedbackType.Tilt,
+        onClick = if (state.canRestart && !restartInProgress) onRestart else null,
     ) {
         Box(
             modifier =
@@ -266,7 +274,12 @@ private fun HomeRuntimeStatusCard(
                         .padding(end = 98.dp),
             ) {
                 Text(
-                    text = stringResource(state.titleRes),
+                    text =
+                        if (state.canRestart && restartInProgress) {
+                            stringResource(R.string.home_runtime_restarting)
+                        } else {
+                            stringResource(state.titleRes)
+                        },
                     style =
                         MiuixTheme.textStyles.title3.copy(
                             fontWeight = FontWeight.Medium,
@@ -299,7 +312,12 @@ private fun HomeRuntimeStatusCard(
                     color = MiuixTheme.colorScheme.onSurfaceContainer,
                 )
                 Text(
-                    text = stringResource(state.summaryRes),
+                    text =
+                        if (state.canRestart && restartInProgress) {
+                            stringResource(R.string.home_runtime_restarting_summary)
+                        } else {
+                            stringResource(state.summaryRes)
+                        },
                     modifier = Modifier.padding(top = 12.dp),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
@@ -531,10 +549,11 @@ private fun resolveHomeRuntimeCardState(
 
                 else ->
                     HomeRuntimeCardState(
-                        titleRes = R.string.home_runtime_pending,
-                        summaryRes = R.string.home_runtime_pending_summary,
+                        titleRes = R.string.restart_scope,
+                        summaryRes = R.string.home_runtime_restart_summary,
                         tone = RuntimeStatusTone.Warning,
                         mark = RuntimeStatusMarkKind.Alert,
+                        canRestart = true,
                     )
             }
     }
