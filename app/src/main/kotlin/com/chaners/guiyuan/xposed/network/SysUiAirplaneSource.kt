@@ -55,8 +55,8 @@ internal object SysUiAirplaneSource {
                     )
                 }.isSuccess
             if (!registered) {
-                onAirplaneMode = null
-                onEvent = null
+                this.onAirplaneMode = null
+                this.onEvent = null
                 lastState = null
                 return false
             }
