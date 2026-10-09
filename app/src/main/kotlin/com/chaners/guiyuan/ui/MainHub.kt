@@ -295,66 +295,66 @@ internal fun MainHub(
                 onNavigate = onNavigate,
             )
         }
-    }
 
-    OverlayDialog(
-        title = stringResource(R.string.restart_scope),
-        summary = stringResource(R.string.restart_scope_dialog_summary),
-        show = restartDialog == RestartDialog.CONFIRM,
-        onDismissRequest = {
-            restartAfterDialogDismiss = false
-            restartDialog = null
-        },
-        onDismissFinished = {
-            if (restartAfterDialogDismiss && !restartInProgress) {
+        OverlayDialog(
+            title = stringResource(R.string.restart_scope),
+            summary = stringResource(R.string.restart_scope_dialog_summary),
+            show = restartDialog == RestartDialog.CONFIRM,
+            onDismissRequest = {
                 restartAfterDialogDismiss = false
-                restartInProgress = true
-                scope.launch {
-                    val success = SysUiScope.restart(context.applicationContext)
-                    restartInProgress = false
-                    (context.applicationContext as? GyApplication)?.refreshXposedStatus()
-                    if (!success) restartDialog = RestartDialog.FAILURE
+                restartDialog = null
+            },
+            onDismissFinished = {
+                if (restartAfterDialogDismiss && !restartInProgress) {
+                    restartAfterDialogDismiss = false
+                    restartInProgress = true
+                    scope.launch {
+                        val success = SysUiScope.restart(context.applicationContext)
+                        restartInProgress = false
+                        (context.applicationContext as? GyApplication)?.refreshXposedStatus()
+                        if (!success) restartDialog = RestartDialog.FAILURE
+                    }
                 }
+            },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        restartAfterDialogDismiss = false
+                        restartDialog = null
+                    },
+                )
+                Spacer(Modifier.width(20.dp))
+                TextButton(
+                    text = stringResource(R.string.restart),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = {
+                        restartAfterDialogDismiss = true
+                        restartDialog = null
+                    },
+                )
             }
-        },
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+        }
+
+        OverlayDialog(
+            title = stringResource(R.string.restart_scope_failed),
+            summary = stringResource(R.string.restart_scope_failed_summary),
+            show = restartDialog == RestartDialog.FAILURE,
+            onDismissRequest = { restartDialog = null },
         ) {
             TextButton(
-                text = stringResource(R.string.cancel),
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    restartAfterDialogDismiss = false
-                    restartDialog = null
-                },
-            )
-            Spacer(Modifier.width(20.dp))
-            TextButton(
-                text = stringResource(R.string.restart),
-                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.confirm),
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = {
-                    restartAfterDialogDismiss = true
-                    restartDialog = null
-                },
+                onClick = { restartDialog = null },
             )
         }
-    }
-
-    OverlayDialog(
-        title = stringResource(R.string.restart_scope_failed),
-        summary = stringResource(R.string.restart_scope_failed_summary),
-        show = restartDialog == RestartDialog.FAILURE,
-        onDismissRequest = { restartDialog = null },
-    ) {
-        TextButton(
-            text = stringResource(R.string.confirm),
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.textButtonColorsPrimary(),
-            onClick = { restartDialog = null },
-        )
     }
 }
 
