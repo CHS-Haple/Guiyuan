@@ -402,12 +402,29 @@ class GyModule : XposedModule() {
             val hostView = capture.host as? android.view.View
                 ?: error("restored-host-not-view")
             val restoreScheduled =
-                hostView.post {
-                    restoreHotReloadRuntimeOnMain(
-                        capture = capture,
-                        restored = restored,
-                        removedHooks = removed,
-                    )
+                Handler(Looper.getMainLooper()).post {
+                    val reason =
+                        when {
+                            !hostView.isAttachedToWindow -> "status-host-detached"
+                            SysUiHostRegistry.current() !== hostView -> "status-host-replaced"
+                            else -> null
+                        }
+                    if (reason == null) {
+                        restoreHotReloadRuntimeOnMain(
+                            capture = capture,
+                            restored = restored,
+                            removedHooks = removed,
+                        )
+                    } else {
+                        logDiagnostic(
+                            level = Log.WARN,
+                            event = "hotReload.complete",
+                            component = "hotReload",
+                            state = "unavailable",
+                            "reason" to reason,
+                            "restartScope" to true,
+                        )
+                    }
                 }
             if (!restoreScheduled) {
                 logDiagnostic(
