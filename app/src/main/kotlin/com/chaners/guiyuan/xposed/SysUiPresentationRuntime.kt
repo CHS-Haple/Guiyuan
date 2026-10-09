@@ -34,6 +34,7 @@ internal object SysUiPresentationRuntime {
         val keyguardAodHooks: Int,
         val keyguardFullAodHooks: Int,
         val keyguardStatusIconHooks: Int,
+        val tintFailure: String?,
         val sceneFailure: String?,
         val mobileTypeFailure: String?,
     ) {
@@ -71,14 +72,20 @@ internal object SysUiPresentationRuntime {
         onSceneEvent: ((String) -> Unit)?,
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
+        var tintFailure: String? = null
         val tintHooks =
-            SysUiTintSource.install(
-                module = module,
-                classLoader = classLoader,
-                onTintState = onTintState,
-                onEvent = onTintEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-            ).size
+            runCatching {
+                SysUiTintSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onTintState = onTintState,
+                    onEvent = onTintEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                ).size
+            }.getOrElse { error ->
+                tintFailure = error.message ?: error.javaClass.simpleName
+                SysUiTintSource.failedInstallHookCount
+            }
         val keyguardAodHooks =
             runCatching {
                 SysUiKeyguardAodSource.install(
@@ -161,6 +168,7 @@ internal object SysUiPresentationRuntime {
             keyguardAodHooks = keyguardAodHooks,
             keyguardFullAodHooks = keyguardFullAodHooks,
             keyguardStatusIconHooks = keyguardStatusIconHooks,
+            tintFailure = tintFailure,
             sceneFailure = sceneFailure,
             mobileTypeFailure = mobileTypeFailure,
         ).also { current = it }

@@ -1666,6 +1666,7 @@ class GyModule : XposedModule() {
                         "partial"
                     },
                 "tintHooks" to result.tintHooks,
+                "tintFailure" to result.tintFailure,
                 "sceneHooks" to result.sceneHooks,
                 "sceneFailure" to result.sceneFailure,
                 "mobileTypeHooks" to result.mobileTypeHooks,
