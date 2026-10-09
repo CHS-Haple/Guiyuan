@@ -228,7 +228,9 @@ internal object NativeParticipantRuntime {
             if (targetManager !== manager) {
                 return
             }
-            postReady()
+            if (!postReady() && complete(this)) {
+                onFailure("native-controller-readiness-rejected")
+            }
         }
 
         private fun armForController(): Boolean {
