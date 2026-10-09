@@ -195,8 +195,10 @@ internal object NativeBatterySuppressor {
                 readNativeHideLocked(container)
             } ?: return Result.Failure("native-hide-state-unavailable")
 
-        activeContainer = WeakReference(container)
-        activeBatteryView = WeakReference(batteryView)
+        if (!sameSession) {
+            activeContainer = WeakReference(container)
+            activeBatteryView = WeakReference(batteryView)
+        }
         latestNativeHideRequest = nativeRequestedHide
         suppressionActive = true
         nativeLayoutHideSink?.invoke(nativeRequestedHide)
@@ -224,16 +226,20 @@ internal object NativeBatterySuppressor {
 
     @Synchronized
     fun deactivate(source: String): Result {
-        val container = activeContainer?.get()
+        val event = eventSink?.takeIf { diagnosticsEnabled() }
         val nativeHide =
-            container?.let(::readNativeHideLocked)
-                ?: latestNativeHideRequest
+            if (event != null) {
+                activeContainer?.get()?.let(::readNativeHideLocked)
+                    ?: latestNativeHideRequest
+            } else {
+                null
+            }
 
         val restoredChildren = restorePresentationMasksLocked()
         val wasActive = suppressionActive
         clearOwnedStateLocked()
         val visualChanged = wasActive && restoredChildren > 0
-        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+        event?.invoke(
             "nativeBatterySuppression inactive source=" + source +
                 " restoredNativeHide=" + (nativeHide ?: "unknown") +
                 " restoredChildren=" + restoredChildren +

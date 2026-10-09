@@ -116,9 +116,7 @@ internal object SysUiKeyguardAodSource {
     @Synchronized
     fun currentState(sourceView: View): AodState? {
         states[sourceView]?.let { return it }
-        return readState(sourceView, "seed")?.let { update ->
-            AodState(update).also { states[sourceView] = it }
-        }
+        return readState(sourceView)?.also { states[sourceView] = it }
     }
 
     @Synchronized
@@ -148,10 +146,19 @@ internal object SysUiKeyguardAodSource {
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ) {
-        val update = readState(sourceView, source) ?: return
+        val state = readState(sourceView) ?: return
         synchronized(this) {
-            states[sourceView] = AodState(update)
+            states[sourceView] = state
         }
+        val update =
+            AodUpdate(
+                sourceView = sourceView,
+                toAod = state.toAod,
+                isAodAnimate = state.isAodAnimate,
+                animToAod = state.animToAod,
+                blocksProjection = state.blocksProjection,
+                source = source,
+            )
         onAodState(update)
         onEvent?.invoke(
             "keyguardAod source=" + source +
@@ -162,16 +169,12 @@ internal object SysUiKeyguardAodSource {
         )
     }
 
-    private fun readState(
-        sourceView: View,
-        source: String,
-    ): AodUpdate? {
+    private fun readState(sourceView: View): AodState? {
         val toAod = readBoolean(sourceView, toAodField ?: return null) ?: return null
         val isAodAnimate =
             readBoolean(sourceView, isAodAnimateField ?: return null) ?: return null
         val animToAod = animToAodField?.let { field -> readBoolean(sourceView, field) }
-        return AodUpdate(
-            sourceView = sourceView,
+        return AodState(
             toAod = toAod,
             isAodAnimate = isAodAnimate,
             animToAod = animToAod,
@@ -181,7 +184,6 @@ internal object SysUiKeyguardAodSource {
                     isAodAnimate = isAodAnimate,
                     animToAod = animToAod,
                 ),
-            source = source,
         )
     }
 
@@ -215,14 +217,7 @@ internal object SysUiKeyguardAodSource {
         val isAodAnimate: Boolean,
         val animToAod: Boolean?,
         val blocksProjection: Boolean,
-    ) {
-        constructor(update: AodUpdate) : this(
-            update.toAod,
-            update.isAodAnimate,
-            update.animToAod,
-            update.blocksProjection,
-        )
-    }
+    )
 
     internal data class AodUpdate(
         val sourceView: View,
