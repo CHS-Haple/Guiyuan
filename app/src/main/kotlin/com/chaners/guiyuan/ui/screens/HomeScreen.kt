@@ -136,6 +136,7 @@ internal fun HomeScreen(
                     actions = {
                         HotReloadAction(
                             inProgress = hotReloadInProgress,
+                            enabled = !restartInProgress,
                             onClick = onHotReload,
                         )
                     },

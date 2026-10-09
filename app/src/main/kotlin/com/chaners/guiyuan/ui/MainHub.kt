@@ -278,7 +278,7 @@ internal fun MainHub(
                 restartInProgress = restartInProgress,
                 onRestart = onRestart,
                 onHotReload = {
-                    if (!hotReloadInProgress) {
+                    if (!hotReloadInProgress && !restartInProgress) {
                         hotReloadInProgress = true
                         val accepted = onHotReload {
                             hotReloadInProgress = false
