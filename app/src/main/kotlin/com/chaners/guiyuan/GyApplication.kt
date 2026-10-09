@@ -148,9 +148,9 @@ class GyApplication :
         scopeRequestDone = onComplete
         return runCatching {
             service.requestScope(
-                SYS_UI_PROCESS,
+                listOf(SYS_UI_PROCESS),
                 object : XposedService.OnScopeEventListener {
-                    override fun onScopeRequestApproved(packageName: String) {
+                    override fun onScopeRequestApproved(scope: List<String>) {
                         mainExecutor.execute {
                             if (xposedService === service) {
                                 refreshXposedStatus(service)
@@ -161,19 +161,7 @@ class GyApplication :
                         }
                     }
 
-                    override fun onScopeRequestDenied(packageName: String) {
-                        mainExecutor.execute {
-                            if (xposedService === service) finishScopeRequest(false)
-                        }
-                    }
-
-                    override fun onScopeRequestTimeout(packageName: String) {
-                        mainExecutor.execute {
-                            if (xposedService === service) finishScopeRequest(false)
-                        }
-                    }
-
-                    override fun onScopeRequestFailed(packageName: String, message: String) {
+                    override fun onScopeRequestFailed(message: String) {
                         Log.w(TAG, "Scope request failed: $message")
                         mainExecutor.execute {
                             if (xposedService === service) finishScopeRequest(false)
