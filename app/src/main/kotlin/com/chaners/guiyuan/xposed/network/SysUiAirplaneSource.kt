@@ -36,6 +36,8 @@ internal object SysUiAirplaneSource {
             observer?.let { old ->
                 runCatching { resolver?.unregisterContentObserver(old) }
             }
+            resolver = null
+            observer = null
 
             val nextObserver =
                 object : ContentObserver(Handler(Looper.getMainLooper())) {
@@ -44,11 +46,20 @@ internal object SysUiAirplaneSource {
                     }
                 }
 
-            nextResolver.registerContentObserver(
-                uri,
-                false,
-                nextObserver,
-            )
+            val registered =
+                runCatching {
+                    nextResolver.registerContentObserver(
+                        uri,
+                        false,
+                        nextObserver,
+                    )
+                }.isSuccess
+            if (!registered) {
+                onAirplaneMode = null
+                onEvent = null
+                lastState = null
+                return false
+            }
             resolver = nextResolver
             observer = nextObserver
         }
@@ -73,11 +84,13 @@ internal object SysUiAirplaneSource {
     private fun publish(source: String) {
         val currentResolver = resolver ?: return
         val enabled =
-            Settings.Global.getInt(
-                currentResolver,
-                Settings.Global.AIRPLANE_MODE_ON,
-                0,
-            ) != 0
+            runCatching {
+                Settings.Global.getInt(
+                    currentResolver,
+                    Settings.Global.AIRPLANE_MODE_ON,
+                    0,
+                ) != 0
+            }.getOrNull() ?: return
 
         if (lastState == enabled) {
             return

@@ -455,6 +455,7 @@ internal object NativeNetworkSuppressor {
         diagnosticsEnabled = { false }
         observationAttachedSink = null
         statusPresentationSink = null
+        airplaneSlotAccessor = null
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
