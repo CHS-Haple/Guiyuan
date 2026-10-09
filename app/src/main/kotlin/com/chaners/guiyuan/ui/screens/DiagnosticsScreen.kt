@@ -292,15 +292,15 @@ internal fun DiagnosticsScreen(
                                         )
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
-                            DiagFiles.logIntent(context, sendIntent, prepared.uri)
+                            DiagFiles.logIntent(sendIntent, prepared.uri)
                             val chooserIntent =
                                 Intent.createChooser(sendIntent, shareTitle).apply {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                             runCatching { context.startActivity(chooserIntent) }
-                                .onSuccess { DiagFiles.logChooser(context) }
+                                .onSuccess { DiagFiles.logChooser() }
                                 .onFailure { error ->
-                                    DiagFiles.logChooser(context, error)
+                                    DiagFiles.logChooser(error)
                                     DiagFiles.discard(context, prepared)
                                     snackbarHostState.showSnackbar(shareFailMsg)
                                 }
