@@ -48,6 +48,8 @@ internal class StatusPainter(
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
+    private var cachedCenterVisual: VisualCfg? = null
+    private var cachedCenterGeometry: CenterGeometry.Resolved? = null
     private var cachedOuterWeightScale = Float.NaN
     private var cachedOuterGeometry =
         OuterGeometry.resolve(
@@ -991,17 +993,22 @@ internal class StatusPainter(
         )
     }
 
-    private fun resolveCenterGeometry(
-        visual: VisualCfg,
-    ): CenterGeometry.Resolved =
-        CenterGeometry.resolve(
+    private fun resolveCenterGeometry(visual: VisualCfg): CenterGeometry.Resolved {
+        if (cachedCenterVisual === visual) {
+            cachedCenterGeometry?.let { return it }
+        }
+        return CenterGeometry.resolve(
             wifiScale = visual.wifiScale,
             mobileTypeScale = visual.mobileTypeScale,
             airplaneScale = visual.airplaneScale,
             noSimScale = visual.noSimScale,
             mobileTypeWeight = visual.mobileTypeWeight,
             combinedScale = visual.combinedScale,
-        )
+        ).also { resolved ->
+            cachedCenterVisual = visual
+            cachedCenterGeometry = resolved
+        }
+    }
 
     private fun resolveOuterGeometry(weightScale: Float): OuterGeometry.Resolved {
         val normalized =
