@@ -571,16 +571,6 @@ internal object CcTransitionPolicy {
     ): StatusPainter.TransitionNormalizedBounds? {
         val logical =
             when {
-                preferredChildEntries.any { entry ->
-                    entry == "mobile_type_single" || entry == "mobile_type"
-                } ->
-                    StatusPainter.TransitionNormalizedBounds(
-                        left = 0f,
-                        top = 0f,
-                        right = 0.42f,
-                        bottom = 1f,
-                    )
-
                 preferredChildEntries.contains("mobile_signal") ->
                     StatusPainter.TransitionNormalizedBounds(
                         left = 0.48f,

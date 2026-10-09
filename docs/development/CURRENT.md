@@ -51,6 +51,10 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 - Do not weaken exact restoration or fail-native behavior.
 - Change external versionName only on explicit promotion; current baseline is 0.5.0. Increment Build ID and Android versionCode only for a materially different APK (behavior, UI/assets or compatibility), not for docs, non-behavioral refactors, or repeat CI/builds. The exact Git SHA distinguishes source revisions within a Build.
 
+## Active stacked preview
+
+- PR #339 (Build 836) corrects mobile-type handoff when native 5G text is hidden: no guessed text slot endpoint, including cached witnesses. A matched native TextView now contributes its visible glyph bounds instead of its whole layout box. This remains Draft for focused visual acceptance; the data-SIM source and existing unmatched clip are unchanged.
+
 ## Next
 
 Continue the evidence-based source audit in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329). Review Hook installation/rollback, Hot Reload cleanup, cache invalidation and the full base→HEAD diff before integration. Combined Home/Keyguard/refresh device acceptance remains outstanding; do not promote the runtime changes on CI evidence alone.

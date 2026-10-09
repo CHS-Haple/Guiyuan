@@ -1813,6 +1813,11 @@ internal object CcTransitionOwner {
             val opticalRequired =
                 target is StatusPainter.TransitionTarget.Slots &&
                     target.preferredChildEntries.isNotEmpty()
+            val mobileTypeTarget =
+                target is StatusPainter.TransitionTarget.Slots &&
+                    target.preferredChildEntries.any { entry ->
+                        entry == "mobile_type_single" || entry == "mobile_type"
+                    }
 
             targetCache[key]
                 ?.takeIf { witness ->
@@ -1827,8 +1832,14 @@ internal object CcTransitionOwner {
                         ) &&
                         (
                             !opticalRequired ||
-                                witness.opticalView?.let(::isReliableSemanticTarget) == true ||
-                                witness.fallbackBounds != null
+                                witness.opticalView?.let { optical ->
+                                    isReliableSemanticTarget(optical) &&
+                                        (
+                                            !mobileTypeTarget ||
+                                                hasVisibleMobileType(optical, witness.slotView)
+                                        )
+                                } == true ||
+                                (!mobileTypeTarget && witness.fallbackBounds != null)
                         )
                 }
                 ?.let { return it }
@@ -1890,13 +1901,20 @@ internal object CcTransitionOwner {
                 slot == AIRPLANE_SLOT || slot == NO_SIM_SLOT
             val opticalRequired =
                 target.preferredChildEntries.isNotEmpty() || singleIconOpticalRequired
+            val mobileTypeTarget =
+                target.preferredChildEntries.any { entry ->
+                    entry == "mobile_type_single" || entry == "mobile_type"
+                }
             val nativeOptical =
                 target.preferredChildEntries
                     .firstNotNullOfOrNull { entry ->
                         findDescendantByResourceEntry(
                             root = slotRoot,
                             entryName = entry,
-                        )?.takeIf(::isReliableSemanticTarget)
+                        )?.takeIf { optical ->
+                            isReliableSemanticTarget(optical) &&
+                                (!mobileTypeTarget || hasVisibleMobileType(optical, slotRoot))
+                        }
                     }
             val compatibilityOptical =
                 if (nativeOptical == null) {
@@ -1919,6 +1937,8 @@ internal object CcTransitionOwner {
                 }
             val optical =
                 nativeOptical ?: compatibilityOptical ?: singleIconOptical
+            // A hidden network-type label has no native text endpoint.
+            if (mobileTypeTarget && optical == null) return null
             val fallbackBounds =
                 if (
                     target.preferredChildEntries.isNotEmpty() &&
@@ -2061,6 +2081,9 @@ internal object CcTransitionOwner {
             }
             val resolvedTargetOpticalBounds = targetOpticalBounds
             if (opticalView != null) {
+                if (opticalView is TextView && resolvedTargetOpticalBounds == null) {
+                    return textViewInkGeometry(opticalView, root)
+                }
                 if (opticalView is ImageView) {
                     imageDrawableGeometry(
                         image = opticalView,
@@ -2160,6 +2183,34 @@ internal object CcTransitionOwner {
                         bottom = bar.bottom,
                     )
                 }
+        }
+
+        private fun textViewInkGeometry(
+            view: TextView,
+            root: View,
+        ): FloatArray? {
+            val layout = view.layout ?: return null
+            if (layout.lineCount != 1) return null
+            val text = view.text?.toString()?.takeIf(String::isNotEmpty) ?: return null
+            val ink = Rect()
+            view.paint.getTextBounds(text, 0, text.length, ink)
+            if (ink.width() <= 0 || ink.height() <= 0) return null
+            val baseline = view.extendedPaddingTop + layout.getLineBaseline(0)
+            val left = view.compoundPaddingLeft + layout.getLineLeft(0) + ink.left
+            val top = baseline + ink.top
+            val sample = sample(view, root) ?: return null
+            return CcTransitionPolicy.componentGeometry(
+                parentGeometry = sample,
+                parentWidth = view.width,
+                parentHeight = view.height,
+                bounds =
+                    StatusPainter.TransitionBounds(
+                        left = left,
+                        top = top.toFloat(),
+                        right = left + ink.width(),
+                        bottom = (top + ink.height()).toFloat(),
+                    ),
+            )
         }
 
         private fun imageDrawableGeometry(
@@ -2895,6 +2946,20 @@ internal object CcTransitionOwner {
                 view.isAttachedToWindow &&
                 view.width > 0 &&
                 view.height > 0
+
+        private fun hasVisibleMobileType(view: View, slot: View): Boolean {
+            if (view.alpha <= 0f || NativePresentationResolver.nativeTargetType(view) == null) {
+                return false
+            }
+            if (view is ImageView && view.drawable?.alpha == 0) return false
+            var current: View? = view
+            while (current != null) {
+                if (current.visibility != View.VISIBLE) return false
+                if (current === slot) return true
+                current = current.parent as? View
+            }
+            return false
+        }
 
         private fun isUsableSlotView(view: View): Boolean =
             view.isAttachedToWindow &&

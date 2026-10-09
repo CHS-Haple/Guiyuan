@@ -322,35 +322,32 @@ class CcTransitionGeometryTest {
     }
 
     @Test
-    fun semanticFallbackSeparatesMobileTypeAndSignalInsteadOfSharingSlotCenter() {
-        val type =
+    fun missingNativeMobileTextHasNoGuessedSignalSlotEndpoint() {
+        assertNull(
             CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
-            )
-        val signal =
-            CcTransitionPolicy.semanticFallbackBounds(
-                preferredChildEntries = listOf("mobile_signal"),
-                isRtl = false,
-            )
-        requireNotNull(type)
-        requireNotNull(signal)
-
-        assertTrue(type.right < signal.left)
-
-        val rtlType =
+            ),
+        )
+        assertNull(
             CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
-            )
-        val rtlSignal =
-            CcTransitionPolicy.semanticFallbackBounds(
-                preferredChildEntries = listOf("mobile_signal"),
-                isRtl = true,
-            )
-        requireNotNull(rtlType)
+            ),
+        )
+
+        val signal = CcTransitionPolicy.semanticFallbackBounds(
+            preferredChildEntries = listOf("mobile_signal"),
+            isRtl = false,
+        )
+        val rtlSignal = CcTransitionPolicy.semanticFallbackBounds(
+            preferredChildEntries = listOf("mobile_signal"),
+            isRtl = true,
+        )
+        requireNotNull(signal)
         requireNotNull(rtlSignal)
-        assertTrue(rtlSignal.right < rtlType.left)
+        assertEquals(0.48f, signal.left, 0.0001f)
+        assertEquals(0.52f, rtlSignal.right, 0.0001f)
     }
 
     @Test
