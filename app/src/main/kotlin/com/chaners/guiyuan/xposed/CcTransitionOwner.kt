@@ -668,6 +668,10 @@ internal object CcTransitionOwner {
                 // Different text cannot share the native endpoint's scale or position.
                 val matchedTargetGeometry =
                     targetGeometry.takeUnless { nativeTypeMatch == false }
+                val matchedTextWeight =
+                    if (nativeTypeMatch == true) witness?.textWeight else null
+                val matchedTextStyle =
+                    if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
                     if (
                         spec.shapePolicy ==
@@ -777,8 +781,8 @@ internal object CcTransitionOwner {
                                 width = sourceWidth,
                                 height = sourceHeight,
                                 indicator = model.centerIndicator,
-                                targetWeight = witness?.textWeight,
-                                targetStyle = witness?.textStyle,
+                                targetWeight = matchedTextWeight,
+                                targetStyle = matchedTextStyle,
                                 progress = motionProgress,
                                 nativeTargetAvailable =
                                     matchedTargetGeometry != null &&
@@ -904,26 +908,8 @@ internal object CcTransitionOwner {
                         } else {
                             null
                         },
-                    centerTargetTextWeight =
-                        if (
-                            spec.component ==
-                                StatusPainter.TransitionComponent.CENTER &&
-                            model.centerIndicator is CenterIndicator.MobileType
-                        ) {
-                            if (nativeTypeMatch == true) witness?.textWeight else null
-                        } else {
-                            null
-                        },
-                    centerTargetTextStyle =
-                        if (
-                            spec.component ==
-                                StatusPainter.TransitionComponent.CENTER &&
-                            model.centerIndicator is CenterIndicator.MobileType
-                        ) {
-                            if (nativeTypeMatch == true) witness?.textStyle else null
-                        } else {
-                            null
-                        },
+                    centerTargetTextWeight = matchedTextWeight,
+                    centerTargetTextStyle = matchedTextStyle,
                     centerNativeTarget =
                         spec.component == StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType &&
