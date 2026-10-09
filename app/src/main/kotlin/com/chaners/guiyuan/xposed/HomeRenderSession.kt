@@ -462,7 +462,8 @@ internal object HomeRenderSession {
             source: String,
         ) {
             val update = renderController.updateTint(state)
-            if (update.resolved != null) {
+            val becameReady = update.resolved != null && !tintReady
+            if (becameReady) {
                 tintReady = true
             }
 
@@ -476,7 +477,9 @@ internal object HomeRenderSession {
                 }
             }
 
-            dispatchPresentationReadiness(source)
+            if (becameReady) {
+                dispatchPresentationReadiness(source)
+            }
         }
 
         fun update(

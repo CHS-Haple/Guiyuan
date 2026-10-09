@@ -24,7 +24,6 @@ internal object SysUiTintSource {
     private val lastStates = WeakHashMap<View, TintState>()
     private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
-    private val lastSemanticBatteryTints = WeakHashMap<View, List<Int>>()
     private val batteryIconClipFields = HashMap<Class<*>, List<Field>>()
     private val colorFilterColorGetters = HashMap<Class<*>, java.lang.reflect.Method>()
     private val colorFilterWithoutColorGetter = HashSet<Class<*>>()
@@ -193,6 +192,10 @@ internal object SysUiTintSource {
                 iconField.get(sourceView) as? View
             }.getOrNull() ?: return
 
+        if (synchronized(this) { batteryIconStructureLogged.containsKey(iconView) }) {
+            return
+        }
+
         val clipFields = collectClipDrawableFields(iconView)
         val clipStates: List<BatteryClipTintState> =
             clipFields.map { field ->
@@ -218,19 +221,8 @@ internal object SysUiTintSource {
             (iconView as? ImageView)
                 ?.imageTintList
                 ?.defaultColor
-        val structureFirst =
-            synchronized(this) {
-                batteryIconStructureLogged.put(sourceView, Unit) == null
-            }
-        val semanticChanged =
-            synchronized(this) {
-                val previous = lastSemanticBatteryTints[sourceView]
-                lastSemanticBatteryTints[sourceView] = semanticTints
-                semanticTints.isNotEmpty() && previous != semanticTints
-            }
-
-        if (!structureFirst && !semanticChanged) {
-            return
+        synchronized(this) {
+            batteryIconStructureLogged[iconView] = Unit
         }
 
         onEvent(
@@ -340,11 +332,16 @@ internal object SysUiTintSource {
         handle.id == UPDATE_HOOK_ID || handle.id == INTERNAL_HOOK_ID
 
     @Synchronized
+    fun resetDiagnosticProbes() {
+        firstEventLogged.clear()
+        batteryIconStructureLogged.clear()
+    }
+
+    @Synchronized
     fun resetRuntimeState() {
         lastStates.clear()
         firstEventLogged.clear()
         batteryIconStructureLogged.clear()
-        lastSemanticBatteryTints.clear()
         batteryIconClipFields.clear()
         colorFilterColorGetters.clear()
         colorFilterWithoutColorGetter.clear()

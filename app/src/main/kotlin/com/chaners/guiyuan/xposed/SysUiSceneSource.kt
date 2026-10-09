@@ -150,18 +150,16 @@ internal object SysUiSceneSource {
         onEvent: ((String) -> Unit)?,
     ) {
         val update =
-            SceneUpdate(
-                sourceView = sourceView,
-                surface = classifyRawState(rawState),
-                rawState = rawState,
-            )
-        val changed =
             synchronized(this) {
-                states.put(sourceView, update) != update
+                if (states[sourceView]?.rawState == rawState) {
+                    return
+                }
+                SceneUpdate(
+                    sourceView = sourceView,
+                    surface = classifyRawState(rawState),
+                    rawState = rawState,
+                ).also { states[sourceView] = it }
             }
-        if (!changed) {
-            return
-        }
 
         onSceneState(update)
         onEvent?.invoke(
