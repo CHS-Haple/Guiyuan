@@ -39,7 +39,9 @@ def validate_artifact(name: str, artifact: dict) -> None:
 
 def source_string_constant(source_text: str, constant_name: str, label: str) -> str:
     match = re.search(
-        rf'{re.escape(constant_name)}\s*=\s*\n?\s*"([^"]+)"',
+        rf'(?m)^[ \t]*(?:(?:private|internal|public|protected)[ \t]+)?'
+        rf'const[ \t]+val[ \t]+{re.escape(constant_name)}[ \t]*=[ \t]*'
+        r'(?:\r?\n[ \t]*)?"([^"\r\n]+)"',
         source_text,
     )
     if not match:
