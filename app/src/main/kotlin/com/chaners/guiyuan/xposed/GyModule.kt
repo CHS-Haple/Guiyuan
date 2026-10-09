@@ -58,6 +58,7 @@ class GyModule : XposedModule() {
     }
 
     private var islandSourceInstalled = false
+    @Volatile
     private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
@@ -223,7 +224,7 @@ class GyModule : XposedModule() {
                 if (ccSourceInstalled) {
                     SysUiCcSource.HOOK_COUNT
                 } else {
-                    0
+                    SysUiCcSource.failedInstallHookCount
                 }
         logDiagnostic(
             level = Log.INFO,
@@ -987,10 +988,16 @@ class GyModule : XposedModule() {
             SysUiCcSource.install(
                 module = this,
                 classLoader = classLoader,
-                onUpdate = ::onCcUpdate,
-                onFakePresentationAttached = ::onCcFakeAttached,
+                onUpdate = { update ->
+                    if (ccSourceInstalled) onCcUpdate(update)
+                },
+                onFakePresentationAttached = { host ->
+                    if (ccSourceInstalled) onCcFakeAttached(host)
+                },
                 onRuntimeFailure = ::onCcRuntimeFailure,
-                onEvent = ::onCcEvent,
+                onEvent = { event ->
+                    if (ccSourceInstalled) onCcEvent(event)
+                },
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
@@ -1021,6 +1028,7 @@ class GyModule : XposedModule() {
                 component = "panelTransition",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "hooks" to SysUiCcSource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Panel transition source installation failed", error)
@@ -3371,6 +3379,7 @@ class GyModule : XposedModule() {
     private fun teardownOldGeneration(
         continuousHandoff: Boolean = false,
     ) {
+        ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
