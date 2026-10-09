@@ -267,6 +267,28 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun textHandoffRecognizesMatchingAndDifferentNativeTypes() {
+        val matches = CcTransitionPolicy::mobileTypeTextMatches
+        assertEquals(true, matches("5GA", false, "5G-A", false))
+        assertEquals(true, matches("5G", true, "5G", true))
+        assertEquals(false, matches("5GA", false, "5G", false))
+        assertEquals(false, matches("4G", false, "5G", false))
+        assertEquals(false, matches("5G", true, "5G", false))
+        assertEquals(null, matches("5GA", false, null, null))
+    }
+
+    @Test
+    fun differentNativeTextExitsLateUsingExistingMotion() {
+        val policy = CcTransitionPolicy
+        assertEquals(1f, policy.differentTextSourceAlpha(0f, 0f, false), 0.0001f)
+        assertEquals(0.875f, policy.differentTextSourceAlpha(0.5f, 0f, false), 0.0001f)
+        assertEquals(0f, policy.differentTextSourceAlpha(1f, 0f, false), 0.0001f)
+        assertEquals(0.4f, policy.differentTextSourceAlpha(0f, 0.6f, true), 0.0001f)
+        assertEquals(1f, policy.differentTextSourceAlpha(0f, 0.6f, false), 0.0001f)
+        assertEquals(1f, policy.differentTextSourceAlpha(Float.NaN, 0f, false), 0.0001f)
+    }
+
+    @Test
     fun mobileTypeWeightInterpolatesToNativeTarget() {
         assertEquals(
             800,

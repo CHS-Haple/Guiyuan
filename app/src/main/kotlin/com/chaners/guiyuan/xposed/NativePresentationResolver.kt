@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import java.lang.reflect.Field
+import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
@@ -170,34 +172,43 @@ internal object NativePresentationResolver {
 
         findViewByResourceEntry(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->
-                val image = view as? ImageView
-                val drawable = image?.drawable
-                val networkType =
-                    normalizeDrawableNetworkType(
-                        rawLabel = drawable?.readStringField(MOBILE_TYPE_FIELD).orEmpty(),
-                        enhanced =
-                            drawable?.readBooleanField(MOBILE_TYPE_ENHANCED_FIELD) == true,
-                        beforeMeasure = drawable != null && drawable === pendingMobileTypeDrawable,
-                    )
-                if (networkType != null) {
-                    return networkType
-                }
+                readOpticalNetworkType(view, pendingMobileTypeDrawable)?.let { return it }
             }
-
         findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
-                val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
-                if (text.isNotEmpty()) {
-                    return NetworkType(
-                        label = text,
-                        enhanced = false,
-                        source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
-                    )
-                }
+                readOpticalNetworkType(view)?.let { return it }
             }
-
         return null
     }
+
+    // A visual target is not the data SIM. Read its text only for the CC handoff.
+    internal fun readOpticalNetworkType(
+        view: View?,
+        pendingDrawable: Drawable? = null,
+    ): NetworkType? =
+        when (view?.let(::resourceEntryName)) {
+            MOBILE_TYPE_RESOURCE_ENTRY -> {
+                val drawable = (view as? ImageView)?.drawable
+                normalizeDrawableNetworkType(
+                    rawLabel = drawable?.readStringField(MOBILE_TYPE_FIELD).orEmpty(),
+                    enhanced = drawable?.readBooleanField(MOBILE_TYPE_ENHANCED_FIELD) == true,
+                    beforeMeasure = drawable != null && drawable === pendingDrawable,
+                )
+            }
+
+            MOBILE_TYPE_SINGLE_RESOURCE_ENTRY ->
+                (view as? TextView)?.text?.toString()?.trim()
+                    ?.takeIf(String::isNotEmpty)
+                    ?.let { text ->
+                        NetworkType(
+                            label = text,
+                            enhanced = false,
+                            source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
+                        )
+                    }
+
+            else -> null
+        }
 
     internal fun normalizeDrawableNetworkType(
         rawLabel: String,
@@ -257,18 +268,28 @@ internal object NativePresentationResolver {
         }.getOrNull()
     }
 
+    // Cache only reflective access, never the label: one drawable can update in place.
+    private val typeFields = ConcurrentHashMap<Class<*>, Field>()
+    private val enhancedFields = ConcurrentHashMap<Class<*>, Field>()
+
     private fun Drawable.readStringField(name: String): String? =
         runCatching {
-            javaClass.getDeclaredField(name)
-                .apply { isAccessible = true }
-                .get(this) as? String
+            val field =
+                typeFields[javaClass]
+                    ?: javaClass.getDeclaredField(name)
+                        .apply { isAccessible = true }
+                        .also { typeFields.putIfAbsent(javaClass, it) }
+            field.get(this) as? String
         }.getOrNull()
 
     private fun Drawable.readBooleanField(name: String): Boolean? =
         runCatching {
-            javaClass.getDeclaredField(name)
-                .apply { isAccessible = true }
-                .getBoolean(this)
+            val field =
+                enhancedFields[javaClass]
+                    ?: javaClass.getDeclaredField(name)
+                        .apply { isAccessible = true }
+                        .also { enhancedFields.putIfAbsent(javaClass, it) }
+            field.getBoolean(this)
         }.getOrNull()
 
     internal data class ActiveBindingResolution(

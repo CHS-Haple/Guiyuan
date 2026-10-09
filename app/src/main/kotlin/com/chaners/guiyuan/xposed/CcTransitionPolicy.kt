@@ -25,6 +25,35 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    // null means native text is unavailable, not a confirmed mismatch.
+    fun mobileTypeTextMatches(
+        sourceLabel: String,
+        sourceEnhanced: Boolean,
+        targetLabel: String?,
+        targetEnhanced: Boolean?,
+    ): Boolean? {
+        val target = targetLabel?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        fun normalized(text: String) = text.trim().uppercase().replace("-", "").replace("_", "")
+        return normalized(sourceLabel) == normalized(target) &&
+            sourceEnhanced == targetEnhanced
+    }
+
+    fun differentTextSourceAlpha(
+        motionProgress: Float,
+        nativeAppearanceAlpha: Float,
+        nativeAppearanceActive: Boolean,
+    ): Float {
+        val progress = geometryProgress(motionProgress)
+        val nativeAlpha =
+            if (nativeAppearanceActive && nativeAppearanceAlpha.isFinite()) {
+                nativeAppearanceAlpha.coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+        // Move first; release the old text as the native endpoint becomes visible.
+        return 1f - maxOf(progress * progress * progress, nativeAlpha)
+    }
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p
