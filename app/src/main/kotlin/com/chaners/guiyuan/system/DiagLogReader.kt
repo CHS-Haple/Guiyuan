@@ -80,6 +80,7 @@ internal object DiagLogReader {
 
         val sessionRefs =
             lines.mapIndexedNotNull { index, line ->
+                if ("sessionId=" !in line) return@mapIndexedNotNull null
                 DiagProtocol.parse(line)
                     ?.fields
                     ?.get("sessionId")
