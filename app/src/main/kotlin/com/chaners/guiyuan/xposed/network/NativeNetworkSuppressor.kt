@@ -51,6 +51,7 @@ internal object NativeNetworkSuppressor {
         setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
 
     private val installedHandles = mutableListOf<HookHandle>()
+    private var installIncomplete = false
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var pendingObservationHost: WeakReference<View>? = null
@@ -123,6 +124,7 @@ internal object NativeNetworkSuppressor {
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): String? {
+        if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
@@ -253,16 +255,19 @@ internal object NativeNetworkSuppressor {
 
             installedHandles.clear()
             installedHandles.addAll(created)
+            installIncomplete = false
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             null
         }.getOrElse { error ->
-            created.forEach { handle ->
-                runCatching { handle.unhook() }
+            val remaining = created.filter { handle ->
+                runCatching { handle.unhook() }.isFailure
             }
             installedHandles.clear()
+            installedHandles.addAll(remaining)
+            installIncomplete = remaining.isNotEmpty()
             airplaneSlotAccessor = null
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
@@ -277,7 +282,8 @@ internal object NativeNetworkSuppressor {
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            error.message ?: error.javaClass.simpleName
+            val reason = error.message ?: error.javaClass.simpleName
+            if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
     }
 
@@ -444,6 +450,7 @@ internal object NativeNetworkSuppressor {
     fun resetRuntimeState(source: String) {
         deactivate(source)
         installedHandles.clear()
+        installIncomplete = false
         eventSink = null
         diagnosticsEnabled = { false }
         observationAttachedSink = null
