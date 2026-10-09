@@ -25,6 +25,26 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    fun mobileTypeMatches(
+        sourceLabel: String,
+        sourceEnhanced: Boolean,
+        target: NativePresentationResolver.NetworkType?,
+    ): Boolean? {
+        target ?: return null
+        fun shown(label: String, enhanced: Boolean): String {
+            val value = label.trim().uppercase().replace("-", "").replace("_", "")
+            return if (value == "5G" && enhanced) "5G++" else value
+        }
+        return shown(sourceLabel, sourceEnhanced) ==
+            shown(target.label, target.enhanced)
+    }
+
+    fun mobileTypeSourceAlpha(nativeAppearance: Boolean, nativeAlpha: Float): Float {
+        if (!nativeAppearance) return 1f
+        val visible = nativeAlpha.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
+        return 1f - visible
+    }
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p

@@ -7,6 +7,33 @@ import org.junit.Test
 
 class CcTransitionGeometryTest {
     @Test
+    fun mobileTypeHandoffComparesCurrentNativeGlyphNotDataSimOwnership() {
+        val native5G = NativePresentationResolver.NetworkType(
+            label = "5G",
+            enhanced = false,
+            source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+        )
+        val native5GA = native5G.copy(label = "5GA")
+        val nativePlus = native5G.copy(enhanced = true)
+
+        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5G))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5GA))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G-A", false, native5GA))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G++", false, nativePlus))
+        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("4G", false, native5G))
+        assertNull(CcTransitionPolicy.mobileTypeMatches("5GA", false, null))
+    }
+
+    @Test
+    fun differentMobileTypesFadeWithActualNativeAppearanceInBothDirections() {
+        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(false, 1f), 0f)
+        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 0f), 0f)
+        assertEquals(0.55f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 0.45f), 0.0001f)
+        assertEquals(0f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 1f), 0f)
+        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(true, Float.NaN), 0f)
+    }
+
+    @Test
     fun fakeCapacityLeaseDoesNotChangeEndAnchoredMotionCarrierCenter() {
         val expandedCarrier =
             floatArrayOf(

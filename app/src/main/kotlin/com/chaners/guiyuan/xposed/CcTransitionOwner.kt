@@ -735,6 +735,32 @@ internal object CcTransitionOwner {
                                 carrierFrames = carrierFrames,
                             )
                     }
+                val nativeTypeMatch =
+                    if (
+                        spec.component == StatusPainter.TransitionComponent.CENTER &&
+                        model.centerIndicator is CenterIndicator.MobileType &&
+                        targetGeometry != null
+                    ) {
+                        CcTransitionPolicy.mobileTypeMatches(
+                            sourceLabel = model.centerIndicator.label,
+                            sourceEnhanced = model.centerIndicator.enhanced,
+                            target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
+                        )
+                    } else {
+                        null
+                    }
+                val textMismatch = nativeTypeMatch == false
+                val componentOpacity =
+                    if (textMismatch) {
+                        opacity *
+                            CcTransitionPolicy.mobileTypeSourceAlpha(
+                                nativeAppearance = nativeAppearance,
+                                nativeAlpha =
+                                    witness?.opticalView?.let(::endpointAlpha) ?: 0f,
+                            )
+                    } else {
+                        opacity
+                    }
                 val componentVisibleFraction =
                     if (
                         spec.component ==
@@ -750,7 +776,7 @@ internal object CcTransitionOwner {
                     } else {
                         CcTransitionPolicy.unmatchedExitVisibleFraction(motionProgress)
                     }
-                if (componentVisibleFraction <= 0f || opacity <= 0f) return@forEach
+                if (componentVisibleFraction <= 0f || componentOpacity <= 0f) return@forEach
                 val matrixBounds =
                     when {
                         spec.component ==
@@ -764,7 +790,8 @@ internal object CcTransitionOwner {
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
                                 nativeTargetAvailable =
-                                    targetGeometry != null && witness?.opticalView != null,
+                                    targetGeometry != null &&
+                                        witness?.opticalView != null && nativeTypeMatch == true,
                                 visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 
@@ -791,7 +818,7 @@ internal object CcTransitionOwner {
                 val save =
                     canvas.saveLayerAlpha(
                         null,
-                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
+                        (255f * componentOpacity.coerceIn(0f, 1f)).roundToInt(),
                     )
                 canvas.concat(matrix)
                 if (componentVisibleFraction < 1f) {
@@ -892,7 +919,7 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType
                         ) {
-                            witness?.textWeight
+                            if (nativeTypeMatch == true) witness?.textWeight else null
                         } else {
                             null
                         },
@@ -902,14 +929,15 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType
                         ) {
-                            witness?.textStyle
+                            if (nativeTypeMatch == true) witness?.textStyle else null
                         } else {
                             null
                         },
                     centerNativeTarget =
                         spec.component == StatusPainter.TransitionComponent.CENTER &&
                             model.centerIndicator is CenterIndicator.MobileType &&
-                            targetGeometry != null && witness?.opticalView != null,
+                            targetGeometry != null && witness?.opticalView != null &&
+                            nativeTypeMatch == true,
                     batteryRingExitDirection =
                         if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                             batteryRingExitDirection
