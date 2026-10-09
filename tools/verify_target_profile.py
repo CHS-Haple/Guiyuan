@@ -39,8 +39,9 @@ def validate_artifact(name: str, artifact: dict) -> None:
 
 def source_string_constant(source_text: str, constant_name: str, label: str) -> str:
     match = re.search(
-        rf'(?m)^[ \t]*(?:(?:private|internal|public)\s+)?const[ \t]+val[ \t]+'
-        rf'{re.escape(constant_name)}[ \t]*=[ \t\r\n]*"([^"]+)"',
+        rf'(?m)^[ \t]*(?:(?:private|internal|public|protected)[ \t]+)?'
+        rf'const[ \t]+val[ \t]+{re.escape(constant_name)}[ \t]*=[ \t]*'
+        r'(?:\r?\n[ \t]*)?"([^"\r\n]+)"',
         source_text,
     )
     if not match:
@@ -293,6 +294,7 @@ lifecycle_hook_specs = (
         "(ZZ)V",
     ),
 )
+source_cache = {}
 for (
     hook_name,
     source_path,
@@ -303,7 +305,9 @@ for (
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing lifecycle hook point: {hook_name}")
-    source_text = source_path.read_text(encoding="utf-8")
+    if source_path not in source_cache:
+        source_cache[source_path] = source_path.read_text(encoding="utf-8")
+    source_text = source_cache[source_path]
     source_class = source_string_constant(
         source_text,
         class_constant,
@@ -321,7 +325,9 @@ for (
     if hook_point.get("descriptor") != expected_descriptor:
         fail(f"lifecycle hook descriptor drifted from profile: {hook_name}")
 
-keyguard_aod_text = KEYGUARD_AOD_SOURCE_PATH.read_text(encoding="utf-8")
+keyguard_aod_text = source_cache.get(KEYGUARD_AOD_SOURCE_PATH)
+if keyguard_aod_text is None:
+    keyguard_aod_text = KEYGUARD_AOD_SOURCE_PATH.read_text(encoding="utf-8")
 keyguard_aod_class = source_string_constant(
     keyguard_aod_text,
     "BATTERY_VIEW_CLASS",

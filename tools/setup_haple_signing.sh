@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 : "${HAPLE_KEYSTORE_BASE64:?HAPLE_KEYSTORE_BASE64 is required}"
 : "${HAPLE_KEYSTORE_PASSWORD:?HAPLE_KEYSTORE_PASSWORD is required}"
@@ -9,7 +10,17 @@ set -euo pipefail
 : "${GITHUB_ENV:?GITHUB_ENV is required}"
 
 KEYSTORE_PATH="$RUNNER_TEMP/Haple.keystore"
+PROBE="$RUNNER_TEMP/haple-key-probe.p12"
+SIGNING_READY=false
 export KEYSTORE_PATH
+
+cleanup() {
+  rm -f "$PROBE"
+  if [[ "$SIGNING_READY" != true ]]; then
+    rm -f "$KEYSTORE_PATH"
+  fi
+}
+trap cleanup EXIT
 
 python3 - <<'PY'
 import base64
@@ -52,7 +63,6 @@ if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
   exit 1
 fi
 
-PROBE="$RUNNER_TEMP/haple-key-probe.p12"
 rm -f "$PROBE"
 if ! keytool -importkeystore \
   -srckeystore "$KEYSTORE_PATH" \
@@ -67,7 +77,6 @@ if ! keytool -importkeystore \
   echo "Cannot recover Haple private key with HAPLE_KEYSTORE_PASSWORD."
   exit 1
 fi
-rm -f "$PROBE"
-
 echo "HAPLE_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+SIGNING_READY=true
 echo "Haple signing keystore and private key verified."
