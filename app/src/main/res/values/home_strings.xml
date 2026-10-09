@@ -10,7 +10,7 @@
     <string name="home_runtime_unhooked_summary">SystemUI scope is not enabled</string>
     <string name="home_runtime_pending">Pending</string>
     <string name="home_runtime_pending_summary">Waiting for SystemUI to reload</string>
-    <string name="home_runtime_restart_summary">Not active yet. Tap to restart SystemUI and enable Guiyuan.</string>
+    <string name="home_runtime_restart_summary">Waiting for SystemUI to reload · Tap to restart</string>
     <string name="home_runtime_restarting">Restarting SystemUI</string>
     <string name="home_runtime_restarting_summary">Reloading Guiyuan through SystemUI</string>
     <string name="home_runtime_disabled">Disabled</string>

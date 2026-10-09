@@ -549,7 +549,7 @@ private fun resolveHomeRuntimeCardState(
 
                 else ->
                     HomeRuntimeCardState(
-                        titleRes = R.string.restart_scope,
+                        titleRes = R.string.home_runtime_pending,
                         summaryRes = R.string.home_runtime_restart_summary,
                         tone = RuntimeStatusTone.Warning,
                         mark = RuntimeStatusMarkKind.Alert,
