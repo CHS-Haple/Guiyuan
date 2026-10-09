@@ -167,10 +167,14 @@ internal object SysUiTintSource {
 
         val changed =
             synchronized(this) {
-                val previous = lastStates[sourceView]
-                lastStates[sourceView] = state
-                lastSourceView = WeakReference(sourceView)
-                previous != state
+                val changed = lastStates[sourceView] != state
+                if (changed) {
+                    lastStates[sourceView] = state
+                }
+                if (lastSourceView?.get() !== sourceView) {
+                    lastSourceView = WeakReference(sourceView)
+                }
+                changed
             }
         if (changed) {
             onTintState(TintUpdate(sourceView, state))

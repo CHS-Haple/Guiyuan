@@ -476,25 +476,7 @@ internal object HomeRenderSession {
                 }
             }
 
-            if (update.changed) {
-                val resolved = update.resolved
-                if (resolved != null) {
-                    emitEvent {
-                        "homeRenderTint source=" + source +
-                            " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
-                            " statusIcon=#" +
-                            (
-                                resolved.statusIconTint
-                                    ?.toUInt()
-                                    ?.toString(16)
-                                    ?.padStart(8, '0')
-                                    ?: "none"
-                            )
-                    }
-                }
-            }
-            dispatchPresentationReadiness("tint:" + source)
+            dispatchPresentationReadiness(source)
         }
 
         fun update(

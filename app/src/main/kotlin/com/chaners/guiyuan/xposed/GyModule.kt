@@ -1834,32 +1834,7 @@ class GyModule : XposedModule() {
         val resolvedUpdate = update.copy(state = resolvedState)
         HomeRenderSession.onTintUpdate(resolvedUpdate)
         CcRenderSession.onTintUpdate(resolvedUpdate)
-        if (detailedDiagnosticsEnabled) {
-            log(
-                Log.INFO,
-                TAG,
-                "tintCommit source=batteryDarkReceiver" +
-                    " applied=#" +
-                    resolvedState.appliedTint.toUInt().toString(16).padStart(8, '0') +
-                    " statusIcon=#" +
-                    (
-                        resolvedState.statusIconTint
-                            ?.toUInt()
-                            ?.toString(16)
-                            ?.padStart(8, '0')
-                            ?: "none"
-                    ) +
-                    " liveStatusIcon=#" +
-                    (
-                        liveStatusIconTint
-                            ?.toUInt()
-                            ?.toString(16)
-                            ?.padStart(8, '0')
-                            ?: "none"
-                    ) +
-                    " authority=live-systemui-status-icons",
-            )
-        }
+
     }
 
     private fun onFullAodStarted() {
