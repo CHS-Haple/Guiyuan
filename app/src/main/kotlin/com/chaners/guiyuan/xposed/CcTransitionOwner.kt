@@ -763,6 +763,8 @@ internal object CcTransitionOwner {
                                 targetWeight = witness?.textWeight,
                                 targetStyle = witness?.textStyle,
                                 progress = motionProgress,
+                                nativeTargetAvailable =
+                                    targetGeometry != null && witness?.opticalView != null,
                                 visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 
@@ -904,6 +906,10 @@ internal object CcTransitionOwner {
                         } else {
                             null
                         },
+                    centerNativeTarget =
+                        spec.component == StatusPainter.TransitionComponent.CENTER &&
+                            model.centerIndicator is CenterIndicator.MobileType &&
+                            targetGeometry != null && witness?.opticalView != null,
                     batteryRingExitDirection =
                         if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                             batteryRingExitDirection
