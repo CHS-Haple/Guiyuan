@@ -102,7 +102,7 @@ internal object SysUiKeyguardAodSource {
                 runCatching { handle.unhook() }.isFailure
             }
             failedInstallHandles = remaining
-            resetRuntimeState()
+            clearSourceState()
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
             }
@@ -136,6 +136,12 @@ internal object SysUiKeyguardAodSource {
 
     @Synchronized
     fun resetRuntimeState() {
+        failedInstallHandles = emptyList()
+        clearSourceState()
+    }
+
+    @Synchronized
+    private fun clearSourceState() {
         hooksReady = false
         states.clear()
         toAodField = null

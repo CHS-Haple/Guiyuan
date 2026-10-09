@@ -132,7 +132,7 @@ internal object SysUiTintSource {
                         },
                     )
             }.getOrElse { error ->
-                resetRuntimeState()
+                clearSourceState()
                 throw error
             }
         val internalHandle =
@@ -165,7 +165,7 @@ internal object SysUiTintSource {
             }.getOrElse { error ->
                 val cleanupFailed = runCatching { updateHandle.unhook() }.isFailure
                 if (cleanupFailed) failedInstallHandles = listOf(updateHandle)
-                resetRuntimeState()
+                clearSourceState()
                 if (cleanupFailed) {
                     throw IllegalStateException("tint-source-hook-cleanup-failed", error)
                 }
@@ -364,6 +364,12 @@ internal object SysUiTintSource {
 
     @Synchronized
     fun resetRuntimeState() {
+        failedInstallHandles = emptyList()
+        clearSourceState()
+    }
+
+    @Synchronized
+    private fun clearSourceState() {
         hooksReady = false
         lastStates.clear()
         firstEventLogged.clear()

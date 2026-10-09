@@ -362,6 +362,7 @@ internal object SysUiBatterySource {
 
     @Synchronized
     fun resetRuntimeState() {
+        failedInstallHandles = emptyList()
         hooksReady = false
         lastState = null
         lastChargingIconResId = null
