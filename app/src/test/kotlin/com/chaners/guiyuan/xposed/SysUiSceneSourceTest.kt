@@ -25,32 +25,27 @@ class SysUiSceneSourceTest {
     }
 
     @Test
-    fun steadySourceAuthorityRequiresMatchingStructuralHost() {
+    fun steadyHostClassificationUsesVerifiedNativeHost() {
         assertEquals(
             SourceScene.HOME,
-            SysUiSceneSource.classifySteadySourceAncestors(
-                listOf(
-                    "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
-                    "com.android.systemui.statusbar.phone.MiuiNotificationStatusContainer",
-                ),
-            ),
+            SysUiSceneSource.classifyHost(StatusBarHostCapture.HOST_CLASS_NAME),
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            SysUiSceneSource.classifySteadySourceAncestors(
-                listOf(
-                    "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
-                    "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
-                ),
+            SysUiSceneSource.classifyHost(
+                "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView",
             ),
         )
         assertEquals(
             SourceScene.UNKNOWN,
-            SysUiSceneSource.classifySteadySourceAncestors(
-                listOf(
-                    "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
-                    "com.android.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons",
-                ),
+            SysUiSceneSource.classifyHost(
+                "com.android.systemui.statusbar.phone.MiuiNotificationStatusContainer",
+            ),
+        )
+        assertEquals(
+            SourceScene.UNKNOWN,
+            SysUiSceneSource.classifyHost(
+                "com.miui.systemui.controlcenter.phone.widget.ControlCenterFakeStatusIcons",
             ),
         )
     }

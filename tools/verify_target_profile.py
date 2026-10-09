@@ -157,12 +157,19 @@ scene_method = source_string_constant(
     "UPDATE_STATE_METHOD_NAME",
     "scene state source",
 )
+scene_field = source_string_constant(
+    scene_source_text,
+    "STATUS_BAR_STATE_FIELD_NAME",
+    "scene state source",
+)
 if scene_class != scene_hook.get("className"):
     fail("scene state source class drifted from profile")
 if scene_method != scene_hook.get("methodName"):
     fail("scene state source method drifted from profile")
 
 verified_fields = profile.get("verifiedSystemUiFields", {})
+if scene_field not in set(verified_fields.get(scene_class, [])):
+    fail("scene state source field is not listed in the pinned SystemUI profile")
 
 
 
