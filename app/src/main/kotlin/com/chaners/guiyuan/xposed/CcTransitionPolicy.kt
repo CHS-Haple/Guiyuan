@@ -39,12 +39,6 @@ internal object CcTransitionPolicy {
             shown(target.label, target.enhanced)
     }
 
-    fun mobileTypeSourceAlpha(nativeAppearance: Boolean, nativeAlpha: Float): Float {
-        if (!nativeAppearance) return 1f
-        val visible = nativeAlpha.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
-        return 1f - visible
-    }
-
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p

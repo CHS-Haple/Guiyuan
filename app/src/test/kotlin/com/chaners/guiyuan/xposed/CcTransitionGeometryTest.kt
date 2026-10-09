@@ -25,12 +25,21 @@ class CcTransitionGeometryTest {
     }
 
     @Test
-    fun differentMobileTypesFadeWithActualNativeAppearanceInBothDirections() {
-        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(false, 1f), 0f)
-        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 0f), 0f)
-        assertEquals(0.55f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 0.45f), 0.0001f)
-        assertEquals(0f, CcTransitionPolicy.mobileTypeSourceAlpha(true, 1f), 0f)
-        assertEquals(1f, CcTransitionPolicy.mobileTypeSourceAlpha(true, Float.NaN), 0f)
+    fun unmatchedMobileTextUsesTheExistingCarrierClip() {
+        // A different native label has no valid text target, even when its slot exists.
+        val policy = CcTransitionPolicy
+        assertEquals(1f, policy.unmatchedExitVisibleFraction(0f), 0f)
+        assertEquals(0.125f, policy.unmatchedExitVisibleFraction(0.5f), 0.0001f)
+        assertEquals(0f, policy.unmatchedExitVisibleFraction(1f), 0f)
+        assertEquals(1f, policy.unmatchedExitVisibleFraction(Float.NaN), 0f)
+
+        val clip = policy.horizontalClipBounds(
+            left = 0f, top = 0f, right = 80f, bottom = 30f,
+            visibleFraction = policy.unmatchedExitVisibleFraction(0.5f),
+            anchorRight = false,
+        )
+        requireNotNull(clip)
+        assertEquals(10f, clip[2], 0.0001f)
     }
 
     @Test
