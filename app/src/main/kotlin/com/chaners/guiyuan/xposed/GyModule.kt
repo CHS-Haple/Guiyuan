@@ -1602,7 +1602,6 @@ class GyModule : XposedModule() {
                     "BatteryController callbacks",
             )
         }.onFailure { error ->
-            SysUiBatteryRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",

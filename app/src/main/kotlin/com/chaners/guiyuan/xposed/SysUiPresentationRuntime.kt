@@ -16,7 +16,7 @@ internal object SysUiPresentationRuntime {
                     it.keyguardAodHooks +
                     it.keyguardFullAodHooks +
                     it.keyguardStatusIconHooks
-            } ?: 0
+            } ?: SysUiTintSource.failedInstallHookCount
 
     val keyguardAodReady: Boolean
         @Synchronized get() = current?.keyguardAodReady == true

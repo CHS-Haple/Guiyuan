@@ -6,7 +6,7 @@ internal object SysUiBatteryRuntime {
     private var hooks = 0
 
     val installedHookCount: Int
-        @Synchronized get() = hooks
+        @Synchronized get() = hooks + SysUiBatterySource.failedInstallHookCount
 
     @Synchronized
     fun attach(
