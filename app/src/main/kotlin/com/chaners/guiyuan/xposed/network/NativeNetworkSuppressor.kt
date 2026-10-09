@@ -82,6 +82,8 @@ internal object NativeNetworkSuppressor {
         ConcurrentHashMap<Class<*>, List<Field>>()
     private val tintMethodByManagerClass =
         ConcurrentHashMap<Class<*>, Method>()
+    private val bindingGetterByClass =
+        ConcurrentHashMap<Class<*>, Method>()
 
     @Volatile
     private var suppressedBindings: Array<WeakReference<Any>> = emptyArray()
@@ -450,6 +452,7 @@ internal object NativeNetworkSuppressor {
         statusIconStaticColorAccessor = null
         tintFieldsByClass.clear()
         tintMethodByManagerClass.clear()
+        bindingGetterByClass.clear()
         lastStatusPresentation =
             PresentationStore.StatusIconPresentation()
     }
@@ -1345,14 +1348,17 @@ internal object NativeNetworkSuppressor {
     }
 
     private fun bindingOf(view: View): Any? {
+        val viewClass = view.javaClass
         val getter =
-            generateSequence<Class<*>>(view.javaClass) { clazz -> clazz.superclass }
-                .flatMap { clazz -> clazz.declaredMethods.asSequence() }
-                .firstOrNull { method ->
-                    method.parameterCount == 0 &&
-                        method.name.startsWith("getBinding\$") &&
-                        method.returnType.name == MODERN_BINDING_INTERFACE
-                }
+            bindingGetterByClass[viewClass]
+                ?: generateSequence<Class<*>>(viewClass) { it.superclass }
+                    .flatMap { it.declaredMethods.asSequence() }
+                    .firstOrNull { method ->
+                        method.parameterCount == 0 &&
+                            method.name.startsWith("getBinding\$") &&
+                            method.returnType.name == MODERN_BINDING_INTERFACE
+                    }
+                    ?.also { bindingGetterByClass[viewClass] = it }
                 ?: return null
         return runCatching {
             getter.isAccessible = true
