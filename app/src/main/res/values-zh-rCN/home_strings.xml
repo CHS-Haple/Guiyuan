@@ -9,7 +9,6 @@
     <string name="home_runtime_unhooked">未 Hook</string>
     <string name="home_runtime_unhooked_summary">SystemUI 作用域未启用</string>
     <string name="home_runtime_pending">待生效</string>
-    <string name="home_runtime_pending_summary">等待 SystemUI 重新加载</string>
     <string name="home_runtime_restart_summary">等待 SystemUI 重新加载，点击卡片重启</string>
     <string name="home_runtime_restarting">正在重启 SystemUI</string>
     <string name="home_runtime_restarting_summary">正在重新加载归元</string>

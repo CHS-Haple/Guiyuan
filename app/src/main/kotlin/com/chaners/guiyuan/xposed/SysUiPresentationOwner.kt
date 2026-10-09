@@ -2648,15 +2648,6 @@ internal object SysUiPresentationOwner {
         SESSION,
     }
 
-
-
-
-
-
-
-
-
-
     private fun ViewGroup.directChild(className: String): View? {
         for (index in 0 until childCount) {
             val child = getChildAt(index)

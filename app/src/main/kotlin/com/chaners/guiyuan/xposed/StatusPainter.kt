@@ -394,10 +394,6 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
-
-
-
-
     internal enum class TransitionComponent {
         BATTERY,
         BATTERY_NUMBER,
