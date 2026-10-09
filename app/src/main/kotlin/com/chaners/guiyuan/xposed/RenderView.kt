@@ -191,7 +191,7 @@ internal class RenderView(
             model = current,
             visual = this.visual,
             previousCenterIndicator = previousCenterIndicator,
-            // 这里预留的是布局空间，两端都按完整尺寸算，动画时才不会被裁掉。
+            // Reserve both full endpoints so the animated glyph is not clipped.
             centerExitAmount = 1f,
             centerEnterAmount = 1f,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
