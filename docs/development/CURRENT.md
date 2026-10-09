@@ -53,7 +53,7 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Active stacked preview
 
-- Draft PR #339 (Build 839): missing native endpoints fade intact source components without clipping or shape contraction (network type, Wi-Fi, mobile bars, battery ring, top number and other standalone icons). The charging lightning is an intentional exception: its hide uses the existing ring-lifetime clip with or without a native charging target, following the battery number until hidden; native-target reveal runs only with a valid target. Targeted transitions, latent reveals, live data-SIM semantics and native text ink bounds remain unchanged. Build 839's focused mobile-type/charging transition behavior was accepted on-device on 2026-10-09; combined Home/Keyguard/refresh validation remains separate.
+- Accepted Build 839 (PR #339 merged into #336): missing native endpoints fade intact source components without clipping or shape contraction (network type, Wi-Fi, mobile bars, battery ring, top number and other standalone icons). The charging lightning is an intentional exception: its hide uses the existing ring-lifetime clip with or without a native charging target, following the battery number until hidden; native-target reveal runs only with a valid target. Targeted transitions, latent reveals, live data-SIM semantics and native text ink bounds remain unchanged. Build 839's focused mobile-type/charging transition behavior was accepted on-device on 2026-10-09; combined Home/Keyguard/refresh validation remains separate.
 
 ## Next
 
