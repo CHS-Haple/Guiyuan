@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import android.view.View
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
@@ -39,6 +40,10 @@ internal object SysUiHotReload {
         val host =
             SysUiHostRegistry.current()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
+        // A captured host can survive detachment; it must not own the next generation.
+        if ((host as? View)?.isAttachedToWindow != true) {
+            return PrepareResult.Unavailable("status-host-detached")
+        }
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()

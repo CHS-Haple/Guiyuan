@@ -39,8 +39,6 @@ internal object SysUiSceneSource {
                 Int::class.javaPrimitiveType,
             ).apply { isAccessible = true }
 
-        statusBarStateField = stateField
-
         val handle =
             module
                 .hook(updateStateMethod)
@@ -62,6 +60,7 @@ internal object SysUiSceneSource {
                         result
                     },
                 )
+        statusBarStateField = stateField
 
         return listOf(handle)
     }
