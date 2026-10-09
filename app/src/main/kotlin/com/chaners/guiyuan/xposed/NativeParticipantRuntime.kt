@@ -122,6 +122,7 @@ internal object NativeParticipantRuntime {
 
     @Synchronized
     fun resetControllerRuntimeState() {
+        cancelPendingLocked()
         controllersByManager.clear()
         controllerHook = null
     }
@@ -149,7 +150,7 @@ internal object NativeParticipantRuntime {
         return if (activation.start()) {
             null
         } else {
-            pending = null
+            cancelPendingLocked()
             "native-controller-readiness-rejected"
         }
     }
@@ -163,6 +164,7 @@ internal object NativeParticipantRuntime {
             return false
         }
         pending = null
+        activation.cancel()
         return true
     }
 
@@ -187,13 +189,10 @@ internal object NativeParticipantRuntime {
         private var readyCallbackPosted = false
 
         fun start(): Boolean {
-            return if (hostView.isAttachedToWindow) {
-                armForController()
-            } else {
-                hostView.addOnAttachStateChangeListener(this)
-                attachListenerRegistered = true
-                true
-            }
+            // An attached host may disappear before its controller is observed.
+            hostView.addOnAttachStateChangeListener(this)
+            attachListenerRegistered = true
+            return !hostView.isAttachedToWindow || armForController()
         }
 
         fun cancel() {
@@ -208,19 +207,19 @@ internal object NativeParticipantRuntime {
         }
 
         override fun onViewAttachedToWindow(view: View) {
-            if (attachListenerRegistered) {
-                view.removeOnAttachStateChangeListener(this)
-                attachListenerRegistered = false
-            }
             if (!armForController() && complete(this)) {
                 onFailure("native-controller-readiness-rejected")
             }
         }
 
-        override fun onViewDetachedFromWindow(view: View) = Unit
+        override fun onViewDetachedFromWindow(view: View) {
+            if (complete(this)) {
+                onFailure("native-controller-host-detached")
+            }
+        }
 
         fun onControllerObserved(manager: Any) {
-            if (readyCallbackPosted) {
+            if (!hostView.isAttachedToWindow || readyCallbackPosted) {
                 return
             }
             val targetManager =
@@ -255,6 +254,10 @@ internal object NativeParticipantRuntime {
         override fun run() {
             readyCallbackPosted = false
             if (!complete(this)) {
+                return
+            }
+            if (!hostView.isAttachedToWindow) {
+                onFailure("native-controller-host-detached")
                 return
             }
             onReady(hostView)
