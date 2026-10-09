@@ -49,12 +49,17 @@ internal object NativeBatterySuppressor {
         isDetailedDiagnosticsEnabled: () -> Boolean = { false },
         onNativeLayoutHideChanged: (Boolean) -> Unit = {},
     ): String? {
-        if (installedHookCount == HOOK_COUNT) {
+        if (
+            installedHookCount == HOOK_COUNT &&
+            hideField != null &&
+            chargingViewField != null
+        ) {
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             nativeLayoutHideSink = onNativeLayoutHideChanged
             return null
         }
+        if (installedHookCount != 0) return "partial-hook-state"
 
         val createdHandles = mutableListOf<HookHandle>()
         return runCatching {
@@ -134,20 +139,20 @@ internal object NativeBatterySuppressor {
             nativeLayoutHideSink = onNativeLayoutHideChanged
             null
         }.getOrElse { error ->
-            createdHandles.forEach { handle ->
-                runCatching { handle.unhook() }
+            val remaining = createdHandles.filter { handle ->
+                runCatching { handle.unhook() }.isFailure
             }
-            runCatching { hideHookHandle?.unhook() }
-            runCatching { chargeRefreshHookHandle?.unhook() }
-            hideHookHandle = null
-            chargeRefreshHookHandle = null
+            hideHookHandle = remaining.firstOrNull { it.id == HIDE_HOOK_ID }
+            chargeRefreshHookHandle =
+                remaining.firstOrNull { it.id == CHARGE_REFRESH_HOOK_ID }
             hideField = null
             chargingViewField = null
             clearOwnedStateLocked()
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             nativeLayoutHideSink = null
-            error.message ?: error.javaClass.simpleName
+            val reason = error.message ?: error.javaClass.simpleName
+            if (remaining.isEmpty()) reason else reason + "-hook-cleanup-failed"
         }
     }
 
@@ -246,21 +251,6 @@ internal object NativeBatterySuppressor {
                 " visualChanged=" + visualChanged,
         )
         return Result.Inactive
-    }
-
-    @Synchronized
-    fun resetRuntimeState(source: String) {
-        deactivate(source)
-        runCatching { hideHookHandle?.unhook() }
-        runCatching { chargeRefreshHookHandle?.unhook() }
-        hideHookHandle = null
-        chargeRefreshHookHandle = null
-        hideField = null
-        chargingViewField = null
-        clearOwnedStateLocked()
-        eventSink = null
-        diagnosticsEnabled = { false }
-        nativeLayoutHideSink = null
     }
 
     private fun hideRequestHooker(): Hooker =

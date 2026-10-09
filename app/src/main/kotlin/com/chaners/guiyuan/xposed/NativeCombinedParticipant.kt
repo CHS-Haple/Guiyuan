@@ -402,9 +402,11 @@ internal object NativeCombinedParticipant {
                         },
                     )
             }.getOrElse { error ->
-                runCatching { visualBoundsHandle.unhook() }
-                return "slot-translation-hook-" +
-                        (error.message ?: error.javaClass.simpleName)
+                val cleanupFailed = runCatching { visualBoundsHandle.unhook() }.isFailure
+                if (cleanupFailed) visualBoundsHook = visualBoundsHandle
+                val reason = "slot-translation-hook-" +
+                    (error.message ?: error.javaClass.simpleName)
+                return if (cleanupFailed) reason + "-hook-cleanup-failed" else reason
             }
 
         val handle =
@@ -588,10 +590,17 @@ internal object NativeCombinedParticipant {
                             }
                         },
                     )
-            }.getOrElse {
-                runCatching { slotTranslationHandle.unhook() }
-                runCatching { visualBoundsHandle.unhook() }
-                return "constructor-hook-" + (it.message ?: it.javaClass.simpleName)
+            }.getOrElse { error ->
+                val slotCleanupFailed = runCatching { slotTranslationHandle.unhook() }.isFailure
+                val boundsCleanupFailed = runCatching { visualBoundsHandle.unhook() }.isFailure
+                if (slotCleanupFailed) slotTranslationHook = slotTranslationHandle
+                if (boundsCleanupFailed) visualBoundsHook = visualBoundsHandle
+                val reason = "constructor-hook-" + (error.message ?: error.javaClass.simpleName)
+                return if (slotCleanupFailed || boundsCleanupFailed) {
+                    reason + "-hook-cleanup-failed"
+                } else {
+                    reason
+                }
             }
 
         visualBoundsHook = visualBoundsHandle
@@ -1960,58 +1969,6 @@ internal object NativeCombinedParticipant {
         }
         pendingPreDrawRoot = null
         pendingPreDrawListener = null
-    }
-
-    @Synchronized
-    fun resetRuntimeState() {
-        constructorHook = null
-        visualBoundsHook = null
-        slotTranslationHook = null
-        reset()
-    }
-
-    private fun reset() {
-        removePendingPreDraw()
-        TransitionDiagnosticProbe.stop()
-        if (handoffCommitted) {
-            handoffSink?.invoke(false)
-        }
-        targetBindingState?.visible = false
-        renderViewRef?.get()?.let { render ->
-            (render.parent as? ViewGroup)?.removeView(render)
-        }
-        bindingStates.clear()
-        rootRef = null
-        renderViewRef = null
-        hostRef = null
-        batteryRef = null
-        nativeBatteryLayoutHidden = false
-        activeSlotBoundaryWidth = 0
-        activeSlotTranslationX = null
-        activeSlotWidth = 0
-        activeSlotHeight = 0
-        handoffSink = null
-        targetBindingState = null
-        modelReady = false
-        tintReady = false
-        currentSurface = SysUiSceneSource.Surface.UNKNOWN
-        handoffPending = false
-        handoffCommitted = false
-        eventSink = null
-        nativeStateIcon = null
-        nativeStateDot = null
-        nativeStateHidden = null
-        nativeSetRemoveMethod = null
-        nativeGetRemoveFlagMethod = null
-        transitionProbeEnabled = null
-        modelReadyLogged = false
-        unlockedGeometryLogged = false
-        visualBoundsLogged = false
-        slotTranslationCorrectionLogged = false
-        renderController = null
-        injected = false
-        registryRestored = false
-        failureReason = null
     }
 
     private fun createRuntimeCreator(classLoader: ClassLoader): Any {

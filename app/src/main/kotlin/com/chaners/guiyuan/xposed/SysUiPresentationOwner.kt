@@ -297,9 +297,10 @@ internal object SysUiPresentationOwner {
                     .setId(LAYOUT_HOOK_ID)
                     .intercept(layoutHooker(refreshMasksAfter = true))
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                clearInstallState()
-                return "layout-hook-" + (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "layout-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first),
+                )
             }
         val third =
             runCatching {
@@ -308,10 +309,10 @@ internal object SysUiPresentationOwner {
                     .setId(BATTERY_HIDE_HOOK_ID)
                     .intercept(batteryHideStateHooker())
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                runCatching { second.unhook() }
-                clearInstallState()
-                return "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first, second),
+                )
             }
 
         val fourth =
@@ -321,12 +322,10 @@ internal object SysUiPresentationOwner {
                     .setId(ISLAND_SHOWING_HOOK_ID)
                     .intercept(islandShowingHooker())
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                runCatching { second.unhook() }
-                runCatching { third.unhook() }
-                clearInstallState()
-                return "island-showing-hook-" +
-                    (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "island-showing-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first, second, third),
+                )
             }
 
         measureHook = first
@@ -1253,6 +1252,21 @@ internal object SysUiPresentationOwner {
         controlCenterEventSink = null
         controlCenterFailNativeSink = null
         controlCenterReadySink = null
+    }
+
+    private fun rollbackInstall(
+        reason: String,
+        handles: List<HookHandle>,
+    ): String {
+        val remaining = handles.filter { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+        clearInstallState()
+        measureHook = remaining.firstOrNull { it.id == MEASURE_HOOK_ID }
+        layoutHook = remaining.firstOrNull { it.id == LAYOUT_HOOK_ID }
+        batteryHideHook = remaining.firstOrNull { it.id == BATTERY_HIDE_HOOK_ID }
+        islandShowingHook = remaining.firstOrNull { it.id == ISLAND_SHOWING_HOOK_ID }
+        return if (remaining.isEmpty()) reason else reason + "-hook-cleanup-failed"
     }
 
     private fun clearInstallState() {
