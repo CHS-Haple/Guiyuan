@@ -74,6 +74,14 @@ internal object NativeNetworkSuppressor {
     private val transitionStateFieldCache =
         ConcurrentHashMap<Class<*>, TransitionStateFields>()
 
+    // Cache reflective lookups, not the live SystemUI tint values.
+    private val tintFieldNames =
+        setOf("mDarkIconDispatcher", "mTintAreas", "mIconTint", "mColor")
+    private val tintFieldsByClass =
+        ConcurrentHashMap<Class<*>, List<Field>>()
+    private val tintMethodByManagerClass =
+        ConcurrentHashMap<Class<*>, Method>()
+
     @Volatile
     private var suppressedBindings: Array<WeakReference<Any>> = emptyArray()
 
@@ -434,6 +442,8 @@ internal object NativeNetworkSuppressor {
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
+        tintFieldsByClass.clear()
+        tintMethodByManagerClass.clear()
         lastStatusPresentation =
             PresentationStore.StatusIconPresentation()
     }
@@ -855,22 +865,23 @@ internal object NativeNetworkSuppressor {
                 ?: return null
 
         return runCatching {
-            val dispatcherType =
-                Class.forName(
-                    DARK_ICON_DISPATCHER_CLASS,
-                    false,
-                    manager.javaClass.classLoader,
-                )
+            val managerClass = manager.javaClass
             val getTint =
-                dispatcherType.methods.firstOrNull { method ->
-                    method.name == "getTint" &&
-                        method.parameterCount == 3 &&
-                        View::class.java.isAssignableFrom(
-                            method.parameterTypes[1],
-                        ) &&
-                        method.parameterTypes.getOrNull(2) ==
-                            Int::class.javaPrimitiveType
-                } ?: return@runCatching null
+                tintMethodByManagerClass[managerClass]
+                    ?: Class.forName(
+                        DARK_ICON_DISPATCHER_CLASS,
+                        false,
+                        managerClass.classLoader,
+                    ).methods.firstOrNull { method ->
+                        method.name == "getTint" &&
+                            method.parameterCount == 3 &&
+                            View::class.java.isAssignableFrom(
+                                method.parameterTypes[1],
+                            ) &&
+                            method.parameterTypes[2] ==
+                                Int::class.javaPrimitiveType
+                    }?.also { tintMethodByManagerClass[managerClass] = it }
+                    ?: return@runCatching null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
                 ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
@@ -927,18 +938,21 @@ internal object NativeNetworkSuppressor {
             width > 0 &&
             height > 0
 
+    private fun tintFields(clazz: Class<*>): List<Field> =
+        tintFieldsByClass.computeIfAbsent(clazz) {
+            generateSequence(clazz) { it.superclass }
+                .flatMap { it.declaredFields.asSequence() }
+                .filter { it.name in tintFieldNames }
+                .toList()
+        }
+
     private fun readObjectField(
         target: Any,
         name: String,
     ): Any? {
         val field =
-            generateSequence(target.javaClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == name
-                    }
-                }
-                .firstOrNull()
+            tintFields(target.javaClass)
+                .firstOrNull { it.name == name }
                 ?: return null
         return runCatching {
             field.isAccessible = true
@@ -951,17 +965,11 @@ internal object NativeNetworkSuppressor {
         name: String,
     ): Int? {
         val field =
-            generateSequence(target.javaClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == name &&
-                            (
-                                candidate.type == Int::class.javaPrimitiveType ||
-                                    candidate.type == Int::class.java
-                            )
-                    }
+            tintFields(target.javaClass)
+                .firstOrNull {
+                    it.name == name &&
+                        it.type == Int::class.javaPrimitiveType
                 }
-                .firstOrNull()
                 ?: return null
         return runCatching {
             field.isAccessible = true

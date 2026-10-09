@@ -253,6 +253,8 @@ internal object CcTransitionOwner {
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
+        private val boundsMatrix = Matrix()
+        private val boundsValues = FloatArray(9)
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -2903,6 +2905,7 @@ internal object CcTransitionOwner {
             )
         }
 
+        // Callers consume this mutable matrix immediately with Canvas.concat.
         private fun matrixForBoundsGeometry(
             geometry: FloatArray,
             bounds: StatusPainter.TransitionBounds,
@@ -2914,7 +2917,7 @@ internal object CcTransitionOwner {
             ) {
                 return null
             }
-            val values = FloatArray(9)
+            val values = boundsValues
             values[Matrix.MSCALE_X] = geometry[2] / bounds.width
             values[Matrix.MSKEW_X] = geometry[4] / bounds.height
             values[Matrix.MTRANS_X] =
@@ -2930,7 +2933,8 @@ internal object CcTransitionOwner {
             values[Matrix.MPERSP_0] = 0f
             values[Matrix.MPERSP_1] = 0f
             values[Matrix.MPERSP_2] = 1f
-            return Matrix().apply { setValues(values) }
+            boundsMatrix.setValues(values)
+            return boundsMatrix
         }
 
         private data class TargetCacheKey(
