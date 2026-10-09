@@ -242,43 +242,6 @@ internal object NativeParticipantAccess {
         }
     }
 
-    fun invokeCreate(
-        handles: Handles,
-        setter: ResourceSetter,
-        slot: String,
-        resourceId: Int,
-        contentDescription: CharSequence,
-    ) {
-        setter.method.isAccessible = true
-        when (setter.mode) {
-            ResourceSetIconMode.CONTENT_SLOT_RES ->
-                setter.method.invoke(
-                    handles.controller,
-                    contentDescription,
-                    slot,
-                    resourceId,
-                )
-
-            ResourceSetIconMode.SLOT_RES_CONTENT ->
-                setter.method.invoke(
-                    handles.controller,
-                    slot,
-                    resourceId,
-                    contentDescription,
-                )
-        }
-    }
-
-    fun invokeVisibility(
-        handles: Handles,
-        method: Method,
-        slot: String,
-        visible: Boolean,
-    ) {
-        method.isAccessible = true
-        method.invoke(handles.controller, slot, visible)
-    }
-
     fun invokeRemoval(
         handles: Handles,
         removal: Removal,
