@@ -1213,7 +1213,7 @@ internal class StatusPainter(
                     TopSlotAvoidance(
                         bounds = resolved.opticalBounds,
                         components =
-                            resolved.opticalComponents
+                            resolved.opticalComponents()
                                 .ifEmpty { listOf(resolved.opticalBounds) },
                     )
                 } ?: resolveWifiFallbackAvoidance(geometry)
@@ -2596,15 +2596,8 @@ internal class StatusPainter(
                     right = resolved.opticalRight,
                     bottom = resolved.opticalBottom,
                 ),
-            opticalComponents =
-                asset.opticalComponents.map { component ->
-                    TransitionBounds(
-                        left = drawLeft + component.left * resolved.drawWidth,
-                        top = drawTop + component.top * resolved.drawHeight,
-                        right = drawLeft + component.right * resolved.drawWidth,
-                        bottom = drawTop + component.bottom * resolved.drawHeight,
-                    )
-                },
+            drawLeft = drawLeft,
+            drawTop = drawTop,
         )
     }
 
@@ -3477,8 +3470,19 @@ internal class StatusPainter(
         val drawWidth: Float,
         val drawHeight: Float,
         val opticalBounds: TransitionBounds,
-        val opticalComponents: List<TransitionBounds>,
-    )
+        val drawLeft: Float,
+        val drawTop: Float,
+    ) {
+        fun opticalComponents(): List<TransitionBounds> =
+            asset.opticalComponents.map { component ->
+                TransitionBounds(
+                    left = drawLeft + component.left * drawWidth,
+                    top = drawTop + component.top * drawHeight,
+                    right = drawLeft + component.right * drawWidth,
+                    bottom = drawTop + component.bottom * drawHeight,
+                )
+            }
+    }
 
     private data class NativeOpticalSize(
         val width: Float,
