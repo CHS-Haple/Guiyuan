@@ -315,12 +315,6 @@ jobs:
         if: steps.scope.outputs.run_android == 'true'
         shell: bash
         run: |
-          REQUIRED_ENTRIES=(
-            "META-INF/xposed/java_init.list"
-            "META-INF/xposed/module.prop"
-            "META-INF/xposed/scope.list"
-          )
-
           APKS=()
           if [[ "${{ steps.scope.outputs.run_debug }}" == "true" ]]; then
             APKS+=("$DEBUG_APK_PATH")
@@ -328,48 +322,7 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
           fi
-
-          for APK in "${APKS[@]}"; do
-            for entry in "${REQUIRED_ENTRIES[@]}"; do
-              if ! unzip -Z1 "$APK" | grep -Fxq "$entry"; then
-                echo "Missing modern Xposed metadata in $APK: $entry"
-                exit 1
-              fi
-            done
-
-            if unzip -Z1 "$APK" | grep -Fxq "assets/xposed_init"; then
-              echo "Legacy Xposed entry metadata must not be packaged in $APK."
-              exit 1
-            fi
-
-            if [[ "$(unzip -p "$APK" META-INF/xposed/scope.list | tr -d '\r\n')" != "com.android.systemui" ]]; then
-              echo "Unexpected Xposed scope in $APK."
-              exit 1
-            fi
-
-            if ! unzip -p "$APK" META-INF/xposed/module.prop | grep -Fxq "targetApiVersion=102"; then
-              echo "Modern Xposed target API 102 metadata is missing from $APK."
-              exit 1
-            fi
-
-            if ! unzip -p "$APK" META-INF/xposed/module.prop | grep -Fxq "autoHotReload=true"; then
-              echo "Modern Xposed hot reload metadata is missing from $APK."
-              exit 1
-            fi
-
-            JAVA_ENTRY_COUNT="$(
-              unzip -p "$APK" META-INF/xposed/java_init.list |
-                tr -d '\r' |
-                sed '/^[[:space:]]*$/d' |
-                wc -l |
-                tr -d ' '
-            )"
-            if [[ "$JAVA_ENTRY_COUNT" != "1" ]]; then
-              echo "Hot reload requires exactly one Java entry class in $APK."
-              exit 1
-            fi
-          done
-
+          bash tools/verify_xposed_metadata.sh "${APKS[@]}"
       - name: Verify Haple APK signatures
         if: steps.scope.outputs.run_android == 'true' && github.event_name != 'pull_request'
         shell: bash
