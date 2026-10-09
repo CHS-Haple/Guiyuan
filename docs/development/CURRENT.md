@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.5.0 / Build 773 (`20261008-773`); diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Development integration: Guiyuan 0.5.0 / Build 817 (`20261009-817`); NavigationEvent Compose 1.2.0 is integrated, with system-back gestures from Features and Settings to Home accepted on the separate Build 817 Canary. Previous dev UI behavior remains accepted; diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
 - Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
@@ -10,6 +10,8 @@
 - Liquid Glass has its own saved navigation-content choice, defaulting to icons and text; Standard, Blur and Glass share their original choice, defaulting to icons only. Explicit saved selections are preserved.
 - Home runtime status keeps its existing state semantics while all accent/background color changes use one short transition.
 - Charging lightning sampling and Diagnostics entry motion are integrated in `dev`, with combined Home/Keyguard/refresh device validation still outstanding.
+
+- Build and CI tooling: Gradle 9.8.1, Kotlin Compose/Serialization compiler plugins 2.4.21 and pinned `actions/upload-artifact` 7.0.2. MIUIX stays at the published `0.9.4-0657575a-SNAPSHOT` revision.
 
 ## Accepted runtime contract
 
@@ -25,7 +27,7 @@
 
 ## Maintainability baseline
 
-Repository-wide maintainability review is considered complete unless a concrete new finding appears.
+The initial repository-wide screening is not proof of a completed line-by-line audit. The evidence-based maintainability review remains active in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329); its unmerged runtime changes are not part of the accepted `dev` baseline.
 
 Current rules:
 - prefer concise, scope-appropriate names over modifier/suffix stacking;
@@ -51,4 +53,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Choose the next task from [ROADMAP.md](ROADMAP.md) or a concrete device issue. Continue focused device checks for combined Home/Keyguard/refresh scenarios.
+Continue the evidence-based review in #328 / Draft #329, while keeping accepted `dev` and stable `main` separate. Prioritize reproducible source, lifecycle and compatibility findings; request focused device evidence only for changed runtime behavior. Combined Home/Keyguard/refresh acceptance remains separately tracked.
