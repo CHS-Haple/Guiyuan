@@ -53,7 +53,6 @@ internal object CcTransitionOwner {
     private var sourceScene = SourceScene.UNKNOWN
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
-    private var latestBatteryNumberProbeSummary: String? = null
 
     @Synchronized
     fun onSourceUpdate(update: SysUiCcSource.Update) {
@@ -99,7 +98,7 @@ internal object CcTransitionOwner {
 
     @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
-        latestBatteryNumberProbeSummary
+        current?.batteryNumberProbe()
 
     @Synchronized
     fun detach(source: String = "detach") {
@@ -314,12 +313,14 @@ internal object CcTransitionOwner {
                 sourceViewRef.get() === sourceView &&
                 sourceAnchorRef.get() === sourceAnchor
 
+        fun batteryNumberProbe(): String =
+            resolveBatteryNumberProbe(finalBattery)
+
         fun start() {
             if (started) return
             val rootView = rootRef.get() ?: return
             val source = sourceViewRef.get() ?: return
             started = true
-            latestBatteryNumberProbeSummary = resolveBatteryNumberProbe(finalBattery)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
