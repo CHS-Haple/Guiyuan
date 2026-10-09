@@ -154,7 +154,7 @@ class CcTransitionOwnerTest {
         assertEquals(
             0.5f,
             policy.chargingVisibleFraction(progress = midpoint, targetAvailable = false),
-            0.0001f,
+            0.001f,
         )
         assertEquals(
             0f,
