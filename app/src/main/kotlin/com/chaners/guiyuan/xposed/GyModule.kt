@@ -3817,7 +3817,6 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        NativeBatterySuppressor.deactivate(source)
         NativeNetworkSuppressor.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
     }

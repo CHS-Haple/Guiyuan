@@ -120,26 +120,6 @@ internal object NativeParticipantAccess {
         }.getOrNull()
     }
 
-    fun invokeSetIconHolder(
-        handles: Handles,
-        slot: String,
-        holder: Any,
-    ) {
-        val holderClass =
-            handles.holderClass
-                ?: error("status-icon-holder-class-missing")
-        check(holderClass.isInstance(holder)) {
-            "status-icon-holder-type-mismatch"
-        }
-        val setter =
-            handles.controller.javaClass.findMethod(
-                name = "setIcon",
-                parameterTypes = listOf("java.lang.String", ICON_HOLDER),
-            ) ?: error("set-icon-holder-method-missing")
-        setter.isAccessible = true
-        setter.invoke(handles.controller, slot, holder)
-    }
-
     @Suppress("UNCHECKED_CAST")
     fun clearBindableEntries(
         handles: Handles,
@@ -428,15 +408,6 @@ internal object NativeParticipantAccess {
         classLoader: ClassLoader,
         manager: Any,
     ): ControllerRef? {
-        val observedController =
-            NativeParticipantRuntime.controllerFor(manager)
-        if (observedController != null) {
-            return ControllerRef(
-                value = observedController,
-                source = "add-icon-group-observer",
-            )
-        }
-
         val dependencyClass = classOrNull(DEPENDENCY, classLoader)
         if (dependencyClass != null) {
             val getMethod =
