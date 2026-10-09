@@ -11,7 +11,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | libxposed API | 102.0.0 | Modern Xposed API surface | Apache-2.0 |
 | libxposed service | 102.0.0 | Modern Xposed service integration | Apache-2.0 |
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
-| AndroidX Navigation Event Compose | 1.1.2 | Predictive/navigation event integration | Apache-2.0 |
+| AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-0657575a-SNAPSHOT (`0657575a0259f89b3863166ec2cef4223ea01156`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
@@ -34,7 +34,7 @@ The selected Material Symbols are stored as local Android vector drawables sourc
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper for Gradle 9.8.0. Gradle 9.8.0 is distributed under Apache-2.0.
+The repository includes the official Gradle Wrapper for Gradle 9.8.1. Gradle 9.8.1 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
 
