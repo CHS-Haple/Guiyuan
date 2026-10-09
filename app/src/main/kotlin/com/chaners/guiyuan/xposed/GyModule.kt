@@ -1484,7 +1484,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
-        val cleanupFailures = ArrayList<String>(6)
+        val cleanupFailures = mutableListOf<String>()
         fun safely(step: String, block: () -> Unit) {
             try {
                 block()
