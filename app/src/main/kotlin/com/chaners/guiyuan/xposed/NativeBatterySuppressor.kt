@@ -34,6 +34,7 @@ internal object NativeBatterySuppressor {
     private var latestNativeHideRequest: Boolean? = null
     private var suppressionActive = false
     private var eventSink: ((String) -> Unit)? = null
+    private var diagnosticsEnabled: () -> Boolean = { false }
     private var nativeLayoutHideSink: ((Boolean) -> Unit)? = null
 
     val installedHookCount: Int
@@ -45,10 +46,12 @@ internal object NativeBatterySuppressor {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
+        isDetailedDiagnosticsEnabled: () -> Boolean = { false },
         onNativeLayoutHideChanged: (Boolean) -> Unit = {},
     ): String? {
         if (installedHookCount == HOOK_COUNT) {
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             nativeLayoutHideSink = onNativeLayoutHideChanged
             return null
         }
@@ -127,6 +130,7 @@ internal object NativeBatterySuppressor {
             hideHookHandle = hideHandle
             chargeRefreshHookHandle = refreshHandle
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             nativeLayoutHideSink = onNativeLayoutHideChanged
             null
         }.getOrElse { error ->
@@ -141,6 +145,7 @@ internal object NativeBatterySuppressor {
             chargingViewField = null
             clearOwnedStateLocked()
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             nativeLayoutHideSink = null
             error.message ?: error.javaClass.simpleName
         }
@@ -208,7 +213,7 @@ internal object NativeBatterySuppressor {
         }
 
         val visualChanged = mask.alphaWrites > 0 || mask.visibilityWrites > 0
-        eventSink?.invoke(
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
             "nativeBatterySuppression active source=" + source +
                 " nativeRequestedHide=" + nativeRequestedHide +
                 " maskedChildren=" + mask.maskedChildren +
@@ -228,7 +233,7 @@ internal object NativeBatterySuppressor {
         val wasActive = suppressionActive
         clearOwnedStateLocked()
         val visualChanged = wasActive && restoredChildren > 0
-        eventSink?.invoke(
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
             "nativeBatterySuppression inactive source=" + source +
                 " restoredNativeHide=" + (nativeHide ?: "unknown") +
                 " restoredChildren=" + restoredChildren +
@@ -248,6 +253,7 @@ internal object NativeBatterySuppressor {
         chargingViewField = null
         clearOwnedStateLocked()
         eventSink = null
+        diagnosticsEnabled = { false }
         nativeLayoutHideSink = null
     }
 
@@ -278,7 +284,7 @@ internal object NativeBatterySuppressor {
                 if (applied == requested) {
                     nativeLayoutHideSink?.invoke(requested)
                 }
-                eventSink?.invoke(
+                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                     "nativeBatterySuppression passthrough " +
                         "nativeRequestedHide=" + requested +
                         " appliedNativeHide=" + (applied ?: "unknown") +
@@ -313,7 +319,7 @@ internal object NativeBatterySuppressor {
                 snapshot.failureReason == null &&
                 (snapshot.alphaWrites > 0 || snapshot.visibilityWrites > 0)
             ) {
-                eventSink?.invoke(
+                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                     "nativeBatterySuppression revalidate " +
                         "source=" + UPDATE_CHARGE_METHOD_NAME +
                         " maskedChildren=" + snapshot.maskedChildren +

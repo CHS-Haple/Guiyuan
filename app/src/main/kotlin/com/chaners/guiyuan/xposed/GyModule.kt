@@ -759,6 +759,7 @@ class GyModule : XposedModule() {
                         log(Log.INFO, TAG, event)
                     }
                 },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onNativeLayoutHideChanged = { hidden ->
                     NativeCombinedParticipant
                         .onNativeBatteryLayoutHideChanged(hidden)
