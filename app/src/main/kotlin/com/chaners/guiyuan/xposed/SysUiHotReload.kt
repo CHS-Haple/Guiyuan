@@ -118,6 +118,9 @@ internal object SysUiHotReload {
         oldHandles.forEach { handle ->
             if (handle !== hostHandle) {
                 runCatching { handle.unhook() }
+                    .getOrElse { cause ->
+                        throw IllegalStateException("stale-hook-unhook-failed", cause)
+                    }
                 removed += 1
             }
         }

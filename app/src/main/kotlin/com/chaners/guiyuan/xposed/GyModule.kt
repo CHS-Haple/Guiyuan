@@ -254,11 +254,14 @@ class GyModule : XposedModule() {
 
     override fun onHotReloaded(param: HotReloadedParam) {
         rotateDiagnosticSession()
-        val takeover =
-            SysUiHotReload.takeOverHooks(
-                param = param,
-                onCaptured = ::onStatusHostCaptured,
-            )
+        val takeoverResult =
+            runCatching {
+                SysUiHotReload.takeOverHooks(
+                    param = param,
+                    onCaptured = ::onStatusHostCaptured,
+                )
+            }
+        val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
             bindRuntimeDiagnostics()
@@ -269,7 +272,7 @@ class GyModule : XposedModule() {
                 event = "hotReload.complete",
                 component = "hotReload",
                 state = "error",
-                "reason" to "status-host-hook-missing",
+                "reason" to (takeoverResult.exceptionOrNull()?.message ?: "status-host-hook-missing"),
                 "restartScope" to true,
             )
             return
