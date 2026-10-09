@@ -24,7 +24,6 @@ internal object SysUiHotReload {
     }
 
     internal data class HookTakeover(
-        val hostHandle: HookHandle,
         val removedHooks: Int,
         val classLoader: ClassLoader,
     )
@@ -138,7 +137,6 @@ internal object SysUiHotReload {
         )
 
         return HookTakeover(
-            hostHandle = hostHandle,
             removedHooks = removed,
             classLoader = classLoader,
         )
