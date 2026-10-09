@@ -1936,7 +1936,16 @@ internal object CcTransitionOwner {
         private fun resolveFrozenAdditionalMobileTargets(
             primary: TargetWitness?,
         ): List<TargetWitness> {
-            frozenAdditionalMobileTargets?.let { return it }
+            frozenAdditionalMobileTargets?.let { targets ->
+                if (targets.all { target ->
+                        target.slotView.isAttachedToWindow &&
+                            target.slotView !== primary?.slotView &&
+                            target.subscriptionId != primary?.subscriptionId &&
+                            target.subscriptionId == readMobileSubId(target.slotView)
+                    }) {
+                    return targets
+                }
+            }
             val resolved = resolveAdditionalMobileTargets(primary)
             frozenAdditionalMobileTargets = resolved
             return resolved
