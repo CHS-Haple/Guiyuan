@@ -1938,7 +1938,8 @@ internal object CcTransitionOwner {
         ): List<TargetWitness> {
             frozenAdditionalMobileTargets?.let { targets ->
                 if (targets.all { target ->
-                        target.slotView.isAttachedToWindow &&
+                        target.slotView.visibility == View.VISIBLE &&
+                            isUsableSlotView(target.slotView) &&
                             target.slotView !== primary?.slotView &&
                             target.subscriptionId != primary?.subscriptionId &&
                             target.subscriptionId == readMobileSubId(target.slotView)
