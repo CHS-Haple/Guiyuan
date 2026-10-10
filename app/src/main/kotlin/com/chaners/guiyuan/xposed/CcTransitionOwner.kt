@@ -325,6 +325,11 @@ internal object CcTransitionOwner {
         fun visualState(): String =
             "started=" + started +
                 ":rootShown=" + (rootRef.get()?.isShown ?: "unavailable") +
+                ":fakeOpacity=" +
+                (fakeRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
+                ":finalOpacity=" +
+                (finalRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
+                ":sourceWidth=" + (sourceViewRef.get()?.width ?: "unavailable") +
                 ":progress=" + progress
 
         fun batteryNumberProbe(): String =
