@@ -788,7 +788,7 @@ internal object SysUiPresentationOwner {
         controlCenterReadySink = onReady
 
         val existing = controlCenterCurrent
-        if (
+        val sameHost =
             existing?.matches(
                 host = host,
                 statusIcons = statusIcons,
@@ -796,7 +796,11 @@ internal object SysUiPresentationOwner {
                 battery = battery,
                 batteryCarrier = batteryCarrier,
             ) == true
-        ) {
+        if (!sameHost && (host.width <= 0 || host.layoutParams?.width != host.width)) {
+            // The fake carrier must finish its native layout before we lease its width.
+            return Result.Failure("fake-carrier-native-layout-pending", retryAfterLayout = true)
+        }
+        if (sameHost) {
             val masked =
                 existing.start(
                     deferVisualMaskUntilLayout = true,
@@ -2546,6 +2550,9 @@ internal object SysUiPresentationOwner {
 
         fun validateNativeLayoutBeforeVisualMask(): Boolean {
             if (!active || !started) return false
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && appliedFakeCarrierWidthPx == null) {
+                return false
+            }
             if (!capacityLeaseAwaitingLayout) return true
 
             val hostView =
@@ -2566,10 +2573,33 @@ internal object SysUiPresentationOwner {
                         onFailNative("fake-carrier-post-lease-state-invalid")
                         return false
                     }
-            if (
-                hostView.layoutParams?.width != expectedWidthPx ||
-                !isFakeCarrierEndAnchored(hostView, parent)
-            ) {
+            val liveWidthPx = hostView.layoutParams?.width
+            val endAnchored = isFakeCarrierEndAnchored(hostView, parent)
+            if (liveWidthPx != expectedWidthPx || !endAnchored) {
+                val parentWidthPx =
+                    parent.width - parent.paddingLeft - parent.paddingRight
+                if (
+                    leasePhase == LeasePhase.PREARM &&
+                    endAnchored &&
+                    liveWidthPx != null &&
+                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                        visibleCycleActive = false,
+                        liveWidthPx = liveWidthPx,
+                        appliedWidthPx = expectedWidthPx,
+                        currentParentContentWidthPx = parentWidthPx,
+                        leasedParentContentWidthPx = fakeCarrierParentWidth,
+                    ) == FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+                ) {
+                    // Native changed its hidden carrier; the next visible edge must lease afresh.
+                    clearCapacityLeaseSnapshot()
+                    pendingNativeCarrierWidth = liveWidthPx
+                    onEvent(
+                        eventPrefix + " fakeCarrierCapacity lease=yield-hidden-prearm" +
+                            " liveWidth=" + liveWidthPx +
+                            " next=visible-cycle",
+                    )
+                    return false
+                }
                 onFailNative("fake-carrier-post-lease-layout-invalid")
                 return false
             }

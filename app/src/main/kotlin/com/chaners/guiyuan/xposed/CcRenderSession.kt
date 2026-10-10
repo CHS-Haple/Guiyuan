@@ -503,6 +503,10 @@ internal object CcRenderSession {
         private val statusAreaLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProjection()
+                if (sceneEligible && featureEnabled && !nativePresentationReady && !requestedVisible) {
+                    // A Keyguard scene may become ready before the fake carrier's own layout.
+                    prepareNativePresentation(reused = true)
+                }
             }
         private val carrierLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
