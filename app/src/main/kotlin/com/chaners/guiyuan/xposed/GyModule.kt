@@ -1971,6 +1971,17 @@ class GyModule : XposedModule() {
         val target =
             SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolution.host)
 
+        if (target == false && CcTransitionOwner.onNativeAodTarget()) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.ccTransitionRelease",
+                component = "controlCenterProjection",
+                state = "released",
+                "source" to "animateIconContainer",
+                "authority" to "native-aod-target",
+            )
+        }
+
         val prearmed =
             armHomeAodPrearm(
                 resolution = resolution,
