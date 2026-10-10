@@ -163,6 +163,17 @@ internal object ScenePolicy {
             // ignored-slot and reservation ownership remain deferred.
             return KeyguardAodProjection.KEYGUARD
         }
+        if (
+            isAodAnimate &&
+            aodEnabled && !keyguardEnabled &&
+            steadySourceScene == SourceScene.KEYGUARD &&
+            lastStableFamilyScene == StableKeyguardAodScene.AOD &&
+            fullAodTargetSourceReady &&
+            nativeToLockScreenTarget == true
+        ) {
+            // The native battery is still leaving AOD after the icon fade starts.
+            return KeyguardAodProjection.AOD
+        }
         if (isAodAnimate) {
             return resolveAnimatingKeyguardAodProjection(
                 keyguardEnabled = keyguardEnabled,

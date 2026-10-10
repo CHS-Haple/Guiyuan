@@ -230,6 +230,29 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun aodOnlyRetainsBatteryMaskThroughNativeKeyguardTransition() {
+        fun projection(animated: Boolean, toAod: Boolean, target: Boolean) =
+            ScenePolicy.resolveKeyguardAodProjection(
+                featureEnabled = true,
+                keyguardEnabled = false,
+                aodEnabled = true,
+                toAod = toAod,
+                isAodAnimate = animated,
+                steadySourceScene = SourceScene.KEYGUARD,
+                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
+                keyguardStatusIconsAlpha = 0.5f,
+                nativeToLockScreenTarget = target,
+                fullAodTargetSourceReady = true,
+                fullAodVisualBoundary = true,
+            )
+
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, true, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, false, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projection(false, false, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, true, false))
+    }
+
+    @Test
     fun singleEnabledFamilyUsesNativeKeyguardStatusIconsBoundary() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
