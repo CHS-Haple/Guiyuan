@@ -143,6 +143,9 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
+    fun visualState(): String? = current?.visualState()
+
+    @Synchronized
     fun currentTransitionSourceWitness(): TransitionSourceWitness? =
         current?.transitionSourceWitness()
 
@@ -317,6 +320,12 @@ internal object KeyguardRenderSession {
                 batteryCarrier.get() === resolved.batteryCarrier
 
         fun isScene(candidate: Scene): Boolean = scene == candidate
+
+        fun visualState(): String =
+            scene.name.lowercase() +
+                ":childShown=" + renderView.isShown +
+                ":childAlpha=" + renderView.alpha +
+                ":hostShown=" + (host.get()?.isShown ?: "unavailable")
 
         fun retarget(
             scene: Scene,
