@@ -1,8 +1,16 @@
 name: Work Branch APK
 run-name: >-
-  ${{ github.event_name == 'issue_comment'
-      && github.event.issue.title
-      || format('{0} - {1}', inputs.variant, inputs.source_branch) }}
+  ${{ github.event_name == 'workflow_dispatch'
+      && format('{0} APK | {1}', inputs.variant, inputs.source_branch)
+      || (github.event.issue.pull_request != null
+          && github.actor == github.repository_owner
+          && github.event.comment.body == '/canary'
+          && format('Canary APK | PR #{0}', github.event.issue.number))
+      || (github.event.issue.pull_request != null
+          && github.actor == github.repository_owner
+          && github.event.comment.body == '/internal'
+          && format('Internal APK | PR #{0}', github.event.issue.number))
+      || format('Ignored comment | #{0}', github.event.issue.number) }}
 
 on:
   workflow_dispatch:
