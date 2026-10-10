@@ -745,7 +745,7 @@ internal object SysUiNetworkSource {
 
         onEvent?.invoke(
             "networkPipeline wifi seed source=" + source +
-                " state=" + if (semantic.state != null) "ready" else "unavailable" +
+                " state=" + (if (semantic.state != null) "ready" else "unavailable") +
                 " getter=" + getter.name +
                 " flow=" + flow.javaClass.simpleName +
                 " valueType=" + semantic.valueType +

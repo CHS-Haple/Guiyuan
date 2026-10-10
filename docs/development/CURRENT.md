@@ -2,7 +2,8 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.5.0 / Build 817 (`20261009-817`); NavigationEvent Compose 1.2.0 is integrated, with system-back gestures from Features and Settings to Home accepted on the separate Build 817 Canary. Previous dev UI behavior remains accepted; diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Development integration: Guiyuan 0.5.0 / Build 844 (`20261010-844`); NavigationEvent Compose 1.2.0 is integrated, with system-back gestures from Features and Settings to Home accepted on the separate Build 817 Canary. Previous dev UI behavior remains accepted; diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Control Center callback failure diagnostics distinguish fallback requests from incomplete cleanup; Wi-Fi seed diagnostics preserve source and resource details for both ready and unavailable states.
 - Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
@@ -27,7 +28,7 @@
 
 ## Maintainability baseline
 
-A source-wide static screening has been performed, but its inventory is not proof of a completed line-by-line audit. Continue evidence-based review of actual code and call paths; do not rewrite stable features to satisfy a file-count or style target.
+The initial repository-wide screening is not proof of a completed line-by-line audit. The evidence-based maintainability review remains active in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329); its unmerged runtime changes are not part of the accepted `dev` baseline.
 
 Current rules:
 - prefer concise, scope-appropriate names over modifier/suffix stacking;
@@ -53,4 +54,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Continue the evidence-based source audit in [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) and Draft [#329](https://github.com/CHS-Haple/Guiyuan/pull/329). Review Hook installation/rollback, Hot Reload cleanup, cache invalidation and the full base→HEAD diff before integration. Combined Home/Keyguard/refresh device acceptance remains outstanding; do not promote the runtime changes on CI evidence alone.
+Continue the evidence-based review in #328 / Draft #329, while keeping accepted `dev` and stable `main` separate. Prioritize reproducible source, lifecycle and compatibility findings; request focused device evidence only for changed runtime behavior. Combined Home/Keyguard/refresh acceptance remains separately tracked.
