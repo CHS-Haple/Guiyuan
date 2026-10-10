@@ -75,7 +75,6 @@ internal object SysUiKeyguardHostProbe {
         )
     }
 
-
     internal fun boundaryGeometry(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
     ): String {
