@@ -151,8 +151,12 @@ internal object DiagLogReader {
     }
 
     private fun pidOf(line: String): String? =
-        pidRe.find(line)?.groupValues?.getOrNull(1)
+        (lspPidRe.find(line) ?: logcatPidRe.find(line))
+            ?.groupValues?.getOrNull(1)
 
-    private val pidRe =
+    private val lspPidRe =
         Regex(""":\s*(\d+):\s*\d+\s+[A-Z]/LSPosedFramework""")
+
+    private val logcatPidRe =
+        Regex("""^\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+(\d+)\s+\d+\s+[VDIWEAF]\s+""")
 }
