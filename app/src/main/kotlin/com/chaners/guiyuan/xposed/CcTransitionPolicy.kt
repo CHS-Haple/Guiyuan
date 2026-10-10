@@ -25,6 +25,20 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    fun mobileTypeMatches(
+        sourceLabel: String,
+        sourceEnhanced: Boolean,
+        target: NativePresentationResolver.NetworkType?,
+    ): Boolean? {
+        target ?: return null
+        fun shown(label: String, enhanced: Boolean): String {
+            val value = label.trim().uppercase().replace("-", "").replace("_", "")
+            return if (value == "5G" && enhanced) "5G++" else value
+        }
+        return shown(sourceLabel, sourceEnhanced) ==
+            shown(target.label, target.enhanced)
+    }
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p
@@ -56,12 +70,14 @@ internal object CcTransitionPolicy {
         nativeBatteryIslandActive: Boolean,
         targetRowRtl: Boolean,
     ): BatteryRingTransitionPolicy.ExitDirection {
-        if (!nativeBatteryIslandActive) return liveCenterDirection
-
-        // During HyperOS Battery-Island expansion the final status row is
-        // itself being reflowed. Its live pixel X is therefore not a stable
-        // direction authority for the ring's first frames. The structural
-        // destination is still toward the status-row logical start.
+        // The ring must retain its exit side when the native center glyph
+        // disappears. Battery-Island reflow also makes the live X unreliable.
+        if (
+            !nativeBatteryIslandActive &&
+            liveCenterDirection != BatteryRingTransitionPolicy.ExitDirection.NONE
+        ) {
+            return liveCenterDirection
+        }
         return if (targetRowRtl) {
             BatteryRingTransitionPolicy.ExitDirection.RIGHT
         } else {
@@ -69,7 +85,7 @@ internal object CcTransitionPolicy {
         }
     }
 
-    fun unmatchedExitVisibleFraction(rawProgress: Float): Float {
+    fun unmatchedExitOpacity(rawProgress: Float): Float {
         val remaining = 1f - geometryProgress(rawProgress)
         return remaining * remaining * remaining
     }
@@ -557,16 +573,6 @@ internal object CcTransitionPolicy {
     ): StatusPainter.TransitionNormalizedBounds? {
         val logical =
             when {
-                preferredChildEntries.any { entry ->
-                    entry == "mobile_type_single" || entry == "mobile_type"
-                } ->
-                    StatusPainter.TransitionNormalizedBounds(
-                        left = 0f,
-                        top = 0f,
-                        right = 0.42f,
-                        bottom = 1f,
-                    )
-
                 preferredChildEntries.contains("mobile_signal") ->
                     StatusPainter.TransitionNormalizedBounds(
                         left = 0.48f,
