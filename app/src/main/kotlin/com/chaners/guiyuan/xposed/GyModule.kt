@@ -927,6 +927,20 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
+        if (
+            detailedDiagnosticsEnabled &&
+            update.visible == false &&
+            (aodWindow as? AodWindow.Waiting)?.toLockScreen == false
+        ) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "projection.aodRelease",
+                component = "controlCenterProjection",
+                state = "after-panel-hidden",
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
+            )
+        }
 
         if (
             detailedDiagnosticsEnabled &&
@@ -978,6 +992,8 @@ class GyModule : XposedModule() {
                     "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
                     "keyguardCarrierShown" to keyguard?.systemIcons?.isShown,
                     "familyVisual" to KeyguardRenderSession.visualState(),
+                    "ccFakeVisual" to CcRenderSession.visualState(),
+                    "ccTransitionVisual" to CcTransitionOwner.visualState(),
                     "nativeKeyguardShown" to keyguard?.host?.isShown,
                     "nativeStatusShown" to keyguard?.statusIcons?.isShown,
                     "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
@@ -2021,6 +2037,8 @@ class GyModule : XposedModule() {
                 "source" to "animateIconContainer",
                 "targetToLockScreen" to target,
                 "familyVisual" to KeyguardRenderSession.visualState(),
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
                 "nativeKeyguardShown" to resolution.host.host.isShown,
                 "nativeStatusShown" to resolution.host.statusIcons.isShown,
                 "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
