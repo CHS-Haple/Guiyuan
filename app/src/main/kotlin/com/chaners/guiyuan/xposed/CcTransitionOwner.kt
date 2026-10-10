@@ -97,6 +97,13 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
+    fun visualState(): String =
+        "visible=" + visible +
+            ":eligible=" + sceneEligible +
+            ":progress=" + (nativeProgress ?: "none") +
+            ":drawable=" + (current?.visualState() ?: "none")
+
+    @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
         current?.batteryNumberProbe()
 
@@ -314,6 +321,11 @@ internal object CcTransitionOwner {
                 finalRootRef.get() === finalRoot &&
                 sourceViewRef.get() === sourceView &&
                 sourceAnchorRef.get() === sourceAnchor
+
+        fun visualState(): String =
+            "started=" + started +
+                ":rootShown=" + (rootRef.get()?.isShown ?: "unavailable") +
+                ":progress=" + progress
 
         fun batteryNumberProbe(): String =
             resolveBatteryNumberProbe(finalBattery)
