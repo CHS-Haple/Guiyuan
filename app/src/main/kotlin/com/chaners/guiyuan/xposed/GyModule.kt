@@ -927,6 +927,31 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
+        if (detailedDiagnosticsEnabled && update.appearance != null) {
+            val keyguard =
+                (SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.ccAppearance",
+                component = "controlCenterProjection",
+                state = "sampled",
+                "source" to "native-appearance",
+                "appearance" to update.appearance,
+                "animated" to update.appearanceAnimated,
+                "ccVisible" to controlCenterSceneVisible,
+                "ccFraction" to ccExpansion,
+                "ccSource" to controlCenterSourceScene.name,
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "keyguardVisual" to KeyguardRenderSession.visualState(),
+                "nativeKeyguardShown" to keyguard?.host?.isShown,
+                "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
+                "nativeSleepLinkage" to
+                    keyguard?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+            )
+        }
         if (
             detailedDiagnosticsEnabled &&
             update.visible == false
