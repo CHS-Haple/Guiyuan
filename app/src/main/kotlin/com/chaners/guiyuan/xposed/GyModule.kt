@@ -977,6 +977,13 @@ class GyModule : XposedModule() {
                     "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
                     "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
                     "keyguardCarrierShown" to keyguard?.systemIcons?.isShown,
+                    "familyVisual" to KeyguardRenderSession.visualState(),
+                    "nativeKeyguardShown" to keyguard?.host?.isShown,
+                    "nativeStatusShown" to keyguard?.statusIcons?.isShown,
+                    "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
+                    "nativeSystemAlpha" to keyguard?.systemIcons?.alpha,
+                    "nativeToLockScreen" to
+                        keyguard?.let(SysUiKeyguardHostResolver::nativeToLockScreenTarget),
                     "homeSlots" to SysUiPresentationOwner.homeSlots().size,
                     "aodTarget" to
                         (aodWindow as? AodWindow.Waiting)?.toLockScreen?.let {
@@ -1990,6 +1997,13 @@ class GyModule : XposedModule() {
                     null -> "unavailable"
                 },
             "isAodAnimate" to aodState?.isAodAnimate,
+            "familyVisual" to KeyguardRenderSession.visualState(),
+            "nativeKeyguardShown" to resolution.host.host.isShown,
+            "nativeStatusShown" to resolution.host.statusIcons.isShown,
+            "nativeSystemShown" to resolution.host.systemIcons.isShown,
+            "homeCombinedShown" to HomeRenderSession.isOverlayShown(),
+            "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+            "ccVisible" to controlCenterSceneVisible,
             "cachedToAod" to aodState?.toAod,
             "nativeToAod" to nativeState?.toAod,
             "nativeIsAodAnimate" to nativeState?.isAodAnimate,
