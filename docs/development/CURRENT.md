@@ -2,14 +2,14 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.5.0 / Build 875 (`20261010-875`), integrating the maintainability and AOD/Keyguard/Control Center lifecycle work through #381. Previously accepted UI, diagnostics, and NavigationEvent Compose 1.2.0 behavior remain part of this baseline. The maintainer reports no problems in the tested scenes; untested combinations are not claimed verified.
+- Development integration: Guiyuan 0.5.0 / Build 876 (`20261011-876`), incorporating the tested B875 AOD/Keyguard/Control Center baseline and the distinct runtime-card guidance, 5GA native-target text transition, SIM-bound mobile event deduplication and Hot Reload network-state fixes from historical #335/#336/#340/#341. Maintainer acceptance covers previously tested paths; the new integration and rare rebind/Hot Reload interleavings are not claimed separately device verified.
 - Control Center callback failure diagnostics distinguish fallback requests from incomplete cleanup; Wi-Fi seed diagnostics preserve source and resource details for both ready and unavailable states.
 - Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
-- Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
+- Mobile runtime state retains semantic signal strength without persisting native signal/VoLTE/VoWiFi resource IDs. Native icon event deduplication includes SIM identity, and Hot Reload restoration preserves attached roots plus newly observed Wi-Fi/mobile state while retaining fallback for missing transfer data.
 - Liquid Glass selected-state tint follows the active MIUIX theme color, including Monet dynamic color.
 - Liquid Glass has its own saved navigation-content choice, defaulting to icons and text; Standard, Blur and Glass share their original choice, defaulting to icons only. Explicit saved selections are preserved.
-- Home runtime status keeps its existing state semantics while all accent/background color changes use one short transition.
+- Home runtime status keeps its existing state semantics and color transitions, with a scoped Xposed enable prompt when supported and one MIUIX loading indicator while checking/reloading.
 - Charging lightning sampling and Diagnostics entry motion remain integrated in `dev`; current tested Home/Keyguard/refresh paths have no reported regression.
 
 - Build and CI tooling: Gradle 9.8.1, Kotlin Compose/Serialization compiler plugins 2.4.21 and pinned `actions/upload-artifact` 7.0.2. MIUIX stays at the published `0.9.4-0657575a-SNAPSHOT` revision.
@@ -20,7 +20,7 @@
 - Keyguard and AOD share one host-scoped family presentation owner; same-host scene changes retarget that owner instead of creating duplicate mutable owners.
 - AOD is never a Control Center transition source.
 - Notification Shade and the fully expanded Control Center remain native.
-- QS_FAKE is the bounded Control Center transition bridge. A new fake-carrier width lease waits for the native host width/layout agreement and resumes on native layout; a hidden prearm lease may yield to an authoritative native width reset, while visible ownership conflicts fail native.
+- QS_FAKE is the bounded Control Center transition bridge. Its width lease waits for native layout agreement and resumes on native layout; a hidden prearm lease may yield to an authoritative native reset. A 5GA suffix only morphs toward a verified native text target; an unknown target preserves fail-native behavior.
 - SystemUI owns native scene state, layout, appearance, alpha, visibility, translation and motion timing.
 - Guiyuan owns only its renderer plus the minimum verified suppression, masking, reservation and transition-projection state.
 - Any ownership, host, geometry, or compatibility ambiguity triggers fail-native behavior for the smallest affected surface.
@@ -54,4 +54,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Continue the evidence-based audit in #328 from the integrated Build 875 `dev` tree, keeping `main` as the separate stable promotion boundary. Evaluate remaining independently diverged UI/5GA/mobile draft branches against current `dev` before adopting their unique behavior; they are not part of #381. Prefer coherent integration over more checkpoint branches, and request device evidence only when runtime changes warrant it.
+Continue the evidence-based audit in #328 from the integrated Build 876 `dev` tree, keeping `main` as a separate stable promotion boundary. The historical UI/5GA/mobile draft candidates #335/#336/#340/#341 have been consolidated into this source tree; do not re-merge their old branches. Review future runtime changes from current `dev`, and request focused device evidence only when necessary.
