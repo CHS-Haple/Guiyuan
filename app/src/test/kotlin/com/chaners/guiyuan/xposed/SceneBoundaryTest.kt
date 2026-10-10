@@ -7,7 +7,7 @@ import org.junit.Test
 
 class SceneBoundaryTest {
     @Test
-    fun singleChildNativeTargetPreservesOutgoingVisualLifetime() {
+    fun nativeAodTargetSurrendersOutgoingKeyguardAtVisualBoundary() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -26,7 +26,7 @@ class SceneBoundaryTest {
             ),
         )
         assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
@@ -96,9 +96,9 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun fullAodTargetPendingRetainsOutgoingSingleChildThroughFadeLifetime() {
+    fun nativeAodTargetReleasesKeyguardDuringPendingAnimation() {
         assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
@@ -115,7 +115,7 @@ class SceneBoundaryTest {
             ),
         )
         assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = true,
