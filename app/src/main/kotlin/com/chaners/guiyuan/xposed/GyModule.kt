@@ -949,10 +949,6 @@ class GyModule : XposedModule() {
 
     }
 
-    private fun canRestoreHomeAfterCc(): Boolean =
-        FeaturePrefsOwner.current().aod ||
-            steadyStatusSourceScene != SourceScene.KEYGUARD
-
     private fun handleCcUpdate(
         update: SysUiCcSource.Update,
     ): SourceScene? {
@@ -961,8 +957,33 @@ class GyModule : XposedModule() {
         val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
-            HomeRenderSession.onControlCenterAuthorityChanged(canRestoreHomeAfterCc())
+            // Restore Home first. QS_FAKE compact presentation remains prearmed
+            // for the lifetime of the native fake root; only the Combined
+            // overlay visibility changes with Control Center visibility.
+            HomeRenderSession.onControlCenterAuthorityChanged(true)
             CcRenderSession.setRequestedVisible(false)
+            if (detailedDiagnosticsEnabled) {
+                val keyguard =
+                    (SysUiKeyguardHostResolver.current()
+                        as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "projection.yield",
+                    component = "controlCenterProjection",
+                    state = "panel-hidden",
+                    "ccSource" to controlCenterSourceScene.name,
+                    "steadySource" to steadyStatusSourceScene.name,
+                    "aodEnabled" to FeaturePrefsOwner.current().aod,
+                    "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+                    "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                    "keyguardCarrierShown" to keyguard?.systemIcons?.isShown,
+                    "homeSlots" to SysUiPresentationOwner.homeSlots().size,
+                    "aodTarget" to
+                        (aodWindow as? AodWindow.Waiting)?.toLockScreen?.let {
+                            if (it) "keyguard" else "aod"
+                        },
+                )
+            }
             return null
         }
 
@@ -1368,11 +1389,9 @@ class GyModule : XposedModule() {
         if (!controlCenterSceneVisible) {
             return
         }
-        // A disabled-AOD Keyguard source must not restore Home when the
-        // projected carrier yields.
-        HomeRenderSession.onControlCenterAuthorityChanged(
-            !ready && canRestoreHomeAfterCc(),
-        )
+        // Projected owner is already visible when ready=true. On the reverse
+        // edge Home is restored before the projected owner is removed.
+        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
     }
 
     private fun onCcEvent(event: String) {
@@ -2499,9 +2518,6 @@ class GyModule : XposedModule() {
             }
         }
         if (sourceScene == SourceScene.HOME) {
-            if (!controlCenterSceneVisible) {
-                HomeRenderSession.onControlCenterAuthorityChanged(true)
-            }
             if (aodWindow !is AodWindow.Running) {
                 homeAodFallback = HomeAodFallback.NONE
             }
