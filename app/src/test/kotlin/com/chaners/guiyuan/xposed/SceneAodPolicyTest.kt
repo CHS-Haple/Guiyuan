@@ -562,6 +562,92 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun nativeAodBatteryModeOwnsTheFinalKeyguardClipRelease() {
+        fun hold(
+            target: Boolean? = false,
+            batteryAod: Boolean = false,
+            claimed: Boolean = true,
+            animated: Boolean = true,
+            aodEnabled: Boolean = false,
+        ) = ScenePolicy.shouldHoldKeyguardForAodBattery(
+            featureEnabled = true,
+            keyguardEnabled = true,
+            aodEnabled = aodEnabled,
+            sourceScene = SourceScene.KEYGUARD,
+            nativeToLockScreenTarget = target,
+            batteryInAodMode = batteryAod,
+            nativeHandoffActive = true,
+            keyguardClaimed = claimed,
+            animatedBatteryMode = animated,
+        )
+
+        assertTrue(hold())
+        assertFalse(hold(batteryAod = true))
+        assertFalse(hold(target = true))
+        assertFalse(hold(target = null))
+        assertFalse(hold(claimed = false))
+        assertFalse(hold(animated = false))
+        assertFalse(hold(aodEnabled = true))
+        assertFalse(
+            ScenePolicy.shouldHoldKeyguardForAodBattery(
+                featureEnabled = false,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                sourceScene = SourceScene.KEYGUARD,
+                nativeToLockScreenTarget = false,
+                batteryInAodMode = false,
+                nativeHandoffActive = true,
+                keyguardClaimed = true,
+                animatedBatteryMode = true,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.shouldHoldKeyguardForAodBattery(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                sourceScene = SourceScene.KEYGUARD,
+                nativeToLockScreenTarget = false,
+                batteryInAodMode = false,
+                nativeHandoffActive = false,
+                keyguardClaimed = true,
+                animatedBatteryMode = true,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.shouldHoldKeyguardForAodBattery(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                sourceScene = SourceScene.HOME,
+                nativeToLockScreenTarget = false,
+                batteryInAodMode = false,
+                nativeHandoffActive = true,
+                keyguardClaimed = true,
+                animatedBatteryMode = true,
+            ),
+        )
+    }
+
+    @Test
+    fun pendingAodTargetRejectsPreviousKeyguardStableSignal() {
+        assertFalse(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = false,
+                toAod = false,
+                isAodAnimate = false,
+            ),
+        )
+        assertTrue(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = false,
+                toAod = true,
+                isAodAnimate = false,
+            ),
+        )
+    }
+
+    @Test
     fun keyguardBoundaryHandoffStopsWhenNativeTargetChanges() {
         val eligible = { target: Boolean? ->
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(

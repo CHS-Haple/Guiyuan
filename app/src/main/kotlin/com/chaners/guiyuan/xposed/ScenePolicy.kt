@@ -303,6 +303,27 @@ internal object ScenePolicy {
             homePresentationOwnedAtFullAodStart &&
             nativeToLockScreenTarget == false
 
+    fun shouldHoldKeyguardForAodBattery(
+        featureEnabled: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        sourceScene: SourceScene,
+        nativeToLockScreenTarget: Boolean?,
+        batteryInAodMode: Boolean,
+        nativeHandoffActive: Boolean,
+        keyguardClaimed: Boolean,
+        animatedBatteryMode: Boolean,
+    ): Boolean =
+        featureEnabled &&
+            keyguardEnabled &&
+            !aodEnabled &&
+            sourceScene == SourceScene.KEYGUARD &&
+            nativeToLockScreenTarget == false &&
+            !batteryInAodMode &&
+            nativeHandoffActive &&
+            keyguardClaimed &&
+            animatedBatteryMode
+
     fun fullAodPendingTargetReachedStableState(
         pendingTargetToLockScreen: Boolean?,
         toAod: Boolean,

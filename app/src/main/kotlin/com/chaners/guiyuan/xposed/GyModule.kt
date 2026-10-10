@@ -45,9 +45,8 @@ class GyModule : XposedModule() {
 
         data class Waiting(
             val toLockScreen: Boolean,
-        ) : AodWindow {
-            override val boundaryPending = true
-        }
+            override val boundaryPending: Boolean,
+        ) : AodWindow
     }
 
     // Home native-AOD fallback is one phase; candidate and active never overlap.
@@ -1898,9 +1897,13 @@ class GyModule : XposedModule() {
                     SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved)
                 }
 
+        val holdNativeBattery =
+            (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
+                ?.host
+                ?.let { holdKeyguardForAodBattery(it, settings) } == true
         aodWindow =
-            if (boundaryPending && target != null) {
-                AodWindow.Waiting(target)
+            if (target != null && (boundaryPending || holdNativeBattery)) {
+                AodWindow.Waiting(target, boundaryPending)
             } else {
                 null
             }
@@ -2114,7 +2117,7 @@ class GyModule : XposedModule() {
         aodWindow =
             when (val state = aodWindow) {
                 is AodWindow.Running -> state.copy(boundaryPending = false)
-                is AodWindow.Waiting -> null
+                is AodWindow.Waiting -> state.copy(boundaryPending = false)
                 null -> null
             }
     }
@@ -2707,6 +2710,18 @@ class GyModule : XposedModule() {
         update: SysUiKeyguardAodSource.AodUpdate,
     ) {
         if (update.isAodAnimate) return
+        val waiting = aodWindow as? AodWindow.Waiting
+        if (
+            waiting != null &&
+            !ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = waiting.toLockScreen,
+                toAod = update.toAod,
+                isAodAnimate = update.isAodAnimate,
+            )
+        ) {
+            // A late result from the previous scene cannot override the current target.
+            return
+        }
         val next =
             when {
                 SysUiKeyguardAodSource.isStableAod(
@@ -2786,6 +2801,34 @@ class GyModule : XposedModule() {
         )
     }
 
+    private fun holdKeyguardForAodBattery(
+        host: SysUiKeyguardHostResolver.ResolvedHost,
+        cfg: FeatureCfg,
+    ): Boolean {
+        if (
+            !cfg.enabled || !cfg.keyguard || cfg.aod ||
+            steadyStatusSourceScene != SourceScene.KEYGUARD
+        ) {
+            return false
+        }
+        val waiting = aodWindow as? AodWindow.Waiting
+        val nativeBattery = SysUiKeyguardAodSource.currentState(host.battery)
+            ?: return false
+        return ScenePolicy.shouldHoldKeyguardForAodBattery(
+            featureEnabled = cfg.enabled,
+            keyguardEnabled = cfg.keyguard,
+            aodEnabled = cfg.aod,
+            sourceScene = steadyStatusSourceScene,
+            nativeToLockScreenTarget =
+                SysUiKeyguardHostResolver.nativeToLockScreenTarget(host),
+            batteryInAodMode = nativeBattery.toAod,
+            nativeHandoffActive =
+                aodWindow is AodWindow.Running || waiting?.toLockScreen == false,
+            keyguardClaimed = SysUiPresentationOwner.keyguardClaimed(),
+            animatedBatteryMode = SysUiKeyguardAodSource.usesAnimatedBatteryMode(host.battery),
+        )
+    }
+
     private fun resolveKeyguardAodProjection(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         fullAodVisualBoundary: Boolean = false,
@@ -2848,6 +2891,18 @@ class GyModule : XposedModule() {
                             "fallback" to "native-keyguard-aod",
                         )
                     }
+                    return
+                }
+
+                if (holdKeyguardForAodBattery(resolution.host, settings)) {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "aod.batteryHandoff",
+                        component = "keyguardPresentation",
+                        state = "held",
+                        "source" to source,
+                        "authority" to "native-battery-mode",
+                    )
                     return
                 }
 

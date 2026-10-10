@@ -17,6 +17,7 @@ internal object SysUiKeyguardAodSource {
     private const val TO_AOD_FIELD = "mToAod"
     private const val IS_AOD_ANIMATE_FIELD = "mIsAodAnimate"
     private const val ANIM_TO_AOD_FIELD = "mAnimToAod"
+    private const val STORED_STYLE_FIELD = "mStoreRealStyle"
 
     private const val SET_AOD_ANIMATE_HOOK_ID =
         "combinedstatus.keyguardAod.setIsAodAnimate"
@@ -31,6 +32,7 @@ internal object SysUiKeyguardAodSource {
     @Volatile private var toAodField: Field? = null
     @Volatile private var isAodAnimateField: Field? = null
     @Volatile private var animToAodField: Field? = null
+    @Volatile private var storedStyleField: Field? = null
 
     fun install(
         module: XposedModule,
@@ -84,6 +86,7 @@ internal object SysUiKeyguardAodSource {
         toAodField = resolvedToAod
         isAodAnimateField = resolvedIsAnimate
         animToAodField = resolvedAnimToAod
+        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
 
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
@@ -137,6 +140,12 @@ internal object SysUiKeyguardAodSource {
     @Synchronized
     fun nativeState(sourceView: View): AodState? = readState(sourceView)
 
+    // Style 3 does not use the native battery alpha/mode handoff.
+    fun usesAnimatedBatteryMode(sourceView: View): Boolean =
+        storedStyleField
+            ?.let { field -> runCatching { field.getInt(sourceView) }.getOrNull() }
+            ?.let { it != 3 } == true
+
     @Synchronized
     fun resetRuntimeState() {
         failedInstallHandles = emptyList()
@@ -150,6 +159,7 @@ internal object SysUiKeyguardAodSource {
         toAodField = null
         isAodAnimateField = null
         animToAodField = null
+        storedStyleField = null
     }
 
     internal fun blocksKeyguardProjection(
@@ -209,6 +219,16 @@ internal object SysUiKeyguardAodSource {
                 ),
         )
     }
+
+    private fun resolveIntField(type: Class<*>, name: String): Field? =
+        generateSequence(type) { current -> current.superclass }
+            .mapNotNull { current ->
+                current.declaredFields.firstOrNull { field ->
+                    field.name == name && field.type == Int::class.javaPrimitiveType
+                }
+            }
+            .firstOrNull()
+            ?.apply { isAccessible = true }
 
     private fun resolveBooleanField(type: Class<*>, name: String): Field? =
         generateSequence(type) { current -> current.superclass }
