@@ -308,6 +308,7 @@ internal object KeyguardRenderSession {
                             "keyguardAodWitness source=renderView.onDraw" +
                                 " shown=true statusIconsAlpha=" +
                                 statusIcons.get()?.alpha +
+                                " hostVisual={" + visualChainSummary(host.get()) + "}" +
                                 " nativeCc=" + SysUiCcSource.nativeVisualState()
                         }
                     }
@@ -540,6 +541,7 @@ internal object KeyguardRenderSession {
                 "keyguardAodWitness source=renderView.visibility" +
                     " shown=true statusIconsAlpha=" +
                     statusIcons.get()?.alpha +
+                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
                     " nativeCc=" + SysUiCcSource.nativeVisualState()
             }
         }
