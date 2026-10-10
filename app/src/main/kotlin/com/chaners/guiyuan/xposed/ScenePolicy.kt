@@ -120,6 +120,19 @@ internal object ScenePolicy {
     ): KeyguardAodProjection {
         if (!featureEnabled) return KeyguardAodProjection.NATIVE
         if (
+            keyguardEnabled &&
+            !aodEnabled &&
+            steadySourceScene == SourceScene.KEYGUARD &&
+            lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD &&
+            fullAodTargetSourceReady &&
+            nativeToLockScreenTarget == false &&
+            (fullAodVisualBoundary || isAodAnimate)
+        ) {
+            // Our sibling renderer does not inherit native status-icons alpha.
+            // Return ownership at the confirmed AOD visual boundary, not alpha=0.
+            return KeyguardAodProjection.NATIVE
+        }
+        if (
             homeNativeAodFallbackActive &&
             keyguardEnabled &&
             !aodEnabled
