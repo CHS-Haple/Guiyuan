@@ -49,6 +49,7 @@ class GyApplication :
     private var xposedService: XposedService? = null
 
     private val handler = Handler(Looper.getMainLooper())
+    private var scopeRequestDone: ((Boolean) -> Unit)? = null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
     internal val xposedStatus: StateFlow<XposedStatus> =
@@ -104,6 +105,7 @@ class GyApplication :
 
     override fun onServiceBind(service: XposedService) {
         handler.removeCallbacks(bindTimeout)
+        if (xposedService !== service) finishScopeRequest(false)
         xposedService = service
         syncRuntime(service)
         refreshXposedStatus(service)
@@ -112,6 +114,7 @@ class GyApplication :
     override fun onServiceDied(service: XposedService) {
         if (xposedService === service) {
             xposedService = null
+            finishScopeRequest(false)
             _xposedStatus.value = XposedStatus.FrameworkUnavailable
         }
     }
@@ -122,11 +125,62 @@ class GyApplication :
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
+        scopeRequestDone = null
         super.onTerminate()
     }
 
     internal fun refreshXposedStatus() {
         xposedService?.let(::refreshXposedStatus)
+    }
+
+    fun requestSysUiScope(onComplete: (Boolean) -> Unit): Boolean {
+        val service = xposedService ?: return false
+        if (service.apiVersion < 102 || scopeRequestDone != null) return false
+
+        val inScope = runCatching { SYS_UI_PROCESS in service.scope }
+            .getOrElse { return false }
+        if (inScope) {
+            refreshXposedStatus(service)
+            onComplete(true)
+            return true
+        }
+
+        scopeRequestDone = onComplete
+        return runCatching {
+            service.requestScope(
+                listOf(SYS_UI_PROCESS),
+                object : XposedService.OnScopeEventListener {
+                    override fun onScopeRequestApproved(scope: List<String>) {
+                        mainExecutor.execute {
+                            if (xposedService === service) {
+                                refreshXposedStatus(service)
+                                finishScopeRequest(
+                                    runCatching { SYS_UI_PROCESS in service.scope }.getOrDefault(false),
+                                )
+                            }
+                        }
+                    }
+
+                    override fun onScopeRequestFailed(message: String) {
+                        Log.w(TAG, "Scope request failed: $message")
+                        mainExecutor.execute {
+                            if (xposedService === service) finishScopeRequest(false)
+                        }
+                    }
+                },
+            )
+            true
+        }.getOrElse { throwable ->
+            scopeRequestDone = null
+            Log.w(TAG, "Unable to request SystemUI scope: " + throwable.message)
+            false
+        }
+    }
+
+    private fun finishScopeRequest(granted: Boolean) {
+        val callback = scopeRequestDone ?: return
+        scopeRequestDone = null
+        callback(granted)
     }
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
