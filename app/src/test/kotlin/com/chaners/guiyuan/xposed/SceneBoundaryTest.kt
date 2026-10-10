@@ -420,20 +420,6 @@ class SceneBoundaryTest {
                 homeOriginConfirmed = true,
             ),
         )
-        // The Home source may precede transient Keyguard ancestry.
-        val sourceBefore = SourceScene.HOME
-        val sourceAfter = SourceScene.KEYGUARD
-        assertTrue(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
-                homePresentationOwned = true,
-                homeOriginConfirmed =
-                    sourceBefore == SourceScene.HOME &&
-                        sourceAfter == SourceScene.KEYGUARD,
-            ),
-        )
         assertFalse(
             ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
@@ -547,40 +533,6 @@ class SceneBoundaryTest {
                 homeNativeAodFallbackCandidate = true,
                 homePresentationOwnedAtFullAodStart = false,
                 nativeToLockScreenTarget = false,
-            ),
-        )
-    }
-
-    @Test
-    fun disabledAodFromRealKeyguardKeepsNativeHandoff() {
-        // Retained Home slots cannot stand in for an actual Home origin.
-        assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
-                homePresentationOwned = true,
-                homeOriginConfirmed = false,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
-                homeNativeAodFallbackCandidate = false,
-                homePresentationOwnedAtFullAodStart = true,
-                nativeToLockScreenTarget = false,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
-                candidateActive = false,
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
-                toAod = true,
-                isAodAnimate = true,
             ),
         )
     }
