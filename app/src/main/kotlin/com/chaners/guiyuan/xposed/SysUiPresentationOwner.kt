@@ -51,6 +51,7 @@ internal object SysUiPresentationOwner {
     private var current: Session? = null
     private var keyguardFamilyCurrent: Session? = null
     private var keyguardFamilySurface: KeyguardFamilySurface? = null
+    private var nativeAodPeers: AodPeerMasks? = null
     private var controlCenterCurrent: Session? = null
     private var controlCenterEventSink: ((String) -> Unit)? = null
     private var controlCenterFailNativeSink: ((String) -> Unit)? = null
@@ -453,11 +454,22 @@ internal object SysUiPresentationOwner {
         )
 
     @Synchronized
-    fun deactivateKeyguard(source: String): Result =
+    fun deactivateKeyguard(
+        source: String,
+        preserveNativeAodPeers: Boolean = false,
+    ): Result =
         deactivateKeyguardFamily(
             surface = KeyguardFamilySurface.KEYGUARD,
             source = source,
+            preserveNativeAodPeers = preserveNativeAodPeers,
         )
+
+    @Synchronized
+    fun releaseNativeAodPeers(): Int {
+        val held = nativeAodPeers ?: return 0
+        nativeAodPeers = null
+        return held.release()
+    }
 
     @Synchronized
     fun commitKeyguardDeferredLayoutOwnership(): Result {
@@ -557,6 +569,7 @@ internal object SysUiPresentationOwner {
                     surface.surfaceName + "-ignored-slots-list-unavailable",
                 )
         list.size
+        releaseNativeAodPeers()
 
         keyguardFamilyEventSink = onEvent
         keyguardFamilyFailNativeSink = onFailNative
@@ -661,6 +674,7 @@ internal object SysUiPresentationOwner {
     private fun deactivateKeyguardFamily(
         surface: KeyguardFamilySurface,
         source: String,
+        preserveNativeAodPeers: Boolean = false,
     ): Result {
         if (keyguardFamilySurface != surface) {
             return Result.Inactive(0)
@@ -668,6 +682,16 @@ internal object SysUiPresentationOwner {
         val session = keyguardFamilyCurrent ?: return Result.Inactive(0)
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
+        if (preserveNativeAodPeers && surface == KeyguardFamilySurface.KEYGUARD) {
+            releaseNativeAodPeers()
+            nativeAodPeers = session.takeNativeAodPeerMasks()
+            nativeAodPeers?.let { masks ->
+                keyguardFamilyEventSink?.invoke(
+                    "keyguardPresentation nativeAodPeers held=" + masks.size +
+                        " source=" + source,
+                )
+            }
+        }
         val restored = session.stop(source)
         keyguardFamilyEventSink?.invoke(
             surface.eventPrefix + " inactive source=" + source +
@@ -943,6 +967,7 @@ internal object SysUiPresentationOwner {
                     requestLayout = requestLayout,
                 )
             } ?: 0
+        val nativeAodRestored = releaseNativeAodPeers()
         val keyguardFamilyRestored =
             keyguardFamilyCurrent?.let { session ->
                 keyguardFamilyCurrent = null
@@ -963,11 +988,12 @@ internal object SysUiPresentationOwner {
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        return homeRestored + keyguardFamilyRestored + controlCenterRestored
+        return homeRestored + keyguardFamilyRestored + controlCenterRestored + nativeAodRestored
     }
 
     @Synchronized
     fun resetRuntimeState(source: String) {
+        releaseNativeAodPeers()
         deactivateCc(source)
         deactivateAod(source)
         deactivateKeyguard(source)
@@ -1026,7 +1052,16 @@ internal object SysUiPresentationOwner {
                     controlCenterCurrent?.takeIf { candidate -> candidate.owns(target) }
                         ?: current?.takeIf { candidate -> candidate.owns(target) }
                         ?: keyguardFamilyCurrent?.takeIf { candidate -> candidate.owns(target) }
-                } ?: return@Hooker chain.proceed()
+                }
+            if (session == null) {
+                val result = chain.proceed()
+                if (refreshMasksAfter) {
+                    synchronized(this) {
+                        nativeAodPeers?.takeIf { it.owns(target) }?.refresh()
+                    }
+                }
+                return@Hooker result
+            }
 
             session.traceFakeCarrierWidth(
                 if (refreshMasksAfter) "layout-before" else "measure-before",
@@ -1276,6 +1311,7 @@ internal object SysUiPresentationOwner {
     }
 
     private fun clearInstallState() {
+        releaseNativeAodPeers()
         measureHook = null
         layoutHook = null
         batteryHideHook = null
@@ -1424,6 +1460,17 @@ internal object SysUiPresentationOwner {
         ) {
             this.surfaceName = surfaceName
             this.eventPrefix = eventPrefix
+        }
+
+        fun takeNativeAodPeerMasks(): AodPeerMasks? {
+            val group = statusIcons.get() ?: return null
+            val peers = clipStates.filter { state ->
+                val view = state.view.get()
+                view != null && NativeParticipantAccess.slotOf(view) in representedSlots
+            }
+            if (peers.isEmpty()) return null
+            clipStates.removeAll(peers.toSet())
+            return AodPeerMasks(group, peers)
         }
 
         fun hasPresentationClaim(): Boolean =
@@ -2567,7 +2614,7 @@ internal object SysUiPresentationOwner {
                 val view = state.view.get()
                 if (view == null || view !in targets) {
                     if (view != null) {
-                        restoreClipState(state)
+                        state.restore()
                     }
                     iterator.remove()
                 }
@@ -2613,7 +2660,7 @@ internal object SysUiPresentationOwner {
                 val view = state.view.get()
                 if (view == null || view !in targets) {
                     if (view != null) {
-                        restoreClipState(state)
+                        state.restore()
                     }
                     iterator.remove()
                 }
@@ -2644,7 +2691,7 @@ internal object SysUiPresentationOwner {
             clipStates.clear()
             var restored = 0
             states.forEach { state ->
-                if (restoreClipState(state)) {
+                if (state.restore()) {
                     restored += 1
                 }
             }
@@ -2656,19 +2703,11 @@ internal object SysUiPresentationOwner {
             mirroredPeerClipStates.clear()
             var restored = 0
             states.forEach { state ->
-                if (restoreClipState(state)) {
+                if (state.restore()) {
                     restored += 1
                 }
             }
             return restored
-        }
-        private fun restoreClipState(state: ClipState): Boolean {
-            val view = state.view.get() ?: return false
-            if (view.clipBounds != state.appliedClip) {
-                return false
-            }
-            view.clipBounds = state.nativeClip?.let(::Rect)
-            return view.clipBounds == state.nativeClip
         }
     }
 
@@ -2677,11 +2716,61 @@ internal object SysUiPresentationOwner {
         val hiddenSlots: Set<String>,
     )
 
+    // Only represented peers stay masked; the original AOD battery is released.
+    private class AodPeerMasks(
+        group: ViewGroup,
+        initial: List<ClipState>,
+    ) {
+        private val group = WeakReference(group)
+        private val clips = initial.toMutableList()
+        val size: Int get() = clips.size
+
+        fun owns(candidate: ViewGroup): Boolean = group.get() === candidate
+
+        fun refresh() {
+            val root = group.get() ?: return
+            val peers = (0 until root.childCount).mapNotNull { index ->
+                root.getChildAt(index).takeIf { child ->
+                    NativeParticipantAccess.slotOf(child) in representedSlots
+                }
+            }.toSet()
+            val iterator = clips.iterator()
+            while (iterator.hasNext()) {
+                val clip = iterator.next()
+                if (clip.view.get() !in peers) {
+                    clip.restore()
+                    iterator.remove()
+                }
+            }
+            peers.forEach { peer ->
+                if (clips.none { it.view.get() === peer }) {
+                    val native = peer.clipBounds?.let(::Rect)
+                    val empty = Rect(0, 0, 0, 0)
+                    peer.clipBounds = empty
+                    clips += ClipState(WeakReference(peer), native, empty)
+                }
+            }
+        }
+
+        fun release(): Int {
+            val count = clips.count { it.restore() }
+            clips.clear()
+            return count
+        }
+    }
+
     private data class ClipState(
         val view: WeakReference<View>,
         val nativeClip: Rect?,
         val appliedClip: Rect,
-    )
+    ) {
+        fun restore(): Boolean {
+            val target = view.get() ?: return false
+            if (target.clipBounds != appliedClip) return false
+            target.clipBounds = nativeClip?.let(::Rect)
+            return target.clipBounds == nativeClip
+        }
+    }
 
     private data class PaddingState(
         val start: Int,

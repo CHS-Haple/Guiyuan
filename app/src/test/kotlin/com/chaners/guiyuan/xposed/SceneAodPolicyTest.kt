@@ -588,6 +588,50 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun nativeAodPeersNeedStableBatteryAndUnfinishedIconFade() {
+        fun hold(
+            target: Boolean? = false,
+            toAod: Boolean = true,
+            animating: Boolean = false,
+            alpha: Float? = 1f,
+            claimed: Boolean = true,
+            keyguard: Boolean = true,
+            aod: Boolean = false,
+        ) = ScenePolicy.shouldKeepNativeAodPeers(
+            featureEnabled = true,
+            keyguardEnabled = keyguard,
+            aodEnabled = aod,
+            targetToLockScreen = target,
+            batteryInAodMode = toAod,
+            batteryAnimating = animating,
+            statusIconsAlpha = alpha,
+            keyguardClaimed = claimed,
+        )
+        assertTrue(hold())
+        assertFalse(hold(alpha = 0f))
+        assertFalse(hold(alpha = null))
+        assertFalse(hold(toAod = false))
+        assertFalse(hold(animating = true))
+        assertFalse(hold(target = true))
+        assertFalse(hold(target = null))
+        assertFalse(hold(claimed = false))
+        assertFalse(hold(keyguard = false))
+        assertFalse(hold(aod = true))
+        assertFalse(
+            ScenePolicy.shouldKeepNativeAodPeers(
+                featureEnabled = false,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                targetToLockScreen = false,
+                batteryInAodMode = true,
+                batteryAnimating = false,
+                statusIconsAlpha = 1f,
+                keyguardClaimed = true,
+            ),
+        )
+    }
+
+    @Test
     fun nativeAodBatteryModeOwnsTheFinalKeyguardClipRelease() {
         fun hold(
             target: Boolean? = false,

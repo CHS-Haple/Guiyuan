@@ -308,6 +308,21 @@ internal object ScenePolicy {
             homePresentationOwnedAtFullAodStart &&
             nativeToLockScreenTarget == false
 
+    fun shouldKeepNativeAodPeers(
+        featureEnabled: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        targetToLockScreen: Boolean?,
+        batteryInAodMode: Boolean,
+        batteryAnimating: Boolean,
+        statusIconsAlpha: Float?,
+        keyguardClaimed: Boolean,
+    ): Boolean =
+        featureEnabled && keyguardEnabled && !aodEnabled &&
+            targetToLockScreen == false && batteryInAodMode &&
+            !batteryAnimating && statusIconsAlpha != null &&
+            statusIconsAlpha > 0f && keyguardClaimed
+
     fun shouldHoldKeyguardForAodBattery(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,

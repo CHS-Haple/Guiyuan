@@ -2965,7 +2965,10 @@ class GyModule : XposedModule() {
 
                     ScenePolicy.KeyguardAodProjection.NATIVE -> {
                         deactivateAodRuntime("keyguard-aod-native")
-                        deactivateKeyguardRuntime("keyguard-aod-native")
+                        deactivateKeyguardRuntime(
+                            source = "keyguard-aod-native",
+                            nativeAodHandoff = true,
+                        )
                     }
                 }
             }
@@ -3319,14 +3322,43 @@ class GyModule : XposedModule() {
         reconcileCcForKeyguard("keyguard-fail-native")
     }
 
-    private fun deactivateKeyguardRuntime(source: String) {
+    private fun deactivateKeyguardRuntime(
+        source: String,
+        nativeAodHandoff: Boolean = false,
+    ) {
         val wasReady = keyguardRuntimeReady
         clearBoundaryHandoff()
         keyguardCcLeaseActive = false
         keyguardReadyObserved = false
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
-        SysUiPresentationOwner.deactivateKeyguard(source)
+        val keepPeers =
+            if (nativeAodHandoff) {
+                val resolved = SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready
+                val native = resolved?.host?.battery?.let(SysUiKeyguardAodSource::nativeState)
+                val cfg = FeaturePrefsOwner.current()
+                ScenePolicy.shouldKeepNativeAodPeers(
+                    featureEnabled = cfg.enabled,
+                    keyguardEnabled = cfg.keyguard,
+                    aodEnabled = cfg.aod,
+                    targetToLockScreen = resolved?.host?.let(
+                        SysUiKeyguardHostResolver::nativeToLockScreenTarget,
+                    ),
+                    batteryInAodMode = native?.toAod == true,
+                    batteryAnimating = native?.isAodAnimate != false,
+                    statusIconsAlpha = resolved?.host?.let(
+                        SysUiKeyguardHostResolver::statusIconsPresentationAlpha,
+                    ),
+                    keyguardClaimed = SysUiPresentationOwner.keyguardClaimed(),
+                )
+            } else {
+                false
+            }
+        SysUiPresentationOwner.deactivateKeyguard(source, preserveNativeAodPeers = keepPeers)
+        if (!nativeAodHandoff) {
+            SysUiPresentationOwner.releaseNativeAodPeers()
+        }
         KeyguardRenderSession.detach()
         if (wasReady) {
             reconcileCcForKeyguard("keyguard-deactivate:" + source)
