@@ -1707,6 +1707,11 @@ internal object SysUiPresentationOwner {
                     onFailNative("aod-peer-battery-unavailable")
                     return
                 }
+                // Restore native peer layout with its visibility, not at session cleanup.
+                if (!restoreEndReservation()) {
+                    onFailNative("aod-peer-reservation-restore-failed")
+                    return
+                }
                 if (!restorePersistentIgnoredSlots(requestLayout = true)) {
                     onFailNative("aod-peer-restore-failed")
                     return
@@ -1722,6 +1727,7 @@ internal object SysUiPresentationOwner {
                     }
                 aodPeersReleased = false
                 aodBatteryReleased = false
+                if (reclaimPeers && !syncEndReservation()) return
                 refreshClipMasks()
                 if (reclaimPeers && !applyPersistentIgnoredSlots(group)) return
                 onEvent(eventPrefix + " peers=guiyuan-aod owner=representation")
@@ -2021,7 +2027,7 @@ internal object SysUiPresentationOwner {
         }
 
         fun syncEndReservation(): Boolean {
-            if (!active) return true
+            if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
                 return true
             }
