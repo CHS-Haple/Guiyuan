@@ -1484,7 +1484,8 @@ class GyModule : XposedModule() {
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
-        fun safely(block: () -> Unit) {
+        val cleanupFailures = mutableListOf<String>()
+        fun safely(step: String, block: () -> Unit) {
             try {
                 block()
             } catch (cleanupError: Throwable) {
@@ -1494,11 +1495,12 @@ class GyModule : XposedModule() {
                 ) {
                     throw cleanupError
                 }
+                cleanupFailures += step + ":" + cleanupError.javaClass.simpleName
             }
         }
 
         if (keyguardCcLeaseActive) {
-            safely {
+            safely("lease") {
                 releaseKeyguardCcLease(
                     source = "panel-runtime-failure",
                     reconcileReadiness = false,
@@ -1507,29 +1509,33 @@ class GyModule : XposedModule() {
         }
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
-        safely {
+        safely("source-scene") {
             SysUiPresentationOwner.updateCcSourceScene(SourceScene.UNKNOWN)
         }
-        safely {
+        safely("transition-eligibility") {
             CcTransitionOwner.setSceneEligible(false)
         }
-        safely {
+        safely("transition-detach") {
             CcTransitionOwner.detach("panel-runtime-failure")
         }
-        safely {
+        safely("render-eligibility") {
             CcRenderSession.setSceneEligible(false)
         }
-        safely {
+        safely("home-authority") {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
         }
-        safely {
+        safely("error-report") {
             logDiagnostic(
                 level = Log.ERROR,
                 event = "runtime.callback",
                 component = "panelTransition",
-                state = "fail-native",
+                state =
+                    if (cleanupFailures.isEmpty()) "fallback-requested" else "cleanup-incomplete",
                 "reason" to (error.message ?: error.javaClass.simpleName),
-                "fallback" to "native-control-center",
+                "fallback" to
+                    if (cleanupFailures.isEmpty()) "native-control-center" else "unconfirmed",
+                "cleanupFailures" to
+                    cleanupFailures.takeIf { it.isNotEmpty() }?.joinToString(","),
             )
             log(Log.ERROR, TAG, "Panel transition runtime callback failed", error)
         }
