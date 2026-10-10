@@ -96,6 +96,45 @@ class SceneBoundaryTest {
     }
 
     @Test
+    fun nativeAodBoundaryDoesNotWaitForBatteryAnimationFlags() {
+        val args = listOf(false, true)
+        for (animated in args) {
+            assertEquals(
+                ScenePolicy.KeyguardAodProjection.NATIVE,
+                ScenePolicy.resolveKeyguardAodProjection(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = false,
+                    toAod = false,
+                    isAodAnimate = animated,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                    keyguardStatusIconsAlpha = 1f,
+                    nativeToLockScreenTarget = false,
+                    fullAodTargetSourceReady = true,
+                    fullAodVisualBoundary = true,
+                ),
+            )
+        }
+        assertEquals(
+            ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            ScenePolicy.resolveKeyguardAodProjection(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                toAod = false,
+                isAodAnimate = false,
+                steadySourceScene = SourceScene.KEYGUARD,
+                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                keyguardStatusIconsAlpha = 1f,
+                nativeToLockScreenTarget = false,
+                fullAodTargetSourceReady = true,
+                fullAodVisualBoundary = false,
+            ),
+        )
+    }
+
+    @Test
     fun nativeAodTargetReleasesKeyguardDuringPendingAnimation() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
