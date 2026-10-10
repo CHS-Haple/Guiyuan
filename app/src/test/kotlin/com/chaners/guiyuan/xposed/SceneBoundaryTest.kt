@@ -77,7 +77,7 @@ class SceneBoundaryTest {
             ),
         )
         assertEquals(
-            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
@@ -167,7 +167,7 @@ class SceneBoundaryTest {
             ),
         )
         assertEquals(
-            ScenePolicy.KeyguardAodProjection.NATIVE,
+            ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
                 featureEnabled = true,
                 keyguardEnabled = false,
