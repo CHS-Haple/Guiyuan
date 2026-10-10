@@ -246,8 +246,6 @@ CI proves configured source/build checks, not SystemUI runtime correctness.
 
 Use concise PR titles, typically `type(scope): description`. GitHub Actions appends `| CI #PR` for PR checks. For a Build-labeled APK run, an owner comment such as `B850 Canary` produces `type(scope): description | B850 Canary #PR`; the workflow verifies the requested Build against the checked-out Gradle source. The older `/canary` and `/internal` comments remain compatible but cannot show a Build in the run title.
 
-
-
 Do not expose signing credentials or project-signed artifacts to untrusted fork workflows.
 
 ### Canary
