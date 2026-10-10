@@ -2,7 +2,8 @@
 
 ## Baseline
 
-- Development integration: Guiyuan 0.5.0 / Build 817 (`20261009-817`); NavigationEvent Compose 1.2.0 is integrated, with system-back gestures from Features and Settings to Home accepted on the separate Build 817 Canary. Previous dev UI behavior remains accepted; diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Development integration: Guiyuan 0.5.0 / Build 844 (`20261010-844`); NavigationEvent Compose 1.2.0 is integrated, with system-back gestures from Features and Settings to Home accepted on the separate Build 817 Canary. Previous dev UI behavior remains accepted; diagnostics use meaningful compact summaries and keep expanded technical fields raw. Existing diagnostics/list motion, leading icons, feature grouping/defaults, and independent Liquid nav-content preferences remain accepted. Combined Home/Keyguard/refresh acceptance remains tracked separately.
+- Control Center callback failure diagnostics distinguish fallback requests from incomplete cleanup; Wi-Fi seed diagnostics preserve source and resource details for both ready and unavailable states.
 - Stable `main`: Guiyuan 0.5.0 / Build 770; accepted Liquid nav preferences, diagnostics motion, semantic leading icons, feature grouping/defaults and previous runtime-state ownership baseline.
 - Charging visibility follows the authoritative SystemUI battery state; charging-glyph identity no longer acts as a second charging-state source.
 - Mobile runtime state keeps semantic signal strength instead of persisting native signal/VoLTE/VoWiFi resource IDs; presentation refresh and Hot Reload compatibility remain preserved.
