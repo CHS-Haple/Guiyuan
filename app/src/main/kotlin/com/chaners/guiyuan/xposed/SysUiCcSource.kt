@@ -445,6 +445,21 @@ internal object SysUiCcSource {
     fun currentHomeEligibility(): Boolean? =
         if (failedInstallHandles.isEmpty()) homeEligible else false
 
+    // Read-only CC window snapshot at native AOD/visibility event boundaries.
+    fun nativeVisualState(): String? {
+        val header = headerRef.get() ?: return null
+        val endpoints = anchorContract?.transitionEndpoints(header) ?: return null
+        fun describe(view: View): String =
+            "shown=" + view.isShown +
+                ",alpha=" + view.alpha +
+                ",visibility=" + view.visibility +
+                ",windowVisibility=" + view.windowVisibility +
+                ",attached=" + view.isAttachedToWindow
+        return "fake={" + describe(endpoints.fakeRoot) + "}" +
+            ":final={" + describe(endpoints.finalRoot) + "}" +
+            ":root={" + describe(endpoints.finalRoot.rootView) + "}"
+    }
+
     @Synchronized
     fun restoreHomeEligibility(eligible: Boolean?) {
         if (eligible != null) {
