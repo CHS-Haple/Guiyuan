@@ -17,6 +17,7 @@ internal object KeyguardIconTransitionSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onTransition: () -> Unit,
+        onBeforeAod: () -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         val viewClass = Class.forName(KEYGUARD_VIEW_CLASS, false, classLoader)
@@ -43,6 +44,17 @@ internal object KeyguardIconTransitionSource {
                 .intercept(
                     Hooker { chain ->
                         val rawArg0 = chain.getArg(0) as? Boolean
+                        // The pinned native false target starts AOD icon exit.
+                        // Release the CC overlay before native animation setup.
+                        if (rawArg0 == false) {
+                            runCatching { onBeforeAod() }
+                                .onFailure { error ->
+                                    onEvent?.invoke(
+                                        "keyguardStatusIconTransition beforeAodFailed=" +
+                                            error.javaClass.simpleName,
+                                    )
+                                }
+                        }
                         val result = chain.proceed()
                         onTransition()
                         onEvent?.invoke(
