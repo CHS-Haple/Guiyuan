@@ -2526,6 +2526,9 @@ class GyModule : XposedModule() {
         }
 
         val settings = FeaturePrefsOwner.current()
+        if (!update.toAod) {
+            SysUiPresentationOwner.onAodBatteryExit(update.sourceView)
+        }
         // Battery toAod is not the destination while native animateFullAod runs.
         val activateHomeNativeAodFallback =
             aodWindow !is AodWindow.Running &&

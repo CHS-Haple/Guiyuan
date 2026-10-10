@@ -566,7 +566,12 @@ internal object KeyguardRenderSession {
                 when (iconAlphaMode) {
                     IconAlphaMode.NONE -> 1f
                     IconAlphaMode.FOLLOW -> nativeAlpha
-                    IconAlphaMode.INVERSE -> 1f - nativeAlpha
+                    IconAlphaMode.INVERSE -> {
+                        // Native battery and status icons have separate fade animations.
+                        val batteryAlpha =
+                            batteryView.get()?.alpha?.coerceIn(0f, 1f) ?: nativeAlpha
+                        1f - minOf(nativeAlpha, batteryAlpha)
+                    }
                 }
             if (renderView.alpha != alpha) renderView.alpha = alpha
         }

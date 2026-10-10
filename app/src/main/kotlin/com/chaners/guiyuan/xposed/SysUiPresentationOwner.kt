@@ -142,6 +142,12 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
+    fun onAodBatteryExit(sourceView: View) {
+        if (keyguardFamilySurface != KeyguardFamilySurface.AOD) return
+        keyguardFamilyCurrent?.onAodBatteryExit(sourceView)
+    }
+
+    @Synchronized
     fun updateCcSourceScene(sourceScene: SourceScene) {
         if (controlCenterSourceScene == sourceScene) return
         controlCenterSourceScene = sourceScene
@@ -1464,9 +1470,11 @@ internal object SysUiPresentationOwner {
             this.eventPrefix = eventPrefix
         }
 
+        // Native peers can resume before the outgoing AOD renderer retires.
         fun hasPresentationClaim(): Boolean =
             active &&
                 (
+                    aodPeersReleased ||
                     persistentIgnoredSlotsApplied ||
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
@@ -1669,12 +1677,17 @@ internal object SysUiPresentationOwner {
             return masked
         }
 
+        fun onAodBatteryExit(sourceView: View) {
+            if (!aodPeersReleased || battery.get() !== sourceView) return
+            refreshClipMasks()
+        }
+
         fun onAodIconTransition(toLockScreen: Boolean) {
             if (!active || !started) return
             if (toLockScreen) {
                 if (aodPeersReleased) return
                 aodPeersReleased = true
-                if (!restoreAodPeerClips()) {
+                if (!releaseAodClips()) {
                     onFailNative("aod-peer-battery-unavailable")
                     return
                 }
@@ -1692,23 +1705,16 @@ internal object SysUiPresentationOwner {
                     }
                 aodPeersReleased = false
                 refreshClipMasks()
-                if (!applyPersistentIgnoredSlots(group)) return
+                if (!active || !applyPersistentIgnoredSlots(group)) return
                 onEvent(eventPrefix + " peers=guiyuan-aod owner=representation")
             }
         }
 
-        private fun restoreAodPeerClips(): Boolean {
-            val batteryView = battery.get() ?: return false
-            val iterator = clipStates.iterator()
-            while (iterator.hasNext()) {
-                val state = iterator.next()
-                val view = state.view.get()
-                if (view !== batteryView) {
-                    restoreClipState(state)
-                    iterator.remove()
-                }
-            }
-            return true
+        private fun releaseAodClips(): Boolean {
+            if (battery.get() == null) return false
+            // Battery is unmasked only after native AOD mode has exited.
+            refreshClipMasks()
+            return active
         }
 
         fun stop(
@@ -2680,7 +2686,12 @@ internal object SysUiPresentationOwner {
                 }
 
             val targets = linkedSetOf<View>()
-            targets += batteryView
+            if (
+                !aodPeersReleased ||
+                SysUiKeyguardAodSource.nativeState(batteryView)?.toAod != false
+            ) {
+                targets += batteryView
+            }
             if (!aodPeersReleased) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
