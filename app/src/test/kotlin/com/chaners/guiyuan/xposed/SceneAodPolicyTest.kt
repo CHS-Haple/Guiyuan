@@ -560,4 +560,20 @@ class SceneAodPolicyTest {
             ),
         )
     }
+
+    @Test
+    fun keyguardBoundaryHandoffStopsWhenNativeTargetChanges() {
+        val eligible = { target: Boolean? ->
+            ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
+                nativeToLockScreenTarget = target,
+            )
+        }
+        assertTrue(eligible(true))
+        assertFalse(eligible(false))
+        assertFalse(eligible(null))
+    }
 }
