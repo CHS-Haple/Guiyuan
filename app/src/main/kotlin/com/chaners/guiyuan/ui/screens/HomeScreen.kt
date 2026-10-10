@@ -50,6 +50,8 @@ import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -73,6 +75,13 @@ private enum class RuntimeStatusMarkKind {
     Check,
     Alert,
     Minus,
+    Loading,
+}
+
+private enum class HomeRuntimeAction {
+    None,
+    Restart,
+    RequestScope,
 }
 
 private data class HomeRuntimeCardState(
@@ -80,7 +89,7 @@ private data class HomeRuntimeCardState(
     val summaryRes: Int,
     val tone: RuntimeStatusTone,
     val mark: RuntimeStatusMarkKind,
-    val canRestart: Boolean = false,
+    val action: HomeRuntimeAction = HomeRuntimeAction.None,
 )
 
 @Composable
@@ -88,7 +97,9 @@ internal fun HomeScreen(
     bottomContentPadding: Dp,
     hotReloadInProgress: Boolean,
     restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
     onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
     previewState: PreviewSandboxUiState,
     onHotReload: () -> Unit,
     onOpenPreviewSandbox: () -> Unit,
@@ -170,7 +181,9 @@ internal fun HomeScreen(
                         runtimeStatus = xposedStatus,
                         hotReloadInProgress = hotReloadInProgress,
                         restartInProgress = restartInProgress,
+                        scopeRequestInProgress = scopeRequestInProgress,
                         onRestart = onRestart,
+                        onRequestScope = onRequestScope,
                         onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
@@ -203,7 +216,9 @@ private fun HomeRuntimeStatusCard(
     runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
     restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
     onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -212,6 +227,8 @@ private fun HomeRuntimeStatusCard(
             enabled = enabled,
             runtimeStatus = runtimeStatus,
             hotReloadInProgress = hotReloadInProgress,
+            restartInProgress = restartInProgress,
+            scopeRequestInProgress = scopeRequestInProgress,
         )
     val targetAccentColor =
         when (state.tone) {
@@ -249,7 +266,12 @@ private fun HomeRuntimeStatusCard(
                 contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
             ),
         pressFeedbackType = PressFeedbackType.Tilt,
-        onClick = if (state.canRestart && !restartInProgress) onRestart else null,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
     ) {
         Box(
             modifier =
@@ -275,12 +297,7 @@ private fun HomeRuntimeStatusCard(
                         .padding(end = 98.dp),
             ) {
                 Text(
-                    text =
-                        if (state.canRestart && restartInProgress) {
-                            stringResource(R.string.home_runtime_restarting)
-                        } else {
-                            stringResource(state.titleRes)
-                        },
+                    text = stringResource(state.titleRes),
                     style =
                         MiuixTheme.textStyles.title3.copy(
                             fontWeight = FontWeight.Medium,
@@ -313,12 +330,7 @@ private fun HomeRuntimeStatusCard(
                     color = MiuixTheme.colorScheme.onSurfaceContainer,
                 )
                 Text(
-                    text =
-                        if (state.canRestart && restartInProgress) {
-                            stringResource(R.string.home_runtime_restarting_summary)
-                        } else {
-                            stringResource(state.summaryRes)
-                        },
+                    text = stringResource(state.summaryRes),
                     modifier = Modifier.padding(top = 12.dp),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
@@ -416,6 +428,20 @@ private fun RuntimeStatusMark(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
+    if (kind == RuntimeStatusMarkKind.Loading) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+                strokeWidth = 6.4.dp,
+                colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                    foregroundColor = color.copy(alpha = 0.58f),
+                    backgroundColor = color.copy(alpha = 0.13f),
+                ),
+            )
+        }
+        return
+    }
+
     Canvas(modifier = modifier) {
         val markColor = color.copy(alpha = 0.58f)
         val ringStrokeWidth = 6.4.dp.toPx()
@@ -435,6 +461,8 @@ private fun RuntimeStatusMark(
         )
 
         when (kind) {
+            RuntimeStatusMarkKind.Loading -> Unit
+
             RuntimeStatusMarkKind.Check -> {
                 val checkPath =
                     Path().apply {
@@ -486,6 +514,8 @@ private fun resolveHomeRuntimeCardState(
     enabled: Boolean,
     runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
 ): HomeRuntimeCardState {
     if (!enabled) {
         return HomeRuntimeCardState(
@@ -496,12 +526,30 @@ private fun resolveHomeRuntimeCardState(
         )
     }
 
+    if (restartInProgress) {
+        return HomeRuntimeCardState(
+            titleRes = R.string.home_runtime_restarting,
+            summaryRes = R.string.home_runtime_restarting_summary,
+            tone = RuntimeStatusTone.Warning,
+            mark = RuntimeStatusMarkKind.Loading,
+        )
+    }
+
     if (hotReloadInProgress) {
         return HomeRuntimeCardState(
             titleRes = R.string.home_runtime_reloading,
             summaryRes = R.string.home_runtime_reloading_summary,
             tone = RuntimeStatusTone.Warning,
-            mark = RuntimeStatusMarkKind.Alert,
+            mark = RuntimeStatusMarkKind.Loading,
+        )
+    }
+
+    if (scopeRequestInProgress) {
+        return HomeRuntimeCardState(
+            titleRes = R.string.home_runtime_requesting,
+            summaryRes = R.string.home_runtime_requesting_summary,
+            tone = RuntimeStatusTone.Warning,
+            mark = RuntimeStatusMarkKind.Loading,
         )
     }
 
@@ -511,7 +559,7 @@ private fun resolveHomeRuntimeCardState(
                 titleRes = R.string.home_runtime_checking,
                 summaryRes = R.string.home_runtime_checking_summary,
                 tone = RuntimeStatusTone.Neutral,
-                mark = RuntimeStatusMarkKind.Minus,
+                mark = RuntimeStatusMarkKind.Loading,
             )
 
         XposedStatus.FrameworkUnavailable ->
@@ -538,6 +586,7 @@ private fun resolveHomeRuntimeCardState(
                         summaryRes = R.string.home_runtime_unhooked_summary,
                         tone = RuntimeStatusTone.Error,
                         mark = RuntimeStatusMarkKind.Alert,
+                        action = HomeRuntimeAction.RequestScope,
                     )
 
                 runtimeStatus.sysUiRunning ->
@@ -554,7 +603,7 @@ private fun resolveHomeRuntimeCardState(
                         summaryRes = R.string.home_runtime_restart_summary,
                         tone = RuntimeStatusTone.Warning,
                         mark = RuntimeStatusMarkKind.Alert,
-                        canRestart = true,
+                        action = HomeRuntimeAction.Restart,
                     )
             }
     }
