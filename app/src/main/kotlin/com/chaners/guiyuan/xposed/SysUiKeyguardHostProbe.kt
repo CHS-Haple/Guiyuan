@@ -75,6 +75,28 @@ internal object SysUiKeyguardHostProbe {
         )
     }
 
+
+    internal fun boundaryGeometry(
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
+    ): String {
+        fun bounds(view: View): String {
+            val position = IntArray(2)
+            view.getLocationInWindow(position)
+            return position[0].toString() + ".." + (position[0] + view.width) +
+                ",width=" + view.width +
+                ",measured=" + view.measuredWidth +
+                ",paddingEnd=" + view.paddingEnd +
+                ",alpha=" + view.alpha +
+                ",attached=" + view.isAttachedToWindow +
+                ",layoutRequested=" + view.isLayoutRequested
+        }
+
+        return "statusIcons={" + bounds(resolved.statusIcons) + "}" +
+            " systemIcons={" + bounds(resolved.systemIcons) + "}" +
+            " battery={" + bounds(resolved.battery) + "}" +
+            " batteryCarrier={" + bounds(resolved.batteryCarrier) + "}"
+    }
+
     internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD
 
