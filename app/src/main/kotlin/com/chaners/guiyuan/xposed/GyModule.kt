@@ -929,12 +929,11 @@ class GyModule : XposedModule() {
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
         if (
             detailedDiagnosticsEnabled &&
-            update.visible == false &&
-            (aodWindow as? AodWindow.Waiting)?.toLockScreen == false
+            update.visible == false
         ) {
             logDiagnostic(
                 level = Log.INFO,
-                event = "projection.aodRelease",
+                event = "projection.hiddenLayers",
                 component = "controlCenterProjection",
                 state = "after-panel-hidden",
                 "ccFakeVisual" to CcRenderSession.visualState(),
