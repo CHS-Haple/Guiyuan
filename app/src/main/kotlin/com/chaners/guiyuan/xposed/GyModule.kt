@@ -2512,33 +2512,43 @@ class GyModule : XposedModule() {
     private fun onKeyguardAodStateUpdate(
         update: SysUiKeyguardAodSource.AodUpdate,
     ) {
+        val settings = FeaturePrefsOwner.current()
         val waiting = aodWindow as? AodWindow.Waiting
-        if (waiting != null && !update.isAodAnimate) {
-            if (
-                !ScenePolicy.fullAodPendingTargetReachedStableState(
+        if (waiting != null) {
+            val reached =
+                ScenePolicy.fullAodPendingTargetReachedStableState(
                     pendingTargetToLockScreen = waiting.toLockScreen,
                     toAod = update.toAod,
                     isAodAnimate = update.isAodAnimate,
                 )
+            // Do not reacquire Keyguard from an intermediate battery callback
+            // while the native target is AOD and only Keyguard is enabled.
+            if (
+                !waiting.toLockScreen && settings.enabled &&
+                settings.keyguard && !settings.aod &&
+                update.isAodAnimate
             ) {
-                // A canceled native animation may report its old stable battery state.
-                if (detailedDiagnosticsEnabled) {
-                    logDiagnostic(
-                        level = Log.INFO,
-                        event = "aod.staleBattery",
-                        component = "keyguardAod",
-                        state = "ignored",
-                        "source" to update.source,
-                        "batteryToAod" to update.toAod,
-                        "pendingTarget" to if (waiting.toLockScreen) "keyguard" else "aod",
-                    )
-                }
                 return
             }
-            aodWindow = null
+            if (!update.isAodAnimate) {
+                if (!reached) {
+                    if (detailedDiagnosticsEnabled) {
+                        logDiagnostic(
+                            level = Log.INFO,
+                            event = "aod.staleBattery",
+                            component = "keyguardAod",
+                            state = "ignored",
+                            "source" to update.source,
+                            "batteryToAod" to update.toAod,
+                            "pendingTarget" to if (waiting.toLockScreen) "keyguard" else "aod",
+                        )
+                    }
+                    return
+                }
+                aodWindow = null
+            }
         }
 
-        val settings = FeaturePrefsOwner.current()
         // Battery toAod is not the destination while native animateFullAod runs.
         val activateHomeNativeAodFallback =
             aodWindow !is AodWindow.Running &&
@@ -2610,6 +2620,23 @@ class GyModule : XposedModule() {
             }
         }
         KeyguardRenderSession.onAodState(update)
+        if (stableAod && detailedDiagnosticsEnabled) {
+            val host =
+                (SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+            if (host != null) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "aod.nativeEndpoint",
+                    component = "keyguardAod",
+                    state = "sampled",
+                    "statusIconsAlpha" to host.statusIcons.alpha,
+                    "statusIconsShown" to host.statusIcons.isShown,
+                    "systemIconsShown" to host.systemIcons.isShown,
+                    "batteryAlpha" to host.battery.alpha,
+                )
+            }
+        }
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,

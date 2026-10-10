@@ -667,6 +667,13 @@ class SceneAodPolicyTest {
         assertFalse(
             ScenePolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
+                toAod = false,
+                isAodAnimate = true,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = false,
                 toAod = true,
                 isAodAnimate = true,
             ),
