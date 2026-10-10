@@ -1560,6 +1560,7 @@ class GyModule : XposedModule() {
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
                 onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
+                onBeforeAodIconTransition = ::onBeforeAodIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(
                         trace = beginRenderTrace("mobileType"),
@@ -1945,6 +1946,19 @@ class GyModule : XposedModule() {
         }
     }
 
+    private fun onBeforeAodIconTransition() {
+        if (CcTransitionOwner.onNativeAodTarget()) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.ccTransitionRelease",
+                component = "controlCenterProjection",
+                state = "released",
+                "source" to "animateIconContainer:before",
+                "authority" to "native-icon-animation-direction",
+            )
+        }
+    }
+
     private fun onKeyguardIconTransition() {
         val resolution =
             SysUiKeyguardHostResolver.current()
@@ -1977,7 +1991,7 @@ class GyModule : XposedModule() {
                 event = "aod.ccTransitionRelease",
                 component = "controlCenterProjection",
                 state = "released",
-                "source" to "animateIconContainer",
+                "source" to "animateIconContainer:after",
                 "authority" to "native-aod-target",
             )
         }
