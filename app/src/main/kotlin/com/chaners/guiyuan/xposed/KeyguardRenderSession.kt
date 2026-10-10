@@ -791,12 +791,7 @@ internal object KeyguardRenderSession {
                     sceneEligible = sceneEligible,
                 )
             if (visible) {
-                // The module child lives directly under the verified system-icons
-                // family carrier. Do not copy Battery's independent AOD alpha
-                // animation onto the whole combined visual: HyperOS animates
-                // Battery and status icons as separate children, and Battery may
-                // legitimately reach alpha=0 during a family scene transfer.
-                // Battery fades separately; the combined icon follows native status icons.
+                // The sibling combined view follows status icons, not Battery's separate AOD fade.
                 updateRenderAlpha()
             }
             renderView.visibility = if (visible) View.VISIBLE else View.GONE
