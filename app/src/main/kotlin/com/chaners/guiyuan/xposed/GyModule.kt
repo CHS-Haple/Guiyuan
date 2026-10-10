@@ -1997,13 +1997,6 @@ class GyModule : XposedModule() {
                     null -> "unavailable"
                 },
             "isAodAnimate" to aodState?.isAodAnimate,
-            "familyVisual" to KeyguardRenderSession.visualState(),
-            "nativeKeyguardShown" to resolution.host.host.isShown,
-            "nativeStatusShown" to resolution.host.statusIcons.isShown,
-            "nativeSystemShown" to resolution.host.systemIcons.isShown,
-            "homeCombinedShown" to HomeRenderSession.isOverlayShown(),
-            "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
-            "ccVisible" to controlCenterSceneVisible,
             "cachedToAod" to aodState?.toAod,
             "nativeToAod" to nativeState?.toAod,
             "nativeIsAodAnimate" to nativeState?.isAodAnimate,
@@ -2019,6 +2012,24 @@ class GyModule : XposedModule() {
                 ),
             "authority" to "native-status-icon-animation",
         )
+        if (detailedDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.visibleLayers",
+                component = "keyguardAod",
+                state = "sampled",
+                "source" to "animateIconContainer",
+                "targetToLockScreen" to target,
+                "familyVisual" to KeyguardRenderSession.visualState(),
+                "nativeKeyguardShown" to resolution.host.host.isShown,
+                "nativeStatusShown" to resolution.host.statusIcons.isShown,
+                "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
+                "nativeSystemShown" to resolution.host.systemIcons.isShown,
+                "homeCombinedShown" to HomeRenderSession.isOverlayShown(),
+                "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+                "ccVisible" to controlCenterSceneVisible,
+            )
+        }
         if (!eligible) return
 
         val visualOnlyIncomingKeyguard =
