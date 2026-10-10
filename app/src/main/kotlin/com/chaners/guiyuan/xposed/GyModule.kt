@@ -2091,6 +2091,7 @@ class GyModule : XposedModule() {
         }
         if (!eligible) return
 
+        KeyguardRenderSession.onNativeIconTransition(toLockScreen = target == true)
         val visualOnlyIncomingKeyguard =
             armBoundaryHandoff(
                 resolution = resolution,
