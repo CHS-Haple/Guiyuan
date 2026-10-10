@@ -2004,10 +2004,13 @@ class GyModule : XposedModule() {
         visualBoundaryReached: Boolean,
     ): Boolean {
         if (boundaryHandoff != null) {
-            if (visualBoundaryReached) {
-                onBoundaryVisualReady(source)
+            if (nativeToLockScreenTarget == true) {
+                if (visualBoundaryReached) {
+                    onBoundaryVisualReady(source)
+                }
+                return true
             }
-            return true
+            clearBoundaryHandoff()
         }
 
         val settings = FeaturePrefsOwner.current()
