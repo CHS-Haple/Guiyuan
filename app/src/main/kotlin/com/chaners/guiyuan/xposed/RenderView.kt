@@ -18,6 +18,7 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 internal class RenderView(
     context: Context,
     private val onDrawn: ((View) -> Unit)? = null,
+    private val onShownChanged: ((View) -> Unit)? = null,
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
@@ -276,6 +277,12 @@ internal class RenderView(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         painter.clearNativeResources()
+        onShownChanged?.invoke(this)
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        onShownChanged?.invoke(this)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
