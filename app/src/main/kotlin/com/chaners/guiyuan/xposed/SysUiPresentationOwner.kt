@@ -1028,7 +1028,13 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent?.takeIf { candidate -> candidate.owns(target) }
                 } ?: return@Hooker chain.proceed()
 
+            session.traceFakeCarrierWidth(
+                if (refreshMasksAfter) "layout-before" else "measure-before",
+            )
             val result = session.withRepresentedSlotsIgnored { chain.proceed() }
+            session.traceFakeCarrierWidth(
+                if (refreshMasksAfter) "layout-after" else "measure-after",
+            )
             if (refreshMasksAfter) {
                 syncPeerMirrorAfterLayout(session)
             }
@@ -1348,6 +1354,7 @@ internal object SysUiPresentationOwner {
         }
 
         private var capacityLeaseAwaitingLayout = false
+        private var firstLeaseWidthMismatch: String? = null
         private var leasePhase = LeasePhase.PREARM
         private var pendingNativeCarrierWidth: Int? = null
         private var batteryWidthUnavailable = false
@@ -2346,6 +2353,7 @@ internal object SysUiPresentationOwner {
         }
 
         private fun clearCapacityLeaseSnapshot() {
+            firstLeaseWidthMismatch = null
             nativeFakeCarrierLayoutWidthPx = null
             fakeCarrierParentWidth = null
             appliedFakeCarrierWidthPx = null
@@ -2385,6 +2393,36 @@ internal object SysUiPresentationOwner {
             )
             callback?.invoke(masked)
             return masked
+        }
+
+        fun traceFakeCarrierWidth(boundary: String) {
+            if (
+                surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !capacityLeaseAwaitingLayout ||
+                firstLeaseWidthMismatch != null
+            ) return
+            val hostView = host.get() ?: return
+            val appliedWidth = appliedFakeCarrierWidthPx ?: return
+            val liveWidth = hostView.layoutParams?.width ?: return
+            if (liveWidth == appliedWidth) return
+
+            firstLeaseWidthMismatch = boundary
+            val parent = hostView.parent as? ViewGroup
+            onEvent(
+                eventPrefix + " fakeCarrierCapacity boundary=width-mismatch" +
+                    " firstObserved=" + boundary +
+                    " liveWidth=" + liveWidth +
+                    " appliedWidth=" + appliedWidth +
+                    " nativeWidth=" + nativeFakeCarrierLayoutWidthPx +
+                    " viewWidth=" + hostView.width +
+                    " measuredWidth=" + hostView.measuredWidth +
+                    " layoutRequested=" + hostView.isLayoutRequested +
+                    " parentContentWidth=" +
+                    (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: "unavailable") +
+                    " endAnchored=" +
+                    (parent?.let { isFakeCarrierEndAnchored(hostView, it) } ?: "unavailable") +
+                    " phase=" + leasePhase.name,
+            )
         }
 
         fun validateNativeLayoutBeforeVisualMask(): Boolean {
