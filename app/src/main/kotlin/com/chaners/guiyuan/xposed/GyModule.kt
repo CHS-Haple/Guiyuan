@@ -2875,6 +2875,9 @@ class GyModule : XposedModule() {
                 SysUiPresentationRuntime.keyguardFullAodReady,
             fullAodTargetPending = aodWindow?.boundaryPending == true,
             fullAodVisualBoundary = fullAodVisualBoundary,
+            outgoingAodOwned =
+                (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
+                    SysUiPresentationOwner.aodClaimed(resolved),
             homeAodTransitionOrigin = homeAodOriginPending,
             homeAodTargetPrearm = homeAodTargetPrearmPending,
             homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),

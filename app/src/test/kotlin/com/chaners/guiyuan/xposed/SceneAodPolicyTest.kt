@@ -230,6 +230,48 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun outgoingAodClaimSurvivesCanceledBatteryAnimationAcrossQuickReverse() {
+        fun projection(
+            toAod: Boolean,
+            animated: Boolean,
+            owned: Boolean = true,
+            target: Boolean = true,
+            ready: Boolean = true,
+            alpha: Float = 0.5f,
+        ) = ScenePolicy.resolveKeyguardAodProjection(
+            featureEnabled = true,
+            keyguardEnabled = false,
+            aodEnabled = true,
+            toAod = toAod,
+            isAodAnimate = animated,
+            steadySourceScene = SourceScene.KEYGUARD,
+            // Rapid reversal may never produce a stable AOD callback.
+            lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+            keyguardStatusIconsAlpha = alpha,
+            nativeToLockScreenTarget = target,
+            fullAodTargetSourceReady = ready,
+            fullAodTargetPending = false,
+            fullAodVisualBoundary = true,
+            outgoingAodOwned = owned,
+        )
+
+        // A canceled earlier animation clears isAodAnimate before the new one begins.
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, false))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(false, true))
+        // Original battery has now committed a stable Keyguard mode.
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projection(false, false))
+
+        // Not a general override: ownership and the authoritative target are required.
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projection(true, true, owned = false))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projection(true, true, target = false))
+        assertEquals(
+            ScenePolicy.KeyguardAodProjection.NATIVE,
+            projection(true, true, ready = false, alpha = 1f),
+        )
+    }
+
+    @Test
     fun singleEnabledFamilyUsesNativeKeyguardStatusIconsBoundary() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,

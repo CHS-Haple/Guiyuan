@@ -108,6 +108,20 @@ internal object SysUiPresentationOwner {
             keyguardFamilyCurrent?.hasPresentationClaim() == true
 
     @Synchronized
+    internal fun aodClaimed(host: SysUiKeyguardHostResolver.ResolvedHost): Boolean =
+        keyguardFamilySurface == KeyguardFamilySurface.AOD &&
+            keyguardFamilyCurrent?.let { session ->
+                session.hasPresentationClaim() &&
+                    session.matches(
+                        host = host.host,
+                        statusIcons = host.statusIcons,
+                        batteryContainer = host.systemIcons,
+                        battery = host.battery,
+                        batteryCarrier = host.batteryCarrier,
+                    )
+            } == true
+
+    @Synchronized
     fun updateCcSourceScene(sourceScene: SourceScene) {
         if (controlCenterSourceScene == sourceScene) return
         controlCenterSourceScene = sourceScene

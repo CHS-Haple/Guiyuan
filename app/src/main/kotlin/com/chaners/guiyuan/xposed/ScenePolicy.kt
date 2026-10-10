@@ -114,6 +114,7 @@ internal object ScenePolicy {
         fullAodTargetSourceReady: Boolean = false,
         fullAodTargetPending: Boolean = false,
         fullAodVisualBoundary: Boolean = false,
+        outgoingAodOwned: Boolean = false,
         homeAodTransitionOrigin: Boolean = false,
         homeAodTargetPrearm: Boolean = false,
         homeNativeAodFallbackActive: Boolean = false,
@@ -162,6 +163,15 @@ internal object ScenePolicy {
             // authorizes only the replacement renderer / clip mask; native
             // ignored-slot and reservation ownership remain deferred.
             return KeyguardAodProjection.KEYGUARD
+        }
+        if (
+            aodEnabled && !keyguardEnabled &&
+            outgoingAodOwned && fullAodTargetSourceReady &&
+            nativeToLockScreenTarget == true &&
+            (toAod || isAodAnimate)
+        ) {
+            // Canceled AOD animation callbacks can precede the new Keyguard battery mode.
+            return KeyguardAodProjection.AOD
         }
         if (isAodAnimate) {
             return resolveAnimatingKeyguardAodProjection(

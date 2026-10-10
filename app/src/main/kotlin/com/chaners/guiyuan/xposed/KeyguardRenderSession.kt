@@ -148,9 +148,7 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun onNativeIconTransition(toLockScreen: Boolean) {
-        current
-            ?.takeIf { it.isScene(Scene.KEYGUARD) }
-            ?.onNativeIconTransition(toLockScreen)
+        current?.onNativeIconTransition(toLockScreen)
     }
 
     @Synchronized
@@ -288,6 +286,12 @@ internal object KeyguardRenderSession {
         DRAWN,
     }
 
+    private enum class IconAlphaMode {
+        NONE,
+        FOLLOW,
+        INVERSE,
+    }
+
     private class Session(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
@@ -304,7 +308,7 @@ internal object KeyguardRenderSession {
         private val batteryCarrier = WeakReference(resolved.batteryCarrier)
         private var aodDraw = AodDraw.IDLE
         private var aodShown = false
-        private var followIconAlpha = false
+        private var iconAlphaMode = IconAlphaMode.NONE
         private var iconAlphaObserver: ViewTreeObserver? = null
         private val iconAlphaListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -378,9 +382,7 @@ internal object KeyguardRenderSession {
             this.featureEnabled = featureEnabled
             this.sceneEligible = sceneEligible
             this.onPresentationReadinessChanged = onPresentationReadinessChanged
-            if (changedScene && scene != Scene.KEYGUARD) {
-                stopFollowingIconAlpha()
-            }
+            if (changedScene) stopFollowingIconAlpha()
             if (changedScene) {
                 readyLogged = false
                 rejectedTintLogged = false
@@ -517,6 +519,15 @@ internal object KeyguardRenderSession {
         }
 
         fun onNativeIconTransition(toLockScreen: Boolean) {
+            if (scene == Scene.AOD) {
+                if (toLockScreen && !FeaturePrefsOwner.current().keyguard) {
+                    trackIconAlpha(IconAlphaMode.INVERSE)
+                } else if (!toLockScreen) {
+                    stopFollowingIconAlpha()
+                    applyResolvedVisibility()
+                }
+                return
+            }
             if (toLockScreen) {
                 stopFollowingIconAlpha()
                 aodDraw = AodDraw.IDLE
@@ -530,33 +541,38 @@ internal object KeyguardRenderSession {
                 aodShown = false
                 observeAodVisibility(renderView)
             }
-            if (!followIconAlpha) {
-                followIconAlpha = true
+            trackIconAlpha(IconAlphaMode.FOLLOW)
+        }
+
+        private fun trackIconAlpha(mode: IconAlphaMode) {
+            if (iconAlphaMode == IconAlphaMode.NONE) {
                 val observer = statusIcons.get()?.viewTreeObserver
                 if (observer?.isAlive == true) {
                     observer.addOnPreDrawListener(iconAlphaListener)
                     iconAlphaObserver = observer
                 }
             }
+            iconAlphaMode = mode
             syncNativeIconAlpha()
         }
 
         private fun syncNativeIconAlpha() {
-            if (followIconAlpha) updateRenderAlpha()
+            if (iconAlphaMode != IconAlphaMode.NONE) updateRenderAlpha()
         }
 
         private fun updateRenderAlpha() {
+            val nativeAlpha = statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: 1f
             val alpha =
-                if (followIconAlpha) {
-                    statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: 1f
-                } else {
-                    1f
+                when (iconAlphaMode) {
+                    IconAlphaMode.NONE -> 1f
+                    IconAlphaMode.FOLLOW -> nativeAlpha
+                    IconAlphaMode.INVERSE -> 1f - nativeAlpha
                 }
             if (renderView.alpha != alpha) renderView.alpha = alpha
         }
 
         private fun stopFollowingIconAlpha() {
-            followIconAlpha = false
+            iconAlphaMode = IconAlphaMode.NONE
             iconAlphaObserver
                 ?.takeIf { it.isAlive }
                 ?.removeOnPreDrawListener(iconAlphaListener)
