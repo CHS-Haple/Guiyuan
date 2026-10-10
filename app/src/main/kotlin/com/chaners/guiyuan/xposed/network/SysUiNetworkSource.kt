@@ -1081,7 +1081,8 @@ internal object SysUiNetworkSource {
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.toString() + ":" + valueText
+                // A native icon view may be rebound to a different SIM.
+                val eventKey = "$subscriptionId:$classId:$valueText"
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
