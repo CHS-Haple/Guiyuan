@@ -66,6 +66,7 @@ internal object SysUiPresentationRuntime {
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
+        onBeforeAodIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -125,6 +126,7 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
+                    onBeforeAod = onBeforeAodIconTransition,
                     onEvent = onKeyguardAodEvent,
                 ).size
             }.getOrElse { error ->
