@@ -112,6 +112,29 @@ class SceneControlCenterTest {
     }
 
     @Test
+    fun aodTransitionRejectsKeyguardLeaseReentryOnLatePanelFraction() {
+        assertTrue(
+            ScenePolicy.shouldAcquireKeyguardCcLease(
+                sourceScene = SourceScene.KEYGUARD,
+                keyguardPresentationReady = true,
+                nativeFraction = 1f,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.shouldRetainKeyguardCcLease(
+                leaseActive = true,
+                sourceScene = SourceScene.KEYGUARD,
+                featureEnabled = true,
+                keyguardEnabled = true,
+                hostAttached = true,
+                aodBlocked = true,
+                incomingBoundaryPresentationReady = false,
+                nativeFraction = 1f,
+            ),
+        )
+    }
+
+    @Test
     fun hiddenControlCenterIgnoresKeyguardLifecycleChurnUntilItActuallyOpens() {
         assertFalse(
             ScenePolicy.shouldReconcileCcForKeyguard(
