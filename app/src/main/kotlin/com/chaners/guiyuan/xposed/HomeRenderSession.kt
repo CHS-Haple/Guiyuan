@@ -124,6 +124,9 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
+    fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
+
+    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -402,6 +405,8 @@ internal object HomeRenderSession {
             }
             dispatchPresentationReadiness("control-center:" + source)
         }
+
+        fun isOverlayShown(): Boolean = probeView.isShown
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
