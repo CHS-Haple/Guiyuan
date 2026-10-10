@@ -1,16 +1,17 @@
 name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'workflow_dispatch'
-      && format('{0} APK | {1}', inputs.variant, inputs.source_branch)
+      && format('{0} | B{1} {2}', inputs.source_branch, inputs.build_number, inputs.variant)
       || (github.event.issue.pull_request != null
           && github.actor == github.repository_owner
-          && github.event.comment.body == '/canary'
-          && format('Canary APK | PR #{0}', github.event.issue.number))
-      || (github.event.issue.pull_request != null
-          && github.actor == github.repository_owner
-          && github.event.comment.body == '/internal'
-          && format('Internal APK | PR #{0}', github.event.issue.number))
-      || format('Ignored comment | #{0}', github.event.issue.number) }}
+          && (github.event.comment.body == '/canary'
+              || github.event.comment.body == '/internal'
+              || (startsWith(github.event.comment.body, 'B')
+                  && (endsWith(github.event.comment.body, ' Canary')
+                      || endsWith(github.event.comment.body, ' Internal'))))
+          && format('{0} | {1} #{2}', github.event.issue.title,
+              github.event.comment.body, github.event.issue.number))
+      || format('Skipped comment | #{0}', github.event.issue.number) }}
 
 on:
   workflow_dispatch:
@@ -27,6 +28,10 @@ on:
         options:
           - canary
           - internal
+      build_number:
+        description: 'Build suffix (for example 850); checked against the source Gradle Build'
+        required: true
+        type: string
   issue_comment:
     types: [created]
 
@@ -48,7 +53,11 @@ jobs:
        github.actor == github.repository_owner) ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
-       (github.event.comment.body == '/canary' || github.event.comment.body == '/internal') &&
+       (github.event.comment.body == '/canary' ||
+        github.event.comment.body == '/internal' ||
+        (startsWith(github.event.comment.body, 'B') &&
+         (endsWith(github.event.comment.body, ' Canary') ||
+          endsWith(github.event.comment.body, ' Internal')))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -67,6 +76,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_SOURCE_BRANCH: ${{ inputs.source_branch }}
           MANUAL_VARIANT: ${{ inputs.variant }}
+          MANUAL_BUILD_NUMBER: ${{ inputs.build_number }}
           COMMENT_PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
@@ -77,6 +87,7 @@ jobs:
             workflow_dispatch)
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
+              expected_build="$MANUAL_BUILD_NUMBER"
               if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
                 echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
                 exit 1
@@ -101,11 +112,16 @@ jobs:
               branch="$(jq -r '.head.ref // empty' <<<"$pr_json")"
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
               case "$COMMENT_BODY" in
-                /canary) variant="canary" ;;
-                /internal) variant="internal" ;;
+                /canary) variant="canary"; expected_build="" ;;
+                /internal) variant="internal"; expected_build="" ;;
                 *)
-                  echo "::error::Unsupported PR build command."
-                  exit 1
+                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]](Canary|Internal)$ ]]; then
+                    expected_build="${BASH_REMATCH[1]}"
+                    variant="${BASH_REMATCH[2],,}"
+                  else
+                    echo "::error::Unsupported PR build command."
+                    exit 1
+                  fi
                   ;;
               esac
 
@@ -135,9 +151,15 @@ jobs:
             exit 1
           fi
 
+          if [[ -n "$expected_build" && ! "$expected_build" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Build number must be a positive integer."
+            exit 1
+          fi
+
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
           echo "variant=$variant" >> "$GITHUB_OUTPUT"
+          echo "expected_build=$expected_build" >> "$GITHUB_OUTPUT"
           {
             printf '%s\n' "### Trusted source"
             printf '%s\n' "- Trigger: \`$EVENT_NAME\`"
@@ -160,12 +182,20 @@ jobs:
           EXPECTED_SOURCE_SHA: ${{ steps.source.outputs.sha }}
           EXPECTED_SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
           EXPECTED_VARIANT: ${{ steps.source.outputs.variant }}
+          EXPECTED_BUILD: ${{ steps.source.outputs.expected_build }}
         run: |
           set -euo pipefail
           resolved_sha="$(git rev-parse HEAD)"
           if [[ "$resolved_sha" != "$EXPECTED_SOURCE_SHA" ]]; then
             echo "::error::Checked-out SHA does not match the resolved trusted source."
             exit 1
+          fi
+          if [[ -n "$EXPECTED_BUILD" ]]; then
+            build_id="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
+            if [[ "$build_id" != *-"$EXPECTED_BUILD" ]]; then
+              echo "::error::Requested B$EXPECTED_BUILD does not match source Build $build_id."
+              exit 1
+            fi
           fi
           echo "TRUSTED_SOURCE_SHA=$resolved_sha" >> "$GITHUB_ENV"
           echo "TRUSTED_SOURCE_BRANCH=$EXPECTED_SOURCE_BRANCH" >> "$GITHUB_ENV"
