@@ -274,6 +274,12 @@ internal object KeyguardRenderSession {
         AOD("aodRender", true),
     }
 
+    private enum class AodDraw {
+        IDLE,
+        WAITING,
+        DRAWN,
+    }
+
     private class Session(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
@@ -288,7 +294,25 @@ internal object KeyguardRenderSession {
         private val statusIcons = WeakReference(resolved.statusIcons)
         private val batteryView = WeakReference(resolved.battery)
         private val batteryCarrier = WeakReference(resolved.batteryCarrier)
-        private val renderView = RenderView(resolved.host.context)
+        private var aodDraw = AodDraw.IDLE
+        private var aodShown = false
+        private val renderView =
+            RenderView(
+                resolved.host.context,
+                onShownChanged = ::observeAodVisibility,
+                onDrawn = { view ->
+                    observeAodVisibility(view)
+                    if (aodDraw == AodDraw.WAITING && view.isShown) {
+                        aodDraw = AodDraw.DRAWN
+                        emitEvent {
+                            "keyguardAodWitness source=renderView.onDraw" +
+                                " shown=true statusIconsAlpha=" +
+                                statusIcons.get()?.alpha +
+                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                        }
+                    }
+                },
+            )
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
 
@@ -413,6 +437,15 @@ internal object KeyguardRenderSession {
         }
 
         fun stop() {
+            if (aodDraw != AodDraw.IDLE) {
+                emitEvent {
+                    "keyguardAodWitness source=session-stop" +
+                        " shownDuringAod=" + aodShown +
+                        " freshVisibleDraw=" + (aodDraw == AodDraw.DRAWN) +
+                        " nativeCc=" + SysUiCcSource.nativeVisualState()
+                }
+                aodDraw = AodDraw.IDLE
+            }
             layoutReady = false
             dispatchPresentationReadiness("stop")
             systemIcons.get()?.removeOnAttachStateChangeListener(this)
@@ -466,6 +499,16 @@ internal object KeyguardRenderSession {
         fun updateAodState(update: SysUiKeyguardAodSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
+            if (
+                scene == Scene.KEYGUARD &&
+                update.isAodAnimate &&
+                !update.toAod &&
+                aodDraw == AodDraw.IDLE &&
+                isDetailedDiagnosticsEnabled()
+            ) {
+                aodDraw = AodDraw.WAITING
+                observeAodVisibility(renderView)
+            }
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Aod source=" + update.source +
@@ -487,6 +530,17 @@ internal object KeyguardRenderSession {
                         },
                     ) + "}" +
                     " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}"
+            }
+        }
+
+        private fun observeAodVisibility(view: View) {
+            if (aodDraw == AodDraw.IDLE || aodShown || !view.isShown) return
+            aodShown = true
+            emitEvent {
+                "keyguardAodWitness source=renderView.visibility" +
+                    " shown=true statusIconsAlpha=" +
+                    statusIcons.get()?.alpha +
+                    " nativeCc=" + SysUiCcSource.nativeVisualState()
             }
         }
 
