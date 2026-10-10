@@ -949,6 +949,10 @@ class GyModule : XposedModule() {
 
     }
 
+    private fun canRestoreHomeAfterCc(): Boolean =
+        FeaturePrefsOwner.current().aod ||
+            steadyStatusSourceScene != SourceScene.KEYGUARD
+
     private fun handleCcUpdate(
         update: SysUiCcSource.Update,
     ): SourceScene? {
@@ -957,11 +961,7 @@ class GyModule : XposedModule() {
         val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
-            // A Keyguard shade can close while entering AOD. Only restore Home
-            // if native source ownership has not moved to Keyguard.
-            HomeRenderSession.onControlCenterAuthorityChanged(
-                steadyStatusSourceScene != SourceScene.KEYGUARD,
-            )
+            HomeRenderSession.onControlCenterAuthorityChanged(canRestoreHomeAfterCc())
             CcRenderSession.setRequestedVisible(false)
             return null
         }
@@ -1371,7 +1371,7 @@ class GyModule : XposedModule() {
         // Projected owner is already visible when ready=true. On the reverse
         // edge Home is restored before the projected owner is removed.
         HomeRenderSession.onControlCenterAuthorityChanged(
-            !ready && steadyStatusSourceScene != SourceScene.KEYGUARD,
+            !ready && canRestoreHomeAfterCc(),
         )
     }
 
