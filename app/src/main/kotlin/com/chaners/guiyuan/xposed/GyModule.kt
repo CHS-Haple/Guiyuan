@@ -1368,8 +1368,8 @@ class GyModule : XposedModule() {
         if (!controlCenterSceneVisible) {
             return
         }
-        // Projected owner is already visible when ready=true. On the reverse
-        // edge Home is restored before the projected owner is removed.
+        // A disabled-AOD Keyguard source must not restore Home when the
+        // projected carrier yields.
         HomeRenderSession.onControlCenterAuthorityChanged(
             !ready && canRestoreHomeAfterCc(),
         )
