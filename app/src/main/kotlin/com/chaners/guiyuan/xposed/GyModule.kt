@@ -2053,6 +2053,16 @@ class GyModule : XposedModule() {
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
                 homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
+        if (!precommit && detailedDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.geometry",
+                component = "keyguardPresentation",
+                state = "visual-only",
+                "source" to source,
+                "geometry" to SysUiKeyguardHostProbe.boundaryGeometry(resolution.host),
+            )
+        }
         boundaryHandoff =
             BoundaryHandoff(
                 precommit = precommit,
@@ -2207,6 +2217,20 @@ class GyModule : XposedModule() {
                 source = source + ":precommitted-layout",
             )
             return true
+        }
+        if (detailedDiagnosticsEnabled) {
+            val ready = SysUiKeyguardHostResolver.current()
+                as? SysUiKeyguardHostResolver.ResolveResult.Ready
+            if (ready != null) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "aod.geometry",
+                    component = "keyguardPresentation",
+                    state = "before-stable-commit",
+                    "source" to source,
+                    "geometry" to SysUiKeyguardHostProbe.boundaryGeometry(ready.host),
+                )
+            }
         }
         boundaryHandoff = null
         return when (
