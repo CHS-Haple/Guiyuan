@@ -247,6 +247,7 @@ internal object ScenePolicy {
         lastStableFamilyScene: StableKeyguardAodScene,
         nativeToLockScreenTarget: Boolean?,
         statusIconsPresentationAlpha: Float?,
+        nativeAodLayout: Boolean = false,
         homeNativeAodFallbackActive: Boolean = false,
     ): Boolean =
         shouldUseKeyguardBoundaryVisualHandoff(
@@ -257,8 +258,12 @@ internal object ScenePolicy {
             nativeToLockScreenTarget = nativeToLockScreenTarget,
             homeNativeAodFallbackActive = homeNativeAodFallbackActive,
         ) &&
-            statusIconsPresentationAlpha != null &&
-            statusIconsPresentationAlpha == 0f
+            // When the native battery still has AOD geometry, claim the
+            // existing reservation before revealing the Keyguard replacement.
+            (
+                statusIconsPresentationAlpha == 0f ||
+                    (statusIconsPresentationAlpha == 1f && nativeAodLayout)
+            )
 
     fun shouldArmHomeNativeAodFallbackCandidate(
         featureEnabled: Boolean,

@@ -562,6 +562,32 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun aodExpandedBatteryCanPrecommitIncomingKeyguardLayout() {
+        fun allow(
+            alpha: Float?,
+            nativeAodLayout: Boolean = false,
+            target: Boolean? = true,
+            aodEnabled: Boolean = false,
+        ) = ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
+            featureEnabled = true,
+            keyguardEnabled = true,
+            aodEnabled = aodEnabled,
+            lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
+            nativeToLockScreenTarget = target,
+            statusIconsPresentationAlpha = alpha,
+            nativeAodLayout = nativeAodLayout,
+        )
+        assertTrue(allow(alpha = 0f))
+        assertTrue(allow(alpha = 1f, nativeAodLayout = true))
+        assertFalse(allow(alpha = 1f))
+        assertFalse(allow(alpha = 0.5f, nativeAodLayout = true))
+        assertFalse(allow(alpha = null, nativeAodLayout = true))
+        assertFalse(allow(alpha = 1f, nativeAodLayout = true, target = false))
+        assertFalse(allow(alpha = 1f, nativeAodLayout = true, target = null))
+        assertFalse(allow(alpha = 1f, nativeAodLayout = true, aodEnabled = true))
+    }
+
+    @Test
     fun nativeAodBatteryModeOwnsTheFinalKeyguardClipRelease() {
         fun hold(
             target: Boolean? = false,

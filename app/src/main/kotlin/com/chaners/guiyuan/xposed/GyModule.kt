@@ -33,6 +33,7 @@ class GyModule : XposedModule() {
         val precommit: Boolean,
         var layoutReady: Boolean = false,
         var visualReady: Boolean = false,
+        val visibleAtArm: Boolean = false,
     )
 
     private sealed interface AodWindow {
@@ -2168,6 +2169,15 @@ class GyModule : XposedModule() {
             SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
                 resolution.host,
             )
+        val battery = resolution.host.battery
+        val nativeAod = SysUiKeyguardAodSource.nativeState(battery)
+        val batteryWidth = battery.width
+        val carrierWidth = resolution.host.batteryCarrier.width
+        val nativeAodLayout =
+            nativeAod?.toAod == true &&
+                SysUiKeyguardAodSource.usesAnimatedBatteryMode(battery) &&
+                batteryWidth > carrierWidth &&
+                carrierWidth > 0
         val precommit =
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
                 featureEnabled = settings.enabled,
@@ -2179,6 +2189,7 @@ class GyModule : XposedModule() {
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
+                nativeAodLayout = nativeAodLayout,
                 homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
         if (!precommit && detailedDiagnosticsEnabled) {
@@ -2195,6 +2206,8 @@ class GyModule : XposedModule() {
             BoundaryHandoff(
                 precommit = precommit,
                 visualReady = visualBoundaryReached,
+                visibleAtArm =
+                    precommit && nativeAodLayout && statusIconsAlphaAtArm == 1f,
             )
 
         val attached =
@@ -2221,6 +2234,7 @@ class GyModule : XposedModule() {
             "nativeVisualMask" to "clipBounds",
             "renderer" to "keyguard-combined",
             "statusIconsAlphaAtArm" to statusIconsAlphaAtArm,
+            "nativeAodLayout" to nativeAodLayout,
             "nativeLifecycleAuthority" to "status-icons-presentation-alpha",
         )
     }
@@ -2279,13 +2293,14 @@ class GyModule : XposedModule() {
         }
         handoff.layoutReady = true
         keyguardRuntimeReady = false
-        KeyguardRenderSession.setNativeHandoffActive(!handoff.visualReady)
+        val canReveal = handoff.visualReady || handoff.visibleAtArm
+        KeyguardRenderSession.setNativeHandoffActive(!canReveal)
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.cutover",
             component = "keyguardPresentation",
             state =
-                if (handoff.visualReady) {
+                if (canReveal) {
                     "visual-handoff-prelayout-ready"
                 } else {
                     "prelayout-ready-hidden"
@@ -2294,8 +2309,9 @@ class GyModule : XposedModule() {
             "representedSlots" to result.representedSlots,
             "maskedViews" to result.maskedViews,
             "nativeVisualBoundaryReached" to handoff.visualReady,
+            "nativeVisibleAtArm" to handoff.visibleAtArm,
         )
-        if (handoff.visualReady) {
+        if (canReveal) {
             reconcileCcForKeyguard(
                 "keyguard-boundary-layout-ready",
             )
