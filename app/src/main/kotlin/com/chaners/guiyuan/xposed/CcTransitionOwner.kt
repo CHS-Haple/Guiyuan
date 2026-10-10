@@ -44,6 +44,7 @@ internal object CcTransitionOwner {
     private const val BATTERY_NUMBER_MIN_TEXT_SIZE_PX = 8f
 
     private var visible = false
+    private var aodTarget = false
     private var sceneEligible = false
     private var projectionReady = false
     private var nativeProgress: Float? = null
@@ -57,6 +58,7 @@ internal object CcTransitionOwner {
     @Synchronized
     fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
+            if (!nextVisible || !visible) aodTarget = false
             visible = nextVisible
             if (!nextVisible) {
                 nativeProgress = null
@@ -85,6 +87,17 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
+    fun onNativeAodTarget(): Boolean {
+        if (!visible || aodTarget) return false
+        aodTarget = true
+        val hadDrawable = current != null
+        // Native AOD can start before CC publishes its hidden event.
+        current?.stop("native-aod-target")
+        current = null
+        return hadDrawable
+    }
+
+    @Synchronized
     fun setSceneEligible(eligible: Boolean) {
         sceneEligible = eligible
         sync("scene")
@@ -99,6 +112,7 @@ internal object CcTransitionOwner {
     @Synchronized
     fun visualState(): String =
         "visible=" + visible +
+            ":aodTarget=" + aodTarget +
             ":eligible=" + sceneEligible +
             ":progress=" + (nativeProgress ?: "none") +
             ":drawable=" + (current?.visualState() ?: "none")
@@ -112,6 +126,7 @@ internal object CcTransitionOwner {
         current?.stop(source)
         current = null
         visible = false
+        aodTarget = false
         projectionReady = false
         nativeProgress = null
         nativeAppearance = false
@@ -126,6 +141,7 @@ internal object CcTransitionOwner {
         val endpoint = endpoints
         val shouldRun =
             visible &&
+                !aodTarget &&
                 sceneEligible &&
                 projectionReady &&
                 progress != null &&
