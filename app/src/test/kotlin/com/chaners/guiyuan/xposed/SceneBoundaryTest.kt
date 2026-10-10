@@ -7,7 +7,7 @@ import org.junit.Test
 
 class SceneBoundaryTest {
     @Test
-    fun nativeAodTargetSurrendersOutgoingKeyguardAtVisualBoundary() {
+    fun outgoingKeyguardYieldsAtAodBoundary() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
@@ -96,9 +96,8 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun nativeAodBoundaryDoesNotWaitForBatteryAnimationFlags() {
-        val args = listOf(false, true)
-        for (animated in args) {
+    fun aodBoundaryPrecedesAodState() {
+        for (animated in listOf(false, true)) {
             assertEquals(
                 ScenePolicy.KeyguardAodProjection.NATIVE,
                 ScenePolicy.resolveKeyguardAodProjection(
@@ -135,7 +134,7 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun nativeAodTargetReleasesKeyguardDuringPendingAnimation() {
+    fun outgoingKeyguardYieldsDuringAodAnimation() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
