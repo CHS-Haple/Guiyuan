@@ -265,13 +265,13 @@ internal object ScenePolicy {
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
         homePresentationOwned: Boolean,
-        homeCarrierPresentationVisible: Boolean,
+        homeOriginConfirmed: Boolean,
     ): Boolean =
         featureEnabled &&
             keyguardEnabled &&
             !aodEnabled &&
             homePresentationOwned &&
-            homeCarrierPresentationVisible
+            homeOriginConfirmed
 
     fun shouldConsumeHomeNativeAodFallbackOnAodState(
         candidateActive: Boolean,

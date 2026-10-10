@@ -1757,7 +1757,9 @@ class GyModule : XposedModule() {
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
                 homePresentationOwned = homeOwnedAtStart,
-                homeCarrierPresentationVisible = homeCarrierVisibleAtStart,
+                homeOriginConfirmed =
+                    homeCarrierVisibleAtStart &&
+                        steadyStatusSourceScene == SourceScene.HOME,
             )
         ) {
             homeAodFallback = HomeAodFallback.CANDIDATE
@@ -1819,15 +1821,9 @@ class GyModule : XposedModule() {
             } else {
                 null
             }
-        if (target == true || target == null) {
+        if (target != false) {
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
-        }
-        if (target == true) {
-            if (homeAodFallback == HomeAodFallback.ACTIVE) {
-                homeAodFallback = HomeAodFallback.NONE
-            }
-        } else if (target == null) {
             homeAodFallback = HomeAodFallback.NONE
         }
 
@@ -2436,6 +2432,28 @@ class GyModule : XposedModule() {
 
     private fun onSceneStateUpdate(update: SysUiSceneSource.SceneUpdate) {
         val sourceScene = SysUiSceneSource.steadySourceScene(update)
+        if (
+            steadyStatusSourceScene == SourceScene.HOME &&
+            sourceScene == SourceScene.KEYGUARD &&
+            stableFamilyScene == ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+            aodWindow == null &&
+            homeAodFallback == HomeAodFallback.NONE
+        ) {
+            val settings = FeaturePrefsOwner.current()
+            if (
+                ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+                    featureEnabled = settings.enabled,
+                    keyguardEnabled = settings.keyguard,
+                    aodEnabled = settings.aod,
+                    homePresentationOwned =
+                        SysUiPresentationOwner.homeSlots().isNotEmpty(),
+                    homeOriginConfirmed = true,
+                )
+            ) {
+                // Keyguard ancestry can hide Home before the native AOD target arrives.
+                homeAodFallback = HomeAodFallback.CANDIDATE
+            }
+        }
         if (sourceScene != SourceScene.UNKNOWN) {
             steadyStatusSourceScene = sourceScene
         }
@@ -2450,9 +2468,7 @@ class GyModule : XposedModule() {
         }
         if (sourceScene == SourceScene.HOME) {
             if (aodWindow !is AodWindow.Running) {
-                if (homeAodFallback == HomeAodFallback.ACTIVE) {
-                    homeAodFallback = HomeAodFallback.NONE
-                }
+                homeAodFallback = HomeAodFallback.NONE
             }
             // UNLOCKED_STATUS_BAR + Home ancestry is the authoritative unlock
             // boundary. A Keyguard Control Center lease must never outlive it:
@@ -3027,6 +3043,10 @@ class GyModule : XposedModule() {
         }
         keyguardRuntimeReady = true
         keyguardReadyObserved = true
+        if (aodWindow == null && homeAodFallback == HomeAodFallback.CANDIDATE) {
+            // A real Keyguard cutover supersedes the preceding Home-origin hint.
+            homeAodFallback = HomeAodFallback.NONE
+        }
         KeyguardRenderSession.setNativeHandoffActive(false)
         logDiagnostic(
             level = Log.INFO,
