@@ -2536,25 +2536,20 @@ class GyModule : XposedModule() {
                 "homeOriginLatched" to homeAodOriginPending,
                 "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
                 "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
-                "ccNativeVisual" to
-                    if (update.toAod && update.source == "toggleAodMode") {
-                        SysUiCcSource.nativeVisualState()
-                    } else {
-                        null
-                    },
-                "homeOverlayShown" to
-                    if (update.toAod && update.source == "toggleAodMode") {
-                        HomeRenderSession.isOverlayShown()
-                    } else {
-                        null
-                    },
-                "familyVisual" to
-                    if (update.toAod && update.source == "toggleAodMode") {
-                        KeyguardRenderSession.visualState()
-                    } else {
-                        null
-                    },
             )
+            if (update.toAod && update.source == "toggleAodMode") {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "aod.windowWitness",
+                    component = "keyguardAod",
+                    state = "sampled",
+                    "source" to "native-battery-mode",
+                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                    "ccVisible" to controlCenterSceneVisible,
+                    "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                    "familyVisual" to KeyguardRenderSession.visualState(),
+                )
+            }
         }
     }
 
