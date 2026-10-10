@@ -247,6 +247,8 @@ internal object CcTransitionOwner {
         private var nativeAppearanceAnimated = false
         private var started = false
         private var cachedNativePeerTint: Int? = null
+        private var lastFakeOpacity = Float.NaN
+        private var lastFinalOpacity = Float.NaN
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
@@ -300,9 +302,17 @@ internal object CcTransitionOwner {
                 refreshNativePeerTint()
                 syncTransitionReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
+                // Folme changes endpoint alpha without a CC progress callback.
+                val fakeOpacity = endpointAlpha(fake)
+                val finalOpacity = endpointAlpha(final)
+                val opacityChanged =
+                    fakeOpacity != lastFakeOpacity || finalOpacity != lastFinalOpacity
+                lastFakeOpacity = fakeOpacity
+                lastFinalOpacity = finalOpacity
                 if (
                     currentSnapshot !== previousSnapshot ||
-                    cachedNativePeerTint != previousTint
+                    cachedNativePeerTint != previousTint ||
+                    opacityChanged
                 ) {
                     drawable.invalidateSelf()
                 }
