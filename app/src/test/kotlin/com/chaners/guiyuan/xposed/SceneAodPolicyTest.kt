@@ -230,6 +230,31 @@ class SceneAodPolicyTest {
     }
 
     @Test
+    fun aodOnlyHandsNativePeersBackAtIconBoundaryAndReclaimsOnReverse() {
+        fun action(
+            target: Boolean?,
+            enabled: Boolean = true,
+            keyguard: Boolean = false,
+            aod: Boolean = true,
+            claimed: Boolean = true,
+        ) = ScenePolicy.aodPeerAction(
+            enabled = enabled,
+            keyguardEnabled = keyguard,
+            aodEnabled = aod,
+            aodClaimed = claimed,
+            nativeToLockScreenTarget = target,
+        )
+
+        assertEquals(ScenePolicy.AodPeerAction.RELEASE, action(true))
+        assertEquals(ScenePolicy.AodPeerAction.RECLAIM, action(false))
+        assertEquals(ScenePolicy.AodPeerAction.NONE, action(null))
+        assertEquals(ScenePolicy.AodPeerAction.NONE, action(true, claimed = false))
+        assertEquals(ScenePolicy.AodPeerAction.NONE, action(true, keyguard = true))
+        assertEquals(ScenePolicy.AodPeerAction.NONE, action(true, aod = false))
+        assertEquals(ScenePolicy.AodPeerAction.NONE, action(true, enabled = false))
+    }
+
+    @Test
     fun outgoingAodClaimSurvivesCanceledBatteryAnimationAcrossQuickReverse() {
         fun projection(
             toAod: Boolean,

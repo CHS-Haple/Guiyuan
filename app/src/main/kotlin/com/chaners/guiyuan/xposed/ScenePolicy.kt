@@ -100,6 +100,29 @@ internal object ScenePolicy {
         AOD,
     }
 
+    enum class AodPeerAction {
+        NONE,
+        RELEASE,
+        RECLAIM,
+    }
+
+    fun aodPeerAction(
+        enabled: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        aodClaimed: Boolean,
+        nativeToLockScreenTarget: Boolean?,
+    ): AodPeerAction {
+        if (!enabled || keyguardEnabled || !aodEnabled || !aodClaimed) {
+            return AodPeerAction.NONE
+        }
+        return when (nativeToLockScreenTarget) {
+            true -> AodPeerAction.RELEASE
+            false -> AodPeerAction.RECLAIM
+            null -> AodPeerAction.NONE
+        }
+    }
+
     fun resolveKeyguardAodProjection(
         featureEnabled: Boolean,
         keyguardEnabled: Boolean,

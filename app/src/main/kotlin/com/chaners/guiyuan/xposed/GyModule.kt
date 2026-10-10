@@ -1961,6 +1961,8 @@ class GyModule : XposedModule() {
         }
 
         (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.let { ready ->
+            // A reverse target must reacquire AOD peers even without an icon boundary.
+            if (target == false) syncAodPeers(ready.host, target)
             if (!releaseTransientHomeKeyguard) {
                 armBoundaryHandoff(
                     resolution = ready,
@@ -2031,6 +2033,8 @@ class GyModule : XposedModule() {
             )
         }
 
+        // Native icon motion can occur before a stable-family boundary is recorded.
+        syncAodPeers(resolution.host, target)
         if (aodWindow?.boundaryPending != true) {
             return
         }
@@ -2111,6 +2115,28 @@ class GyModule : XposedModule() {
             )
         }
         clearAodBoundary()
+    }
+
+    private fun syncAodPeers(
+        host: SysUiKeyguardHostResolver.ResolvedHost,
+        target: Boolean?,
+    ) {
+        val settings = FeaturePrefsOwner.current()
+        when (
+            ScenePolicy.aodPeerAction(
+                enabled = settings.enabled,
+                keyguardEnabled = settings.keyguard,
+                aodEnabled = settings.aod,
+                aodClaimed = SysUiPresentationOwner.aodClaimed(host),
+                nativeToLockScreenTarget = target,
+            )
+        ) {
+            ScenePolicy.AodPeerAction.RELEASE ->
+                SysUiPresentationOwner.onAodIconTransition(host, toLockScreen = true)
+            ScenePolicy.AodPeerAction.RECLAIM ->
+                SysUiPresentationOwner.onAodIconTransition(host, toLockScreen = false)
+            ScenePolicy.AodPeerAction.NONE -> Unit
+        }
     }
 
     private fun clearAodBoundary() {
