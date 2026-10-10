@@ -271,6 +271,20 @@ class CenterGeometryTest {
     }
 
     @Test
+    fun fiveGaSuffixMorphNeedsARealNativeTarget() {
+        fun fraction(main: String, suffix: String, available: Boolean, progress: Float) =
+            MobileTypeSuffixPolicy.morphProgress(main, suffix, available, progress)
+
+        assertEquals(0f, fraction("5G", "A", true, 0f), 0f)
+        assertEquals(0.5f, fraction("5G", "A", true, 0.5f), 0f)
+        assertEquals(1f, fraction("5G", "A", true, 1f), 0f)
+        assertEquals(0f, fraction("5G", "A", false, 1f), 0f)
+        assertEquals(0f, fraction("5G", "++", true, 1f), 0f)
+        assertEquals(0f, fraction("4G", "+", true, 1f), 0f)
+        assertEquals(0f, fraction("5G", "A", true, Float.NaN), 0f)
+    }
+
+    @Test
     fun nativePeerDefaultsRemainOpticallyMatchedButDoNotFollowWifiScaling() {
         val base =
             CenterGeometry.resolve(
