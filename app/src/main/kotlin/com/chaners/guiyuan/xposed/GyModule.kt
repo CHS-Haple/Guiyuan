@@ -993,6 +993,7 @@ class GyModule : XposedModule() {
                     "familyVisual" to KeyguardRenderSession.visualState(),
                     "ccFakeVisual" to CcRenderSession.visualState(),
                     "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
                     "nativeKeyguardShown" to keyguard?.host?.isShown,
                     "nativeStatusShown" to keyguard?.statusIcons?.isShown,
                     "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
@@ -2038,6 +2039,7 @@ class GyModule : XposedModule() {
                 "familyVisual" to KeyguardRenderSession.visualState(),
                 "ccFakeVisual" to CcRenderSession.visualState(),
                 "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
                 "nativeKeyguardShown" to resolution.host.host.isShown,
                 "nativeStatusShown" to resolution.host.statusIcons.isShown,
                 "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
@@ -2534,6 +2536,24 @@ class GyModule : XposedModule() {
                 "homeOriginLatched" to homeAodOriginPending,
                 "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
                 "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
+                "ccNativeVisual" to
+                    if (update.toAod && update.source == "toggleAodMode") {
+                        SysUiCcSource.nativeVisualState()
+                    } else {
+                        null
+                    },
+                "homeOverlayShown" to
+                    if (update.toAod && update.source == "toggleAodMode") {
+                        HomeRenderSession.isOverlayShown()
+                    } else {
+                        null
+                    },
+                "familyVisual" to
+                    if (update.toAod && update.source == "toggleAodMode") {
+                        KeyguardRenderSession.visualState()
+                    } else {
+                        null
+                    },
             )
         }
     }
