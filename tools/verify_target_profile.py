@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+# Checks recorded SystemUI profile metadata against source, not APK bytes.
 import json
 import pathlib
 import re
 import sys
 
-# Checks recorded profile metadata against project sources, not APK bytes.
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROFILE_PATH = ROOT / "compat" / "targets" / "hyperos-17.03.260226.r.json"
 PROBE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiCompatibilityProbe.kt"
@@ -33,7 +33,7 @@ def validate_artifact(name: str, artifact: dict) -> None:
             fail(f"{name}.{key} is not a normalized {length}-character hex digest")
     for key in ("sizeBytes", "dexCount", "classCount"):
         value = artifact.get(key)
-        if type(value) is not int or value <= 0:
+        if not isinstance(value, int) or value <= 0:
             fail(f"{name}.{key} must be a positive integer")
 
 
@@ -53,7 +53,7 @@ profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
 if profile.get("schemaVersion") != 1:
     fail("unsupported schemaVersion")
 if not profile.get("generatedFromExactApks"):
-    fail("profile must declare its exact-APK provenance")
+    fail("profile must be marked as generated from exact APKs")
 
 artifacts = profile.get("artifacts", {})
 if set(artifacts) != {"systemUi"}:
@@ -67,7 +67,7 @@ if not isinstance(runtime_markers, dict) or not runtime_markers:
 verified_systemui = set(profile.get("verifiedSystemUiClasses", []))
 missing_verified = set(runtime_markers.values()) - verified_systemui
 if missing_verified:
-    fail("runtime markers missing from pinned SystemUI class list: " + ", ".join(sorted(missing_verified)))
+    fail("runtime markers not listed in the pinned SystemUI profile: " + ", ".join(sorted(missing_verified)))
 
 probe_text = PROBE_PATH.read_text(encoding="utf-8")
 probe_markers = dict(re.findall(r'"([^"]+)"\s+to\s+"([^"]+)"', probe_text))
@@ -228,7 +228,7 @@ if not re.search(
 battery_semantic_fields = set(battery_semantic_contract.get("fields", []))
 verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
 if not battery_semantic_fields or not battery_semantic_fields.issubset(verified_battery_fields):
-    fail("battery semantic fields are not all listed in the pinned SystemUI profile")
+    fail("battery semantic fields are not all verified in the SystemUI APK")
 source_required_fields = set(
     re.findall(r'requiredField\("([^"]+)"\)', battery_source_text)
 )
@@ -351,17 +351,27 @@ expected_native_roles = {"mobileNetwork", "wifi", "battery"}
 if set(native_status_views) != expected_native_roles:
     fail("nativeStatusViews must define mobileNetwork, wifi, and battery")
 if not set(native_status_views.values()).issubset(verified_systemui):
-    fail("native status view classes are not all listed in the pinned SystemUI profile")
+    fail("native status view classes are not all verified in the SystemUI APK")
 
 inventory_text = NATIVE_STATUS_INVENTORY_PATH.read_text(encoding="utf-8")
 inventory_constants = {
-    "mobileNetwork": "MOBILE_NETWORK_VIEW_CLASS_NAME",
-    "wifi": "WIFI_VIEW_CLASS_NAME",
-    "battery": "BATTERY_VIEW_CLASS_NAME",
+    "mobileNetwork": re.search(
+        r'MOBILE_NETWORK_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
+    "wifi": re.search(
+        r'WIFI_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
+    "battery": re.search(
+        r'BATTERY_VIEW_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
 }
-for role, name in inventory_constants.items():
-    source_class = source_string_constant(inventory_text, name, "native status inventory")
-    if source_class != native_status_views[role]:
+for role, match in inventory_constants.items():
+    if not match:
+        fail(f"native status inventory constant is missing: {role}")
+    if match.group(1) != native_status_views[role]:
         fail(f"native status inventory class drifted from profile: {role}")
 
 native_status_containers = profile.get("nativeStatusContainers", {})
@@ -369,33 +379,48 @@ expected_native_containers = {"miuiStatusIcons", "statusIcons", "batteryContaine
 if set(native_status_containers) != expected_native_containers:
     fail("nativeStatusContainers must define miuiStatusIcons, statusIcons, and batteryContainer")
 if not set(native_status_containers.values()).issubset(verified_systemui):
-    fail("native status container classes are not all listed in the pinned SystemUI profile")
+    fail("native status container classes are not all verified in the SystemUI APK")
 
 container_constants = {
-    "miuiStatusIcons": "MIUI_STATUS_ICON_CONTAINER_CLASS_NAME",
-    "statusIcons": "STATUS_ICON_CONTAINER_CLASS_NAME",
-    "batteryContainer": "BATTERY_CONTAINER_CLASS_NAME",
+    "miuiStatusIcons": re.search(
+        r'(?m)^\s*const val MIUI_STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
+    "statusIcons": re.search(
+        r'(?m)^\s*const val STATUS_ICON_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
+    "batteryContainer": re.search(
+        r'(?m)^\s*const val BATTERY_CONTAINER_CLASS_NAME\s*=\s*\n?\s*"([^"]+)"',
+        inventory_text,
+    ),
 }
-for role, name in container_constants.items():
-    source_class = source_string_constant(inventory_text, name, "native status container")
-    if source_class != native_status_containers[role]:
+for role, match in container_constants.items():
+    if not match:
+        fail(f"native status container constant is missing: {role}")
+    if match.group(1) != native_status_containers[role]:
         fail(f"native status container class drifted from profile: {role}")
 
-print(f"Pinned target profile: {profile['profileId']}")
+
+print(f"Target profile: {profile['profileId']}")
 print(
-    "Recorded SystemUI metadata: "
+    "Recorded SystemUI: "
     f"{artifacts['systemUi']['displayName']} "
     f"md5={artifacts['systemUi']['md5']} "
     f"sha1={artifacts['systemUi']['sha1']} "
     f"dex={artifacts['systemUi']['dexCount']} "
     f"classes={artifacts['systemUi']['classCount']}"
 )
-print(f"Runtime marker declarations checked: {len(runtime_markers)}")
-print(f"Hook point declarations checked: {len(hook_points)}")
+print(f"Recorded runtime markers consistent: {len(runtime_markers)}")
+print(f"Recorded hook point contracts consistent: {len(hook_points)}")
 print(
-    "Battery semantic profile consistency: "
-    f"{len(battery_semantic_fields)} fields, progress-status reference checked"
+    "Battery semantic contract: "
+    f"{len(battery_semantic_fields)} recorded fields consistent, "
+    "progress-status contract consistent"
 )
-print(f"Native status view declarations checked: {len(native_status_views)}")
-print(f"Native status container declarations checked: {len(native_status_containers)}")
-print("Check scope: pinned metadata and source consistency only; SystemUI APK bytes not inspected")
+print(f"Recorded native status views consistent: {len(native_status_views)}")
+print(f"Recorded native status containers consistent: {len(native_status_containers)}")
+print(
+    "Check scope: recorded profile metadata and source consistency only; "
+    "SystemUI APK bytes were not inspected"
+)
