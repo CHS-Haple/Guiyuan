@@ -135,6 +135,9 @@ internal object SysUiKeyguardAodSource {
     }
 
     @Synchronized
+    fun nativeState(sourceView: View): AodState? = readState(sourceView)
+
+    @Synchronized
     fun resetRuntimeState() {
         failedInstallHandles = emptyList()
         clearSourceState()
