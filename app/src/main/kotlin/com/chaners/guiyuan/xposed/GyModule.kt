@@ -1179,7 +1179,9 @@ class GyModule : XposedModule() {
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = ccExpansion,
-            )
+            ) ||
+            // AOD can release the lease before CC publishes its final fraction.
+            !shouldRetainKeyguardCcLease(active = true)
         ) {
             return
         }
@@ -1197,7 +1199,9 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun shouldRetainKeyguardCcLease(): Boolean {
+    private fun shouldRetainKeyguardCcLease(
+        active: Boolean = keyguardCcLeaseActive,
+    ): Boolean {
         val resolved =
             SysUiKeyguardHostResolver.current()
                 as? SysUiKeyguardHostResolver.ResolveResult.Ready
@@ -1211,7 +1215,7 @@ class GyModule : XposedModule() {
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
         return ScenePolicy.shouldRetainKeyguardCcLease(
-            leaseActive = keyguardCcLeaseActive,
+            leaseActive = active,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
             keyguardEnabled = settings.keyguard,
