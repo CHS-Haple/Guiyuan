@@ -106,6 +106,8 @@ internal fun MainHub(
     var hotReloadInProgress by remember { mutableStateOf(false) }
     var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
     var restartInProgress by remember { mutableStateOf(false) }
+    var scopeRequestInProgress by remember { mutableStateOf(false) }
+    var scopeRequestFailed by remember { mutableStateOf(false) }
     var restartAfterDialogDismiss by remember { mutableStateOf(false) }
     val onRestart = {
         if (!restartInProgress) restartDialog = RestartDialog.CONFIRM
@@ -276,7 +278,22 @@ internal fun MainHub(
                 swipeBackEnabled = appearance.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
                 restartInProgress = restartInProgress,
+                scopeRequestInProgress = scopeRequestInProgress,
                 onRestart = onRestart,
+                onRequestScope = {
+                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress) {
+                        scopeRequestInProgress = true
+                        val accepted =
+                            (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
+                                scopeRequestInProgress = false
+                                if (!granted) scopeRequestFailed = true
+                            } ?: false
+                        if (!accepted) {
+                            scopeRequestInProgress = false
+                            scopeRequestFailed = true
+                        }
+                    }
+                },
                 onHotReload = {
                     if (!hotReloadInProgress && !restartInProgress) {
                         hotReloadInProgress = true
@@ -343,6 +360,20 @@ internal fun MainHub(
         }
 
         OverlayDialog(
+            title = stringResource(R.string.home_scope_request_failed),
+            summary = stringResource(R.string.home_scope_request_failed_summary),
+            show = scopeRequestFailed,
+            onDismissRequest = { scopeRequestFailed = false },
+        ) {
+            TextButton(
+                text = stringResource(R.string.confirm),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = { scopeRequestFailed = false },
+            )
+        }
+
+        OverlayDialog(
             title = stringResource(R.string.restart_scope_failed),
             summary = stringResource(R.string.restart_scope_failed_summary),
             show = restartDialog == RestartDialog.FAILURE,
@@ -384,7 +415,9 @@ private fun TopLevelPager(
     swipeBackEnabled: Boolean,
     hotReloadInProgress: Boolean,
     restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
     onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
     onHotReload: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
@@ -417,7 +450,9 @@ private fun TopLevelPager(
                 bottomContentPadding = bottom,
                 hotReloadInProgress = hotReloadInProgress,
                 restartInProgress = restartInProgress,
+                scopeRequestInProgress = scopeRequestInProgress,
                 onRestart = onRestart,
+                onRequestScope = onRequestScope,
                 previewState = previewState,
                 onHotReload = onHotReload,
                 onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
