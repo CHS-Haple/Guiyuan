@@ -957,10 +957,11 @@ class GyModule : XposedModule() {
         val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
-            // Restore Home first. QS_FAKE compact presentation remains prearmed
-            // for the lifetime of the native fake root; only the Combined
-            // overlay visibility changes with Control Center visibility.
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            // A Keyguard shade can close while entering AOD. Only restore Home
+            // if native source ownership has not moved to Keyguard.
+            HomeRenderSession.onControlCenterAuthorityChanged(
+                steadyStatusSourceScene != SourceScene.KEYGUARD,
+            )
             CcRenderSession.setRequestedVisible(false)
             return null
         }
@@ -1369,7 +1370,9 @@ class GyModule : XposedModule() {
         }
         // Projected owner is already visible when ready=true. On the reverse
         // edge Home is restored before the projected owner is removed.
-        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
+        HomeRenderSession.onControlCenterAuthorityChanged(
+            !ready && steadyStatusSourceScene != SourceScene.KEYGUARD,
+        )
     }
 
     private fun onCcEvent(event: String) {
@@ -2496,6 +2499,9 @@ class GyModule : XposedModule() {
             }
         }
         if (sourceScene == SourceScene.HOME) {
+            if (!controlCenterSceneVisible) {
+                HomeRenderSession.onControlCenterAuthorityChanged(true)
+            }
             if (aodWindow !is AodWindow.Running) {
                 homeAodFallback = HomeAodFallback.NONE
             }
