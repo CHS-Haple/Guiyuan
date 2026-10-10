@@ -1970,6 +1970,12 @@ class GyModule : XposedModule() {
             return
         }
 
+        val nativeState =
+            if (detailedDiagnosticsEnabled) {
+                SysUiKeyguardAodSource.nativeState(resolution.host.battery)
+            } else {
+                null
+            }
         val eligible = target != null
         logDiagnostic(
             level = if (eligible) Log.INFO else Log.WARN,
@@ -1984,6 +1990,15 @@ class GyModule : XposedModule() {
                     null -> "unavailable"
                 },
             "isAodAnimate" to aodState?.isAodAnimate,
+            "cachedToAod" to aodState?.toAod,
+            "nativeToAod" to nativeState?.toAod,
+            "nativeIsAodAnimate" to nativeState?.isAodAnimate,
+            "cacheMatchesNative" to
+                if (aodState != null && nativeState != null) {
+                    aodState == nativeState
+                } else {
+                    null
+                },
             "statusIconsAlpha" to
                 SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
                     resolution.host,
