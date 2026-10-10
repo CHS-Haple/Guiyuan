@@ -141,6 +141,9 @@ internal object CcRenderSession {
         SysUiPresentationOwner.onCcVisibilityChanged(true)
 
     @Synchronized
+    fun visualState(): String? = current?.visualState()
+
+    @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
         current?.setRequestedVisible(visible) ?: false
 
@@ -595,6 +598,14 @@ internal object CcRenderSession {
                 "controlCenterProjection cleanup source=" + source
             }
         }
+
+        fun visualState(): String =
+            "requested=" + requestedVisible +
+                ":eligible=" + sceneEligible +
+                ":childShown=" + renderView.isShown +
+                ":childAlpha=" + renderView.alpha +
+                ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
+                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (
