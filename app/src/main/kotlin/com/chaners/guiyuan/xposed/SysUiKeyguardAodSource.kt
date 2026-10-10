@@ -17,17 +17,22 @@ internal object SysUiKeyguardAodSource {
     private const val TO_AOD_FIELD = "mToAod"
     private const val IS_AOD_ANIMATE_FIELD = "mIsAodAnimate"
     private const val ANIM_TO_AOD_FIELD = "mAnimToAod"
+    private const val STORED_STYLE_FIELD = "mStoreRealStyle"
 
     private const val SET_AOD_ANIMATE_HOOK_ID =
         "combinedstatus.keyguardAod.setIsAodAnimate"
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
 
-    private val states = WeakHashMap<View, AodUpdate>()
+    // Stored values must not keep their weak View keys alive.
+    private val states = WeakHashMap<View, AodState>()
+    @Volatile private var hooksReady = false
+    @Volatile private var failedInstallHandles: List<HookHandle> = emptyList()
 
     @Volatile private var toAodField: Field? = null
     @Volatile private var isAodAnimateField: Field? = null
     @Volatile private var animToAodField: Field? = null
+    @Volatile private var storedStyleField: Field? = null
 
     fun install(
         module: XposedModule,
@@ -35,6 +40,8 @@ internal object SysUiKeyguardAodSource {
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
+        check(!hooksReady && failedInstallHandles.isEmpty()) { "keyguard-aod-hooks-already-installed" }
+
         val batteryClass = Class.forName(BATTERY_VIEW_CLASS, false, classLoader)
         val resolvedToAod =
             resolveBooleanField(batteryClass, TO_AOD_FIELD)
@@ -79,6 +86,7 @@ internal object SysUiKeyguardAodSource {
         toAodField = resolvedToAod
         isAodAnimateField = resolvedIsAnimate
         animToAodField = resolvedAnimToAod
+        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
 
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
@@ -90,13 +98,23 @@ internal object SysUiKeyguardAodSource {
                 module.hook(toggleMethod)
                     .setId(TOGGLE_AOD_HOOK_ID)
                     .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onEvent))
+            hooksReady = true
             return handles
         } catch (error: Throwable) {
-            handles.asReversed().forEach { handle -> runCatching { handle.unhook() } }
-            resetRuntimeState()
+            val remaining = handles.asReversed().filter { handle ->
+                runCatching { handle.unhook() }.isFailure
+            }
+            failedInstallHandles = remaining
+            clearSourceState()
+            if (remaining.isNotEmpty()) {
+                throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
+            }
             throw error
         }
     }
+
+    val failedInstallHookCount: Int
+        get() = failedInstallHandles.size
 
     private fun aodHooker(
         source: String,
@@ -105,6 +123,7 @@ internal object SysUiKeyguardAodSource {
     ): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
+            if (!hooksReady) return@Hooker result
             val sourceView = chain.thisObject as? View
             if (sourceView != null) {
                 publish(sourceView, source, onAodState, onEvent)
@@ -113,25 +132,39 @@ internal object SysUiKeyguardAodSource {
         }
 
     @Synchronized
-    fun currentState(sourceView: View): AodUpdate? {
+    fun currentState(sourceView: View): AodState? {
         states[sourceView]?.let { return it }
-        return readState(sourceView, "seed")?.also { update ->
-            states[sourceView] = update
-        }
+        return readState(sourceView)?.also { states[sourceView] = it }
     }
 
     @Synchronized
+    fun nativeState(sourceView: View): AodState? = readState(sourceView)
+
+    // Style 3 does not use the native battery alpha/mode handoff.
+    fun usesAnimatedBatteryMode(sourceView: View): Boolean =
+        storedStyleField
+            ?.let { field -> runCatching { field.getInt(sourceView) }.getOrNull() }
+            ?.let { it != 3 } == true
+
+    @Synchronized
     fun resetRuntimeState() {
+        failedInstallHandles = emptyList()
+        clearSourceState()
+    }
+
+    @Synchronized
+    private fun clearSourceState() {
+        hooksReady = false
         states.clear()
         toAodField = null
         isAodAnimateField = null
         animToAodField = null
+        storedStyleField = null
     }
 
     internal fun blocksKeyguardProjection(
         toAod: Boolean,
         isAodAnimate: Boolean,
-        animToAod: Boolean?,
     ): Boolean =
         toAod || isAodAnimate
 
@@ -147,10 +180,19 @@ internal object SysUiKeyguardAodSource {
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ) {
-        val update = readState(sourceView, source) ?: return
+        val state = readState(sourceView) ?: return
         synchronized(this) {
-            states[sourceView] = update
+            states[sourceView] = state
         }
+        val update =
+            AodUpdate(
+                sourceView = sourceView,
+                toAod = state.toAod,
+                isAodAnimate = state.isAodAnimate,
+                animToAod = state.animToAod,
+                blocksProjection = state.blocksProjection,
+                source = source,
+            )
         onAodState(update)
         onEvent?.invoke(
             "keyguardAod source=" + source +
@@ -161,16 +203,12 @@ internal object SysUiKeyguardAodSource {
         )
     }
 
-    private fun readState(
-        sourceView: View,
-        source: String,
-    ): AodUpdate? {
+    private fun readState(sourceView: View): AodState? {
         val toAod = readBoolean(sourceView, toAodField ?: return null) ?: return null
         val isAodAnimate =
             readBoolean(sourceView, isAodAnimateField ?: return null) ?: return null
         val animToAod = animToAodField?.let { field -> readBoolean(sourceView, field) }
-        return AodUpdate(
-            sourceView = sourceView,
+        return AodState(
             toAod = toAod,
             isAodAnimate = isAodAnimate,
             animToAod = animToAod,
@@ -178,11 +216,19 @@ internal object SysUiKeyguardAodSource {
                 blocksKeyguardProjection(
                     toAod = toAod,
                     isAodAnimate = isAodAnimate,
-                    animToAod = animToAod,
                 ),
-            source = source,
         )
     }
+
+    private fun resolveIntField(type: Class<*>, name: String): Field? =
+        generateSequence(type) { current -> current.superclass }
+            .mapNotNull { current ->
+                current.declaredFields.firstOrNull { field ->
+                    field.name == name && field.type == Int::class.javaPrimitiveType
+                }
+            }
+            .firstOrNull()
+            ?.apply { isAccessible = true }
 
     private fun resolveBooleanField(type: Class<*>, name: String): Field? =
         generateSequence(type) { current -> current.superclass }
@@ -208,6 +254,13 @@ internal object SysUiKeyguardAodSource {
     private fun isBooleanType(type: Class<*>): Boolean =
         type == Boolean::class.javaPrimitiveType ||
             type == Boolean::class.javaObjectType
+
+    internal data class AodState(
+        val toAod: Boolean,
+        val isAodAnimate: Boolean,
+        val animToAod: Boolean?,
+        val blocksProjection: Boolean,
+    )
 
     internal data class AodUpdate(
         val sourceView: View,

@@ -65,7 +65,7 @@ class BatteryRingTransitionPolicyTest {
     }
 
     @Test
-    fun globalCurveKeepsBuild550EarlyPaceAndExtendsTailContinuously() {
+    fun globalCurveKeepsEarlyPaceAndSmoothTail() {
         fun remainingAtGlobal(progress: Float): Float =
             BatteryRingTransitionPolicy.remainingFraction(
                 BatteryRingTransitionPolicy.transitionProgress(progress),
@@ -148,7 +148,7 @@ class BatteryRingTransitionPolicyTest {
     }
 
     @Test
-    fun nonePreservesBuild543ActiveLengthSemantics() {
+    fun noneExitPreservesActiveLength() {
         val result =
             BatteryRingTransitionPolicy.resolve(
                 drawableArcs = listOf(
@@ -164,7 +164,7 @@ class BatteryRingTransitionPolicyTest {
     }
 
     @Test
-    fun rightExitPreservesBuild543ActiveLengthSemantics() {
+    fun rightExitPreservesActiveLength() {
         val result =
             BatteryRingTransitionPolicy.resolve(
                 drawableArcs = listOf(

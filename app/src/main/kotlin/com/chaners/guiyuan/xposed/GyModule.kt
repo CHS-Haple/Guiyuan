@@ -33,6 +33,7 @@ class GyModule : XposedModule() {
         val precommit: Boolean,
         var layoutReady: Boolean = false,
         var visualReady: Boolean = false,
+        val visibleAtArm: Boolean = false,
     )
 
     private sealed interface AodWindow {
@@ -45,9 +46,8 @@ class GyModule : XposedModule() {
 
         data class Waiting(
             val toLockScreen: Boolean,
-        ) : AodWindow {
-            override val boundaryPending = true
-        }
+            override val boundaryPending: Boolean,
+        ) : AodWindow
     }
 
     // Home native-AOD fallback is one phase; candidate and active never overlap.
@@ -58,6 +58,7 @@ class GyModule : XposedModule() {
     }
 
     private var islandSourceInstalled = false
+    @Volatile
     private var ccSourceInstalled = false
     private var controlCenterSceneVisible = false
     private var controlCenterSceneEligible = false
@@ -223,7 +224,7 @@ class GyModule : XposedModule() {
                 if (ccSourceInstalled) {
                     SysUiCcSource.HOOK_COUNT
                 } else {
-                    0
+                    SysUiCcSource.failedInstallHookCount
                 }
         logDiagnostic(
             level = Log.INFO,
@@ -254,11 +255,14 @@ class GyModule : XposedModule() {
 
     override fun onHotReloaded(param: HotReloadedParam) {
         rotateDiagnosticSession()
-        val takeover =
-            SysUiHotReload.takeOverHooks(
-                param = param,
-                onCaptured = ::onStatusHostCaptured,
-            )
+        val takeoverResult =
+            runCatching {
+                SysUiHotReload.takeOverHooks(
+                    param = param,
+                    onCaptured = ::onStatusHostCaptured,
+                )
+            }
+        val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
             bindRuntimeDiagnostics()
@@ -269,7 +273,7 @@ class GyModule : XposedModule() {
                 event = "hotReload.complete",
                 component = "hotReload",
                 state = "error",
-                "reason" to "status-host-hook-missing",
+                "reason" to (takeoverResult.exceptionOrNull()?.message ?: "status-host-hook-missing"),
                 "restartScope" to true,
             )
             return
@@ -385,6 +389,17 @@ class GyModule : XposedModule() {
             }
 
             val capture = SysUiHostRegistry.restore(restored.host)
+            if (capture == null) {
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "hotReload.complete",
+                    component = "hotReload",
+                    state = "unavailable",
+                    "reason" to "status-host-replaced-before-restore",
+                    "restartScope" to true,
+                )
+                return@runCatching
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "host.restore",
@@ -398,12 +413,29 @@ class GyModule : XposedModule() {
             val hostView = capture.host as? android.view.View
                 ?: error("restored-host-not-view")
             val restoreScheduled =
-                hostView.post {
-                    restoreHotReloadRuntimeOnMain(
-                        capture = capture,
-                        restored = restored,
-                        removedHooks = removed,
-                    )
+                Handler(Looper.getMainLooper()).post {
+                    val reason =
+                        when {
+                            !hostView.isAttachedToWindow -> "status-host-detached"
+                            SysUiHostRegistry.current() !== hostView -> "status-host-replaced"
+                            else -> null
+                        }
+                    if (reason == null) {
+                        restoreHotReloadRuntimeOnMain(
+                            capture = capture,
+                            restored = restored,
+                            removedHooks = removed,
+                        )
+                    } else {
+                        logDiagnostic(
+                            level = Log.WARN,
+                            event = "hotReload.complete",
+                            component = "hotReload",
+                            state = "unavailable",
+                            "reason" to reason,
+                            "restartScope" to true,
+                        )
+                    }
                 }
             if (!restoreScheduled) {
                 logDiagnostic(
@@ -451,7 +483,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkSource.restoreHotReloadBindings(restored.bindings)
             SysUiNetworkSource.seedRestoredWifiState(
                 onEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                    if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
                         ::onNetworkPipelineEvent
                     } else {
                         null
@@ -629,76 +661,6 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installCombinedParticipant(
-        classLoader: ClassLoader,
-        source: String,
-    ) {
-        val failure =
-            NativeCombinedParticipant.install(
-                module = this,
-                classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
-                isTransitionProbeEnabled = { detailedDiagnosticsEnabled },
-                onSlotOrderResult = { slotOrder ->
-                    when (slotOrder) {
-                        is NativeSlotOrder.Result.Ready -> {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "slot.reserve",
-                                component = "nativeSlotOrder",
-                                state = "ready",
-                                "source" to source,
-                                "mode" to "controller-pre-init",
-                                "created" to slotOrder.created,
-                                "nativeIndex" to slotOrder.nativeIndex,
-                                "fromIndex" to slotOrder.fromIndex,
-                                "toIndex" to slotOrder.toIndex,
-                                "slotCount" to slotOrder.slotCount,
-                                "viewOnlySynced" to slotOrder.viewOnlySynced,
-                                "originalOrderPreserved" to
-                                    slotOrder.originalOrderPreserved,
-                            )
-                        }
-
-                        is NativeSlotOrder.Result.Failure -> {
-                            logDiagnostic(
-                                level = Log.WARN,
-                                event = "slot.reserve",
-                                component = "nativeSlotOrder",
-                                state = "unavailable",
-                                "source" to source,
-                                "mode" to "controller-pre-init",
-                                "reason" to slotOrder.reason,
-                            )
-                        }
-                    }
-                },
-            )
-        if (failure == null) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "hook.install",
-                component = "nativeCombinedParticipant",
-                state = "ready",
-                "source" to source,
-                "hooks" to NativeCombinedParticipant.installedHookCount,
-            )
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "hook.install",
-                component = "nativeCombinedParticipant",
-                state = "unavailable",
-                "source" to source,
-                "reason" to failure,
-            )
-        }
-    }
-
     private fun installNetworkSuppression(
         classLoader: ClassLoader,
         source: String,
@@ -712,6 +674,7 @@ class GyModule : XposedModule() {
                         log(Log.INFO, TAG, event)
                     }
                 },
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
                         level = Log.INFO,
@@ -739,82 +702,6 @@ class GyModule : XposedModule() {
                 level = Log.WARN,
                 event = "hook.install",
                 component = "nativeNetworkSuppression",
-                state = "unavailable",
-                "source" to source,
-                "reason" to failure,
-            )
-        }
-    }
-
-    private fun installBatterySuppression(
-        classLoader: ClassLoader,
-        source: String,
-    ) {
-        val failure =
-            NativeBatterySuppressor.install(
-                module = this,
-                classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
-                onNativeLayoutHideChanged = { hidden ->
-                    NativeCombinedParticipant
-                        .onNativeBatteryLayoutHideChanged(hidden)
-                },
-            )
-        if (failure == null) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "hook.install",
-                component = "nativeBatterySuppression",
-                state = "ready",
-                "source" to source,
-                "hooks" to NativeBatterySuppressor.installedHookCount,
-                "contract" to
-                    "MiuiStatusBatteryContainer.setIsHideBattery(Boolean):native-layout-authority+visual-mask",
-            )
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "hook.install",
-                component = "nativeBatterySuppression",
-                state = "unavailable",
-                "source" to source,
-                "reason" to failure,
-            )
-        }
-    }
-
-    private fun installParticipantObserver(
-        classLoader: ClassLoader,
-        source: String,
-    ) {
-        val failure =
-            NativeParticipantRuntime.installControllerObserver(
-                module = this,
-                classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
-            )
-        if (failure == null) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "hook.install",
-                component = "nativeParticipantControllerObserver",
-                state = "ready",
-                "source" to source,
-                "hooks" to NativeParticipantRuntime.installedHookCount,
-            )
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "hook.install",
-                component = "nativeParticipantControllerObserver",
                 state = "unavailable",
                 "source" to source,
                 "reason" to failure,
@@ -870,6 +757,7 @@ class GyModule : XposedModule() {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
                 },
                 onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onNetworkPipelineEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { result ->
             refreshStatusIconObservation("network-source:" + source)
@@ -981,10 +869,16 @@ class GyModule : XposedModule() {
             SysUiCcSource.install(
                 module = this,
                 classLoader = classLoader,
-                onUpdate = ::onCcUpdate,
-                onFakePresentationAttached = ::onCcFakeAttached,
+                onUpdate = { update ->
+                    if (ccSourceInstalled) onCcUpdate(update)
+                },
+                onFakePresentationAttached = { host ->
+                    if (ccSourceInstalled) onCcFakeAttached(host)
+                },
                 onRuntimeFailure = ::onCcRuntimeFailure,
-                onEvent = ::onCcEvent,
+                onEvent = { event ->
+                    if (ccSourceInstalled) onCcEvent(event)
+                },
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
                 },
@@ -1015,6 +909,7 @@ class GyModule : XposedModule() {
                 component = "panelTransition",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "hooks" to SysUiCcSource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Panel transition source installation failed", error)
@@ -1032,6 +927,44 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
+        if (detailedDiagnosticsEnabled && update.appearance != null) {
+            val keyguard =
+                (SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.ccAppearance",
+                component = "controlCenterProjection",
+                state = "sampled",
+                "source" to "native-appearance",
+                "appearance" to update.appearance,
+                "animated" to update.appearanceAnimated,
+                "ccVisible" to controlCenterSceneVisible,
+                "ccFraction" to ccExpansion,
+                "ccSource" to controlCenterSourceScene.name,
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "keyguardVisual" to KeyguardRenderSession.visualState(),
+                "nativeKeyguardShown" to keyguard?.host?.isShown,
+                "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
+                "nativeSleepLinkage" to
+                    keyguard?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+            )
+        }
+        if (
+            detailedDiagnosticsEnabled &&
+            update.visible == false
+        ) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "projection.hiddenLayers",
+                component = "controlCenterProjection",
+                state = "after-panel-hidden",
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
+            )
+        }
 
         if (
             detailedDiagnosticsEnabled &&
@@ -1067,6 +1000,38 @@ class GyModule : XposedModule() {
             // overlay visibility changes with Control Center visibility.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             CcRenderSession.setRequestedVisible(false)
+            if (detailedDiagnosticsEnabled) {
+                val keyguard =
+                    (SysUiKeyguardHostResolver.current()
+                        as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "projection.yield",
+                    component = "controlCenterProjection",
+                    state = "panel-hidden",
+                    "ccSource" to controlCenterSourceScene.name,
+                    "steadySource" to steadyStatusSourceScene.name,
+                    "aodEnabled" to FeaturePrefsOwner.current().aod,
+                    "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+                    "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                    "keyguardCarrierShown" to keyguard?.systemIcons?.isShown,
+                    "familyVisual" to KeyguardRenderSession.visualState(),
+                    "ccFakeVisual" to CcRenderSession.visualState(),
+                    "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                    "nativeKeyguardShown" to keyguard?.host?.isShown,
+                    "nativeStatusShown" to keyguard?.statusIcons?.isShown,
+                    "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
+                    "nativeSystemAlpha" to keyguard?.systemIcons?.alpha,
+                    "nativeToLockScreen" to
+                        keyguard?.let(SysUiKeyguardHostResolver::nativeToLockScreenTarget),
+                    "homeSlots" to SysUiPresentationOwner.homeSlots().size,
+                    "aodTarget" to
+                        (aodWindow as? AodWindow.Waiting)?.toLockScreen?.let {
+                            if (it) "keyguard" else "aod"
+                        },
+                )
+            }
             return null
         }
 
@@ -1594,13 +1559,13 @@ class GyModule : XposedModule() {
                     "BatteryController callbacks",
             )
         }.onFailure { error ->
-            SysUiBatteryRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
                 component = "batteryState",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "hooks" to SysUiBatterySource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Battery state source installation failed", error)
@@ -1628,6 +1593,7 @@ class GyModule : XposedModule() {
                     )
                 },
                 onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onTintSourceEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onSceneSourceEvent else null,
                 onKeyguardAodEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
@@ -1657,8 +1623,11 @@ class GyModule : XposedModule() {
                         "partial"
                     },
                 "tintHooks" to result.tintHooks,
+                "tintFailure" to result.tintFailure,
                 "sceneHooks" to result.sceneHooks,
+                "sceneFailure" to result.sceneFailure,
                 "mobileTypeHooks" to result.mobileTypeHooks,
+                "mobileTypeFailure" to result.mobileTypeFailure,
                 "keyguardAodHooks" to result.keyguardAodHooks,
                 "keyguardAodReady" to result.keyguardAodReady,
                 "keyguardFullAodHooks" to result.keyguardFullAodHooks,
@@ -1682,6 +1651,7 @@ class GyModule : XposedModule() {
                 component = "presentationRuntime",
                 state = "error",
                 "reason" to (error.message ?: error.javaClass.simpleName),
+                "tintCleanupRemainingHooks" to SysUiTintSource.failedInstallHookCount,
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Presentation runtime source installation failed", error)
@@ -1838,32 +1808,7 @@ class GyModule : XposedModule() {
         val resolvedUpdate = update.copy(state = resolvedState)
         HomeRenderSession.onTintUpdate(resolvedUpdate)
         CcRenderSession.onTintUpdate(resolvedUpdate)
-        if (detailedDiagnosticsEnabled) {
-            log(
-                Log.INFO,
-                TAG,
-                "tintCommit source=batteryDarkReceiver" +
-                    " applied=#" +
-                    resolvedState.appliedTint.toUInt().toString(16).padStart(8, '0') +
-                    " statusIcon=#" +
-                    (
-                        resolvedState.statusIconTint
-                            ?.toUInt()
-                            ?.toString(16)
-                            ?.padStart(8, '0')
-                            ?: "none"
-                    ) +
-                    " liveStatusIcon=#" +
-                    (
-                        liveStatusIconTint
-                            ?.toUInt()
-                            ?.toString(16)
-                            ?.padStart(8, '0')
-                            ?: "none"
-                    ) +
-                    " authority=live-systemui-status-icons",
-            )
-        }
+
     }
 
     private fun onFullAodStarted() {
@@ -1882,7 +1827,9 @@ class GyModule : XposedModule() {
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
                 homePresentationOwned = homeOwnedAtStart,
-                homeCarrierPresentationVisible = homeCarrierVisibleAtStart,
+                homeOriginConfirmed =
+                    homeCarrierVisibleAtStart &&
+                        steadyStatusSourceScene == SourceScene.HOME,
             )
         ) {
             homeAodFallback = HomeAodFallback.CANDIDATE
@@ -1923,6 +1870,19 @@ class GyModule : XposedModule() {
             "homePresentationOwnedAtStart" to homeOwnedAtStart,
             "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
         )
+        if (detailedDiagnosticsEnabled) {
+            val host =
+                (SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.nativeSleepLinkage",
+                component = "keyguardAod",
+                state = "sampled",
+                "source" to "animateFullAod:before",
+                "native" to host?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+            )
+        }
     }
 
     private fun onFullAodCommitted() {
@@ -1938,21 +1898,19 @@ class GyModule : XposedModule() {
                     SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved)
                 }
 
+        val holdNativeBattery =
+            (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
+                ?.host
+                ?.let { holdKeyguardForAodBattery(it, settings) } == true
         aodWindow =
-            if (boundaryPending && target != null) {
-                AodWindow.Waiting(target)
+            if (target != null && (boundaryPending || holdNativeBattery)) {
+                AodWindow.Waiting(target, boundaryPending)
             } else {
                 null
             }
-        if (target == true || target == null) {
+        if (target != false) {
             homeAodOriginPending = false
             homeAodTargetPrearmPending = false
-        }
-        if (target == true) {
-            if (homeAodFallback == HomeAodFallback.ACTIVE) {
-                homeAodFallback = HomeAodFallback.NONE
-            }
-        } else if (target == null) {
             homeAodFallback = HomeAodFallback.NONE
         }
 
@@ -2003,6 +1961,8 @@ class GyModule : XposedModule() {
         }
 
         (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.let { ready ->
+            // A reverse target must reacquire AOD peers even without an icon boundary.
+            if (target == false) syncAodPeers(ready.host, target)
             if (!releaseTransientHomeKeyguard) {
                 armBoundaryHandoff(
                     resolution = ready,
@@ -2073,10 +2033,18 @@ class GyModule : XposedModule() {
             )
         }
 
+        // Native icon motion can occur before a stable-family boundary is recorded.
+        syncAodPeers(resolution.host, target)
         if (aodWindow?.boundaryPending != true) {
             return
         }
 
+        val nativeState =
+            if (detailedDiagnosticsEnabled) {
+                SysUiKeyguardAodSource.nativeState(resolution.host.battery)
+            } else {
+                null
+            }
         val eligible = target != null
         logDiagnostic(
             level = if (eligible) Log.INFO else Log.WARN,
@@ -2091,14 +2059,47 @@ class GyModule : XposedModule() {
                     null -> "unavailable"
                 },
             "isAodAnimate" to aodState?.isAodAnimate,
+            "cachedToAod" to aodState?.toAod,
+            "nativeToAod" to nativeState?.toAod,
+            "nativeIsAodAnimate" to nativeState?.isAodAnimate,
+            "cacheMatchesNative" to
+                if (aodState != null && nativeState != null) {
+                    aodState == nativeState
+                } else {
+                    null
+                },
             "statusIconsAlpha" to
                 SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
                     resolution.host,
                 ),
             "authority" to "native-status-icon-animation",
         )
+        if (detailedDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.visibleLayers",
+                component = "keyguardAod",
+                state = "sampled",
+                "source" to "animateIconContainer",
+                "targetToLockScreen" to target,
+                "familyVisual" to KeyguardRenderSession.visualState(),
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                "nativeSleepLinkage" to
+                    SysUiKeyguardHostResolver.sleepLinkageState(resolution.host),
+                "nativeKeyguardShown" to resolution.host.host.isShown,
+                "nativeStatusShown" to resolution.host.statusIcons.isShown,
+                "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
+                "nativeSystemShown" to resolution.host.systemIcons.isShown,
+                "homeCombinedShown" to HomeRenderSession.isOverlayShown(),
+                "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+                "ccVisible" to controlCenterSceneVisible,
+            )
+        }
         if (!eligible) return
 
+        KeyguardRenderSession.onNativeIconTransition(toLockScreen = target == true)
         val visualOnlyIncomingKeyguard =
             armBoundaryHandoff(
                 resolution = resolution,
@@ -2116,12 +2117,34 @@ class GyModule : XposedModule() {
         clearAodBoundary()
     }
 
+    private fun syncAodPeers(
+        host: SysUiKeyguardHostResolver.ResolvedHost,
+        target: Boolean?,
+    ) {
+        val settings = FeaturePrefsOwner.current()
+        when (
+            ScenePolicy.aodPeerAction(
+                enabled = settings.enabled,
+                keyguardEnabled = settings.keyguard,
+                aodEnabled = settings.aod,
+                aodClaimed = SysUiPresentationOwner.aodClaimed(host),
+                nativeToLockScreenTarget = target,
+            )
+        ) {
+            ScenePolicy.AodPeerAction.RELEASE ->
+                SysUiPresentationOwner.onAodIconTransition(host, toLockScreen = true)
+            ScenePolicy.AodPeerAction.RECLAIM ->
+                SysUiPresentationOwner.onAodIconTransition(host, toLockScreen = false)
+            ScenePolicy.AodPeerAction.NONE -> Unit
+        }
+    }
+
     private fun clearAodBoundary() {
         // The visual boundary can finish before animateFullAod itself does.
         aodWindow =
             when (val state = aodWindow) {
                 is AodWindow.Running -> state.copy(boundaryPending = false)
-                is AodWindow.Waiting -> null
+                is AodWindow.Waiting -> state.copy(boundaryPending = false)
                 null -> null
             }
     }
@@ -2133,10 +2156,13 @@ class GyModule : XposedModule() {
         visualBoundaryReached: Boolean,
     ): Boolean {
         if (boundaryHandoff != null) {
-            if (visualBoundaryReached) {
-                onBoundaryVisualReady(source)
+            if (nativeToLockScreenTarget == true) {
+                if (visualBoundaryReached) {
+                    onBoundaryVisualReady(source)
+                }
+                return true
             }
-            return true
+            clearBoundaryHandoff()
         }
 
         val settings = FeaturePrefsOwner.current()
@@ -2169,6 +2195,15 @@ class GyModule : XposedModule() {
             SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
                 resolution.host,
             )
+        val battery = resolution.host.battery
+        val nativeAod = SysUiKeyguardAodSource.nativeState(battery)
+        val batteryWidth = battery.width
+        val carrierWidth = resolution.host.batteryCarrier.width
+        val nativeAodLayout =
+            nativeAod?.toAod == true &&
+                SysUiKeyguardAodSource.usesAnimatedBatteryMode(battery) &&
+                batteryWidth > carrierWidth &&
+                carrierWidth > 0
         val precommit =
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
                 featureEnabled = settings.enabled,
@@ -2180,12 +2215,25 @@ class GyModule : XposedModule() {
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
+                nativeAodLayout = nativeAodLayout,
                 homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
+        if (!precommit && detailedDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.geometry",
+                component = "keyguardPresentation",
+                state = "visual-only",
+                "source" to source,
+                "geometry" to SysUiKeyguardHostProbe.boundaryGeometry(resolution.host),
+            )
+        }
         boundaryHandoff =
             BoundaryHandoff(
                 precommit = precommit,
                 visualReady = visualBoundaryReached,
+                visibleAtArm =
+                    precommit && nativeAodLayout && statusIconsAlphaAtArm == 1f,
             )
 
         val attached =
@@ -2212,6 +2260,7 @@ class GyModule : XposedModule() {
             "nativeVisualMask" to "clipBounds",
             "renderer" to "keyguard-combined",
             "statusIconsAlphaAtArm" to statusIconsAlphaAtArm,
+            "nativeAodLayout" to nativeAodLayout,
             "nativeLifecycleAuthority" to "status-icons-presentation-alpha",
         )
     }
@@ -2270,13 +2319,14 @@ class GyModule : XposedModule() {
         }
         handoff.layoutReady = true
         keyguardRuntimeReady = false
-        KeyguardRenderSession.setNativeHandoffActive(!handoff.visualReady)
+        val canReveal = handoff.visualReady || handoff.visibleAtArm
+        KeyguardRenderSession.setNativeHandoffActive(!canReveal)
         logDiagnostic(
             level = Log.INFO,
             event = "presentation.cutover",
             component = "keyguardPresentation",
             state =
-                if (handoff.visualReady) {
+                if (canReveal) {
                     "visual-handoff-prelayout-ready"
                 } else {
                     "prelayout-ready-hidden"
@@ -2285,8 +2335,9 @@ class GyModule : XposedModule() {
             "representedSlots" to result.representedSlots,
             "maskedViews" to result.maskedViews,
             "nativeVisualBoundaryReached" to handoff.visualReady,
+            "nativeVisibleAtArm" to handoff.visibleAtArm,
         )
-        if (handoff.visualReady) {
+        if (canReveal) {
             reconcileCcForKeyguard(
                 "keyguard-boundary-layout-ready",
             )
@@ -2336,6 +2387,20 @@ class GyModule : XposedModule() {
                 source = source + ":precommitted-layout",
             )
             return true
+        }
+        if (detailedDiagnosticsEnabled) {
+            val ready = SysUiKeyguardHostResolver.current()
+                as? SysUiKeyguardHostResolver.ResolveResult.Ready
+            if (ready != null) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "aod.geometry",
+                    component = "keyguardPresentation",
+                    state = "before-stable-commit",
+                    "source" to source,
+                    "geometry" to SysUiKeyguardHostProbe.boundaryGeometry(ready.host),
+                )
+            }
         }
         boundaryHandoff = null
         return when (
@@ -2461,8 +2526,25 @@ class GyModule : XposedModule() {
         }
 
         val settings = FeaturePrefsOwner.current()
+        if (
+            settings.enabled && settings.aod && !settings.keyguard &&
+            !update.toAod &&
+            SysUiKeyguardAodSource.usesAnimatedBatteryMode(update.sourceView)
+        ) {
+            val resolved =
+                SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready
+            if (
+                resolved != null && resolved.host.battery === update.sourceView &&
+                SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved.host) == true
+            ) {
+                SysUiPresentationOwner.releaseAodBatteryMask(resolved.host)
+            }
+        }
+        // Battery toAod is not the destination while native animateFullAod runs.
         val activateHomeNativeAodFallback =
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            aodWindow !is AodWindow.Running &&
+                ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = (homeAodFallback == HomeAodFallback.CANDIDATE),
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
@@ -2556,11 +2638,51 @@ class GyModule : XposedModule() {
                 "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
                 "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
             )
+            if (update.toAod && update.source == "toggleAodMode") {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "aod.windowWitness",
+                    component = "keyguardAod",
+                    state = "sampled",
+                    "source" to "native-battery-mode",
+                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                    "nativeSleepLinkage" to
+                        (SysUiKeyguardHostResolver.current()
+                            as? SysUiKeyguardHostResolver.ResolveResult.Ready)
+                            ?.host
+                            ?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+                    "ccVisible" to controlCenterSceneVisible,
+                    "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                    "familyVisual" to KeyguardRenderSession.visualState(),
+                )
+            }
         }
     }
 
     private fun onSceneStateUpdate(update: SysUiSceneSource.SceneUpdate) {
         val sourceScene = SysUiSceneSource.steadySourceScene(update)
+        if (
+            steadyStatusSourceScene == SourceScene.HOME &&
+            sourceScene == SourceScene.KEYGUARD &&
+            stableFamilyScene == ScenePolicy.StableKeyguardAodScene.UNKNOWN &&
+            aodWindow == null &&
+            homeAodFallback == HomeAodFallback.NONE
+        ) {
+            val settings = FeaturePrefsOwner.current()
+            if (
+                ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+                    featureEnabled = settings.enabled,
+                    keyguardEnabled = settings.keyguard,
+                    aodEnabled = settings.aod,
+                    homePresentationOwned =
+                        SysUiPresentationOwner.homeSlots().isNotEmpty(),
+                    homeOriginConfirmed = true,
+                )
+            ) {
+                // Keyguard ancestry can hide Home before the native AOD target arrives.
+                homeAodFallback = HomeAodFallback.CANDIDATE
+            }
+        }
         if (sourceScene != SourceScene.UNKNOWN) {
             steadyStatusSourceScene = sourceScene
         }
@@ -2575,9 +2697,7 @@ class GyModule : XposedModule() {
         }
         if (sourceScene == SourceScene.HOME) {
             if (aodWindow !is AodWindow.Running) {
-                if (homeAodFallback == HomeAodFallback.ACTIVE) {
-                    homeAodFallback = HomeAodFallback.NONE
-                }
+                homeAodFallback = HomeAodFallback.NONE
             }
             // UNLOCKED_STATUS_BAR + Home ancestry is the authoritative unlock
             // boundary. A Keyguard Control Center lease must never outlive it:
@@ -2623,7 +2743,7 @@ class GyModule : XposedModule() {
             )
         }
 
-        if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
             SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
         }
 
@@ -2647,6 +2767,18 @@ class GyModule : XposedModule() {
         update: SysUiKeyguardAodSource.AodUpdate,
     ) {
         if (update.isAodAnimate) return
+        val waiting = aodWindow as? AodWindow.Waiting
+        if (
+            waiting != null &&
+            !ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = waiting.toLockScreen,
+                toAod = update.toAod,
+                isAodAnimate = update.isAodAnimate,
+            )
+        ) {
+            // A late result from the previous scene cannot override the current target.
+            return
+        }
         val next =
             when {
                 SysUiKeyguardAodSource.isStableAod(
@@ -2726,6 +2858,34 @@ class GyModule : XposedModule() {
         )
     }
 
+    private fun holdKeyguardForAodBattery(
+        host: SysUiKeyguardHostResolver.ResolvedHost,
+        cfg: FeatureCfg,
+    ): Boolean {
+        if (
+            !cfg.enabled || !cfg.keyguard || cfg.aod ||
+            steadyStatusSourceScene != SourceScene.KEYGUARD
+        ) {
+            return false
+        }
+        val waiting = aodWindow as? AodWindow.Waiting
+        val nativeBattery = SysUiKeyguardAodSource.currentState(host.battery)
+            ?: return false
+        return ScenePolicy.shouldHoldKeyguardForAodBattery(
+            featureEnabled = cfg.enabled,
+            keyguardEnabled = cfg.keyguard,
+            aodEnabled = cfg.aod,
+            sourceScene = steadyStatusSourceScene,
+            nativeToLockScreenTarget =
+                SysUiKeyguardHostResolver.nativeToLockScreenTarget(host),
+            batteryInAodMode = nativeBattery.toAod,
+            nativeHandoffActive =
+                aodWindow is AodWindow.Running || waiting?.toLockScreen == false,
+            keyguardClaimed = SysUiPresentationOwner.keyguardClaimed(),
+            animatedBatteryMode = SysUiKeyguardAodSource.usesAnimatedBatteryMode(host.battery),
+        )
+    }
+
     private fun resolveKeyguardAodProjection(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         fullAodVisualBoundary: Boolean = false,
@@ -2756,6 +2916,9 @@ class GyModule : XposedModule() {
                 SysUiPresentationRuntime.keyguardFullAodReady,
             fullAodTargetPending = aodWindow?.boundaryPending == true,
             fullAodVisualBoundary = fullAodVisualBoundary,
+            outgoingAodOwned =
+                (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
+                    SysUiPresentationOwner.aodClaimed(resolved),
             homeAodTransitionOrigin = homeAodOriginPending,
             homeAodTargetPrearm = homeAodTargetPrearmPending,
             homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
@@ -2788,6 +2951,18 @@ class GyModule : XposedModule() {
                             "fallback" to "native-keyguard-aod",
                         )
                     }
+                    return
+                }
+
+                if (holdKeyguardForAodBattery(resolution.host, settings)) {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "aod.batteryHandoff",
+                        component = "keyguardPresentation",
+                        state = "held",
+                        "source" to source,
+                        "authority" to "native-battery-mode",
+                    )
                     return
                 }
 
@@ -3152,6 +3327,10 @@ class GyModule : XposedModule() {
         }
         keyguardRuntimeReady = true
         keyguardReadyObserved = true
+        if (aodWindow == null && homeAodFallback == HomeAodFallback.CANDIDATE) {
+            // A real Keyguard cutover supersedes the preceding Home-origin hint.
+            homeAodFallback = HomeAodFallback.NONE
+        }
         KeyguardRenderSession.setNativeHandoffActive(false)
         logDiagnostic(
             level = Log.INFO,
@@ -3395,6 +3574,7 @@ class GyModule : XposedModule() {
     private fun teardownOldGeneration(
         continuousHandoff: Boolean = false,
     ) {
+        ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
         controlCenterSourceScene = SourceScene.UNKNOWN
@@ -3745,363 +3925,6 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun scheduleParticipantRuntime(
-        host: Any,
-        source: String,
-    ) {
-        val failure =
-            NativeParticipantRuntime.schedule(
-                host = host,
-                onReady = { readyHost ->
-                    attachCombinedParticipant(
-                        host = readyHost,
-                        source = source,
-                    )
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        runParticipantDiagnostics(
-                            host = readyHost,
-                            source = source,
-                        )
-                    }
-                },
-                onFailure = { reason ->
-                    logDiagnostic(
-                        level = Log.WARN,
-                        event = "participant.lifecycle",
-                        component = "nativeParticipant",
-                        state = "unavailable",
-                        "source" to source,
-                        "reason" to reason,
-                    )
-                },
-            )
-        if (failure == null) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "participant.lifecycle",
-                component = "nativeParticipant",
-                state = "pending",
-                "source" to source,
-                "trigger" to "native-dark-icon-manager-registered",
-            )
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "participant.lifecycle",
-                component = "nativeParticipant",
-                state = "unavailable",
-                "source" to source,
-                "reason" to failure,
-            )
-        }
-    }
-
-    private fun runParticipantDiagnostics(
-        host: Any,
-        source: String,
-    ) {
-        val nativeParticipant = ParticipantContractProbe.inspect(host)
-        logDiagnostic(
-            level =
-                if (nativeParticipant.registrationContractReady) {
-                    Log.INFO
-                } else {
-                    Log.WARN
-                },
-            event = "contract.probe",
-            component = "nativeParticipant",
-            "available" to nativeParticipant.available,
-            "reason" to nativeParticipant.reason,
-            "manager" to nativeParticipant.managerClass,
-            "group" to nativeParticipant.groupClass,
-            "groupRes" to nativeParticipant.groupResource,
-            "controller" to nativeParticipant.controllerClass,
-            "controllerSource" to nativeParticipant.controllerSource,
-            "controllerMatches" to nativeParticipant.controllerMatches,
-            "managerMatches" to nativeParticipant.managerMatches,
-            "groupMatches" to nativeParticipant.groupMatches,
-            "setIconHolder" to nativeParticipant.setIconHolder,
-            "resourceSetIconMode" to nativeParticipant.resourceSetIconMode,
-            "setIconVisibility" to nativeParticipant.setIconVisibility,
-            "removalReady" to nativeParticipant.removalReady,
-            "removalMode" to nativeParticipant.removalMode,
-            "addIconGroup" to nativeParticipant.addIconGroup,
-            "removeIconGroup" to nativeParticipant.removeIconGroup,
-            "addHolder" to nativeParticipant.addHolder,
-            "holderFactoryReady" to nativeParticipant.holderFactoryReady,
-            "statusIconDisplayable" to nativeParticipant.iconViewDisplayable,
-            "slotAccessor" to nativeParticipant.iconViewSlotAccessor,
-            "systemManagedCreationReady" to nativeParticipant.systemManagedCreationReady,
-            "registrationReady" to nativeParticipant.registrationContractReady,
-            "setIconSignatures" to
-                nativeParticipant.setIconSignatures.joinToString("|"),
-            "removeSignatures" to
-                nativeParticipant.removeSignatures.joinToString("|"),
-            "holderFactories" to
-                nativeParticipant.holderFactorySignatures.joinToString("|"),
-        )
-
-        if (nativeParticipant.registrationContractReady) {
-            val bindableParticipant =
-                BindableContractProbe.inspect(host)
-            val bindableProbeReady =
-                bindableParticipant.staticContractReady &&
-                    bindableParticipant.managerBindableMapReady &&
-                    bindableParticipant.viewOnlySlotsReady
-            logDiagnostic(
-                level = if (bindableProbeReady) Log.INFO else Log.WARN,
-                event = "contract.probe",
-                component = "nativeBindableParticipant",
-                "source" to source,
-                "available" to bindableParticipant.available,
-                "reason" to bindableParticipant.reason,
-                "interfaceReady" to bindableParticipant.bindableInterfaceReady,
-                "creatorReady" to bindableParticipant.creatorReady,
-                "registry" to bindableParticipant.registryClass,
-                "registryConstructors" to
-                    bindableParticipant.registryConstructors.joinToString("|"),
-                "holder" to bindableParticipant.holderClass,
-                "holderConstructors" to
-                    bindableParticipant.holderConstructors.joinToString("|"),
-                "modernView" to bindableParticipant.modernViewClass,
-                "singleView" to bindableParticipant.singleBindableViewClass,
-                "managerMapReady" to bindableParticipant.managerBindableMapReady,
-                "managerMapCount" to bindableParticipant.managerBindableCount,
-                "managerEntries" to
-                    bindableParticipant.managerBindableEntries.joinToString("|"),
-                "viewOnlySlotsReady" to bindableParticipant.viewOnlySlotsReady,
-                "viewOnlySlots" to
-                    bindableParticipant.viewOnlySlots.joinToString("|"),
-                "runtimeViews" to
-                    bindableParticipant.runtimeBindableViews.joinToString("|"),
-                "slotOrder" to
-                    bindableParticipant.runtimeSlotOrder.joinToString("|"),
-                "groupClipChildren" to bindableParticipant.groupClipChildren,
-                "groupClipToPadding" to bindableParticipant.groupClipToPadding,
-                "groupHeight" to bindableParticipant.groupHeight,
-                "staticContractReady" to bindableParticipant.staticContractReady,
-                "dynamicRegistrationObserved" to
-                    bindableParticipant.dynamicRegistrationObserved,
-            )
-
-            val visualGeometry =
-                BindableGeometryProbe.inspect(host)
-            logDiagnostic(
-                level = if (visualGeometry.ready) Log.INFO else Log.WARN,
-                event = "contract.probe",
-                component = "nativeBindableVisualGeometry",
-                "source" to source,
-                "available" to visualGeometry.available,
-                "reason" to visualGeometry.reason,
-                "reference" to visualGeometry.referenceClass,
-                "referenceBounds" to visualGeometry.referenceBounds,
-                "referenceLayoutWidth" to visualGeometry.referenceLayoutWidth,
-                "referenceLayoutHeight" to visualGeometry.referenceLayoutHeight,
-                "groupHeight" to visualGeometry.groupHeight,
-                "groupClipChildren" to visualGeometry.groupClipChildren,
-                "groupClipToPadding" to visualGeometry.groupClipToPadding,
-                "visualWidth" to visualGeometry.visualWidth,
-                "visualHeight" to visualGeometry.visualHeight,
-                "shellMeasuredWidth" to visualGeometry.shellMeasuredWidth,
-                "shellMeasuredHeight" to visualGeometry.shellMeasuredHeight,
-                "shellClipChildren" to visualGeometry.shellClipChildren,
-                "renderMeasuredWidth" to visualGeometry.renderMeasuredWidth,
-                "renderMeasuredHeight" to visualGeometry.renderMeasuredHeight,
-                "renderBounds" to visualGeometry.renderBounds,
-                "projectedTop" to visualGeometry.projectedTop,
-                "projectedBottom" to visualGeometry.projectedBottom,
-                "projectedFitsGroup" to visualGeometry.projectedFitsGroup,
-            )
-
-        }
-    }
-
-    private fun attachCombinedParticipant(
-        host: Any,
-        source: String,
-    ) {
-        when (
-            val nativeCombined =
-                NativeCombinedParticipant.attachHidden(
-                    host = host,
-                    onHandoffStateChanged = { active ->
-                        val presentation =
-                            PresentationStore.snapshot()
-                        val state = StatusStateStore.snapshot()
-                        val wifi = state.wifi
-
-                        if (
-                            active &&
-                            !FeaturePrefsOwner.current().enabled
-                        ) {
-                            val batterySuppression =
-                                NativeBatterySuppressor.deactivate(
-                                    "feature-disabled-native-handoff",
-                                )
-                            val networkSuppression =
-                                NativeNetworkSuppressor.deactivate(
-                                    "feature-disabled-native-handoff",
-                                )
-                            HomeRenderSession.setNativeHandoffActive(false)
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "visibility.handoff",
-                                component = "nativeCombinedParticipant",
-                                state = "blocked",
-                                "source" to source,
-                                "reason" to "master-switch-disabled",
-                                "networkSuppression" to networkSuppression.summary,
-                                "batterySuppression" to batterySuppression.summary,
-                            )
-                            false
-                        } else if (active) {
-                            val batterySuppression =
-                                NativeBatterySuppressor.activate(
-                                    host = host,
-                                    source = "native-handoff:" + source,
-                                )
-                            if (
-                                batterySuppression is
-                                    NativeBatterySuppressor.Result.Failure
-                            ) {
-                                logDiagnostic(
-                                    level = Log.WARN,
-                                    event = "visibility.handoff",
-                                    component = "nativeCombinedParticipant",
-                                    state = "fallback",
-                                    "source" to source,
-                                    "networkSuppression" to "not-attempted",
-                                    "batterySuppression" to batterySuppression.summary,
-                                )
-                                false
-                            } else {
-                                val networkSuppression =
-                                    NativeNetworkSuppressor.activate(
-                                        host = host,
-                                        suppressWifi =
-                                            SysUiNetworkRuntime.wifiReady &&
-                                                ConnectivityPolicy
-                                                    .wifiReplacementReady(
-                                                        wifi = wifi,
-                                                        connectivity = presentation.connectivity,
-                                                    ),
-                                        suppressMobile =
-                                            NetworkSuppressionPolicy.suppressMobile(
-                                                airplaneMode = state.airplaneMode,
-                                                presentation = presentation.mobilePresentation,
-                                                wasSuppressed = false,
-                                            ),
-                                    )
-                                if (
-                                    networkSuppression is
-                                        NativeNetworkSuppressor.Result.Failure
-                                ) {
-                                    val batteryRollback =
-                                        NativeBatterySuppressor.deactivate(
-                                            "native-handoff-rollback",
-                                        )
-                                    logDiagnostic(
-                                        level = Log.WARN,
-                                        event = "visibility.handoff",
-                                        component = "nativeCombinedParticipant",
-                                        state = "fallback",
-                                        "source" to source,
-                                        "networkSuppression" to networkSuppression.summary,
-                                        "batterySuppression" to batteryRollback.summary,
-                                    )
-                                    false
-                                } else {
-                                    HomeRenderSession.setNativeHandoffActive(true)
-                                    logDiagnostic(
-                                        level = Log.INFO,
-                                        event = "visibility.handoff",
-                                        component = "nativeCombinedParticipant",
-                                        state = "active",
-                                        "source" to source,
-                                        "networkSuppression" to networkSuppression.summary,
-                                        "batterySuppression" to batterySuppression.summary,
-                                    )
-                                    true
-                                }
-                            }
-                        } else {
-                            val batterySuppression =
-                                NativeBatterySuppressor.deactivate(
-                                    "native-handoff-fallback",
-                                )
-                            if (
-                                batterySuppression is
-                                    NativeBatterySuppressor.Result.Failure
-                            ) {
-                                logDiagnostic(
-                                    level = Log.WARN,
-                                    event = "visibility.handoff",
-                                    component = "nativeCombinedParticipant",
-                                    state = "active",
-                                    "source" to source,
-                                    "networkSuppression" to "kept-active",
-                                    "batterySuppression" to batterySuppression.summary,
-                                )
-                                false
-                            } else {
-                                val networkSuppression =
-                                    NativeNetworkSuppressor.deactivate(
-                                        "native-handoff-fallback",
-                                    )
-                                HomeRenderSession.setNativeHandoffActive(false)
-                                logDiagnostic(
-                                    level = Log.INFO,
-                                    event = "visibility.handoff",
-                                    component = "nativeCombinedParticipant",
-                                    state = "fallback",
-                                    "source" to source,
-                                    "networkSuppression" to networkSuppression.summary,
-                                    "batterySuppression" to batterySuppression.summary,
-                                )
-                                true
-                            }
-                        }
-                    },
-                )
-        ) {
-            is NativeCombinedParticipant.AttachResult.Ready -> {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "participant.attach",
-                    component = "nativeCombinedParticipant",
-                    state = "ready",
-                    "source" to source,
-                    "slot" to NativeCombinedParticipant.SLOT,
-                    "registryRestored" to nativeCombined.registryRestored,
-                    "root" to nativeCombined.rootClass,
-                    "rootVisibility" to nativeCombined.rootVisibility,
-                    "iconVisible" to nativeCombined.iconVisible,
-                    "layoutWidth" to nativeCombined.layoutWidth,
-                    "layoutHeight" to nativeCombined.layoutHeight,
-                    "renderWidth" to nativeCombined.renderWidth,
-                    "renderHeight" to nativeCombined.renderHeight,
-                    "renderTop" to nativeCombined.renderTop,
-                    "renderBottom" to nativeCombined.renderBottom,
-                    "managerEntry" to nativeCombined.managerEntry,
-                    "modelReady" to nativeCombined.modelReady,
-                    "tintReady" to nativeCombined.tintReady,
-                )
-            }
-
-            is NativeCombinedParticipant.AttachResult.Failure -> {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "participant.attach",
-                    component = "nativeCombinedParticipant",
-                    state = "unavailable",
-                    "source" to source,
-                    "reason" to nativeCombined.reason,
-                )
-            }
-        }
-
-    }
-
     private fun scheduleNativeSlotProbe(
         host: Any,
         source: String,
@@ -4269,7 +4092,6 @@ class GyModule : XposedModule() {
             return
         }
 
-        NativeCombinedParticipant.onFeatureCfgChanged(cfg)
         if (
             !cfg.enabled ||
             !cfg.keyguard ||
@@ -4333,7 +4155,6 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        NativeBatterySuppressor.deactivate(source)
         NativeNetworkSuppressor.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
     }
@@ -4451,6 +4272,9 @@ class GyModule : XposedModule() {
         val previous = detailedDiagnosticsEnabled
         detailedDiagnosticsEnabled = enabled
         if (previous != detailedDiagnosticsEnabled) {
+            if (detailedDiagnosticsEnabled) {
+                SysUiTintSource.resetDiagnosticProbes()
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "diagnostics.level",

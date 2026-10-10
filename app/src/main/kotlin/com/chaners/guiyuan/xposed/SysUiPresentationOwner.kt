@@ -108,6 +108,46 @@ internal object SysUiPresentationOwner {
             keyguardFamilyCurrent?.hasPresentationClaim() == true
 
     @Synchronized
+    internal fun aodClaimed(host: SysUiKeyguardHostResolver.ResolvedHost): Boolean =
+        keyguardFamilySurface == KeyguardFamilySurface.AOD &&
+            keyguardFamilyCurrent?.let { session ->
+                session.hasPresentationClaim() &&
+                    session.matches(
+                        host = host.host,
+                        statusIcons = host.statusIcons,
+                        batteryContainer = host.systemIcons,
+                        battery = host.battery,
+                        batteryCarrier = host.batteryCarrier,
+                    )
+            } == true
+
+    @Synchronized
+    fun onAodIconTransition(
+        host: SysUiKeyguardHostResolver.ResolvedHost,
+        toLockScreen: Boolean,
+    ) {
+        if (keyguardFamilySurface != KeyguardFamilySurface.AOD) return
+        val session = keyguardFamilyCurrent ?: return
+        if (
+            !session.hasPresentationClaim() ||
+            !session.matches(
+                host = host.host,
+                statusIcons = host.statusIcons,
+                batteryContainer = host.systemIcons,
+                battery = host.battery,
+                batteryCarrier = host.batteryCarrier,
+            )
+        ) return
+        session.onAodIconTransition(toLockScreen)
+    }
+
+    @Synchronized
+    fun releaseAodBatteryMask(host: SysUiKeyguardHostResolver.ResolvedHost) {
+        if (!aodClaimed(host)) return
+        keyguardFamilyCurrent?.releaseAodBatteryMask()
+    }
+
+    @Synchronized
     fun updateCcSourceScene(sourceScene: SourceScene) {
         if (controlCenterSourceScene == sourceScene) return
         controlCenterSourceScene = sourceScene
@@ -169,7 +209,7 @@ internal object SysUiPresentationOwner {
                 .mapNotNull { clazz ->
                     clazz.declaredFields.firstOrNull { candidate ->
                         candidate.name == "ignoredSlots" &&
-                            java.util.List::class.java.isAssignableFrom(candidate.type)
+                            List::class.java.isAssignableFrom(candidate.type)
                     }
                 }
                 .firstOrNull()
@@ -180,7 +220,7 @@ internal object SysUiPresentationOwner {
                 .filter { method ->
                     method.name == "addIgnoredSlots" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.util.List::class.java),
+                            arrayOf(List::class.java),
                         ) &&
                         method.returnType == Void.TYPE
                 }
@@ -192,7 +232,7 @@ internal object SysUiPresentationOwner {
                 .filter { method ->
                     method.name == "setIgnoredSlots" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.util.List::class.java),
+                            arrayOf(List::class.java),
                         ) &&
                         method.returnType == Void.TYPE
                 }
@@ -221,7 +261,7 @@ internal object SysUiPresentationOwner {
                 .firstOrNull { method ->
                     method.name == "setIsHideBattery" &&
                         method.parameterTypes.contentEquals(
-                            arrayOf(java.lang.Boolean::class.java),
+                            arrayOf(Boolean::class.javaObjectType),
                         ) &&
                         method.returnType == Void.TYPE
                 }
@@ -297,9 +337,10 @@ internal object SysUiPresentationOwner {
                     .setId(LAYOUT_HOOK_ID)
                     .intercept(layoutHooker(refreshMasksAfter = true))
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                clearInstallState()
-                return "layout-hook-" + (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "layout-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first),
+                )
             }
         val third =
             runCatching {
@@ -308,10 +349,10 @@ internal object SysUiPresentationOwner {
                     .setId(BATTERY_HIDE_HOOK_ID)
                     .intercept(batteryHideStateHooker())
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                runCatching { second.unhook() }
-                clearInstallState()
-                return "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first, second),
+                )
             }
 
         val fourth =
@@ -321,12 +362,10 @@ internal object SysUiPresentationOwner {
                     .setId(ISLAND_SHOWING_HOOK_ID)
                     .intercept(islandShowingHooker())
             }.getOrElse { error ->
-                runCatching { first.unhook() }
-                runCatching { second.unhook() }
-                runCatching { third.unhook() }
-                clearInstallState()
-                return "island-showing-hook-" +
-                    (error.message ?: error.javaClass.simpleName)
+                return rollbackInstall(
+                    "island-showing-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first, second, third),
+                )
             }
 
         measureHook = first
@@ -749,7 +788,7 @@ internal object SysUiPresentationOwner {
         controlCenterReadySink = onReady
 
         val existing = controlCenterCurrent
-        if (
+        val sameHost =
             existing?.matches(
                 host = host,
                 statusIcons = statusIcons,
@@ -757,7 +796,11 @@ internal object SysUiPresentationOwner {
                 battery = battery,
                 batteryCarrier = batteryCarrier,
             ) == true
-        ) {
+        if (!sameHost && (host.width <= 0 || host.layoutParams?.width != host.width)) {
+            // The fake carrier must finish its native layout before we lease its width.
+            return Result.Failure("fake-carrier-native-layout-pending", retryAfterLayout = true)
+        }
+        if (sameHost) {
             val masked =
                 existing.start(
                     deferVisualMaskUntilLayout = true,
@@ -1029,7 +1072,13 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent?.takeIf { candidate -> candidate.owns(target) }
                 } ?: return@Hooker chain.proceed()
 
+            session.traceFakeCarrierWidth(
+                if (refreshMasksAfter) "layout-before" else "measure-before",
+            )
             val result = session.withRepresentedSlotsIgnored { chain.proceed() }
+            session.traceFakeCarrierWidth(
+                if (refreshMasksAfter) "layout-after" else "measure-after",
+            )
             if (refreshMasksAfter) {
                 syncPeerMirrorAfterLayout(session)
             }
@@ -1255,6 +1304,21 @@ internal object SysUiPresentationOwner {
         controlCenterReadySink = null
     }
 
+    private fun rollbackInstall(
+        reason: String,
+        handles: List<HookHandle>,
+    ): String {
+        val remaining = handles.filter { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+        clearInstallState()
+        measureHook = remaining.firstOrNull { it.id == MEASURE_HOOK_ID }
+        layoutHook = remaining.firstOrNull { it.id == LAYOUT_HOOK_ID }
+        batteryHideHook = remaining.firstOrNull { it.id == BATTERY_HIDE_HOOK_ID }
+        islandShowingHook = remaining.firstOrNull { it.id == ISLAND_SHOWING_HOOK_ID }
+        return if (remaining.isEmpty()) reason else reason + "-hook-cleanup-failed"
+    }
+
     private fun clearInstallState() {
         measureHook = null
         layoutHook = null
@@ -1334,10 +1398,13 @@ internal object SysUiPresentationOwner {
         }
 
         private var capacityLeaseAwaitingLayout = false
+        private var firstLeaseWidthMismatch: String? = null
         private var leasePhase = LeasePhase.PREARM
         private var pendingNativeCarrierWidth: Int? = null
         private var batteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
+        private var aodPeersReleased = false
+        private var aodBatteryReleased = false
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String> = emptyList()
         private var transitionRequestedSlotWidthPx: Int? = null
@@ -1401,6 +1468,9 @@ internal object SysUiPresentationOwner {
             surfaceName: String,
             eventPrefix: String,
         ) {
+            if ((aodPeersReleased || aodBatteryReleased) && this.surfaceName != surfaceName) {
+                onAodIconTransition(toLockScreen = false)
+            }
             this.surfaceName = surfaceName
             this.eventPrefix = eventPrefix
         }
@@ -1409,6 +1479,7 @@ internal object SysUiPresentationOwner {
             active &&
                 (
                     persistentIgnoredSlotsApplied ||
+                        aodBatteryReleased ||
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
                 )
@@ -1610,6 +1681,77 @@ internal object SysUiPresentationOwner {
             return masked
         }
 
+        fun releaseAodBatteryMask() {
+            if (!active || !started || aodBatteryReleased) return
+            val nativeBattery = battery.get()
+                ?: run {
+                    onFailNative("aod-battery-view-released")
+                    return
+                }
+            val clip = clipStates.firstOrNull { it.view.get() === nativeBattery }
+                ?: run {
+                    onFailNative("aod-battery-mask-missing")
+                    return
+                }
+            if (!restoreClipState(clip)) {
+                onFailNative("aod-battery-mask-restore-failed")
+                return
+            }
+            clipStates.remove(clip)
+            aodBatteryReleased = true
+            onEvent(eventPrefix + " battery=native owner=original-aod-mode-exit")
+        }
+
+        fun onAodIconTransition(toLockScreen: Boolean) {
+            if (!active || !started) return
+            if (toLockScreen) {
+                if (aodPeersReleased) return
+                aodPeersReleased = true
+                if (!restoreAodPeerClips()) {
+                    onFailNative("aod-peer-battery-unavailable")
+                    return
+                }
+                // Restore native peer layout with its visibility, not at session cleanup.
+                if (!restoreEndReservation()) {
+                    onFailNative("aod-peer-reservation-restore-failed")
+                    return
+                }
+                if (!restorePersistentIgnoredSlots(requestLayout = true)) {
+                    onFailNative("aod-peer-restore-failed")
+                    return
+                }
+                onEvent(eventPrefix + " peers=original-icons owner=native-keyguard-animation")
+            } else {
+                if (!aodPeersReleased && !aodBatteryReleased) return
+                val reclaimPeers = aodPeersReleased
+                val group = statusIcons.get()
+                    ?: run {
+                        onFailNative("aod-peer-status-group-released")
+                        return
+                    }
+                aodPeersReleased = false
+                aodBatteryReleased = false
+                if (reclaimPeers && !syncEndReservation()) return
+                refreshClipMasks()
+                if (reclaimPeers && !applyPersistentIgnoredSlots(group)) return
+                onEvent(eventPrefix + " peers=guiyuan-aod owner=representation")
+            }
+        }
+
+        private fun restoreAodPeerClips(): Boolean {
+            val batteryView = battery.get() ?: return false
+            val iterator = clipStates.iterator()
+            while (iterator.hasNext()) {
+                val state = iterator.next()
+                val view = state.view.get()
+                if (view !== batteryView) {
+                    restoreClipState(state)
+                    iterator.remove()
+                }
+            }
+            return true
+        }
+
         fun stop(
             source: String,
             requestLayout: Boolean = true,
@@ -1624,6 +1766,8 @@ internal object SysUiPresentationOwner {
                 return 0
             }
             lifecycle = Lifecycle.STOPPED
+            aodPeersReleased = false
+            aodBatteryReleased = false
             layoutReadyCallback = null
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
@@ -1887,7 +2031,7 @@ internal object SysUiPresentationOwner {
         }
 
         fun syncEndReservation(): Boolean {
-            if (!active) return true
+            if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
                 return true
             }
@@ -1949,7 +2093,7 @@ internal object SysUiPresentationOwner {
                 return false
             }
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = hostView.width,
                     hostHeightPx = hostView.height,
                     baseCarrierWidthPx = stableCarrierWidthPx,
@@ -1957,7 +2101,7 @@ internal object SysUiPresentationOwner {
                 ) ?: run { onFailNative(surfaceName + "-layout-unavailable"); return false }
             val compactSlotWidthPx =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
-                    baseSlotWidthPx = resolved.requestedSlotWidthPx.toInt(),
+                    baseSlotWidthPx = resolved.visualWidth,
                     userScale = VisualPrefsOwner.current().combinedScale,
                 )
             val requestedSlotWidthPx =
@@ -2332,6 +2476,7 @@ internal object SysUiPresentationOwner {
         }
 
         private fun clearCapacityLeaseSnapshot() {
+            firstLeaseWidthMismatch = null
             nativeFakeCarrierLayoutWidthPx = null
             fakeCarrierParentWidth = null
             appliedFakeCarrierWidthPx = null
@@ -2373,8 +2518,41 @@ internal object SysUiPresentationOwner {
             return masked
         }
 
+        fun traceFakeCarrierWidth(boundary: String) {
+            if (
+                surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !capacityLeaseAwaitingLayout ||
+                firstLeaseWidthMismatch != null
+            ) return
+            val hostView = host.get() ?: return
+            val appliedWidth = appliedFakeCarrierWidthPx ?: return
+            val liveWidth = hostView.layoutParams?.width ?: return
+            if (liveWidth == appliedWidth) return
+
+            firstLeaseWidthMismatch = boundary
+            val parent = hostView.parent as? ViewGroup
+            onEvent(
+                eventPrefix + " fakeCarrierCapacity boundary=width-mismatch" +
+                    " firstObserved=" + boundary +
+                    " liveWidth=" + liveWidth +
+                    " appliedWidth=" + appliedWidth +
+                    " nativeWidth=" + nativeFakeCarrierLayoutWidthPx +
+                    " viewWidth=" + hostView.width +
+                    " measuredWidth=" + hostView.measuredWidth +
+                    " layoutRequested=" + hostView.isLayoutRequested +
+                    " parentContentWidth=" +
+                    (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: "unavailable") +
+                    " endAnchored=" +
+                    (parent?.let { isFakeCarrierEndAnchored(hostView, it) } ?: "unavailable") +
+                    " phase=" + leasePhase.name,
+            )
+        }
+
         fun validateNativeLayoutBeforeVisualMask(): Boolean {
             if (!active || !started) return false
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && appliedFakeCarrierWidthPx == null) {
+                return false
+            }
             if (!capacityLeaseAwaitingLayout) return true
 
             val hostView =
@@ -2395,10 +2573,33 @@ internal object SysUiPresentationOwner {
                         onFailNative("fake-carrier-post-lease-state-invalid")
                         return false
                     }
-            if (
-                hostView.layoutParams?.width != expectedWidthPx ||
-                !isFakeCarrierEndAnchored(hostView, parent)
-            ) {
+            val liveWidthPx = hostView.layoutParams?.width
+            val endAnchored = isFakeCarrierEndAnchored(hostView, parent)
+            if (liveWidthPx != expectedWidthPx || !endAnchored) {
+                val parentWidthPx =
+                    parent.width - parent.paddingLeft - parent.paddingRight
+                if (
+                    leasePhase == LeasePhase.PREARM &&
+                    endAnchored &&
+                    liveWidthPx != null &&
+                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                        visibleCycleActive = false,
+                        liveWidthPx = liveWidthPx,
+                        appliedWidthPx = expectedWidthPx,
+                        currentParentContentWidthPx = parentWidthPx,
+                        leasedParentContentWidthPx = fakeCarrierParentWidth,
+                    ) == FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+                ) {
+                    // Native changed its hidden carrier; the next visible edge must lease afresh.
+                    clearCapacityLeaseSnapshot()
+                    pendingNativeCarrierWidth = liveWidthPx
+                    onEvent(
+                        eventPrefix + " fakeCarrierCapacity lease=yield-hidden-prearm" +
+                            " liveWidth=" + liveWidthPx +
+                            " next=visible-cycle",
+                    )
+                    return false
+                }
                 onFailNative("fake-carrier-post-lease-layout-invalid")
                 return false
             }
@@ -2547,11 +2748,13 @@ internal object SysUiPresentationOwner {
                 }
 
             val targets = linkedSetOf<View>()
-            targets += batteryView
-            for (index in 0 until group.childCount) {
-                val child = group.getChildAt(index)
-                if (NativeParticipantAccess.slotOf(child) in representedSlots) {
-                    targets += child
+            if (!aodBatteryReleased) targets += batteryView
+            if (!aodPeersReleased) {
+                for (index in 0 until group.childCount) {
+                    val child = group.getChildAt(index)
+                    if (NativeParticipantAccess.slotOf(child) in representedSlots) {
+                        targets += child
+                    }
                 }
             }
 
@@ -2647,15 +2850,6 @@ internal object SysUiPresentationOwner {
         CALL,
         SESSION,
     }
-
-
-
-
-
-
-
-
-
 
     private fun ViewGroup.directChild(className: String): View? {
         for (index in 0 until childCount) {

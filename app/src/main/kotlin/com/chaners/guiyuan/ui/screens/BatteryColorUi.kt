@@ -228,14 +228,6 @@ internal fun batterySourceLabel(source: BatteryColorSchemeSource): String =
             stringResource(R.string.battery_color_source_custom)
     }
 
-@Composable
-private fun batterySourceValue(
-    entry: BatteryColorSchemeEntry,
-    slot: BatteryColorSlot,
-): String =
-    batterySchemeEntryColor(entry, slot)?.let(::batteryColorHex)
-        ?: stringResource(R.string.battery_color_follow_inversion)
-
 @StringRes
 internal fun batteryColorSlotLabel(slot: BatteryColorSlot): Int =
     when (slot) {

@@ -284,9 +284,7 @@ internal object StatusStateStore {
         val mobile: Map<Int, MobileState> = emptyMap(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
-    ) {
-
-    }
+    )
 
     internal data class BatteryState(
         val percent: Int,

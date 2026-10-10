@@ -57,8 +57,7 @@ internal object SysUiIslandSource {
                             onEvent(
                                 "islandOwner event showing=" + showing +
                                     " secondary=" + secondary +
-                                    " animate=" + animate +
-                                    "",
+                                    " animate=" + animate,
                             )
                         }
                         result

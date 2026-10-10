@@ -32,6 +32,10 @@ internal object SysUiBatterySource {
     private const val CHARGING_GLYPH_HOOK_ID = "combinedstatus.battery.charging-glyph"
 
     @Volatile
+    private var hooksReady = false
+    @Volatile
+    private var failedInstallHandles: List<HookHandle> = emptyList()
+    @Volatile
     private var lastState: StatusStateStore.BatteryState? = null
 
     @Volatile
@@ -44,6 +48,8 @@ internal object SysUiBatterySource {
         onChargingIconResource: (Int) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
+        check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
+
         val iconClass =
             Class.forName(BATTERY_ICON_VIEW_CLASS_NAME, false, classLoader)
         val meterClass =
@@ -204,6 +210,7 @@ internal object SysUiBatterySource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
+                        if (!hooksReady) return@Hooker result
                         val iconView = chain.thisObject as? View
                             ?: return@Hooker result
                         publish(
@@ -245,32 +252,47 @@ internal object SysUiBatterySource {
         val updateChargeAndTextMethod =
             meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
                 .apply { isAccessible = true }
-        val chargingGlyphHook =
-            module
-                .hook(updateChargeAndTextMethod)
-                .setId(CHARGING_GLYPH_HOOK_ID)
-                .intercept(
-                    Hooker { chain ->
-                        val result = chain.proceed()
-                        val meterView = chain.thisObject as? View
-                            ?: return@Hooker result
-                        publishChargingGlyph(
-                            meterView = meterView,
-                            sourceMethod = updateChargeAndTextMethod.name,
-                        )
-                        result
-                    },
-                )
-
-        return listOf(
-            hook(levelMethod, LEVEL_HOOK_ID),
-            hook(chargeMethod, CHARGE_HOOK_ID),
-            hook(powerSaveMethod, POWER_SAVE_HOOK_ID),
-            hook(performanceMethod, PERFORMANCE_HOOK_ID),
-            hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID),
-            chargingGlyphHook,
-        )
+        val handles = ArrayList<HookHandle>(HOOK_COUNT)
+        try {
+            handles +=
+                module
+                    .hook(updateChargeAndTextMethod)
+                    .setId(CHARGING_GLYPH_HOOK_ID)
+                    .intercept(
+                        Hooker { chain ->
+                            val result = chain.proceed()
+                            if (!hooksReady) return@Hooker result
+                            val meterView = chain.thisObject as? View
+                                ?: return@Hooker result
+                            publishChargingGlyph(
+                                meterView = meterView,
+                                sourceMethod = updateChargeAndTextMethod.name,
+                            )
+                            result
+                        },
+                    )
+            handles += hook(levelMethod, LEVEL_HOOK_ID)
+            handles += hook(chargeMethod, CHARGE_HOOK_ID)
+            handles += hook(powerSaveMethod, POWER_SAVE_HOOK_ID)
+            handles += hook(performanceMethod, PERFORMANCE_HOOK_ID)
+            handles += hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
+            hooksReady = true
+            return handles
+        } catch (error: Throwable) {
+            hooksReady = false
+            val remaining = handles.asReversed().filter { handle ->
+                runCatching { handle.unhook() }.isFailure
+            }
+            failedInstallHandles = remaining
+            if (remaining.isNotEmpty()) {
+                throw IllegalStateException("battery-source-hook-cleanup-failed", error)
+            }
+            throw error
+        }
     }
+
+    val failedInstallHookCount: Int
+        get() = failedInstallHandles.size
 
     fun readHostChargingIconId(host: Any): Int? {
         val root = host as? ViewGroup ?: return null
@@ -340,6 +362,8 @@ internal object SysUiBatterySource {
 
     @Synchronized
     fun resetRuntimeState() {
+        failedInstallHandles = emptyList()
+        hooksReady = false
         lastState = null
         lastChargingIconResId = null
     }

@@ -124,6 +124,9 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
+    fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
+
+    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -403,6 +406,8 @@ internal object HomeRenderSession {
             dispatchPresentationReadiness("control-center:" + source)
         }
 
+        fun isOverlayShown(): Boolean = probeView.isShown
+
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
                 host.get()?.post {
@@ -462,7 +467,8 @@ internal object HomeRenderSession {
             source: String,
         ) {
             val update = renderController.updateTint(state)
-            if (update.resolved != null) {
+            val becameReady = update.resolved != null && !tintReady
+            if (becameReady) {
                 tintReady = true
             }
 
@@ -476,26 +482,9 @@ internal object HomeRenderSession {
                 }
             }
 
-            if (update.changed) {
-                val resolved = update.resolved
-                if (resolved != null) {
-                    emitEvent {
-                        "homeRenderTint source=" + source +
-                            " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
-                            " statusIcon=#" +
-                            (
-                                resolved.statusIconTint
-                                    ?.toUInt()
-                                    ?.toString(16)
-                                    ?.padStart(8, '0')
-                                    ?: "none"
-                            ) +
-                            ""
-                    }
-                }
+            if (becameReady) {
+                dispatchPresentationReadiness(source)
             }
-            dispatchPresentationReadiness("tint:" + source)
         }
 
         fun update(
@@ -663,31 +652,14 @@ internal object HomeRenderSession {
                 return false
             }
 
-            val rtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = hostWidth,
                     hostHeightPx = hostHeight,
                     baseCarrierWidthPx = baseCarrierWidth,
-                    isRtl = rtl,
+                    isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return false
-            if (!resolved.renderCombined) {
-                return false
-            }
-
-            val left =
-                if (rtl) {
-                    0
-                } else {
-                    resolved.slotLeftPx.toInt()
-                }
-            val right =
-                if (rtl) {
-                    resolved.slotRightPx.toInt()
-                } else {
-                    resolved.slotRightPx.toInt()
-                }
-            out.set(left, 0, right, hostHeight)
+            out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }
 

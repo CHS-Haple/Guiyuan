@@ -107,25 +107,25 @@ class RuntimeRenderLatencyTest {
     }
 
     @Test
-    fun negativeDurationsClampToZero() {
+    fun outOfOrderStagesRetainSignedDeltas() {
         val trace =
             RuntimeRenderTrace(
                 id = 1L,
                 source = "test",
-                sourceNanos = 5_000L,
-            ).withStateCommitted(4_000L)
+                sourceNanos = 5_000_000L,
+            ).withStateCommitted(4_000_000L)
 
         val sample =
             RuntimeRenderLatencySample.from(
                 trace = trace,
-                modelCommittedNanos = 3_000L,
-                drawNanos = 2_000L,
+                modelCommittedNanos = 3_000_000L,
+                drawNanos = 2_000_000L,
                 committedOnMainThread = true,
             )
 
-        assertEquals(0L, sample.sourceToStateUs)
-        assertEquals(0L, sample.stateToModelUs)
-        assertEquals(0L, sample.modelToDrawUs)
-        assertEquals(0L, sample.sourceToDrawUs)
+        assertEquals(-1_000L, sample.sourceToStateUs)
+        assertEquals(-1_000L, sample.stateToModelUs)
+        assertEquals(-1_000L, sample.modelToDrawUs)
+        assertEquals(-3_000L, sample.sourceToDrawUs)
     }
 }

@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import android.view.View
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
@@ -23,7 +24,6 @@ internal object SysUiHotReload {
     }
 
     internal data class HookTakeover(
-        val hostHandle: HookHandle,
         val removedHooks: Int,
         val classLoader: ClassLoader,
     )
@@ -39,6 +39,10 @@ internal object SysUiHotReload {
         val host =
             SysUiHostRegistry.current()
                 ?: return PrepareResult.Unavailable("status-host-not-captured")
+        // A captured host can survive detachment; it must not own the next generation.
+        if ((host as? View)?.isAttachedToWindow != true) {
+            return PrepareResult.Unavailable("status-host-detached")
+        }
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
@@ -105,26 +109,34 @@ internal object SysUiHotReload {
         val oldHandles = param.oldHookHandles
         val hostHandle = SysUiHostHook.findOwnedHandle(oldHandles)
             ?: run {
-                oldHandles.forEach { handle -> runCatching { handle.unhook() } }
+                val failed = oldHandles.count { handle ->
+                    runCatching { handle.unhook() }.isFailure
+                }
+                if (failed > 0) {
+                    error("status-host-hook-missing-cleanup-failed:$failed")
+                }
                 return null
             }
+        val classLoader = hostHandle.executable.declaringClass.classLoader
+            ?: return null
+
+        var removed = 0
+        oldHandles.forEach { handle ->
+            if (handle !== hostHandle) {
+                runCatching { handle.unhook() }
+                    .getOrElse { cause ->
+                        throw IllegalStateException("stale-hook-unhook-failed", cause)
+                    }
+                removed += 1
+            }
+        }
 
         SysUiHostHook.replace(
             handle = hostHandle,
             onCaptured = onCaptured,
         )
 
-        var removed = 0
-        oldHandles.forEach { handle ->
-            if (handle !== hostHandle) {
-                runCatching { handle.unhook() }
-                removed += 1
-            }
-        }
-
-        val classLoader = hostHandle.executable.declaringClass.classLoader ?: return null
         return HookTakeover(
-            hostHandle = hostHandle,
             removedHooks = removed,
             classLoader = classLoader,
         )

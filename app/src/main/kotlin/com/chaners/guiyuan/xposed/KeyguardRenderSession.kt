@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -143,6 +144,14 @@ internal object KeyguardRenderSession {
     }
 
     @Synchronized
+    fun visualState(): String? = current?.visualState()
+
+    @Synchronized
+    fun onNativeIconTransition(toLockScreen: Boolean) {
+        current?.onNativeIconTransition(toLockScreen)
+    }
+
+    @Synchronized
     fun currentTransitionSourceWitness(): TransitionSourceWitness? =
         current?.transitionSourceWitness()
 
@@ -271,6 +280,19 @@ internal object KeyguardRenderSession {
         AOD("aodRender", true),
     }
 
+    private enum class AodDraw {
+        IDLE,
+        WAITING,
+        DRAWN,
+    }
+
+    private enum class IconAlphaMode {
+        NONE,
+        FOLLOW,
+        INVERSE,
+        BATTERY_EXIT,
+    }
+
     private class Session(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         private val onEvent: (String) -> Unit,
@@ -285,7 +307,33 @@ internal object KeyguardRenderSession {
         private val statusIcons = WeakReference(resolved.statusIcons)
         private val batteryView = WeakReference(resolved.battery)
         private val batteryCarrier = WeakReference(resolved.batteryCarrier)
-        private val renderView = RenderView(resolved.host.context)
+        private var aodDraw = AodDraw.IDLE
+        private var aodShown = false
+        private var iconAlphaMode = IconAlphaMode.NONE
+        private var iconAlphaObserver: ViewTreeObserver? = null
+        private val iconAlphaListener =
+            ViewTreeObserver.OnPreDrawListener {
+                syncNativeIconAlpha()
+                true
+            }
+        private val renderView =
+            RenderView(
+                resolved.host.context,
+                onShownChanged = ::observeAodVisibility,
+                onDrawn = { view ->
+                    observeAodVisibility(view)
+                    if (aodDraw == AodDraw.WAITING && view.isShown) {
+                        aodDraw = AodDraw.DRAWN
+                        emitEvent {
+                            "keyguardAodWitness source=renderView.onDraw" +
+                                " shown=true statusIconsAlpha=" +
+                                statusIcons.get()?.alpha +
+                                " hostVisual={" + visualChainSummary(host.get()) + "}" +
+                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                        }
+                    }
+                },
+            )
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
 
@@ -318,6 +366,12 @@ internal object KeyguardRenderSession {
 
         fun isScene(candidate: Scene): Boolean = scene == candidate
 
+        fun visualState(): String =
+            scene.name.lowercase() +
+                ":childShown=" + renderView.isShown +
+                ":childAlpha=" + renderView.alpha +
+                ":hostShown=" + (host.get()?.isShown ?: "unavailable")
+
         fun retarget(
             scene: Scene,
             featureEnabled: Boolean,
@@ -329,6 +383,7 @@ internal object KeyguardRenderSession {
             this.featureEnabled = featureEnabled
             this.sceneEligible = sceneEligible
             this.onPresentationReadinessChanged = onPresentationReadinessChanged
+            if (changedScene) stopFollowingIconAlpha()
             if (changedScene) {
                 readyLogged = false
                 rejectedTintLogged = false
@@ -404,6 +459,16 @@ internal object KeyguardRenderSession {
         }
 
         fun stop() {
+            stopFollowingIconAlpha()
+            if (aodDraw != AodDraw.IDLE) {
+                emitEvent {
+                    "keyguardAodWitness source=session-stop" +
+                        " shownDuringAod=" + aodShown +
+                        " freshVisibleDraw=" + (aodDraw == AodDraw.DRAWN) +
+                        " nativeCc=" + SysUiCcSource.nativeVisualState()
+                }
+                aodDraw = AodDraw.IDLE
+            }
             layoutReady = false
             dispatchPresentationReadiness("stop")
             systemIcons.get()?.removeOnAttachStateChangeListener(this)
@@ -454,6 +519,85 @@ internal object KeyguardRenderSession {
             layoutProbe()
         }
 
+        fun onNativeIconTransition(toLockScreen: Boolean) {
+            if (scene == Scene.AOD) {
+                if (toLockScreen && !FeaturePrefsOwner.current().keyguard) {
+                    trackIconAlpha(
+                        if (
+                            batteryView.get()?.let(
+                                SysUiKeyguardAodSource::usesAnimatedBatteryMode,
+                            ) == true
+                        ) {
+                            IconAlphaMode.BATTERY_EXIT
+                        } else {
+                            IconAlphaMode.INVERSE
+                        },
+                    )
+                } else if (!toLockScreen) {
+                    stopFollowingIconAlpha()
+                    applyResolvedVisibility()
+                }
+                return
+            }
+            if (toLockScreen) {
+                stopFollowingIconAlpha()
+                aodDraw = AodDraw.IDLE
+                aodShown = false
+                applyResolvedVisibility()
+                return
+            }
+
+            if (isDetailedDiagnosticsEnabled()) {
+                aodDraw = AodDraw.WAITING
+                aodShown = false
+                observeAodVisibility(renderView)
+            }
+            trackIconAlpha(IconAlphaMode.FOLLOW)
+        }
+
+        private fun trackIconAlpha(mode: IconAlphaMode) {
+            if (iconAlphaMode == IconAlphaMode.NONE) {
+                val observer = statusIcons.get()?.viewTreeObserver
+                if (observer?.isAlive == true) {
+                    observer.addOnPreDrawListener(iconAlphaListener)
+                    iconAlphaObserver = observer
+                }
+            }
+            iconAlphaMode = mode
+            syncNativeIconAlpha()
+        }
+
+        private fun syncNativeIconAlpha() {
+            if (iconAlphaMode != IconAlphaMode.NONE) updateRenderAlpha()
+        }
+
+        private fun updateRenderAlpha() {
+            val nativeAlpha = statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: 1f
+            val alpha =
+                when (iconAlphaMode) {
+                    IconAlphaMode.NONE -> 1f
+                    IconAlphaMode.FOLLOW -> nativeAlpha
+                    IconAlphaMode.INVERSE -> 1f - nativeAlpha
+                    IconAlphaMode.BATTERY_EXIT -> {
+                        val battery = batteryView.get()
+                        ScenePolicy.outgoingAodAlpha(
+                            nativeToAod =
+                                battery?.let(SysUiKeyguardAodSource::currentState)?.toAod,
+                            nativeBatteryAlpha = battery?.alpha,
+                        )
+                    }
+                }
+            if (renderView.alpha != alpha) renderView.alpha = alpha
+        }
+
+        private fun stopFollowingIconAlpha() {
+            iconAlphaMode = IconAlphaMode.NONE
+            iconAlphaObserver
+                ?.takeIf { it.isAlive }
+                ?.removeOnPreDrawListener(iconAlphaListener)
+            iconAlphaObserver = null
+        }
+
         fun updateAodState(update: SysUiKeyguardAodSource.AodUpdate) {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
@@ -478,6 +622,18 @@ internal object KeyguardRenderSession {
                         },
                     ) + "}" +
                     " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}"
+            }
+        }
+
+        private fun observeAodVisibility(view: View) {
+            if (aodDraw == AodDraw.IDLE || aodShown || !view.isShown) return
+            aodShown = true
+            emitEvent {
+                "keyguardAodWitness source=renderView.visibility" +
+                    " shown=true statusIconsAlpha=" +
+                    statusIcons.get()?.alpha +
+                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
+                    " nativeCc=" + SysUiCcSource.nativeVisualState()
             }
         }
 
@@ -614,12 +770,11 @@ internal object KeyguardRenderSession {
                     baseCarrierWidthPx = baseCarrierWidth,
                     isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return false
-            if (!resolved.renderCombined) return false
 
             out.set(
-                resolved.slotLeftPx.toInt(),
+                resolved.left,
                 0,
-                resolved.slotRightPx.toInt(),
+                resolved.right,
                 hostHeight,
             )
             return out.width() > 0 && out.height() > 0
@@ -671,12 +826,8 @@ internal object KeyguardRenderSession {
                     sceneEligible = sceneEligible,
                 )
             if (visible) {
-                // The module child lives directly under the verified system-icons
-                // family carrier. Do not copy Battery's independent AOD alpha
-                // animation onto the whole combined visual: HyperOS animates
-                // Battery and status icons as separate children, and Battery may
-                // legitimately reach alpha=0 during a family scene transfer.
-                renderView.alpha = 1f
+                // The sibling combined view follows status icons, not Battery's separate AOD fade.
+                updateRenderAlpha()
             }
             renderView.visibility = if (visible) View.VISIBLE else View.GONE
             if (visible) {

@@ -20,7 +20,7 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
-import java.util.WeakHashMap
+import java.lang.reflect.Field
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -53,7 +53,6 @@ internal object CcTransitionOwner {
     private var sourceScene = SourceScene.UNKNOWN
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
-    private var latestBatteryNumberProbeSummary: String? = null
 
     @Synchronized
     fun onSourceUpdate(update: SysUiCcSource.Update) {
@@ -98,13 +97,15 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
-    fun currentDiagnostic(): String =
-        current?.diagnostic()
-            ?: "transitionOwner=inactive appearance=" + nativeAppearance
+    fun visualState(): String =
+        "visible=" + visible +
+            ":eligible=" + sceneEligible +
+            ":progress=" + (nativeProgress ?: "none") +
+            ":drawable=" + (current?.visualState() ?: "none")
 
     @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
-        latestBatteryNumberProbeSummary
+        current?.batteryNumberProbe()
 
     @Synchronized
     fun detach(source: String = "detach") {
@@ -188,7 +189,6 @@ internal object CcTransitionOwner {
                     finalRoot = endpoint.finalRoot,
                     sourceSnapshot = sourceSnapshot,
                     steadySourceWitness = steadySourceWitness,
-                    steadySourceLabel = sourceScene.name.lowercase(),
                 ) ?: run {
                     current = null
                     return
@@ -203,12 +203,7 @@ internal object CcTransitionOwner {
             nativeAppearance = nativeAppearance,
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
-                CcTransitionPolicy.usesSemanticTransitionReservation(
-                    sourceScene = sourceScene,
-                    charging = sourceSnapshot.model.charging,
-                    nativeBatteryIslandActive = nativeBatteryIslandActive,
-                ),
-            sourceScene = sourceScene,
+                CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
             genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
@@ -238,7 +233,7 @@ internal object CcTransitionOwner {
             nativeClip = sourceView.clipBounds?.let(::Rect),
             appliedClip = Rect(0, 0, 0, 0),
         )
-        private val mobileSubIdCache = WeakHashMap<View, Int?>()
+        private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private var frozenAirplaneTarget: TargetWitness? = null
@@ -251,26 +246,21 @@ internal object CcTransitionOwner {
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
         private var started = false
-        private var lastStateVersion = sourceSnapshot.stateVersion
-        private var lastWitnessSummary = "pending"
-        private var lastTintSourceColors: RenderColors? = null
-        private var lastTintTransitionColors: RenderColors? = null
-        private var lastTintBatteryTinted: Boolean? = null
-        private var lastTintTransitionEnabled: Boolean? = null
-        private var lastTintMotionProgress: Float? = null
-        private var batteryNumberProbeSummary = "pending"
         private var cachedNativePeerTint: Int? = null
-        private var cachedNativePeerTintAuthority = "none"
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
-        private var nativePaddingExpansionAllowed = true
         private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
+        // Main-thread render scratch; returned geometries remain independent.
+        private val sampleMatrix = Matrix()
+        private val sampleValues = FloatArray(9)
+        private val boundsMatrix = Matrix()
+        private val boundsValues = FloatArray(9)
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -295,6 +285,7 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
                 if (
@@ -302,143 +293,21 @@ internal object CcTransitionOwner {
                     latest.view === source &&
                     latest.anchorView === sourceAnchor
                 ) {
-                    currentSnapshot = latest
-                    lastStateVersion = latest.stateVersion
+                    acceptSourceSnapshot(latest)
                 }
-                // Native QS_FAKE peers remain the live tint authority. Their applied
-                // tint can change independently from Guiyuan source stateVersion, so
-                // keep this read on pre-draw; the resolver itself is allocation-free.
+                // Source snapshots and native peer tint can change without panel motion.
+                val previousTint = cachedNativePeerTint
                 refreshNativePeerTint()
                 syncTransitionReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
-                drawable.invalidateSelf()
+                if (
+                    currentSnapshot !== previousSnapshot ||
+                    cachedNativePeerTint != previousTint
+                ) {
+                    drawable.invalidateSelf()
+                }
                 true
             }
-
-        fun diagnostic(): String =
-            "transitionOwner={progress=" + progress +
-                ",appearance=" + nativeAppearance +
-                ",appearanceAnimated=" + nativeAppearanceAnimated +
-                ",nativePeers=systemui" +
-                ",nativeTint=" +
-                (cachedNativePeerTint?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none") +
-                ",nativeTintAuthority=" + cachedNativePeerTintAuthority +
-                ",sourceAnchor=" + (sourceAnchorRef.get()?.javaClass?.simpleName ?: "none") +
-                ",sourceOrigin=" + (frozenSource?.source ?: "qs-fake-live") +
-                ",sourceStateVersion=" + lastStateVersion +
-                ",root=" + (rootRef.get()?.javaClass?.simpleName ?: "none") +
-                ",fake=" + (fakeRootRef.get()?.javaClass?.simpleName ?: "none") +
-                ",final=" + (finalRootRef.get()?.javaClass?.simpleName ?: "none") +
-                ",witness=" + lastWitnessSummary +
-                ",tintTransition=" + tintDiagnosticSummary() +
-                ",batteryNumberProbe=" + batteryNumberProbeSummary +
-                ",reservation=" + (lastReservationWidthPx ?: -1) +
-                ",nativeReservation=" + (lastNativeReservationWidthPx ?: -1) +
-                ",nativePeerTargetEndOffset=" +
-                (lastNativePeerTargetEndOffsetPx?.toString() ?: "none") +
-                ",batteryIsland=" + nativeBatteryIslandActive +
-                ",iconCapacity=" + statusIconCapacitySummary() +
-                ",nativeRows=" + nativeStatusRowSummary() +
-                ",fakeCarrier=" + fakeCarrierHierarchySummary() +
-                ",reservationMode=" +
-                when {
-                    !transitionReservationEnabled -> "native-peer-motion"
-                    genericIslandShowing == true && nativePaddingExpansionAllowed ->
-                        "native-progress-total-padding+native-island-collision"
-                    genericIslandShowing == true -> "native-island-authority"
-                    !nativePaddingExpansionAllowed -> "native-padding-guard"
-                    else -> "native-progress-total-padding"
-                } +
-                "}"
-
-        private fun statusIconCapacitySummary(): String {
-            fun summary(group: ViewGroup): String {
-                val usableWidth =
-                    (group.width - group.paddingStart - group.paddingEnd)
-                        .coerceAtLeast(0)
-                return "width=" + group.width +
-                    "/start=" + group.paddingStart +
-                    "/end=" + group.paddingEnd +
-                    "/usable=" + usableWidth
-            }
-            return "{fake=" + summary(fakeStatusIcons) +
-                ",final=" + summary(finalStatusIcons) + "}"
-        }
-
-        private fun nativeStatusRowSummary(): String {
-            fun rootToken(view: View?): String =
-                if (view == null) {
-                    "none"
-                } else {
-                    view.javaClass.simpleName +
-                        "(v=" + view.visibility +
-                        ",a=" + view.alpha +
-                        ",w=" + view.width + ")"
-                }
-
-            fun groupToken(group: ViewGroup): String {
-                val children =
-                    buildList {
-                        val limit = minOf(group.childCount, 12)
-                        for (index in 0 until limit) {
-                            val child = group.getChildAt(index)
-                            val slot =
-                                NativeParticipantAccess.slotOf(child)
-                                    ?: NativeParticipantAccess.resourceEntryName(child)
-                                    ?: child.javaClass.simpleName
-                            add(
-                                slot +
-                                    "(state=" +
-                                    (NativeParticipantAccess.visibleState(child) ?: -1) +
-                                    ",icon=" +
-                                    (NativeParticipantAccess.iconVisible(child)?.toString()
-                                        ?: "unknown") +
-                                    ",v=" + child.visibility +
-                                    ",a=" + child.alpha +
-                                    ",l=" + child.left +
-                                    ",r=" + child.right +
-                                    ",w=" + child.width + ")",
-                            )
-                        }
-                    }.joinToString(",")
-                return "count=" + group.childCount + "/items=[" + children + "]"
-            }
-
-            return "{fakeRoot=" + rootToken(fakeRootRef.get()) +
-                ",finalRoot=" + rootToken(finalRootRef.get()) +
-                ",fake=" + groupToken(fakeStatusIcons) +
-                ",final=" + groupToken(finalStatusIcons) + "}"
-        }
-
-        private fun fakeCarrierHierarchySummary(): String {
-            fun token(view: View): String {
-                val entry =
-                    NativeParticipantAccess.resourceEntryName(view)
-                        ?: "no-id"
-                return view.javaClass.simpleName + ":" + entry +
-                    "(l=" + view.left +
-                    ",r=" + view.right +
-                    ",w=" + view.width +
-                    ",v=" + view.visibility + ")"
-            }
-
-            val area = fakeStatusIcons.parent as? View ?: return "{area=none}"
-            val row = area.parent as? ViewGroup
-            val children =
-                row?.let { parent ->
-                    buildList {
-                        val limit = minOf(parent.childCount, 8)
-                        for (index in 0 until limit) {
-                            add(token(parent.getChildAt(index)))
-                        }
-                    }.joinToString(",")
-                }.orEmpty()
-            val fakeRoot = fakeRootRef.get()
-            return "{root=" + (fakeRoot?.let(::token) ?: "none") +
-                ",area=" + token(area) +
-                ",parent=" + (row?.let(::token) ?: "none") +
-                ",children=[" + children + "]}"
-        }
 
         fun matches(
             root: ViewGroup,
@@ -453,13 +322,24 @@ internal object CcTransitionOwner {
                 sourceViewRef.get() === sourceView &&
                 sourceAnchorRef.get() === sourceAnchor
 
+        fun visualState(): String =
+            "started=" + started +
+                ":rootShown=" + (rootRef.get()?.isShown ?: "unavailable") +
+                ":fakeOpacity=" +
+                (fakeRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
+                ":finalOpacity=" +
+                (finalRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
+                ":sourceWidth=" + (sourceViewRef.get()?.width ?: "unavailable") +
+                ":progress=" + progress
+
+        fun batteryNumberProbe(): String =
+            resolveBatteryNumberProbe(finalBattery)
+
         fun start() {
             if (started) return
             val rootView = rootRef.get() ?: return
             val source = sourceViewRef.get() ?: return
             started = true
-            batteryNumberProbeSummary = resolveBatteryNumberProbe(finalBattery)
-            latestBatteryNumberProbeSummary = batteryNumberProbeSummary
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
@@ -475,7 +355,6 @@ internal object CcTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            sourceScene: SourceScene,
             genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
@@ -483,23 +362,38 @@ internal object CcTransitionOwner {
                 this.nativeAppearance != nativeAppearance ||
                     this.nativeAppearanceAnimated != nativeAppearanceAnimated
             this.progress = progress.coerceIn(0f, 1f)
-            this.currentSnapshot = sourceSnapshot
+            acceptSourceSnapshot(sourceSnapshot)
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
             this.genericIslandShowing = genericIslandShowing
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
-            this.nativePaddingExpansionAllowed =
-                CcTransitionPolicy.allowsNativeTransitionPaddingExpansion(
-                    sourceScene = sourceScene,
-                    genericIslandShowing = genericIslandShowing,
-                )
             if (appearanceChanged) {
                 refreshNativePeerTint()
             }
             syncTransitionReservation()
             drawable.invalidateSelf()
+        }
+
+        private fun acceptSourceSnapshot(next: CcRenderSession.TransitionSourceSnapshot) {
+            val previous = currentSnapshot.model
+            val model = next.model
+            // Native battery views can stay attached after their displayed content changes.
+            if (previous.batteryPercent != model.batteryPercent) {
+                targetCache.remove(
+                    TargetCacheKey(StatusPainter.TransitionTarget.BatteryNumber, null),
+                )
+            }
+            if (
+                previous.charging != model.charging ||
+                previous.chargingIconResId != model.chargingIconResId
+            ) {
+                targetCache.remove(
+                    TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
+                )
+            }
+            currentSnapshot = next
         }
 
         fun stop(source: String) {
@@ -542,8 +436,8 @@ internal object CcTransitionOwner {
                             root = rootView,
                         ) ?: return
                     CcTransitionPolicy.composeSourceGeometry(
-                        positionAuthority = sourcePositionSample.geometry,
-                        basisAuthority = sourceBasisSample.geometry,
+                        positionAuthority = sourcePositionSample,
+                        basisAuthority = sourceBasisSample,
                     )
                 } else {
                     null
@@ -563,7 +457,7 @@ internal object CcTransitionOwner {
                     sample(
                         view = fakeStatusIcons,
                         root = rootView,
-                    )?.geometry?.let { fullCurrentCarrier ->
+                    )?.let { fullCurrentCarrier ->
                         val currentCarrier =
                             CcTransitionPolicy.endAnchoredMotionCarrierGeometry(
                                 carrierGeometry = fullCurrentCarrier,
@@ -603,7 +497,6 @@ internal object CcTransitionOwner {
                 )
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
-            if (opacity <= 0f) return
 
             val preferredMobileSubId =
                 PresentationStore
@@ -706,24 +599,6 @@ internal object CcTransitionOwner {
                         )
                     }
                     ?: currentSnapshot.colors
-
-            lastTintSourceColors = currentSnapshot.colors
-            lastTintTransitionColors = transitionColors
-            lastTintBatteryTinted = batteryTinted
-            lastTintTransitionEnabled =
-                currentSnapshot.visual.ccTintTransition
-            lastTintMotionProgress = motionProgress
-
-            val refreshWitnessDiagnostic =
-                lastWitnessSummary == "pending" ||
-                    lastWitnessSummary.contains("unresolved") ||
-                    lastWitnessSummary.contains(":0x0")
-            val witnessDescriptions =
-                if (refreshWitnessDiagnostic) {
-                    ArrayList<String>(specs.size)
-                } else {
-                    null
-                }
 
             val batterySourceCenterX =
                 specs.firstOrNull {
@@ -1057,9 +932,6 @@ internal object CcTransitionOwner {
                 )
                 canvas.restoreToCount(save)
 
-                witnessDescriptions?.add(
-                    witness?.summary ?: (spec.component.name.lowercase() + ":unresolved"),
-                )
             }
 
             val mobileSpec =
@@ -1070,24 +942,21 @@ internal object CcTransitionOwner {
                 mobileSpec != null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
-                val extras =
-                    drawAdditionalMobileLatent(
-                        canvas = canvas,
-                        rootView = rootView,
-                        sourceParentGeometry = sourceParentGeometry,
-                        sourceWidth = sourceWidth,
-                        sourceHeight = sourceHeight,
-                        model = model,
-                        colors = transitionColors,
-                        mobileSpec = mobileSpec,
-                        preferredMobileSubId = preferredMobileSubId,
-                        motionProgress = motionProgress,
-                        shapeProgress = mobileSignalShapeProgress,
-                        opacity = opacity,
-                        carrierFrames = carrierFrames,
-                        collectDescription = witnessDescriptions != null,
-                    )
-                witnessDescriptions?.addAll(extras)
+                drawAdditionalMobileLatent(
+                    canvas = canvas,
+                    rootView = rootView,
+                    sourceParentGeometry = sourceParentGeometry,
+                    sourceWidth = sourceWidth,
+                    sourceHeight = sourceHeight,
+                    model = model,
+                    colors = transitionColors,
+                    mobileSpec = mobileSpec,
+                    preferredMobileSubId = preferredMobileSubId,
+                    motionProgress = motionProgress,
+                    shapeProgress = mobileSignalShapeProgress,
+                    opacity = opacity,
+                    carrierFrames = carrierFrames,
+                )
             }
             drawSupplementalAirplaneReveal(
                 canvas = canvas,
@@ -1100,9 +969,7 @@ internal object CcTransitionOwner {
                 motionProgress = motionProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
-            )?.let { description ->
-                witnessDescriptions?.add(description)
-            }
+            )
             drawSupplementalNoSimReveal(
                 canvas = canvas,
                 rootView = rootView,
@@ -1114,13 +981,7 @@ internal object CcTransitionOwner {
                 motionProgress = motionProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
-            )?.let { description ->
-                witnessDescriptions?.add(description)
-            }
-
-            witnessDescriptions?.let { descriptions ->
-                lastWitnessSummary = descriptions.joinToString("|")
-            }
+            )
         }
 
         private fun drawAdditionalMobileLatent(
@@ -1137,14 +998,13 @@ internal object CcTransitionOwner {
             shapeProgress: Float,
             opacity: Float,
             carrierFrames: CarrierFrames?,
-            collectDescription: Boolean,
-        ): List<String> {
+        ) {
             if (
                 mobileSpec.shapePolicy !=
                 StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ||
                 !sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
-                return emptyList()
+                return
             }
             val sourceGeometry =
                 CcTransitionPolicy.componentGeometry(
@@ -1152,19 +1012,13 @@ internal object CcTransitionOwner {
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
                     bounds = mobileSpec.sourceBounds,
-                ) ?: return emptyList()
+                ) ?: return
             val primary =
                 resolveTarget(
                     target = mobileSpec.target,
                     preferredMobileSubId = preferredMobileSubId,
                 )
             val state = StatusStateStore.snapshot()
-            val descriptions =
-                if (collectDescription) {
-                    ArrayList<String>()
-                } else {
-                    null
-                }
             resolveFrozenAdditionalMobileTargets(primary).forEach { witness ->
                 val subId = witness.subscriptionId ?: return@forEach
                 val level =
@@ -1211,7 +1065,7 @@ internal object CcTransitionOwner {
                                     outerScale = outerSimilarityScale,
                                 ),
                     )
-                val pathGeometry =
+                val geometry =
                     projectedGeometry(
                         source = sourceGeometry,
                         target = targetGeometry,
@@ -1219,7 +1073,6 @@ internal object CcTransitionOwner {
                         scalePolicy = mobileSpec.scalePolicy,
                         carrierFrames = carrierFrames,
                     )
-                val geometry = pathGeometry
                 val matrix =
                     matrixForBoundsGeometry(
                         geometry = geometry,
@@ -1275,9 +1128,7 @@ internal object CcTransitionOwner {
                     mobileTargetBars = targetBars,
                 )
                 canvas.restoreToCount(save)
-                descriptions?.add("mobile-latent:" + witness.summary)
             }
-            return descriptions ?: emptyList()
         }
 
         private fun drawSupplementalAirplaneReveal(
@@ -1291,36 +1142,36 @@ internal object CcTransitionOwner {
             motionProgress: Float,
             opacity: Float,
             carrierFrames: CarrierFrames?,
-        ): String? {
+        ) {
             if (
                 StatusStateStore.snapshot().airplaneMode != true ||
                 model.centerIndicator is CenterIndicator.Airplane ||
                 !sourceRepresentsAny(AIRPLANE_SLOT)
             ) {
-                return null
+                return
             }
             val bounds =
                 painter.transitionAirplaneSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
                     visual = currentSnapshot.visual,
-                ) ?: return null
+                ) ?: return
             val sourceGeometry =
                 CcTransitionPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
                     bounds = bounds,
-                ) ?: return null
-            val witness = resolveFrozenAirplaneTarget() ?: return null
+                ) ?: return
+            val witness = resolveFrozenAirplaneTarget() ?: return
             val targetGeometry =
                 resolveTargetGeometry(
                     witness = witness,
                     root = rootView,
                     sourceGeometry = sourceGeometry,
                     targetOpticalBounds = null,
-                ) ?: return null
-            val pathGeometry =
+                ) ?: return
+            val geometry =
                 projectedGeometry(
                     source = sourceGeometry,
                     target = targetGeometry,
@@ -1328,19 +1179,18 @@ internal object CcTransitionOwner {
                     scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
-            val geometry = pathGeometry
             val revealVisibleFraction =
                 latentRevealVisibleFraction(
                     currentGeometry = geometry,
                     targetGeometry = targetGeometry,
                     witness = witness,
                 )
-            if (revealVisibleFraction <= 0f || opacity <= 0f) return null
+            if (revealVisibleFraction <= 0f || opacity <= 0f) return
             val matrix =
                 matrixForBoundsGeometry(
                     geometry = geometry,
                     bounds = bounds,
-                ) ?: return null
+                ) ?: return
             val save =
                 canvas.saveLayerAlpha(
                     null,
@@ -1360,7 +1210,7 @@ internal object CcTransitionOwner {
                             View.LAYOUT_DIRECTION_RTL,
                 ) ?: run {
                     canvas.restoreToCount(save)
-                    return null
+                    return
                 }
             canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
             painter.drawTransitionAirplane(
@@ -1372,7 +1222,6 @@ internal object CcTransitionOwner {
                 visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
-            return "airplane-reveal:" + witness.summary
         }
 
         private fun drawSupplementalNoSimReveal(
@@ -1386,41 +1235,41 @@ internal object CcTransitionOwner {
             motionProgress: Float,
             opacity: Float,
             carrierFrames: CarrierFrames?,
-        ): String? {
+        ) {
             if (
                 model.centerIndicator is CenterIndicator.NoSim ||
                 !sourceRepresentsAny(NO_SIM_SLOT)
             ) {
-                return null
+                return
             }
             val presentation = PresentationStore.snapshot()
             val resource =
                 presentation.statusIcons.noSimIcon
                     ?.takeIf { presentation.statusIcons.noSimVisible }
-                    ?: return null
+                    ?: return
             val bounds =
                 painter.transitionNoSimSourceBounds(
                     width = sourceWidth,
                     height = sourceHeight,
                     resource = resource,
                     visual = currentSnapshot.visual,
-                ) ?: return null
+                ) ?: return
             val sourceGeometry =
                 CcTransitionPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
                     bounds = bounds,
-                ) ?: return null
-            val witness = resolveFrozenNoSimTarget() ?: return null
+                ) ?: return
+            val witness = resolveFrozenNoSimTarget() ?: return
             val targetGeometry =
                 resolveTargetGeometry(
                     witness = witness,
                     root = rootView,
                     sourceGeometry = sourceGeometry,
                     targetOpticalBounds = null,
-                ) ?: return null
-            val pathGeometry =
+                ) ?: return
+            val geometry =
                 projectedGeometry(
                     source = sourceGeometry,
                     target = targetGeometry,
@@ -1428,19 +1277,18 @@ internal object CcTransitionOwner {
                     scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
                     carrierFrames = carrierFrames,
                 )
-            val geometry = pathGeometry
             val revealVisibleFraction =
                 latentRevealVisibleFraction(
                     currentGeometry = geometry,
                     targetGeometry = targetGeometry,
                     witness = witness,
                 )
-            if (revealVisibleFraction <= 0f || opacity <= 0f) return null
+            if (revealVisibleFraction <= 0f || opacity <= 0f) return
             val matrix =
                 matrixForBoundsGeometry(
                     geometry = geometry,
                     bounds = bounds,
-                ) ?: return null
+                ) ?: return
             val save =
                 canvas.saveLayerAlpha(
                     null,
@@ -1460,7 +1308,7 @@ internal object CcTransitionOwner {
                             View.LAYOUT_DIRECTION_RTL,
                 ) ?: run {
                     canvas.restoreToCount(save)
-                    return null
+                    return
                 }
             canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
             painter.drawTransitionNoSim(
@@ -1473,7 +1321,6 @@ internal object CcTransitionOwner {
                 visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
-            return "no-sim-reveal:" + witness.summary
         }
 
         private fun projectedExactGeometry(
@@ -1545,7 +1392,7 @@ internal object CcTransitionOwner {
             val currentReservation =
                 lastReservationWidthPx ?: compactWidth
             val requiredReservation =
-                requiredReservationWidthForVisualEnvelope(witness)
+                reservationWidthForEnvelope(witness)
                     ?: return 0f
 
             val targetWidth =
@@ -1578,7 +1425,7 @@ internal object CcTransitionOwner {
             )
         }
 
-        private fun requiredReservationWidthForVisualEnvelope(
+        private fun reservationWidthForEnvelope(
             witness: TargetWitness,
         ): Int? {
             val source = sourceViewRef.get() ?: return null
@@ -1651,40 +1498,6 @@ internal object CcTransitionOwner {
             return slots.any(represented::contains)
         }
 
-        private fun tintDiagnosticSummary(): String {
-            val sourceColors = lastTintSourceColors ?: return "pending"
-            val transitionColors = lastTintTransitionColors ?: return "pending"
-            val batteryTinted = lastTintBatteryTinted ?: return "pending"
-            val transitionEnabled = lastTintTransitionEnabled ?: return "pending"
-            val motionProgress = lastTintMotionProgress ?: return "pending"
-
-            fun tintHex(color: Int): String =
-                color.toUInt().toString(16).padStart(8, '0')
-
-            return "{batteryTinted=" + batteryTinted +
-                ",enabled=" + transitionEnabled +
-                ",motion=" + motionProgress +
-                ",target=" +
-                (cachedNativePeerTint?.let(::tintHex) ?: "none") +
-                ",battery=" +
-                tintHex(sourceColors.batteryTint) + "->" +
-                tintHex(transitionColors.batteryTint) +
-                ",number=" +
-                tintHex(sourceColors.batteryTextTint) + "->" +
-                tintHex(transitionColors.batteryTextTint) +
-                ",charging=" +
-                tintHex(sourceColors.chargingIconTint) + "->" +
-                tintHex(transitionColors.chargingIconTint) +
-                ",center=" +
-                tintHex(sourceColors.centerTint) + "->" +
-                tintHex(transitionColors.centerTint) +
-                ",mobile=" +
-                tintHex(sourceColors.mobileTint) + "->" +
-                tintHex(transitionColors.mobileTint) +
-                ",tintPhase=" + CcTransitionPolicy.transitionTintProgress(motionProgress) +
-                "}"
-        }
-
         private fun refreshNativePeerTint() {
             val peerTint =
                 NativeNetworkSuppressor
@@ -1696,12 +1509,6 @@ internal object CcTransitionOwner {
                 )
             if (resolved != null) {
                 cachedNativePeerTint = resolved
-                cachedNativePeerTintAuthority =
-                    if (peerTint != null && resolved == peerTint) {
-                        "qs-fake-visible-peer-applied"
-                    } else {
-                        "cached-last-valid"
-                    }
             }
         }
 
@@ -1750,7 +1557,7 @@ internal object CcTransitionOwner {
                     // end frame before measuring the current projected occupancy.
                     lastNativePeerTargetEndOffsetPx = null
                     val targetEndOffsetPx =
-                        resolveBatteryIslandNativePeerTargetEndOffsetPx()
+                        batteryIslandPeerEndOffsetPx()
                             ?: run {
                                 lastNativeReservationWidthPx = null
                                 val presentationFailed =
@@ -1778,16 +1585,6 @@ internal object CcTransitionOwner {
                     requestedWidth
                 }
 
-            if (!nativePaddingExpansionAllowed) {
-                if (lastNativeReservationWidthPx != null) {
-                    SysUiPresentationOwner.clearCcTransitionReservation(
-                        "transition-island-native-padding-guard",
-                    )
-                    lastNativeReservationWidthPx = null
-                }
-                return
-            }
-
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
                     SysUiPresentationOwner
@@ -1801,7 +1598,7 @@ internal object CcTransitionOwner {
             }
         }
 
-        private fun resolveBatteryIslandNativePeerTargetEndOffsetPx(): Float? {
+        private fun batteryIslandPeerEndOffsetPx(): Float? {
             if (
                 fakeStatusIcons.width <= 0 ||
                 finalBattery.width <= 0 ||
@@ -2033,6 +1830,10 @@ internal object CcTransitionOwner {
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
+                            (witness.slot != MOBILE_SLOT && witness.slot != STACKED_MOBILE_SLOT) ||
+                                witness.subscriptionId == readMobileSubId(witness.slotView)
+                        ) &&
+                        (
                             !opticalRequired ||
                                 witness.opticalView?.let(::isReliableSemanticTarget) == true ||
                                 witness.fallbackBounds != null
@@ -2050,7 +1851,6 @@ internal object CcTransitionOwner {
                             subscriptionId = null,
                             requiresOpticalGeometry = false,
                             fallbackBounds = null,
-                            opticalSource = "battery",
                         ).takeIf { witness -> isUsableSlotView(witness.slotView) }
 
                     StatusPainter.TransitionTarget.BatteryNumber ->
@@ -2126,7 +1926,7 @@ internal object CcTransitionOwner {
                     null
                 }
             val optical =
-                nativeOptical ?: compatibilityOptical?.view ?: singleIconOptical
+                nativeOptical ?: compatibilityOptical ?: singleIconOptical
             val fallbackBounds =
                 if (
                     target.preferredChildEntries.isNotEmpty() &&
@@ -2151,14 +1951,6 @@ internal object CcTransitionOwner {
                 subscriptionId = readMobileSubId(slotRoot),
                 requiresOpticalGeometry = opticalRequired,
                 fallbackBounds = fallbackBounds,
-                opticalSource =
-                    when {
-                        nativeOptical != null -> "native"
-                        compatibilityOptical != null -> compatibilityOptical.source
-                        singleIconOptical != null -> "native-drawable"
-                        fallbackBounds != null -> "slot-estimate"
-                        else -> "slot"
-                    },
                 textWeight = resolveNativeTextWeight(optical),
                 textStyle = resolveNativeTextStyle(optical),
             )
@@ -2167,7 +1959,17 @@ internal object CcTransitionOwner {
         private fun resolveFrozenAdditionalMobileTargets(
             primary: TargetWitness?,
         ): List<TargetWitness> {
-            frozenAdditionalMobileTargets?.let { return it }
+            frozenAdditionalMobileTargets?.let { targets ->
+                if (targets.all { target ->
+                        target.slotView.visibility == View.VISIBLE &&
+                            isUsableSlotView(target.slotView) &&
+                            target.slotView !== primary?.slotView &&
+                            target.subscriptionId != primary?.subscriptionId &&
+                            target.subscriptionId == readMobileSubId(target.slotView)
+                    }) {
+                    return targets
+                }
+            }
             val resolved = resolveAdditionalMobileTargets(primary)
             frozenAdditionalMobileTargets = resolved
             return resolved
@@ -2252,7 +2054,7 @@ internal object CcTransitionOwner {
                 if (snapshot != null && visualSample != null) {
                     val envelope = snapshot.envelope
                     CcTransitionPolicy.componentGeometry(
-                        parentGeometry = visualSample.geometry,
+                        parentGeometry = visualSample,
                         parentWidth = visualView.width,
                         parentHeight = visualView.height,
                         bounds =
@@ -2279,7 +2081,7 @@ internal object CcTransitionOwner {
                     return resolvedTargetOpticalBounds
                         ?.let { bounds ->
                             CcTransitionPolicy.componentGeometry(
-                                parentGeometry = opticalSample.geometry,
+                                parentGeometry = opticalSample,
                                 parentWidth = opticalView.width,
                                 parentHeight = opticalView.height,
                                 bounds =
@@ -2291,7 +2093,7 @@ internal object CcTransitionOwner {
                                     ),
                             )
                         }
-                        ?: opticalSample.geometry
+                        ?: opticalSample
                 }
 
                 syntheticOpticalGeometry(
@@ -2342,11 +2144,11 @@ internal object CcTransitionOwner {
                         contentBounds
                     }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = slotSample.geometry,
+                parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
                 bounds = targetBounds,
-            ) ?: slotSample.geometry
+            ) ?: slotSample
         }
 
         private fun mobileTargetBars(
@@ -2410,7 +2212,7 @@ internal object CcTransitionOwner {
                     )
                 }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = imageSample.geometry,
+                parentGeometry = imageSample,
                 parentWidth = image.width,
                 parentHeight = image.height,
                 bounds = localBounds,
@@ -2473,7 +2275,7 @@ internal object CcTransitionOwner {
                     )
                 }
             return CcTransitionPolicy.componentGeometry(
-                parentGeometry = slotSample.geometry,
+                parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
                 bounds = localBounds,
@@ -2501,7 +2303,6 @@ internal object CcTransitionOwner {
                 subscriptionId = null,
                 requiresOpticalGeometry = true,
                 fallbackBounds = null,
-                opticalSource = "battery-charging-view",
             )
         }
 
@@ -2542,7 +2343,6 @@ internal object CcTransitionOwner {
                         subscriptionId = null,
                         requiresOpticalGeometry = true,
                         fallbackBounds = bounds,
-                        opticalSource = "battery-number-text-layout",
                         textWeight = batteryNumberTypefaceWeight(textView.paint),
                         textStyle = captureTextStyle(textView.paint),
                         preferFallbackGeometry = true,
@@ -2571,7 +2371,6 @@ internal object CcTransitionOwner {
                             subscriptionId = null,
                             requiresOpticalGeometry = true,
                             fallbackBounds = bounds,
-                            opticalSource = "battery-number-hollow-paint",
                             textWeight = batteryNumberTypefaceWeight(nativeBodyPaint),
                             textStyle = captureTextStyle(nativeBodyPaint),
                             preferFallbackGeometry = true,
@@ -2598,7 +2397,6 @@ internal object CcTransitionOwner {
                             subscriptionId = null,
                             requiresOpticalGeometry = true,
                             fallbackBounds = bounds,
-                            opticalSource = "battery-number-text-metrics-on-hollow",
                             textWeight = batteryNumberTypefaceWeight(textView.paint),
                             textStyle = captureTextStyle(textView.paint),
                             preferFallbackGeometry = true,
@@ -2627,7 +2425,6 @@ internal object CcTransitionOwner {
                 subscriptionId = null,
                 requiresOpticalGeometry = true,
                 fallbackBounds = bounds,
-                opticalSource = "battery-number-legacy-icon-paint",
                 textWeight = batteryNumberTypefaceWeight(paint),
                 textStyle = captureTextStyle(paint),
                 preferFallbackGeometry = true,
@@ -3022,7 +2819,7 @@ internal object CcTransitionOwner {
         private fun resolveCompatibilityOpticalTarget(
             slotRoot: View,
             preferredChildEntries: List<String>,
-        ): CompatibilityOpticalTarget? {
+        ): View? {
             if (!preferredChildEntries.contains("mobile_signal")) return null
             val signalContainer =
                 findDescendantByResourceEntry(
@@ -3032,7 +2829,6 @@ internal object CcTransitionOwner {
 
             data class Candidate(
                 val view: View,
-                val snapshot: ParticipantVisualSnapshot.Snapshot,
                 val score: Float,
             )
 
@@ -3054,7 +2850,6 @@ internal object CcTransitionOwner {
                 candidates +=
                     Candidate(
                         view = candidate,
-                        snapshot = snapshot,
                         score = area * componentWeight,
                     )
             }
@@ -3062,32 +2857,29 @@ internal object CcTransitionOwner {
             val best =
                 candidates.maxByOrNull { candidate -> candidate.score }
                     ?: return null
-            return CompatibilityOpticalTarget(
-                view = best.view,
-                source =
-                    "visual-snapshot:" +
-                        best.snapshot.topology.name.lowercase(),
-            )
+            return best.view
         }
 
         private fun readMobileSubId(view: View): Int? {
-            if (mobileSubIdCache.containsKey(view)) {
-                return mobileSubIdCache[view]
-            }
-            val resolved =
-                generateSequence<Class<*>>(view.javaClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz ->
-                        clazz.declaredFields.firstOrNull { field -> field.name == "subId" }
-                    }
-                    .firstOrNull()
-                    ?.let { field ->
-                        runCatching {
-                            field.isAccessible = true
-                            field.getInt(view)
-                        }.getOrNull()
-                    }
-            mobileSubIdCache[view] = resolved
-            return resolved
+            val viewClass = view.javaClass
+            val field =
+                if (mobileSubIdFields.containsKey(viewClass)) {
+                    mobileSubIdFields[viewClass]
+                } else {
+                    generateSequence<Class<*>>(viewClass) { clazz -> clazz.superclass }
+                        .mapNotNull { clazz ->
+                            clazz.declaredFields.firstOrNull { it.name == "subId" }
+                        }
+                        .firstOrNull()
+                        ?.let { candidate ->
+                            runCatching {
+                                candidate.isAccessible = true
+                                candidate
+                            }.getOrNull()
+                        }
+                        .also { mobileSubIdFields[viewClass] = it }
+                } ?: return null
+            return runCatching { field.getInt(view) }.getOrNull()
         }
 
         private fun selectSlotView(
@@ -3149,32 +2941,30 @@ internal object CcTransitionOwner {
         private fun sample(
             view: View,
             root: View,
-        ): Sample? {
+        ): FloatArray? {
             if (!view.isAttachedToWindow || view.width <= 0 || view.height <= 0) {
                 return null
             }
-            val matrix = Matrix()
-            view.transformMatrixToGlobal(matrix)
-            root.transformMatrixToLocal(matrix)
-            val values = FloatArray(9)
-            matrix.getValues(values)
-            return Sample(
-                geometry =
-                    floatArrayOf(
-                        ((values[Matrix.MSCALE_X] * view.width) +
-                            (values[Matrix.MSKEW_X] * view.height)) / 2f +
-                            values[Matrix.MTRANS_X],
-                        ((values[Matrix.MSKEW_Y] * view.width) +
-                            (values[Matrix.MSCALE_Y] * view.height)) / 2f +
-                            values[Matrix.MTRANS_Y],
-                        values[Matrix.MSCALE_X] * view.width,
-                        values[Matrix.MSKEW_Y] * view.width,
-                        values[Matrix.MSKEW_X] * view.height,
-                        values[Matrix.MSCALE_Y] * view.height,
-                    ),
+            sampleMatrix.reset()
+            view.transformMatrixToGlobal(sampleMatrix)
+            root.transformMatrixToLocal(sampleMatrix)
+            sampleMatrix.getValues(sampleValues)
+            val values = sampleValues
+            return floatArrayOf(
+                ((values[Matrix.MSCALE_X] * view.width) +
+                    (values[Matrix.MSKEW_X] * view.height)) / 2f +
+                    values[Matrix.MTRANS_X],
+                ((values[Matrix.MSKEW_Y] * view.width) +
+                    (values[Matrix.MSCALE_Y] * view.height)) / 2f +
+                    values[Matrix.MTRANS_Y],
+                values[Matrix.MSCALE_X] * view.width,
+                values[Matrix.MSKEW_Y] * view.width,
+                values[Matrix.MSKEW_X] * view.height,
+                values[Matrix.MSCALE_Y] * view.height,
             )
         }
 
+        // Callers consume this mutable matrix immediately with Canvas.concat.
         private fun matrixForBoundsGeometry(
             geometry: FloatArray,
             bounds: StatusPainter.TransitionBounds,
@@ -3186,7 +2976,7 @@ internal object CcTransitionOwner {
             ) {
                 return null
             }
-            val values = FloatArray(9)
+            val values = boundsValues
             values[Matrix.MSCALE_X] = geometry[2] / bounds.width
             values[Matrix.MSKEW_X] = geometry[4] / bounds.height
             values[Matrix.MTRANS_X] =
@@ -3202,37 +2992,13 @@ internal object CcTransitionOwner {
             values[Matrix.MPERSP_0] = 0f
             values[Matrix.MPERSP_1] = 0f
             values[Matrix.MPERSP_2] = 1f
-            return Matrix().apply { setValues(values) }
-        }
-
-        private fun matrixForGeometry(
-            geometry: FloatArray,
-            width: Int,
-            height: Int,
-        ): Matrix? {
-            if (geometry.size != 6 || width <= 0 || height <= 0) return null
-            val values = FloatArray(9)
-            values[Matrix.MSCALE_X] = geometry[2] / width
-            values[Matrix.MSKEW_X] = geometry[4] / height
-            values[Matrix.MTRANS_X] =
-                geometry[0] - ((geometry[2] + geometry[4]) / 2f)
-            values[Matrix.MSKEW_Y] = geometry[3] / width
-            values[Matrix.MSCALE_Y] = geometry[5] / height
-            values[Matrix.MTRANS_Y] =
-                geometry[1] - ((geometry[3] + geometry[5]) / 2f)
-            values[Matrix.MPERSP_0] = 0f
-            values[Matrix.MPERSP_1] = 0f
-            values[Matrix.MPERSP_2] = 1f
-            return Matrix().apply { setValues(values) }
+            boundsMatrix.setValues(values)
+            return boundsMatrix
         }
 
         private data class TargetCacheKey(
             val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
-        )
-
-        private data class Sample(
-            val geometry: FloatArray,
         )
 
         private data class CarrierFrames(
@@ -3247,12 +3013,6 @@ internal object CcTransitionOwner {
             val motionCarrierGeometry: FloatArray,
             val motionCarrierWidth: Int,
             val representedSlots: Set<String>,
-            val source: String,
-        )
-
-        private data class CompatibilityOpticalTarget(
-            val view: View,
-            val source: String,
         )
 
         private data class TargetWitness(
@@ -3262,41 +3022,10 @@ internal object CcTransitionOwner {
             val subscriptionId: Int?,
             val requiresOpticalGeometry: Boolean,
             val fallbackBounds: StatusPainter.TransitionNormalizedBounds?,
-            val opticalSource: String,
             val textWeight: Int? = null,
             val textStyle: StatusPainter.TransitionTextStyle? = null,
             val preferFallbackGeometry: Boolean = false,
-        ) {
-            val summary: String
-                get() =
-                    slot +
-                        ":" +
-                        slotView.width +
-                        "x" +
-                        slotView.height +
-                        "/sub=" +
-                        (subscriptionId ?: -1) +
-                        "/opt=" +
-                        opticalSource +
-                        "/weight=" +
-                        (textWeight ?: -1) +
-                        "/fakeBold=" +
-                        (textStyle?.fakeBoldText ?: false) +
-                        "/scaleX=" +
-                        (textStyle?.textScaleX ?: -1f) +
-                        "/stroke=" +
-                        (textStyle?.strokeWidth ?: -1f) +
-                        "/style=" +
-                        (textStyle?.paintStyle?.name ?: "none") +
-                        ":" +
-                        (
-                            opticalView?.let { view ->
-                                (NativeParticipantAccess.resourceEntryName(view)
-                                    ?: view.javaClass.simpleName) +
-                                    ":" + view.width + "x" + view.height
-                            } ?: "none"
-                        )
-        }
+        )
 
         private data class MaskState(
             val view: WeakReference<View>,
@@ -3311,7 +3040,6 @@ internal object CcTransitionOwner {
                 finalRoot: ViewGroup,
                 sourceSnapshot: CcRenderSession.TransitionSourceSnapshot,
                 steadySourceWitness: TransitionSourceWitness?,
-                steadySourceLabel: String,
             ): Session? {
                 val fakeStatusIcons =
                     uniqueDescendant(fakeRoot, STATUS_ICON_CONTAINER_CLASS_NAME)
@@ -3376,17 +3104,6 @@ internal object CcTransitionOwner {
                                 motionCarrierGeometry = motionCarrierGeometry,
                                 motionCarrierWidth = witness.motionCarrier.width,
                                 representedSlots = witness.representedSlots.toSet(),
-                                source =
-                                    steadySourceLabel +
-                                        "-steady-end-slot+" +
-                                        if (
-                                            witness.positionHost.rootView ===
-                                            root.rootView
-                                        ) {
-                                            "same-root"
-                                        } else {
-                                            "cross-root"
-                                        },
                             )
                         }
                 return Session(

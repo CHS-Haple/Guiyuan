@@ -10,9 +10,6 @@ internal object CcTransitionPolicy {
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 
-    fun motionProgress(raw: Float): Float =
-        geometryProgress(raw)
-
     fun handoffMotionProgress(
         expansionProgress: Float,
         finalAppearanceAlpha: Float,
@@ -145,22 +142,7 @@ internal object CcTransitionPolicy {
             ?: valid(cachedTint)
     }
 
-    fun usesSemanticTransitionReservation(
-        sourceScene: SourceScene,
-        charging: Boolean = false,
-        nativeBatteryIslandActive: Boolean? = null,
-    ): Boolean =
-        when (sourceScene) {
-            SourceScene.HOME,
-            SourceScene.KEYGUARD,
-            -> true
-            SourceScene.UNKNOWN -> false
-        }
-
-    fun allowsNativeTransitionPaddingExpansion(
-        sourceScene: SourceScene,
-        genericIslandShowing: Boolean?,
-    ): Boolean =
+    fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
         when (sourceScene) {
             SourceScene.HOME,
             SourceScene.KEYGUARD,

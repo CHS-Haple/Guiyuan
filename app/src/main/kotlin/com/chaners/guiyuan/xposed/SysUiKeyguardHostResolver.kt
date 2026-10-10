@@ -69,6 +69,35 @@ internal object SysUiKeyguardHostResolver {
                 runCatching { field.get(resolved.host) as? Boolean }.getOrNull()
             }
 
+    // Native screen-off decision, sampled only by detailed AOD diagnostics.
+    internal fun sleepLinkageState(resolved: ResolvedHost): String? =
+        runCatching {
+            fun field(owner: Any, name: String): Any? =
+                findField(owner.javaClass, name)?.get(owner)
+
+            val dep = field(resolved.host, "mDep") ?: return@runCatching null
+            val lazy = field(dep, "dozeServiceHost") ?: return@runCatching null
+            val doze = lazy.javaClass.methods
+                .firstOrNull { it.name == "get" && it.parameterCount == 0 }
+                ?.invoke(lazy) ?: return@runCatching null
+            if (doze.javaClass.name !=
+                "com.android.keyguard.injector.DozeServiceHostInjector"
+            ) {
+                return@runCatching null
+            }
+            val cc = field(doze, "mControlCenter") ?: return@runCatching null
+            val expanded = cc.javaClass.methods
+                .firstOrNull { it.name == "getExpanded" && it.parameterCount == 0 }
+                ?.invoke(cc) ?: return@runCatching null
+            "ccExpanded=" + expanded +
+                ":linkage=" + field(doze, "mScreenOffNeedLinkageAnim") +
+                ":fullAod=" + field(doze, "mScreenOffNeedFullAodAnim") +
+                ":screenFade=" + field(doze, "mNeedScreenFade") +
+                ":dozeAfterOff=" + field(doze, "mShouldDozeAfterScreenOff") +
+                ":sleepReason=" + field(doze, "mSleepReason") +
+                ":interactive=" + field(doze, "mDeviceInteractive")
+        }.getOrNull()
+
     internal fun statusIconsPresentationAlpha(
         resolved: ResolvedHost,
     ): Float? {

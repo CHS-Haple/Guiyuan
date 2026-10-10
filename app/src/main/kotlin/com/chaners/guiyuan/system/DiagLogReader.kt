@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.system
 
+import android.content.Context
 import com.chaners.guiyuan.BuildConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
@@ -28,16 +31,17 @@ internal object DiagLogReader {
         val sessionLines: List<String>,
     )
 
-    suspend fun read(): Snapshot {
+    suspend fun read(context: Context): Snapshot = withContext(Dispatchers.Default) {
         val lspResult =
             RootShell.execute(
+                context = context,
                 command = LSP_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
         val lspLines = filterModuleLines(lspResult.output)
 
         if (lspLines.isNotEmpty()) {
-            return Snapshot(
+            return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
@@ -47,11 +51,12 @@ internal object DiagLogReader {
 
         val logcatResult =
             RootShell.execute(
+                context = context,
                 command = LOGCAT_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
-        val logcatLines = filterModuleLines(logcatResult.output)
-        return Snapshot(
+        val logcatLines = filterLogcatLines(logcatResult.output)
+        Snapshot(
             source = Source.LogcatFallback,
             result = logcatResult,
             lines = logcatLines,
@@ -68,6 +73,20 @@ internal object DiagLogReader {
             }
             .toList()
 
+    internal fun filterLogcatLines(output: String): List<String> =
+        output
+            .lineSequence()
+            .filter { line ->
+                if ("CombinedStatus" !in line) return@filter false
+                if ("com.chaners.guiyuan" in line) return@filter true
+
+                val entry = DiagLogParser.parse(line)
+                entry.framework == "logcat" &&
+                    entry.tag == "CombinedStatus" &&
+                    entry.structured
+            }
+            .toList()
+
     internal fun latestSession(lines: List<String>): List<String> {
         if (lines.isEmpty()) {
             return lines
@@ -75,6 +94,7 @@ internal object DiagLogReader {
 
         val sessionRefs =
             lines.mapIndexedNotNull { index, line ->
+                if ("sessionId=" !in line) return@mapIndexedNotNull null
                 DiagProtocol.parse(line)
                     ?.fields
                     ?.get("sessionId")

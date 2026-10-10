@@ -10,7 +10,9 @@ internal object SysUiHostRegistry {
     fun current(): Any? = statusHost.get()
 
     @Synchronized
-    fun restore(host: Any): Capture {
+    fun restore(host: Any): Capture? {
+        // A newer capture must never be replaced by an older transfer.
+        if (statusHost.get()?.let { it !== host } == true) return null
         statusHost = WeakReference(host)
         return Capture(
             host = host,

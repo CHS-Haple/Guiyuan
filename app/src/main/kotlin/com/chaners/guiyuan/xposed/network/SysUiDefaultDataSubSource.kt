@@ -74,10 +74,18 @@ internal object SysUiDefaultDataSubSource {
             }
         }
 
-        publish(
-            source = "seed",
-            force = true,
-        )
+        // Keep the seed even when registration fails, without retaining its callbacks.
+        try {
+            publish(
+                source = "seed",
+                force = true,
+            )
+        } finally {
+            if (receiver == null) {
+                this.onChanged = null
+                this.onEvent = null
+            }
+        }
         return receiver != null
     }
 

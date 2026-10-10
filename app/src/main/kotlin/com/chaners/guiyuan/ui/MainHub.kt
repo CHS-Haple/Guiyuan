@@ -1,11 +1,15 @@
 package com.chaners.guiyuan.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
@@ -15,10 +19,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -26,10 +32,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -46,10 +54,13 @@ import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -64,6 +75,11 @@ import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
+
+private enum class RestartDialog {
+    CONFIRM,
+    FAILURE,
+}
 
 private data class WeightedNavigationItem(
     val label: String,
@@ -86,7 +102,14 @@ internal fun MainHub(
 ) {
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var hotReloadInProgress by remember { mutableStateOf(false) }
+    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
+    var restartInProgress by remember { mutableStateOf(false) }
+    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
+    val onRestart = {
+        if (!restartInProgress) restartDialog = RestartDialog.CONFIRM
+    }
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
@@ -252,8 +275,10 @@ internal fun MainHub(
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
+                restartInProgress = restartInProgress,
+                onRestart = onRestart,
                 onHotReload = {
-                    if (!hotReloadInProgress) {
+                    if (!hotReloadInProgress && !restartInProgress) {
                         hotReloadInProgress = true
                         val accepted = onHotReload {
                             hotReloadInProgress = false
@@ -268,6 +293,66 @@ internal fun MainHub(
                 onSwipeBackChange = onSwipeBackChange,
                 previewState = previewState,
                 onNavigate = onNavigate,
+            )
+        }
+
+        OverlayDialog(
+            title = stringResource(R.string.restart_scope),
+            summary = stringResource(R.string.restart_scope_dialog_summary),
+            show = restartDialog == RestartDialog.CONFIRM,
+            onDismissRequest = {
+                restartAfterDialogDismiss = false
+                restartDialog = null
+            },
+            onDismissFinished = {
+                if (restartAfterDialogDismiss && !restartInProgress) {
+                    restartAfterDialogDismiss = false
+                    restartInProgress = true
+                    scope.launch {
+                        val success = SysUiScope.restart(context.applicationContext)
+                        restartInProgress = false
+                        (context.applicationContext as? GyApplication)?.refreshXposedStatus()
+                        if (!success) restartDialog = RestartDialog.FAILURE
+                    }
+                }
+            },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        restartAfterDialogDismiss = false
+                        restartDialog = null
+                    },
+                )
+                Spacer(Modifier.width(20.dp))
+                TextButton(
+                    text = stringResource(R.string.restart),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = {
+                        restartAfterDialogDismiss = true
+                        restartDialog = null
+                    },
+                )
+            }
+        }
+
+        OverlayDialog(
+            title = stringResource(R.string.restart_scope_failed),
+            summary = stringResource(R.string.restart_scope_failed_summary),
+            show = restartDialog == RestartDialog.FAILURE,
+            onDismissRequest = { restartDialog = null },
+        ) {
+            TextButton(
+                text = stringResource(R.string.confirm),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = { restartDialog = null },
             )
         }
     }
@@ -298,6 +383,8 @@ private fun TopLevelPager(
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    onRestart: () -> Unit,
     onHotReload: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
@@ -329,6 +416,8 @@ private fun TopLevelPager(
             0 -> HomeScreen(
                 bottomContentPadding = bottom,
                 hotReloadInProgress = hotReloadInProgress,
+                restartInProgress = restartInProgress,
+                onRestart = onRestart,
                 previewState = previewState,
                 onHotReload = onHotReload,
                 onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
@@ -342,6 +431,8 @@ private fun TopLevelPager(
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
+                restartInProgress = restartInProgress,
+                onRestart = onRestart,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,
                 onSwipeBackChange = onSwipeBackChange,

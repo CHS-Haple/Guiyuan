@@ -94,11 +94,11 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 ## Diagnostics loads on entry
 
-**Decision:** diagnostics starts background capture on entry, retains the last in-process snapshot, and uses only MIUIX pull-to-refresh for manual refresh feedback.
+**Decision:** diagnostics waits for the incoming navigation transition to settle before collecting logs, retains the last in-process snapshot, and uses only MIUIX pull-to-refresh for manual refresh feedback.
 
-**Why:** waiting for navigation to settle left a blank page, then inserted all log cards after the transition. LSPosed starts asynchronous collection on its log page; Guiyuan should not delay an already asynchronous read.
+**Why:** collecting logs during navigation can compete with page motion. The previous completed snapshot remains visible until the next capture is ready.
 
-**Consequence:** retain one completed snapshot in `GyApp` memory. The summary is absent before the first capture, then rises with the first log card, using the same Folme spring and reveal state; no transient loading label or extra spinner. After first loading or a manual refresh, cards appear in a short, top-down sequence: each moves upward by 12 dp with a MIUIX Folme spring, fully opaque, without expanding row heights or delaying log capture. Cached entries remain visible while refreshing.
+**Consequence:** retain one completed snapshot in `GyApp` memory. The summary is absent before the first capture, then rises with the first log card, using the same Folme spring and reveal state; no transient loading label or extra spinner. After first loading or a manual refresh, cards appear in a short, top-down sequence: each moves upward by 12 dp with a MIUIX Folme spring, fully opaque, without expanding row heights or adding a second UI-only delay. Cached entries remain visible while refreshing.
 
 ## Hot Reload is a generation handoff
 

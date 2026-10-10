@@ -128,6 +128,8 @@ internal object DiagProtocol {
 
     private const val Marker = "diag "
 
+    private val tokenWhitespace = Regex("\\s+")
+
     fun format(
         event: String,
         component: String,
@@ -166,7 +168,7 @@ internal object DiagProtocol {
             line
                 .substring(markerIndex + Marker.length)
                 .trim()
-                .split(Regex("\\s+"))
+                .split(tokenWhitespace)
                 .mapNotNull { token ->
                     val separator = token.indexOf('=')
                     if (separator <= 0 || separator == token.lastIndex) {

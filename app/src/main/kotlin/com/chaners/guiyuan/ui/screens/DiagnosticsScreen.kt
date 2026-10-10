@@ -128,7 +128,7 @@ internal fun DiagnosticsScreen(
     var refreshing by remember { mutableStateOf(false) }
     var viewCleared by rememberSaveable { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var reportBusy by rememberSaveable { mutableStateOf(false) }
+    var reportBusy by remember { mutableStateOf(false) }
     var exportOpen by rememberSaveable { mutableStateOf(false) }
     var levelFilter by rememberSaveable {
         mutableIntStateOf(LEVEL_ALL)
@@ -292,15 +292,15 @@ internal fun DiagnosticsScreen(
                                         )
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
-                            DiagFiles.logIntent(context, sendIntent, prepared.uri)
+                            DiagFiles.logIntent(sendIntent, prepared.uri)
                             val chooserIntent =
                                 Intent.createChooser(sendIntent, shareTitle).apply {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                             runCatching { context.startActivity(chooserIntent) }
-                                .onSuccess { DiagFiles.logChooser(context) }
+                                .onSuccess { DiagFiles.logChooser() }
                                 .onFailure { error ->
-                                    DiagFiles.logChooser(context, error)
+                                    DiagFiles.logChooser(error)
                                     DiagFiles.discard(context, prepared)
                                     snackbarHostState.showSnackbar(shareFailMsg)
                                 }
@@ -1265,7 +1265,7 @@ private fun reasonLabel(
     }
 
 private fun formatMicros(micros: Long): String =
-    if (micros >= 1_000L) {
+    if (micros >= 1_000L || micros <= -1_000L) {
         String.format(Locale.US, "%.2f ms", micros / 1_000.0)
     } else {
         "$micros μs"

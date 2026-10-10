@@ -37,9 +37,15 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
-    private val nativeCenterAssets = LinkedHashMap<String, NativeCenterAsset>(NATIVE_CENTER_CACHE_SIZE, 0.75f, true)
-    private val nativeTintVariantIds = HashMap<String, Int>()
-    private val nativeWifiReferenceIds = HashMap<String, Int>()
+    private val nativeCenterAssets =
+        LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
+            NATIVE_CENTER_CACHE_SIZE,
+            0.75f,
+            true,
+        )
+    private val nativeTintVariantIds = HashMap<Int, Int>()
+    private val nativeWifiReferenceIds = HashMap<Int, Int>()
+
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
     private var cachedBatteryTopTextWeight: Int = Int.MIN_VALUE
@@ -48,6 +54,8 @@ internal class StatusPainter(
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
+    private var cachedCenterVisual: VisualCfg? = null
+    private var cachedCenterGeometry: CenterGeometry.Resolved? = null
     private var cachedOuterWeightScale = Float.NaN
     private var cachedOuterGeometry =
         OuterGeometry.resolve(
@@ -74,6 +82,14 @@ internal class StatusPainter(
                 }
             }
         }
+
+    fun clearNativeResources() {
+        nativeCenterAssets.clear()
+        nativeTintVariantIds.clear()
+        nativeWifiReferenceIds.clear()
+        airplaneDrawableResolved = false
+        cachedAirplaneResourceId = 0
+    }
 
     fun draw(
         canvas: Canvas,
@@ -377,10 +393,6 @@ internal class StatusPainter(
 
         canvas.restoreToCount(save)
     }
-
-
-
-
 
     internal enum class TransitionComponent {
         BATTERY,
@@ -991,17 +1003,22 @@ internal class StatusPainter(
         )
     }
 
-    private fun resolveCenterGeometry(
-        visual: VisualCfg,
-    ): CenterGeometry.Resolved =
-        CenterGeometry.resolve(
+    private fun resolveCenterGeometry(visual: VisualCfg): CenterGeometry.Resolved {
+        if (cachedCenterVisual === visual) {
+            cachedCenterGeometry?.let { return it }
+        }
+        return CenterGeometry.resolve(
             wifiScale = visual.wifiScale,
             mobileTypeScale = visual.mobileTypeScale,
             airplaneScale = visual.airplaneScale,
             noSimScale = visual.noSimScale,
             mobileTypeWeight = visual.mobileTypeWeight,
             combinedScale = visual.combinedScale,
-        )
+        ).also { resolved ->
+            cachedCenterVisual = visual
+            cachedCenterGeometry = resolved
+        }
+    }
 
     private fun resolveOuterGeometry(weightScale: Float): OuterGeometry.Resolved {
         val normalized =
@@ -1206,7 +1223,7 @@ internal class StatusPainter(
                     TopSlotAvoidance(
                         bounds = resolved.opticalBounds,
                         components =
-                            resolved.opticalComponents
+                            resolved.opticalComponents()
                                 .ifEmpty { listOf(resolved.opticalBounds) },
                     )
                 } ?: resolveWifiFallbackAvoidance(geometry)
@@ -2358,9 +2375,8 @@ internal class StatusPainter(
             return null
         }
 
-        val key = resource.packageName + ":" + resource.resourceId
         val referenceId =
-            nativeWifiReferenceIds.getOrPut(key) {
+            nativeWifiReferenceIds.getOrPut(resource.resourceId) {
                 runCatching {
                     val drawableContext =
                         if (resource.packageName == context.packageName) {
@@ -2392,9 +2408,8 @@ internal class StatusPainter(
             return null
         }
 
-        val key = resource.packageName + ":" + resource.resourceId
         val tintResourceId =
-            nativeTintVariantIds.getOrPut(key) {
+            nativeTintVariantIds.getOrPut(resource.resourceId) {
                 runCatching {
                     val drawableContext =
                         context.createPackageContext(resource.packageName, 0)
@@ -2417,8 +2432,7 @@ internal class StatusPainter(
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
-        val key = resource.packageName + ":" + resource.resourceId
-        nativeCenterAssets[key]?.let { return it }
+        nativeCenterAssets[resource]?.let { return it }
 
         val asset =
             runCatching {
@@ -2451,7 +2465,7 @@ internal class StatusPainter(
             }.getOrNull()
                 ?: return null
 
-        nativeCenterAssets[key] = asset
+        nativeCenterAssets[resource] = asset
         if (nativeCenterAssets.size > NATIVE_CENTER_CACHE_SIZE) {
             val eldest = nativeCenterAssets.entries.iterator().next()
             nativeCenterAssets.remove(eldest.key)
@@ -2591,15 +2605,8 @@ internal class StatusPainter(
                     right = resolved.opticalRight,
                     bottom = resolved.opticalBottom,
                 ),
-            opticalComponents =
-                asset.opticalComponents.map { component ->
-                    TransitionBounds(
-                        left = drawLeft + component.left * resolved.drawWidth,
-                        top = drawTop + component.top * resolved.drawHeight,
-                        right = drawLeft + component.right * resolved.drawWidth,
-                        bottom = drawTop + component.bottom * resolved.drawHeight,
-                    )
-                },
+            drawLeft = drawLeft,
+            drawTop = drawTop,
         )
     }
 
@@ -3472,8 +3479,19 @@ internal class StatusPainter(
         val drawWidth: Float,
         val drawHeight: Float,
         val opticalBounds: TransitionBounds,
-        val opticalComponents: List<TransitionBounds>,
-    )
+        val drawLeft: Float,
+        val drawTop: Float,
+    ) {
+        fun opticalComponents(): List<TransitionBounds> =
+            asset.opticalComponents.map { component ->
+                TransitionBounds(
+                    left = drawLeft + component.left * drawWidth,
+                    top = drawTop + component.top * drawHeight,
+                    right = drawLeft + component.right * drawWidth,
+                    bottom = drawTop + component.bottom * drawHeight,
+                )
+            }
+    }
 
     private data class NativeOpticalSize(
         val width: Float,

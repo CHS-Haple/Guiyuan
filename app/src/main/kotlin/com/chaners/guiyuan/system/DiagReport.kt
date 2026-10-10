@@ -24,8 +24,26 @@ internal object DiagReport {
         val runtimeEvents = snapshot.runtimeEvents
         val logLines = lines.takeLast(limit)
         val requested = level.name.lowercase()
-        val diagnostics = runtimeEvents.component("diagnostics")
-        val effective = diagnostics?.fields?.get("level")
+        // Level changes do not carry binding state; keep their observations separate.
+        val diagnostics =
+            snapshot.entries
+                .asReversed()
+                .filter { entry ->
+                    entry.structured &&
+                        entry.component == "diagnostics" &&
+                        (runtimeEvents.sessionId == null ||
+                            entry.fields["sessionId"] == runtimeEvents.sessionId)
+                }
+        val runtimeLevel =
+            diagnostics.firstNotNullOfOrNull { it.fields["level"] } ?: "not-observed"
+        val runtimeBinding =
+            diagnostics.firstNotNullOfOrNull { entry ->
+                if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
+                    entry.state
+                } else {
+                    null
+                }
+            } ?: "not-observed"
         return buildString {
             appendLine("Guiyuan Diagnostic Report")
             appendLine()
@@ -47,7 +65,8 @@ internal object DiagReport {
             appendLine()
             appendLine("[Diagnostics state]")
             appendLine("requestedLevel=" + requested)
-            appendLine("runtimeLevel=" + (effective ?: "unavailable"))
+            appendLine("runtimeLevel=" + runtimeLevel)
+            appendLine("runtimeBinding=" + runtimeBinding)
             appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
             appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
             appendLine()
@@ -72,6 +91,7 @@ internal object DiagReport {
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)
             appendLine("collection=" + collectionState(log.result))
+            if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
             appendLine("lines=" + logLines.size)
             if (logLines.isEmpty()) {
                 appendLine("No Guiyuan runtime log entries were available.")

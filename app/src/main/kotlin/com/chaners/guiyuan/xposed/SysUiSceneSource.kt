@@ -16,7 +16,8 @@ internal object SysUiSceneSource {
 
     private const val HOOK_ID = "combinedstatus.scene.battery.updateState"
 
-    private val states = WeakHashMap<View, SceneUpdate>()
+    // Values must not retain the weak View keys.
+    private val states = WeakHashMap<View, Int>()
 
     @Volatile
     private var statusBarStateField: Field? = null
@@ -37,8 +38,6 @@ internal object SysUiSceneSource {
                 UPDATE_STATE_METHOD_NAME,
                 Int::class.javaPrimitiveType,
             ).apply { isAccessible = true }
-
-        statusBarStateField = stateField
 
         val handle =
             module
@@ -61,6 +60,7 @@ internal object SysUiSceneSource {
                         result
                     },
                 )
+        statusBarStateField = stateField
 
         return listOf(handle)
     }
@@ -94,38 +94,32 @@ internal object SysUiSceneSource {
     fun steadySourceScene(sourceView: View): SourceScene {
         var current: View? = sourceView
         while (current != null) {
-            when (current.javaClass.name) {
-                KEYGUARD_HOST_CLASS_NAME -> return SourceScene.KEYGUARD
-                HOME_HOST_CLASS_NAME -> return SourceScene.HOME
-            }
+            val scene = classifyHost(current.javaClass.name)
+            if (scene != SourceScene.UNKNOWN) return scene
             current = current.parent as? View
         }
         return SourceScene.UNKNOWN
     }
 
-    internal fun classifySteadySourceAncestors(
-        classNames: List<String>,
-    ): SourceScene =
-        when {
-            KEYGUARD_HOST_CLASS_NAME in classNames -> SourceScene.KEYGUARD
-            HOME_HOST_CLASS_NAME in classNames -> SourceScene.HOME
+    internal fun classifyHost(className: String): SourceScene =
+        when (className) {
+            StatusBarHostCapture.HOST_CLASS_NAME -> SourceScene.HOME
+            KEYGUARD_HOST_CLASS_NAME -> SourceScene.KEYGUARD
             else -> SourceScene.UNKNOWN
         }
 
     @Synchronized
-    fun currentState(sourceView: View): SceneUpdate? {
-        states[sourceView]?.let { return it }
-
-        val field = statusBarStateField ?: return null
+    fun currentSurface(sourceView: View): Surface? {
         val rawState =
-            runCatching { field.getInt(sourceView) }
-                .getOrNull()
-                ?: return null
-        return SceneUpdate(
-            sourceView = sourceView,
-            surface = classifyRawState(rawState),
-            rawState = rawState,
-        ).also { states[sourceView] = it }
+            states[sourceView]
+                ?: run {
+                    val field = statusBarStateField ?: return null
+                    runCatching { field.getInt(sourceView) }
+                        .getOrNull()
+                        ?.also { states[sourceView] = it }
+                        ?: return null
+                }
+        return classifyRawState(rawState)
     }
 
     @Synchronized
@@ -149,28 +143,25 @@ internal object SysUiSceneSource {
         onSceneState: (SceneUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
     ) {
+        synchronized(this) {
+            if (states[sourceView] == rawState) {
+                return
+            }
+            states[sourceView] = rawState
+        }
         val update =
             SceneUpdate(
                 sourceView = sourceView,
                 surface = classifyRawState(rawState),
                 rawState = rawState,
             )
-        val changed =
-            synchronized(this) {
-                states.put(sourceView, update) != update
-            }
-        if (!changed) {
-            return
-        }
-
         onSceneState(update)
         onEvent?.invoke(
             "sceneState source=" + source +
                 " raw=" + rawState +
                 " batteryState=" + update.surface.name +
                 " authority=battery-status-state-readonly" +
-                " homeVisibilityAuthority=host+panel-coordinator" +
-                "",
+                " homeVisibilityAuthority=host+panel-coordinator",
         )
     }
 
@@ -187,8 +178,6 @@ internal object SysUiSceneSource {
         val rawState: Int,
     )
 
-    private const val HOME_HOST_CLASS_NAME =
-        "com.android.systemui.statusbar.phone.MiuiNotificationStatusContainer"
     private const val KEYGUARD_HOST_CLASS_NAME =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
 
