@@ -530,18 +530,28 @@ internal object KeyguardRenderSession {
                 aodShown = false
                 observeAodVisibility(renderView)
             }
-            followIconAlpha = true
-            val observer = statusIcons.get()?.viewTreeObserver
-            if (observer?.isAlive == true) {
-                observer.addOnPreDrawListener(iconAlphaListener)
-                iconAlphaObserver = observer
+            if (!followIconAlpha) {
+                followIconAlpha = true
+                val observer = statusIcons.get()?.viewTreeObserver
+                if (observer?.isAlive == true) {
+                    observer.addOnPreDrawListener(iconAlphaListener)
+                    iconAlphaObserver = observer
+                }
             }
             syncNativeIconAlpha()
         }
 
         private fun syncNativeIconAlpha() {
-            if (!followIconAlpha) return
-            val alpha = statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: return
+            if (followIconAlpha) updateRenderAlpha()
+        }
+
+        private fun updateRenderAlpha() {
+            val alpha =
+                if (followIconAlpha) {
+                    statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: 1f
+                } else {
+                    1f
+                }
             if (renderView.alpha != alpha) renderView.alpha = alpha
         }
 
@@ -786,13 +796,8 @@ internal object KeyguardRenderSession {
                 // animation onto the whole combined visual: HyperOS animates
                 // Battery and status icons as separate children, and Battery may
                 // legitimately reach alpha=0 during a family scene transfer.
-                // Follow SystemUI's real status-icon fade, not Battery's separate AOD fade.
-                renderView.alpha =
-                    if (followIconAlpha) {
-                        statusIcons.get()?.alpha?.coerceIn(0f, 1f) ?: 1f
-                    } else {
-                        1f
-                    }
+                // Battery fades separately; the combined icon follows native status icons.
+                updateRenderAlpha()
             }
             renderView.visibility = if (visible) View.VISIBLE else View.GONE
             if (visible) {
