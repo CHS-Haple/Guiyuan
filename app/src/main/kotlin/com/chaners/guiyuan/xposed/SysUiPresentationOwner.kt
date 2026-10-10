@@ -142,6 +142,12 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
+    fun releaseAodBatteryMask(host: SysUiKeyguardHostResolver.ResolvedHost) {
+        if (!aodClaimed(host)) return
+        keyguardFamilyCurrent?.releaseAodBatteryMask()
+    }
+
+    @Synchronized
     fun updateCcSourceScene(sourceScene: SourceScene) {
         if (controlCenterSourceScene == sourceScene) return
         controlCenterSourceScene = sourceScene
@@ -1394,6 +1400,7 @@ internal object SysUiPresentationOwner {
         private var batteryWidthUnavailable = false
         private var persistentIgnoredSlotsApplied = false
         private var aodPeersReleased = false
+        private var aodBatteryReleased = false
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String> = emptyList()
         private var transitionRequestedSlotWidthPx: Int? = null
@@ -1457,7 +1464,7 @@ internal object SysUiPresentationOwner {
             surfaceName: String,
             eventPrefix: String,
         ) {
-            if (aodPeersReleased && this.surfaceName != surfaceName) {
+            if ((aodPeersReleased || aodBatteryReleased) && this.surfaceName != surfaceName) {
                 onAodIconTransition(toLockScreen = false)
             }
             this.surfaceName = surfaceName
@@ -1468,6 +1475,7 @@ internal object SysUiPresentationOwner {
             active &&
                 (
                     persistentIgnoredSlotsApplied ||
+                        aodBatteryReleased ||
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
                 )
@@ -1669,6 +1677,27 @@ internal object SysUiPresentationOwner {
             return masked
         }
 
+        fun releaseAodBatteryMask() {
+            if (!active || !started || aodBatteryReleased) return
+            val nativeBattery = battery.get()
+                ?: run {
+                    onFailNative("aod-battery-view-released")
+                    return
+                }
+            val clip = clipStates.firstOrNull { it.view.get() === nativeBattery }
+                ?: run {
+                    onFailNative("aod-battery-mask-missing")
+                    return
+                }
+            if (!restoreClipState(clip)) {
+                onFailNative("aod-battery-mask-restore-failed")
+                return
+            }
+            clipStates.remove(clip)
+            aodBatteryReleased = true
+            onEvent(eventPrefix + " battery=native owner=original-aod-mode-exit")
+        }
+
         fun onAodIconTransition(toLockScreen: Boolean) {
             if (!active || !started) return
             if (toLockScreen) {
@@ -1684,15 +1713,17 @@ internal object SysUiPresentationOwner {
                 }
                 onEvent(eventPrefix + " peers=original-icons owner=native-keyguard-animation")
             } else {
-                if (!aodPeersReleased) return
+                if (!aodPeersReleased && !aodBatteryReleased) return
+                val reclaimPeers = aodPeersReleased
                 val group = statusIcons.get()
                     ?: run {
                         onFailNative("aod-peer-status-group-released")
                         return
                     }
                 aodPeersReleased = false
+                aodBatteryReleased = false
                 refreshClipMasks()
-                if (!applyPersistentIgnoredSlots(group)) return
+                if (reclaimPeers && !applyPersistentIgnoredSlots(group)) return
                 onEvent(eventPrefix + " peers=guiyuan-aod owner=representation")
             }
         }
@@ -1726,6 +1757,7 @@ internal object SysUiPresentationOwner {
             }
             lifecycle = Lifecycle.STOPPED
             aodPeersReleased = false
+            aodBatteryReleased = false
             layoutReadyCallback = null
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
@@ -2680,7 +2712,7 @@ internal object SysUiPresentationOwner {
                 }
 
             val targets = linkedSetOf<View>()
-            targets += batteryView
+            if (!aodBatteryReleased) targets += batteryView
             if (!aodPeersReleased) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)

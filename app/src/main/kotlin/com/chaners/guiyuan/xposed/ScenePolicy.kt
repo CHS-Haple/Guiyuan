@@ -100,6 +100,17 @@ internal object ScenePolicy {
         AOD,
     }
 
+    // Follow native battery alpha only after it leaves AOD mode.
+    fun outgoingAodAlpha(
+        nativeToAod: Boolean?,
+        nativeBatteryAlpha: Float?,
+    ): Float =
+        if (nativeToAod == false && nativeBatteryAlpha?.isFinite() == true) {
+            1f - nativeBatteryAlpha.coerceIn(0f, 1f)
+        } else {
+            1f
+        }
+
     enum class AodPeerAction {
         NONE,
         RELEASE,

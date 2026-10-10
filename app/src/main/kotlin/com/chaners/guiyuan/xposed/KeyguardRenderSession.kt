@@ -290,6 +290,7 @@ internal object KeyguardRenderSession {
         NONE,
         FOLLOW,
         INVERSE,
+        BATTERY_EXIT,
     }
 
     private class Session(
@@ -521,7 +522,17 @@ internal object KeyguardRenderSession {
         fun onNativeIconTransition(toLockScreen: Boolean) {
             if (scene == Scene.AOD) {
                 if (toLockScreen && !FeaturePrefsOwner.current().keyguard) {
-                    trackIconAlpha(IconAlphaMode.INVERSE)
+                    trackIconAlpha(
+                        if (
+                            batteryView.get()?.let(
+                                SysUiKeyguardAodSource::usesAnimatedBatteryMode,
+                            ) == true
+                        ) {
+                            IconAlphaMode.BATTERY_EXIT
+                        } else {
+                            IconAlphaMode.INVERSE
+                        },
+                    )
                 } else if (!toLockScreen) {
                     stopFollowingIconAlpha()
                     applyResolvedVisibility()
@@ -567,6 +578,14 @@ internal object KeyguardRenderSession {
                     IconAlphaMode.NONE -> 1f
                     IconAlphaMode.FOLLOW -> nativeAlpha
                     IconAlphaMode.INVERSE -> 1f - nativeAlpha
+                    IconAlphaMode.BATTERY_EXIT -> {
+                        val battery = batteryView.get()
+                        ScenePolicy.outgoingAodAlpha(
+                            nativeToAod =
+                                battery?.let(SysUiKeyguardAodSource::currentState)?.toAod,
+                            nativeBatteryAlpha = battery?.alpha,
+                        )
+                    }
                 }
             if (renderView.alpha != alpha) renderView.alpha = alpha
         }

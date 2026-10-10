@@ -7,6 +7,19 @@ import org.junit.Test
 
 class SceneAodPolicyTest {
     @Test
+    fun outgoingAodRingFollowsNativeBatteryOnlyAfterModeExit() {
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(true, 0.85f), 0f)
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(null, 0f), 0f)
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, 0f), 0f)
+        assertEquals(0.6f, ScenePolicy.outgoingAodAlpha(false, 0.4f), 0.0001f)
+        assertEquals(0f, ScenePolicy.outgoingAodAlpha(false, 1f), 0f)
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, -0.5f), 0f)
+        assertEquals(0f, ScenePolicy.outgoingAodAlpha(false, 1.5f), 0f)
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, null), 0f)
+        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, Float.NaN), 0f)
+    }
+
+    @Test
     fun aodProjectionRequiresEnabledStableOrPrearmedTarget() {
         assertTrue(
             ScenePolicy.aodProjectionEligible(

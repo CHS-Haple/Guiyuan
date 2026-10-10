@@ -2526,6 +2526,21 @@ class GyModule : XposedModule() {
         }
 
         val settings = FeaturePrefsOwner.current()
+        if (
+            settings.enabled && settings.aod && !settings.keyguard &&
+            !update.toAod &&
+            SysUiKeyguardAodSource.usesAnimatedBatteryMode(update.sourceView)
+        ) {
+            val resolved =
+                SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready
+            if (
+                resolved != null && resolved.host.battery === update.sourceView &&
+                SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved.host) == true
+            ) {
+                SysUiPresentationOwner.releaseAodBatteryMask(resolved.host)
+            }
+        }
         // Battery toAod is not the destination while native animateFullAod runs.
         val activateHomeNativeAodFallback =
             aodWindow !is AodWindow.Running &&
