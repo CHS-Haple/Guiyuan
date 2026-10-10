@@ -1,10 +1,10 @@
 name: Build
 run-name: >-
   ${{ github.event_name == 'pull_request'
-      && format('CI | PR #{0} to {1}', github.event.pull_request.number, github.base_ref)
+      && format('{0} | CI #{1}', github.event.pull_request.title, github.event.pull_request.number)
       || github.event_name == 'push'
-      && format('CI | {0}', github.ref_name)
-      || 'CI | manual' }}
+      && format('ci: Validate {0} | CI', github.ref_name)
+      || 'ci: Manual validation | CI' }}
 
 on:
   push:
