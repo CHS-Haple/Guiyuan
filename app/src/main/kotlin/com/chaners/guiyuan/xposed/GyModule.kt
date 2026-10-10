@@ -1845,6 +1845,19 @@ class GyModule : XposedModule() {
             "homePresentationOwnedAtStart" to homeOwnedAtStart,
             "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
         )
+        if (detailedDiagnosticsEnabled) {
+            val host =
+                (SysUiKeyguardHostResolver.current()
+                    as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
+            logDiagnostic(
+                level = Log.INFO,
+                event = "aod.nativeSleepLinkage",
+                component = "keyguardAod",
+                state = "sampled",
+                "source" to "animateFullAod:before",
+                "native" to host?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+            )
+        }
     }
 
     private fun onFullAodCommitted() {
@@ -2040,6 +2053,8 @@ class GyModule : XposedModule() {
                 "ccFakeVisual" to CcRenderSession.visualState(),
                 "ccTransitionVisual" to CcTransitionOwner.visualState(),
                 "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                "nativeSleepLinkage" to
+                    SysUiKeyguardHostResolver.sleepLinkageState(resolution.host),
                 "nativeKeyguardShown" to resolution.host.host.isShown,
                 "nativeStatusShown" to resolution.host.statusIcons.isShown,
                 "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
@@ -2545,6 +2560,11 @@ class GyModule : XposedModule() {
                     state = "sampled",
                     "source" to "native-battery-mode",
                     "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                    "nativeSleepLinkage" to
+                        (SysUiKeyguardHostResolver.current()
+                            as? SysUiKeyguardHostResolver.ResolveResult.Ready)
+                            ?.host
+                            ?.let(SysUiKeyguardHostResolver::sleepLinkageState),
                     "ccVisible" to controlCenterSceneVisible,
                     "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
                     "familyVisual" to KeyguardRenderSession.visualState(),
