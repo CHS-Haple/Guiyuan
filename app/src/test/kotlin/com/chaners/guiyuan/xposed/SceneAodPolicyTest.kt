@@ -664,10 +664,31 @@ class SceneAodPolicyTest {
                 isAodAnimate = false,
             ),
         )
+        assertFalse(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = false,
+                toAod = true,
+                isAodAnimate = true,
+            ),
+        )
         assertTrue(
             ScenePolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = true,
+                isAodAnimate = false,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = true,
+                toAod = true,
+                isAodAnimate = false,
+            ),
+        )
+        assertTrue(
+            ScenePolicy.fullAodPendingTargetReachedStableState(
+                pendingTargetToLockScreen = true,
+                toAod = false,
                 isAodAnimate = false,
             ),
         )

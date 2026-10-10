@@ -36,13 +36,22 @@ class GyModule : XposedModule() {
         val visibleAtArm: Boolean = false,
     )
 
+    private enum class AodBoundary {
+        NONE,
+        PENDING,
+        REACHED,
+    }
+
     private sealed interface AodWindow {
         val boundaryPending: Boolean
 
         data class Running(
-            override val boundaryPending: Boolean,
+            val boundary: AodBoundary,
             val homeOwnedAtStart: Boolean,
-        ) : AodWindow
+        ) : AodWindow {
+            override val boundaryPending: Boolean
+                get() = boundary == AodBoundary.PENDING
+        }
 
         data class Waiting(
             val toLockScreen: Boolean,
@@ -1848,7 +1857,7 @@ class GyModule : XposedModule() {
                 settings.keyguard != settings.aod
         aodWindow =
             AodWindow.Running(
-                boundaryPending = boundaryPending,
+                boundary = if (boundaryPending) AodBoundary.PENDING else AodBoundary.NONE,
                 homeOwnedAtStart = homeOwnedAtStart,
             )
 
@@ -1888,6 +1897,9 @@ class GyModule : XposedModule() {
     private fun onFullAodCommitted() {
         val running = aodWindow as? AodWindow.Running
         val boundaryPending = running?.boundaryPending == true
+        // The native icon boundary can run before animateFullAod returns.
+        val boundaryTracked =
+            running?.boundary?.let { it != AodBoundary.NONE } == true
         val homeOwnedAtStart = running?.homeOwnedAtStart == true
         val settings = FeaturePrefsOwner.current()
         val resolution = SysUiKeyguardHostResolver.current()
@@ -1902,8 +1914,12 @@ class GyModule : XposedModule() {
             (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
                 ?.host
                 ?.let { holdKeyguardForAodBattery(it, settings) } == true
+        val awaitBattery =
+            boundaryTracked &&
+                (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
+                    ?.host?.battery?.let(SysUiKeyguardAodSource::usesAnimatedBatteryMode) == true
         aodWindow =
-            if (target != null && (boundaryPending || holdNativeBattery)) {
+            if (target != null && (awaitBattery || holdNativeBattery)) {
                 AodWindow.Waiting(target, boundaryPending)
             } else {
                 null
@@ -1927,6 +1943,7 @@ class GyModule : XposedModule() {
             "source" to "animateFullAod:after",
             "authority" to "native-mToLockScreen",
             "visualBoundaryPending" to (aodWindow?.boundaryPending == true),
+            "waitingForBatteryMode" to (aodWindow is AodWindow.Waiting),
             "homeOriginLatched" to homeAodOriginPending,
             "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
             "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),
@@ -1998,7 +2015,7 @@ class GyModule : XposedModule() {
                         when (val state = aodWindow) {
                             is AodWindow.Running ->
                                 state.copy(
-                                    boundaryPending = false,
+                                    boundary = AodBoundary.NONE,
                                     homeOwnedAtStart = false,
                                 )
                             is AodWindow.Waiting -> null
@@ -2117,7 +2134,14 @@ class GyModule : XposedModule() {
         // The visual boundary can finish before animateFullAod itself does.
         aodWindow =
             when (val state = aodWindow) {
-                is AodWindow.Running -> state.copy(boundaryPending = false)
+                is AodWindow.Running ->
+                    state.copy(
+                        boundary = if (state.boundary == AodBoundary.PENDING) {
+                            AodBoundary.REACHED
+                        } else {
+                            state.boundary
+                        },
+                    )
                 is AodWindow.Waiting -> state.copy(boundaryPending = false)
                 null -> null
             }
@@ -2487,15 +2511,28 @@ class GyModule : XposedModule() {
         update: SysUiKeyguardAodSource.AodUpdate,
     ) {
         val waiting = aodWindow as? AodWindow.Waiting
-        if (
-            waiting != null &&
-            !update.isAodAnimate &&
-            ScenePolicy.fullAodPendingTargetReachedStableState(
-                pendingTargetToLockScreen = waiting.toLockScreen,
-                toAod = update.toAod,
-                isAodAnimate = update.isAodAnimate,
-            )
-        ) {
+        if (waiting != null && !update.isAodAnimate) {
+            if (
+                !ScenePolicy.fullAodPendingTargetReachedStableState(
+                    pendingTargetToLockScreen = waiting.toLockScreen,
+                    toAod = update.toAod,
+                    isAodAnimate = update.isAodAnimate,
+                )
+            ) {
+                // A canceled native animation may report its old stable battery state.
+                if (detailedDiagnosticsEnabled) {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "aod.staleBattery",
+                        component = "keyguardAod",
+                        state = "ignored",
+                        "source" to update.source,
+                        "batteryToAod" to update.toAod,
+                        "pendingTarget" to if (waiting.toLockScreen) "keyguard" else "aod",
+                    )
+                }
+                return
+            }
             aodWindow = null
         }
 
