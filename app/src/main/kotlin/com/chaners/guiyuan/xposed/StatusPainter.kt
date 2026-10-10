@@ -251,6 +251,7 @@ internal class StatusPainter(
         batteryNumberTargetStyle: TransitionTextStyle? = null,
         centerTargetTextWeight: Int? = null,
         centerTargetTextStyle: TransitionTextStyle? = null,
+        centerNativeTarget: Boolean = false,
         batteryRingExitDirection: BatteryRingTransitionPolicy.ExitDirection =
             BatteryRingTransitionPolicy.ExitDirection.NONE,
     ) {
@@ -357,6 +358,7 @@ internal class StatusPainter(
                     scaleMobileTypeWithCanvas = false,
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
+                    mobileTypeNativeTarget = centerNativeTarget,
                 )
             }
 
@@ -1879,6 +1881,7 @@ internal class StatusPainter(
         targetWeight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,
+        nativeTargetAvailable: Boolean = false,
         visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
@@ -1906,6 +1909,7 @@ internal class StatusPainter(
                 scaleWithCanvas = false,
                 targetStyle = targetStyle,
                 transitionProgress = progress,
+                nativeTargetAvailable = nativeTargetAvailable,
             ).bounds
         val local =
             if (visual.layout == ContentLayout.BATTERY_CENTER) {
@@ -2246,6 +2250,7 @@ internal class StatusPainter(
         scaleMobileTypeWithCanvas: Boolean,
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
+        mobileTypeNativeTarget: Boolean = false,
     ) {
         if (appearAmount <= 0f) {
             return
@@ -2285,6 +2290,7 @@ internal class StatusPainter(
                     scaleWithCanvas = scaleMobileTypeWithCanvas,
                     targetStyle = mobileTypeTargetStyle,
                     transitionProgress = mobileTypeTransitionProgress,
+                    nativeTargetAvailable = mobileTypeNativeTarget,
                 )
 
             CenterIndicator.Airplane ->
@@ -2779,6 +2785,7 @@ internal class StatusPainter(
         scaleWithCanvas: Boolean,
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
+        nativeTargetAvailable: Boolean = false,
     ) {
         val layout =
             resolveMobileTypeLayout(
@@ -2788,6 +2795,7 @@ internal class StatusPainter(
                 scaleWithCanvas = scaleWithCanvas,
                 targetStyle = targetStyle,
                 transitionProgress = transitionProgress,
+                nativeTargetAvailable = nativeTargetAvailable,
             )
 
         paint.style = Paint.Style.FILL
@@ -2832,6 +2840,7 @@ internal class StatusPainter(
         scaleWithCanvas: Boolean,
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
+        nativeTargetAvailable: Boolean = false,
     ): MobileTypeLayout {
         val normalized = indicator.label.trim().uppercase()
         val split =
@@ -2861,13 +2870,21 @@ internal class StatusPainter(
                 combinedScale = geometry.combinedScale,
                 scaleWithCanvas = scaleWithCanvas,
             )
-        val suffixTextSize =
+        val baseSuffixSize =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixSize,
                 canvasScale = scale,
                 combinedScale = geometry.combinedScale,
                 scaleWithCanvas = scaleWithCanvas,
             )
+        val suffixMorph =
+            MobileTypeSuffixPolicy.morphProgress(
+                main = split.first,
+                suffix = split.second,
+                nativeTargetAvailable = nativeTargetAvailable,
+                progress = transitionProgress,
+            )
+        val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
         configureTransitionTextStyle(
             sourceTypeface = mobileTypeTypeface(geometry.mobileTypeWeight),
@@ -2941,9 +2958,11 @@ internal class StatusPainter(
                     suffix = split.second,
                     magnitude = suffixOffset,
                 )
-        val suffixBaselineY =
+        val sourceSuffixBaseline =
             suffixCenterY -
                 (mobileTypeSuffixBounds.top + mobileTypeSuffixBounds.bottom) / 2f
+        val suffixBaselineY =
+            sourceSuffixBaseline + (mainBaselineY - sourceSuffixBaseline) * suffixMorph
 
         return MobileTypeLayout(
             main = split.first,

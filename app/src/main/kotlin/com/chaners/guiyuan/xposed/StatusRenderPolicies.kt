@@ -63,6 +63,18 @@ internal object MobileTypeScalePolicy {
 }
 
 internal object MobileTypeSuffixPolicy {
+    fun morphProgress(
+        main: String,
+        suffix: String,
+        nativeTargetAvailable: Boolean,
+        progress: Float,
+    ): Float =
+        if (main == "5G" && suffix == "A" && nativeTargetAvailable && progress.isFinite()) {
+            progress.coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+
     fun verticalOffset(
         suffix: String,
         magnitude: Float,

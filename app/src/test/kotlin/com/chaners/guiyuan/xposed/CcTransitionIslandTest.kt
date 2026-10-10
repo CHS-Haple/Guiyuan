@@ -36,18 +36,38 @@ class CcTransitionIslandTest {
     }
 
     @Test
-    fun nonBatteryIslandKeepsLiveExitDirection() {
-        BatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
+    fun nonBatteryIslandUsesLiveDirectionOrRowFallback() {
+        val policy = CcTransitionPolicy
+        val left = BatteryRingTransitionPolicy.ExitDirection.LEFT
+        val right = BatteryRingTransitionPolicy.ExitDirection.RIGHT
+        val none = BatteryRingTransitionPolicy.ExitDirection.NONE
+        listOf(left, right).forEach { live ->
             assertEquals(
                 live,
-                CcTransitionPolicy
-                    .batteryRingExitDirection(
-                        liveCenterDirection = live,
-                        nativeBatteryIslandActive = false,
-                        targetRowRtl = false,
-                    ),
+                policy.batteryRingExitDirection(
+                    liveCenterDirection = live,
+                    nativeBatteryIslandActive = false,
+                    targetRowRtl = false,
+                ),
             )
         }
+
+        assertEquals(
+            left,
+            policy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
+        )
+        assertEquals(
+            right,
+            policy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = true,
+            ),
+        )
     }
 
     @Test

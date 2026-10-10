@@ -185,8 +185,8 @@ internal object StatusStateStore {
             return current
         }
 
-        // Newly installed hooks may report battery changes before the saved state is restored.
-        val observedBattery = current.battery
+        // New hooks can report state before the saved snapshot is restored.
+        val observed = current
         val battery =
             if (bundle.getBoolean(KEY_BATTERY_PRESENT, false)) {
                 BatteryState(
@@ -254,13 +254,13 @@ internal object StatusStateStore {
         current =
             Snapshot(
                 battery = battery,
-                wifi = wifi,
-                mobile = mobile,
+                wifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi,
+                mobile = mobile.apply { putAll(observed.mobile) },
                 airplaneMode = airplane,
                 mobileRecoveryPending =
                     bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
             )
-        observedBattery?.let(::updateBattery)
+        observed.battery?.let(::updateBattery)
         return current
     }
 

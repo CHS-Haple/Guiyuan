@@ -476,6 +476,9 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
+        // A new hook can bind a reused root before the old generation hands it over.
+        val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
         wifiRoots.clear()
         mobileRoots.clear()
         lastWifiEvents.clear()
@@ -483,9 +486,7 @@ internal object SysUiNetworkSource {
         lastMobileEvents.clear()
 
         val payload = raw as? Array<*>
-            ?: return BindingRestoreResult(wifiRoots = 0, mobileRoots = 0)
-
-        val wifi = payload.getOrNull(0) as? List<*>
+        val wifi = payload?.getOrNull(0) as? List<*>
         wifi.orEmpty().forEach { value ->
             val pair = value as? Array<*>
             val root =
@@ -503,7 +504,7 @@ internal object SysUiNetworkSource {
             }
         }
 
-        val mobile = payload.getOrNull(1) as? List<*>
+        val mobile = payload?.getOrNull(1) as? List<*>
         mobile.orEmpty().forEach { value ->
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
@@ -513,6 +514,8 @@ internal object SysUiNetworkSource {
             }
         }
 
+        wifiRoots.putAll(newWifi)
+        mobileRoots.putAll(newMobile)
         return BindingRestoreResult(
             wifiRoots = wifiRoots.size,
             mobileRoots = mobileRoots.size,
@@ -1081,7 +1084,8 @@ internal object SysUiNetworkSource {
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.toString() + ":" + valueText
+                // A native icon view may be rebound to a different SIM.
+                val eventKey = "$subscriptionId:$classId:$valueText"
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
