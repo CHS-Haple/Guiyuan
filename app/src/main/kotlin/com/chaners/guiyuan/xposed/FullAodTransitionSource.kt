@@ -17,7 +17,7 @@ internal object FullAodTransitionSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onTransitionStarted: () -> Unit,
-        onTransitionCommitted: () -> Unit,
+        onTransitionCommitted: (Boolean?) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
@@ -53,9 +53,9 @@ internal object FullAodTransitionSource {
                         onTransitionStarted()
                         val result = chain.proceed()
 
-                        // Direction is read from mToLockScreen only after native
-                        // code returns. Raw arguments remain diagnostics only.
-                        onTransitionCommitted()
+                        // Native owns the target direction; arg1 states whether
+                        // completion can arrive asynchronously.
+                        onTransitionCommitted(rawArg1)
                         onEvent?.invoke(
                             "keyguardFullAod source=animateFullAod" +
                                 " arg0=" + (rawArg0 ?: "unavailable") +

@@ -1894,7 +1894,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onFullAodCommitted() {
+    private fun onFullAodCommitted(animated: Boolean?) {
         val running = aodWindow as? AodWindow.Running
         val boundaryPending = running?.boundaryPending == true
         // The native icon boundary can run before animateFullAod returns.
@@ -1914,8 +1914,9 @@ class GyModule : XposedModule() {
             (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
                 ?.host
                 ?.let { holdKeyguardForAodBattery(it, settings) } == true
+        // The non-animated native branch completes battery mode inside proceed().
         val awaitBattery =
-            boundaryTracked &&
+            animated == true && boundaryTracked &&
                 (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
                     ?.host?.battery?.let(SysUiKeyguardAodSource::usesAnimatedBatteryMode) == true
         aodWindow =
@@ -1944,6 +1945,7 @@ class GyModule : XposedModule() {
             "authority" to "native-mToLockScreen",
             "visualBoundaryPending" to (aodWindow?.boundaryPending == true),
             "waitingForBatteryMode" to (aodWindow is AodWindow.Waiting),
+            "nativeAnimated" to animated,
             "homeOriginLatched" to homeAodOriginPending,
             "homeNativeAodFallbackCandidate" to (homeAodFallback == HomeAodFallback.CANDIDATE),
             "homeNativeAodFallbackActive" to (homeAodFallback == HomeAodFallback.ACTIVE),

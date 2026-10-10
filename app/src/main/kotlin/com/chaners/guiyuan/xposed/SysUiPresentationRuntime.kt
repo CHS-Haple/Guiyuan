@@ -64,7 +64,7 @@ internal object SysUiPresentationRuntime {
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
-        onKeyguardFullAodTransitionCommitted: () -> Unit,
+        onKeyguardFullAodTransitionCommitted: (Boolean?) -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
