@@ -2332,8 +2332,10 @@ class GyModule : XposedModule() {
         }
 
         val settings = FeaturePrefsOwner.current()
+        // Battery toAod is not the destination while native animateFullAod runs.
         val activateHomeNativeAodFallback =
-            ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
+            aodWindow !is AodWindow.Running &&
+                ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = (homeAodFallback == HomeAodFallback.CANDIDATE),
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
