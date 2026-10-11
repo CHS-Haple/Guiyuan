@@ -410,15 +410,11 @@ internal object SysUiPresentationOwner {
         val hideField =
             batteryHideField
                 ?: return Result.Failure("battery-hide-field-unavailable")
-        val baseSlotWidthPx =
-            SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
-                ?: return Result.Failure("battery-core-width-unavailable")
+        SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
+            ?: return Result.Failure("battery-core-width-unavailable")
 
-        @Suppress("UNCHECKED_CAST")
-        val list =
-            runCatching { field.get(statusIcons) as? MutableList<String> }.getOrNull()
-                ?: return Result.Failure("ignored-slots-list-unavailable")
-        list.size
+        runCatching { field.get(statusIcons) as? MutableList<*> }.getOrNull()
+            ?: return Result.Failure("ignored-slots-list-unavailable")
 
         val existing = current
         if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
@@ -590,13 +586,10 @@ internal object SysUiPresentationOwner {
         SysUiCarrierMetrics.resolveWidthPx(resolved.batteryCarrier)
             ?: return Result.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
-        @Suppress("UNCHECKED_CAST")
-        val list =
-            runCatching { field.get(resolved.statusIcons) as? MutableList<String> }.getOrNull()
-                ?: return Result.Failure(
-                    surface.surfaceName + "-ignored-slots-list-unavailable",
-                )
-        list.size
+        runCatching { field.get(resolved.statusIcons) as? MutableList<*> }.getOrNull()
+            ?: return Result.Failure(
+                surface.surfaceName + "-ignored-slots-list-unavailable",
+            )
 
         keyguardFamilyEventSink = onEvent
         keyguardFamilyFailNativeSink = onFailNative
@@ -774,14 +767,11 @@ internal object SysUiPresentationOwner {
                 retryAfterLayout = true,
             )
 
-        @Suppress("UNCHECKED_CAST")
-        val list =
-            runCatching { field.get(statusIcons) as? MutableList<String> }.getOrNull()
-                ?: return Result.Failure(
-                    "ignored-slots-list-unavailable",
-                    retryAfterLayout = true,
-                )
-        list.size
+        runCatching { field.get(statusIcons) as? MutableList<*> }.getOrNull()
+            ?: return Result.Failure(
+                "ignored-slots-list-unavailable",
+                retryAfterLayout = true,
+            )
 
         controlCenterEventSink = onEvent
         controlCenterFailNativeSink = onFailNative
@@ -2666,9 +2656,6 @@ internal object SysUiPresentationOwner {
         ) {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return
             val normalized = if (active) hiddenSlots.toSet() else emptySet()
-            val changed =
-                steadyPeerMirrorActive != active ||
-                    steadyPeerMirrorHiddenSlots != normalized
             steadyPeerMirrorActive = active
             steadyPeerMirrorHiddenSlots = normalized
             if (!active) {
