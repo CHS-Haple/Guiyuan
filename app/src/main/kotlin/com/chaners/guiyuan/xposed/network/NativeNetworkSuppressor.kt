@@ -1196,16 +1196,12 @@ internal object NativeNetworkSuppressor {
     fun preMaskMobileSignal(image: ImageView): Boolean {
         val homeGroup = activeGroup?.get()
         if (
-            !NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
-                suppressionActive =
-                    activeManager != null &&
-                        mobileSuppressionEnabled,
-                belongsToActiveHomeGroup =
-                    homeGroup != null &&
-                        isDescendantOf(
-                            view = image,
-                            ancestor = homeGroup,
-                        ),
+            activeManager == null ||
+            !mobileSuppressionEnabled ||
+            homeGroup == null ||
+            !isDescendantOf(
+                view = image,
+                ancestor = homeGroup,
             )
         ) {
             return false

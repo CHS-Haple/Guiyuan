@@ -195,29 +195,5 @@ class NetworkSuppressionPolicyTest {
         )
     }
 
-    @Test
-    fun mobilePreMaskRequiresActiveHomeOwnership() {
-        assertEquals(
-            true,
-            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
-                suppressionActive = true,
-                belongsToActiveHomeGroup = true,
-            ),
-        )
-        assertEquals(
-            false,
-            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
-                suppressionActive = true,
-                belongsToActiveHomeGroup = false,
-            ),
-        )
-        assertEquals(
-            false,
-            NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
-                suppressionActive = false,
-                belongsToActiveHomeGroup = true,
-            ),
-        )
-    }
 
 }

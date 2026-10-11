@@ -60,10 +60,4 @@ internal object NetworkSuppressionPolicy {
     internal fun isVisibleTint(color: Int): Boolean =
         color ushr 24 != 0
 
-    internal fun shouldPreMaskMobileSignal(
-        suppressionActive: Boolean,
-        belongsToActiveHomeGroup: Boolean,
-    ): Boolean =
-        suppressionActive && belongsToActiveHomeGroup
-
 }
