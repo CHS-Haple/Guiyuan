@@ -1,54 +1,43 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
-import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -73,9 +62,60 @@ internal fun AboutScreen(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
-    val backgroundActive by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val heroHeightPx = with(density) { 316.dp.toPx() }
+    val density = LocalDensity.current
+    val backdrop = rememberLayerBackdrop()
+    val blur = remember { isRuntimeShaderSupported() }
+    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
+    val logoBlend = remember(isDark) {
+        if (isDark) {
+            listOf(
+                BlendColorEntry(Color(0xe6a1a1a1), BlurBlendMode.ColorDodge),
+                BlendColorEntry(Color(0x4de6e6e6), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af500), BlurBlendMode.Lab),
+            )
+        } else {
+            listOf(
+                BlendColorEntry(Color(0xcc4a4a4a), BlurBlendMode.ColorBurn),
+                BlendColorEntry(Color(0xff4f4f4f), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af200), BlurBlendMode.Lab),
+            )
+        }
+    }
+    var heroHeight by remember { mutableStateOf(200.dp) }
+    var spacerBottom by remember { mutableFloatStateOf(0f) }
+    var iconBottom by remember { mutableFloatStateOf(0f) }
+    var nameBottom by remember { mutableFloatStateOf(0f) }
+    var versionBottom by remember { mutableFloatStateOf(0f) }
+    val spacerHeight = heroHeight + 218.dp
+    val scrollProgress by remember {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex > 0) 1f
+            else (listState.firstVisibleItemScrollOffset / with(density) { spacerHeight.toPx() })
+                .coerceIn(0f, 1f)
+        }
+    }
+    val visible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    val collapse by remember {
+        derivedStateOf {
+            val offset = listState.firstVisibleItemScrollOffset.toFloat()
+            if (listState.firstVisibleItemIndex > 0) {
+                Triple(1f, 1f, 1f)
+            } else if (spacerBottom <= versionBottom ||
+                versionBottom <= nameBottom || nameBottom <= iconBottom
+            ) {
+                Triple(0f, 0f, 0f)
+            } else {
+                val first = spacerBottom - versionBottom
+                val second = versionBottom - nameBottom
+                val third = nameBottom - iconBottom
+                Triple(
+                    ((offset - first * 0.5f) / (first * 0.5f)).coerceIn(0f, 1f),
+                    ((offset - first) / second).coerceIn(0f, 1f),
+                    ((offset - first - second) / third).coerceIn(0f, 1f),
+                )
+            }
+        }
+    }
     var showRepoUnavailable by rememberSaveable { mutableStateOf(false) }
     val env by
         produceState(
@@ -89,16 +129,29 @@ internal fun AboutScreen(
         title = stringResource(R.string.about_title),
         onBack = onBack,
         listState = listState,
-        background = {
+        titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
+        background = { padding ->
             BgEffectBackground(
-                dynamicBackground = backgroundActive,
+                dynamicBackground = visible,
                 modifier = Modifier.fillMaxSize(),
+                bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 isFullSize = true,
-                alpha = {
-                    if (listState.firstVisibleItemIndex > 0) 0f
-                    else 1f - (listState.firstVisibleItemScrollOffset / heroHeightPx).coerceIn(0f, 1f)
-                },
-            ) {}
+                alpha = { 1f - scrollProgress },
+            ) {
+                AboutHero(
+                    topPadding = padding.calculateTopPadding(),
+                    active = visible,
+                    backdrop = if (blur) backdrop else null,
+                    logoBlend = logoBlend,
+                    versionProgress = collapse.first,
+                    nameProgress = collapse.second,
+                    iconProgress = collapse.third,
+                    onHeight = { heroHeight = it },
+                    onIconBottom = { if (iconBottom == 0f) iconBottom = it },
+                    onNameBottom = { if (nameBottom == 0f) nameBottom = it },
+                    onVersionBottom = { if (versionBottom == 0f) versionBottom = it },
+                )
+            }
         },
         overlay = {
             OverlayDialog(
@@ -116,8 +169,17 @@ internal fun AboutScreen(
             }
         },
     ) {
-        item(key = "aboutHero") {
-            AboutHero()
+        item(key = "logoSpacer") {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(spacerHeight)
+                    .onGloballyPositioned { coords ->
+                        if (spacerBottom == 0f && listState.firstVisibleItemScrollOffset == 0) {
+                            spacerBottom = coords.positionInWindow().y + coords.size.height
+                        }
+                    },
+            )
         }
         Section(R.string.section_app) {
             BasicComponent(
@@ -435,106 +497,3 @@ private fun AboutDependencyPreference(
     )
 }
 
-@Composable
-private fun AboutHero() {
-    Column(
-        modifier = Modifier.fillMaxWidth().height(316.dp).padding(top = 28.dp, bottom = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        GuiyuanAnimatedIdentityMark(markSize = 116.dp, interactive = true)
-        Text(
-            text = stringResource(R.string.product_name),
-            modifier = Modifier.padding(top = 12.dp),
-            fontSize = 36.sp,
-            fontWeight = FontWeight.Bold,
-            color = MiuixTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "v${BuildConfig.VERSION_NAME}",
-            modifier = Modifier.padding(top = 4.dp),
-            fontSize = 14.sp,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        )
-        Text(
-            text = stringResource(R.string.about_logo_hold_hint),
-            modifier = Modifier.padding(top = 10.dp),
-            fontSize = 12.sp,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-        )
-    }
-}
-
-@Composable
-private fun GuiyuanAnimatedIdentityMark(
-    markSize: Dp = 64.dp,
-    interactive: Boolean = false,
-) {
-    var boosted by remember { mutableStateOf(false) }
-    val speed by animateFloatAsState(
-        targetValue = if (boosted) 4f else 1f,
-        animationSpec = folmeSpring(damping = 1f, response = if (boosted) 0.65f else 0.9f),
-        label = "aboutOrbitSpeed",
-    )
-    val currentSpeed by rememberUpdatedState(speed)
-    var orbitRotation by remember { mutableFloatStateOf(0f) }
-
-    LaunchedEffect(Unit) {
-        var previous = withFrameNanos { it }
-        while (true) {
-            val now = withFrameNanos { it }
-            // A resumed frame must not turn a long pause into an angular jump.
-            val delta = (now - previous).coerceIn(0L, 50_000_000L) / 1_000_000_000f
-            previous = now
-            orbitRotation = (orbitRotation - 18f * currentSpeed * delta) % 360f
-        }
-    }
-    val pressModifier =
-        if (interactive) {
-            Modifier.pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        try {
-                            tryAwaitRelease()
-                        } finally {
-                            boosted = false
-                        }
-                    },
-                    onLongPress = { boosted = true },
-                )
-            }
-        } else {
-            Modifier
-        }
-
-    val painter = painterResource(R.drawable.ic_launcher_foreground)
-    val tint = MiuixTheme.colorScheme.onSurfaceContainer
-
-    Box(
-        modifier = Modifier.size(markSize).then(pressModifier),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(
-            modifier = Modifier.size(markSize),
-        ) {
-            val targetSize =
-                Size(
-                    width = size.width * 1.8f,
-                    height = size.height * 1.8f,
-                )
-            val left = (size.width - targetSize.width) / 2f
-            val top = (size.height - targetSize.height) / 2f
-
-            rotate(degrees = orbitRotation, pivot = center) {
-                translate(left = left, top = top) {
-                    with(painter) {
-                        draw(
-                            size = targetSize,
-                            colorFilter = ColorFilter.tint(tint),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
