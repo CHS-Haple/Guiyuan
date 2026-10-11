@@ -211,6 +211,7 @@ internal fun SettingsPage(
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
+    foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -291,6 +292,7 @@ internal fun SettingsPage(
             } else {
                 SettingsList()
             }
+            foreground(contentPadding)
         }
 
         overlay()
