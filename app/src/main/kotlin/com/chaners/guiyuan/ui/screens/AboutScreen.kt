@@ -19,6 +19,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
