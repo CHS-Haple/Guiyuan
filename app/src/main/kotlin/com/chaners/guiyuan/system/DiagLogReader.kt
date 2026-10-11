@@ -111,7 +111,8 @@ internal object DiagLogReader {
                 } else {
                     val id = event.fields["sessionId"]
                     val first =
-                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }?.first
+                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }
+                            ?.first
                     first != null && (latestStart == null || first > latestStart.first)
                 }
             }

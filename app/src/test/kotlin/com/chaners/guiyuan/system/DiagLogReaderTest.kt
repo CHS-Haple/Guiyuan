@@ -133,14 +133,19 @@ class DiagLogReaderTest {
         )
     }
 
-
     @Test
     fun failedHotReloadBeforeModuleReloadedStillSelectsNewGeneration() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
             "10-11 20:15:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    component =
+                        when {
+                            kind.startsWith("module.") -> "module"
+                            kind == "diagnostics.bind" -> "diagnostics"
+                            kind == "runtime.teardown" -> "runtimeSession"
+                            else -> "hotReload"
+                        },
                     state = state,
                     fields = mapOf("sessionId" to session),
                 )
