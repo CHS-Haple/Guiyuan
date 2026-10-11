@@ -92,28 +92,35 @@ internal object DiagLogReader {
             return lines
         }
 
+        var newestStartSession: String? = null
         val sessionRefs =
             lines.mapIndexedNotNull { index, line ->
                 if ("sessionId=" !in line) return@mapIndexedNotNull null
-                DiagProtocol.parse(line)
-                    ?.fields
-                    ?.get("sessionId")
-                    ?.let { sessionId -> index to sessionId }
+                DiagProtocol.parse(line)?.let { event ->
+                    event.fields["sessionId"]?.let { sessionId ->
+                        if (event.event == "module.loaded" || event.event == "module.reloaded") {
+                            newestStartSession = sessionId
+                        }
+                        index to sessionId
+                    }
+                }
             }
-        val sessionId = sessionRefs.lastOrNull()?.second
+        val sessionId = newestStartSession ?: sessionRefs.lastOrNull()?.second
         if (sessionId != null) {
             val start =
-                sessionRefs.firstOrNull { (_, id) ->
-                    id == sessionId
-                }?.first
+                sessionRefs.firstOrNull { (_, id) -> id == sessionId }?.first
                     ?: return lines
+            val stale =
+                sessionRefs.asSequence()
+                    .filter { (index, id) -> index >= start && id != sessionId }
+                    .map { it.first }
+                    .toSet()
             val pid = pidOf(lines[start])
-            if (pid == null) {
-                return lines.drop(start)
-            }
             return lines
                 .subList(start, lines.size)
-                .filter { line -> pidOf(line) == pid }
+                .filterIndexed { index, line ->
+                    index + start !in stale && (pid == null || pidOf(line) == pid)
+                }
         }
 
         val buildToken = "build=" + BuildConfig.BUILD_ID
