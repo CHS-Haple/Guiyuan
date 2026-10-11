@@ -7,8 +7,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
-import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
@@ -26,6 +24,8 @@ import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -256,7 +256,8 @@ class GyApplication :
                 feature =
                     FeatureCfg(
                         enabled = featurePrefs.getBoolean(FEATURE_ENABLED_KEY, true),
-                        keyguard = featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
+                        keyguard =
+                            featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
                         aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
                     ),
                 changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
