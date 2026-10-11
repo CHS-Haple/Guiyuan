@@ -556,15 +556,21 @@ internal object KeyguardRenderSession {
         }
 
         private fun trackIconAlpha(mode: IconAlphaMode) {
-            if (iconAlphaMode == IconAlphaMode.NONE) {
-                val observer = statusIcons.get()?.viewTreeObserver
-                if (observer?.isAlive == true) {
-                    observer.addOnPreDrawListener(iconAlphaListener)
-                    iconAlphaObserver = observer
-                }
-            }
             iconAlphaMode = mode
+            bindIconAlphaObserver()
             syncNativeIconAlpha()
+        }
+
+        private fun bindIconAlphaObserver() {
+            if (iconAlphaMode == IconAlphaMode.NONE) return
+            val owner = systemIcons.get()?.takeIf { it.isAttachedToWindow } ?: return
+            val observer = owner.viewTreeObserver
+            if (observer === iconAlphaObserver && observer.isAlive) return
+            clearIconAlphaObserver()
+            if (observer.isAlive) {
+                observer.addOnPreDrawListener(iconAlphaListener)
+                iconAlphaObserver = observer
+            }
         }
 
         private fun syncNativeIconAlpha() {
@@ -592,6 +598,10 @@ internal object KeyguardRenderSession {
 
         private fun stopFollowingIconAlpha() {
             iconAlphaMode = IconAlphaMode.NONE
+            clearIconAlphaObserver()
+        }
+
+        private fun clearIconAlphaObserver() {
             iconAlphaObserver
                 ?.takeIf { it.isAlive }
                 ?.removeOnPreDrawListener(iconAlphaListener)
@@ -700,10 +710,13 @@ internal object KeyguardRenderSession {
         }
 
         override fun onViewAttachedToWindow(view: View) {
+            bindIconAlphaObserver()
+            syncNativeIconAlpha()
             layoutProbe()
         }
 
         override fun onViewDetachedFromWindow(view: View) {
+            clearIconAlphaObserver()
             if (layoutReady) {
                 layoutReady = false
                 dispatchPresentationReadiness("host-detached")
