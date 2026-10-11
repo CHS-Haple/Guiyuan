@@ -1,10 +1,22 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
+import top.yukonga.miuix.kmp.anim.folmeSpring
+import top.yukonga.miuix.kmp.basic.Text
+import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -60,6 +72,10 @@ internal fun AboutScreen(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val listState = rememberLazyListState()
+    val backgroundActive by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val heroHeightPx = with(density) { 316.dp.toPx() }
     var showRepoUnavailable by rememberSaveable { mutableStateOf(false) }
     val env by
         produceState(
@@ -72,6 +88,18 @@ internal fun AboutScreen(
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
+        listState = listState,
+        background = {
+            BgEffectBackground(
+                dynamicBackground = backgroundActive,
+                modifier = Modifier.fillMaxSize(),
+                isFullSize = true,
+                alpha = {
+                    if (listState.firstVisibleItemIndex > 0) 0f
+                    else 1f - (listState.firstVisibleItemScrollOffset / heroHeightPx).coerceIn(0f, 1f)
+                },
+            ) {}
+        },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.about_repo_unavailable_title),
@@ -88,6 +116,9 @@ internal fun AboutScreen(
             }
         },
     ) {
+        item(key = "aboutHero") {
+            AboutHero()
+        }
         Section(R.string.section_app) {
             BasicComponent(
                 title = stringResource(R.string.product_name),
@@ -405,30 +436,86 @@ private fun AboutDependencyPreference(
 }
 
 @Composable
-private fun GuiyuanAnimatedIdentityMark() {
-    val orbitRotation by
-        rememberInfiniteTransition(label = "guiyuanIdentityOrbit").animateFloat(
-            initialValue = 0f,
-            targetValue = -360f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        tween(
-                            durationMillis = 20_000,
-                            easing = LinearEasing,
-                        ),
-                ),
-            label = "guiyuanIdentityOrbitRotation",
+private fun AboutHero() {
+    Column(
+        modifier = Modifier.fillMaxWidth().height(316.dp).padding(top = 28.dp, bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        GuiyuanAnimatedIdentityMark(markSize = 116.dp, interactive = true)
+        Text(
+            text = stringResource(R.string.product_name),
+            modifier = Modifier.padding(top = 12.dp),
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            color = MiuixTheme.colorScheme.onSurface,
         )
+        Text(
+            text = "v${BuildConfig.VERSION_NAME}",
+            modifier = Modifier.padding(top = 4.dp),
+            fontSize = 14.sp,
+            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        )
+        Text(
+            text = stringResource(R.string.about_logo_hold_hint),
+            modifier = Modifier.padding(top = 10.dp),
+            fontSize = 12.sp,
+            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+        )
+    }
+}
+
+@Composable
+private fun GuiyuanAnimatedIdentityMark(
+    markSize: Dp = 64.dp,
+    interactive: Boolean = false,
+) {
+    var boosted by remember { mutableStateOf(false) }
+    val speed by animateFloatAsState(
+        targetValue = if (boosted) 4f else 1f,
+        animationSpec = folmeSpring(damping = 1f, response = if (boosted) 0.65f else 0.9f),
+        label = "aboutOrbitSpeed",
+    )
+    val currentSpeed by rememberUpdatedState(speed)
+    var orbitRotation by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        var previous = withFrameNanos { it }
+        while (true) {
+            val now = withFrameNanos { it }
+            // A resumed frame must not turn a long pause into an angular jump.
+            val delta = (now - previous).coerceIn(0L, 50_000_000L) / 1_000_000_000f
+            previous = now
+            orbitRotation = (orbitRotation - 18f * currentSpeed * delta) % 360f
+        }
+    }
+    val pressModifier =
+        if (interactive) {
+            Modifier.pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            boosted = false
+                        }
+                    },
+                    onLongPress = { boosted = true },
+                )
+            }
+        } else {
+            Modifier
+        }
+
     val painter = painterResource(R.drawable.ic_launcher_foreground)
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
 
     Box(
-        modifier = Modifier.size(64.dp),
+        modifier = Modifier.size(markSize).then(pressModifier),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(markSize),
         ) {
             val targetSize =
                 Size(
@@ -438,10 +525,7 @@ private fun GuiyuanAnimatedIdentityMark() {
             val left = (size.width - targetSize.width) / 2f
             val top = (size.height - targetSize.height) / 2f
 
-            rotate(
-                degrees = orbitRotation,
-                pivot = center,
-            ) {
+            rotate(degrees = orbitRotation, pivot = center) {
                 translate(left = left, top = top) {
                     with(painter) {
                         draw(
