@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
 import com.chaners.guiyuan.settings.DiagLevel
+import com.chaners.guiyuan.settings.isDiagKey
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
@@ -68,7 +69,7 @@ class GyApplication :
 
     private val diagListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == DIAG_LEVEL_KEY) {
+            if (isDiagKey(key)) {
                 xposedService?.let(::syncRuntime)
             }
         }
