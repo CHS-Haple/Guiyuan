@@ -34,8 +34,4 @@ internal object SysUiHostHook {
             handle = handle,
             onCaptured = onCaptured,
         ).also { ready = true }
-
-    fun markUnavailable() {
-        ready = false
-    }
 }

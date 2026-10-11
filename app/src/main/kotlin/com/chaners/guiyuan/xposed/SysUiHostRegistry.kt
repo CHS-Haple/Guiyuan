@@ -16,7 +16,6 @@ internal object SysUiHostRegistry {
         statusHost = WeakReference(host)
         return Capture(
             host = host,
-            className = host.javaClass.name,
             identity = System.identityHashCode(host),
             replacement = false,
         )
@@ -32,7 +31,6 @@ internal object SysUiHostRegistry {
         statusHost = WeakReference(host)
         return Capture(
             host = host,
-            className = host.javaClass.name,
             identity = System.identityHashCode(host),
             replacement = previous != null,
         )
@@ -40,7 +38,6 @@ internal object SysUiHostRegistry {
 
     internal data class Capture(
         val host: Any,
-        val className: String,
         val identity: Int,
         val replacement: Boolean,
     )
