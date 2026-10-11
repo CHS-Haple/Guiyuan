@@ -34,7 +34,7 @@
 
 ## Maintainability baseline
 
-The initial repository-wide screening is not proof of a completed line-by-line audit. The reviewed source and runtime changes from [#329](https://github.com/CHS-Haple/Guiyuan/pull/329) are now part of the accepted `dev` baseline through #381; its redundant PR was closed. The systematic evidence-based audit [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) remains open for unreviewed files and risks.
+The bounded evidence-based maintainability phase [#328](https://github.com/CHS-Haple/Guiyuan/issues/328) is closed after repository-wide screening, focused call-chain and lifecycle reviews, and reviewed cleanups through #422. This is not proof of a completed line-by-line review or full HyperOS runtime verification. The accepted changes from [#329](https://github.com/CHS-Haple/Guiyuan/pull/329) are integrated; its redundant PR was closed. Continue scoped maintainability review for each non-trivial change, rather than treating #328 as an endless repository-wide blocker.
 
 Current rules:
 - prefer concise, scope-appropriate names over modifier/suffix stacking;
@@ -60,4 +60,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Continue the evidence-based audit in #328 from the integrated Build 885 `dev` tree, keeping `main` as a separate stable promotion boundary. The historical UI/5GA/mobile draft candidates #335/#336/#340/#341 have been consolidated into this source tree; do not re-merge their old branches. Review future runtime changes from current `dev`, and request focused device evidence only when necessary.
+Continue evidence-backed product and runtime work from the accepted Build 885 `dev` tree, with `main` retained as the separate stable promotion boundary. Keep applying CONTRIBUTING's full-diff, call-chain and maintainability reviews to each meaningful change. Review suspected duplicate native alpha writers, unusual host/AOD rebinds or visual-cache growth only when concrete source or device evidence warrants action; #348/#359/#375 remain independent observation items. The historical UI/5GA/mobile draft candidates #335/#336/#340/#341 are already integrated; do not re-merge their old branches.
