@@ -120,8 +120,7 @@ internal object SettingsEntryHook {
             }.getOrNull() ?: continue
 
             var artwork: Drawable.ConstantState? = null
-            var loaded = false
-            var mode = -1
+            var nightMode = -1
             var warned = false
             module.hook(getView).setId(ICON_HOOK_ID).intercept(Hooker { chain ->
                 val result = chain.proceed()
@@ -139,9 +138,8 @@ internal object SettingsEntryHook {
                     val image = view as? ImageView ?: return@runCatching
                     val night = row.resources.configuration.uiMode and
                         android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                    if (!loaded || mode != night) {
-                        loaded = true
-                        mode = night
+                    if (nightMode != night) {
+                        nightMode = night
                         artwork = createIcon(row.context, style)?.constantState
                     }
                     artwork?.newDrawable(row.resources)?.mutate()?.let(image::setImageDrawable)

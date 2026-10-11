@@ -23,7 +23,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -141,7 +140,7 @@ internal fun MainHub(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var hotReloadInProgress by remember { mutableStateOf(false) }
-    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
+    var restartDialog by remember { mutableStateOf<RestartDialog?>(null) }
     var restartInProgress by remember { mutableStateOf(false) }
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
@@ -438,36 +437,44 @@ internal fun MainHub(
                         },
                     )
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
+                if (availableTargets.isEmpty()) {
                     TextButton(
-                        text = stringResource(
-                            if (selectedTargets == availableTargets) {
-                                R.string.restart_scope_clear_all
-                            } else {
-                                R.string.restart_scope_select_all
+                        text = stringResource(R.string.confirm),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { restartDialog = null },
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        TextButton(
+                            text = stringResource(
+                                if (selectedTargets == availableTargets) {
+                                    R.string.restart_scope_clear_all
+                                } else {
+                                    R.string.restart_scope_select_all
+                                },
+                            ),
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedTargets =
+                                    if (selectedTargets == availableTargets) emptySet()
+                                    else availableTargets
                             },
-                        ),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            selectedTargets =
-                                if (selectedTargets == availableTargets) emptySet()
-                                else availableTargets
-                        },
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
-                        text = stringResource(R.string.restart),
-                        modifier = Modifier.weight(1f),
-                        enabled = selectedTargets.isNotEmpty(),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                        onClick = {
-                            queuedRestart = selectedTargets intersect availableTargets
-                            restartDialog = null
-                        },
-                    )
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        TextButton(
+                            text = stringResource(R.string.restart),
+                            modifier = Modifier.weight(1f),
+                            enabled = selectedTargets.isNotEmpty(),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            onClick = {
+                                queuedRestart = selectedTargets intersect availableTargets
+                                restartDialog = null
+                            },
+                        )
+                    }
                 }
             }
         }
