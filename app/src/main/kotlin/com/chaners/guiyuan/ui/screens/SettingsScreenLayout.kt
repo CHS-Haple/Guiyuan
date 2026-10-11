@@ -8,6 +8,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
@@ -207,6 +208,7 @@ internal fun SettingsPage(
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
+    background: @Composable BoxScope.() -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -252,6 +254,7 @@ internal fun SettingsPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
+            background()
             val contentPadding =
                 pageContentPadding(
                     innerPadding = paddingValues,
