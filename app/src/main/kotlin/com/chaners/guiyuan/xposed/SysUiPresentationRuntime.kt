@@ -93,6 +93,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
                     onEvent = onKeyguardAodEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
                 onKeyguardAodEvent?.invoke(
@@ -110,6 +111,7 @@ internal object SysUiPresentationRuntime {
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
                     onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
                     onEvent = onKeyguardAodEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
                 onKeyguardAodEvent?.invoke(
@@ -126,6 +128,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
                     onEvent = onKeyguardAodEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
                 onKeyguardAodEvent?.invoke(
@@ -143,6 +146,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onSceneState = onSceneState,
                     onEvent = onSceneEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
                 sceneFailure = error.message ?: error.javaClass.simpleName
