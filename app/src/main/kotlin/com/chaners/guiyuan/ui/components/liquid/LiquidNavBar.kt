@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -151,11 +152,13 @@ internal fun LiquidNavBar(
                 (constraints.maxWidth.toFloat() - 8.dp.toPx()) / tabsCount
             }
 
+        val widthPx = rememberUpdatedState(constraints.maxWidth)
+        val tabWidthPx = rememberUpdatedState(tabWidth)
         val offsetAnim = remember { Animatable(0f) }
         val panelOffset by remember(density) {
             derivedStateOf {
                 val fraction =
-                    (offsetAnim.value / constraints.maxWidth)
+                    (offsetAnim.value / widthPx.value)
                         .fastCoerceIn(-1f, 1f)
                 with(density) {
                     4.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
@@ -164,12 +167,14 @@ internal fun LiquidNavBar(
         }
 
         val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
+        val currentLtr = rememberUpdatedState(ltr)
         val scope = rememberCoroutineScope()
         var currentIndex by remember(selectedIndex) {
             mutableIntStateOf(selectedIndex())
         }
         val motion =
-            remember(scope) {
+            // The tab count owns the animation range; dimensions remain live.
+            remember(scope, tabsCount) {
                 LiquidDragMotion(
                     scope = scope,
                     initialValue = selectedIndex().toFloat(),
@@ -195,7 +200,7 @@ internal fun LiquidNavBar(
                         updateValue(
                             (
                                 targetValue +
-                                    dragAmount.x / tabWidth * if (ltr) 1f else -1f
+                                    dragAmount.x / tabWidthPx.value * if (currentLtr.value) 1f else -1f
                             ).fastCoerceIn(0f, (tabsCount - 1).toFloat()),
                         )
                         scope.launch {
@@ -221,17 +226,17 @@ internal fun LiquidNavBar(
         }
 
         val highlight =
-            remember(scope) {
+            remember(scope, motion, density) {
                 LiquidHighlight(
                     scope = scope,
                     position = { size, _ ->
                         Offset(
                             x =
-                                if (ltr) {
-                                    (motion.value + 0.5f) * tabWidth + panelOffset
+                                if (currentLtr.value) {
+                                    (motion.value + 0.5f) * tabWidthPx.value + panelOffset
                                 } else {
                                     size.width -
-                                        (motion.value + 0.5f) * tabWidth +
+                                        (motion.value + 0.5f) * tabWidthPx.value +
                                         panelOffset
                                 },
                             y = size.height / 2f,
