@@ -8,6 +8,22 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-11
+
+### Changed
+- Refined the Home runtime-status card with an actionable SystemUI restart path and an Xposed scope-request route when supported, while retaining explicit pending/unavailable states.
+- Improved native-target status transitions, including verified 5GA text targets and SIM-scoped mobile updates. Missing or incompatible targets continue to fail native.
+- Updated Liquid navigation layout tracking so its motion follows the current width and layout direction without creating a second motion owner.
+
+### Fixed
+- Rebound the retained Keyguard/AOD icon-alpha observer after host detachment and reattachment, keeping one active listener tied to the current View tree.
+- Hardened Hot Reload network-state restoration and preference propagation across service binding, changes and failures, preserving the authoritative current settings.
+- Kept diagnostic logs from separate Hot Reload generations in the same SystemUI process distinguishable, including takeover failure events preceding a successful reload marker.
+
+### Engineering
+- Completed a bounded maintainability cleanup with evidence-backed dead-code, resource and test simplification; routine per-change maintainability review remains required.
+- Updated build tooling to Gradle 9.8.1, Kotlin 2.4.21 and pinned Actions artifact upload 7.0.2, retaining the verified MIUIX snapshot.
+
 ## [0.5.0] - 2026-10-08
 
 ### Added
