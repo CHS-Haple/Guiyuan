@@ -1178,15 +1178,10 @@ internal object NativeNetworkSuppressor {
         var masked = 0
         mobileVisualMasks.forEach { state ->
             val view = state.view.get() ?: return@forEach
-            val targetAlpha =
-                NetworkSuppressionPolicy.mobileVisualMaskAlpha(
-                    nativeAlpha = state.nativeAlpha,
-                    suppressionActive = true,
-                )
-            if (view.alpha != targetAlpha) {
-                view.alpha = targetAlpha
+            if (view.alpha != 0f) {
+                view.alpha = 0f
             }
-            if (view.alpha == targetAlpha) {
+            if (view.alpha == 0f) {
                 masked += 1
             }
         }
