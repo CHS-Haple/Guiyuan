@@ -93,28 +93,6 @@ class NetworkSuppressionPolicyTest {
         )
 
     @Test
-    fun activeMobileVisualMaskMakesNativeSignalContainerTransparent() {
-        assertEquals(
-            0f,
-            NetworkSuppressionPolicy.mobileVisualMaskAlpha(
-                nativeAlpha = 1f,
-                suppressionActive = true,
-            ),
-        )
-    }
-
-    @Test
-    fun inactiveMobileVisualMaskPreservesNativeAlpha() {
-        assertEquals(
-            0.65f,
-            NetworkSuppressionPolicy.mobileVisualMaskAlpha(
-                nativeAlpha = 0.65f,
-                suppressionActive = false,
-            ),
-        )
-    }
-
-    @Test
     fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
         assertEquals(
             true,
