@@ -59,7 +59,7 @@ internal object FullAodTransitionSource {
                         // code returns. Raw arguments remain diagnostics only.
                         onTransitionCommitted()
                         if (detailed) {
-                            onEvent(
+                            onEvent?.invoke(
                                 "keyguardFullAod source=animateFullAod" +
                                     " arg0=" + (rawArg0 ?: "unavailable") +
                                     " arg1=" + (rawArg1 ?: "unavailable"),
