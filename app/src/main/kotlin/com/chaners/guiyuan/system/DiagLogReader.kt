@@ -92,6 +92,7 @@ internal object DiagLogReader {
             return lines
         }
 
+        // Old-generation teardown may arrive after the new session starts.
         var newestStartSession: String? = null
         val sessionRefs =
             lines.mapIndexedNotNull { index, line ->
