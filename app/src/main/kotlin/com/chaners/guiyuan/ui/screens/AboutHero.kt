@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -208,7 +209,6 @@ internal fun GuiyuanAnimatedIdentityMark(
 
     val painter = painterResource(R.drawable.ic_launcher_foreground)
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
-    val waveTint = MiuixTheme.colorScheme.primary
     Box(
         modifier = Modifier
             .size(markSize)
@@ -219,10 +219,14 @@ internal fun GuiyuanAnimatedIdentityMark(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.matchParentSize()) {
-            val progress = wave.value
-            drawWave(waveTint, progress, 0.38f)
-            drawWave(waveTint, (progress - 0.2f) / 0.8f, 0.23f)
+        if (wave.isRunning) {
+            // Only sample the larger backdrop while the one-shot ripple is moving.
+            Canvas(Modifier.requiredSize(markSize * 3.8f).then(effectModifier)) {
+                val progress = wave.value
+                val diameter = markSize.toPx()
+                drawWave(tint, progress, 0.30f, diameter)
+                drawWave(tint, (progress - 0.2f) / 0.8f, 0.18f, diameter)
+            }
         }
         Box(Modifier.matchParentSize().clipToBounds()) {
             Canvas(Modifier.matchParentSize().then(effectModifier)) {
@@ -245,11 +249,11 @@ internal fun GuiyuanAnimatedIdentityMark(
 }
 
 // A hollow, feathered wave: the center stays clear instead of becoming a dark cloud.
-private fun DrawScope.drawWave(color: Color, progress: Float, strength: Float) {
+private fun DrawScope.drawWave(color: Color, progress: Float, strength: Float, diameter: Float) {
     if (progress <= 0f || progress >= 1f) return
 
-    val radius = size.minDimension * (0.55f + 1.15f * progress)
-    val feather = size.minDimension * (0.1f + 0.055f * progress)
+    val radius = diameter * (0.55f + 1.15f * progress)
+    val feather = diameter * (0.1f + 0.055f * progress)
     val edge = radius + feather
     val alpha = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
     drawCircle(
