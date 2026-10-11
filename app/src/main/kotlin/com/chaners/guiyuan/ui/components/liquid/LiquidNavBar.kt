@@ -152,7 +152,7 @@ internal fun LiquidNavBar(
             }
 
         val offsetAnim = remember { Animatable(0f) }
-        val panelOffset by remember(density) {
+        val panelOffset by remember(density, constraints.maxWidth) {
             derivedStateOf {
                 val fraction =
                     (offsetAnim.value / constraints.maxWidth)
@@ -169,7 +169,8 @@ internal fun LiquidNavBar(
             mutableIntStateOf(selectedIndex())
         }
         val motion =
-            remember(scope) {
+            // The drag callbacks keep these measurements for their lifetime.
+            remember(scope, tabsCount, tabWidth, ltr) {
                 LiquidDragMotion(
                     scope = scope,
                     initialValue = selectedIndex().toFloat(),
@@ -221,7 +222,7 @@ internal fun LiquidNavBar(
         }
 
         val highlight =
-            remember(scope) {
+            remember(scope, motion, tabWidth, ltr) {
                 LiquidHighlight(
                     scope = scope,
                     position = { size, _ ->
