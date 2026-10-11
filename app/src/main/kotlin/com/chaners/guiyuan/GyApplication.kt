@@ -24,6 +24,8 @@ import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -49,6 +51,9 @@ class GyApplication :
 
     @Volatile
     private var xposedService: XposedService? = null
+
+    @Volatile
+    private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private var scopeRequestDone: ((Boolean) -> Unit)? = null
@@ -105,6 +110,7 @@ class GyApplication :
         handler.removeCallbacks(bindTimeout)
         if (xposedService !== service) finishScopeRequest(false)
         xposedService = service
+        lastMirror = null
         syncRuntime(service)
         refreshXposedStatus(service)
     }
@@ -112,6 +118,7 @@ class GyApplication :
     override fun onServiceDied(service: XposedService) {
         if (xposedService === service) {
             xposedService = null
+            lastMirror = null
             finishScopeRequest(false)
             _xposedStatus.value = XposedStatus.FrameworkUnavailable
         }
@@ -123,6 +130,7 @@ class GyApplication :
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
+        lastMirror = null
         scopeRequestDone = null
         super.onTerminate()
     }
@@ -236,66 +244,55 @@ class GyApplication :
             }
     }
 
-    // App prefs stay authoritative; Xposed receives one mirrored runtime snapshot.
+    // App prefs are authoritative; replay on bind, retry after errors, skip identical commits.
     private fun syncRuntime(service: XposedService) {
-        val level =
-            diagPrefs.getString(
-                DIAG_LEVEL_KEY,
-                DiagLevel.General.name,
-            ) ?: DiagLevel.General.name
-        val enabled =
-            featurePrefs.getBoolean(
-                FEATURE_ENABLED_KEY,
-                true,
+        val snapshot =
+            RuntimeSnapshot(
+                level =
+                    diagPrefs.getString(
+                        DIAG_LEVEL_KEY,
+                        DiagLevel.General.name,
+                    ) ?: DiagLevel.General.name,
+                feature =
+                    FeatureCfg(
+                        enabled = featurePrefs.getBoolean(FEATURE_ENABLED_KEY, true),
+                        keyguard =
+                            featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
+                        aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
+                    ),
+                changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
+                visual = visualPrefs.readVisualCfg(),
             )
-        val keyguard =
-            featurePrefs.getBoolean(
-                FEATURE_KEYGUARD_KEY,
-                FEATURE_KEYGUARD_DEFAULT,
-            )
-        val aod =
-            featurePrefs.getBoolean(
-                FEATURE_AOD_KEY,
-                FEATURE_AOD_DEFAULT,
-            )
-        val featureChangedAtNs =
-            featurePrefs.getLong(
-                FEATURE_CHANGED_AT_NS_KEY,
-                0L,
-            )
-        val visual =
-            visualPrefs.readVisualCfg()
+        val previous = lastMirror
+        if (previous?.first === service && previous.second == snapshot) return
 
         runCatching {
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
-                .putString(DIAG_LEVEL_KEY, level)
-                .putBoolean(
-                    FEATURE_ENABLED_KEY,
-                    enabled,
-                )
-                .putBoolean(
-                    FEATURE_KEYGUARD_KEY,
-                    keyguard,
-                )
-                .putBoolean(
-                    FEATURE_AOD_KEY,
-                    aod,
-                )
-                .putLong(
-                    FEATURE_CHANGED_AT_NS_KEY,
-                    featureChangedAtNs,
-                )
-                .putVisualCfg(visual)
+                .putString(DIAG_LEVEL_KEY, snapshot.level)
+                .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
+                .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
+                .putBoolean(FEATURE_AOD_KEY, snapshot.feature.aod)
+                .putLong(FEATURE_CHANGED_AT_NS_KEY, snapshot.changedAtNs)
+                .putVisualCfg(snapshot.visual)
             check(editor.commit()) { "remote preference commit failed" }
+            if (xposedService === service) lastMirror = service to snapshot
         }.onFailure { throwable ->
+            lastMirror = null
             Log.w(
                 TAG,
                 "Unable to mirror runtime preferences: " + throwable.message,
             )
         }
     }
+
+    private data class RuntimeSnapshot(
+        val level: String,
+        val feature: FeatureCfg,
+        val changedAtNs: Long,
+        val visual: VisualCfg,
+    )
 
     private companion object {
         const val TAG = "CombinedStatus[App]"
