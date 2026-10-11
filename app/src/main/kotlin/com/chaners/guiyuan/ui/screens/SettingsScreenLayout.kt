@@ -212,7 +212,6 @@ internal fun SettingsPage(
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     listState: LazyListState? = null,
-    edgeFeedback: Boolean = false,
     pullToRefresh: SettingsPullToRefresh? = null,
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
@@ -222,6 +221,7 @@ internal fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val springScroll = pullToRefresh == null
 
     Scaffold(
         snackbarHost = snackbarHost,
@@ -277,13 +277,13 @@ internal fun SettingsPage(
                         Modifier
                             .fillMaxSize()
                             .then(
-                                if (edgeFeedback) Modifier.scrollEndHaptic().overScrollVertical()
+                                if (springScroll) Modifier.scrollEndHaptic().overScrollVertical()
                                 else Modifier,
                             )
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
-                    // The custom spring owns About's overscroll; avoid two effects competing.
-                    overscrollEffect = if (edgeFeedback) null else rememberOverscrollEffect(),
+                    // Pull-to-refresh remains the gesture owner on Diagnostics.
+                    overscrollEffect = if (springScroll) null else rememberOverscrollEffect(),
                     content = content,
                 )
             }

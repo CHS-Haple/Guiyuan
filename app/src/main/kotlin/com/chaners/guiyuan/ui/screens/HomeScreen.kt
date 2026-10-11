@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -167,7 +169,10 @@ internal fun HomeScreen(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .scrollEndHaptic()
+                        .overScrollVertical()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
+                overscrollEffect = null,
                 contentPadding =
                     pageContentPadding(
                         innerPadding = paddingValues,
