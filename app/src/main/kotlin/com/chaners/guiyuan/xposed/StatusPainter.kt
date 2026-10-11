@@ -2036,19 +2036,9 @@ internal class StatusPainter(
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        configureTransitionTextStyle(
-            sourceTypeface = batteryTopTextTypeface(weight),
-            currentWeight = weight,
-            targetStyle = targetStyle,
-            progress = transitionProgress,
-            textSize = layout.textSize,
-        )
-        paint.textAlign = Paint.Align.LEFT
-
         // Weight interpolation can change glyph ink width. Re-anchor every
         // frame to the source optical center so typography changes cannot
         // introduce a sideways drift on top of the geometry morph.
-        paint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
         val currentBounds =
             batteryTopTextOpticalBounds(
                 layout = layout,
@@ -2056,6 +2046,7 @@ internal class StatusPainter(
                 targetStyle = targetStyle,
                 transitionProgress = transitionProgress,
             )
+        paint.textAlign = Paint.Align.LEFT
         val currentOpticalWidth = currentBounds.width
         val currentCenterX = layout.textOpticalBounds.centerX
         val textX =
