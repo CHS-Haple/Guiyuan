@@ -18,6 +18,7 @@ import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
@@ -74,11 +75,7 @@ class GyApplication :
 
     private val featListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (
-                key == FEATURE_ENABLED_KEY ||
-                key == FEATURE_KEYGUARD_KEY ||
-                key == FEATURE_AOD_KEY
-            ) {
+            if (isFeatureKey(key)) {
                 xposedService?.let(::syncRuntime)
             }
         }
