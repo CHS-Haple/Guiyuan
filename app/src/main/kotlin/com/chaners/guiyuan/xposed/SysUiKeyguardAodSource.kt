@@ -39,6 +39,7 @@ internal object SysUiKeyguardAodSource {
         classLoader: ClassLoader,
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "keyguard-aod-hooks-already-installed" }
 
@@ -93,11 +94,11 @@ internal object SysUiKeyguardAodSource {
             handles +=
                 module.hook(setAnimateMethod)
                     .setId(SET_AOD_ANIMATE_HOOK_ID)
-                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onEvent))
+                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onEvent, isDetailedDiagnosticsEnabled))
             handles +=
                 module.hook(toggleMethod)
                     .setId(TOGGLE_AOD_HOOK_ID)
-                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onEvent))
+                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onEvent, isDetailedDiagnosticsEnabled))
             hooksReady = true
             return handles
         } catch (error: Throwable) {
@@ -120,13 +121,14 @@ internal object SysUiKeyguardAodSource {
         source: String,
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
             if (!hooksReady) return@Hooker result
             val sourceView = chain.thisObject as? View
             if (sourceView != null) {
-                publish(sourceView, source, onAodState, onEvent)
+                publish(sourceView, source, onAodState, onEvent, isDetailedDiagnosticsEnabled)
             }
             result
         }
@@ -179,6 +181,7 @@ internal object SysUiKeyguardAodSource {
         source: String,
         onAodState: (AodUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ) {
         val state = readState(sourceView) ?: return
         synchronized(this) {
@@ -194,13 +197,15 @@ internal object SysUiKeyguardAodSource {
                 source = source,
             )
         onAodState(update)
-        onEvent?.invoke(
-            "keyguardAod source=" + source +
-                " toAod=" + update.toAod +
-                " isAodAnimate=" + update.isAodAnimate +
-                " animToAod=" + (update.animToAod ?: "unavailable") +
-                " blocked=" + update.blocksProjection,
-        )
+        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+            onEvent(
+                "keyguardAod source=" + source +
+                    " toAod=" + update.toAod +
+                    " isAodAnimate=" + update.isAodAnimate +
+                    " animToAod=" + (update.animToAod ?: "unavailable") +
+                    " blocked=" + update.blocksProjection,
+            )
+        }
     }
 
     private fun readState(sourceView: View): AodState? {
