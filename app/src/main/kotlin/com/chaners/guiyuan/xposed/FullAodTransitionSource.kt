@@ -44,10 +44,6 @@ internal object FullAodTransitionSource {
                 .setId(HOOK_ID)
                 .intercept(
                     Hooker { chain ->
-                        val detailed = onEvent != null && isDetailedDiagnosticsEnabled()
-                        val rawArg0 = if (detailed) chain.getArg(0) as? Boolean else null
-                        val rawArg1 = if (detailed) chain.getArg(1) as? Boolean else null
-
                         // Open the native transition scope before HyperOS runs.
                         // animateIconContainer may be invoked inside proceed(),
                         // so waiting until animateFullAod returns would miss the
@@ -58,8 +54,10 @@ internal object FullAodTransitionSource {
                         // Direction is read from mToLockScreen only after native
                         // code returns. Raw arguments remain diagnostics only.
                         onTransitionCommitted()
-                        if (detailed) {
-                            onEvent?.invoke(
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            val rawArg0 = chain.getArg(0) as? Boolean
+                            val rawArg1 = chain.getArg(1) as? Boolean
+                            onEvent(
                                 "keyguardFullAod source=animateFullAod" +
                                     " arg0=" + (rawArg0 ?: "unavailable") +
                                     " arg1=" + (rawArg1 ?: "unavailable"),
