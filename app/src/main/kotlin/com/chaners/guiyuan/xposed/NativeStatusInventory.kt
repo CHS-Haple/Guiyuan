@@ -233,6 +233,10 @@ internal object NativeStatusInventory {
                     state = state,
                 )
                 if (state.nodes >= STATUS_ICON_SUBTREE_MAX_NODES) {
+                    // A full nested branch can leave later siblings unvisited.
+                    if (index < parent.childCount - 1) {
+                        state.truncated = true
+                    }
                     return
                 }
             }

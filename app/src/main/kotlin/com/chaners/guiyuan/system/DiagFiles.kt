@@ -128,7 +128,6 @@ internal object DiagFiles {
     }
 
     fun logIntent(
-        context: Context,
         intent: Intent,
         uri: Uri,
     ) {
@@ -143,7 +142,6 @@ internal object DiagFiles {
     }
 
     fun logChooser(
-        context: Context,
         error: Throwable? = null,
     ) {
         if (!BuildConfig.DEBUG) {

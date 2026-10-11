@@ -47,10 +47,6 @@ internal object StatusBarStableSession {
     }
 
     @Synchronized
-    fun currentSlotMetrics(host: Any): SlotMetrics? =
-        current?.slotMetricsFor(host)
-
-    @Synchronized
     fun detach() {
         current?.stop()
         current = null
@@ -77,12 +73,6 @@ internal object StatusBarStableSession {
         private val batteryView = WeakReference(batteryView)
         private var anchorCaptured = false
         private var anchorLayoutListener: View.OnLayoutChangeListener? = null
-        private var capturedSlotMetrics: SlotMetrics? = null
-
-        fun slotMetricsFor(host: Any): SlotMetrics? =
-            capturedSlotMetrics.takeIf {
-                this.host.get() === host
-            }
 
         fun matches(
             host: ViewGroup,
@@ -206,7 +196,6 @@ internal object StatusBarStableSession {
                     layoutRtl = view.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                     batteryTranslationX = view.translationX,
                 )
-            capturedSlotMetrics = slotMetrics
             onEvent(slotMetrics.logLine)
             return true
         }

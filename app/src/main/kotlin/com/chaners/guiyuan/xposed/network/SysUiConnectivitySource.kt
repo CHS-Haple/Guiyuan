@@ -10,6 +10,7 @@ import android.telephony.TelephonyManager
 
 internal object SysUiConnectivitySource {
     private var manager: ConnectivityManager? = null
+    @Volatile
     private var callback: ConnectivityManager.NetworkCallback? = null
 
     @Synchronized
@@ -56,6 +57,7 @@ internal object SysUiConnectivitySource {
         val networkCallback =
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
+                    if (callback !== this) return
                     currentDefaultNetwork = network
                 }
 
@@ -63,7 +65,7 @@ internal object SysUiConnectivitySource {
                     network: Network,
                     networkCapabilities: NetworkCapabilities,
                 ) {
-                    if (network != currentDefaultNetwork) {
+                    if (callback !== this || network != currentDefaultNetwork) {
                         return
                     }
                     publish(
@@ -73,7 +75,7 @@ internal object SysUiConnectivitySource {
                 }
 
                 override fun onLost(network: Network) {
-                    if (network != currentDefaultNetwork) {
+                    if (callback !== this || network != currentDefaultNetwork) {
                         return
                     }
                     currentDefaultNetwork = null
@@ -84,10 +86,10 @@ internal object SysUiConnectivitySource {
                 }
             }
 
+        manager = connectivityManager
+        callback = networkCallback
         return runCatching {
             connectivityManager.registerDefaultNetworkCallback(networkCallback, handler)
-            manager = connectivityManager
-            callback = networkCallback
             if (connectivityManager.activeNetwork == null) {
                 publish(
                     source = "initial-none",
@@ -96,6 +98,7 @@ internal object SysUiConnectivitySource {
             }
             true
         }.getOrElse {
+            detach()
             false
         }
     }

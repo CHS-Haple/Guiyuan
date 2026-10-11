@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.os.Looper
 import android.os.SystemClock
@@ -11,10 +12,13 @@ import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 
 internal class RenderView(
     context: Context,
+    private val onDrawn: ((View) -> Unit)? = null,
+    private val onShownChanged: ((View) -> Unit)? = null,
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
@@ -45,6 +49,11 @@ internal class RenderView(
 
     @Volatile
     private var visual = VisualCfg()
+
+    // Color preferences depend on configuration, not on each animation frame.
+    private var colorPrefsSource = visual
+    private var colorPrefs = BatteryColorPolicy.preferencesFor(visual)
+    private var colorCache: ColorCache? = null
 
     @Volatile
     private var logicalViewportWidthPx: Int = 0
@@ -184,7 +193,7 @@ internal class RenderView(
             model = current,
             visual = this.visual,
             previousCenterIndicator = previousCenterIndicator,
-            // 这里预留的是布局空间，两端都按完整尺寸算，动画时才不会被裁掉。
+            // Reserve both full endpoints so the animated glyph is not clipped.
             centerExitAmount = 1f,
             centerEnterAmount = 1f,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
@@ -265,6 +274,23 @@ internal class RenderView(
         centerTransitionFraction = 1f
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        painter.clearNativeResources()
+        onShownChanged?.invoke(this)
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        onShownChanged?.invoke(this)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        painter.clearNativeResources()
+        requestRedraw()
+    }
+
     override fun onDetachedFromWindow() {
         cancelCenterTransition()
         super.onDetachedFromWindow()
@@ -282,6 +308,11 @@ internal class RenderView(
         super.onDraw(canvas)
         val current = model ?: return
         val tint = tintState ?: return
+        val currentVisual = visual
+        if (currentVisual !== colorPrefsSource) {
+            colorPrefs = BatteryColorPolicy.preferencesFor(currentVisual)
+            colorPrefsSource = currentVisual
+        }
         val transitionFraction =
             centerTransitionFraction.coerceIn(0f, 1f)
         val logicalWidth = currentLogicalViewportWidthPx()
@@ -291,19 +322,30 @@ internal class RenderView(
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
         }
+        val colors =
+            colorCache
+                ?.takeIf { cache ->
+                    cache.model === current &&
+                        cache.tint === tint &&
+                        cache.visual === currentVisual
+                }?.colors
+                ?: ColorPolicy.resolve(
+                    model = current,
+                    tintState = tint,
+                    visualSettings = currentVisual,
+                    batteryColorPreferences = colorPrefs,
+                ).also { resolved ->
+                    colorCache = ColorCache(current, tint, currentVisual, resolved)
+                }
+
         painter.draw(
             canvas = canvas,
             width = logicalWidth,
             height = logicalHeight,
             model = current,
-            colors =
-                ColorPolicy.resolve(
-                    model = current,
-                    tintState = tint,
-                    visualSettings = visual,
-                ),
+            colors = colors,
             opacity = 1f,
-            visual = this.visual,
+            visual = currentVisual,
             previousCenterIndicator = previousCenterIndicator,
             centerExitAmount =
                 1f -
@@ -315,6 +357,7 @@ internal class RenderView(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
         )
         canvas.restoreToCount(viewportSave)
+        onDrawn?.invoke(this)
 
         val committedAt = pendingStateUptimeMs
         if (committedAt != 0L) {
@@ -341,6 +384,14 @@ internal class RenderView(
             )
         }
     }
+
+    // Only state inputs affect colors; motion interpolators do not.
+    private class ColorCache(
+        val model: RenderModel,
+        val tint: TintState,
+        val visual: VisualCfg,
+        val colors: RenderColors,
+    )
 
     private companion object {
         const val CENTER_TRANSITION_DURATION_MS = 100L

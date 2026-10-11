@@ -410,14 +410,14 @@ class SceneBoundaryTest {
     }
 
     @Test
-    fun disabledAodHomeFallbackArmsOnlyFromVisibleNativeHomeCarrier() {
+    fun disabledAodHomeFallbackRequiresHomeOriginAndOwnership() {
         assertTrue(
             ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homePresentationOwned = true,
-                homeCarrierPresentationVisible = true,
+                homeOriginConfirmed = true,
             ),
         )
         assertFalse(
@@ -426,7 +426,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homePresentationOwned = true,
-                homeCarrierPresentationVisible = false,
+                homeOriginConfirmed = false,
             ),
         )
         assertFalse(
@@ -435,7 +435,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = false,
                 homePresentationOwned = false,
-                homeCarrierPresentationVisible = true,
+                homeOriginConfirmed = true,
             ),
         )
         assertFalse(
@@ -444,7 +444,7 @@ class SceneBoundaryTest {
                 keyguardEnabled = true,
                 aodEnabled = true,
                 homePresentationOwned = true,
-                homeCarrierPresentationVisible = true,
+                homeOriginConfirmed = true,
             ),
         )
     }
@@ -512,6 +512,26 @@ class SceneBoundaryTest {
                 aodEnabled = false,
                 homeNativeAodFallbackCandidate = false,
                 homePresentationOwnedAtFullAodStart = true,
+                nativeToLockScreenTarget = false,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                homeNativeAodFallbackCandidate = true,
+                homePresentationOwnedAtFullAodStart = true,
+                nativeToLockScreenTarget = null,
+            ),
+        )
+        assertFalse(
+            ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
+                featureEnabled = true,
+                keyguardEnabled = true,
+                aodEnabled = false,
+                homeNativeAodFallbackCandidate = true,
+                homePresentationOwnedAtFullAodStart = false,
                 nativeToLockScreenTarget = false,
             ),
         )

@@ -36,11 +36,10 @@ class SysUiKeyguardAodSourceTest {
     }
 
     @Test
-    fun anyNativeAodSignalBlocksKeyguardProjection() {
-        assertFalse(SysUiKeyguardAodSource.blocksKeyguardProjection(false, false, false))
-        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(true, false, false))
-        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(false, true, false))
-        assertFalse(SysUiKeyguardAodSource.blocksKeyguardProjection(false, false, true))
-        assertFalse(SysUiKeyguardAodSource.blocksKeyguardProjection(false, false, null))
+    fun nativeAodTransitionBlocksKeyguardProjection() {
+        assertFalse(SysUiKeyguardAodSource.blocksKeyguardProjection(false, false))
+        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(true, false))
+        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(false, true))
+        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(true, true))
     }
 }

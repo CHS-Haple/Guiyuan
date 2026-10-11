@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +51,8 @@ import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -73,6 +76,13 @@ private enum class RuntimeStatusMarkKind {
     Check,
     Alert,
     Minus,
+    Loading,
+}
+
+private enum class HomeRuntimeAction {
+    None,
+    Restart,
+    RequestScope,
 }
 
 private data class HomeRuntimeCardState(
@@ -80,12 +90,17 @@ private data class HomeRuntimeCardState(
     val summaryRes: Int,
     val tone: RuntimeStatusTone,
     val mark: RuntimeStatusMarkKind,
+    val action: HomeRuntimeAction = HomeRuntimeAction.None,
 )
 
 @Composable
 internal fun HomeScreen(
     bottomContentPadding: Dp,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
+    onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
     previewState: PreviewSandboxUiState,
     onHotReload: () -> Unit,
     onOpenPreviewSandbox: () -> Unit,
@@ -133,6 +148,7 @@ internal fun HomeScreen(
                     actions = {
                         HotReloadAction(
                             inProgress = hotReloadInProgress,
+                            enabled = !restartInProgress,
                             onClick = onHotReload,
                         )
                     },
@@ -165,6 +181,10 @@ internal fun HomeScreen(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
                         hotReloadInProgress = hotReloadInProgress,
+                        restartInProgress = restartInProgress,
+                        scopeRequestInProgress = scopeRequestInProgress,
+                        onRestart = onRestart,
+                        onRequestScope = onRequestScope,
                         onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
@@ -196,6 +216,10 @@ private fun HomeRuntimeStatusCard(
     enabled: Boolean,
     runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
+    onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -204,6 +228,8 @@ private fun HomeRuntimeStatusCard(
             enabled = enabled,
             runtimeStatus = runtimeStatus,
             hotReloadInProgress = hotReloadInProgress,
+            restartInProgress = restartInProgress,
+            scopeRequestInProgress = scopeRequestInProgress,
         )
     val targetAccentColor =
         when (state.tone) {
@@ -241,6 +267,12 @@ private fun HomeRuntimeStatusCard(
                 contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
             ),
         pressFeedbackType = PressFeedbackType.Tilt,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
     ) {
         Box(
             modifier =
@@ -324,6 +356,10 @@ private fun HomePreviewSandboxCard(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val model = remember(state, resources, LocalConfiguration.current) {
+        state.toRenderModel(resources)
+    }
+
     Card(
         modifier = modifier,
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
@@ -365,7 +401,7 @@ private fun HomePreviewSandboxCard(
             contentAlignment = Alignment.Center,
         ) {
             StatusPreview(
-                model = state.toRenderModel(resources),
+                model = model,
                 visual = visual,
                 modifier =
                     Modifier
@@ -397,6 +433,20 @@ private fun RuntimeStatusMark(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
+    if (kind == RuntimeStatusMarkKind.Loading) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+                strokeWidth = 6.4.dp,
+                colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                    foregroundColor = color.copy(alpha = 0.58f),
+                    backgroundColor = color.copy(alpha = 0.13f),
+                ),
+            )
+        }
+        return
+    }
+
     Canvas(modifier = modifier) {
         val markColor = color.copy(alpha = 0.58f)
         val ringStrokeWidth = 6.4.dp.toPx()
@@ -416,6 +466,8 @@ private fun RuntimeStatusMark(
         )
 
         when (kind) {
+            RuntimeStatusMarkKind.Loading -> Unit
+
             RuntimeStatusMarkKind.Check -> {
                 val checkPath =
                     Path().apply {
@@ -467,6 +519,8 @@ private fun resolveHomeRuntimeCardState(
     enabled: Boolean,
     runtimeStatus: XposedStatus,
     hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
 ): HomeRuntimeCardState {
     if (!enabled) {
         return HomeRuntimeCardState(
@@ -477,12 +531,30 @@ private fun resolveHomeRuntimeCardState(
         )
     }
 
+    if (restartInProgress) {
+        return HomeRuntimeCardState(
+            titleRes = R.string.home_runtime_restarting,
+            summaryRes = R.string.home_runtime_restarting_summary,
+            tone = RuntimeStatusTone.Warning,
+            mark = RuntimeStatusMarkKind.Loading,
+        )
+    }
+
     if (hotReloadInProgress) {
         return HomeRuntimeCardState(
             titleRes = R.string.home_runtime_reloading,
             summaryRes = R.string.home_runtime_reloading_summary,
             tone = RuntimeStatusTone.Warning,
-            mark = RuntimeStatusMarkKind.Alert,
+            mark = RuntimeStatusMarkKind.Loading,
+        )
+    }
+
+    if (scopeRequestInProgress) {
+        return HomeRuntimeCardState(
+            titleRes = R.string.home_runtime_requesting,
+            summaryRes = R.string.home_runtime_requesting_summary,
+            tone = RuntimeStatusTone.Warning,
+            mark = RuntimeStatusMarkKind.Loading,
         )
     }
 
@@ -492,7 +564,7 @@ private fun resolveHomeRuntimeCardState(
                 titleRes = R.string.home_runtime_checking,
                 summaryRes = R.string.home_runtime_checking_summary,
                 tone = RuntimeStatusTone.Neutral,
-                mark = RuntimeStatusMarkKind.Minus,
+                mark = RuntimeStatusMarkKind.Loading,
             )
 
         XposedStatus.FrameworkUnavailable ->
@@ -519,6 +591,7 @@ private fun resolveHomeRuntimeCardState(
                         summaryRes = R.string.home_runtime_unhooked_summary,
                         tone = RuntimeStatusTone.Error,
                         mark = RuntimeStatusMarkKind.Alert,
+                        action = HomeRuntimeAction.RequestScope,
                     )
 
                 runtimeStatus.sysUiRunning ->
@@ -532,9 +605,10 @@ private fun resolveHomeRuntimeCardState(
                 else ->
                     HomeRuntimeCardState(
                         titleRes = R.string.home_runtime_pending,
-                        summaryRes = R.string.home_runtime_pending_summary,
+                        summaryRes = R.string.home_runtime_restart_summary,
                         tone = RuntimeStatusTone.Warning,
                         mark = RuntimeStatusMarkKind.Alert,
+                        action = HomeRuntimeAction.Restart,
                     )
             }
     }

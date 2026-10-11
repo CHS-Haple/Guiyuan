@@ -42,16 +42,6 @@ internal object NetworkSuppressionPolicy {
             presentation.activeBoundRoots > activeSubscriptions
     }
 
-    internal fun mobileVisualMaskAlpha(
-        nativeAlpha: Float,
-        suppressionActive: Boolean,
-    ): Float =
-        if (suppressionActive) {
-            0f
-        } else {
-            nativeAlpha
-        }
-
     internal fun statusIconTint(
         locationAwareTint: Int?,
         peerAppliedTint: Int?,
@@ -69,11 +59,5 @@ internal object NetworkSuppressionPolicy {
 
     internal fun isVisibleTint(color: Int): Boolean =
         color ushr 24 != 0
-
-    internal fun shouldPreMaskMobileSignal(
-        suppressionActive: Boolean,
-        belongsToActiveHomeGroup: Boolean,
-    ): Boolean =
-        suppressionActive && belongsToActiveHomeGroup
 
 }

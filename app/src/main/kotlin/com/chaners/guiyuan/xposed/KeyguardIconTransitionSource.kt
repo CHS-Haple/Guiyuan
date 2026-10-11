@@ -18,6 +18,7 @@ internal object KeyguardIconTransitionSource {
         classLoader: ClassLoader,
         onTransition: () -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val viewClass = Class.forName(KEYGUARD_VIEW_CLASS, false, classLoader)
         val candidates =
@@ -42,13 +43,15 @@ internal object KeyguardIconTransitionSource {
                 .setId(HOOK_ID)
                 .intercept(
                     Hooker { chain ->
-                        val rawArg0 = chain.getArg(0) as? Boolean
                         val result = chain.proceed()
                         onTransition()
-                        onEvent?.invoke(
-                            "keyguardStatusIconTransition source=animateIconContainer" +
-                                " arg0=" + (rawArg0 ?: "unavailable"),
-                        )
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            val rawArg0 = chain.getArg(0) as? Boolean
+                            onEvent(
+                                "keyguardStatusIconTransition source=animateIconContainer" +
+                                    " arg0=" + (rawArg0 ?: "unavailable"),
+                            )
+                        }
                         result
                     },
                 ),

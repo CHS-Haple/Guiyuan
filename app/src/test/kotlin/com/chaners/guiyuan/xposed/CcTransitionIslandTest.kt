@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CcTransitionIslandTest {
     @Test
-    fun batteryIslandRingExitUsesLogicalStartWhileNativeTargetRowReflows() {
+    fun batteryIslandExitFollowsLogicalStart() {
         val direction =
             CcTransitionPolicy
                 .batteryRingExitDirection(
@@ -36,109 +36,45 @@ class CcTransitionIslandTest {
     }
 
     @Test
-    fun nonBatteryIslandRingExitKeepsLiveBuild544GeometryDirection() {
-        BatteryRingTransitionPolicy.ExitDirection.entries.forEach { live ->
+    fun nonBatteryIslandUsesLiveDirectionOrRowFallback() {
+        val policy = CcTransitionPolicy
+        val left = BatteryRingTransitionPolicy.ExitDirection.LEFT
+        val right = BatteryRingTransitionPolicy.ExitDirection.RIGHT
+        val none = BatteryRingTransitionPolicy.ExitDirection.NONE
+        listOf(left, right).forEach { live ->
             assertEquals(
                 live,
-                CcTransitionPolicy
-                    .batteryRingExitDirection(
-                        liveCenterDirection = live,
-                        nativeBatteryIslandActive = false,
-                        targetRowRtl = false,
-                    ),
+                policy.batteryRingExitDirection(
+                    liveCenterDirection = live,
+                    nativeBatteryIslandActive = false,
+                    targetRowRtl = false,
+                ),
             )
         }
-    }
 
-    @Test
-    fun islandScenesKeepSemanticReservationForGuiyuanExpansion() {
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = true,
-                ),
+        assertEquals(
+            left,
+            policy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
         )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = false,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.HOME,
-                    charging = true,
-                    nativeBatteryIslandActive = null,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(
-                    sourceScene = SourceScene.KEYGUARD,
-                    charging = true,
-                    nativeBatteryIslandActive = true,
-                ),
+        assertEquals(
+            right,
+            policy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = true,
+            ),
         )
     }
 
     @Test
-    fun nativeIslandCollisionDoesNotDisableGuiyuanPaddingReflow() {
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = true,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.KEYGUARD,
-                    genericIslandShowing = true,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = false,
-                ),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.HOME,
-                    genericIslandShowing = null,
-                ),
-        )
-        assertTrue(
-            !CcTransitionPolicy
-                .allowsNativeTransitionPaddingExpansion(
-                    sourceScene = SourceScene.UNKNOWN,
-                    genericIslandShowing = true,
-                ),
-        )
-    }
-
-    @Test
-    fun verifiedSourceScenesKeepSemanticReservationThroughProjection() {
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.HOME),
-        )
-        assertTrue(
-            CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.KEYGUARD),
-        )
-        assertTrue(
-            !CcTransitionPolicy
-                .usesSemanticTransitionReservation(SourceScene.UNKNOWN),
-        )
+    fun semanticReservationRequiresKnownSourceScene() {
+        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.HOME))
+        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.KEYGUARD))
+        assertTrue(!CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.UNKNOWN))
     }
 
     @Test

@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.distinctByIdentity
 import com.chaners.guiyuan.xposed.PresentationStore
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -50,12 +51,14 @@ internal object NativeNetworkSuppressor {
         setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
 
     private val installedHandles = mutableListOf<HookHandle>()
+    private var installIncomplete = false
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
+    private var diagnosticsEnabled: () -> Boolean = { false }
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
     private var airplaneSlotAccessor: Method? = null
@@ -73,6 +76,16 @@ internal object NativeNetworkSuppressor {
     private val transitionStateAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
     private val transitionStateFieldCache =
         ConcurrentHashMap<Class<*>, TransitionStateFields>()
+
+    // Cache reflective lookups, not the live SystemUI tint values.
+    private val tintFieldNames =
+        setOf("mDarkIconDispatcher", "mTintAreas", "mIconTint", "mColor")
+    private val tintFieldsByClass =
+        ConcurrentHashMap<Class<*>, List<Field>>()
+    private val tintMethodByManagerClass =
+        ConcurrentHashMap<Class<*>, Method>()
+    private val bindingGetterByClass =
+        ConcurrentHashMap<Class<*>, Method>()
 
     @Volatile
     private var suppressedBindings: Array<WeakReference<Any>> = emptyArray()
@@ -106,12 +119,15 @@ internal object NativeNetworkSuppressor {
         module: XposedModule,
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
+        isDetailedDiagnosticsEnabled: () -> Boolean = { false },
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): String? {
+        if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             return null
@@ -204,9 +220,9 @@ internal object NativeNetworkSuppressor {
                     .firstOrNull { method ->
                         method.name == "onIconAdded" &&
                             method.parameterCount == 4 &&
-                            method.parameterTypes.getOrNull(0) == Integer.TYPE &&
-                            method.parameterTypes.getOrNull(1) == String::class.java &&
-                            method.parameterTypes.getOrNull(2) == java.lang.Boolean.TYPE
+                            method.parameterTypes[0] == Integer.TYPE &&
+                            method.parameterTypes[1] == String::class.java &&
+                            method.parameterTypes[2] == java.lang.Boolean.TYPE
                     }
                     ?: error("home-icon-manager-onIconAdded-missing")
             onIconAdded.isAccessible = true
@@ -239,15 +255,19 @@ internal object NativeNetworkSuppressor {
 
             installedHandles.clear()
             installedHandles.addAll(created)
+            installIncomplete = false
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             null
         }.getOrElse { error ->
-            created.forEach { handle ->
-                runCatching { handle.unhook() }
+            val remaining = created.filter { handle ->
+                runCatching { handle.unhook() }.isFailure
             }
             installedHandles.clear()
+            installedHandles.addAll(remaining)
+            installIncomplete = remaining.isNotEmpty()
             airplaneSlotAccessor = null
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
@@ -259,9 +279,11 @@ internal object NativeNetworkSuppressor {
             pendingObservationHost = null
             pendingObservationSource = null
             eventSink = onEvent
+            diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            error.message ?: error.javaClass.simpleName
+            val reason = error.message ?: error.javaClass.simpleName
+            if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
     }
 
@@ -315,7 +337,7 @@ internal object NativeNetworkSuppressor {
         suppressedBindings = emptyArray()
         refreshStatusPresentationLocked("observerAttach")
 
-        eventSink?.invoke(
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name,
@@ -366,7 +388,7 @@ internal object NativeNetworkSuppressor {
             return Result.Failure(snapshot.failureReason)
         }
 
-        eventSink?.invoke(snapshot.logLine)
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
         return Result.Active
     }
 
@@ -398,7 +420,7 @@ internal object NativeNetworkSuppressor {
             return Result.Failure(snapshot.failureReason)
         }
 
-        eventSink?.invoke(snapshot.logLine)
+        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
         return Result.Active
     }
 
@@ -415,7 +437,7 @@ internal object NativeNetworkSuppressor {
         )
         group?.requestLayout()
         if (previousCount > 0) {
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "nativeNetworkSuppression inactive source=" + source +
                     " restoredBindings=" + previousCount +
                     " restoredMobileVisualMasks=" + restoredVisualMasks,
@@ -428,12 +450,21 @@ internal object NativeNetworkSuppressor {
     fun resetRuntimeState(source: String) {
         deactivate(source)
         installedHandles.clear()
+        installIncomplete = false
         eventSink = null
+        diagnosticsEnabled = { false }
         observationAttachedSink = null
         statusPresentationSink = null
+        airplaneSlotAccessor = null
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
+        transitionStateAccessorCache.clear()
+        transitionStateAccessorMissing.clear()
+        transitionStateFieldCache.clear()
+        tintFieldsByClass.clear()
+        tintMethodByManagerClass.clear()
+        bindingGetterByClass.clear()
         lastStatusPresentation =
             PresentationStore.StatusIconPresentation()
     }
@@ -524,14 +555,14 @@ internal object NativeNetworkSuppressor {
                                 observationAttachedSink?.invoke(
                                     pendingSource ?: "homeManagerRegistered",
                                 )
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "statusIconObservation ready source=" +
                                         (pendingSource ?: "homeManagerRegistered") +
                                         " trigger=homeManagerRegistered",
                                 )
                             }
                             is Result.Failure ->
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "statusIconObservation unavailable " +
                                         "source=" + (pendingSource ?: "homeManagerRegistered") +
                                         " reason=" + state.reason,
@@ -562,10 +593,10 @@ internal object NativeNetworkSuppressor {
                         refreshStatusPresentationLocked("iconAdded:" + slot)
                         if (!observationOnly) {
                             val snapshot = refreshBindingsLocked("iconAdded:" + slot)
-                            eventSink?.invoke(snapshot.logLine)
+                            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
                             if (snapshot.failureReason != null) {
                                 clearSessionLocked(requestLayout = true)
-                                eventSink?.invoke(
+                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                                     "nativeNetworkSuppression failNative source=iconAdded:" + slot +
                                         " reason=" + snapshot.failureReason,
                                 )
@@ -746,7 +777,7 @@ internal object NativeNetworkSuppressor {
         if (presentation != lastStatusPresentation) {
             lastStatusPresentation = presentation
             statusPresentationSink?.invoke(presentation)
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "statusIconPresentation source=" + source +
                     " tint=" +
                     (presentation.appliedTint
@@ -855,22 +886,23 @@ internal object NativeNetworkSuppressor {
                 ?: return null
 
         return runCatching {
-            val dispatcherType =
-                Class.forName(
-                    DARK_ICON_DISPATCHER_CLASS,
-                    false,
-                    manager.javaClass.classLoader,
-                )
+            val managerClass = manager.javaClass
             val getTint =
-                dispatcherType.methods.firstOrNull { method ->
-                    method.name == "getTint" &&
-                        method.parameterCount == 3 &&
-                        View::class.java.isAssignableFrom(
-                            method.parameterTypes.getOrNull(1),
-                        ) &&
-                        method.parameterTypes.getOrNull(2) ==
-                            Int::class.javaPrimitiveType
-                } ?: return@runCatching null
+                tintMethodByManagerClass[managerClass]
+                    ?: Class.forName(
+                        DARK_ICON_DISPATCHER_CLASS,
+                        false,
+                        managerClass.classLoader,
+                    ).methods.firstOrNull { method ->
+                        method.name == "getTint" &&
+                            method.parameterCount == 3 &&
+                            View::class.java.isAssignableFrom(
+                                method.parameterTypes[1],
+                            ) &&
+                            method.parameterTypes[2] ==
+                                Int::class.javaPrimitiveType
+                    }?.also { tintMethodByManagerClass[managerClass] = it }
+                    ?: return@runCatching null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
                 ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
@@ -927,18 +959,21 @@ internal object NativeNetworkSuppressor {
             width > 0 &&
             height > 0
 
+    private fun tintFields(clazz: Class<*>): List<Field> =
+        tintFieldsByClass.computeIfAbsent(clazz) {
+            generateSequence(clazz) { it.superclass }
+                .flatMap { it.declaredFields.asSequence() }
+                .filter { it.name in tintFieldNames }
+                .toList()
+        }
+
     private fun readObjectField(
         target: Any,
         name: String,
     ): Any? {
         val field =
-            generateSequence(target.javaClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == name
-                    }
-                }
-                .firstOrNull()
+            tintFields(target.javaClass)
+                .firstOrNull { it.name == name }
                 ?: return null
         return runCatching {
             field.isAccessible = true
@@ -951,21 +986,16 @@ internal object NativeNetworkSuppressor {
         name: String,
     ): Int? {
         val field =
-            generateSequence(target.javaClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == name &&
-                            (
-                                candidate.type == Int::class.javaPrimitiveType ||
-                                    candidate.type == Int::class.java
-                            )
-                    }
+            tintFields(target.javaClass)
+                .firstOrNull {
+                    it.name == name &&
+                        (it.type == Int::class.javaPrimitiveType ||
+                            it.type == Int::class.javaObjectType)
                 }
-                .firstOrNull()
                 ?: return null
         return runCatching {
             field.isAccessible = true
-            field.getInt(target)
+            (field.get(target) as? Number)?.toInt()
         }.getOrNull()
     }
 
@@ -1062,14 +1092,13 @@ internal object NativeNetworkSuppressor {
 
         suppressedBindings =
             bindings
-                .distinctBy { binding -> System.identityHashCode(binding) }
+                .distinctByIdentity { it }
                 .map(::WeakReference)
                 .toTypedArray()
 
         val visualMaskResult =
             refreshMobileVisualMasksLocked(
                 targetViews = targetViews,
-                source = source,
             )
         if (visualMaskResult.failureReason != null) {
             return BindingSnapshot.failure(
@@ -1096,7 +1125,6 @@ internal object NativeNetworkSuppressor {
 
     private fun refreshMobileVisualMasksLocked(
         targetViews: List<Pair<String, View>>,
-        source: String,
     ): VisualMaskSnapshot {
         val previous = mobileVisualMasks
         val next = mutableListOf<MobileVisualMaskState>()
@@ -1111,7 +1139,6 @@ internal object NativeNetworkSuppressor {
                             entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
                         )
                             ?: return VisualMaskSnapshot.failure(
-                                source = source,
                                 reason = "mobile-signal-container-missing",
                             )
 
@@ -1142,64 +1169,52 @@ internal object NativeNetworkSuppressor {
 
         mobileVisualMasks =
             next
-                .distinctBy { state ->
-                    state.view.get()?.let(System::identityHashCode)
-                }
+                .distinctByIdentity { state -> state.view.get() }
                 .toTypedArray()
 
         var masked = 0
         mobileVisualMasks.forEach { state ->
             val view = state.view.get() ?: return@forEach
-            val targetAlpha =
-                NetworkSuppressionPolicy.mobileVisualMaskAlpha(
-                    nativeAlpha = state.nativeAlpha,
-                    suppressionActive = true,
-                )
-            if (view.alpha != targetAlpha) {
-                view.alpha = targetAlpha
+            if (view.alpha != 0f) {
+                view.alpha = 0f
             }
-            if (view.alpha == targetAlpha) {
+            if (view.alpha == 0f) {
                 masked += 1
             }
         }
 
         return VisualMaskSnapshot.ready(
-            source = source,
             maskCount = masked,
         )
     }
 
     @Synchronized
-    fun preMaskMobileSignal(image: ImageView): Boolean {
+    fun preMaskMobileSignal(image: ImageView) {
         val homeGroup = activeGroup?.get()
         if (
-            !NetworkSuppressionPolicy.shouldPreMaskMobileSignal(
-                suppressionActive =
-                    activeManager != null &&
-                        mobileSuppressionEnabled,
-                belongsToActiveHomeGroup =
-                    homeGroup != null &&
-                        isDescendantOf(
-                            view = image,
-                            ancestor = homeGroup,
-                        ),
+            activeManager == null ||
+            !mobileSuppressionEnabled ||
+            homeGroup == null ||
+            !isDescendantOf(
+                view = image,
+                ancestor = homeGroup,
             )
         ) {
-            return false
+            return
         }
 
         val container =
             findAncestorByResourceEntry(
                 view = image,
                 entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
-            ) ?: return false
+            ) ?: return
 
         val existing =
             mobileVisualMasks.firstOrNull { state ->
                 state.view.get() === container
             }
         if (existing == null && container.alpha == 0f) {
-            return true
+            return
         }
 
         val state =
@@ -1214,9 +1229,7 @@ internal object NativeNetworkSuppressor {
                                 mobileVisualMasks.asList() +
                                     created
                             )
-                                .distinctBy { mask ->
-                                    mask.view.get()?.let(System::identityHashCode)
-                                }
+                                .distinctByIdentity { mask -> mask.view.get() }
                                 .toTypedArray()
                     }
 
@@ -1225,16 +1238,14 @@ internal object NativeNetworkSuppressor {
             container.alpha = 0f
         }
         if (changed || existing == null) {
-            eventSink?.invoke(
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "nativeNetworkSuppression preMaskMobileSignal " +
                     "view=" + image.javaClass.simpleName +
                     " nativeAlpha=" + state.nativeAlpha +
                     " appliedAlpha=" + container.alpha +
-                    " source=mobile-signal-beforeProceed " +
-                    "",
+                    " source=mobile-signal-beforeProceed ",
             )
         }
-        return container.alpha == 0f
     }
 
     private fun isDescendantOf(
@@ -1332,14 +1343,17 @@ internal object NativeNetworkSuppressor {
     }
 
     private fun bindingOf(view: View): Any? {
+        val viewClass = view.javaClass
         val getter =
-            generateSequence<Class<*>>(view.javaClass) { clazz -> clazz.superclass }
-                .flatMap { clazz -> clazz.declaredMethods.asSequence() }
-                .firstOrNull { method ->
-                    method.parameterCount == 0 &&
-                        method.name.startsWith("getBinding\$") &&
-                        method.returnType.name == MODERN_BINDING_INTERFACE
-                }
+            bindingGetterByClass[viewClass]
+                ?: generateSequence<Class<*>>(viewClass) { it.superclass }
+                    .flatMap { it.declaredMethods.asSequence() }
+                    .firstOrNull { method ->
+                        method.parameterCount == 0 &&
+                            method.name.startsWith("getBinding\$") &&
+                            method.returnType.name == MODERN_BINDING_INTERFACE
+                    }
+                    ?.also { bindingGetterByClass[viewClass] = it }
                 ?: return null
         return runCatching {
             getter.isAccessible = true
@@ -1491,27 +1505,22 @@ internal object NativeNetworkSuppressor {
     )
 
     private data class VisualMaskSnapshot(
-        val source: String,
         val maskCount: Int,
         val failureReason: String?,
     ) {
         companion object {
             fun ready(
-                source: String,
                 maskCount: Int,
             ): VisualMaskSnapshot =
                 VisualMaskSnapshot(
-                    source = source,
                     maskCount = maskCount,
                     failureReason = null,
                 )
 
             fun failure(
-                source: String,
                 reason: String,
             ): VisualMaskSnapshot =
                 VisualMaskSnapshot(
-                    source = source,
                     maskCount = 0,
                     failureReason = reason,
                 )

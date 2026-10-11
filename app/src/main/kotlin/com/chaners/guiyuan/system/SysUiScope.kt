@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.system
 
+import android.content.Context
+
 internal object SysUiScope {
     private const val TIMEOUT_SEC = 10L
     internal const val RESTART_TRIES = 60
@@ -31,8 +33,9 @@ internal object SysUiScope {
             "done\n" +
             "exit 22"
 
-    suspend fun restart(): Boolean =
+    suspend fun restart(context: Context): Boolean =
         RootShell.execute(
+            context = context,
             command = restartCmd,
             timeoutSeconds = TIMEOUT_SEC,
         ).isSuccess

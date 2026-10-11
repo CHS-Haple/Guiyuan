@@ -19,7 +19,7 @@ internal object SysUiKeyguardHostProbe {
 
     @Synchronized
     fun capture(update: SysUiSceneSource.SceneUpdate): Snapshot? {
-        if (!shouldProbe(update.surface)) return null
+        if (update.surface != SysUiSceneSource.Surface.KEYGUARD) return null
 
         val host =
             findAncestor(update.sourceView, KEYGUARD_HOST_CLASS) as? ViewGroup
@@ -75,11 +75,26 @@ internal object SysUiKeyguardHostProbe {
         )
     }
 
-    internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
-        surface == SysUiSceneSource.Surface.KEYGUARD
+    internal fun boundaryGeometry(
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
+    ): String {
+        fun bounds(view: View): String {
+            val position = IntArray(2)
+            view.getLocationInWindow(position)
+            return position[0].toString() + ".." + (position[0] + view.width) +
+                ",width=" + view.width +
+                ",measured=" + view.measuredWidth +
+                ",paddingEnd=" + view.paddingEnd +
+                ",alpha=" + view.alpha +
+                ",attached=" + view.isAttachedToWindow +
+                ",layoutRequested=" + view.isLayoutRequested
+        }
 
-    internal fun isHostClassName(className: String): Boolean =
-        className == KEYGUARD_HOST_CLASS
+        return "statusIcons={" + bounds(resolved.statusIcons) + "}" +
+            " systemIcons={" + bounds(resolved.systemIcons) + "}" +
+            " battery={" + bounds(resolved.battery) + "}" +
+            " batteryCarrier={" + bounds(resolved.batteryCarrier) + "}"
+    }
 
     internal fun shouldFreezeSample(
         hostAttached: Boolean,

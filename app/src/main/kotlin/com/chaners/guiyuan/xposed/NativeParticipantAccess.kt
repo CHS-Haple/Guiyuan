@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.graphics.drawable.Icon
 import android.view.View
 import android.view.ViewGroup
 import java.lang.reflect.Method
@@ -9,12 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 internal object NativeParticipantAccess {
     const val PHONE_STATUS_BAR_VIEW =
         "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"
-    const val ICON_HOLDER =
-        "com.android.systemui.statusbar.phone.StatusBarIconHolder"
-    const val STATUS_BAR_ICON_VIEW =
-        "com.android.systemui.statusbar.StatusBarIconView"
-    const val STATUS_ICON_DISPLAYABLE =
-        "com.android.systemui.statusbar.StatusIconDisplayable"
     private const val DEPENDENCY =
         "com.android.systemui.Dependency"
     private val STATUS_BAR_ICON_CONTROLLER_CANDIDATES =
@@ -64,39 +57,12 @@ internal object NativeParticipantAccess {
 
         return ResolveResult.Ready(
             Handles(
-                statusBarView = statusBarView,
                 manager = manager,
                 group = group,
-                controller = controller.value,
-                controllerSource = controller.source,
-                classLoader = classLoader,
-                holderClass = classOrNull(ICON_HOLDER, classLoader),
-                iconViewClass = classOrNull(STATUS_BAR_ICON_VIEW, classLoader),
-                displayableClass = classOrNull(STATUS_ICON_DISPLAYABLE, classLoader),
+                controller = controller,
             ),
         )
     }
-
-    fun resourceSetter(controllerClass: Class<*>): ResourceSetter? =
-        controllerClass
-            .allMethods()
-            .filter { method -> method.name == "setIcon" }
-            .mapNotNull { method ->
-                classifyResourceSetIcon(method)?.let { mode ->
-                    ResourceSetter(method = method, mode = mode)
-                }
-            }
-            .firstOrNull()
-
-    fun setIconHolderAvailable(controllerClass: Class<*>): Boolean =
-        controllerClass.hasMethod(
-            name = "setIcon",
-            parameterTypes =
-                listOf(
-                    "java.lang.String",
-                    ICON_HOLDER,
-                ),
-        )
 
     fun iconHolder(
         handles: Handles,
@@ -119,26 +85,6 @@ internal object NativeParticipantAccess {
             getter.isAccessible = true
             getter.invoke(iconList, tag, slot)
         }.getOrNull()
-    }
-
-    fun invokeSetIconHolder(
-        handles: Handles,
-        slot: String,
-        holder: Any,
-    ) {
-        val holderClass =
-            handles.holderClass
-                ?: error("status-icon-holder-class-missing")
-        check(holderClass.isInstance(holder)) {
-            "status-icon-holder-type-mismatch"
-        }
-        val setter =
-            handles.controller.javaClass.findMethod(
-                name = "setIcon",
-                parameterTypes = listOf("java.lang.String", ICON_HOLDER),
-            ) ?: error("set-icon-holder-method-missing")
-        setter.isAccessible = true
-        setter.invoke(handles.controller, slot, holder)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -165,16 +111,6 @@ internal object NativeParticipantAccess {
         return removed
     }
 
-    fun visibilityMethod(controllerClass: Class<*>): Method? =
-        controllerClass.findMethod(
-            name = "setIconVisibility",
-            parameterTypes =
-                listOf(
-                    "java.lang.String",
-                    "boolean",
-                ),
-        )
-
     fun removal(controllerClass: Class<*>): Removal? {
         val candidates =
             controllerClass
@@ -193,30 +129,6 @@ internal object NativeParticipantAccess {
                 RemovalMode.REMOVE_TAGGED -> 2
                 RemovalMode.REMOVE_SLOT -> 3
             }
-        }
-    }
-
-    fun classifyResourceSetIcon(method: Method): ResourceSetIconMode? {
-        if (method.name != "setIcon" || method.parameterCount != 3) {
-            return null
-        }
-        val params = method.parameterTypes
-        val intType = Int::class.javaPrimitiveType
-        val firstIsText = CharSequence::class.java.isAssignableFrom(params[0])
-        val thirdIsText = CharSequence::class.java.isAssignableFrom(params[2])
-
-        return when {
-            firstIsText &&
-                params[1] == String::class.java &&
-                params[2] == intType ->
-                ResourceSetIconMode.CONTENT_SLOT_RES
-
-            params[0] == String::class.java &&
-                params[1] == intType &&
-                thirdIsText ->
-                ResourceSetIconMode.SLOT_RES_CONTENT
-
-            else -> null
         }
     }
 
@@ -241,43 +153,6 @@ internal object NativeParticipantAccess {
 
             else -> null
         }
-    }
-
-    fun invokeCreate(
-        handles: Handles,
-        setter: ResourceSetter,
-        slot: String,
-        resourceId: Int,
-        contentDescription: CharSequence,
-    ) {
-        setter.method.isAccessible = true
-        when (setter.mode) {
-            ResourceSetIconMode.CONTENT_SLOT_RES ->
-                setter.method.invoke(
-                    handles.controller,
-                    contentDescription,
-                    slot,
-                    resourceId,
-                )
-
-            ResourceSetIconMode.SLOT_RES_CONTENT ->
-                setter.method.invoke(
-                    handles.controller,
-                    slot,
-                    resourceId,
-                    contentDescription,
-                )
-        }
-    }
-
-    fun invokeVisibility(
-        handles: Handles,
-        method: Method,
-        slot: String,
-        visible: Boolean,
-    ) {
-        method.isAccessible = true
-        method.invoke(handles.controller, slot, visible)
     }
 
     fun invokeRemoval(
@@ -357,129 +232,6 @@ internal object NativeParticipantAccess {
         }.getOrNull()
     }
 
-    fun visibleState(view: View): Int? {
-        val accessor =
-            view.javaClass
-                .allMethods()
-                .firstOrNull { method ->
-                    method.name == "getVisibleState" &&
-                        method.parameterCount == 0 &&
-                        (
-                            method.returnType == Int::class.javaPrimitiveType ||
-                                method.returnType == Int::class.java
-                        )
-                }
-
-        val viaAccessor =
-            accessor?.let { method ->
-                runCatching {
-                    method.isAccessible = true
-                    method.invoke(view) as? Int
-                }.getOrNull()
-            }
-        if (viaAccessor != null) {
-            return viaAccessor
-        }
-
-        return view.readField("mVisibleState") as? Int
-    }
-
-    fun iconVisible(view: View): Boolean? {
-        val accessor =
-            view.javaClass
-                .allMethods()
-                .firstOrNull { method ->
-                    method.name == "isIconVisible" &&
-                        method.parameterCount == 0 &&
-                        (
-                            method.returnType == Boolean::class.javaPrimitiveType ||
-                                method.returnType == Boolean::class.java
-                        )
-                }
-
-        val viaAccessor =
-            accessor?.let { method ->
-                runCatching {
-                    method.isAccessible = true
-                    method.invoke(view) as? Boolean
-                }.getOrNull()
-            }
-        if (viaAccessor != null) {
-            return viaAccessor
-        }
-
-        val icon = view.readField("mIcon") ?: return null
-        return icon.readField("visible") as? Boolean
-    }
-
-    fun findBootstrapResource(group: ViewGroup): BootstrapResource? {
-        val expectedPackage = group.context.packageName
-        for (index in 0 until group.childCount) {
-            val child = group.getChildAt(index)
-            val statusBarIcon = child.readField("mIcon") ?: continue
-            val icon = statusBarIcon.readField("icon") as? Icon ?: continue
-            if (icon.type != Icon.TYPE_RESOURCE) {
-                continue
-            }
-            val resourceId = runCatching { icon.resId }.getOrDefault(0)
-            if (resourceId == 0) {
-                continue
-            }
-            val resourcePackage =
-                runCatching {
-                    group.resources.getResourcePackageName(resourceId)
-                }.getOrNull()
-            if (resourcePackage != expectedPackage) {
-                continue
-            }
-            return BootstrapResource(
-                resourceId = resourceId,
-                resourcePackage = resourcePackage,
-                sourceSlot = slotOf(child),
-                sourceIndex = index,
-            )
-        }
-        return null
-    }
-
-    fun methodSignatures(
-        clazz: Class<*>,
-        names: Set<String>,
-    ): List<String> =
-        clazz
-            .allMethods()
-            .filter { method -> method.name in names }
-            .distinctBy(::methodSignature)
-            .map(::methodSignature)
-            .sorted()
-            .toList()
-
-    fun holderFactories(holderClass: Class<*>?): List<Method> {
-        val clazz = holderClass ?: return emptyList()
-        return clazz
-            .declaredMethods
-            .filter { method ->
-                java.lang.reflect.Modifier.isStatic(method.modifiers) &&
-                    clazz.isAssignableFrom(method.returnType)
-            }
-            .sortedBy(::methodSignature)
-            .toList()
-    }
-
-    fun hasMethodSignature(
-        clazz: Class<*>?,
-        name: String,
-        parameterTypes: List<String>,
-    ): Boolean =
-        clazz?.hasMethod(name, parameterTypes) == true
-
-    fun methodSignature(method: Method): String =
-        method.name +
-            "(" +
-            method.parameterTypes.joinToString(",") { type -> type.name } +
-            "):" +
-            method.returnType.name
-
     fun resourceEntryName(view: View): String? {
         if (view.id == View.NO_ID) {
             return null
@@ -488,20 +240,6 @@ internal object NativeParticipantAccess {
             view.resources.getResourceEntryName(view.id)
         }.getOrNull()
     }
-
-    private fun Class<*>.findMethod(
-        name: String,
-        parameterTypes: List<String>,
-    ): Method? =
-        allMethods().firstOrNull { method ->
-            method.name == name &&
-                method.parameterTypes.map { type -> type.name } == parameterTypes
-        }
-
-    private fun Class<*>.hasMethod(
-        name: String,
-        parameterTypes: List<String>,
-    ): Boolean = findMethod(name, parameterTypes) != null
 
     private fun Class<*>.allMethods(): Sequence<Method> =
         generateSequence(this) { clazz -> clazz.superclass }
@@ -522,16 +260,7 @@ internal object NativeParticipantAccess {
     private fun resolveStatusBarIconController(
         classLoader: ClassLoader,
         manager: Any,
-    ): ControllerRef? {
-        val observedController =
-            NativeParticipantRuntime.controllerFor(manager)
-        if (observedController != null) {
-            return ControllerRef(
-                value = observedController,
-                source = "add-icon-group-observer",
-            )
-        }
-
+    ): Any? {
         val dependencyClass = classOrNull(DEPENDENCY, classLoader)
         if (dependencyClass != null) {
             val getMethod =
@@ -556,24 +285,13 @@ internal object NativeParticipantAccess {
                             getMethod.invoke(null, controllerType)
                         }.getOrNull()
                     if (controller != null) {
-                        return ControllerRef(
-                            value = controller,
-                            source = "dependency",
-                        )
+                        return controller
                     }
                 }
             }
         }
 
-        val legacyController = manager.readField("mController")
-        if (legacyController != null) {
-            return ControllerRef(
-                value = legacyController,
-                source = "manager-field",
-            )
-        }
-
-        return null
+        return manager.readField("mController")
     }
 
     private fun classOrNull(
@@ -585,15 +303,9 @@ internal object NativeParticipantAccess {
         }.getOrNull()
 
     internal data class Handles(
-        val statusBarView: View,
         val manager: Any,
         val group: ViewGroup,
         val controller: Any,
-        val controllerSource: String,
-        val classLoader: ClassLoader,
-        val holderClass: Class<*>?,
-        val iconViewClass: Class<*>?,
-        val displayableClass: Class<*>?,
     )
 
     internal sealed interface ResolveResult {
@@ -606,32 +318,10 @@ internal object NativeParticipantAccess {
         ) : ResolveResult
     }
 
-    private data class ControllerRef(
-        val value: Any,
-        val source: String,
-    )
-
-    internal data class ResourceSetter(
-        val method: Method,
-        val mode: ResourceSetIconMode,
-    )
-
     internal data class Removal(
         val method: Method,
         val mode: RemovalMode,
     )
-
-    internal data class BootstrapResource(
-        val resourceId: Int,
-        val resourcePackage: String,
-        val sourceSlot: String?,
-        val sourceIndex: Int,
-    )
-
-    internal enum class ResourceSetIconMode {
-        CONTENT_SLOT_RES,
-        SLOT_RES_CONTENT,
-    }
 
     internal enum class RemovalMode {
         REMOVE_ALL_SLOT_PIPELINE_FLAG,

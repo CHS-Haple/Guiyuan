@@ -6,7 +6,7 @@ import org.junit.Test
 
 class SceneControlCenterTest {
     @Test
-    fun controlCenterProjectionInheritsVerifiedSourceSceneCapability() {
+    fun controlCenterRequiresEligibleSourceAndSettings() {
         assertTrue(
             ScenePolicy.controlCenterProjectionEligible(
                 featureEnabled = true,

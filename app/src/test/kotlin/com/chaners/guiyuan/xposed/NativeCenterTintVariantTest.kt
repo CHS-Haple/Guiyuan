@@ -35,11 +35,11 @@ class NativeCenterTintVariantTest {
     }
 
     @Test
-    fun alreadyDarkModeInputStillResolvesOpaqueTintMask() {
+    fun tintThenDarkmodeSuffixesNormalizeWithoutDuplication() {
         assertEquals(
             "stat_sys_wifi_signal_1_tint",
             nativeCenterTintEntryName(
-                "stat_sys_wifi_signal_1_darkmode",
+                "stat_sys_wifi_signal_1_tint_darkmode",
             ),
         )
     }

@@ -12,14 +12,15 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 @Composable
 internal fun HotReloadAction(
     inProgress: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     val label = stringResource(R.string.hot_reload)
 
     TooltipBox(text = label) {
         IconButton(
-            onClick = { if (!inProgress) onClick() },
-            enabled = true,
+            onClick = { if (enabled && !inProgress) onClick() },
+            enabled = enabled,
             holdDownState = inProgress,
         ) {
             Icon(

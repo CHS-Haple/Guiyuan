@@ -7,6 +7,82 @@ import org.junit.Test
 
 class CcTransitionGeometryTest {
     @Test
+    fun mobileTypeHandoffComparesCurrentNativeGlyphNotDataSimOwnership() {
+        val native5G = NativePresentationResolver.NetworkType(
+            label = "5G",
+            enhanced = false,
+            source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+        )
+        val native5GA = native5G.copy(label = "5GA")
+        val nativePlus = native5G.copy(enhanced = true)
+
+        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5G))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5GA))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G-A", false, native5GA))
+        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G++", false, nativePlus))
+        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("4G", false, native5G))
+        assertNull(CcTransitionPolicy.mobileTypeMatches("5GA", false, null))
+    }
+
+    @Test
+    fun missingNativeEndpointUsesOneWholeComponentFadeCurve() {
+        val policy = CcTransitionPolicy
+        assertEquals(1f, policy.unmatchedExitOpacity(0f), 0f)
+        assertEquals(0.125f, policy.unmatchedExitOpacity(0.5f), 0.0001f)
+        assertEquals(0f, policy.unmatchedExitOpacity(1f), 0f)
+        assertEquals(1f, policy.unmatchedExitOpacity(Float.NaN), 0f)
+
+        // No target geometry means the source keeps its native carrier basis.
+        val source = floatArrayOf(120f, 50f, 24f, 0f, 0f, 30f)
+        val carrier = floatArrayOf(100f, 50f, 80f, 0f, 0f, 40f)
+        val moved = carrier.copyOf().apply { this[0] += 20f }
+        val carried = policy.rebaseSourceToCurrentCarrier(source, carrier, moved)
+        assertEquals(140f, carried[0], 0.0001f)
+        assertEquals(24f, carried[2], 0.0001f)
+        assertEquals(30f, carried[5], 0.0001f)
+    }
+
+    @Test
+    fun missingTextDoesNotReverseBatteryRingRetraction() {
+        val none = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.NONE
+        val left = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.LEFT
+        val right = com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy.ExitDirection.RIGHT
+
+        assertEquals(
+            left,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
+        )
+        assertEquals(
+            right,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = none,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = true,
+            ),
+        )
+        assertEquals(
+            right,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = right,
+                nativeBatteryIslandActive = false,
+                targetRowRtl = false,
+            ),
+        )
+        assertEquals(
+            left,
+            CcTransitionPolicy.batteryRingExitDirection(
+                liveCenterDirection = right,
+                nativeBatteryIslandActive = true,
+                targetRowRtl = false,
+            ),
+        )
+    }
+
+    @Test
     fun fakeCapacityLeaseDoesNotChangeEndAnchoredMotionCarrierCenter() {
         val expandedCarrier =
             floatArrayOf(
@@ -286,35 +362,32 @@ class CcTransitionGeometryTest {
     }
 
     @Test
-    fun semanticFallbackSeparatesMobileTypeAndSignalInsteadOfSharingSlotCenter() {
-        val type =
+    fun missingNativeMobileTextHasNoGuessedSignalSlotEndpoint() {
+        assertNull(
             CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
-            )
-        val signal =
-            CcTransitionPolicy.semanticFallbackBounds(
-                preferredChildEntries = listOf("mobile_signal"),
-                isRtl = false,
-            )
-        requireNotNull(type)
-        requireNotNull(signal)
-
-        assertTrue(type.right < signal.left)
-
-        val rtlType =
+            ),
+        )
+        assertNull(
             CcTransitionPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
-            )
-        val rtlSignal =
-            CcTransitionPolicy.semanticFallbackBounds(
-                preferredChildEntries = listOf("mobile_signal"),
-                isRtl = true,
-            )
-        requireNotNull(rtlType)
+            ),
+        )
+
+        val signal = CcTransitionPolicy.semanticFallbackBounds(
+            preferredChildEntries = listOf("mobile_signal"),
+            isRtl = false,
+        )
+        val rtlSignal = CcTransitionPolicy.semanticFallbackBounds(
+            preferredChildEntries = listOf("mobile_signal"),
+            isRtl = true,
+        )
+        requireNotNull(signal)
         requireNotNull(rtlSignal)
-        assertTrue(rtlSignal.right < rtlType.left)
+        assertEquals(0.48f, signal.left, 0.0001f)
+        assertEquals(0.52f, rtlSignal.right, 0.0001f)
     }
 
     @Test

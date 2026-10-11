@@ -105,35 +105,21 @@ internal object HotReloadTransfer {
 
         val state = payload.getOrNull(INDEX_STATE) as? Bundle ?: return null
         val bindings = payload.getOrNull(INDEX_BINDINGS)
+        // Version has already passed the supported-version and payload-size checks.
         val notificationShadeHomeEligible =
-            if (
-                version == VERSION ||
-                version == PRESENTATION_TRANSFER_VERSION ||
-                version == TINT_TRANSFER_VERSION ||
-                version == CONTROL_CENTER_TRANSFER_VERSION ||
-                version == SHADE_TRANSFER_VERSION
-            ) {
+            if (version >= SHADE_TRANSFER_VERSION) {
                 payload.getOrNull(INDEX_NOTIFICATION_SHADE_HOME_ELIGIBLE) as? Boolean
             } else {
                 null
             }
         val controlCenterHomeEligible =
-            if (
-                version == VERSION ||
-                version == PRESENTATION_TRANSFER_VERSION ||
-                version == TINT_TRANSFER_VERSION ||
-                version == CONTROL_CENTER_TRANSFER_VERSION
-            ) {
+            if (version >= CONTROL_CENTER_TRANSFER_VERSION) {
                 payload.getOrNull(INDEX_CONTROL_CENTER_HOME_ELIGIBLE) as? Boolean
             } else {
                 null
             }
         val appliedTint =
-            if (
-                version == VERSION ||
-                version == PRESENTATION_TRANSFER_VERSION ||
-                version == TINT_TRANSFER_VERSION
-            ) {
+            if (version >= TINT_TRANSFER_VERSION) {
                 (payload.getOrNull(INDEX_APPLIED_TINT) as? Number)
                     ?.toInt()
                     ?.takeIf(::isOpaqueEnoughForPresentation)
@@ -141,14 +127,7 @@ internal object HotReloadTransfer {
                 null
             }
         val statusIconTint =
-            if (
-                (
-                    version == VERSION ||
-                        version == PRESENTATION_TRANSFER_VERSION ||
-                        version == TINT_TRANSFER_VERSION
-                ) &&
-                    appliedTint != null
-            ) {
+            if (version >= TINT_TRANSFER_VERSION && appliedTint != null) {
                 (payload.getOrNull(INDEX_STATUS_ICON_TINT) as? Number)
                     ?.toInt()
                     ?.takeIf(::isOpaqueEnoughForPresentation)
@@ -157,7 +136,7 @@ internal object HotReloadTransfer {
             }
 
         val controlCenterFakeHost =
-            if (version == VERSION || version == PRESENTATION_TRANSFER_VERSION) {
+            if (version >= PRESENTATION_TRANSFER_VERSION) {
                 (payload.getOrNull(INDEX_CONTROL_CENTER_FAKE_HOST) as? ViewGroup)
                     ?.takeIf { candidate ->
                         candidate.isAttachedToWindow &&

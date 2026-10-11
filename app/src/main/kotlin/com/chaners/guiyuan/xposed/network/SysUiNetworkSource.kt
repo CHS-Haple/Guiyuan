@@ -11,6 +11,7 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiNetworkSource {
     const val WIFI_BINDER_CLASS_NAME =
@@ -145,6 +146,7 @@ internal object SysUiNetworkSource {
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): InstallResult {
         val wifi =
             installWifi(
@@ -152,6 +154,7 @@ internal object SysUiNetworkSource {
                 classLoader = classLoader,
                 onWifiState = onWifiState,
                 onEvent = onEvent,
+                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             )
         val mobile =
             installMobile(
@@ -161,6 +164,7 @@ internal object SysUiNetworkSource {
                 onMobileSignalWillApply = onMobileSignalWillApply,
                 onPresentationChanged = onPresentationChanged,
                 onEvent = onEvent,
+                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             )
 
         return InstallResult(
@@ -176,8 +180,10 @@ internal object SysUiNetworkSource {
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
+        val active = AtomicBoolean(false)
 
         return try {
             val wifiBinderClass =
@@ -259,9 +265,11 @@ internal object SysUiNetworkSource {
                         .setId(WIFI_BIND_HOOK_ID)
                         .intercept(
                             wifiBindHooker(
+                                active = active,
                                 seedContract = seedContract,
                                 onWifiState = onWifiState,
                                 onEvent = onEvent,
+                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             ),
                         )
                 }
@@ -272,29 +280,28 @@ internal object SysUiNetworkSource {
                         .setId(WIFI_ICON_HOOK_ID)
                         .intercept(
                             wifiIconHooker(
+                                active = active,
                                 wifiImageField = wifiIconImageField,
                                 wifiClassIdField = wifiIconClassIdField,
                                 wifiVisibleIconField = wifiVisibleIconField,
                                 iconResourceIdAccessor = iconResourceIdAccessor,
                                 onWifiState = onWifiState,
                                 onEvent = onEvent,
+                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             ),
                         )
                 }
 
+            active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
                 ready = true,
                 failure = null,
             )
         } catch (error: InstallStageException) {
-            created.forEach { handle -> runCatching { handle.unhook() } }
+            active.set(false)
             wifiSeedContract = null
-            BranchInstallResult(
-                handles = emptyList(),
-                ready = false,
-                failure = installFailure("wifi", error),
-            )
+            failedBranch("wifi", error, created)
         }
     }
 
@@ -305,8 +312,10 @@ internal object SysUiNetworkSource {
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
+        val active = AtomicBoolean(false)
 
         return try {
             val mobileBinderClass =
@@ -372,9 +381,11 @@ internal object SysUiNetworkSource {
                         .setId(MOBILE_BIND_HOOK_ID)
                         .intercept(
                             mobileBindHooker(
+                                active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
                                 onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
+                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             ),
                         )
                 }
@@ -385,28 +396,27 @@ internal object SysUiNetworkSource {
                         .setId(MOBILE_SIGNAL_HOOK_ID)
                         .intercept(
                             mobileSignalHooker(
+                                active = active,
                                 mobileImageField = mobileImageField,
                                 mobileClassIdField = mobileClassIdField,
                                 onMobileSignal = onMobileSignal,
                                 onMobileSignalWillApply = onMobileSignalWillApply,
                                 onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
+                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             ),
                         )
                 }
 
+            active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
                 ready = true,
                 failure = null,
             )
         } catch (error: InstallStageException) {
-            created.forEach { handle -> runCatching { handle.unhook() } }
-            BranchInstallResult(
-                handles = emptyList(),
-                ready = false,
-                failure = installFailure("mobile", error),
-            )
+            active.set(false)
+            failedBranch("mobile", error, created)
         }
     }
 
@@ -449,12 +459,16 @@ internal object SysUiNetworkSource {
     fun exportHotReloadBindings(): Array<Any?> {
         val wifi = ArrayList<Any>(wifiRoots.size)
         wifiRoots.forEach { (root, viewModel) ->
-            wifi.add(arrayOf(root, viewModel))
+            if (root.isAttachedToWindow) {
+                wifi.add(arrayOf(root, viewModel))
+            }
         }
 
         val mobile = ArrayList<Any>(mobileRoots.size)
         mobileRoots.forEach { (root, subscriptionId) ->
-            mobile.add(arrayOf(root, subscriptionId))
+            if (root.isAttachedToWindow) {
+                mobile.add(arrayOf(root, subscriptionId))
+            }
         }
 
         return arrayOf(wifi, mobile)
@@ -462,6 +476,9 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
+        // A new hook can bind a reused root before the old generation hands it over.
+        val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
         wifiRoots.clear()
         mobileRoots.clear()
         lastWifiEvents.clear()
@@ -469,9 +486,7 @@ internal object SysUiNetworkSource {
         lastMobileEvents.clear()
 
         val payload = raw as? Array<*>
-            ?: return BindingRestoreResult(wifiRoots = 0, mobileRoots = 0)
-
-        val wifi = payload.getOrNull(0) as? List<*>
+        val wifi = payload?.getOrNull(0) as? List<*>
         wifi.orEmpty().forEach { value ->
             val pair = value as? Array<*>
             val root =
@@ -489,16 +504,18 @@ internal object SysUiNetworkSource {
             }
         }
 
-        val mobile = payload.getOrNull(1) as? List<*>
+        val mobile = payload?.getOrNull(1) as? List<*>
         mobile.orEmpty().forEach { value ->
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
             val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
-            if (root.isAttachedToWindow) {
+            if (root.isAttachedToWindow && subscriptionId >= 0) {
                 mobileRoots[root] = subscriptionId
             }
         }
 
+        wifiRoots.putAll(newWifi)
+        mobileRoots.putAll(newMobile)
         return BindingRestoreResult(
             wifiRoots = wifiRoots.size,
             mobileRoots = mobileRoots.size,
@@ -507,7 +524,8 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun hotReloadBindingCounts(): Pair<Int, Int> =
-        wifiRoots.size to mobileRoots.size
+        wifiRoots.keys.count { it.isAttachedToWindow } to
+            mobileRoots.keys.count { it.isAttachedToWindow }
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
@@ -527,8 +545,7 @@ internal object SysUiNetworkSource {
                     "nativeSlot binding=wifi root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
             }
             mobileRoots.forEach { (root, subscriptionId) ->
@@ -537,8 +554,7 @@ internal object SysUiNetworkSource {
                         " root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
             }
         }
@@ -566,13 +582,37 @@ internal object SysUiNetworkSource {
         )
     }
 
+    private fun failedBranch(
+        component: String,
+        error: InstallStageException,
+        handles: List<HookHandle>,
+    ): BranchInstallResult {
+        val remaining = handles.filter { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+        val failure = installFailure(component, error)
+        return BranchInstallResult(
+            handles = remaining,
+            ready = false,
+            failure =
+                if (remaining.isEmpty()) {
+                    failure
+                } else {
+                    failure.copy(reason = failure.reason + "-hook-cleanup-failed")
+                },
+        )
+    }
+
     fun matches(handle: HookHandle): Boolean = handle.id in hookIds
 
     private fun wifiBindHooker(
+        active: AtomicBoolean,
         seedContract: WifiSeedContract,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val root = chain.getArg(0) as? ViewGroup
         val viewModel = chain.getArg(1)
 
@@ -585,22 +625,22 @@ internal object SysUiNetworkSource {
             }
             val bindingChanged = previous !== viewModel
             if (bindingChanged) {
-                onEvent?.invoke(
+                val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
+                diagnosticEvent?.invoke(
                     "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
                         "root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " vm=" + viewModel.javaClass.simpleName +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        "",
+                        " layout=" + layoutToken(root),
                 )
                 readWifiSeed(
                     root = root,
                     viewModel = viewModel,
                     contract = seedContract,
                     source = "bind",
-                    onEvent = onEvent,
+                    onEvent = diagnosticEvent,
                 )?.let(onWifiState)
             }
         }
@@ -708,7 +748,7 @@ internal object SysUiNetworkSource {
 
         onEvent?.invoke(
             "networkPipeline wifi seed source=" + source +
-                " state=" + if (semantic.state != null) "ready" else "unavailable" +
+                " state=" + (if (semantic.state != null) "ready" else "unavailable") +
                 " getter=" + getter.name +
                 " flow=" + flow.javaClass.simpleName +
                 " valueType=" + semantic.valueType +
@@ -786,7 +826,7 @@ internal object SysUiNetworkSource {
                 state = StatusStateStore.WifiState.Hidden,
                 resourceId = null,
                 resourceName = null,
-                valueType = value?.javaClass?.simpleName ?: "null",
+                valueType = value.javaClass.simpleName,
             )
         }
 
@@ -828,13 +868,16 @@ internal object SysUiNetworkSource {
     }
 
     private fun wifiIconHooker(
+        active: AtomicBoolean,
         wifiImageField: Field,
         wifiClassIdField: Field,
         wifiVisibleIconField: Field,
         iconResourceIdAccessor: IconResourceIdAccessor,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val value = chain.getArg(0)
         val emitter = chain.thisObject
         val classId =
@@ -850,22 +893,21 @@ internal object SysUiNetworkSource {
             runCatching {
                 wifiImageField.get(emitter) as? ImageView
             }.getOrNull()
-        val bound = image != null && findWifiBinding(image)
         val semantic =
-            if (bound && image != null) {
-                decodeWifiSemantic(
-                    value = value,
-                    sourceView = image,
-                    wifiVisibleIconField = wifiVisibleIconField,
-                    iconResourceIdAccessor = iconResourceIdAccessor,
-                )
-            } else {
-                null
-            }
+            image
+                ?.takeIf(::findWifiBinding)
+                ?.let { boundImage ->
+                    decodeWifiSemantic(
+                        value = value,
+                        sourceView = boundImage,
+                        wifiVisibleIconField = wifiVisibleIconField,
+                        iconResourceIdAccessor = iconResourceIdAccessor,
+                    )
+                }
 
         val result = chain.proceed()
 
-        if (image != null && bound && semantic != null) {
+        if (image != null && semantic != null) {
             val taggedResId =
                 (image.tag as? Number)
                     ?.toInt()
@@ -912,26 +954,28 @@ internal object SysUiNetworkSource {
 
             if (changed) {
                 effective.state?.let(onWifiState)
-                onEvent?.invoke(
-                    "networkPipeline wifi iconEvent " +
-                        "phase=semanticBeforeProceed/viewAfterProceed " +
-                        "viewId=" + resourceId(image) +
-                        " classId=" + classId +
-                        " valueType=" + semantic.valueType +
-                        " effectiveType=" + effective.valueType +
-                        " modelResId=" + (semantic.resourceId ?: 0) +
-                        " modelResource=" + (semantic.resourceName ?: "n/a") +
-                        " taggedResId=" + (taggedResId ?: 0) +
-                        " taggedResource=" + (taggedResource ?: "n/a") +
-                        " appliedFallback=" +
-                        if (hotspotAppliedFallback) {
-                            "hotspot-tag-change"
-                        } else {
-                            "none"
-                        } +
-                        " visibility=" + visibilityName(image.visibility) +
-                        " presentation=" + wifiPresentationToken(image),
-                )
+                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    onEvent(
+                        "networkPipeline wifi iconEvent " +
+                            "phase=semanticBeforeProceed/viewAfterProceed " +
+                            "viewId=" + resourceId(image) +
+                            " classId=" + classId +
+                            " valueType=" + semantic.valueType +
+                            " effectiveType=" + effective.valueType +
+                            " modelResId=" + (semantic.resourceId ?: 0) +
+                            " modelResource=" + (semantic.resourceName ?: "n/a") +
+                            " taggedResId=" + (taggedResId ?: 0) +
+                            " taggedResource=" + (taggedResource ?: "n/a") +
+                            " appliedFallback=" +
+                            if (hotspotAppliedFallback) {
+                                "hotspot-tag-change"
+                            } else {
+                                "none"
+                            } +
+                            " visibility=" + visibilityName(image.visibility) +
+                            " presentation=" + wifiPresentationToken(image),
+                    )
+                }
             }
         }
 
@@ -950,14 +994,18 @@ internal object SysUiNetworkSource {
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
     private fun mobileBindHooker(
+        active: AtomicBoolean,
         subscriptionIdMethod: Method,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val root = chain.getArg(0) as? ViewGroup
         val locationViewModel = chain.getArg(1)
         val iconViewModel = chain.getArg(2)
         var bindingLog: String? = null
+        var bindingChanged = false
 
         if (
             root != null &&
@@ -967,10 +1015,12 @@ internal object SysUiNetworkSource {
                 (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
             }.getOrDefault(-1)
 
+            val nextId = subscriptionId.takeIf { it >= 0 }
             val previous = synchronized(this) {
-                mobileRoots.put(root, subscriptionId)
+                if (nextId == null) mobileRoots.remove(root) else mobileRoots.put(root, nextId)
             }
-            if (previous == null || previous != subscriptionId) {
+            bindingChanged = previous != nextId
+            if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
                 bindingLog =
                     "networkPipeline mobile bound " +
                         "stage=beforeProceed " +
@@ -980,27 +1030,29 @@ internal object SysUiNetworkSource {
                         " subId=" + subscriptionId +
                         " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
                         " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root) +
-                        ""
+                        " layout=" + layoutToken(root)
             }
         }
 
         val result = chain.proceed()
-        bindingLog?.let {
-            onEvent?.invoke(it)
+        if (bindingChanged) {
+            bindingLog?.let { onEvent?.invoke(it) }
             onPresentationChanged?.invoke()
         }
         result
     }
 
     private fun mobileSignalHooker(
+        active: AtomicBoolean,
         mobileImageField: Field,
         mobileClassIdField: Field,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
+        if (!active.get()) return@Hooker chain.proceed()
         val emitter = chain.thisObject
         val image = runCatching {
             mobileImageField.get(emitter) as? ImageView
@@ -1014,10 +1066,12 @@ internal object SysUiNetworkSource {
             runCatching {
                 onMobileSignalWillApply?.invoke(image)
             }.onFailure { error ->
-                onEvent?.invoke(
-                    "networkPipeline mobile preMask failed " +
-                        "error=" + error.javaClass.simpleName,
-                )
+                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    onEvent(
+                        "networkPipeline mobile preMask failed " +
+                            "error=" + error.javaClass.simpleName,
+                    )
+                }
             }
         }
 
@@ -1030,7 +1084,8 @@ internal object SysUiNetworkSource {
                     null -> "null"
                     else -> value.javaClass.simpleName
                 }
-                val eventKey = classId.toString() + ":" + valueText
+                // A native icon view may be rebound to a different SIM.
+                val eventKey = "$subscriptionId:$classId:$valueText"
                 val changed = synchronized(this) {
                     lastMobileEvents.put(image, eventKey) != eventKey
                 }
@@ -1039,7 +1094,9 @@ internal object SysUiNetworkSource {
                     val resourceId = (value as? Number)
                         ?.toInt()
                         ?.takeIf { it != 0 }
-                    val resourceName = resourceId?.let { id -> resourceName(image, id) }
+                    val resourceName =
+                        if (classId == 0) resourceId?.let { id -> resourceName(image, id) }
+                        else null
                     when (classId) {
                         0 ->
                             onMobileSignal(
@@ -1049,14 +1106,19 @@ internal object SysUiNetworkSource {
                         1, 2 -> onPresentationChanged?.invoke()
                     }
 
-                    eventLog =
-                        "networkPipeline mobile iconEvent " +
-                            "phase=beforeProceed " +
-                            "subId=" + subscriptionId +
-                            " viewId=" + resourceId(image) +
-                            " classId=" + classId +
-                            " value=" + valueText +
-                            " resource=" + (resourceName ?: "n/a")
+                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                        eventLog =
+                            "networkPipeline mobile iconEvent " +
+                                "phase=beforeProceed " +
+                                "subId=" + subscriptionId +
+                                " viewId=" + resourceId(image) +
+                                " classId=" + classId +
+                                " value=" + valueText +
+                                " resource=" +
+                                (resourceName
+                                    ?: resourceId?.let { id -> resourceName(image, id) }
+                                    ?: "n/a")
+                    }
                 }
             }
         }

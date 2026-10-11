@@ -108,53 +108,7 @@ jobs:
 
       - name: Verify modern Xposed metadata
         shell: bash
-        run: |
-          APK="app/build/outputs/apk/release/app-release.apk"
-          REQUIRED_ENTRIES=(
-            "META-INF/xposed/java_init.list"
-            "META-INF/xposed/module.prop"
-            "META-INF/xposed/scope.list"
-          )
-
-          for entry in "${REQUIRED_ENTRIES[@]}"; do
-            if ! unzip -Z1 "$APK" | grep -Fxq "$entry"; then
-              echo "Missing modern Xposed metadata in $APK: $entry"
-              exit 1
-            fi
-          done
-
-          if unzip -Z1 "$APK" | grep -Fxq "assets/xposed_init"; then
-            echo "Legacy Xposed entry metadata must not be packaged in $APK."
-            exit 1
-          fi
-
-          if [[ "$(unzip -p "$APK" META-INF/xposed/scope.list | tr -d '\r\n')" != "com.android.systemui" ]]; then
-            echo "Unexpected Xposed scope in $APK."
-            exit 1
-          fi
-
-          if ! unzip -p "$APK" META-INF/xposed/module.prop | grep -Fxq "targetApiVersion=102"; then
-            echo "Modern Xposed target API 102 metadata is missing from $APK."
-            exit 1
-          fi
-
-          if ! unzip -p "$APK" META-INF/xposed/module.prop | grep -Fxq "autoHotReload=true"; then
-            echo "Modern Xposed hot reload metadata is missing from $APK."
-            exit 1
-          fi
-
-          JAVA_ENTRY_COUNT="$(
-            unzip -p "$APK" META-INF/xposed/java_init.list |
-              tr -d '\r' |
-              sed '/^[[:space:]]*$/d' |
-              wc -l |
-              tr -d ' '
-          )"
-          if [[ "$JAVA_ENTRY_COUNT" != "1" ]]; then
-            echo "Hot reload requires exactly one Java entry class in $APK."
-            exit 1
-          fi
-
+        run: bash tools/verify_xposed_metadata.sh app/build/outputs/apk/release/app-release.apk
       - name: Verify release is non-debuggable
         shell: bash
         run: |
@@ -236,7 +190,7 @@ jobs:
 
           changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
           heading = re.compile(
-              rf"^## \\[{re.escape(version)}\\] - \\d{{4}}-\\d{{2}}-\\d{{2}}$",
+              rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}$",
               re.MULTILINE,
           )
           match = heading.search(changelog)
@@ -246,14 +200,14 @@ jobs:
               )
 
           body_start = match.end()
-          next_heading = re.search(r"^## \\[", changelog[body_start:], re.MULTILINE)
+          next_heading = re.search(r"^## \[", changelog[body_start:], re.MULTILINE)
           body_end = body_start + next_heading.start() if next_heading else len(changelog)
           notes = changelog[body_start:body_end].strip()
           if not notes:
               raise SystemExit(f"The CHANGELOG release section for {version} has no release notes.")
 
           engineering = re.compile(
-              r"^### Engineering\\s*\\n.*?(?=^### |\\Z)",
+              r"^### Engineering\s*\n.*?(?=^### |\Z)",
               re.MULTILINE | re.DOTALL,
           )
           release_notes = engineering.sub("", notes).strip()
@@ -262,7 +216,7 @@ jobs:
                   f"The CHANGELOG release section for {version} has no user-facing release notes."
               )
 
-          pathlib.Path("release-notes.md").write_text(release_notes + "\\n", encoding="utf-8")
+          pathlib.Path("release-notes.md").write_text(release_notes + "\n", encoding="utf-8")
           PY
 
       - name: Check stable release identity
@@ -283,7 +237,7 @@ jobs:
           fi
 
       - name: Upload signed APK artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.APK_NAME }}
           path: dist/${{ env.APK_NAME }}

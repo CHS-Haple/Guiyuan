@@ -10,9 +10,6 @@ internal object CcTransitionPolicy {
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 
-    fun motionProgress(raw: Float): Float =
-        geometryProgress(raw)
-
     fun handoffMotionProgress(
         expansionProgress: Float,
         finalAppearanceAlpha: Float,
@@ -26,6 +23,20 @@ internal object CcTransitionPolicy {
                 ?.coerceIn(0f, 1f)
                 ?: 0f
         return expansion + (1f - expansion) * appearance
+    }
+
+    fun mobileTypeMatches(
+        sourceLabel: String,
+        sourceEnhanced: Boolean,
+        target: NativePresentationResolver.NetworkType?,
+    ): Boolean? {
+        target ?: return null
+        fun shown(label: String, enhanced: Boolean): String {
+            val value = label.trim().uppercase().replace("-", "").replace("_", "")
+            return if (value == "5G" && enhanced) "5G++" else value
+        }
+        return shown(sourceLabel, sourceEnhanced) ==
+            shown(target.label, target.enhanced)
     }
 
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
@@ -59,12 +70,14 @@ internal object CcTransitionPolicy {
         nativeBatteryIslandActive: Boolean,
         targetRowRtl: Boolean,
     ): BatteryRingTransitionPolicy.ExitDirection {
-        if (!nativeBatteryIslandActive) return liveCenterDirection
-
-        // During HyperOS Battery-Island expansion the final status row is
-        // itself being reflowed. Its live pixel X is therefore not a stable
-        // direction authority for the ring's first frames. The structural
-        // destination is still toward the status-row logical start.
+        // The ring must retain its exit side when the native center glyph
+        // disappears. Battery-Island reflow also makes the live X unreliable.
+        if (
+            !nativeBatteryIslandActive &&
+            liveCenterDirection != BatteryRingTransitionPolicy.ExitDirection.NONE
+        ) {
+            return liveCenterDirection
+        }
         return if (targetRowRtl) {
             BatteryRingTransitionPolicy.ExitDirection.RIGHT
         } else {
@@ -72,7 +85,7 @@ internal object CcTransitionPolicy {
         }
     }
 
-    fun unmatchedExitVisibleFraction(rawProgress: Float): Float {
+    fun unmatchedExitOpacity(rawProgress: Float): Float {
         val remaining = 1f - geometryProgress(rawProgress)
         return remaining * remaining * remaining
     }
@@ -145,22 +158,7 @@ internal object CcTransitionPolicy {
             ?: valid(cachedTint)
     }
 
-    fun usesSemanticTransitionReservation(
-        sourceScene: SourceScene,
-        charging: Boolean = false,
-        nativeBatteryIslandActive: Boolean? = null,
-    ): Boolean =
-        when (sourceScene) {
-            SourceScene.HOME,
-            SourceScene.KEYGUARD,
-            -> true
-            SourceScene.UNKNOWN -> false
-        }
-
-    fun allowsNativeTransitionPaddingExpansion(
-        sourceScene: SourceScene,
-        genericIslandShowing: Boolean?,
-    ): Boolean =
+    fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
         when (sourceScene) {
             SourceScene.HOME,
             SourceScene.KEYGUARD,
@@ -575,16 +573,6 @@ internal object CcTransitionPolicy {
     ): StatusPainter.TransitionNormalizedBounds? {
         val logical =
             when {
-                preferredChildEntries.any { entry ->
-                    entry == "mobile_type_single" || entry == "mobile_type"
-                } ->
-                    StatusPainter.TransitionNormalizedBounds(
-                        left = 0f,
-                        top = 0f,
-                        right = 0.42f,
-                        bottom = 1f,
-                    )
-
                 preferredChildEntries.contains("mobile_signal") ->
                     StatusPainter.TransitionNormalizedBounds(
                         left = 0.48f,
@@ -611,22 +599,6 @@ internal object CcTransitionPolicy {
             top = logical.top,
             right = 1f - logical.left,
             bottom = logical.bottom,
-        )
-    }
-
-    fun scaleGeometry(
-        source: FloatArray,
-        scale: Float,
-    ): FloatArray {
-        require(source.size == 6)
-        val normalized = scale.coerceAtLeast(0f)
-        return floatArrayOf(
-            source[0],
-            source[1],
-            source[2] * normalized,
-            source[3] * normalized,
-            source[4] * normalized,
-            source[5] * normalized,
         )
     }
 

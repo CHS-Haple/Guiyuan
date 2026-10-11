@@ -38,6 +38,19 @@ class DiagPrefsOwnerTest {
     }
 
     @Test
+    fun clearingPreferenceReturnsToGeneral() {
+        val prefs = FakePreferences()
+        val observed = mutableListOf<Boolean>()
+        DiagPrefsOwner.bind(prefs, forceDetailed = false, onChanged = observed::add)
+
+        prefs.setLevel(DiagLevel.Detailed.name)
+        prefs.clearLevel()
+
+        assertEquals(listOf(false, true, false), observed)
+        assertEquals(1, prefs.listenerCount)
+    }
+
+    @Test
     fun unbindRejectsStaleCallback() {
         val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
@@ -106,6 +119,11 @@ class DiagPrefsOwnerTest {
 
         fun setRaw(value: String) {
             level = value
+        }
+
+        fun clearLevel() {
+            level = DiagLevel.General.name
+            listeners.toList().forEach { it.onSharedPreferenceChanged(this, null) }
         }
 
         override fun getString(

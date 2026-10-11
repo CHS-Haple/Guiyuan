@@ -40,7 +40,7 @@ Keep credentials, signing material, local SDK paths, generated APK/AAB artifacts
 Before editing:
 1. confirm the requirement or defect;
 2. identify the responsible owner/state source/lifecycle/API/layout rule;
-3. define the smallest useful change boundary;
+3. choose a coherent scope that removes the cause without unrelated churn;
 4. identify behavior that must remain unchanged;
 5. decide what evidence is needed for acceptance.
 

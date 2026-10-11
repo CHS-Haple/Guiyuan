@@ -32,10 +32,8 @@ internal object SysUiCompatibilityProbe {
                     .joinToString(",")
 
                 return buildString {
-                    append("SystemUI profile=hyperos-17.03.260226.r ")
-                    append("compatibility=")
-                    append(if (matched == resolved.size) "STRUCTURAL_MATCH" else "PARTIAL_MATCH")
-                    append(" markers=")
+                    append("SystemUI targetProfile=hyperos-17.03.260226.r")
+                    append(" markerClasses=")
                     append(matched)
                     append('/')
                     append(resolved.size)

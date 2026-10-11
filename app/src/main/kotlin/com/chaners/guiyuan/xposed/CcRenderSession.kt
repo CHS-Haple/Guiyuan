@@ -141,6 +141,9 @@ internal object CcRenderSession {
         SysUiPresentationOwner.onCcVisibilityChanged(true)
 
     @Synchronized
+    fun visualState(): String? = current?.visualState()
+
+    @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
         current?.setRequestedVisible(visible) ?: false
 
@@ -500,6 +503,10 @@ internal object CcRenderSession {
         private val statusAreaLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProjection()
+                if (sceneEligible && featureEnabled && !nativePresentationReady && !requestedVisible) {
+                    // A Keyguard scene may become ready before the fake carrier's own layout.
+                    prepareNativePresentation(reused = true)
+                }
             }
         private val carrierLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
@@ -595,6 +602,14 @@ internal object CcRenderSession {
                 "controlCenterProjection cleanup source=" + source
             }
         }
+
+        fun visualState(): String =
+            "requested=" + requestedVisible +
+                ":eligible=" + sceneEligible +
+                ":childShown=" + renderView.isShown +
+                ":childAlpha=" + renderView.alpha +
+                ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
+                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (
@@ -799,20 +814,19 @@ internal object CcRenderSession {
                 SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
             val resolved =
-                HomeLayoutResolver.resolve(
+                SteadyLayoutResolver.resolve(
                     hostWidthPx = statusArea.width,
                     hostHeightPx = statusArea.height,
                     baseCarrierWidthPx = carrierWidth,
                     isRtl = statusArea.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: return markLayoutUnavailable()
-            if (!resolved.renderCombined) return markLayoutUnavailable()
 
             hostView.getLocationInWindow(hostLocationScratch)
             statusArea.getLocationInWindow(statusAreaLocationScratch)
             val offsetX = statusAreaLocationScratch[0] - hostLocationScratch[0]
             val offsetY = statusAreaLocationScratch[1] - hostLocationScratch[1]
-            val left = offsetX + resolved.slotLeftPx.toInt()
-            val right = offsetX + resolved.slotRightPx.toInt()
+            val left = offsetX + resolved.left
+            val right = offsetX + resolved.right
             val top = offsetY
             val bottom = offsetY + statusArea.height
             anchorRect.set(left, top, right, bottom)

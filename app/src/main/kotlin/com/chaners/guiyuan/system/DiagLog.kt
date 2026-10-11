@@ -166,7 +166,7 @@ internal object DiagLogParser {
             message
                 .substring(0, firstFieldStart)
                 .trim()
-                .split(Regex("\\s+"))
+                .split(tokenWhitespace)
                 .filter(String::isNotBlank)
                 .joinToString(".")
                 .ifBlank { "legacy" }
@@ -287,6 +287,8 @@ internal object DiagLogParser {
             """^(\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)\s+""" +
                 """(\d+)\s+(\d+)\s+([VDIWEAF])\s+([^:]+):\s*(.*)$""",
         )
+
+    private val tokenWhitespace = Regex("\\s+")
 
     private val legacyFieldRe =
         Regex("""(?<!\S)([A-Za-z][A-Za-z0-9_.-]*)=([^\s]+)""")

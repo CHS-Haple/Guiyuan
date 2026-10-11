@@ -21,7 +21,7 @@ internal data class DiagSnapshot(
             val appCtx = context.applicationContext
             val env = RuntimeEnv.resolve(appCtx)
             val level = DiagRepo(appCtx).current()
-            val log = DiagLogReader.read()
+            val log = DiagLogReader.read(appCtx)
             val (entries, runtimeEvents) =
                 withContext(Dispatchers.Default) {
                     val lines = log.sessionLines

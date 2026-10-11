@@ -38,6 +38,8 @@ internal object SysUiCcSource {
 
     private var probe = ProbeState()
     @Volatile
+    private var failedInstallHandles: List<HookHandle> = emptyList()
+    @Volatile
     private var homeEligible: Boolean? = null
     private var anchorContract: AnchorContract? = null
     private var headerRef = WeakReference<Any>(null)
@@ -52,6 +54,8 @@ internal object SysUiCcSource {
         onEvent: ((String) -> Unit)? = null,
         isProbeEnabled: () -> Boolean = { false },
     ): List<HookHandle> {
+        check(failedInstallHandles.isEmpty()) { "partial-hook-state" }
+
         val ccClass =
             Class.forName(CONTROL_CENTER_CLASS, false, classLoader)
         val visibleMethod =
@@ -187,8 +191,7 @@ internal object SysUiCcSource {
                                                 "controlCenterFakeLifecycle attached " +
                                                     "root=" + root.javaClass.name +
                                                     " attachedToWindow=" +
-                                                    root.isAttachedToWindow +
-                                                    "",
+                                                    root.isAttachedToWindow,
                                             )
                                             describeFakeIslandContractOnce(root)?.let(onEvent)
                                         },
@@ -280,17 +283,25 @@ internal object SysUiCcSource {
 
             return handles
         } catch (error: Throwable) {
-            handles.asReversed().forEach { handle ->
-                runCatching { handle.unhook() }
+            val remaining = handles.asReversed().filter { handle ->
+                runCatching { handle.unhook() }.isFailure
             }
+            failedInstallHandles = remaining
             homeEligible = false
+            if (remaining.isNotEmpty()) {
+                throw IllegalStateException("control-center-hook-cleanup-failed", error)
+            }
             throw error
         }
     }
 
+    val failedInstallHookCount: Int
+        get() = failedInstallHandles.size
+
     fun resetRuntimeState() {
         synchronized(this) {
             probe = ProbeState()
+            failedInstallHandles = emptyList()
             homeEligible = null
             anchorContract = null
             headerRef = WeakReference(null)
@@ -432,7 +443,22 @@ internal object SysUiCcSource {
         value?.takeIf { it.isFinite() }
 
     fun currentHomeEligibility(): Boolean? =
-        homeEligible
+        if (failedInstallHandles.isEmpty()) homeEligible else false
+
+    // Read-only CC window snapshot at native AOD/visibility event boundaries.
+    fun nativeVisualState(): String? {
+        val header = headerRef.get() ?: return null
+        val endpoints = anchorContract?.transitionEndpoints(header) ?: return null
+        fun describe(view: View): String =
+            "shown=" + view.isShown +
+                ",alpha=" + view.alpha +
+                ",visibility=" + view.visibility +
+                ",windowVisibility=" + view.windowVisibility +
+                ",attached=" + view.isAttachedToWindow
+        return "fake={" + describe(endpoints.fakeRoot) + "}" +
+            ":final={" + describe(endpoints.finalRoot) + "}" +
+            ":root={" + describe(endpoints.finalRoot.rootView) + "}"
+    }
 
     @Synchronized
     fun restoreHomeEligibility(eligible: Boolean?) {
@@ -566,8 +592,7 @@ internal object SysUiCcSource {
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
                         sourceSceneSummary +
                         batteryIslandSummary +
-                        " authority=hyperos-native-callback" +
-                        "",
+                        " authority=hyperos-native-callback",
                 )
             },
         )

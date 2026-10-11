@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.system
 
+import android.content.Context
 import com.chaners.guiyuan.BuildConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
@@ -28,16 +31,17 @@ internal object DiagLogReader {
         val sessionLines: List<String>,
     )
 
-    suspend fun read(): Snapshot {
+    suspend fun read(context: Context): Snapshot = withContext(Dispatchers.Default) {
         val lspResult =
             RootShell.execute(
+                context = context,
                 command = LSP_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
         val lspLines = filterModuleLines(lspResult.output)
 
         if (lspLines.isNotEmpty()) {
-            return Snapshot(
+            return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
@@ -47,11 +51,12 @@ internal object DiagLogReader {
 
         val logcatResult =
             RootShell.execute(
+                context = context,
                 command = LOGCAT_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
-        val logcatLines = filterModuleLines(logcatResult.output)
-        return Snapshot(
+        val logcatLines = filterLogcatLines(logcatResult.output)
+        Snapshot(
             source = Source.LogcatFallback,
             result = logcatResult,
             lines = logcatLines,
@@ -68,32 +73,71 @@ internal object DiagLogReader {
             }
             .toList()
 
+    internal fun filterLogcatLines(output: String): List<String> =
+        output
+            .lineSequence()
+            .filter { line ->
+                if ("CombinedStatus" !in line) return@filter false
+                if ("com.chaners.guiyuan" in line) return@filter true
+
+                val entry = DiagLogParser.parse(line)
+                entry.framework == "logcat" &&
+                    entry.tag == "CombinedStatus" &&
+                    entry.structured
+            }
+            .toList()
+
     internal fun latestSession(lines: List<String>): List<String> {
         if (lines.isEmpty()) {
             return lines
         }
 
-        val sessionRefs =
+        // The new generation can fail before module.reloaded; old teardown may log later.
+        val tagged =
             lines.mapIndexedNotNull { index, line ->
+                if ("sessionId=" !in line) return@mapIndexedNotNull null
                 DiagProtocol.parse(line)
-                    ?.fields
-                    ?.get("sessionId")
-                    ?.let { sessionId -> index to sessionId }
+                    ?.takeIf { event -> event.fields["sessionId"] != null }
+                    ?.let { event -> index to event }
             }
-        val sessionId = sessionRefs.lastOrNull()?.second
+        val latestStart =
+            tagged.lastOrNull { (_, event) ->
+                event.event == "module.loaded" || event.event == "module.reloaded"
+            }
+        val failedNewGeneration =
+            tagged.lastOrNull { (_, event) ->
+                if (event.event != "hotReload.complete" || event.state != "error") {
+                    false
+                } else {
+                    val id = event.fields["sessionId"]
+                    val first =
+                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }
+                            ?.first
+                    first != null && (latestStart == null || first > latestStart.first)
+                }
+            }
+        val sessionId =
+            (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
+                ?.second
+                ?.fields
+                ?.get("sessionId")
         if (sessionId != null) {
             val start =
-                sessionRefs.firstOrNull { (_, id) ->
-                    id == sessionId
-                }?.first
+                tagged.firstOrNull { (_, event) -> event.fields["sessionId"] == sessionId }?.first
                     ?: return lines
+            val stale =
+                tagged.asSequence()
+                    .filter { (index, event) ->
+                        index >= start && event.fields["sessionId"] != sessionId
+                    }
+                    .map { it.first }
+                    .toSet()
             val pid = pidOf(lines[start])
-            if (pid == null) {
-                return lines.drop(start)
-            }
             return lines
                 .subList(start, lines.size)
-                .filter { line -> pidOf(line) == pid }
+                .filterIndexed { index, line ->
+                    index + start !in stale && (pid == null || pidOf(line) == pid)
+                }
         }
 
         val buildToken = "build=" + BuildConfig.BUILD_ID
@@ -131,8 +175,12 @@ internal object DiagLogReader {
     }
 
     private fun pidOf(line: String): String? =
-        pidRe.find(line)?.groupValues?.getOrNull(1)
+        (lspPidRe.find(line) ?: logcatPidRe.find(line))
+            ?.groupValues?.getOrNull(1)
 
-    private val pidRe =
+    private val lspPidRe =
         Regex(""":\s*(\d+):\s*\d+\s+[A-Z]/LSPosedFramework""")
+
+    private val logcatPidRe =
+        Regex("""^\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+(\d+)\s+\d+\s+[VDIWEAF]\s+""")
 }

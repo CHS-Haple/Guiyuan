@@ -36,7 +36,7 @@ internal class DiagRepo(context: Context) {
 
             val listener =
                 SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == DIAG_LEVEL_KEY) {
+                    if (isDiagKey(key)) {
                         emitCurrent()
                     }
                 }
@@ -66,3 +66,6 @@ internal class DiagRepo(context: Context) {
 
 internal const val DIAG_PREFS = "diagnostics"
 internal const val DIAG_LEVEL_KEY = "diagnostics_level"
+
+internal fun isDiagKey(key: String?): Boolean =
+    key == null || key == DIAG_LEVEL_KEY

@@ -21,6 +21,7 @@ internal object SysUiNetworkRuntime {
         onMobileSignalWillApply: ((android.widget.ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): SysUiNetworkSource.InstallResult =
         SysUiNetworkSource.install(
             module = module,
@@ -30,6 +31,7 @@ internal object SysUiNetworkRuntime {
             onMobileSignalWillApply = onMobileSignalWillApply,
             onPresentationChanged = onPresentationChanged,
             onEvent = onEvent,
+            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
         ).also { current = it }
 
     @Synchronized
