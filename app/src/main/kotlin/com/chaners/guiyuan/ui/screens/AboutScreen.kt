@@ -349,6 +349,25 @@ internal fun AboutScreen(
                     )
                 },
             )
+            val targetSummary = when (val status = xposedStatus) {
+                is XposedStatus.Connected ->
+                    stringResource(
+                        if (status.sysUiRunning) R.string.runtime_target_detected
+                        else R.string.runtime_target_not_detected,
+                    )
+                XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
+                XposedStatus.FrameworkUnavailable,
+                XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_scope_unavailable)
+            }
+            BasicComponent(
+                title = stringResource(R.string.runtime_target_title),
+                summary = targetSummary,
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_fact_check,
+                    )
+                },
+            )
         }
     }
 

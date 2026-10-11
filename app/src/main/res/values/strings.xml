@@ -157,6 +157,9 @@
     <string name="runtime_scope_granted">Granted</string>
     <string name="runtime_scope_not_granted">Not granted</string>
     <string name="runtime_scope_unavailable">Cannot verify</string>
+    <string name="runtime_target_title">Running target</string>
+    <string name="runtime_target_detected">SystemUI detected</string>
+    <string name="runtime_target_not_detected">SystemUI not detected</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>
