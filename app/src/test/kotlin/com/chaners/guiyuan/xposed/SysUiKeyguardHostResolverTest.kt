@@ -14,11 +14,6 @@ class SysUiKeyguardHostResolverTest {
     }
 
     @Test
-    fun resolverAcceptsOnlyPinnedKeyguardHostClass() {
-        assertTrue(SysUiKeyguardHostResolver.isHostClassName("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"))
-        assertFalse(SysUiKeyguardHostResolver.isHostClassName("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"))
-    }
-    @Test
     fun keyguardStatusIconsAlphaUsesOnlyLocalNativeStatusIconLayer() {
         assertTrue(
             SysUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(

@@ -58,9 +58,6 @@ internal object SysUiKeyguardHostResolver {
         surface == SysUiSceneSource.Surface.KEYGUARD ||
             surface == SysUiSceneSource.Surface.SHADE_LOCKED
 
-    internal fun isHostClassName(className: String): Boolean =
-        className == KEYGUARD_HOST_CLASS
-
     internal fun nativeToLockScreenTarget(
         resolved: ResolvedHost,
     ): Boolean? =
