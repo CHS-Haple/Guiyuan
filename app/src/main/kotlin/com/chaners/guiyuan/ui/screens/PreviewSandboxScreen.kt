@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -83,7 +84,9 @@ internal fun PreviewSandboxScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val renderModel = state.toRenderModel(resourceResolver)
+    val renderModel = remember(state, resourceResolver, LocalConfiguration.current) {
+        state.toRenderModel(resourceResolver)
+    }
 
     val networkModeOptions =
         listOf(

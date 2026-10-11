@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -355,6 +356,10 @@ private fun HomePreviewSandboxCard(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val model = remember(state, resources, LocalConfiguration.current) {
+        state.toRenderModel(resources)
+    }
+
     Card(
         modifier = modifier,
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
@@ -396,7 +401,7 @@ private fun HomePreviewSandboxCard(
             contentAlignment = Alignment.Center,
         ) {
             StatusPreview(
-                model = state.toRenderModel(resources),
+                model = model,
                 visual = visual,
                 modifier =
                     Modifier
