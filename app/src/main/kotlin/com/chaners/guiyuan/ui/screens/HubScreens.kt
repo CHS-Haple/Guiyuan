@@ -34,6 +34,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.settings.SettingsEntryPrefs
+import com.chaners.guiyuan.settings.SettingsEntryIcon
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
@@ -546,6 +547,7 @@ internal fun SettingsHubScreen(
         ctx.applicationContext as GyApplication
     }
     var entry by remember { mutableStateOf(SettingsEntryPrefs.get(ctx)) }
+    var entryIcon by remember { mutableStateOf(SettingsEntryPrefs.icon(ctx)) }
     var pending by remember { mutableStateOf<SettingsEntry?>(null) }
     var requestFailed by remember { mutableStateOf(false) }
     val entryOptions = listOf(
@@ -554,6 +556,14 @@ internal fun SettingsHubScreen(
         stringResource(R.string.settings_entry_middle),
         stringResource(R.string.settings_entry_bottom),
     )
+    val iconOptions = listOf(
+        stringResource(R.string.settings_entry_icon_rounded),
+        stringResource(R.string.settings_entry_icon_hollow),
+    )
+    fun saveEntryIcon(value: SettingsEntryIcon) {
+        if (SettingsEntryPrefs.setIcon(ctx, value)) entryIcon = value
+        else requestFailed = true
+    }
     fun saveEntry(value: SettingsEntry) {
         if (SettingsEntryPrefs.set(ctx, value)) entry = value
         else requestFailed = true
@@ -671,7 +681,7 @@ internal fun SettingsHubScreen(
                 selectedIndex = entry.ordinal,
                 title = stringResource(R.string.settings_entry_title),
                 startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_app_shortcut)
                 },
                 summary = stringResource(
                     if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
@@ -688,6 +698,19 @@ internal fun SettingsHubScreen(
                             }
                         }
                     }
+                },
+            )
+            OverlayDropdownPreference(
+                items = iconOptions,
+                selectedIndex = entryIcon.ordinal,
+                title = stringResource(R.string.settings_entry_icon_title),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
+                },
+                summary = stringResource(R.string.settings_entry_icon_summary),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
                 },
             )
         }

@@ -19,6 +19,7 @@ import com.chaners.guiyuan.settings.DIAG_PREFS
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
@@ -101,7 +102,9 @@ class GyApplication :
 
     private val settingsListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == SETTINGS_ENTRY_KEY) xposedService?.let(::syncRuntime)
+            if (key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY) {
+                xposedService?.let(::syncRuntime)
+            }
         }
 
     override fun onCreate() {
@@ -152,12 +155,16 @@ class GyApplication :
         xposedService?.let(::refreshXposedStatus)
     }
 
-    fun settingsInScope(): Boolean {
-        val service = xposedService ?: return false
-        return runCatching {
-            service.apiVersion >= 102 && SETTINGS_PROCESS in service.scope
-        }.getOrDefault(false)
+    // The framework's scope is authoritative, independent of UI feature toggles.
+    fun enabledScopes(): Set<String>? {
+        val service = xposedService ?: return null
+        if (service.apiVersion < 102) return null
+        return runCatching { service.scope.toSet() }
+            .onFailure { Log.w(TAG, "Unable to read enabled scopes", it) }
+            .getOrNull()
     }
+
+    fun settingsInScope(): Boolean = enabledScopes()?.contains(SETTINGS_PROCESS) == true
 
     fun requestSettingsScope(onComplete: (Boolean) -> Unit): Boolean =
         requestScope(SETTINGS_PROCESS, onComplete)
@@ -276,6 +283,7 @@ class GyApplication :
         val snapshot =
             RuntimeSnapshot(
                 settingsEntry = settingsPrefs.getInt(SETTINGS_ENTRY_KEY, 0),
+                settingsIcon = settingsPrefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0),
                 level =
                     diagPrefs.getString(
                         DIAG_LEVEL_KEY,
@@ -299,6 +307,7 @@ class GyApplication :
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
                 .putInt(SETTINGS_ENTRY_KEY, snapshot.settingsEntry)
+                .putInt(SETTINGS_ENTRY_ICON_KEY, snapshot.settingsIcon)
                 .putString(DIAG_LEVEL_KEY, snapshot.level)
                 .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
                 .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
@@ -318,6 +327,7 @@ class GyApplication :
 
     private data class RuntimeSnapshot(
         val settingsEntry: Int,
+        val settingsIcon: Int,
         val level: String,
         val feature: FeatureCfg,
         val changedAtNs: Long,

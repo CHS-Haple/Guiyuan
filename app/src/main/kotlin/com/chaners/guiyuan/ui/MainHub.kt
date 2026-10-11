@@ -1,5 +1,8 @@
 package com.chaners.guiyuan.ui
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
@@ -23,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -37,8 +43,6 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.SettingsEntry
-import com.chaners.guiyuan.settings.SettingsEntryPrefs
 import com.chaners.guiyuan.system.SettingsScope
 import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.NavContentItem
@@ -87,9 +91,31 @@ private enum class RestartDialog {
     FAILURE,
 }
 
-private enum class RestartTarget {
-    SYS_UI,
-    SETTINGS,
+private enum class RestartTarget(val pkg: String) {
+    SYS_UI("com.android.systemui"),
+    SETTINGS("com.android.settings"),
+}
+
+// Use the same installed-package artwork the scope manager displays.
+@Composable
+private fun RestartAppIcon(pkg: String, fallback: Int) {
+    val ctx = LocalContext.current
+    val density = LocalDensity.current
+    val icon = remember(ctx, pkg, density.density) {
+        runCatching {
+            val side = with(density) { 48.dp.roundToPx() }
+            val drawable = ctx.packageManager.getApplicationIcon(pkg)
+            val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+            drawable.setBounds(0, 0, side, side)
+            drawable.draw(Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(24.dp))
+    } else {
+        SemanticLeadingIcon(fallback)
+    }
 }
 
 private data class WeightedNavigationItem(
@@ -119,20 +145,20 @@ internal fun MainHub(
     var restartInProgress by remember { mutableStateOf(false) }
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
-    var availableTargets by remember { mutableStateOf(setOf(RestartTarget.SYS_UI)) }
-    var selectedTargets by remember { mutableStateOf(setOf(RestartTarget.SYS_UI)) }
+    var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var failedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     val app = context.applicationContext as GyApplication
     val onRestart = {
         if (!restartInProgress) {
-            availableTargets =
-                if (SettingsEntryPrefs.get(context) != SettingsEntry.Disabled && app.settingsInScope()) {
-                    setOf(RestartTarget.SYS_UI, RestartTarget.SETTINGS)
-                } else {
-                    setOf(RestartTarget.SYS_UI)
-                }
-            selectedTargets = setOf(RestartTarget.SYS_UI)
+            val scopes = app.enabledScopes()
+            availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+                scopes != null && it.pkg in scopes
+            }
+            selectedTargets =
+                if (RestartTarget.SYS_UI in availableTargets) setOf(RestartTarget.SYS_UI)
+                else availableTargets
             queuedRestart = emptySet()
             restartDialog = RestartDialog.SELECT
         }
@@ -341,10 +367,10 @@ internal fun MainHub(
         OverlayDialog(
             title = stringResource(R.string.restart_scope_dialog_title),
             summary = stringResource(
-                if (RestartTarget.SETTINGS in availableTargets) {
-                    R.string.restart_scope_dialog_summary
-                } else {
-                    R.string.restart_scope_dialog_sysui_summary
+                when {
+                    availableTargets.isEmpty() -> R.string.restart_scope_no_targets
+                    RestartTarget.SETTINGS in availableTargets -> R.string.restart_scope_dialog_summary
+                    else -> R.string.restart_scope_dialog_sysui_summary
                 },
             ),
             show = restartDialog == RestartDialog.SELECT,
@@ -374,24 +400,29 @@ internal fun MainHub(
             },
         ) {
             Column {
-                CheckboxPreference(
-                    title = stringResource(R.string.restart_scope_sysui),
-                    summary = "com.android.systemui",
-                    checked = RestartTarget.SYS_UI in selectedTargets,
-                    onCheckedChange = { checked ->
-                        selectedTargets =
-                            if (checked) selectedTargets + RestartTarget.SYS_UI
-                            else selectedTargets - RestartTarget.SYS_UI
-                    },
-                    checkboxLocation = CheckboxLocation.End,
-                    startAction = {
-                        SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard)
-                    },
-                )
+                if (RestartTarget.SYS_UI in availableTargets) {
+                    CheckboxPreference(
+                        title = stringResource(R.string.restart_scope_sysui),
+                        summary = RestartTarget.SYS_UI.pkg,
+                        checked = RestartTarget.SYS_UI in selectedTargets,
+                        onCheckedChange = { checked ->
+                            selectedTargets =
+                                if (checked) selectedTargets + RestartTarget.SYS_UI
+                                else selectedTargets - RestartTarget.SYS_UI
+                        },
+                        checkboxLocation = CheckboxLocation.End,
+                        startAction = {
+                            RestartAppIcon(
+                                RestartTarget.SYS_UI.pkg,
+                                R.drawable.ic_material_symbol_dashboard,
+                            )
+                        },
+                    )
+                }
                 if (RestartTarget.SETTINGS in availableTargets) {
                     CheckboxPreference(
                         title = stringResource(R.string.restart_scope_settings),
-                        summary = "com.android.settings",
+                        summary = RestartTarget.SETTINGS.pkg,
                         checked = RestartTarget.SETTINGS in selectedTargets,
                         onCheckedChange = { checked ->
                             selectedTargets =
@@ -400,7 +431,10 @@ internal fun MainHub(
                         },
                         checkboxLocation = CheckboxLocation.End,
                         startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
+                            RestartAppIcon(
+                                RestartTarget.SETTINGS.pkg,
+                                R.drawable.ic_material_symbol_settings_applications,
+                            )
                         },
                     )
                 }

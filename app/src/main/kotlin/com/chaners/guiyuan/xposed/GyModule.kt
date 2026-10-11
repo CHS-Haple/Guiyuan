@@ -11,7 +11,9 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
+import com.chaners.guiyuan.settings.SettingsEntryIcon
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
@@ -121,7 +123,12 @@ class GyModule : XposedModule() {
                     getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME).getInt(SETTINGS_ENTRY_KEY, 0),
                 )
             }.getOrDefault(SettingsEntry.Disabled)
-            SettingsEntryHook.install(this, param.classLoader, entry)
+            val icon = runCatching {
+                SettingsEntryIcon.from(
+                    getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME).getInt(SETTINGS_ENTRY_ICON_KEY, 0),
+                )
+            }.getOrDefault(SettingsEntryIcon.Rounded)
+            SettingsEntryHook.install(this, param.classLoader, entry, icon)
             return
         }
         if (param.packageName != SYSTEM_UI_PACKAGE) return

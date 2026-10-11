@@ -364,6 +364,10 @@
     <string name="battery_custom_scheme_delete">Delete</string>
     <string name="battery_custom_scheme_delete_summary">Delete “%1$s”? If it is active, Guiyuan switches back to the built-in scheme this style was based on.</string>
 
+    <string name="settings_entry_icon_title">Settings entry icon</string>
+    <string name="settings_entry_icon_summary">Choose the Guiyuan icon style used in System Settings. Restart Settings to apply.</string>
+    <string name="settings_entry_icon_rounded">Rounded square</string>
+    <string name="settings_entry_icon_hollow">Transparent background</string>
     <string name="settings_entry_title">System settings entry</string>
     <string name="settings_entry_summary">Show a Guiyuan shortcut in System Settings</string>
     <string name="settings_entry_restart_hint">Restart the Settings app to apply this change</string>
@@ -377,6 +381,7 @@
     <string name="settings_entry_failed_summary">Access was not confirmed. Enable Settings in the module manager and choose the entry position again. Status bar functions are unaffected.</string>
 
     <string name="restart_scope_dialog_title">Quick restart scopes</string>
+    <string name="restart_scope_no_targets">No enabled restart targets could be confirmed. Connect the Xposed service and enable the desired scope in the module manager.</string>
     <string name="restart_scope_dialog_sysui_summary">Root access is required to restart System UI. Your device will not reboot.</string>
     <string name="restart_scope_sysui">System UI</string>
     <string name="restart_scope_settings">Settings</string>
