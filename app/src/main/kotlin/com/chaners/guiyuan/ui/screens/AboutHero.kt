@@ -28,7 +28,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -161,13 +163,13 @@ internal fun GuiyuanAnimatedIdentityMark(
         animationSpec = folmeSpring(damping = 0.85f, response = if (pressed) 0.23f else 0.38f),
         label = "aboutLogoPress",
     )
-    val halo = remember { Animatable(0f) }
+    val wave = remember { Animatable(0f) }
     LaunchedEffect(boosted, active) {
-        halo.snapTo(0f)
+        wave.snapTo(0f)
         if (boosted && active) {
-            // One pulse at peak speed, then stay idle even if the hold continues.
+            // One release at peak speed, with a delayed echo; never loop while held.
             snapshotFlow { speed }.first { it >= 19f }
-            halo.animateTo(1f, tween(durationMillis = 850, easing = FastOutSlowInEasing))
+            wave.animateTo(1f, tween(durationMillis = 1000, easing = FastOutSlowInEasing))
         }
     }
     val currentSpeed by rememberUpdatedState(speed)
@@ -206,6 +208,7 @@ internal fun GuiyuanAnimatedIdentityMark(
 
     val painter = painterResource(R.drawable.ic_launcher_foreground)
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
+    val waveTint = MiuixTheme.colorScheme.primary
     Box(
         modifier = Modifier
             .size(markSize)
@@ -217,35 +220,9 @@ internal fun GuiyuanAnimatedIdentityMark(
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.matchParentSize()) {
-            val progress = halo.value
-            if (progress > 0f && progress < 1f) {
-                val strength = sin((PI * progress).toFloat())
-                // Diffuse behind the full mark, not a stroke emerging from its inner ring.
-                val radius = size.minDimension * (0.72f + 0.55f * progress)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to tint.copy(alpha = 0.21f * strength),
-                        0.35f to tint.copy(alpha = 0.18f * strength),
-                        0.7f to tint.copy(alpha = 0.08f * strength),
-                        1f to tint.copy(alpha = 0f),
-                        center = center,
-                        radius = radius,
-                    ),
-                    radius = radius,
-                )
-                val waveRadius = size.minDimension * (0.8f + 0.65f * progress)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        0f to tint.copy(alpha = 0.08f * strength),
-                        0.55f to tint.copy(alpha = 0.11f * strength),
-                        0.8f to tint.copy(alpha = 0.06f * strength),
-                        1f to tint.copy(alpha = 0f),
-                        center = center,
-                        radius = waveRadius,
-                    ),
-                    radius = waveRadius,
-                )
-            }
+            val progress = wave.value
+            drawWave(waveTint, progress, 0.38f)
+            drawWave(waveTint, (progress - 0.2f) / 0.8f, 0.23f)
         }
         Box(Modifier.matchParentSize().clipToBounds()) {
             Canvas(Modifier.matchParentSize().then(effectModifier)) {
@@ -265,4 +242,26 @@ internal fun GuiyuanAnimatedIdentityMark(
             }
         }
     }
+}
+
+// A hollow, feathered wave: the center stays clear instead of becoming a dark cloud.
+private fun DrawScope.drawWave(color: Color, progress: Float, strength: Float) {
+    if (progress <= 0f || progress >= 1f) return
+
+    val radius = size.minDimension * (0.55f + 1.15f * progress)
+    val feather = size.minDimension * (0.1f + 0.055f * progress)
+    val edge = radius + feather
+    val alpha = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to Color.Transparent,
+            ((radius - feather) / edge) to Color.Transparent,
+            ((radius - feather * 0.45f) / edge) to color.copy(alpha = alpha * 0.45f),
+            (radius / edge) to color.copy(alpha = alpha),
+            1f to Color.Transparent,
+            center = center,
+            radius = edge,
+        ),
+        radius = edge,
+    )
 }

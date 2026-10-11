@@ -100,7 +100,11 @@ internal fun AboutScreen(
     // The content may exceed one screen; use a minimum, not a fixed parent height.
     val contentMinHeight by remember(density, listState) {
         derivedStateOf {
-            with(density) { listState.layoutInfo.viewportSize.height.toDp() }
+            val info = listState.layoutInfo
+            val available = (
+                info.viewportSize.height - info.beforeContentPadding - info.afterContentPadding
+            ).coerceAtLeast(0)
+            with(density) { available.toDp() }
         }
     }
     val scrollProgress by remember(density) {
