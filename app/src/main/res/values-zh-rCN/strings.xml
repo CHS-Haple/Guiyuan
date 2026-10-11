@@ -365,5 +365,4 @@
     <string name="battery_custom_scheme_delete">删除</string>
     <string name="battery_custom_scheme_delete_summary">删除“%1$s”？若当前正在使用，将切换回创建该样式时所基于的内置方案。</string>
 
-    <string name="about_logo_hold_hint">长按图标可加速旋转</string>
 </resources>
