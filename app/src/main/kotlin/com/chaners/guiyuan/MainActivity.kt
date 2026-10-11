@@ -64,6 +64,8 @@ class MainActivity : ComponentActivity() {
                     ThemeMode.Dark -> true
                     ThemeMode.System -> sysDark
                 }
+            // Sandbox only overrides this Activity window; never the saved app theme.
+            var previewBarDark by remember { mutableStateOf<Boolean?>(null) }
             var lang by remember {
                 mutableStateOf(initialLang)
             }
@@ -71,14 +73,15 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(initialIconHidden)
             }
 
-            DisposableEffect(dark) {
-                updateBarIcons(dark)
+            DisposableEffect(previewBarDark, dark) {
+                updateBarIcons(previewBarDark ?: dark)
                 onDispose { }
             }
 
             GyApp(
                 appearance = appearance,
                 dark = dark,
+                onPreviewThemeChange = { previewBarDark = it },
                 lang = lang,
                 iconHidden = iconHidden,
                 onHotReload = { onComplete ->
