@@ -43,12 +43,11 @@ internal object KeyguardIconTransitionSource {
                 .setId(HOOK_ID)
                 .intercept(
                     Hooker { chain ->
-                        val detailed = onEvent != null && isDetailedDiagnosticsEnabled()
-                        val rawArg0 = if (detailed) chain.getArg(0) as? Boolean else null
                         val result = chain.proceed()
                         onTransition()
-                        if (detailed) {
-                            onEvent?.invoke(
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            val rawArg0 = chain.getArg(0) as? Boolean
+                            onEvent(
                                 "keyguardStatusIconTransition source=animateIconContainer" +
                                     " arg0=" + (rawArg0 ?: "unavailable"),
                             )
