@@ -36,9 +36,6 @@ internal object SysUiTintSource {
     private var batteryPercentViewField: Field? = null
 
     @Volatile
-    private var batteryIconViewField: Field? = null
-
-    @Volatile
     private var lastSourceView: WeakReference<View>? = null
 
     fun install(
@@ -74,7 +71,6 @@ internal object SysUiTintSource {
                 .apply { isAccessible = true }
 
         batteryPercentViewField = percentField
-        batteryIconViewField = iconField
 
         val updateHandle =
             runCatching {
@@ -378,7 +374,6 @@ internal object SysUiTintSource {
         colorFilterColorGetters.clear()
         colorFilterWithoutColorGetter.clear()
         batteryPercentViewField = null
-        batteryIconViewField = null
         lastSourceView = null
     }
 
