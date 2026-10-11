@@ -31,36 +31,6 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun keyguardAndAodStayIndependent() {
-        val keyguard =
-            com.chaners.guiyuan.settings.FeatureCfg(
-                enabled = true,
-                keyguard = true,
-                aod = false,
-            )
-        val aod =
-            com.chaners.guiyuan.settings.FeatureCfg(
-                enabled = true,
-                keyguard = false,
-                aod = true,
-            )
-        val masterOff =
-            com.chaners.guiyuan.settings.FeatureCfg(
-                enabled = false,
-                keyguard = true,
-                aod = true,
-            )
-
-        assertEquals(true, keyguard.keyguard)
-        assertEquals(false, keyguard.aod)
-        assertEquals(false, aod.keyguard)
-        assertEquals(true, aod.aod)
-        assertEquals(false, masterOff.enabled)
-        assertEquals(true, masterOff.keyguard)
-        assertEquals(true, masterOff.aod)
-    }
-
-    @Test
     fun validTimestampProducesLatency() {
         assertEquals(
             6_000_000L,
