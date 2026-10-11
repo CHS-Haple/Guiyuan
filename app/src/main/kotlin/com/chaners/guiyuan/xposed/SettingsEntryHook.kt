@@ -158,8 +158,13 @@ internal object SettingsEntryHook {
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
         val app = context.createPackageContext(MODULE_PKG, 0)
+        val size = (48 * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
         if (style == SettingsEntryIcon.Rounded) {
-            return app.packageManager.getApplicationIcon(MODULE_PKG)
+            val icon = app.packageManager.getApplicationIcon(MODULE_PKG)
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            icon.setBounds(0, 0, size, size)
+            icon.draw(Canvas(bitmap))
+            return BitmapDrawable(context.resources, bitmap)
         }
 
         val foreground = app.getDrawable(R.drawable.ic_launcher_foreground)?.mutate()
@@ -173,7 +178,6 @@ internal object SettingsEntryHook {
         foreground.setTint(tint)
 
         // Crop the existing app mark's transparent padding; its paths stay canonical.
-        val size = (48 * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
         val source = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         foreground.setBounds(0, 0, size, size)
         foreground.draw(Canvas(source))
