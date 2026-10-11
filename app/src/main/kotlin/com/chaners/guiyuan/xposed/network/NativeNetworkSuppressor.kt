@@ -1126,7 +1126,6 @@ internal object NativeNetworkSuppressor {
 
     private fun refreshMobileVisualMasksLocked(
         targetViews: List<Pair<String, View>>,
-        source: String,
     ): VisualMaskSnapshot {
         val previous = mobileVisualMasks
         val next = mutableListOf<MobileVisualMaskState>()
@@ -1141,7 +1140,6 @@ internal object NativeNetworkSuppressor {
                             entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
                         )
                             ?: return VisualMaskSnapshot.failure(
-                                source = source,
                                 reason = "mobile-signal-container-missing",
                             )
 
@@ -1187,13 +1185,12 @@ internal object NativeNetworkSuppressor {
         }
 
         return VisualMaskSnapshot.ready(
-            source = source,
             maskCount = masked,
         )
     }
 
     @Synchronized
-    fun preMaskMobileSignal(image: ImageView): Boolean {
+    fun preMaskMobileSignal(image: ImageView) {
         val homeGroup = activeGroup?.get()
         if (
             activeManager == null ||
@@ -1204,21 +1201,21 @@ internal object NativeNetworkSuppressor {
                 ancestor = homeGroup,
             )
         ) {
-            return false
+            return
         }
 
         val container =
             findAncestorByResourceEntry(
                 view = image,
                 entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
-            ) ?: return false
+            ) ?: return
 
         val existing =
             mobileVisualMasks.firstOrNull { state ->
                 state.view.get() === container
             }
         if (existing == null && container.alpha == 0f) {
-            return true
+            return
         }
 
         val state =
@@ -1250,7 +1247,6 @@ internal object NativeNetworkSuppressor {
                     " source=mobile-signal-beforeProceed ",
             )
         }
-        return container.alpha == 0f
     }
 
     private fun isDescendantOf(
@@ -1510,27 +1506,22 @@ internal object NativeNetworkSuppressor {
     )
 
     private data class VisualMaskSnapshot(
-        val source: String,
         val maskCount: Int,
         val failureReason: String?,
     ) {
         companion object {
             fun ready(
-                source: String,
                 maskCount: Int,
             ): VisualMaskSnapshot =
                 VisualMaskSnapshot(
-                    source = source,
                     maskCount = maskCount,
                     failureReason = null,
                 )
 
             fun failure(
-                source: String,
                 reason: String,
             ): VisualMaskSnapshot =
                 VisualMaskSnapshot(
-                    source = source,
                     maskCount = 0,
                     failureReason = reason,
                 )
