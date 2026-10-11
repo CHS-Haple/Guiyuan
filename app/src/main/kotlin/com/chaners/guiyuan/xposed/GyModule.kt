@@ -4092,6 +4092,8 @@ class GyModule : XposedModule() {
             return
         }
 
+        if (cfg != FeaturePrefsOwner.current()) return
+
         if (
             !cfg.enabled ||
             !cfg.keyguard ||
