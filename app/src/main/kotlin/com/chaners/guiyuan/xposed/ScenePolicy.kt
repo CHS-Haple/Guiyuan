@@ -78,16 +78,6 @@ internal object ScenePolicy {
             heightPx > 0 &&
             hostAttached
 
-    fun aodProjectionEligible(
-        featureEnabled: Boolean,
-        aodEnabled: Boolean,
-        stableAod: Boolean,
-        homeTransitionPrearm: Boolean = false,
-    ): Boolean =
-        featureEnabled &&
-            aodEnabled &&
-            (stableAod || homeTransitionPrearm)
-
     enum class KeyguardAodProjection {
         NATIVE,
         KEYGUARD,
