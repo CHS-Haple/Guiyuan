@@ -130,28 +130,41 @@ internal fun AboutScreen(
         onBack = onBack,
         listState = listState,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
-        background = { padding ->
+        background = {
             BgEffectBackground(
                 dynamicBackground = visible,
                 modifier = Modifier.fillMaxSize(),
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 isFullSize = true,
                 alpha = { 1f - scrollProgress },
-            ) {
-                AboutHero(
-                    topPadding = padding.calculateTopPadding(),
-                    active = visible,
-                    backdrop = if (blur) backdrop else null,
-                    logoBlend = logoBlend,
-                    versionProgress = collapse.first,
-                    nameProgress = collapse.second,
-                    iconProgress = collapse.third,
-                    onHeight = { heroHeight = it },
-                    onIconBottom = { if (iconBottom == 0f) iconBottom = it },
-                    onNameBottom = { if (nameBottom == 0f) nameBottom = it },
-                    onVersionBottom = { if (versionBottom == 0f) versionBottom = it },
-                )
-            }
+            ) {}
+        },
+        foreground = { padding ->
+            AboutHero(
+                topPadding = padding.calculateTopPadding(),
+                active = visible,
+                backdrop = if (blur) backdrop else null,
+                logoBlend = logoBlend,
+                versionProgress = collapse.first,
+                nameProgress = collapse.second,
+                iconProgress = collapse.third,
+                onHeight = { if (heroHeight != it) heroHeight = it },
+                onIconBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                    ) iconBottom = it
+                },
+                onNameBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                    ) nameBottom = it
+                },
+                onVersionBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                    ) versionBottom = it
+                },
+            )
         },
         overlay = {
             OverlayDialog(
@@ -175,8 +188,11 @@ internal fun AboutScreen(
                     .fillMaxWidth()
                     .height(spacerHeight)
                     .onGloballyPositioned { coords ->
-                        if (spacerBottom == 0f && listState.firstVisibleItemScrollOffset == 0) {
-                            spacerBottom = coords.positionInWindow().y + coords.size.height
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0
+                        ) {
+                            val bottom = coords.positionInWindow().y + coords.size.height
+                            if (spacerBottom != bottom) spacerBottom = bottom
                         }
                     },
             )
