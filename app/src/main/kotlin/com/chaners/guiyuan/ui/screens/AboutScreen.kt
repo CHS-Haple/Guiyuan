@@ -220,7 +220,7 @@ internal fun AboutScreen(
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                 ) {
-                ArrowPreference(
+                    ArrowPreference(
                         title = stringResource(R.string.about_project_home_title),
                         summary = stringResource(R.string.about_project_home_summary),
                         startAction = {
@@ -267,7 +267,7 @@ internal fun AboutScreen(
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                 ) {
-                val unavailable =     stringResource(R.string.about_value_unavailable)
+                    val unavailable = stringResource(R.string.about_value_unavailable)
                     val deviceSummary =
                         listOf(
                             env.device.trim(),
