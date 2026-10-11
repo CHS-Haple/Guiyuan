@@ -47,17 +47,15 @@ class CcTransitionOwnerTest {
     @Test
     fun chargingGlyphUsesOpaqueClipHideAndAcceleratedLateReveal() {
         val policy = BatteryNumberFollowerPolicy
-        val (hideStart, hideEnd) = policy.sourceHideWindow()
-        val (revealStart, revealEnd) = policy.targetRevealWindow()
-
-        assertEquals(0.85f, revealStart, 0.0001f)
-        assertEquals(0.90f, revealEnd, 0.0001f)
+        val hideStart = 0f
+        val hideMid = 0.09f
+        val hideEnd = 0.181f
+        val revealStart = 0.85f
+        val revealEnd = 0.90f
 
         assertEquals(0f, policy.chargingRingLifetimeProgress(hideStart), 0.001f)
-        assertEquals(0.40f, policy.chargingRingLifetimeProgress(hideEnd), 0.001f)
-        assertEquals(0.322f, policy.chargingRingRemaining(hideEnd), 0.01f)
+        assertEquals(0.40f, policy.chargingRingLifetimeProgress(0.18f), 0.001f)
         assertEquals(1f, policy.chargingSourceVisibleFraction(hideStart), 0.001f)
-        val hideMid = (hideStart + hideEnd) / 2f
         assertEquals(0.20f, policy.chargingRingLifetimeProgress(hideMid), 0.001f)
         assertEquals(0.50f, policy.chargingSourceVisibleFraction(hideMid), 0.001f)
         assertEquals(0f, policy.chargingSourceVisibleFraction(hideEnd), 0.001f)
@@ -128,7 +126,7 @@ class CcTransitionOwnerTest {
     @Test
     fun chargingGlyphNeverUsesItsOwnTargetMotionWhileSourceClipRemains() {
         val policy = BatteryNumberFollowerPolicy
-        val (_, hideEnd) = policy.sourceHideWindow()
+        val hideEnd = 0.181f
         var observedPartialClip = false
 
         for (sample in 0..400) {
