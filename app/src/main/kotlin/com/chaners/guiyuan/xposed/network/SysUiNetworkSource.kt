@@ -1094,7 +1094,9 @@ internal object SysUiNetworkSource {
                     val resourceId = (value as? Number)
                         ?.toInt()
                         ?.takeIf { it != 0 }
-                    val resourceName = resourceId?.let { id -> resourceName(image, id) }
+                    val resourceName =
+                        if (classId == 0) resourceId?.let { id -> resourceName(image, id) }
+                        else null
                     when (classId) {
                         0 ->
                             onMobileSignal(
@@ -1112,7 +1114,10 @@ internal object SysUiNetworkSource {
                                 " viewId=" + resourceId(image) +
                                 " classId=" + classId +
                                 " value=" + valueText +
-                                " resource=" + (resourceName ?: "n/a")
+                                " resource=" +
+                                (resourceName
+                                    ?: resourceId?.let { id -> resourceName(image, id) }
+                                    ?: "n/a")
                     }
                 }
             }
