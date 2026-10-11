@@ -11,6 +11,8 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
+import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -89,7 +91,12 @@ class GyModule : XposedModule() {
     @Volatile
     private var detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
 
+    private var inSettings = false
+
     override fun onModuleLoaded(param: ModuleLoadedParam) {
+        inSettings = param.processName == SETTINGS_PACKAGE
+        if (inSettings) return
+
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
@@ -107,9 +114,17 @@ class GyModule : XposedModule() {
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
-        if (!param.isFirstPackage || param.packageName != SYSTEM_UI_PACKAGE) {
+        if (!param.isFirstPackage) return
+        if (param.packageName == SETTINGS_PACKAGE) {
+            val entry = runCatching {
+                SettingsEntry.from(
+                    getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME).getInt(SETTINGS_ENTRY_KEY, 0),
+                )
+            }.getOrDefault(SettingsEntry.Disabled)
+            SettingsEntryHook.install(this, param.classLoader, entry)
             return
         }
+        if (param.packageName != SYSTEM_UI_PACKAGE) return
 
         val compatibility = SysUiCompatibilityProbe.inspect(param.classLoader)
         log(Log.INFO, TAG, compatibility.summary)
@@ -184,6 +199,8 @@ class GyModule : XposedModule() {
     }
 
     override fun onHotReloading(param: HotReloadingParam): Boolean {
+        // Settings restarts normally; it must not enter the SystemUI transfer path.
+        if (inSettings) return false
         val prepared =
             SysUiHotReload.prepare(
                 param = param,
@@ -252,6 +269,7 @@ class GyModule : XposedModule() {
     }
 
     override fun onHotReloaded(param: HotReloadedParam) {
+        if (inSettings) return
         rotateDiagnosticSession()
         val takeoverResult =
             runCatching {
@@ -4389,5 +4407,6 @@ class GyModule : XposedModule() {
     private companion object {
         const val TAG = "CombinedStatus"
         const val SYSTEM_UI_PACKAGE = "com.android.systemui"
+        const val SETTINGS_PACKAGE = "com.android.settings"
     }
 }

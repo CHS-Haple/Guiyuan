@@ -19,6 +19,8 @@ import com.chaners.guiyuan.settings.DIAG_PREFS
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
@@ -47,6 +49,10 @@ class GyApplication :
 
     private val visualPrefs: SharedPreferences by lazy {
         getSharedPreferences(COMBINED_STATUS_VISUAL_PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    private val settingsPrefs: SharedPreferences by lazy {
+        getSharedPreferences(SETTINGS_ENTRY_PREFS, Context.MODE_PRIVATE)
     }
 
     @Volatile
@@ -93,12 +99,18 @@ class GyApplication :
             }
         }
 
+    private val settingsListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == SETTINGS_ENTRY_KEY) xposedService?.let(::syncRuntime)
+        }
+
     override fun onCreate() {
         super.onCreate()
         migrateBatteryTopChargingScaleReferenceIfNeeded(visualPrefs)
         diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.registerOnSharedPreferenceChangeListener(featListener)
         visualPrefs.registerOnSharedPreferenceChangeListener(visualListener)
+        settingsPrefs.registerOnSharedPreferenceChangeListener(settingsListener)
         XposedServiceHelper.registerListener(this)
         handler.postDelayed(
             bindTimeout,
@@ -128,6 +140,7 @@ class GyApplication :
         diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
+        settingsPrefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
@@ -139,11 +152,24 @@ class GyApplication :
         xposedService?.let(::refreshXposedStatus)
     }
 
-    fun requestSysUiScope(onComplete: (Boolean) -> Unit): Boolean {
+    fun settingsInScope(): Boolean {
+        val service = xposedService ?: return false
+        return runCatching {
+            service.apiVersion >= 102 && SETTINGS_PROCESS in service.scope
+        }.getOrDefault(false)
+    }
+
+    fun requestSettingsScope(onComplete: (Boolean) -> Unit): Boolean =
+        requestScope(SETTINGS_PROCESS, onComplete)
+
+    fun requestSysUiScope(onComplete: (Boolean) -> Unit): Boolean =
+        requestScope(SYS_UI_PROCESS, onComplete)
+
+    private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
         if (service.apiVersion < 102 || scopeRequestDone != null) return false
 
-        val inScope = runCatching { SYS_UI_PROCESS in service.scope }
+        val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
         if (inScope) {
             refreshXposedStatus(service)
@@ -154,14 +180,14 @@ class GyApplication :
         scopeRequestDone = onComplete
         return runCatching {
             service.requestScope(
-                listOf(SYS_UI_PROCESS),
+                listOf(pkg),
                 object : XposedService.OnScopeEventListener {
                     override fun onScopeRequestApproved(scope: List<String>) {
                         mainExecutor.execute {
                             if (xposedService === service) {
                                 refreshXposedStatus(service)
                                 finishScopeRequest(
-                                    runCatching { SYS_UI_PROCESS in service.scope }.getOrDefault(false),
+                                    runCatching { pkg in service.scope }.getOrDefault(false),
                                 )
                             }
                         }
@@ -178,7 +204,7 @@ class GyApplication :
             true
         }.getOrElse { throwable ->
             scopeRequestDone = null
-            Log.w(TAG, "Unable to request SystemUI scope: " + throwable.message)
+            Log.w(TAG, "Unable to request $pkg scope: " + throwable.message)
             false
         }
     }
@@ -249,6 +275,7 @@ class GyApplication :
     private fun syncRuntime(service: XposedService) {
         val snapshot =
             RuntimeSnapshot(
+                settingsEntry = settingsPrefs.getInt(SETTINGS_ENTRY_KEY, 0),
                 level =
                     diagPrefs.getString(
                         DIAG_LEVEL_KEY,
@@ -271,6 +298,7 @@ class GyApplication :
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
+                .putInt(SETTINGS_ENTRY_KEY, snapshot.settingsEntry)
                 .putString(DIAG_LEVEL_KEY, snapshot.level)
                 .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
                 .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
@@ -289,6 +317,7 @@ class GyApplication :
     }
 
     private data class RuntimeSnapshot(
+        val settingsEntry: Int,
         val level: String,
         val feature: FeatureCfg,
         val changedAtNs: Long,
@@ -298,6 +327,7 @@ class GyApplication :
     private companion object {
         const val TAG = "CombinedStatus[App]"
         const val SYS_UI_PROCESS = "com.android.systemui"
+        const val SETTINGS_PROCESS = "com.android.settings"
         const val XPOSED_BIND_TIMEOUT_MS = 1_000L
     }
 }

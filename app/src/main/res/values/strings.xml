@@ -364,4 +364,16 @@
     <string name="battery_custom_scheme_delete">Delete</string>
     <string name="battery_custom_scheme_delete_summary">Delete “%1$s”? If it is active, Guiyuan switches back to the built-in scheme this style was based on.</string>
 
+    <string name="settings_entry_title">System settings entry</string>
+    <string name="settings_entry_summary">Show a Guiyuan shortcut in System Settings</string>
+    <string name="settings_entry_restart_hint">Restart the Settings app to apply this change</string>
+    <string name="settings_entry_disabled">Disabled</string>
+    <string name="settings_entry_top">Top</string>
+    <string name="settings_entry_middle">Middle</string>
+    <string name="settings_entry_bottom">Bottom</string>
+    <string name="settings_entry_scope_title">Enable System Settings entry</string>
+    <string name="settings_entry_scope_summary">This optional shortcut needs the Settings scope only; existing status bar functions are unaffected. Request Xposed access now?</string>
+    <string name="settings_entry_failed_title">Settings access unavailable</string>
+    <string name="settings_entry_failed_summary">Access was not confirmed. Enable Settings in the module manager and choose the entry position again. Status bar functions are unaffected.</string>
+
 </resources>

@@ -31,6 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.GyApplication
+import com.chaners.guiyuan.settings.SettingsEntry
+import com.chaners.guiyuan.settings.SettingsEntryPrefs
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
@@ -538,6 +541,24 @@ internal fun SettingsHubScreen(
     onSwipeBackChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
+    val ctx = LocalContext.current
+    val app = remember(ctx.applicationContext) {
+        ctx.applicationContext as GyApplication
+    }
+    var entry by remember { mutableStateOf(SettingsEntryPrefs.get(ctx)) }
+    var pending by remember { mutableStateOf<SettingsEntry?>(null) }
+    var requestFailed by remember { mutableStateOf(false) }
+    val entryOptions = listOf(
+        stringResource(R.string.settings_entry_disabled),
+        stringResource(R.string.settings_entry_top),
+        stringResource(R.string.settings_entry_middle),
+        stringResource(R.string.settings_entry_bottom),
+    )
+    fun saveEntry(value: SettingsEntry) {
+        if (SettingsEntryPrefs.set(ctx, value)) entry = value
+        else requestFailed = true
+    }
+
     val languageOptions = listOf(
         stringResource(R.string.language_system),
         stringResource(R.string.language_english),
@@ -546,6 +567,54 @@ internal fun SettingsHubScreen(
     HubPage(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
+        overlay = {
+            OverlayDialog(
+                title = stringResource(R.string.settings_entry_scope_title),
+                summary = stringResource(R.string.settings_entry_scope_summary),
+                show = pending != null,
+                onDismissRequest = { pending = null },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        onClick = { pending = null },
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.confirm),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        onClick = {
+                            val target = pending
+                            pending = null
+                            if (target != null) {
+                                val accepted = app.requestSettingsScope { approved ->
+                                    if (approved) saveEntry(target)
+                                    else requestFailed = true
+                                }
+                                if (!accepted) requestFailed = true
+                            }
+                        },
+                    )
+                }
+            }
+            OverlayDialog(
+                title = stringResource(R.string.settings_entry_failed_title),
+                summary = stringResource(R.string.settings_entry_failed_summary),
+                show = requestFailed,
+                onDismissRequest = { requestFailed = false },
+            ) {
+                TextButton(
+                    text = stringResource(R.string.confirm),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { requestFailed = false },
+                )
+            }
+        },
     ) {
         Section(R.string.section_appearance_interaction) {
             ArrowPreference(
@@ -596,6 +665,30 @@ internal fun SettingsHubScreen(
                 summary = stringResource(R.string.hide_launcher_icon_summary),
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
+            )
+            OverlayDropdownPreference(
+                items = entryOptions,
+                selectedIndex = entry.ordinal,
+                title = stringResource(R.string.settings_entry_title),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
+                },
+                summary = stringResource(
+                    if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
+                    else R.string.settings_entry_restart_hint,
+                ),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    SettingsEntry.entries.getOrNull(index)?.let { selected ->
+                        if (selected != entry) {
+                            if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
+                                saveEntry(selected)
+                            } else {
+                                pending = selected
+                            }
+                        }
+                    }
+                },
             )
         }
         Section(R.string.section_diagnostics_maintenance) {

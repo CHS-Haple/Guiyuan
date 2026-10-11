@@ -363,4 +363,16 @@
     <string name="battery_custom_scheme_delete">删除</string>
     <string name="battery_custom_scheme_delete_summary">删除“%1$s”？若当前正在使用，将切换回创建该样式时所基于的内置方案。</string>
 
+    <string name="settings_entry_title">系统设置入口</string>
+    <string name="settings_entry_summary">在系统设置中显示归元快捷入口</string>
+    <string name="settings_entry_restart_hint">重新启动系统设置应用后更新入口位置</string>
+    <string name="settings_entry_disabled">禁用</string>
+    <string name="settings_entry_top">顶部</string>
+    <string name="settings_entry_middle">中部</string>
+    <string name="settings_entry_bottom">底部</string>
+    <string name="settings_entry_scope_title">启用系统设置入口</string>
+    <string name="settings_entry_scope_summary">此可选功能只需要系统设置作用域，不影响现有状态栏功能。是否向 Xposed 框架申请授权？</string>
+    <string name="settings_entry_failed_title">系统设置作用域不可用</string>
+    <string name="settings_entry_failed_summary">尚未确认授权。请在模块管理器中手动开启“系统设置”作用域，然后重新选择入口位置。状态栏功能不受影响。</string>
+
 </resources>
