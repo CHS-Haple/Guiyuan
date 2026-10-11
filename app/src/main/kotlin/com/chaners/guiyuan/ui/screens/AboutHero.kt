@@ -117,7 +117,7 @@ internal fun AboutHero(
             color = MiuixTheme.colorScheme.onBackground,
         )
         Text(
-            text = "${BuildConfig.VERSION_NAME}-${BuildConfig.BUILD_ID.substringAfterLast('-')}",
+            text = "v${BuildConfig.VERSION_NAME}-${BuildConfig.BUILD_ID}",
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned { coords ->
@@ -143,10 +143,16 @@ internal fun GuiyuanAnimatedIdentityMark(
     effectModifier: Modifier = Modifier,
 ) {
     var boosted by remember { mutableStateOf(false) }
+    var pressed by remember { mutableStateOf(false) }
     val speed by animateFloatAsState(
         targetValue = if (boosted) 10f else 1f,
         animationSpec = folmeSpring(damping = 1f, response = if (boosted) 0.48f else 0.95f),
         label = "aboutOrbitSpeed",
+    )
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = folmeSpring(damping = 0.85f, response = if (pressed) 0.23f else 0.38f),
+        label = "aboutLogoPress",
     )
     val currentSpeed by rememberUpdatedState(speed)
     var orbitRotation by remember { mutableFloatStateOf(0f) }
@@ -167,9 +173,11 @@ internal fun GuiyuanAnimatedIdentityMark(
             Modifier.pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
+                        pressed = true
                         try {
                             tryAwaitRelease()
                         } finally {
+                            pressed = false
                             boosted = false
                         }
                     },
@@ -183,7 +191,13 @@ internal fun GuiyuanAnimatedIdentityMark(
     val painter = painterResource(R.drawable.ic_launcher_foreground)
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
     Box(
-        modifier = Modifier.size(markSize).then(pressModifier),
+        modifier = Modifier
+            .size(markSize)
+            .then(pressModifier)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            },
         contentAlignment = Alignment.Center,
     ) {
         Canvas(

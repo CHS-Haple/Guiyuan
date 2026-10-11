@@ -300,11 +300,11 @@ internal fun SettingsPage(
 }
 
 internal fun androidx.compose.foundation.lazy.LazyListScope.Section(
-    @StringRes titleRes: Int,
+    @StringRes titleRes: Int? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     item {
-        SmallTitle(stringResource(titleRes))
+        titleRes?.let { SmallTitle(stringResource(it)) }
         Card(
             modifier = Modifier
                 .padding(horizontal = 12.dp)

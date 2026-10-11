@@ -31,7 +31,6 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
@@ -197,47 +196,7 @@ internal fun AboutScreen(
                     },
             )
         }
-        Section(R.string.section_app) {
-            BasicComponent(
-                title = stringResource(R.string.product_name),
-                summary = stringResource(R.string.app_description),
-                startAction = {
-                    GuiyuanAnimatedIdentityMark()
-                },
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_version_label),
-                summary = BuildConfig.VERSION_NAME,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_tag,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_build_label),
-                summary = BuildConfig.BUILD_ID,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_deployed_code,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_package_label),
-                summary = BuildConfig.APPLICATION_ID,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_package_2,
-                    )
-                },
-            )
-        }
-
-        Section(R.string.section_about_project) {
+        Section {
             ArrowPreference(
                 title = stringResource(R.string.about_project_home_title),
                 summary = stringResource(R.string.about_project_home_summary),
