@@ -19,7 +19,7 @@ internal object SysUiKeyguardHostProbe {
 
     @Synchronized
     fun capture(update: SysUiSceneSource.SceneUpdate): Snapshot? {
-        if (!shouldProbe(update.surface)) return null
+        if (update.surface != SysUiSceneSource.Surface.KEYGUARD) return null
 
         val host =
             findAncestor(update.sourceView, KEYGUARD_HOST_CLASS) as? ViewGroup
@@ -95,12 +95,6 @@ internal object SysUiKeyguardHostProbe {
             " battery={" + bounds(resolved.battery) + "}" +
             " batteryCarrier={" + bounds(resolved.batteryCarrier) + "}"
     }
-
-    internal fun shouldProbe(surface: SysUiSceneSource.Surface): Boolean =
-        surface == SysUiSceneSource.Surface.KEYGUARD
-
-    internal fun isHostClassName(className: String): Boolean =
-        className == KEYGUARD_HOST_CLASS
 
     internal fun shouldFreezeSample(
         hostAttached: Boolean,
