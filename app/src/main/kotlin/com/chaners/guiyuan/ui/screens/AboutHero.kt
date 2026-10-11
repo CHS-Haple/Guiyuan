@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,8 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -54,6 +55,8 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
+import kotlin.math.PI
+import kotlin.math.sin
 
 @Composable
 internal fun AboutHero(
@@ -87,7 +90,6 @@ internal fun AboutHero(
         Box(
             modifier = Modifier
                 .size(100.dp)
-                .clipToBounds()
                 .graphicsLayer {
                     alpha = 1f - iconProgress
                     scaleX = 1f - iconProgress * 0.05f
@@ -161,14 +163,12 @@ internal fun GuiyuanAnimatedIdentityMark(
         label = "aboutLogoPress",
     )
     val halo = remember { Animatable(0f) }
-    LaunchedEffect(boosted) {
-        if (!boosted) {
-            halo.snapTo(0f)
-        } else {
-            // Trigger once near top speed; no continuous halo animation while held.
+    LaunchedEffect(boosted, active) {
+        halo.snapTo(0f)
+        if (boosted && active) {
+            // One pulse at peak speed, then stay idle even if the hold continues.
             snapshotFlow { speed }.first { it >= 19f }
-            halo.snapTo(1f)
-            halo.animateTo(0f, tween(durationMillis = 650, easing = FastOutSlowInEasing))
+            halo.animateTo(1f, tween(durationMillis = 850, easing = FastOutSlowInEasing))
         }
     }
     val currentSpeed by rememberUpdatedState(speed)
@@ -217,27 +217,50 @@ internal fun GuiyuanAnimatedIdentityMark(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(
-            modifier = Modifier.size(markSize).then(effectModifier),
-        ) {
-            val glow = halo.value
-            if (glow > 0f) {
+        Canvas(Modifier.matchParentSize()) {
+            val progress = halo.value
+            if (progress > 0f && progress < 1f) {
+                val strength = sin((PI * progress).toFloat())
+                // Diffuse behind the full mark, not a stroke emerging from its inner ring.
+                val radius = size.minDimension * (0.72f + 0.55f * progress)
                 drawCircle(
-                    color = tint.copy(alpha = 0.48f * glow),
-                    radius = size.minDimension * (0.49f - 0.11f * glow),
-                    style = Stroke(width = 2.dp.toPx()),
+                    brush = Brush.radialGradient(
+                        0f to tint.copy(alpha = 0.21f * strength),
+                        0.35f to tint.copy(alpha = 0.18f * strength),
+                        0.7f to tint.copy(alpha = 0.08f * strength),
+                        1f to tint.copy(alpha = 0f),
+                        center = center,
+                        radius = radius,
+                    ),
+                    radius = radius,
+                )
+                val waveRadius = size.minDimension * (0.8f + 0.65f * progress)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        0f to tint.copy(alpha = 0.08f * strength),
+                        0.55f to tint.copy(alpha = 0.11f * strength),
+                        0.8f to tint.copy(alpha = 0.06f * strength),
+                        1f to tint.copy(alpha = 0f),
+                        center = center,
+                        radius = waveRadius,
+                    ),
+                    radius = waveRadius,
                 )
             }
-            val targetSize = Size(size.width * 1.8f, size.height * 1.8f)
-            val left = (size.width - targetSize.width) / 2f
-            val top = (size.height - targetSize.height) / 2f
-            rotate(degrees = orbitRotation, pivot = center) {
-                translate(left = left, top = top) {
-                    with(painter) {
-                        draw(
-                            size = targetSize,
-                            colorFilter = ColorFilter.tint(tint),
-                        )
+        }
+        Box(Modifier.matchParentSize().clipToBounds()) {
+            Canvas(Modifier.matchParentSize().then(effectModifier)) {
+                val targetSize = Size(size.width * 1.8f, size.height * 1.8f)
+                val left = (size.width - targetSize.width) / 2f
+                val top = (size.height - targetSize.height) / 2f
+                rotate(degrees = orbitRotation, pivot = center) {
+                    translate(left = left, top = top) {
+                        with(painter) {
+                            draw(
+                                size = targetSize,
+                                colorFilter = ColorFilter.tint(tint),
+                            )
+                        }
                     }
                 }
             }
