@@ -8,6 +8,7 @@ internal sealed interface XposedStatus {
     data object QueryUnavailable : XposedStatus
 
     data class Connected(
+        val apiVersion: Int,
         val sysUiInScope: Boolean,
         val sysUiRunning: Boolean,
     ) : XposedStatus

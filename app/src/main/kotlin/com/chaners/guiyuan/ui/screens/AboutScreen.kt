@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -26,8 +27,10 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
+import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
+import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -59,6 +62,10 @@ internal fun AboutScreen(
     onOpenThirdParty: () -> Unit,
 ) {
     val context = LocalContext.current
+    val app = remember(context.applicationContext) {
+        context.applicationContext as GyApplication
+    }
+    val xposedStatus by app.xposedStatus.collectAsState()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
     val density = LocalDensity.current
@@ -307,9 +314,26 @@ internal fun AboutScreen(
         }
 
         Section(R.string.section_module_runtime) {
+            val serviceSummary = when (val status = xposedStatus) {
+                is XposedStatus.Connected ->
+                    stringResource(R.string.runtime_service_connected, status.apiVersion)
+                XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
+                XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
+                XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
+            }
+            val scopeSummary = when (val status = xposedStatus) {
+                is XposedStatus.Connected ->
+                    stringResource(
+                        if (status.sysUiInScope) R.string.runtime_scope_granted
+                        else R.string.runtime_scope_not_granted,
+                    )
+                XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
+                XposedStatus.FrameworkUnavailable,
+                XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_scope_unavailable)
+            }
             BasicComponent(
-                title = stringResource(R.string.runtime_framework_title),
-                summary = stringResource(R.string.runtime_framework_summary),
+                title = stringResource(R.string.runtime_service_title),
+                summary = serviceSummary,
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_extension,
@@ -318,19 +342,10 @@ internal fun AboutScreen(
             )
             BasicComponent(
                 title = stringResource(R.string.runtime_scope_title),
-                summary = stringResource(R.string.runtime_scope_summary),
+                summary = scopeSummary,
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_target,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.runtime_target_title),
-                summary = stringResource(R.string.runtime_target_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_fact_check,
                     )
                 },
             )

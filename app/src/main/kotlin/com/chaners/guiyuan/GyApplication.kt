@@ -232,6 +232,7 @@ class GyApplication :
                     }
 
                 XposedStatus.Connected(
+                    apiVersion = service.apiVersion,
                     sysUiInScope = inScope,
                     sysUiRunning = running,
                 )
