@@ -63,8 +63,10 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
@@ -189,7 +191,10 @@ internal fun DiagnosticsScreen(
         reportBusy = true
         scope.launch {
             try {
-                onReady(DiagReport.build(captured))
+                val report = withContext(Dispatchers.Default) {
+                    DiagReport.build(captured)
+                }
+                onReady(report)
             } finally {
                 reportBusy = false
             }
