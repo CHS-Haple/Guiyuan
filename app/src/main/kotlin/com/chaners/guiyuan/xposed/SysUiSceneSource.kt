@@ -27,6 +27,7 @@ internal object SysUiSceneSource {
         classLoader: ClassLoader,
         onSceneState: (SceneUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val batteryClass =
             Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
@@ -56,6 +57,7 @@ internal object SysUiSceneSource {
                             source = "updateState",
                             onSceneState = onSceneState,
                             onEvent = onEvent,
+                            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                         )
                         result
                     },
@@ -142,6 +144,7 @@ internal object SysUiSceneSource {
         source: String,
         onSceneState: (SceneUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ) {
         synchronized(this) {
             if (states[sourceView] == rawState) {
@@ -156,13 +159,15 @@ internal object SysUiSceneSource {
                 rawState = rawState,
             )
         onSceneState(update)
-        onEvent?.invoke(
-            "sceneState source=" + source +
-                " raw=" + rawState +
-                " batteryState=" + update.surface.name +
-                " authority=battery-status-state-readonly" +
-                " homeVisibilityAuthority=host+panel-coordinator",
-        )
+        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+            onEvent(
+                "sceneState source=" + source +
+                    " raw=" + rawState +
+                    " batteryState=" + update.surface.name +
+                    " authority=battery-status-state-readonly" +
+                    " homeVisibilityAuthority=host+panel-coordinator",
+            )
+        }
     }
 
     internal enum class Surface {
