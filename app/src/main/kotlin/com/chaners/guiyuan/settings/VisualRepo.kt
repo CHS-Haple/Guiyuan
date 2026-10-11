@@ -7,19 +7,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal fun isVisualPreferenceKey(key: String?): Boolean {
-    if (key == null) return true
-    if (
-        key == CONTENT_LAYOUT_KEY ||
-        key in PROFILE_VISUAL_BASE_KEYS ||
-        key in GLOBAL_VISUAL_KEYS
-    ) return true
-    return ContentLayout.entries.any { layout ->
-        PROFILE_VISUAL_BASE_KEYS.any { baseKey ->
-            key == visualProfileKey(layout, baseKey)
+private val visualPreferenceKeys = buildSet {
+    add(CONTENT_LAYOUT_KEY)
+    addAll(PROFILE_VISUAL_BASE_KEYS)
+    addAll(GLOBAL_VISUAL_KEYS)
+    ContentLayout.entries.forEach { layout ->
+        PROFILE_VISUAL_BASE_KEYS.forEach { key ->
+            add(visualProfileKey(layout, key))
         }
     }
 }
+
+internal fun isVisualPreferenceKey(key: String?): Boolean =
+    key == null || key in visualPreferenceKeys
 
 internal class VisualRepo(context: Context) {
     private val preferences =
