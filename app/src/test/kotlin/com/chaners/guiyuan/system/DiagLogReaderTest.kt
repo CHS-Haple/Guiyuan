@@ -55,6 +55,85 @@ class DiagLogReaderTest {
     }
 
     @Test
+    fun hotReloadKeepsNewestStartedSessionDespiteTrailingOldGenerationEvents() {
+        fun event(second: Int, kind: String, session: String): String =
+            "[ 2026-10-11T19:15:${second.toString().padStart(2, '0')}.000 " +
+                "1000: 2200: 2200 I/LSPosedFramework ] " +
+                "(com.android.systemui) [com.chaners.guiyuan,CombinedStatus,876,0,1] " +
+                DiagProtocol.format(
+                    event = kind,
+                    component =
+                        when {
+                            kind.startsWith("module.") -> "module"
+                            kind == "runtime.teardown" -> "runtimeSession"
+                            else -> "hotReload"
+                        },
+                    fields = mapOf("sessionId" to session),
+                )
+
+        val firstStart = event(30, "module.loaded", "old")
+        val newStart = event(31, "module.reloaded", "new")
+        val oldTeardown = event(32, "runtime.teardown", "old")
+        val newComplete = event(33, "hotReload.complete", "new")
+        val delayedOld = event(34, "hotReload.complete", "old")
+
+        assertEquals(
+            listOf(newStart, newComplete),
+            DiagLogReader.latestSession(
+                listOf(firstStart, newStart, oldTeardown, newComplete, delayedOld),
+            ),
+        )
+    }
+
+    @Test
+    fun logcatHotReloadPreservesUntaggedEventsButDropsTaggedOldSession() {
+        fun event(second: Int, kind: String, session: String): String =
+            "10-11 19:15:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = kind,
+                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    fields = mapOf("sessionId" to session),
+                )
+
+        val oldStart = event(30, "module.loaded", "old")
+        val newStart = event(31, "module.reloaded", "new")
+        val oldEvent = event(32, "runtime.teardown", "old")
+        val legacy =
+            "10-11 19:15:33.000 2200 2200 I CombinedStatus: " +
+                "com.chaners.guiyuan legacy event"
+        val newEvent = event(34, "hotReload.complete", "new")
+
+        assertEquals(
+            listOf(newStart, legacy, newEvent),
+            DiagLogReader.latestSession(
+                DiagLogReader.filterLogcatLines(
+                    listOf(oldStart, newStart, oldEvent, legacy, newEvent).joinToString("\n"),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun sessionIdStillScopesWhenPidEnvelopeIsUnavailable() {
+        fun event(kind: String, session: String): String =
+            DiagProtocol.format(
+                event = kind,
+                component = "module",
+                fields = mapOf("sessionId" to session),
+            )
+
+        val oldStart = event("module.loaded", "old")
+        val newStart = event("module.reloaded", "new")
+        val lateOld = event("runtime.teardown", "old")
+        val untagged = "untagged legacy log line"
+
+        assertEquals(
+            listOf(newStart, untagged),
+            DiagLogReader.latestSession(listOf(oldStart, newStart, lateOld, untagged)),
+        )
+    }
+
+    @Test
     fun lsposedSessionStillKeepsOnlyMatchingProcess() {
         fun event(pid: Int, second: Int, session: String): String =
             "[ 2026-10-10T21:53:${second.toString().padStart(2, '0')}.000 " +
