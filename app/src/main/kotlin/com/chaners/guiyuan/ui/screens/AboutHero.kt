@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -58,6 +60,7 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.sin
 
 @Composable
@@ -75,6 +78,12 @@ internal fun AboutHero(
     onVersionBottom: (Float) -> Unit,
 ) {
     val density = LocalDensity.current
+    val markSize = 100.dp
+    val markDiameter = with(density) { markSize.toPx() }
+    val markRadius = markDiameter / 2f
+    val wave = remember { Animatable(0f) }
+    var titleDistance by remember { mutableFloatStateOf(0f) }
+    var versionDistance by remember { mutableFloatStateOf(0f) }
     val blur = if (backdrop == null) Modifier else Modifier.textureBlur(
         backdrop = backdrop,
         shape = RoundedCornerShape(0.dp),
@@ -91,7 +100,7 @@ internal fun AboutHero(
     ) {
         Box(
             modifier = Modifier
-                .size(100.dp)
+                .size(markSize)
                 .graphicsLayer {
                     alpha = 1f - iconProgress
                     scaleX = 1f - iconProgress * 0.05f
@@ -103,7 +112,8 @@ internal fun AboutHero(
             contentAlignment = Alignment.Center,
         ) {
             GuiyuanAnimatedIdentityMark(
-                markSize = 100.dp,
+                markSize = markSize,
+                wave = wave,
                 interactive = active && iconProgress < 1f,
                 active = active,
                 effectModifier = blur,
@@ -115,11 +125,16 @@ internal fun AboutHero(
                 .padding(top = 12.dp, bottom = 5.dp)
                 .onGloballyPositioned { coords ->
                     onNameBottom(coords.positionInWindow().y + coords.size.height)
+                    val distance = coords.positionInParent().y + coords.size.height / 2f - markRadius
+                    if (titleDistance != distance) titleDistance = distance
                 }
                 .graphicsLayer {
+                    val lift = waveLift(wave.value, titleDistance, markDiameter)
+                    val scale = 1f + lift * 0.014f
                     alpha = 1f - nameProgress
-                    scaleX = 1f - nameProgress * 0.05f
-                    scaleY = 1f - nameProgress * 0.05f
+                    scaleX = (1f - nameProgress * 0.05f) * scale
+                    scaleY = (1f - nameProgress * 0.05f) * scale
+                    translationY = -lift * 1.2.dp.toPx()
                 }
                 .then(blur),
             fontSize = 35.sp,
@@ -132,11 +147,16 @@ internal fun AboutHero(
                 .fillMaxWidth()
                 .onGloballyPositioned { coords ->
                     onVersionBottom(coords.positionInWindow().y + coords.size.height)
+                    val distance = coords.positionInParent().y + coords.size.height / 2f - markRadius
+                    if (versionDistance != distance) versionDistance = distance
                 }
                 .graphicsLayer {
+                    val lift = waveLift(wave.value, versionDistance, markDiameter)
+                    val scale = 1f + lift * 0.008f
                     alpha = 1f - versionProgress
-                    scaleX = 1f - versionProgress * 0.05f
-                    scaleY = 1f - versionProgress * 0.05f
+                    scaleX = (1f - versionProgress * 0.05f) * scale
+                    scaleY = (1f - versionProgress * 0.05f) * scale
+                    translationY = -lift * 0.7.dp.toPx()
                 },
             textAlign = TextAlign.Center,
             fontSize = 14.sp,
@@ -148,6 +168,7 @@ internal fun AboutHero(
 @Composable
 internal fun GuiyuanAnimatedIdentityMark(
     markSize: Dp = 64.dp,
+    wave: Animatable<Float, AnimationVector1D>,
     interactive: Boolean = false,
     active: Boolean = true,
     effectModifier: Modifier = Modifier,
@@ -164,7 +185,6 @@ internal fun GuiyuanAnimatedIdentityMark(
         animationSpec = folmeSpring(damping = 0.85f, response = if (pressed) 0.23f else 0.38f),
         label = "aboutLogoPress",
     )
-    val wave = remember { Animatable(0f) }
     LaunchedEffect(boosted, active) {
         wave.snapTo(0f)
         if (boosted && active) {
@@ -268,4 +288,13 @@ private fun DrawScope.drawWave(color: Color, progress: Float, strength: Float, d
         ),
         radius = edge,
     )
+}
+
+// The text moves only when the actual outgoing wavefront passes its measured center.
+private fun waveLift(progress: Float, distance: Float, diameter: Float): Float {
+    if (progress <= 0f || progress >= 1f || distance <= 0f || diameter <= 0f) return 0f
+    val radius = diameter * (0.55f + 1.15f * progress)
+    val feather = diameter * (0.1f + 0.055f * progress)
+    val crossing = (1f - abs(distance - radius) / feather).coerceIn(0f, 1f)
+    return crossing * sin((PI * progress).toFloat())
 }
