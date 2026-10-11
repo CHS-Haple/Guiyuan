@@ -140,14 +140,13 @@
     <string name="diagnostics_build_label">Build</string>
     <string name="diagnostics_package_label">Application package</string>
 
-    <string name="section_device_system">Device &amp; system</string>
+    <string name="section_device_system">Device &amp; environment</string>
     <string name="device_name_label">Device</string>
     <string name="device_model_label">Device model</string>
     <string name="android_version_label">Android version</string>
     <string name="os_version_label">HyperOS version</string>
     <string name="systemui_version_label">SystemUI version</string>
 
-    <string name="section_module_runtime">Module environment</string>
     <string name="runtime_service_title">Xposed service</string>
     <string name="runtime_service_connected">Connected｜API %1$d</string>
     <string name="runtime_service_checking">Checking…</string>
@@ -157,9 +156,6 @@
     <string name="runtime_scope_granted">Granted</string>
     <string name="runtime_scope_not_granted">Not granted</string>
     <string name="runtime_scope_unavailable">Cannot verify</string>
-    <string name="runtime_target_title">Running target</string>
-    <string name="runtime_target_detected">SystemUI detected</string>
-    <string name="runtime_target_not_detected">SystemUI not detected</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>
