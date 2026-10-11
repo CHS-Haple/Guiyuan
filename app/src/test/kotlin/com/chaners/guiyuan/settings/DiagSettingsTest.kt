@@ -5,6 +5,13 @@ import org.junit.Test
 
 class DiagSettingsTest {
     @Test
+    fun clearEventResetsDiagnosticPreference() {
+        org.junit.Assert.assertTrue(isDiagKey(null))
+        org.junit.Assert.assertTrue(isDiagKey(DIAG_LEVEL_KEY))
+        org.junit.Assert.assertFalse(isDiagKey("unrelated_key"))
+    }
+
+    @Test
     fun defaultsToGeneralWhenValueIsMissing() {
         assertEquals(
             DiagLevel.General,

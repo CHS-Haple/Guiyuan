@@ -3,6 +3,7 @@ package com.chaners.guiyuan.xposed.prefs
 import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
+import com.chaners.guiyuan.settings.isDiagKey
 
 internal object DiagPrefsOwner {
     private var prefs: SharedPreferences? = null
@@ -33,7 +34,7 @@ internal object DiagPrefsOwner {
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (
-                    key == DIAG_LEVEL_KEY &&
+                    isDiagKey(key) &&
                     isCurrent(
                         prefs = changed,
                         token = token,
