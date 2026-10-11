@@ -87,11 +87,11 @@ internal fun AboutScreen(
     var nameBottom by remember { mutableFloatStateOf(0f) }
     var versionBottom by remember { mutableFloatStateOf(0f) }
     val spacerHeight = heroHeight + 218.dp
-    val scrollProgress by remember {
+    val scrollProgress by remember(density) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) 1f
-            else (listState.firstVisibleItemScrollOffset / with(density) { spacerHeight.toPx() })
-                .coerceIn(0f, 1f)
+            else (listState.firstVisibleItemScrollOffset /
+                with(density) { (heroHeight + 218.dp).toPx() }).coerceIn(0f, 1f)
         }
     }
     val visible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
