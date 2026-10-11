@@ -92,28 +92,44 @@ internal object DiagLogReader {
             return lines
         }
 
-        // Old-generation teardown may arrive after the new session starts.
-        var newestStartSession: String? = null
-        val sessionRefs =
+        // The new generation can fail before module.reloaded; old teardown may log later.
+        val tagged =
             lines.mapIndexedNotNull { index, line ->
                 if ("sessionId=" !in line) return@mapIndexedNotNull null
-                DiagProtocol.parse(line)?.let { event ->
-                    event.fields["sessionId"]?.let { sessionId ->
-                        if (event.event == "module.loaded" || event.event == "module.reloaded") {
-                            newestStartSession = sessionId
-                        }
-                        index to sessionId
-                    }
+                DiagProtocol.parse(line)
+                    ?.takeIf { event -> event.fields["sessionId"] != null }
+                    ?.let { event -> index to event }
+            }
+        val latestStart =
+            tagged.lastOrNull { (_, event) ->
+                event.event == "module.loaded" || event.event == "module.reloaded"
+            }
+        val failedNewGeneration =
+            tagged.lastOrNull { (_, event) ->
+                if (event.event != "hotReload.complete" || event.state != "error") {
+                    false
+                } else {
+                    val id = event.fields["sessionId"]
+                    val first =
+                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }
+                            ?.first
+                    first != null && (latestStart == null || first > latestStart.first)
                 }
             }
-        val sessionId = newestStartSession ?: sessionRefs.lastOrNull()?.second
+        val sessionId =
+            (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
+                ?.second
+                ?.fields
+                ?.get("sessionId")
         if (sessionId != null) {
             val start =
-                sessionRefs.firstOrNull { (_, id) -> id == sessionId }?.first
+                tagged.firstOrNull { (_, event) -> event.fields["sessionId"] == sessionId }?.first
                     ?: return lines
             val stale =
-                sessionRefs.asSequence()
-                    .filter { (index, id) -> index >= start && id != sessionId }
+                tagged.asSequence()
+                    .filter { (index, event) ->
+                        index >= start && event.fields["sessionId"] != sessionId
+                    }
                     .map { it.first }
                     .toSet()
             val pid = pidOf(lines[start])

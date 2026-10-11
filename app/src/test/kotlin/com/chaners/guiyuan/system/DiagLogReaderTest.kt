@@ -134,6 +134,59 @@ class DiagLogReaderTest {
     }
 
     @Test
+    fun failedHotReloadBeforeModuleReloadedStillSelectsNewGeneration() {
+        fun event(second: Int, kind: String, state: String?, session: String): String =
+            "10-11 20:15:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = kind,
+                    component =
+                        when {
+                            kind.startsWith("module.") -> "module"
+                            kind == "diagnostics.bind" -> "diagnostics"
+                            kind == "runtime.teardown" -> "runtimeSession"
+                            else -> "hotReload"
+                        },
+                    state = state,
+                    fields = mapOf("sessionId" to session),
+                )
+
+        val oldStart = event(30, "module.loaded", "ready", "old")
+        val newBind = event(31, "diagnostics.bind", "ready", "new")
+        val failedTakeover = event(32, "hotReload.complete", "error", "new")
+        val delayedOld = event(33, "runtime.teardown", "released", "old")
+
+        assertEquals(
+            listOf(newBind, failedTakeover),
+            DiagLogReader.latestSession(listOf(oldStart, newBind, failedTakeover, delayedOld)),
+        )
+    }
+
+    @Test
+    fun lateOldGenerationFailureCannotOverrideNewSuccessfulStart() {
+        fun event(second: Int, kind: String, state: String?, session: String): String =
+            "10-11 20:16:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = kind,
+                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    state = state,
+                    fields = mapOf("sessionId" to session),
+                )
+
+        val oldStart = event(30, "module.loaded", "ready", "old")
+        val oldError = event(31, "hotReload.complete", "error", "old")
+        val newStart = event(32, "module.reloaded", "ready", "new")
+        val delayedOldError = event(33, "hotReload.complete", "error", "old")
+        val newComplete = event(34, "hotReload.complete", "ready", "new")
+
+        assertEquals(
+            listOf(newStart, newComplete),
+            DiagLogReader.latestSession(
+                listOf(oldStart, oldError, newStart, delayedOldError, newComplete),
+            ),
+        )
+    }
+
+    @Test
     fun lsposedSessionStillKeepsOnlyMatchingProcess() {
         fun event(pid: Int, second: Int, session: String): String =
             "[ 2026-10-10T21:53:${second.toString().padStart(2, '0')}.000 " +
