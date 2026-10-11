@@ -233,7 +233,6 @@ class GyModule : XposedModule() {
             state = "preparing",
             "hooks" to hookCount,
             "build" to BuildConfig.BUILD_ID,
-            "transfer" to "classloader-neutral",
             "hostIdentity" to System.identityHashCode(prepared.host),
             "wifiRoots" to prepared.wifiRoots,
             "mobileRoots" to prepared.mobileRoots,
@@ -246,7 +245,6 @@ class GyModule : XposedModule() {
             event = "hotReload.cleanup",
             component = "hotReload",
             state = "deferred-to-new-generation",
-            "uiMutation" to "single-main-thread-handoff",
             "homePresentation" to "retained-until-generation-handoff",
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
@@ -542,7 +540,6 @@ class GyModule : XposedModule() {
                 component = "hotReload",
                 state = "ready",
                 "mode" to generationHandoff,
-                "layoutCommit" to "single-main-thread-turn",
             )
 
             SysUiCcSource.restoreHomeEligibility(
