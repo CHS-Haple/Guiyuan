@@ -366,5 +366,4 @@
     <string name="battery_custom_scheme_delete">Delete</string>
     <string name="battery_custom_scheme_delete_summary">Delete “%1$s”? If it is active, Guiyuan switches back to the built-in scheme this style was based on.</string>
 
-    <string name="about_logo_hold_hint">Hold the logo to spin faster</string>
 </resources>
