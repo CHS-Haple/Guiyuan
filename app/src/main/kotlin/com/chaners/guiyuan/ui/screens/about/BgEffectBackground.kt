@@ -16,13 +16,13 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.floor
 
 @Composable
-fun BgEffectBackground(
+internal fun BgEffectBackground(
     dynamicBackground: Boolean,
     modifier: Modifier = Modifier,
     bgModifier: Modifier = Modifier,
