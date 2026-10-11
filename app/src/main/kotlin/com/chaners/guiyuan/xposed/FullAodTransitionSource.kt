@@ -19,6 +19,7 @@ internal object FullAodTransitionSource {
         onTransitionStarted: () -> Unit,
         onTransitionCommitted: () -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
         val candidates =
@@ -56,11 +57,13 @@ internal object FullAodTransitionSource {
                         // Direction is read from mToLockScreen only after native
                         // code returns. Raw arguments remain diagnostics only.
                         onTransitionCommitted()
-                        onEvent?.invoke(
-                            "keyguardFullAod source=animateFullAod" +
-                                " arg0=" + (rawArg0 ?: "unavailable") +
-                                " arg1=" + (rawArg1 ?: "unavailable"),
-                        )
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            onEvent(
+                                "keyguardFullAod source=animateFullAod" +
+                                    " arg0=" + (rawArg0 ?: "unavailable") +
+                                    " arg1=" + (rawArg1 ?: "unavailable"),
+                            )
+                        }
                         result
                     },
                 )
