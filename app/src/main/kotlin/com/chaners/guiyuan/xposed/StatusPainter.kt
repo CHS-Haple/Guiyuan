@@ -2798,7 +2798,7 @@ internal class StatusPainter(
                 nativeTargetAvailable = nativeTargetAvailable,
             )
 
-        paint.style = Paint.Style.FILL
+        // Draw with the text style already used to measure this layout.
         paint.color = tint
         paint.alpha =
             VisualIntensity.resolveCanvasAlpha(
@@ -2806,15 +2806,6 @@ internal class StatusPainter(
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        configureTransitionTextStyle(
-            sourceTypeface = mobileTypeTypeface(geometry.mobileTypeWeight),
-            currentWeight = geometry.mobileTypeWeight,
-            targetStyle = targetStyle,
-            progress = transitionProgress,
-            textSize = layout.mainTextSize,
-        )
-        paint.textAlign = Paint.Align.LEFT
-
         paint.textSize = layout.mainTextSize
         canvas.drawText(
             layout.main,
