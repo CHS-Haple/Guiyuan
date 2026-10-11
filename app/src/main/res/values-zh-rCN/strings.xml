@@ -144,17 +144,13 @@
     <string name="device_model_label">设备型号</string>
     <string name="android_version_label">Android 版本</string>
     <string name="os_version_label">HyperOS 版本</string>
-    <string name="systemui_version_label">SystemUI 版本</string>
 
-    <string name="runtime_service_title">Xposed 服务</string>
+    <string name="runtime_service_title">框架服务</string>
     <string name="runtime_service_connected">已连接｜API %1$d</string>
     <string name="runtime_service_checking">正在检查…</string>
     <string name="runtime_service_disconnected">未连接</string>
     <string name="runtime_service_query_unavailable">已连接｜状态不可查询</string>
-    <string name="runtime_scope_title">SystemUI 作用域</string>
-    <string name="runtime_scope_granted">已授权</string>
-    <string name="runtime_scope_not_granted">未授权</string>
-    <string name="runtime_scope_unavailable">无法确认</string>
+    <string name="runtime_scope_title">作用域</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>

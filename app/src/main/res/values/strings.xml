@@ -145,17 +145,13 @@
     <string name="device_model_label">Device model</string>
     <string name="android_version_label">Android version</string>
     <string name="os_version_label">HyperOS version</string>
-    <string name="systemui_version_label">SystemUI version</string>
 
-    <string name="runtime_service_title">Xposed service</string>
+    <string name="runtime_service_title">Framework service</string>
     <string name="runtime_service_connected">Connected｜API %1$d</string>
     <string name="runtime_service_checking">Checking…</string>
     <string name="runtime_service_disconnected">Not connected</string>
     <string name="runtime_service_query_unavailable">Connected｜Status unavailable</string>
-    <string name="runtime_scope_title">SystemUI scope</string>
-    <string name="runtime_scope_granted">Granted</string>
-    <string name="runtime_scope_not_granted">Not granted</string>
-    <string name="runtime_scope_unavailable">Cannot verify</string>
+    <string name="runtime_scope_title">Scope</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>

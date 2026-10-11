@@ -15,7 +15,7 @@
     <string name="home_runtime_disabled">Disabled</string>
     <string name="home_runtime_disabled_summary">Native system status icons are in use</string>
     <string name="home_runtime_framework_unavailable">Not connected</string>
-    <string name="home_runtime_framework_unavailable_summary">Cannot connect to Xposed service\nCheck framework and module setup</string>
+    <string name="home_runtime_framework_unavailable_summary">Cannot connect to framework service\nCheck framework and module setup</string>
     <string name="home_runtime_unknown">Status unavailable</string>
     <string name="home_runtime_unknown_summary">SystemUI status is unavailable\nTry later or open Diagnostics</string>
     <string name="home_runtime_checking">Checking</string>
@@ -23,9 +23,9 @@
     <string name="home_runtime_reloading">Reloading</string>
     <string name="home_runtime_reloading_summary">Hot reloading Guiyuan</string>
     <string name="home_runtime_requesting">Requesting access</string>
-    <string name="home_runtime_requesting_summary">Waiting for Xposed scope approval</string>
+    <string name="home_runtime_requesting_summary">Waiting for scope approval</string>
     <string name="home_scope_request_failed">Scope request unavailable</string>
-    <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your Xposed manager.</string>
+    <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your module manager.</string>
 
     <string name="section_home_preview_sandbox">Preview sandbox</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>

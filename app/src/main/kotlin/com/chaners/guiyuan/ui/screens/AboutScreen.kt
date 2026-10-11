@@ -302,15 +302,6 @@ internal fun AboutScreen(
                     )
                 },
             )
-            BasicComponent(
-                title = stringResource(R.string.systemui_version_label),
-                summary = env.sysUiVersion.ifBlank { unavailable },
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_dashboard,
-                    )
-                },
-            )
             val serviceSummary = when (val status = xposedStatus) {
                 is XposedStatus.Connected ->
                     stringResource(R.string.runtime_service_connected, status.apiVersion)
@@ -318,16 +309,7 @@ internal fun AboutScreen(
                 XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
                 XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
             }
-            val scopeSummary = when (val status = xposedStatus) {
-                is XposedStatus.Connected ->
-                    stringResource(
-                        if (status.sysUiInScope) R.string.runtime_scope_granted
-                        else R.string.runtime_scope_not_granted,
-                    )
-                XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
-                XposedStatus.FrameworkUnavailable,
-                XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_scope_unavailable)
-            }
+            val scopeSummary = "SystemUI$ABOUT_VALUE_SEPARATOR${env.sysUiVersion.ifBlank { unavailable }}"
             BasicComponent(
                 title = stringResource(R.string.runtime_service_title),
                 summary = serviceSummary,
@@ -346,12 +328,8 @@ internal fun AboutScreen(
                     )
                 },
             )
-
         }
-
-
     }
-
 }
 
 @Composable
