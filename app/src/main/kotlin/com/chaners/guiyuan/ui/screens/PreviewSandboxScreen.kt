@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -196,9 +195,7 @@ internal fun PreviewSandboxScreen(
                     Modifier
                         .fillMaxSize()
                         .scrollEndHaptic()
-                        .overScrollVertical()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
-                overscrollEffect = null,
                 contentPadding =
                     pageContentPadding(
                         innerPadding = paddingValues,
