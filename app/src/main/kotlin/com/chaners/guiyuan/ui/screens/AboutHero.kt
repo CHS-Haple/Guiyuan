@@ -94,7 +94,7 @@ internal fun AboutHero(
         ) {
             GuiyuanAnimatedIdentityMark(
                 markSize = 100.dp,
-                interactive = true,
+                interactive = active && iconProgress < 1f,
                 active = active,
                 effectModifier = blur,
             )
