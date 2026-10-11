@@ -48,7 +48,7 @@ internal object KeyguardIconTransitionSource {
                         val result = chain.proceed()
                         onTransition()
                         if (detailed) {
-                            onEvent(
+                            onEvent?.invoke(
                                 "keyguardStatusIconTransition source=animateIconContainer" +
                                     " arg0=" + (rawArg0 ?: "unavailable"),
                             )
