@@ -9,6 +9,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
@@ -206,9 +207,10 @@ internal fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
+    titleAlpha: Float = 1f,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
-    background: @Composable BoxScope.() -> Unit = {},
+    background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -226,6 +228,7 @@ internal fun SettingsPage(
                 SmallTopAppBar(
                     title = title,
                     color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha),
                     scrollBehavior = scrollBehavior,
                     titlePadding = titlePadding,
                     navigationIcon = {
@@ -254,12 +257,12 @@ internal fun SettingsPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
-            background()
             val contentPadding =
                 pageContentPadding(
                     innerPadding = paddingValues,
                     extraBottom = 12.dp,
                 )
+            background(contentPadding)
 
             @Composable
             fun SettingsList() {
