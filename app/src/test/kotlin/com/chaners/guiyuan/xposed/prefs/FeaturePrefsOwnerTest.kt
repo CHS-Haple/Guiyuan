@@ -1,18 +1,25 @@
 package com.chaners.guiyuan.xposed.prefs
 
+import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
+import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
+import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.isFeatureKey
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FeaturePrefsOwnerTest {
     @Test
-    fun clearNotificationParticipatesInFeatureRuntimeSync() {
-        assertEquals(true, isFeatureKey(null))
-        assertEquals(true, isFeatureKey("combined_status_enabled"))
-        assertEquals(true, isFeatureKey("combined_status_keyguard_enabled"))
-        assertEquals(true, isFeatureKey("combined_status_aod_enabled"))
-        assertEquals(false, isFeatureKey("unrelated"))
+    fun featureKeyFilterIncludesClearAndExcludesTimestamp() {
+        assertTrue(isFeatureKey(null))
+        assertTrue(isFeatureKey(FEATURE_ENABLED_KEY))
+        assertTrue(isFeatureKey(FEATURE_KEYGUARD_KEY))
+        assertTrue(isFeatureKey(FEATURE_AOD_KEY))
+        assertFalse(isFeatureKey(FEATURE_CHANGED_AT_NS_KEY))
+        assertFalse(isFeatureKey("unrelated"))
     }
 
     @Test
