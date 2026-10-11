@@ -1099,7 +1099,6 @@ internal object NativeNetworkSuppressor {
         val visualMaskResult =
             refreshMobileVisualMasksLocked(
                 targetViews = targetViews,
-                source = source,
             )
         if (visualMaskResult.failureReason != null) {
             return BindingSnapshot.failure(
