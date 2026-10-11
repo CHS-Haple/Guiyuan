@@ -602,22 +602,6 @@ internal object CcTransitionPolicy {
         )
     }
 
-    fun scaleGeometry(
-        source: FloatArray,
-        scale: Float,
-    ): FloatArray {
-        require(source.size == 6)
-        val normalized = scale.coerceAtLeast(0f)
-        return floatArrayOf(
-            source[0],
-            source[1],
-            source[2] * normalized,
-            source[3] * normalized,
-            source[4] * normalized,
-            source[5] * normalized,
-        )
-    }
-
     fun relativeGeometryWidth(
         target: FloatArray,
         current: FloatArray,

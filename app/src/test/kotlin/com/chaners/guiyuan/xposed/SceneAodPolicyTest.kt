@@ -20,35 +20,23 @@ class SceneAodPolicyTest {
     }
 
     @Test
-    fun aodProjectionRequiresEnabledStableOrPrearmedTarget() {
-        assertTrue(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = true,
-                aodEnabled = true,
-                stableAod = true,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = true,
-                aodEnabled = false,
-                stableAod = true,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = false,
-                aodEnabled = true,
-                stableAod = true,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = true,
-                aodEnabled = true,
-                stableAod = false,
-            ),
-        )
+    fun homeAodPrearmUsesLiveProjectionDecision() {
+        fun projected(feature: Boolean, aod: Boolean, prearmed: Boolean) =
+            ScenePolicy.resolveKeyguardAodProjection(
+                featureEnabled = feature,
+                keyguardEnabled = false,
+                aodEnabled = aod,
+                toAod = false,
+                isAodAnimate = false,
+                steadySourceScene = SourceScene.HOME,
+                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                homeAodTargetPrearm = prearmed,
+            )
+
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projected(true, true, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projected(true, false, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projected(false, true, true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, projected(true, true, false))
     }
 
     @Test
@@ -618,25 +606,6 @@ class SceneAodPolicyTest {
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                 homePresentationOwned = true,
-            ),
-        )
-    }
-    @Test
-    fun aodPrearmRequiresAodFeatureAndVisibleHomeOwnership() {
-        assertTrue(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = true,
-                aodEnabled = true,
-                stableAod = false,
-                homeTransitionPrearm = true,
-            ),
-        )
-        assertFalse(
-            ScenePolicy.aodProjectionEligible(
-                featureEnabled = true,
-                aodEnabled = false,
-                stableAod = false,
-                homeTransitionPrearm = true,
             ),
         )
     }
