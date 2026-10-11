@@ -37,6 +37,9 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.SettingsEntry
+import com.chaners.guiyuan.settings.SettingsEntryPrefs
+import com.chaners.guiyuan.system.SettingsScope
 import com.chaners.guiyuan.system.SysUiScope
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
@@ -53,6 +56,7 @@ import com.chaners.guiyuan.ui.screens.FeaturesScreen
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
+import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -60,6 +64,8 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -77,8 +83,13 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 private const val TopLevelPageCount = 3
 
 private enum class RestartDialog {
-    CONFIRM,
+    SELECT,
     FAILURE,
+}
+
+private enum class RestartTarget {
+    SYS_UI,
+    SETTINGS,
 }
 
 private data class WeightedNavigationItem(
@@ -108,9 +119,23 @@ internal fun MainHub(
     var restartInProgress by remember { mutableStateOf(false) }
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
-    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
+    var availableTargets by remember { mutableStateOf(setOf(RestartTarget.SYS_UI)) }
+    var selectedTargets by remember { mutableStateOf(setOf(RestartTarget.SYS_UI)) }
+    var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    var failedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    val app = context.applicationContext as GyApplication
     val onRestart = {
-        if (!restartInProgress) restartDialog = RestartDialog.CONFIRM
+        if (!restartInProgress) {
+            availableTargets =
+                if (SettingsEntryPrefs.get(context) != SettingsEntry.Disabled && app.settingsInScope()) {
+                    setOf(RestartTarget.SYS_UI, RestartTarget.SETTINGS)
+                } else {
+                    setOf(RestartTarget.SYS_UI)
+                }
+            selectedTargets = setOf(RestartTarget.SYS_UI)
+            queuedRestart = emptySet()
+            restartDialog = RestartDialog.SELECT
+        }
     }
     val miuixMaterialActive =
         appearance.navEnabled &&
@@ -314,48 +339,102 @@ internal fun MainHub(
         }
 
         OverlayDialog(
-            title = stringResource(R.string.restart_scope),
-            summary = stringResource(R.string.restart_scope_dialog_summary),
-            show = restartDialog == RestartDialog.CONFIRM,
+            title = stringResource(R.string.restart_scope_dialog_title),
+            summary = stringResource(
+                if (RestartTarget.SETTINGS in availableTargets) {
+                    R.string.restart_scope_dialog_summary
+                } else {
+                    R.string.restart_scope_dialog_sysui_summary
+                },
+            ),
+            show = restartDialog == RestartDialog.SELECT,
             onDismissRequest = {
-                restartAfterDialogDismiss = false
+                queuedRestart = emptySet()
                 restartDialog = null
             },
             onDismissFinished = {
-                if (restartAfterDialogDismiss && !restartInProgress) {
-                    restartAfterDialogDismiss = false
+                if (queuedRestart.isNotEmpty() && !restartInProgress) {
+                    val targets = queuedRestart
+                    queuedRestart = emptySet()
                     restartInProgress = true
                     scope.launch {
-                        val success = SysUiScope.restart(context.applicationContext)
+                        val failed = mutableSetOf<RestartTarget>()
+                        if (RestartTarget.SYS_UI in targets &&
+                            !SysUiScope.restart(context.applicationContext)
+                        ) failed += RestartTarget.SYS_UI
+                        if (RestartTarget.SETTINGS in targets &&
+                            !SettingsScope.restart(context.applicationContext)
+                        ) failed += RestartTarget.SETTINGS
+                        failedTargets = failed
                         restartInProgress = false
-                        (context.applicationContext as? GyApplication)?.refreshXposedStatus()
-                        if (!success) restartDialog = RestartDialog.FAILURE
+                        app.refreshXposedStatus()
+                        if (failed.isNotEmpty()) restartDialog = RestartDialog.FAILURE
                     }
                 }
             },
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        restartAfterDialogDismiss = false
-                        restartDialog = null
+            Column {
+                CheckboxPreference(
+                    title = stringResource(R.string.restart_scope_sysui),
+                    summary = "com.android.systemui",
+                    checked = RestartTarget.SYS_UI in selectedTargets,
+                    onCheckedChange = { checked ->
+                        selectedTargets =
+                            if (checked) selectedTargets + RestartTarget.SYS_UI
+                            else selectedTargets - RestartTarget.SYS_UI
+                    },
+                    checkboxLocation = CheckboxLocation.End,
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard)
                     },
                 )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = stringResource(R.string.restart),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        restartAfterDialogDismiss = true
-                        restartDialog = null
-                    },
-                )
+                if (RestartTarget.SETTINGS in availableTargets) {
+                    CheckboxPreference(
+                        title = stringResource(R.string.restart_scope_settings),
+                        summary = "com.android.settings",
+                        checked = RestartTarget.SETTINGS in selectedTargets,
+                        onCheckedChange = { checked ->
+                            selectedTargets =
+                                if (checked) selectedTargets + RestartTarget.SETTINGS
+                                else selectedTargets - RestartTarget.SETTINGS
+                        },
+                        checkboxLocation = CheckboxLocation.End,
+                        startAction = {
+                            SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
+                        },
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(
+                            if (selectedTargets == availableTargets) {
+                                R.string.restart_scope_clear_all
+                            } else {
+                                R.string.restart_scope_select_all
+                            },
+                        ),
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            selectedTargets =
+                                if (selectedTargets == availableTargets) emptySet()
+                                else availableTargets
+                        },
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.restart),
+                        modifier = Modifier.weight(1f),
+                        enabled = selectedTargets.isNotEmpty(),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        onClick = {
+                            queuedRestart = selectedTargets intersect availableTargets
+                            restartDialog = null
+                        },
+                    )
+                }
             }
         }
 
@@ -375,7 +454,17 @@ internal fun MainHub(
 
         OverlayDialog(
             title = stringResource(R.string.restart_scope_failed),
-            summary = stringResource(R.string.restart_scope_failed_summary),
+            summary = stringResource(
+                R.string.restart_scope_failed_summary,
+                failedTargets
+                    .map {
+                        when (it) {
+                            RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
+                            RestartTarget.SETTINGS -> context.getString(R.string.restart_scope_settings)
+                        }
+                    }
+                    .joinToString(", "),
+            ),
             show = restartDialog == RestartDialog.FAILURE,
             onDismissRequest = { restartDialog = null },
         ) {

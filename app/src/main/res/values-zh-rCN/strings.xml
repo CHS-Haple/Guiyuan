@@ -61,11 +61,11 @@
     <string name="about_summary">版本、项目与运行环境</string>
     <string name="diagnostics_title">诊断</string>
     <string name="diagnostics_summary">查看归元运行日志</string>
-    <string name="restart_scope">重启 SystemUI</string>
-    <string name="restart_scope_summary">重启 SystemUI 以重新加载归元</string>
-    <string name="restart_scope_dialog_summary">需要 Root 权限。将重启 SystemUI 以重新加载归元，设备本身不会重启。</string>
+    <string name="restart_scope">重启作用域</string>
+    <string name="restart_scope_summary">选择并重启已启用的作用域进程</string>
+    <string name="restart_scope_dialog_summary">需要 Root 权限。将重启选中的进程；设置应用会自动重新打开，设备不会重启。</string>
     <string name="restart_scope_failed">重启失败</string>
-    <string name="restart_scope_failed_summary">请确认 Root 权限可用且 SystemUI 能正常重新启动后重试</string>
+    <string name="restart_scope_failed_summary">无法重启：%1$s。请检查 Root 权限后重试。</string>
     <string name="restart">重启</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
@@ -374,5 +374,12 @@
     <string name="settings_entry_scope_summary">此可选功能只需要系统设置作用域，不影响现有状态栏功能。是否向 Xposed 框架申请授权？</string>
     <string name="settings_entry_failed_title">系统设置作用域不可用</string>
     <string name="settings_entry_failed_summary">尚未确认授权。请在模块管理器中手动开启“系统设置”作用域，然后重新选择入口位置。状态栏功能不受影响。</string>
+
+    <string name="restart_scope_dialog_title">快速重启作用域</string>
+    <string name="restart_scope_dialog_sysui_summary">需要 Root 权限，将重新启动系统界面进程，不会重启设备。</string>
+    <string name="restart_scope_sysui">系统界面</string>
+    <string name="restart_scope_settings">设置</string>
+    <string name="restart_scope_select_all">全选</string>
+    <string name="restart_scope_clear_all">取消全选</string>
 
 </resources>

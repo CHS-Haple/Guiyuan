@@ -62,11 +62,11 @@
     <string name="about_summary">Version, project, and runtime environment</string>
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_summary">View Guiyuan runtime logs</string>
-    <string name="restart_scope">Restart SystemUI</string>
-    <string name="restart_scope_summary">Restart SystemUI to reload Guiyuan</string>
-    <string name="restart_scope_dialog_summary">Root access is required. SystemUI will restart to reload Guiyuan. The device will not reboot.</string>
+    <string name="restart_scope">Restart scopes</string>
+    <string name="restart_scope_summary">Choose active targets to restart and apply changes</string>
+    <string name="restart_scope_dialog_summary">Root access is required. Selected targets will restart; Settings will reopen in the foreground. Your device will not reboot.</string>
     <string name="restart_scope_failed">Restart failed</string>
-    <string name="restart_scope_failed_summary">Check Root access and confirm SystemUI can restart normally, then try again</string>
+    <string name="restart_scope_failed_summary">Could not restart: %1$s. Check Root access and try again.</string>
     <string name="restart">Restart</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">OK</string>
@@ -375,5 +375,12 @@
     <string name="settings_entry_scope_summary">This optional shortcut needs the Settings scope only; existing status bar functions are unaffected. Request Xposed access now?</string>
     <string name="settings_entry_failed_title">Settings access unavailable</string>
     <string name="settings_entry_failed_summary">Access was not confirmed. Enable Settings in the module manager and choose the entry position again. Status bar functions are unaffected.</string>
+
+    <string name="restart_scope_dialog_title">Quick restart scopes</string>
+    <string name="restart_scope_dialog_sysui_summary">Root access is required to restart System UI. Your device will not reboot.</string>
+    <string name="restart_scope_sysui">System UI</string>
+    <string name="restart_scope_settings">Settings</string>
+    <string name="restart_scope_select_all">Select all</string>
+    <string name="restart_scope_clear_all">Clear all</string>
 
 </resources>
