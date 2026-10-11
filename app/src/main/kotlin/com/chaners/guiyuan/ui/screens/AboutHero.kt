@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -17,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +28,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,6 +53,7 @@ import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlinx.coroutines.flow.first
 
 @Composable
 internal fun AboutHero(
@@ -145,7 +151,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     var boosted by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
     val speed by animateFloatAsState(
-        targetValue = if (boosted) 10f else 1f,
+        targetValue = if (boosted) 20f else 1f,
         animationSpec = folmeSpring(damping = 1f, response = if (boosted) 0.48f else 0.95f),
         label = "aboutOrbitSpeed",
     )
@@ -154,6 +160,17 @@ internal fun GuiyuanAnimatedIdentityMark(
         animationSpec = folmeSpring(damping = 0.85f, response = if (pressed) 0.23f else 0.38f),
         label = "aboutLogoPress",
     )
+    val halo = remember { Animatable(0f) }
+    LaunchedEffect(boosted) {
+        if (!boosted) {
+            halo.snapTo(0f)
+        } else {
+            // Trigger once near top speed; no continuous halo animation while held.
+            snapshotFlow { speed }.first { it >= 19f }
+            halo.snapTo(1f)
+            halo.animateTo(0f, tween(durationMillis = 650, easing = FastOutSlowInEasing))
+        }
+    }
     val currentSpeed by rememberUpdatedState(speed)
     var orbitRotation by remember { mutableFloatStateOf(0f) }
 
@@ -203,6 +220,14 @@ internal fun GuiyuanAnimatedIdentityMark(
         Canvas(
             modifier = Modifier.size(markSize).then(effectModifier),
         ) {
+            val glow = halo.value
+            if (glow > 0f) {
+                drawCircle(
+                    color = tint.copy(alpha = 0.48f * glow),
+                    radius = size.minDimension * (0.49f - 0.11f * glow),
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
             val targetSize = Size(size.width * 1.8f, size.height * 1.8f)
             val left = (size.width - targetSize.width) / 2f
             val top = (size.height - targetSize.height) / 2f
