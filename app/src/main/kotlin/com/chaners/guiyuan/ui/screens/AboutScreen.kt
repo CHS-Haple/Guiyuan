@@ -135,6 +135,7 @@ internal fun AboutScreen(
         title = stringResource(R.string.about_title),
         onBack = onBack,
         listState = listState,
+        edgeFeedback = true,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
             BgEffectBackground(

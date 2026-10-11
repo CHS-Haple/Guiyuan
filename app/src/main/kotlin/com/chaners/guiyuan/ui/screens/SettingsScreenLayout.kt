@@ -7,6 +7,7 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,6 +58,8 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 internal fun SemanticLeadingIcon(
@@ -209,6 +212,7 @@ internal fun SettingsPage(
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     listState: LazyListState? = null,
+    edgeFeedback: Boolean = false,
     pullToRefresh: SettingsPullToRefresh? = null,
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
@@ -272,8 +276,14 @@ internal fun SettingsPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
+                            .then(
+                                if (edgeFeedback) Modifier.scrollEndHaptic().overScrollVertical()
+                                else Modifier,
+                            )
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
+                    // The custom spring owns About's overscroll; avoid two effects competing.
+                    overscrollEffect = if (edgeFeedback) null else rememberOverscrollEffect(),
                     content = content,
                 )
             }
