@@ -27,8 +27,34 @@ for apk in "$@"; do
     exit 1
   fi
 
-  scope="$(unzip -p "$apk" META-INF/xposed/scope.list | tr -d '\r\n')"
-  if [[ "$scope" != "com.android.systemui" ]]; then
+  scope="$(unzip -p "$apk" META-INF/xposed/scope.list | tr -d '\r')"
+  expected_scope=
+    echo "Unexpected Xposed scope in $apk." >&2
+    exit 1
+  fi
+
+  module_prop="$(unzip -p "$apk" META-INF/xposed/module.prop)"
+  for entry in "targetApiVersion=102" "autoHotReload=true"; do
+    if ! grep -Fxq "$entry" <<< "$module_prop"; then
+      echo "Missing Xposed module property in $apk: $entry" >&2
+      exit 1
+    fi
+  done
+
+  java_entry_count="$(
+    unzip -p "$apk" META-INF/xposed/java_init.list |
+      tr -d '\r' |
+      sed '/^[[:space:]]*$/d' |
+      wc -l |
+      tr -d ' '
+  )"
+  if [[ "$java_entry_count" != "1" ]]; then
+    echo "Hot reload requires exactly one Java entry class in $apk." >&2
+    exit 1
+  fi
+done
+com.android.systemui\ncom.android.settings'
+  if [[ "$scope" != "$expected_scope" ]]; then
     echo "Unexpected Xposed scope in $apk." >&2
     exit 1
   fi
