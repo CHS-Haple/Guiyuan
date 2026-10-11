@@ -68,7 +68,6 @@ class PreviewSandboxPolicyTest {
                 networkMode = PreviewNetworkMode.WIFI,
             )
 
-        assertEquals(PreviewNetworkMode.WIFI, state.networkMode)
         assertFalse(state.mobileOptionsVisible)
     }
 

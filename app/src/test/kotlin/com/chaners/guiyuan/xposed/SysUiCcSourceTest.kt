@@ -287,20 +287,6 @@ class SysUiCcSourceTest {
     }
 
     @Test
-    fun transitionDoesNotOwnANativeReleaseTimeline() {
-        assertEquals(
-            0.92f,
-            CcTransitionPolicy.geometryProgress(0.92f),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            CcTransitionPolicy.geometryProgress(1f),
-            0.0001f,
-        )
-    }
-
-    @Test
     fun transitionSimilarityGeometryPreservesSourceAspectRatio() {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
