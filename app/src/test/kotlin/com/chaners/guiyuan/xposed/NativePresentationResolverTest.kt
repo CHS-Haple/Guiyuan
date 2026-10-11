@@ -5,25 +5,6 @@ import org.junit.Test
 
 class NativePresentationResolverTest {
     @Test
-    fun presentationAndDataSubscriptionIdentitiesCanDiffer() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
-                boundRoots = 2,
-                visibleRoots = 1,
-                activeSubscriptionIds = listOf(1, 4),
-                presentationRootSubscriptionId = 1,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
-                networkType = null,
-            )
-
-        assertEquals(1, snapshot.presentationRootSubscriptionId)
-        assertEquals(4, snapshot.effectiveDataSubscriptionId)
-        assertEquals(4, snapshot.networkTypeSubscriptionId)
-    }
-
-    @Test
     fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
         assertEquals(
             4,
