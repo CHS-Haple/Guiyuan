@@ -2697,26 +2697,7 @@ internal object SysUiPresentationOwner {
                 }
             }
 
-            val iterator = mirroredPeerClipStates.iterator()
-            while (iterator.hasNext()) {
-                val state = iterator.next()
-                val view = state.view.get()
-                if (view == null || view !in targets) {
-                    if (view != null) {
-                        restoreClipState(state)
-                    }
-                    iterator.remove()
-                }
-            }
-
-            targets.forEach { view ->
-                if (mirroredPeerClipStates.none { state -> state.view.get() === view }) {
-                    val nativeClip = view.clipBounds?.let(::Rect)
-                    val applied = Rect(0, 0, 0, 0)
-                    view.clipBounds = applied
-                    mirroredPeerClipStates += ClipState(WeakReference(view), nativeClip, applied)
-                }
-            }
+            syncClipMasks(mirroredPeerClipStates, targets)
             return mirroredPeerClipStates.count { state -> state.view.get() != null }
         }
         fun refreshClipMasks(): Int {
@@ -2745,7 +2726,16 @@ internal object SysUiPresentationOwner {
                 }
             }
 
-            val iterator = clipStates.iterator()
+            syncClipMasks(clipStates, targets)
+            refreshMirroredPeerClipMasks()
+            return clipStates.count { state -> state.view.get() != null }
+        }
+
+        private fun syncClipMasks(
+            states: MutableList<ClipState>,
+            targets: Set<View>,
+        ) {
+            val iterator = states.iterator()
             while (iterator.hasNext()) {
                 val state = iterator.next()
                 val view = state.view.get()
@@ -2758,15 +2748,13 @@ internal object SysUiPresentationOwner {
             }
 
             targets.forEach { view ->
-                if (clipStates.none { state -> state.view.get() === view }) {
+                if (states.none { state -> state.view.get() === view }) {
                     val nativeClip = view.clipBounds?.let(::Rect)
                     val applied = Rect(0, 0, 0, 0)
                     view.clipBounds = applied
-                    clipStates += ClipState(WeakReference(view), nativeClip, applied)
+                    states += ClipState(WeakReference(view), nativeClip, applied)
                 }
             }
-            refreshMirroredPeerClipMasks()
-            return clipStates.count { state -> state.view.get() != null }
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
