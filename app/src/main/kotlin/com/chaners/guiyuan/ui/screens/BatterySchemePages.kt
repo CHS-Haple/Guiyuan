@@ -21,8 +21,6 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
@@ -52,7 +51,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -72,7 +70,6 @@ internal fun BatterySchemeOverview(
     requestedSchemeKey: String?,
     onRequestedSchemeHandled: () -> Unit,
     canCreateCustom: Boolean,
-    nextCustomName: String?,
     onApplyScheme: (String) -> Unit,
     onOpenBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
     onOpenCustomSlot: (Int, BatteryColorSlot) -> Unit,
@@ -334,6 +331,7 @@ private fun BatteryAddSchemePage(
     onClick: () -> Unit,
 ) {
     val primary = MiuixTheme.colorScheme.primary
+    val max = BATTERY_COLOR_SCHEME_CUSTOM_MAX
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     ) {
@@ -356,10 +354,9 @@ private fun BatteryAddSchemePage(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(
-                        if (enabled) R.string.battery_scheme_new_summary
-                        else R.string.battery_scheme_full_summary
-                    ),
+                    text =
+                        if (enabled) stringResource(R.string.battery_scheme_new_summary)
+                        else stringResource(R.string.battery_scheme_full_summary, max),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
@@ -392,7 +389,7 @@ private fun BatteryAddSchemePage(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "$count / 5",
+                                text = "$count / $max",
                                 style = MiuixTheme.textStyles.title2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -410,7 +407,7 @@ private fun BatteryAddSchemePage(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                     Text(
-                        text = "$count / 5",
+                        text = "$count / $max",
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
@@ -420,7 +417,7 @@ private fun BatteryAddSchemePage(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    repeat(5) { i ->
+                    repeat(max) { i ->
                         Surface(
                             modifier = Modifier.weight(1f).height(7.dp),
                             shape = CircleShape,
@@ -433,7 +430,7 @@ private fun BatteryAddSchemePage(
                 Spacer(Modifier.height(20.dp))
                 Text(
                     text =
-                        if (enabled) stringResource(R.string.battery_scheme_remaining, 5 - count)
+                        if (enabled) stringResource(R.string.battery_scheme_remaining, max - count)
                         else stringResource(R.string.battery_scheme_full_hint),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -453,29 +450,36 @@ private fun BatterySchemeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val entry =
-        DropdownEntry(
-            items =
-                listOf(
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_rename),
-                        onClick = onRename,
+    val entries =
+        listOf(
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_rename),
+                            onClick = onRename,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_copy),
+                            enabled = canCopy,
+                            onClick = onCopy,
+                        ),
                     ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_copy),
-                        enabled = canCopy,
-                        onClick = onCopy,
+            ),
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_delete),
+                            onClick = onDelete,
+                        ),
                     ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_delete),
-                        onClick = onDelete,
-                    ),
-                ),
+            ),
         )
 
     TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
         OverlayIconDropdownMenu(
-            entry = entry,
+            entries = entries,
             modifier = modifier,
         ) {
             Icon(
