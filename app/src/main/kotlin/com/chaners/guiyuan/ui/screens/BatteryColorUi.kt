@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,10 +96,6 @@ internal fun BatteryCommonColorButton(
     visuallyInactive: Boolean,
     onClick: () -> Unit,
 ) {
-    val dotSize by animateDpAsState(
-        targetValue = if (selected) 34.dp else 28.dp,
-        label = "battery-color-selection",
-    )
     TooltipBox(text = batteryCommonColorName(color)) {
         Surface(
             onClick = onClick,
@@ -113,9 +107,18 @@ internal fun BatteryCommonColorButton(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
+                if (selected) {
+                    Surface(
+                        modifier = Modifier.size(34.dp),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(3.dp, Color.White),
+                        shadowElevation = 2.dp,
+                    ) {}
+                }
                 BatteryColorDot(
                     color = color,
-                    size = dotSize,
+                    size = 28.dp,
                     visuallyInactive = visuallyInactive,
                 )
             }
