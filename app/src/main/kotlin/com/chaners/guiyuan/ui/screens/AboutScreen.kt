@@ -2,6 +2,8 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -358,18 +363,14 @@ internal fun AboutScreen(
                             null -> missingState
                         }
                     }
-                    val scopeSummary = listOf(
-                        listOf(
-                            "SystemUI",
-                            env.sysUiVersion.ifBlank { unavailable },
-                            state("com.android.systemui"),
-                        ).joinToString(ABOUT_VALUE_SEPARATOR),
-                        listOf(
+                    val scopeRows = listOf(
+                        Triple("SystemUI", env.sysUiVersion.ifBlank { unavailable }, state("com.android.systemui")),
+                        Triple(
                             stringResource(R.string.runtime_scope_settings),
                             env.settingsVersion.ifBlank { unavailable },
                             state("com.android.settings"),
-                        ).joinToString(ABOUT_VALUE_SEPARATOR),
-                    ).joinToString("\n")
+                        ),
+                    )
                     BasicComponent(
                         title = stringResource(R.string.runtime_service_title),
                         summary = serviceSummary,
@@ -380,14 +381,55 @@ internal fun AboutScreen(
                         },
                     )
                     BasicComponent(
-                        title = stringResource(R.string.runtime_scope_title),
-                        summary = scopeSummary,
                         startAction = {
                             SemanticLeadingIcon(
                                 iconRes = R.drawable.ic_material_symbol_target,
                             )
                         },
-                    )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.runtime_scope_title),
+                            fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        val summarySize = MiuixTheme.textStyles.body2.fontSize
+                        scopeRows.forEach { (name, version, status) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = name,
+                                    modifier = Modifier.weight(0.30f),
+                                    color = summaryColor,
+                                    fontSize = summarySize,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text("｜", color = summaryColor, fontSize = summarySize)
+                                Text(
+                                    text = version,
+                                    modifier = Modifier.weight(0.46f),
+                                    color = summaryColor,
+                                    fontSize = summarySize,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text("｜", color = summaryColor, fontSize = summarySize)
+                                Text(
+                                    text = status,
+                                    modifier = Modifier.weight(0.24f),
+                                    color = summaryColor,
+                                    fontSize = summarySize,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
