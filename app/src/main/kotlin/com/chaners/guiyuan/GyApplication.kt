@@ -64,6 +64,7 @@ class GyApplication :
 
     private val handler = Handler(Looper.getMainLooper())
     private var scopeRequestDone: ((Boolean) -> Unit)? = null
+    private var hotReloadPending: HotReloadPending? = null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
     internal val xposedStatus: StateFlow<XposedStatus> =
@@ -123,7 +124,10 @@ class GyApplication :
 
     override fun onServiceBind(service: XposedService) {
         handler.removeCallbacks(bindTimeout)
-        if (xposedService !== service) finishScopeRequest(false)
+        if (xposedService !== service) {
+            finishScopeRequest(false)
+            finishHotReload()
+        }
         xposedService = service
         lastMirror = null
         syncRuntime(service)
@@ -135,6 +139,7 @@ class GyApplication :
             xposedService = null
             lastMirror = null
             finishScopeRequest(false)
+            finishHotReload()
             _xposedStatus.value = XposedStatus.FrameworkUnavailable
         }
     }
@@ -148,6 +153,7 @@ class GyApplication :
         xposedService = null
         lastMirror = null
         scopeRequestDone = null
+        hotReloadPending = null
         super.onTerminate()
     }
 
@@ -224,7 +230,7 @@ class GyApplication :
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102) return false
+        if (service.apiVersion < 102 || hotReloadPending != null) return false
 
         val target =
             runCatching {
@@ -234,6 +240,8 @@ class GyApplication :
                 return false
             } ?: return false
 
+        val pending = HotReloadPending(service, onComplete)
+        hotReloadPending = pending
         return runCatching {
             service.hotReloadModule(target, null) { process, result ->
                 Log.i(
@@ -241,15 +249,24 @@ class GyApplication :
                     "Hot reload completed process=" + process.processName + " result=" + result,
                 )
                 mainExecutor.execute {
-                    refreshXposedStatus()
-                    onComplete()
+                    if (xposedService === pending.service && hotReloadPending === pending) {
+                        refreshXposedStatus(pending.service)
+                        finishHotReload()
+                    }
                 }
             }
             true
         }.getOrElse { throwable ->
+            if (hotReloadPending === pending) hotReloadPending = null
             Log.w(TAG, "Unable to request hot reload: " + throwable.message)
             false
         }
+    }
+
+    private fun finishHotReload() {
+        val pending = hotReloadPending ?: return
+        hotReloadPending = null
+        pending.onComplete()
     }
 
     private fun refreshXposedStatus(service: XposedService) {
@@ -315,6 +332,11 @@ class GyApplication :
             )
         }
     }
+
+    private class HotReloadPending(
+        val service: XposedService,
+        val onComplete: () -> Unit,
+    )
 
     private data class RuntimeSnapshot(
         val settingsEntry: Int,
