@@ -22,14 +22,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
-import kotlinx.coroutines.launch
 import com.chaners.guiyuan.settings.customSchemeKey
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -131,7 +132,7 @@ internal fun BatteryColorBottomSheet(
 ) {
     val snackbars = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val limitMessage = stringResource(R.string.battery_scheme_full_notice)
+    val limitMessage = stringResource(R.string.battery_scheme_full_notice, BATTERY_COLOR_SCHEME_CUSTOM_MAX)
     var detailRequest by remember { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember { mutableStateOf(false) }
     var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
@@ -206,34 +207,34 @@ internal fun BatteryColorBottomSheet(
                 onRequestedSchemeHandled = { requestedSchemeKey = null },
                 canCreateCustom = nextCustomId != null,
                 onApplyScheme = repository::activateScheme,
-            onOpenBuiltInSlot = { scheme, slot ->
-                createRequest =
-                    CreateRequest(
-                        sourceKey = scheme.key,
-                        targetSlot = slot,
-                    )
-            },
-            onOpenCustomSlot = { id, slot ->
-                detailRequest = DetailRequest(customId = id, slot = slot)
-                showDetail = true
-            },
-            onAdd = {
-                createRequest =
-                    CreateRequest(
-                        sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-                        targetSlot = null,
-                    )
-            },
-            onRenameCustom = { renameCustomId = it },
-            onCopyCustom = { custom ->
-                val name = nextCustomName
-                if (name != null) {
-                    repository.createCustom(name, custom.key)?.let { id ->
-                        requestedSchemeKey = customSchemeKey(id)
+                onOpenBuiltInSlot = { scheme, slot ->
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = scheme.key,
+                            targetSlot = slot,
+                        )
+                },
+                onOpenCustomSlot = { id, slot ->
+                    detailRequest = DetailRequest(customId = id, slot = slot)
+                    showDetail = true
+                },
+                onAdd = {
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                            targetSlot = null,
+                        )
+                },
+                onRenameCustom = { renameCustomId = it },
+                onCopyCustom = { custom ->
+                    val name = nextCustomName
+                    if (name != null) {
+                        repository.createCustom(name, custom.key)?.let { id ->
+                            requestedSchemeKey = customSchemeKey(id)
+                        }
                     }
-                }
-            },
-            onDeleteCustom = { deleteCustomId = it },
+                },
+                    onDeleteCustom = { deleteCustomId = it },
             )
             SnackbarHost(
                 state = snackbars,
