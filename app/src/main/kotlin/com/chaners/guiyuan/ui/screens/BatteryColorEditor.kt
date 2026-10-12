@@ -408,12 +408,14 @@ internal fun BatteryCreateSchemeDialog(
                 TextButton(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.weight(1f),
+                    minHeight = 50.dp,
                     onClick = onDismiss,
                 )
                 Spacer(Modifier.width(20.dp))
                 TextButton(
                     text = stringResource(R.string.battery_custom_scheme_create),
                     modifier = Modifier.weight(1f),
+                    minHeight = 50.dp,
                     enabled = name.trim().isNotEmpty(),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     onClick = {
@@ -456,12 +458,14 @@ internal fun BatteryRenameSchemeDialog(
                     TextButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
+                    minHeight = 50.dp,
                         onClick = onDismiss,
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
+                    minHeight = 50.dp,
                         enabled =
                             name.trim().isNotEmpty() &&
                                 name.trim() != currentName,
