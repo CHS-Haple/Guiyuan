@@ -43,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -53,9 +52,6 @@ import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -130,7 +126,6 @@ internal fun BatteryCustomModeEditor(
         // The repository remains the single writer; choosing a color switches the slot to CUSTOM.
         onColorChange(color or 0xFF000000.toInt())
     }
-    var showPrecise by remember(custom.id, slot) { mutableStateOf(false) }
 
     val hsv = editingColor?.let { Color(it).toHsv() }
     val currentValueText =
@@ -240,164 +235,147 @@ internal fun BatteryCustomModeEditor(
 
         }
 
-        Spacer(Modifier.height(12.dp))
-        Card(modifier = Modifier.fillMaxWidth()) {
-            BasicComponent(
-                title = stringResource(R.string.battery_color_precision_title),
-                summary = stringResource(R.string.battery_color_precision_summary),
-                endActions = {
-                    Icon(
-                        imageVector = if (showPrecise) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
-                onClick = { showPrecise = !showPrecise },
-            )
-        }
-        if (showPrecise) {
-            BatterySheetSmallTitle(
-                text = stringResource(R.string.battery_color_full_adjustment),
-                textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-            )
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (hsv != null) {
-                    BatteryHsvAdjustmentRow(
-                        title = stringResource(R.string.battery_color_hue),
-                        valueText = "${selectedHue.roundToInt()}°",
-                    ) {
-                        HsvHueSlider(
-                            currentHue = selectedHue,
-                            onHueChanged = { fraction ->
-                                val hue = fraction * 360f
-                                selectedHue = hue
-                                val current = editingColor?.let { Color(it).toHsv() }
-                                applyColor(
-                                    Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
-                                )
-                            },
-                        )
-                    }
-                    BatteryHsvAdjustmentRow(
-                        title = stringResource(R.string.battery_color_saturation),
-                        valueText = "${hsv.s.roundToInt()}%",
-                    ) {
-                        HsvSaturationSlider(
-                            currentHue = selectedHue,
-                            currentSaturation = hsv.s / 100f,
-                            onSaturationChanged = { saturation ->
-                                applyColor(
-                                    Hsv(selectedHue, saturation * 100f, hsv.v).toColor().toArgb(),
-                                )
-                            },
-                        )
-                    }
-                    BatteryHsvAdjustmentRow(
-                        title = stringResource(R.string.battery_color_brightness),
-                        valueText = "${hsv.v.roundToInt()}%",
-                    ) {
-                        HsvValueSlider(
-                            currentHue = selectedHue,
-                            currentSaturation = hsv.s / 100f,
-                            currentValue = hsv.v / 100f,
-                            onValueChanged = { value ->
-                                applyColor(
-                                    Hsv(selectedHue, hsv.s, value * 100f).toColor().toArgb(),
-                                )
-                            },
-                        )
-                    }
-                } else {
-                    BasicComponent(
-                        title = stringResource(R.string.battery_color_no_fixed_color),
-                        summary = stringResource(R.string.battery_color_no_fixed_color_summary),
-                        enabled = false,
+        BatterySheetSmallTitle(
+            text = stringResource(R.string.battery_color_full_adjustment),
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (hsv != null) {
+                BatteryHsvAdjustmentRow(
+                    title = stringResource(R.string.battery_color_hue),
+                    valueText = "${selectedHue.roundToInt()}°",
+                ) {
+                    HsvHueSlider(
+                        currentHue = selectedHue,
+                        onHueChanged = { fraction ->
+                            val hue = fraction * 360f
+                            selectedHue = hue
+                            val current = editingColor?.let { Color(it).toHsv() }
+                            applyColor(
+                                Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
+                            )
+                        },
                     )
                 }
+                BatteryHsvAdjustmentRow(
+                    title = stringResource(R.string.battery_color_saturation),
+                    valueText = "${hsv.s.roundToInt()}%",
+                ) {
+                    HsvSaturationSlider(
+                        currentHue = selectedHue,
+                        currentSaturation = hsv.s / 100f,
+                        onSaturationChanged = { saturation ->
+                            applyColor(
+                                Hsv(selectedHue, saturation * 100f, hsv.v).toColor().toArgb(),
+                            )
+                        },
+                    )
+                }
+                BatteryHsvAdjustmentRow(
+                    title = stringResource(R.string.battery_color_brightness),
+                    valueText = "${hsv.v.roundToInt()}%",
+                ) {
+                    HsvValueSlider(
+                        currentHue = selectedHue,
+                        currentSaturation = hsv.s / 100f,
+                        currentValue = hsv.v / 100f,
+                        onValueChanged = { value ->
+                            applyColor(
+                                Hsv(selectedHue, hsv.s, value * 100f).toColor().toArgb(),
+                            )
+                        },
+                    )
+                }
+            } else {
+                BasicComponent(
+                    title = stringResource(R.string.battery_color_no_fixed_color),
+                    summary = stringResource(R.string.battery_color_no_fixed_color_summary),
+                    enabled = false,
+                )
             }
+        }
 
-            BatterySheetSmallTitle(
-                text = stringResource(R.string.battery_color_precise_input),
-                textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-            )
-            Card(
+        BatterySheetSmallTitle(
+            text = stringResource(R.string.battery_color_precise_input),
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+        ) {
+            TextField(
+                value = hexText,
+                onValueChange = { raw ->
+                    val normalized =
+                        raw.removePrefix("#")
+                            .uppercase()
+                            .filter { it.isDigit() || it in 'A'..'F' }
+                    if (normalized.length <= 6) {
+                        hexText = normalized
+                        batteryColorFromHex(normalized)?.let(::applyColor)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(16.dp),
+                label = stringResource(R.string.battery_color_hex),
+                singleLine = true,
+                colors = TextFieldDefaults.textFieldColors(),
+                textStyle = MiuixTheme.textStyles.main,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TextField(
-                    value = hexText,
+                    value = redText,
                     onValueChange = { raw ->
-                        val normalized =
-                            raw.removePrefix("#")
-                                .uppercase()
-                                .filter { it.isDigit() || it in 'A'..'F' }
-                        if (normalized.length <= 6) {
-                            hexText = normalized
-                            batteryColorFromHex(normalized)?.let(::applyColor)
+                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
+                            redText = raw
+                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = stringResource(R.string.battery_color_hex),
+                    modifier = Modifier.weight(1f),
+                    label = "R",
                     singleLine = true,
                     colors = TextFieldDefaults.textFieldColors(),
                     textStyle = MiuixTheme.textStyles.main,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextField(
-                        value = redText,
-                        onValueChange = { raw ->
-                            if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                                redText = raw
-                                batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        label = "R",
-                        singleLine = true,
-                        colors = TextFieldDefaults.textFieldColors(),
-                        textStyle = MiuixTheme.textStyles.main,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-                    TextField(
-                        value = greenText,
-                        onValueChange = { raw ->
-                            if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                                greenText = raw
-                                batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        label = "G",
-                        singleLine = true,
-                        colors = TextFieldDefaults.textFieldColors(),
-                        textStyle = MiuixTheme.textStyles.main,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-                    TextField(
-                        value = blueText,
-                        onValueChange = { raw ->
-                            if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                                blueText = raw
-                                batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        label = "B",
-                        singleLine = true,
-                        colors = TextFieldDefaults.textFieldColors(),
-                        textStyle = MiuixTheme.textStyles.main,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-                }
+                TextField(
+                    value = greenText,
+                    onValueChange = { raw ->
+                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
+                            greenText = raw
+                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = "G",
+                    singleLine = true,
+                    colors = TextFieldDefaults.textFieldColors(),
+                    textStyle = MiuixTheme.textStyles.main,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+                TextField(
+                    value = blueText,
+                    onValueChange = { raw ->
+                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
+                            blueText = raw
+                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = "B",
+                    singleLine = true,
+                    colors = TextFieldDefaults.textFieldColors(),
+                    textStyle = MiuixTheme.textStyles.main,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
             }
         }
     }
