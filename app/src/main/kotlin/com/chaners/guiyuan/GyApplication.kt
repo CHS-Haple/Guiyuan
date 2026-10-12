@@ -188,10 +188,10 @@ class GyApplication :
     fun settingsInScope(): Boolean = enabledScopes()?.contains(SETTINGS_PROCESS) == true
 
     // Check both pending framework operations before taking ownership of a Root restart.
-    fun canRestartScopes(): Boolean =
+    internal fun canRestartScopes(): Boolean =
         pendingScope.value == null && hotReloadPending == null && !ScopeRestart.isRunning
 
-    fun restartScopes(targets: Set<RestartTarget>): Boolean {
+    internal fun restartScopes(targets: Set<RestartTarget>): Boolean {
         if (!canRestartScopes()) return false
         return ScopeRestart.start(this, targets) { refreshXposedStatus() }
     }
