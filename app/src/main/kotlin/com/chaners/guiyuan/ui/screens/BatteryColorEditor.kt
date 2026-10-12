@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +35,7 @@ import com.chaners.guiyuan.settings.limitCustomSchemeName
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
@@ -167,6 +170,29 @@ internal fun BatteryCustomModeEditor(
                 sourceOptions.getOrNull(index)?.let(onSourceChange)
             },
         )
+        }
+
+        BatterySheetSmallTitle(
+            text = stringResource(R.string.battery_color_palette),
+            textColor = inactiveTitleColor,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+        ) {
+            val previewColor =
+                editingColor?.let(::Color) ?: MiuixTheme.colorScheme.primary
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(26.dp),
+                shape = RoundedCornerShape(13.dp),
+                color = previewColor,
+            ) {}
+            Spacer(Modifier.height(12.dp))
+            BatteryOpaquePalette(
+                color = previewColor,
+                onPreview = { preview -> editingColor = preview.toArgb() or 0xFF000000.toInt() },
+                onCommit = { chosen -> applyColor(chosen.toArgb()) },
+            )
         }
 
         BatterySheetSmallTitle(
