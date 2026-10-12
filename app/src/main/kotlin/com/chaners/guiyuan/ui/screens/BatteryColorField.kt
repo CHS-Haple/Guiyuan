@@ -63,10 +63,10 @@ internal fun BatteryColorField(
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed || change.isConsumed) break
-                            val sample = sample(change.position)
-                            if (sample != last) {
-                                last = sample
-                                onColorChangedNow(sample.first, sample.second)
+                            val next = sample(change.position)
+                            if (next != last) {
+                                last = next
+                                onColorChangedNow(next.first, next.second)
                             }
                             change.consume()
                         }
