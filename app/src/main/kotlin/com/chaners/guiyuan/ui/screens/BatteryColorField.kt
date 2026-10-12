@@ -30,15 +30,9 @@ internal fun BatteryColorField(
     color: Color?,
     hue: Float,
     saturation: Float,
-    onPreview: (Color?, Float) -> Unit,
-    onSelect: (Color, Float) -> Unit,
-    onCancel: () -> Unit,
+    onColorChanged: (Color, Float) -> Unit,
 ) {
-    val onPreviewNow by rememberUpdatedState(onPreview)
-    val onSelectNow by rememberUpdatedState(onSelect)
-    val onCancelNow by rememberUpdatedState(onCancel)
-    val colorNow by rememberUpdatedState(color)
-    val hueNow by rememberUpdatedState(hue)
+    val onColorChangedNow by rememberUpdatedState(onColorChanged)
     val paletteDescription = stringResource(R.string.battery_color_visual_picker)
 
     Canvas(
@@ -63,32 +57,18 @@ internal fun BatteryColorField(
                             return Color.hsv(hue, saturation, 1f) to hue
                         }
 
-                        val before = colorNow
-                        val beforeHue = hueNow
                         var last = sample(down.position)
-                        onPreviewNow(last.first, last.second)
-                        var applied = false
+                        onColorChangedNow(last.first, last.second)
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (!change.pressed) {
-                                if (!change.isConsumed) {
-                                    onSelectNow(last.first, last.second)
-                                    applied = true
-                                }
-                                break
-                            }
-                            if (change.isConsumed) break
-                            val next = sample(change.position)
-                            if (next != last) {
-                                last = next
-                                onPreviewNow(next.first, next.second)
+                            if (!change.pressed || change.isConsumed) break
+                            val sample = sample(change.position)
+                            if (sample != last) {
+                                last = sample
+                                onColorChangedNow(sample.first, sample.second)
                             }
                             change.consume()
-                        }
-                        if (!applied) {
-                            onPreviewNow(before, beforeHue)
-                            onCancelNow()
                         }
                     }
                 },
@@ -115,11 +95,18 @@ internal fun BatteryColorField(
 
         if (color != null) {
             val radius = 11.dp.toPx()
+            // Keep the entire cursor inside the outline, including its outer stroke.
+            val inset = radius + 5.dp.toPx()
             val center =
                 Offset(
-                    (hue / 360f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
-                    (saturation / 100f * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
+                    (hue / 360f * size.width).coerceIn(inset, (size.width - inset).coerceAtLeast(inset)),
+                    (saturation / 100f * size.height).coerceIn(inset, (size.height - inset).coerceAtLeast(inset)),
                 )
+            drawCircle(
+                color = color,
+                radius = radius,
+                center = center,
+            )
             drawCircle(
                 color = Color.Black.copy(alpha = 0.28f),
                 radius = radius + 1.dp.toPx(),
