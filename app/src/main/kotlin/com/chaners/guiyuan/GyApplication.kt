@@ -123,24 +123,29 @@ class GyApplication :
     }
 
     override fun onServiceBind(service: XposedService) {
-        handler.removeCallbacks(bindTimeout)
-        if (xposedService !== service) {
-            finishScopeRequest(false)
-            finishHotReload()
+        // Framework Binder callbacks are not confined to the UI thread.
+        handler.post {
+            handler.removeCallbacks(bindTimeout)
+            if (xposedService !== service) {
+                finishScopeRequest(false)
+                finishHotReload()
+            }
+            xposedService = service
+            lastMirror = null
+            syncRuntime(service)
+            refreshXposedStatus(service)
         }
-        xposedService = service
-        lastMirror = null
-        syncRuntime(service)
-        refreshXposedStatus(service)
     }
 
     override fun onServiceDied(service: XposedService) {
-        if (xposedService === service) {
-            xposedService = null
-            lastMirror = null
-            finishScopeRequest(false)
-            finishHotReload()
-            _xposedStatus.value = XposedStatus.FrameworkUnavailable
+        handler.post {
+            if (xposedService === service) {
+                xposedService = null
+                lastMirror = null
+                finishScopeRequest(false)
+                finishHotReload()
+                _xposedStatus.value = XposedStatus.FrameworkUnavailable
+            }
         }
     }
 
