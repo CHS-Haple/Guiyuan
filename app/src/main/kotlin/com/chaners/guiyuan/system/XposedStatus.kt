@@ -9,7 +9,10 @@ internal sealed interface XposedStatus {
 
     data class Connected(
         val apiVersion: Int,
-        val sysUiInScope: Boolean,
-        val sysUiRunning: Boolean,
-    ) : XposedStatus
+        val scopes: Set<String>,
+        val runningTargets: Set<String>,
+    ) : XposedStatus {
+        val sysUiInScope get() = "com.android.systemui" in scopes
+        val sysUiRunning get() = "com.android.systemui" in runningTargets
+    }
 }

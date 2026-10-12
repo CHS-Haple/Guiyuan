@@ -152,6 +152,11 @@
     <string name="runtime_service_disconnected">Not connected</string>
     <string name="runtime_service_query_unavailable">Connected｜Status unavailable</string>
     <string name="runtime_scope_title">Scope</string>
+    <string name="runtime_scope_settings">System Settings</string>
+    <string name="runtime_scope_unavailable">Unavailable</string>
+    <string name="runtime_scope_missing">Not detected</string>
+    <string name="runtime_scope_connected">Connected</string>
+    <string name="runtime_scope_disabled">Not enabled</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>

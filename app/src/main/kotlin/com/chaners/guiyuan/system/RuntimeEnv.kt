@@ -16,6 +16,7 @@ internal data class RuntimeEnv(
     val osVersion: String,
     val sysUiVersion: String,
     val sysUiVersionCode: Long?,
+    val settingsVersion: String = "—",
 ) {
 
     companion object {
@@ -60,6 +61,13 @@ internal data class RuntimeEnv(
                         )
                     }.getOrNull()
 
+                val settingsPkg = runCatching {
+                    context.packageManager.getPackageInfo(
+                        "com.android.settings",
+                        PackageManager.PackageInfoFlags.of(0),
+                    )
+                }.getOrNull()
+
                 RuntimeEnv(
                     manufacturer = Build.MANUFACTURER.orEmpty(),
                     device = device,
@@ -70,6 +78,7 @@ internal data class RuntimeEnv(
                     osVersion = osVersion.ifBlank { Build.VERSION.INCREMENTAL.orEmpty() },
                     sysUiVersion = sysUiPkg?.versionName.orEmpty().ifBlank { "—" },
                     sysUiVersionCode = sysUiPkg?.longVersionCode,
+                    settingsVersion = settingsPkg?.versionName.orEmpty().ifBlank { "—" },
                 )
             }
 

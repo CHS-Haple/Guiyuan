@@ -255,19 +255,10 @@ class GyApplication :
     private fun refreshXposedStatus(service: XposedService) {
         _xposedStatus.value =
             runCatching {
-                val running =
-                    service.runningTargets.any { target ->
-                        target.processName == SYS_UI_PROCESS
-                    }
-                val inScope =
-                    service.scope.any { packageName ->
-                        packageName == SYS_UI_PROCESS
-                    }
-
                 XposedStatus.Connected(
                     apiVersion = service.apiVersion,
-                    sysUiInScope = inScope,
-                    sysUiRunning = running,
+                    scopes = service.scope.toSet(),
+                    runningTargets = service.runningTargets.map { it.processName }.toSet(),
                 )
             }.getOrElse { throwable ->
                 Log.w(

@@ -333,7 +333,31 @@ internal fun AboutScreen(
                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
                         XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
                     }
-                    val scopeSummary = "SystemUI$ABOUT_VALUE_SEPARATOR${env.sysUiVersion.ifBlank { unavailable }}"
+                    val connectedScopes = xposedStatus as? XposedStatus.Connected
+                    val unavailableState = stringResource(R.string.runtime_scope_unavailable)
+                    val missingState = stringResource(R.string.runtime_scope_missing)
+                    val connectedState = stringResource(R.string.runtime_scope_connected)
+                    val disabledState = stringResource(R.string.runtime_scope_disabled)
+                    val checkingState = stringResource(R.string.runtime_service_checking)
+                    fun state(pkg: String) = when {
+                        xposedStatus == XposedStatus.Checking -> checkingState
+                        connectedScopes == null -> unavailableState
+                        pkg !in connectedScopes.scopes -> disabledState
+                        pkg in connectedScopes.runningTargets -> connectedState
+                        else -> missingState
+                    }
+                    val scopeSummary = listOf(
+                        listOf(
+                            "SystemUI",
+                            env.sysUiVersion.ifBlank { unavailable },
+                            state("com.android.systemui"),
+                        ).joinToString(ABOUT_VALUE_SEPARATOR),
+                        listOf(
+                            stringResource(R.string.runtime_scope_settings),
+                            env.settingsVersion.ifBlank { unavailable },
+                            state("com.android.settings"),
+                        ).joinToString(ABOUT_VALUE_SEPARATOR),
+                    ).joinToString("\n")
                     BasicComponent(
                         title = stringResource(R.string.runtime_service_title),
                         summary = serviceSummary,
