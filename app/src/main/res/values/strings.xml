@@ -345,8 +345,6 @@
     <string name="battery_color_current">Current color</string>
     <string name="battery_color_opaque_summary">Status colors are always applied as opaque</string>
     <string name="battery_color_visual_picker">Visual color picker</string>
-    <string name="battery_color_precision_title">Precision controls</string>
-    <string name="battery_color_precision_summary">Hue, saturation, brightness, HEX and RGB</string>
     <string name="battery_color_common">Common colors</string>
     <string name="battery_common_color_red">Red</string>
     <string name="battery_common_color_orange">Orange</string>
