@@ -2409,16 +2409,10 @@ internal object CcTransitionOwner {
             ) {
                 val bounds = textViewBatteryNumberBounds(textView)
                 if (bounds != null) {
-                    return TargetWitness(
-                        slot = BATTERY_NUMBER_SLOT,
-                        slotView = textView,
-                        opticalView = null,
-                        subscriptionId = null,
-                        requiresOpticalGeometry = true,
-                        fallbackBounds = bounds,
-                        textWeight = batteryNumberTypefaceWeight(textView.paint),
-                        textStyle = captureTextStyle(textView.paint),
-                        preferFallbackGeometry = true,
+                    return batteryNumberWitness(
+                        view = textView,
+                        bounds = bounds,
+                        paint = textView.paint,
                     )
                 }
             }
@@ -2437,16 +2431,10 @@ internal object CcTransitionOwner {
                             text = expected,
                         )
                     if (bounds != null) {
-                        return TargetWitness(
-                            slot = BATTERY_NUMBER_SLOT,
-                            slotView = visibleBatteryBody,
-                            opticalView = null,
-                            subscriptionId = null,
-                            requiresOpticalGeometry = true,
-                            fallbackBounds = bounds,
-                            textWeight = batteryNumberTypefaceWeight(nativeBodyPaint),
-                            textStyle = captureTextStyle(nativeBodyPaint),
-                            preferFallbackGeometry = true,
+                        return batteryNumberWitness(
+                            view = visibleBatteryBody,
+                            bounds = bounds,
+                            paint = nativeBodyPaint,
                         )
                     }
                 }
@@ -2463,16 +2451,10 @@ internal object CcTransitionOwner {
                             text = expected,
                         )
                     if (bounds != null) {
-                        return TargetWitness(
-                            slot = BATTERY_NUMBER_SLOT,
-                            slotView = visibleBatteryBody,
-                            opticalView = null,
-                            subscriptionId = null,
-                            requiresOpticalGeometry = true,
-                            fallbackBounds = bounds,
-                            textWeight = batteryNumberTypefaceWeight(textView.paint),
-                            textStyle = captureTextStyle(textView.paint),
-                            preferFallbackGeometry = true,
+                        return batteryNumberWitness(
+                            view = visibleBatteryBody,
+                            bounds = bounds,
+                            paint = textView.paint,
                         )
                     }
                 }
@@ -2491,9 +2473,21 @@ internal object CcTransitionOwner {
                     paint = paint,
                     text = expected,
                 ) ?: return null
-            return TargetWitness(
+            return batteryNumberWitness(
+                view = legacyIcon,
+                bounds = bounds,
+                paint = paint,
+            )
+        }
+
+        private fun batteryNumberWitness(
+            view: View,
+            bounds: StatusPainter.TransitionNormalizedBounds,
+            paint: Paint,
+        ): TargetWitness =
+            TargetWitness(
                 slot = BATTERY_NUMBER_SLOT,
-                slotView = legacyIcon,
+                slotView = view,
                 opticalView = null,
                 subscriptionId = null,
                 requiresOpticalGeometry = true,
@@ -2502,7 +2496,6 @@ internal object CcTransitionOwner {
                 textStyle = captureTextStyle(paint),
                 preferFallbackGeometry = true,
             )
-        }
 
         private fun findBatteryNumberTextView(root: View): TextView? {
             val expected =
