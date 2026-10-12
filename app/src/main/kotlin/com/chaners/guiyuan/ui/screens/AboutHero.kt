@@ -33,15 +33,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -268,8 +264,8 @@ internal fun GuiyuanAnimatedIdentityMark(
             Canvas(Modifier.requiredSize(markSize * 3.8f).then(effectModifier)) {
                 val progress = wave.value
                 val diameter = markSize.toPx()
-                drawWave(airflow, progress, 0.38f, diameter, wavePhase)
-                drawWave(airflow, (progress - 0.2f) / 0.8f, 0.22f, diameter, wavePhase)
+                drawWave(airflow, progress, 0.46f, diameter, wavePhase)
+                drawWave(airflow, (progress - 0.2f) / 0.8f, 0.10f, diameter, wavePhase)
             }
         }
         Box(Modifier.matchParentSize().clipToBounds()) {
@@ -292,7 +288,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     }
 }
 
-// Rotational airflow: partial wavefronts keep the icon's release angle and lose momentum outward.
+// A soft pressure front. Rotation only nudges the center; it must not break the ring.
 private fun DrawScope.drawWave(
     color: Color,
     progress: Float,
@@ -302,44 +298,35 @@ private fun DrawScope.drawWave(
 ) {
     if (progress <= 0f || progress >= 1f) return
 
-    val sector = (2 * PI / 6).toFloat()
-    val feather = diameter * (0.10f + 0.055f * progress)
-    val fade = strength * sin((PI * progress).toFloat())
-    val drift = phase - 0.55f * progress
+    val radius = diameter * (0.55f + 1.15f * progress)
+    val feather = diameter * (0.20f + 0.07f * progress)
+    val edge = radius + feather
+    val turn = phase - 0.55f * progress
+    val shift = diameter * 0.025f * progress
+    val front = center + Offset(cos(turn) * shift, sin(turn) * shift)
+    val alpha = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
 
-    repeat(6) { arc ->
-        val path = Path()
-        val span = sector * (0.77f + 0.14f * sin(arc * 2.1f + phase))
-        val start = drift + arc * sector - span / 2f +
-            0.055f * sin(arc * 1.7f + phase)
-        for (step in 0..16) {
-            val angle = start + span * step / 16f
-            val radius = flowRadius(progress, angle, diameter, phase)
-            val x = center.x + radius * cos(angle)
-            val y = center.y + radius * sin(angle)
-            if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-        val intensity = fade * (0.74f + 0.26f * sin(arc * 2.1f + phase + progress * 2f))
-        drawPath(
-            path = path,
-            color = color.copy(alpha = (intensity * 0.24f).coerceIn(0f, 1f)),
-            style = Stroke(width = feather * 1.8f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-        )
-        drawPath(
-            path = path,
-            color = color.copy(alpha = (intensity * 0.82f).coerceIn(0f, 1f)),
-            style = Stroke(width = feather * 0.42f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-        )
-    }
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to Color.Transparent,
+            ((radius - feather) / edge) to Color.Transparent,
+            ((radius - 0.55f * feather) / edge) to color.copy(alpha = alpha * 0.15f),
+            (radius / edge) to color.copy(alpha = alpha * 0.52f),
+            ((radius + 0.55f * feather) / edge) to color.copy(alpha = alpha * 0.19f),
+            1f to Color.Transparent,
+            center = front,
+            radius = edge,
+        ),
+        radius = edge,
+        center = front,
+    )
 }
 
+// The slight drift remains circular and gives text the same wavefront crossing time.
 private fun flowRadius(progress: Float, angle: Float, diameter: Float, phase: Float): Float {
-    val base = diameter * (0.55f + 1.15f * progress)
-    val drift = phase - 0.55f * progress
-    return base * (
-        1f + 0.042f * sin(3f * angle - drift) +
-            0.017f * sin(7f * angle + drift * 0.6f)
-    )
+    val radius = diameter * (0.55f + 1.15f * progress)
+    val shift = diameter * 0.025f * progress
+    return radius + shift * cos(angle - (phase - 0.55f * progress))
 }
 
 // Two-tone refraction stays inside the text strokes and follows the same displaced front.
@@ -369,7 +356,7 @@ private fun DrawScope.drawGlint(
 ) {
     if (progress <= 0f || progress >= 1f) return
     val radius = flowRadius(progress, (PI / 2).toFloat(), diameter, phase)
-    val feather = diameter * (0.10f + 0.055f * progress)
+    val feather = diameter * (0.20f + 0.07f * progress)
     val front = size.height / 2f + radius - distance
     if (front < -feather || front > size.height + feather) return
     val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
@@ -399,7 +386,7 @@ private fun waveLift(progress: Float, distance: Float, diameter: Float, phase: F
 private fun wavefrontLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
     if (progress <= 0f || progress >= 1f) return 0f
     val radius = flowRadius(progress, (PI / 2).toFloat(), diameter, phase)
-    val feather = diameter * (0.10f + 0.055f * progress)
+    val feather = diameter * (0.20f + 0.07f * progress)
     val crossing = (1f - abs(distance - radius) / feather).coerceIn(0f, 1f)
     return crossing * sin((PI * progress).toFloat())
 }
