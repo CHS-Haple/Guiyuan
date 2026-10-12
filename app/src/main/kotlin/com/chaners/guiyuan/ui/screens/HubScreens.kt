@@ -631,7 +631,7 @@ internal fun SettingsHubScreen(
                 title = stringResource(R.string.appearance_title),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_style,
+                        iconRes = R.drawable.ic_material_symbol_display_settings,
                     )
                 },
                 summary = stringResource(R.string.appearance_summary),
