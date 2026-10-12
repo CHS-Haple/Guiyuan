@@ -241,6 +241,15 @@ internal object NativeParticipantAccess {
         }.getOrNull()
     }
 
+    fun findResourceView(root: View, entryName: String): View? {
+        if (resourceEntryName(root) == entryName) return root
+        val group = root as? ViewGroup ?: return null
+        for (index in 0 until group.childCount) {
+            findResourceView(group.getChildAt(index), entryName)?.let { return it }
+        }
+        return null
+    }
+
     private fun Class<*>.allMethods(): Sequence<Method> =
         generateSequence(this) { clazz -> clazz.superclass }
             .flatMap { clazz -> clazz.declaredMethods.asSequence() }
