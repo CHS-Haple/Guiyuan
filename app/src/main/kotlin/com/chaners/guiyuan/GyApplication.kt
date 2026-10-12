@@ -32,9 +32,12 @@ import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class GyApplication :
     Application(),
@@ -63,9 +66,11 @@ class GyApplication :
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
 
     private val handler = Handler(Looper.getMainLooper())
-    private var pendingScope: ScopeRequest? = null
-    internal val scopeRequestInFlight: Boolean
-        get() = pendingScope != null
+    private val pendingScope = MutableStateFlow<ScopeRequest?>(null)
+    internal val scopeRequestInFlight: Flow<Boolean> =
+        pendingScope.map { it != null }.distinctUntilChanged()
+    internal val scopeRequestActive: Boolean
+        get() = pendingScope.value != null
 
     private var hotReloadPending: HotReloadPending? = null
     private val _xposedStatus =
@@ -160,7 +165,7 @@ class GyApplication :
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
-        pendingScope = null
+        pendingScope.value = null
         hotReloadPending = null
         super.onTerminate()
     }
@@ -188,7 +193,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope != null || hotReloadPending != null) return false
+        if (service.apiVersion < 102 || pendingScope.value != null || hotReloadPending != null) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -199,14 +204,14 @@ class GyApplication :
         }
 
         val request = ScopeRequest(service, onComplete)
-        pendingScope = request
+        pendingScope.value = request
         return runCatching {
             service.requestScope(
                 listOf(pkg),
                 object : XposedService.OnScopeEventListener {
                     override fun onScopeRequestApproved(scope: List<String>) {
                         mainExecutor.execute {
-                            if (xposedService === request.service && pendingScope === request) {
+                            if (xposedService === request.service && pendingScope.value === request) {
                                 refreshXposedStatus(request.service)
                                 finishScopeRequest(
                                     runCatching { pkg in service.scope }.getOrDefault(false),
@@ -218,7 +223,7 @@ class GyApplication :
                     override fun onScopeRequestFailed(message: String) {
                         Log.w(TAG, "Scope request failed: $message")
                         mainExecutor.execute {
-                            if (xposedService === request.service && pendingScope === request) {
+                            if (xposedService === request.service && pendingScope.value === request) {
                                 finishScopeRequest(false)
                             }
                         }
@@ -227,21 +232,21 @@ class GyApplication :
             )
             true
         }.getOrElse { throwable ->
-            if (pendingScope === request) pendingScope = null
+            if (pendingScope.value === request) pendingScope.value = null
             Log.w(TAG, "Unable to request $pkg scope: " + throwable.message)
             false
         }
     }
 
     private fun finishScopeRequest(granted: Boolean) {
-        val request = pendingScope ?: return
-        pendingScope = null
+        val request = pendingScope.value ?: return
+        pendingScope.value = null
         request.onComplete(granted)
     }
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope != null) return false
+        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope.value != null) return false
 
         val target =
             runCatching {

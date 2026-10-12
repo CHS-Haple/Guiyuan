@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -152,9 +153,10 @@ internal fun MainHub(
     var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var failedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     val app = context.applicationContext as GyApplication
+    val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val onRestart = {
         if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
-            !app.scopeRequestInFlight
+            !scopeBusy
         ) {
             val scopes = app.enabledScopes()
             availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
@@ -333,10 +335,12 @@ internal fun MainHub(
                 swipeBackEnabled = appearance.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
                 restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress,
+                scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
                 onRestart = onRestart,
                 onRequestScope = {
-                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress) {
+                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
+                        !scopeBusy
+                    ) {
                         scopeRequestInProgress = true
                         val accepted =
                             (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
@@ -350,7 +354,9 @@ internal fun MainHub(
                     }
                 },
                 onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress) {
+                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
+                        !scopeBusy
+                    ) {
                         hotReloadInProgress = true
                         val accepted = onHotReload {
                             hotReloadInProgress = false
@@ -611,7 +617,7 @@ private fun TopLevelPager(
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
+                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
                 onRestart = onRestart,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,
