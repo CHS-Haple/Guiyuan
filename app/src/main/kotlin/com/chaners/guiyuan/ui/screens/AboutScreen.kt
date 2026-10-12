@@ -1,14 +1,16 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
+import android.graphics.Bitmap
+import android.graphics.Canvas as BitmapCanvas
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -22,8 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -34,6 +40,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
@@ -356,18 +364,6 @@ internal fun AboutScreen(
                         }
                         return if (failed) errorState to true else connectedState to false
                     }
-                    val scopeRows = listOf(
-                        Triple(
-                            "SystemUI",
-                            env.sysUiVersion.ifBlank { unavailable },
-                            state("com.android.systemui", env.sysUiInstalled),
-                        ),
-                        Triple(
-                            stringResource(R.string.runtime_scope_settings),
-                            env.settingsVersion.ifBlank { unavailable },
-                            state("com.android.settings", env.settingsInstalled),
-                        ),
-                    )
                     BasicComponent(
                         title = stringResource(R.string.runtime_service_title),
                         summary = serviceSummary,
@@ -378,76 +374,99 @@ internal fun AboutScreen(
                         },
                     )
                     BasicComponent(
+                        title = stringResource(R.string.runtime_scope_title),
                         startAction = {
                             SemanticLeadingIcon(
                                 iconRes = R.drawable.ic_material_symbol_target,
                             )
                         },
-                    ) {
-                        Text(
-                            text = stringResource(R.string.runtime_scope_title),
-                            fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onBackground,
-                        )
-                        val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        val summarySize = MiuixTheme.textStyles.body2.fontSize
-                        // Shared columns use the widest row text, not fixed empty slots.
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            Column(Modifier.widthIn(max = 104.dp)) {
-                                scopeRows.forEach { (name, _, _) ->
-                                    Text(
-                                        text = name,
-                                        color = summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                            Column {
-                                scopeRows.forEach {
-                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                }
-                            }
-                            Column(
-                                modifier = Modifier.widthIn(max = 104.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                scopeRows.forEach { (_, _, status) ->
-                                    Text(
-                                        text = status.first,
-                                        color = if (status.second) MiuixTheme.colorScheme.error else summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                            Column {
-                                scopeRows.forEach {
-                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                }
-                            }
-                            Column(Modifier.weight(1f)) {
-                                scopeRows.forEach { (_, version, _) ->
-                                    Text(
-                                        text = version,
-                                        color = summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
+                    AboutScopeRow(
+                        packageName = "com.android.systemui",
+                        name = "SystemUI",
+                        version = env.sysUiVersion.ifBlank { unavailable },
+                        status = state("com.android.systemui", env.sysUiInstalled),
+                        fallbackIcon = R.drawable.ic_material_symbol_display_settings,
+                    )
+                    AboutScopeRow(
+                        packageName = "com.android.settings",
+                        name = stringResource(R.string.runtime_scope_settings),
+                        version = env.settingsVersion.ifBlank { unavailable },
+                        status = state("com.android.settings", env.settingsInstalled),
+                        fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AboutScopeRow(
+    packageName: String,
+    name: String,
+    version: String,
+    status: Pair<String, Boolean>,
+    @DrawableRes fallbackIcon: Int,
+) {
+    BasicComponent(
+        title = name,
+        summary = version,
+        startAction = {
+            AboutScopeIcon(packageName, fallbackIcon)
+        },
+        endActions = {
+            val statusColor = if (status.second) {
+                MiuixTheme.colorScheme.error
+            } else {
+                MiuixTheme.colorScheme.onSurfaceVariantSummary
+            }
+            Text(
+                text = status.first,
+                modifier = Modifier
+                    .background(statusColor.copy(alpha = 0.09f), RoundedCornerShape(50.dp))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                color = statusColor,
+                fontSize = MiuixTheme.textStyles.body2.fontSize,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+            )
+        },
+    )
+}
+
+@Composable
+private fun AboutScopeIcon(
+    packageName: String,
+    @DrawableRes fallbackIcon: Int,
+) {
+    val context = LocalContext.current.applicationContext
+    val icon by produceState<ImageBitmap?>(initialValue = null, key1 = context, key2 = packageName) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val drawable = context.packageManager.getApplicationIcon(packageName)
+                val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                drawable.setBounds(0, 0, bitmap.width, bitmap.height)
+                drawable.draw(BitmapCanvas(bitmap))
+                bitmap.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(11.dp))
+            .background(MiuixTheme.colorScheme.onBackground.copy(alpha = 0.06f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (icon != null) {
+            Image(
+                bitmap = requireNotNull(icon),
+                contentDescription = null,
+                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)),
+            )
+        } else {
+            SemanticLeadingIcon(iconRes = fallbackIcon)
         }
     }
 }
