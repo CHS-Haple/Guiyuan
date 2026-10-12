@@ -1772,7 +1772,7 @@ internal object SysUiPresentationOwner {
                 restorePersistentIgnoredSlots(
                     requestLayout = requestLayout,
                 )
-            val restored = restoreClipMasks() + restoreMirroredPeerClipMasks()
+            val restored = restoreClipMasks(clipStates) + restoreClipMasks(mirroredPeerClipStates)
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
@@ -2777,23 +2777,11 @@ internal object SysUiPresentationOwner {
             }
         }
 
-        private fun restoreClipMasks(): Int {
-            val states = clipStates.toList()
-            clipStates.clear()
+        private fun restoreClipMasks(states: MutableList<ClipState>): Int {
+            val snapshot = states.toList()
+            states.clear()
             var restored = 0
-            states.forEach { state ->
-                if (restoreClipState(state)) {
-                    restored += 1
-                }
-            }
-            return restored
-        }
-
-        private fun restoreMirroredPeerClipMasks(): Int {
-            val states = mirroredPeerClipStates.toList()
-            mirroredPeerClipStates.clear()
-            var restored = 0
-            states.forEach { state ->
+            snapshot.forEach { state ->
                 if (restoreClipState(state)) {
                     restored += 1
                 }
