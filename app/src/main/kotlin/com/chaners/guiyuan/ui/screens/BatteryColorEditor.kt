@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -82,10 +83,16 @@ internal fun BatteryCustomModeEditor(
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
     }
-    var selectedHue by remember(custom.id, slot, entry.source, seed) {
+    var selectedHue by remember(custom.id, slot) {
         mutableFloatStateOf(
             seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
         )
+    }
+    // Grayscale cannot carry a hue; keep the last one until a saturated color replaces it.
+    LaunchedEffect(seed) {
+        seed?.let { Color(it).toHsv() }
+            ?.takeIf { it.s > 0.01f }
+            ?.let { selectedHue = it.h }
     }
     var hexText by remember(custom.id, slot, editingColor) {
         mutableStateOf(
