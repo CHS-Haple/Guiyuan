@@ -32,9 +32,11 @@ internal fun BatteryColorField(
     hue: Float,
     onPreview: (Color?, Float) -> Unit,
     onSelect: (Color, Float) -> Unit,
+    onCancel: () -> Unit,
 ) {
     val onPreviewNow by rememberUpdatedState(onPreview)
     val onSelectNow by rememberUpdatedState(onSelect)
+    val onCancelNow by rememberUpdatedState(onCancel)
     val colorNow by rememberUpdatedState(color)
     val hueNow by rememberUpdatedState(hue)
     val paletteDescription = stringResource(R.string.battery_color_visual_picker)
@@ -84,7 +86,10 @@ internal fun BatteryColorField(
                             }
                             change.consume()
                         }
-                        if (!applied) onPreviewNow(before, beforeHue)
+                        if (!applied) {
+                            onPreviewNow(before, beforeHue)
+                            onCancelNow()
+                        }
                     }
                 },
     ) {
