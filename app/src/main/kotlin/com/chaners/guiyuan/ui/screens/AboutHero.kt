@@ -41,12 +41,14 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -192,6 +194,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     active: Boolean = true,
     effectModifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHapticFeedback.current
     var boosted by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
     val speed by animateFloatAsState(
@@ -211,6 +214,7 @@ internal fun GuiyuanAnimatedIdentityMark(
             // One release at peak speed, with a delayed echo; never loop while held.
             snapshotFlow { speed }.first { it >= 19f }
             onWaveRelease(orbitRotation * (PI / 180).toFloat())
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             wave.animateTo(1f, tween(durationMillis = 1150, easing = FastOutSlowInEasing))
         }
     }
