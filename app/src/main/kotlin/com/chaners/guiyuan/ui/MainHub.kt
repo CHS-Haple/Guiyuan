@@ -381,19 +381,29 @@ internal fun MainHub(
                 if (queuedRestart.isNotEmpty() && !restartInProgress) {
                     val targets = queuedRestart
                     queuedRestart = emptySet()
-                    restartInProgress = true
-                    scope.launch {
-                        val failed = mutableSetOf<RestartTarget>()
-                        if (RestartTarget.SYS_UI in targets &&
-                            !SysUiScope.restart(context.applicationContext)
-                        ) failed += RestartTarget.SYS_UI
-                        if (RestartTarget.SETTINGS in targets &&
-                            !SettingsScope.restart(context.applicationContext)
-                        ) failed += RestartTarget.SETTINGS
-                        failedTargets = failed
-                        restartInProgress = false
-                        app.refreshXposedStatus()
-                        if (failed.isNotEmpty()) restartDialog = RestartDialog.FAILURE
+                    // Scope may have changed in the framework while the dialog was open.
+                    val liveScopes = app.enabledScopes().orEmpty()
+                    if (targets.any { it.pkg !in liveScopes }) {
+                        availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+                            it.pkg in liveScopes
+                        }
+                        selectedTargets = targets intersect availableTargets
+                        restartDialog = RestartDialog.SELECT
+                    } else {
+                        restartInProgress = true
+                        scope.launch {
+                            val failed = mutableSetOf<RestartTarget>()
+                            if (RestartTarget.SYS_UI in targets &&
+                                !SysUiScope.restart(context.applicationContext)
+                            ) failed += RestartTarget.SYS_UI
+                            if (RestartTarget.SETTINGS in targets &&
+                                !SettingsScope.restart(context.applicationContext)
+                            ) failed += RestartTarget.SETTINGS
+                            failedTargets = failed
+                            restartInProgress = false
+                            app.refreshXposedStatus()
+                            if (failed.isNotEmpty()) restartDialog = RestartDialog.FAILURE
+                        }
                     }
                 }
             },
