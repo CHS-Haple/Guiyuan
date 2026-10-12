@@ -258,7 +258,7 @@ class GyApplication :
                 XposedStatus.Connected(
                     apiVersion = service.apiVersion,
                     scopes = service.scope.toSet(),
-                    runningTargets = service.runningTargets.map { it.processName }.toSet(),
+                    runningTargets = service.runningTargets.associate { it.processName to it.state },
                 )
             }.getOrElse { throwable ->
                 Log.w(

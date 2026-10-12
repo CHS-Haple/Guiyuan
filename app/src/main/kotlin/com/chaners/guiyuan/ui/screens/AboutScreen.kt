@@ -33,6 +33,7 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
+import io.github.libxposed.service.HookedTarget
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -339,12 +340,23 @@ internal fun AboutScreen(
                     val connectedState = stringResource(R.string.runtime_scope_connected)
                     val disabledState = stringResource(R.string.runtime_scope_disabled)
                     val checkingState = stringResource(R.string.runtime_service_checking)
-                    fun state(pkg: String) = when {
-                        xposedStatus == XposedStatus.Checking -> checkingState
-                        connectedScopes == null -> unavailableState
-                        pkg !in connectedScopes.scopes -> disabledState
-                        pkg in connectedScopes.runningTargets -> connectedState
-                        else -> missingState
+                    val staleState = stringResource(R.string.runtime_scope_stale)
+                    val reloadingState = stringResource(R.string.runtime_scope_reloading)
+                    val failedState = stringResource(R.string.runtime_scope_failed)
+                    fun state(pkg: String): String {
+                        if (xposedStatus == XposedStatus.Checking) return checkingState
+                        if (connectedScopes == null) return unavailableState
+                        if (pkg !in connectedScopes.scopes) return disabledState
+                        val target = connectedScopes.runningTargets[pkg]
+                            ?: connectedScopes.runningTargets.entries
+                                .firstOrNull { it.key.startsWith("$pkg:") }?.value
+                        return when (target) {
+                            HookedTarget.State.UP_TO_DATE -> connectedState
+                            HookedTarget.State.STALE -> staleState
+                            HookedTarget.State.RELOADING -> reloadingState
+                            HookedTarget.State.FAILED -> failedState
+                            null -> missingState
+                        }
                     }
                     val scopeSummary = listOf(
                         listOf(

@@ -157,6 +157,9 @@
     <string name="runtime_scope_missing">Not detected</string>
     <string name="runtime_scope_connected">Connected</string>
     <string name="runtime_scope_disabled">Not enabled</string>
+    <string name="runtime_scope_stale">Pending reload</string>
+    <string name="runtime_scope_reloading">Reloading</string>
+    <string name="runtime_scope_failed">Reload failed</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>

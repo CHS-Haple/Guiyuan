@@ -156,6 +156,9 @@
     <string name="runtime_scope_missing">未检测到</string>
     <string name="runtime_scope_connected">已连接</string>
     <string name="runtime_scope_disabled">未启用</string>
+    <string name="runtime_scope_stale">待重载</string>
+    <string name="runtime_scope_reloading">重载中</string>
+    <string name="runtime_scope_failed">重载失败</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>
