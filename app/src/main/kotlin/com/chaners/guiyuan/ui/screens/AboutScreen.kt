@@ -412,8 +412,8 @@ internal fun AboutScreen(
                                 )
                                 Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
                                 Text(
-                                    text = version,
-                                    modifier = Modifier.weight(1f),
+                                    text = status,
+                                    modifier = Modifier.width(88.dp),
                                     color = summaryColor,
                                     fontSize = summarySize,
                                     textAlign = TextAlign.Center,
@@ -422,11 +422,11 @@ internal fun AboutScreen(
                                 )
                                 Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
                                 Text(
-                                    text = status,
-                                    modifier = Modifier.width(88.dp),
+                                    text = version,
+                                    modifier = Modifier.weight(1f),
                                     color = summaryColor,
                                     fontSize = summarySize,
-                                    textAlign = TextAlign.End,
+                                    textAlign = TextAlign.Start,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )

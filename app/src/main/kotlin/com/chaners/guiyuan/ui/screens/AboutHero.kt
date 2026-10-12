@@ -27,12 +27,15 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -130,12 +133,14 @@ internal fun AboutHero(
                 }
                 .graphicsLayer {
                     val lift = waveLift(wave.value, titleDistance, markDiameter)
-                    val scale = 1f + lift * 0.014f
                     alpha = 1f - nameProgress
-                    scaleX = (1f - nameProgress * 0.05f) * scale
-                    scaleY = (1f - nameProgress * 0.05f) * scale
-                    translationY = -lift * 1.2.dp.toPx()
+                    compositingStrategy = if (wave.isRunning) CompositingStrategy.Offscreen
+                    else CompositingStrategy.Auto
+                    scaleX = (1f - nameProgress * 0.05f) * (1f + lift * 0.055f)
+                    scaleY = (1f - nameProgress * 0.05f) * (1f + lift * 0.035f)
+                    translationY = -lift * 7.dp.toPx()
                 }
+                .waveGlint(wave, titleDistance, markDiameter, MiuixTheme.colorScheme.primary)
                 .then(blur),
             fontSize = 35.sp,
             fontWeight = FontWeight.Bold,
@@ -152,12 +157,14 @@ internal fun AboutHero(
                 }
                 .graphicsLayer {
                     val lift = waveLift(wave.value, versionDistance, markDiameter)
-                    val scale = 1f + lift * 0.008f
                     alpha = 1f - versionProgress
-                    scaleX = (1f - versionProgress * 0.05f) * scale
-                    scaleY = (1f - versionProgress * 0.05f) * scale
-                    translationY = -lift * 0.7.dp.toPx()
-                },
+                    compositingStrategy = if (wave.isRunning) CompositingStrategy.Offscreen
+                    else CompositingStrategy.Auto
+                    scaleX = (1f - versionProgress * 0.05f) * (1f + lift * 0.045f)
+                    scaleY = (1f - versionProgress * 0.05f) * (1f + lift * 0.025f)
+                    translationY = -lift * 5.dp.toPx()
+                }
+                .waveGlint(wave, versionDistance, markDiameter, MiuixTheme.colorScheme.primary),
             textAlign = TextAlign.Center,
             fontSize = 14.sp,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -276,24 +283,80 @@ private fun DrawScope.drawWave(color: Color, progress: Float, strength: Float, d
     val feather = diameter * (0.1f + 0.055f * progress)
     val edge = radius + feather
     val alpha = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
-    drawCircle(
-        brush = Brush.radialGradient(
-            0f to Color.Transparent,
-            ((radius - feather) / edge) to Color.Transparent,
-            ((radius - feather * 0.45f) / edge) to color.copy(alpha = alpha * 0.45f),
-            (radius / edge) to color.copy(alpha = alpha),
-            1f to Color.Transparent,
-            center = center,
+    val sway = sin((2 * PI * progress).toFloat())
+    withTransform({
+        scale(1f + 0.06f * sway, 1f - 0.04f * sway, center)
+    }) {
+        drawCircle(
+            brush = Brush.radialGradient(
+                0f to Color.Transparent,
+                ((radius - feather) / edge) to Color.Transparent,
+                ((radius - feather * 0.45f) / edge) to color.copy(alpha = alpha * 0.45f),
+                (radius / edge) to color.copy(alpha = alpha),
+                1f to Color.Transparent,
+                center = center,
+                radius = edge,
+            ),
             radius = edge,
+        )
+    }
+}
+
+// SrcAtop keeps the moving glint on the actual text strokes, not the row background.
+private fun Modifier.waveGlint(
+    wave: Animatable<Float, AnimationVector1D>,
+    distance: Float,
+    diameter: Float,
+    color: Color,
+): Modifier = drawWithContent {
+    drawContent()
+    if (!wave.isRunning || distance <= 0f) return@drawWithContent
+    val progress = wave.value
+    drawGlint(progress, distance, diameter, color, 0.72f)
+    drawGlint((progress - 0.2f) / 0.8f, distance, diameter, color, 0.42f)
+}
+
+private fun DrawScope.drawGlint(
+    progress: Float,
+    distance: Float,
+    diameter: Float,
+    color: Color,
+    strength: Float,
+) {
+    if (progress <= 0f || progress >= 1f) return
+    val radius = diameter * (0.55f + 1.15f * progress) *
+        (1f - 0.04f * sin((2 * PI * progress).toFloat()))
+    val feather = diameter * (0.1f + 0.055f * progress)
+    val front = size.height / 2f + radius - distance
+    if (front < -feather || front > size.height + feather) return
+    val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
+    drawRect(
+        brush = Brush.verticalGradient(
+            0f to Color.Transparent,
+            0.32f to color.copy(alpha = intensity * 0.16f),
+            0.5f to color.copy(alpha = intensity),
+            0.68f to color.copy(alpha = intensity * 0.16f),
+            1f to Color.Transparent,
+            startY = front - feather,
+            endY = front + feather,
         ),
-        radius = edge,
+        blendMode = BlendMode.SrcAtop,
     )
 }
 
-// The text moves only when the actual outgoing wavefront passes its measured center.
+// Both wavefronts reach the text at different times; use the drawing's radius and feather.
 private fun waveLift(progress: Float, distance: Float, diameter: Float): Float {
-    if (progress <= 0f || progress >= 1f || distance <= 0f || diameter <= 0f) return 0f
-    val radius = diameter * (0.55f + 1.15f * progress)
+    if (distance <= 0f || diameter <= 0f) return 0f
+    return maxOf(
+        wavefrontLift(progress, distance, diameter),
+        wavefrontLift((progress - 0.2f) / 0.8f, distance, diameter) * 0.6f,
+    )
+}
+
+private fun wavefrontLift(progress: Float, distance: Float, diameter: Float): Float {
+    if (progress <= 0f || progress >= 1f) return 0f
+    val radius = diameter * (0.55f + 1.15f * progress) *
+        (1f - 0.04f * sin((2 * PI * progress).toFloat()))
     val feather = diameter * (0.1f + 0.055f * progress)
     val crossing = (1f - abs(distance - radius) / feather).coerceIn(0f, 1f)
     return crossing * sin((PI * progress).toFloat())
