@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +37,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -44,6 +46,9 @@ import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ExpandLess
+import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -72,6 +77,11 @@ internal fun BatteryCustomModeEditor(
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
     }
+    var selectedHue by remember(custom.id, slot, entry.source, seed) {
+        mutableFloatStateOf(
+            seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
+        )
+    }
     var hexText by remember(custom.id, slot, editingColor) {
         mutableStateOf(
             editingColor
@@ -94,6 +104,8 @@ internal fun BatteryCustomModeEditor(
     fun showColor(color: Int) {
         val opaque = color or 0xFF000000.toInt()
         editingColor = opaque
+        val chosenHsv = Color(opaque).toHsv()
+        if (chosenHsv.s > 0.01f) selectedHue = chosenHsv.h
         hexText = batteryColorHex(opaque).removePrefix("#")
         val value = batteryColorRgb(opaque)
         redText = value.first.toString()
@@ -149,15 +161,13 @@ internal fun BatteryCustomModeEditor(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 24.dp),
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
             OverlayDropdownPreference(
-            items = sourceLabels,
-            selectedIndex = selectedSourceIndex,
-            title = stringResource(R.string.battery_color_source),
-            summary = currentValueText,
-            startAction = {
+                items = sourceLabels,
+                selectedIndex = selectedSourceIndex,
+                title = stringResource(R.string.battery_color_source),
+                summary = currentValueText,
+                startAction = {
                 if (resolved == null) {
                     BatteryColorMosaic(size = 24.dp)
                 } else {
@@ -167,10 +177,10 @@ internal fun BatteryCustomModeEditor(
                     )
                 }
             },
-            onSelectedIndexChange = { index ->
+                onSelectedIndexChange = { index ->
                 sourceOptions.getOrNull(index)?.let(onSourceChange)
-            },
-        )
+                },
+            )
         }
 
         BatterySheetSmallTitle(
@@ -183,9 +193,27 @@ internal fun BatteryCustomModeEditor(
         ) {
             BatteryColorGrid(
                 color = editingColor?.let(::Color) ?: Color(0xFF3482FF),
+                hue = selectedHue,
                 onPreview = { showColor(it.toArgb()) },
                 onSelect = { applyColor(it.toArgb()) },
             )
+            BatteryHsvAdjustmentRow(
+                title = stringResource(R.string.battery_color_hue),
+                valueText = "${selectedHue.roundToInt()}°",
+                visuallyInactive = false,
+            ) {
+                HsvHueSlider(
+                    currentHue = selectedHue,
+                    onHueChanged = { fraction ->
+                        val hue = fraction * 360f
+                        selectedHue = hue
+                        val current = editingColor?.let { Color(it).toHsv() }
+                        applyColor(
+                            Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
+                        )
+                    },
+                )
+            }
         }
 
         BatterySheetSmallTitle(
@@ -219,14 +247,20 @@ internal fun BatteryCustomModeEditor(
             }
         }
 
-        TextButton(
-            text =
-                stringResource(
-                    if (showPrecise) R.string.battery_color_hide_precision
-                    else R.string.battery_color_show_precision
-                ),
-            onClick = { showPrecise = !showPrecise },
-        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            BasicComponent(
+                title = stringResource(R.string.battery_color_precision_title),
+                summary = stringResource(R.string.battery_color_precision_summary),
+                endActions = {
+                    Icon(
+                        imageVector = if (showPrecise) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                onClick = { showPrecise = !showPrecise },
+            )
+        }
         if (showPrecise) {
             BatterySheetSmallTitle(
                 text = stringResource(R.string.battery_color_full_adjustment),
@@ -236,20 +270,6 @@ internal fun BatteryCustomModeEditor(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (hsv != null) {
-                    BatteryHsvAdjustmentRow(
-                        title = stringResource(R.string.battery_color_hue),
-                        valueText = "${hsv.h.roundToInt()}°",
-                        visuallyInactive = visuallyInactive,
-                    ) {
-                        HsvHueSlider(
-                            currentHue = hsv.h,
-                            onHueChanged = { fraction ->
-                                applyColor(
-                                    Hsv(fraction * 360f, hsv.s, hsv.v).toColor().toArgb(),
-                                )
-                            },
-                        )
-                    }
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_saturation),
                         valueText = "${hsv.s.roundToInt()}%",
@@ -376,8 +396,6 @@ internal fun BatteryCustomModeEditor(
 }
 
 
-// The battery renderer stores opaque colors. The pinned MIUIX ColorPalette currently
-// always shows an alpha slider, so this small RGB-only grid uses MIUIX cards around it.
 @Composable
 private fun BatteryHsvAdjustmentRow(
     title: String,
