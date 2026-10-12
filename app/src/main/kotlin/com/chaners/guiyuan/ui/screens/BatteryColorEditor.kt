@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -41,7 +39,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -188,30 +185,24 @@ internal fun BatteryCustomModeEditor(
             }
         }
 
-        BatterySheetSmallTitle(
-            text = stringResource(R.string.battery_color_visual_picker),
-            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            BatterySheetSmallTitle(
+                text = stringResource(R.string.battery_color_visual_picker),
+            )
+            Box(modifier = Modifier.padding(end = 28.dp)) {
+                editingColor?.let {
+                    BatteryColorDot(color = it, size = 28.dp)
+                } ?: BatteryColorMosaic(size = 28.dp)
+            }
+        }
         Card(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(26.dp),
-                shape = RoundedCornerShape(13.dp),
-                color = editingColor?.let(::Color) ?: MiuixTheme.colorScheme.surfaceContainer,
-            ) {
-                if (editingColor == null) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = stringResource(R.string.battery_color_custom_unset),
-                            fontSize = MiuixTheme.textStyles.footnote2.fontSize,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
             BatteryColorField(
                 color = editingColor?.let(::Color),
                 hue = selectedHue,
