@@ -1,10 +1,12 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -21,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.color.api.toHsv
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // The pinned MIUIX ColorPalette always includes alpha. Battery colors are opaque.
 @Composable
@@ -41,6 +44,11 @@ internal fun BatteryColorField(
             Modifier
                 .fillMaxWidth()
                 .height(180.dp)
+                .border(
+                    width = 1.dp,
+                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                    shape = RoundedCornerShape(16.dp),
+                )
                 .semantics { contentDescription = paletteDescription }
                 .pointerInput(Unit) {
                     awaitEachGesture {
