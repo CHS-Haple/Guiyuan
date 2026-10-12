@@ -339,6 +339,7 @@ internal class BatterySchemeRepo(context: Context) {
         val library = current()
         val current = library.customById(id) ?: return
         val changed = transform(current)
+        if (changed == current) return
         val updated =
             library.copy(
                 customSchemes =
