@@ -65,7 +65,6 @@ internal val COMMON_BATTERY_COLORS =
 internal val BATTERY_COLOR_PREVIEW_SLOTS = BatteryColorSlot.entries
 
 private const val BATTERY_COLOR_SHEET_HEIGHT_FRACTION = 0.84f
-internal val BATTERY_SCHEME_VERTICAL_GAP = 12.dp
 
 internal sealed interface BatterySchemePage {
     val key: String
@@ -234,7 +233,7 @@ internal fun BatteryColorBottomSheet(
                         }
                     }
                 },
-                    onDeleteCustom = { deleteCustomId = it },
+                onDeleteCustom = { deleteCustomId = it },
             )
             SnackbarHost(
                 state = snackbars,
