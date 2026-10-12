@@ -63,7 +63,7 @@ class GyApplication :
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
 
     private val handler = Handler(Looper.getMainLooper())
-    private var scopeRequestDone: ((Boolean) -> Unit)? = null
+    private var pendingScope: ScopeRequest? = null
     private var hotReloadPending: HotReloadPending? = null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
@@ -157,7 +157,7 @@ class GyApplication :
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
-        scopeRequestDone = null
+        pendingScope = null
         hotReloadPending = null
         super.onTerminate()
     }
@@ -185,7 +185,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || scopeRequestDone != null) return false
+        if (service.apiVersion < 102 || pendingScope != null) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -195,15 +195,16 @@ class GyApplication :
             return true
         }
 
-        scopeRequestDone = onComplete
+        val request = ScopeRequest(service, onComplete)
+        pendingScope = request
         return runCatching {
             service.requestScope(
                 listOf(pkg),
                 object : XposedService.OnScopeEventListener {
                     override fun onScopeRequestApproved(scope: List<String>) {
                         mainExecutor.execute {
-                            if (xposedService === service) {
-                                refreshXposedStatus(service)
+                            if (xposedService === request.service && pendingScope === request) {
+                                refreshXposedStatus(request.service)
                                 finishScopeRequest(
                                     runCatching { pkg in service.scope }.getOrDefault(false),
                                 )
@@ -214,23 +215,25 @@ class GyApplication :
                     override fun onScopeRequestFailed(message: String) {
                         Log.w(TAG, "Scope request failed: $message")
                         mainExecutor.execute {
-                            if (xposedService === service) finishScopeRequest(false)
+                            if (xposedService === request.service && pendingScope === request) {
+                                finishScopeRequest(false)
+                            }
                         }
                     }
                 },
             )
             true
         }.getOrElse { throwable ->
-            scopeRequestDone = null
+            if (pendingScope === request) pendingScope = null
             Log.w(TAG, "Unable to request $pkg scope: " + throwable.message)
             false
         }
     }
 
     private fun finishScopeRequest(granted: Boolean) {
-        val callback = scopeRequestDone ?: return
-        scopeRequestDone = null
-        callback(granted)
+        val request = pendingScope ?: return
+        pendingScope = null
+        request.onComplete(granted)
     }
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
@@ -337,6 +340,11 @@ class GyApplication :
             )
         }
     }
+
+    private class ScopeRequest(
+        val service: XposedService,
+        val onComplete: (Boolean) -> Unit,
+    )
 
     private class HotReloadPending(
         val service: XposedService,
