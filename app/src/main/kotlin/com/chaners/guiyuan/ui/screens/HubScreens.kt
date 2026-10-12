@@ -681,7 +681,7 @@ internal fun SettingsHubScreen(
                 selectedIndex = entry.ordinal,
                 title = stringResource(R.string.settings_entry_title),
                 startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_app_shortcut)
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
                 },
                 summary = stringResource(
                     if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
@@ -700,19 +700,21 @@ internal fun SettingsHubScreen(
                     }
                 },
             )
-            OverlayDropdownPreference(
-                items = iconOptions,
-                selectedIndex = entryIcon.ordinal,
-                title = stringResource(R.string.settings_entry_icon_title),
-                startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
-                },
-                summary = stringResource(R.string.settings_entry_icon_summary),
-                showValue = true,
-                onSelectedIndexChange = { index ->
-                    SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
-                },
-            )
+            if (entry != SettingsEntry.Disabled) {
+                OverlayDropdownPreference(
+                    items = iconOptions,
+                    selectedIndex = entryIcon.ordinal,
+                    title = stringResource(R.string.settings_entry_icon_title),
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_content_copy)
+                    },
+                    summary = stringResource(R.string.settings_entry_icon_summary),
+                    showValue = true,
+                    onSelectedIndexChange = { index ->
+                        SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
+                    },
+                )
+            }
         }
         Section(R.string.section_diagnostics_maintenance) {
             ArrowPreference(

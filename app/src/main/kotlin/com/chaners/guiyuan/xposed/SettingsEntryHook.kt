@@ -6,9 +6,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.view.View
-import android.view.ViewGroup
-import android.widget.BaseAdapter
 import android.widget.ImageView
 import com.chaners.guiyuan.R
 import android.content.Context
@@ -102,47 +99,39 @@ internal object SettingsEntryHook {
         id: Field,
         style: SettingsEntryIcon,
     ) {
-        val names = listOf(
-            "com.android.settingslib.miuisettings.preference.PreferenceActivity\$HeaderAdapter",
-            "android.preference.PreferenceActivity\$HeaderAdapter",
-        )
-        for (name in names) {
-            val adapter = runCatching { Class.forName(name, false, loader) }.getOrNull()
-                ?: continue
-            if (!BaseAdapter::class.java.isAssignableFrom(adapter)) continue
-            val getView = runCatching {
-                adapter.getDeclaredMethod(
-                    "getView", Int::class.javaPrimitiveType, View::class.java, ViewGroup::class.java,
-                )
-            }.getOrNull() ?: continue
-            val getItem = runCatching {
-                adapter.getMethod("getItem", Int::class.javaPrimitiveType)
-            }.getOrNull() ?: continue
-
+        runCatching {
+            val adapter = Class.forName(
+                "com.android.settings.MiuiSettings\$HeaderAdapter", false, loader,
+            )
+            val holder = Class.forName(
+                "com.android.settings.MiuiSettings\$HeaderViewHolder", false, loader,
+            )
+            val method = adapter.getDeclaredMethod("setIcon", holder, headerClass)
+            val icon = holder.findField("icon")
             var artwork: Drawable.ConstantState? = null
             var nightMode = -1
             var warned = false
-            module.hook(getView).setId(ICON_HOOK_ID).intercept(Hooker { chain ->
+
+            module.hook(method).setId(ICON_HOOK_ID).intercept(Hooker { chain ->
+                // Native binding is the sole writer for other Settings rows.
                 val result = chain.proceed()
                 runCatching {
-                    val row = result as? View ?: return@runCatching
-                    val index = chain.getArg(0) as? Int ?: return@runCatching
-                    val header = getItem.invoke(chain.thisObject, index)
+                    val header = chain.getArg(1) ?: return@runCatching
                     if (!headerClass.isInstance(header) || id.getLong(header) != HEADER_ID) {
                         return@runCatching
                     }
-
-                    val iconId = row.resources.getIdentifier("icon", "id", row.context.packageName)
-                    val view = (if (iconId != 0) row.findViewById<View>(iconId) else null)
-                        ?: row.findViewById(android.R.id.icon)
-                    val image = view as? ImageView ?: return@runCatching
-                    val night = row.resources.configuration.uiMode and
+                    val image = icon.get(chain.getArg(0)) as? ImageView ?: return@runCatching
+                    val night = image.resources.configuration.uiMode and
                         android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                    if (nightMode != night) {
+                    if (night != nightMode) {
+                        artwork = createIcon(image.context, style)?.constantState
                         nightMode = night
-                        artwork = createIcon(row.context, style)?.constantState
                     }
-                    artwork?.newDrawable(row.resources)?.mutate()?.let(image::setImageDrawable)
+                    artwork?.newDrawable(image.resources)?.mutate()?.let {
+                        image.imageTintList = null
+                        image.clearColorFilter()
+                        image.setImageDrawable(it)
+                    }
                 }.onFailure {
                     if (!warned) {
                         warned = true
@@ -151,16 +140,18 @@ internal object SettingsEntryHook {
                 }
                 result
             })
-            return
-        }
-        Log.w(TAG, "Native Settings header icon adapter unavailable; keeping native icon")
+        }.onFailure { Log.w(TAG, "Native Settings icon binding unavailable", it) }
     }
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
         val app = context.createPackageContext(MODULE_PKG, 0)
-        val size = (48 * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val dimen = context.resources.getIdentifier(
+            "header_icon_size", "dimen", "com.android.settings",
+        )
+        val size = (if (dimen != 0) context.resources.getDimensionPixelSize(dimen)
+            else (28 * context.resources.displayMetrics.density).toInt()).coerceAtLeast(1)
         if (style == SettingsEntryIcon.Rounded) {
-            val icon = app.packageManager.getApplicationIcon(MODULE_PKG)
+            val icon = app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             icon.setBounds(0, 0, size, size)
             icon.draw(Canvas(bitmap))
