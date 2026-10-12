@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -75,6 +74,9 @@ internal fun BatteryCustomModeEditor(
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
     }
+    var previewColor by remember(custom.id, slot, entry.source, seed) {
+        mutableStateOf<Int?>(null)
+    }
     var selectedHue by remember(custom.id, slot) {
         mutableFloatStateOf(
             seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
@@ -146,13 +148,11 @@ internal fun BatteryCustomModeEditor(
                 title = stringResource(R.string.battery_color_source),
                 summary = currentValueText,
                 startAction = {
-                    if (resolved == null) {
+                    val shown = previewColor ?: resolved
+                    if (shown == null) {
                         BatteryColorMosaic(size = 24.dp)
                     } else {
-                        BatteryColorDot(
-                            color = resolved,
-                            size = 24.dp,
-                        )
+                        BatteryColorDot(color = shown, size = 24.dp)
                     }
                 },
                 onSelectedIndexChange = { index ->
@@ -192,20 +192,10 @@ internal fun BatteryCustomModeEditor(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            BatterySheetSmallTitle(
-                text = stringResource(R.string.battery_color_visual_picker),
-            )
-            Box(modifier = Modifier.padding(end = 28.dp)) {
-                editingColor?.let {
-                    BatteryColorDot(color = it, size = 28.dp)
-                } ?: BatteryColorMosaic(size = 28.dp)
-            }
-        }
+        BatterySheetSmallTitle(
+            text = stringResource(R.string.battery_color_visual_picker),
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        )
         Card(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
@@ -214,13 +204,16 @@ internal fun BatteryCustomModeEditor(
                 color = editingColor?.let(::Color),
                 hue = selectedHue,
                 onPreview = { preview, hue ->
+                    previewColor = preview?.toArgb()
                     if (preview == null) editingColor = null else showColor(preview.toArgb())
                     selectedHue = hue
                 },
                 onSelect = { color, hue ->
+                    previewColor = color.toArgb()
                     applyColor(color.toArgb())
                     selectedHue = hue
                 },
+                onCancel = { previewColor = null },
             )
         }
 
