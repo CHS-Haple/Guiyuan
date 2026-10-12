@@ -904,7 +904,6 @@ class GyModule : XposedModule() {
         }
     }
 
-
     private fun installCcSource(
         classLoader: ClassLoader,
         source: String,
