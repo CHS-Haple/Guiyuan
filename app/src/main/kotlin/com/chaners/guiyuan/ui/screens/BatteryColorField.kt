@@ -27,8 +27,8 @@ import top.yukonga.miuix.kmp.color.api.toHsv
 internal fun BatteryColorField(
     color: Color?,
     hue: Float,
-    onPreview: (Color?) -> Unit,
-    onSelect: (Color) -> Unit,
+    onPreview: (Color?, Float) -> Unit,
+    onSelect: (Color, Float) -> Unit,
 ) {
     val onPreviewNow by rememberUpdatedState(onPreview)
     val onSelectNow by rememberUpdatedState(onSelect)
@@ -47,22 +47,23 @@ internal fun BatteryColorField(
                         val down = awaitFirstDown()
                         if (size.width <= 0 || size.height <= 0) return@awaitEachGesture
 
-                        fun sample(point: Offset): Color {
-                            val saturation = (point.x / size.width).coerceIn(0f, 1f)
-                            val brightness = (1f - point.y / size.height).coerceIn(0f, 1f)
-                            return Color.hsv(hueNow, saturation, brightness)
+                        fun sample(point: Offset): Pair<Color, Float> {
+                            val hue = (point.x / size.width).coerceIn(0f, 1f) * 359.99f
+                            val saturation = (point.y / size.height).coerceIn(0f, 1f)
+                            return Color.hsv(hue, saturation, 1f) to hue
                         }
 
                         val before = colorNow
+                        val beforeHue = hueNow
                         var last = sample(down.position)
-                        onPreviewNow(last)
+                        onPreviewNow(last.first, last.second)
                         var applied = false
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
                                 if (!change.isConsumed) {
-                                    onSelectNow(last)
+                                    onSelectNow(last.first, last.second)
                                     applied = true
                                 }
                                 break
@@ -71,21 +72,31 @@ internal fun BatteryColorField(
                             val next = sample(change.position)
                             if (next != last) {
                                 last = next
-                                onPreviewNow(next)
+                                onPreviewNow(next.first, next.second)
                             }
                             change.consume()
                         }
-                        if (!applied) onPreviewNow(before)
+                        if (!applied) onPreviewNow(before, beforeHue)
                     }
                 },
     ) {
         val round = CornerRadius(16.dp.toPx())
         drawRoundRect(
-            brush = Brush.horizontalGradient(listOf(Color.White, Color.hsv(hue, 1f, 1f))),
+            brush = Brush.horizontalGradient(
+                listOf(
+                    Color.Red,
+                    Color.Yellow,
+                    Color.Green,
+                    Color.Cyan,
+                    Color.Blue,
+                    Color.Magenta,
+                    Color.Red,
+                ),
+            ),
             cornerRadius = round,
         )
         drawRoundRect(
-            brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black)),
+            brush = Brush.verticalGradient(listOf(Color.White, Color.Transparent)),
             cornerRadius = round,
         )
 
@@ -93,8 +104,8 @@ internal fun BatteryColorField(
             val radius = 11.dp.toPx()
             val center =
                 Offset(
-                    (hsv.s / 100f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
-                    ((1f - hsv.v / 100f) * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
+                    (hue / 360f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
+                    (hsv.s / 100f * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
                 )
             drawCircle(
                 color = Color.Black.copy(alpha = 0.28f),
