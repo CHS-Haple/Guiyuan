@@ -365,13 +365,10 @@ internal fun MainHub(
         }
 
         OverlayDialog(
-            title = stringResource(R.string.restart_scope_dialog_title),
+            title = stringResource(R.string.restart_scope),
             summary = stringResource(
-                when {
-                    availableTargets.isEmpty() -> R.string.restart_scope_no_targets
-                    RestartTarget.SETTINGS in availableTargets -> R.string.restart_scope_dialog_summary
-                    else -> R.string.restart_scope_dialog_sysui_summary
-                },
+                if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
+                else R.string.restart_scope_dialog_summary,
             ),
             show = restartDialog == RestartDialog.SELECT,
             onDismissRequest = {
