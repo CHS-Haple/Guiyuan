@@ -25,11 +25,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.GyApplication
+import com.chaners.guiyuan.settings.SettingsEntry
+import com.chaners.guiyuan.settings.SettingsEntryCfg
+import com.chaners.guiyuan.settings.SettingsEntryPrefs
+import com.chaners.guiyuan.settings.SettingsEntryIcon
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
@@ -79,6 +85,7 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -221,6 +228,7 @@ internal fun FeaturesScreen(
                 valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
                 steps = 7,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(COMBINED_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -239,6 +247,7 @@ internal fun FeaturesScreen(
                 valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
                 steps = 11,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -262,6 +271,7 @@ internal fun FeaturesScreen(
                         BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
                 steps = 19,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(0f),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -281,6 +291,7 @@ internal fun FeaturesScreen(
                 valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -298,6 +309,7 @@ internal fun FeaturesScreen(
                 valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -315,6 +327,7 @@ internal fun FeaturesScreen(
                 valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(NO_SIM_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -332,6 +345,7 @@ internal fun FeaturesScreen(
                 valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints =
                     listOf(
                         mobileTypeScaleDefault(
@@ -358,6 +372,7 @@ internal fun FeaturesScreen(
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
                 steps = 19,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -424,6 +439,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_TEXT_UI_SCALE_MAX,
                     steps = 23,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints =
                         listOf(
                             topTextUiScaleDefault(
@@ -450,6 +466,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
                     steps = 19,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints = listOf(900f),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
@@ -492,6 +509,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
                     steps = 23,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints =
                         listOf(
                             topChargingIconUiScaleDefault(
@@ -530,13 +548,48 @@ internal fun SettingsHubScreen(
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
-    restartInProgress: Boolean,
+    runtimeBusy: Boolean,
     onRestart: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
+    val ctx = LocalContext.current
+    val app = remember(ctx.applicationContext) {
+        ctx.applicationContext as GyApplication
+    }
+    val entryFlow = remember(ctx.applicationContext) {
+        SettingsEntryPrefs.observe(ctx.applicationContext)
+    }
+    val entryCfg by entryFlow.collectAsState(
+        initial = SettingsEntryCfg(
+            entry = SettingsEntryPrefs.get(ctx),
+            icon = SettingsEntryPrefs.icon(ctx),
+        ),
+    )
+    val entry = entryCfg.entry
+    val entryIcon = entryCfg.icon
+    var pending by remember { mutableStateOf<SettingsEntry?>(null) }
+    var scopeApplying by remember { mutableStateOf<SettingsEntry?>(null) }
+    var requestFailed by remember { mutableStateOf(false) }
+    val entryOptions = listOf(
+        stringResource(R.string.settings_entry_disabled),
+        stringResource(R.string.settings_entry_top),
+        stringResource(R.string.settings_entry_middle),
+        stringResource(R.string.settings_entry_bottom),
+    )
+    val iconOptions = listOf(
+        stringResource(R.string.settings_entry_icon_rounded),
+        stringResource(R.string.settings_entry_icon_hollow),
+    )
+    fun saveEntryIcon(value: SettingsEntryIcon) {
+        if (!SettingsEntryPrefs.setIcon(ctx, value)) requestFailed = true
+    }
+    fun saveEntry(value: SettingsEntry) {
+        if (!SettingsEntryPrefs.set(ctx, value)) requestFailed = true
+    }
+
     val languageOptions = listOf(
         stringResource(R.string.language_system),
         stringResource(R.string.language_english),
@@ -545,13 +598,74 @@ internal fun SettingsHubScreen(
     HubPage(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
+        overlay = {
+            OverlayDialog(
+                title = stringResource(R.string.settings_entry_scope_title),
+                summary = stringResource(R.string.settings_entry_scope_summary),
+                show = pending != null,
+                onDismissRequest = { pending = null },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        onClick = { pending = null },
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.confirm),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        enabled = !runtimeBusy && scopeApplying == null,
+                        onClick = {
+                            val target = pending
+                            pending = null
+                            if (target != null && scopeApplying == null) {
+                                val previous = SettingsEntryPrefs.get(ctx)
+                                scopeApplying = target
+                                val accepted = app.requestSettingsScope { approved ->
+                                    if (scopeApplying == target) {
+                                        scopeApplying = null
+                                        if (approved) {
+                                            // A newer selection takes precedence over this grant.
+                                            if (SettingsEntryPrefs.get(ctx) == previous) saveEntry(target)
+                                        } else {
+                                            requestFailed = true
+                                        }
+                                    }
+                                }
+                                if (!accepted) {
+                                    scopeApplying = null
+                                    requestFailed = true
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+            OverlayDialog(
+                title = stringResource(R.string.settings_entry_failed_title),
+                summary = stringResource(R.string.settings_entry_failed_summary),
+                show = requestFailed,
+                onDismissRequest = { requestFailed = false },
+            ) {
+                TextButton(
+                    text = stringResource(R.string.confirm),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { requestFailed = false },
+                )
+            }
+        },
     ) {
         Section(R.string.section_appearance_interaction) {
             ArrowPreference(
                 title = stringResource(R.string.appearance_title),
                 startAction = {
                     SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_style,
+                        iconRes = R.drawable.ic_material_symbol_display_settings,
                     )
                 },
                 summary = stringResource(R.string.appearance_summary),
@@ -596,6 +710,49 @@ internal fun SettingsHubScreen(
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
             )
+            OverlayDropdownPreference(
+                items = entryOptions,
+                selectedIndex = entry.ordinal,
+                title = stringResource(R.string.settings_entry_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_settings_applications,
+                        enabled = scopeApplying == null && !runtimeBusy,
+                    )
+                },
+                enabled = scopeApplying == null && !runtimeBusy,
+                summary = stringResource(
+                    if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
+                    else R.string.settings_entry_restart_hint,
+                ),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    SettingsEntry.entries.getOrNull(index)?.let { selected ->
+                        if (selected != entry) {
+                            if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
+                                saveEntry(selected)
+                            } else {
+                                pending = selected
+                            }
+                        }
+                    }
+                },
+            )
+            if (entry != SettingsEntry.Disabled) {
+                OverlayDropdownPreference(
+                    items = iconOptions,
+                    selectedIndex = entryIcon.ordinal,
+                    title = stringResource(R.string.settings_entry_icon_title),
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_filter_none)
+                    },
+                    summary = stringResource(R.string.settings_entry_icon_summary),
+                    showValue = true,
+                    onSelectedIndexChange = { index ->
+                        SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
+                    },
+                )
+            }
         }
         Section(R.string.section_diagnostics_maintenance) {
             ArrowPreference(
@@ -623,11 +780,11 @@ internal fun SettingsHubScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_restart_alt,
-                        enabled = !restartInProgress,
+                        enabled = !runtimeBusy && scopeApplying == null,
                     )
                 },
                 summary = stringResource(R.string.restart_scope_summary),
-                enabled = !restartInProgress,
+                enabled = !runtimeBusy && scopeApplying == null,
                 onClick = onRestart,
             )
 
@@ -683,6 +840,7 @@ private fun HubPage(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .scrollEndHaptic()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = pageContentPadding(
                     innerPadding = paddingValues,

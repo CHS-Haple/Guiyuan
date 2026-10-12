@@ -1,5 +1,8 @@
 package com.chaners.guiyuan.ui
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,21 +11,26 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -37,7 +45,8 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.system.SysUiScope
+import com.chaners.guiyuan.system.RestartTarget
+import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -53,6 +62,7 @@ import com.chaners.guiyuan.ui.screens.FeaturesScreen
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
+import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -60,6 +70,8 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.preference.CheckboxLocation
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -76,9 +88,27 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
 
-private enum class RestartDialog {
-    CONFIRM,
-    FAILURE,
+// Use the same installed-package artwork the scope manager displays.
+@Composable
+private fun RestartAppIcon(pkg: String, fallback: Int) {
+    val ctx = LocalContext.current
+    val density = LocalDensity.current
+    val config = LocalConfiguration.current
+    val icon = remember(ctx, pkg, density.density, config) {
+        runCatching {
+            val side = with(density) { 48.dp.roundToPx() }
+            val drawable = ctx.packageManager.getApplicationIcon(pkg)
+            val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+            drawable.setBounds(0, 0, side, side)
+            drawable.draw(Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(24.dp))
+    } else {
+        SemanticLeadingIcon(fallback)
+    }
 }
 
 private data class WeightedNavigationItem(
@@ -104,13 +134,31 @@ internal fun MainHub(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var hotReloadInProgress by remember { mutableStateOf(false) }
-    var restartDialog by rememberSaveable { mutableStateOf<RestartDialog?>(null) }
-    var restartInProgress by remember { mutableStateOf(false) }
+    var restartPickerOpen by remember { mutableStateOf(false) }
+    val restartState by ScopeRestart.state.collectAsState()
+    val restartInProgress = restartState is ScopeRestart.State.Running
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
-    var restartAfterDialogDismiss by remember { mutableStateOf(false) }
+    var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets.orEmpty()
+    val app = context.applicationContext as GyApplication
+    val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val onRestart = {
-        if (!restartInProgress) restartDialog = RestartDialog.CONFIRM
+        if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
+            !scopeBusy && app.canRestartScopes()
+        ) {
+            val scopes = app.enabledScopes()
+            availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+                scopes != null && it.pkg in scopes
+            }
+            selectedTargets =
+                if (RestartTarget.SYS_UI in availableTargets) setOf(RestartTarget.SYS_UI)
+                else availableTargets
+            queuedRestart = emptySet()
+            restartPickerOpen = true
+        }
     }
     val miuixMaterialActive =
         appearance.navEnabled &&
@@ -278,10 +326,12 @@ internal fun MainHub(
                 swipeBackEnabled = appearance.swipeBack,
                 hotReloadInProgress = hotReloadInProgress,
                 restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress,
+                scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
                 onRestart = onRestart,
                 onRequestScope = {
-                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress) {
+                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
+                        !scopeBusy
+                    ) {
                         scopeRequestInProgress = true
                         val accepted =
                             (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
@@ -295,7 +345,9 @@ internal fun MainHub(
                     }
                 },
                 onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress) {
+                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
+                        !scopeBusy
+                    ) {
                         hotReloadInProgress = true
                         val accepted = onHotReload {
                             hotReloadInProgress = false
@@ -315,47 +367,116 @@ internal fun MainHub(
 
         OverlayDialog(
             title = stringResource(R.string.restart_scope),
-            summary = stringResource(R.string.restart_scope_dialog_summary),
-            show = restartDialog == RestartDialog.CONFIRM,
+            summary = stringResource(
+                if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
+                else R.string.restart_scope_dialog_summary,
+            ),
+            show = restartPickerOpen,
             onDismissRequest = {
-                restartAfterDialogDismiss = false
-                restartDialog = null
+                queuedRestart = emptySet()
+                restartPickerOpen = false
             },
             onDismissFinished = {
-                if (restartAfterDialogDismiss && !restartInProgress) {
-                    restartAfterDialogDismiss = false
-                    restartInProgress = true
-                    scope.launch {
-                        val success = SysUiScope.restart(context.applicationContext)
-                        restartInProgress = false
-                        (context.applicationContext as? GyApplication)?.refreshXposedStatus()
-                        if (!success) restartDialog = RestartDialog.FAILURE
+                if (queuedRestart.isNotEmpty() && !restartInProgress) {
+                    val targets = queuedRestart
+                    queuedRestart = emptySet()
+                    // Scope may have changed in the framework while the dialog was open.
+                    val liveScopes = app.enabledScopes().orEmpty()
+                    if (targets.any { it.pkg !in liveScopes }) {
+                        availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+                            it.pkg in liveScopes
+                        }
+                        selectedTargets = targets intersect availableTargets
+                        restartPickerOpen = true
+                    } else {
+                        if (!app.restartScopes(targets)) {
+                            restartPickerOpen = true
+                        }
                     }
                 }
             },
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        restartAfterDialogDismiss = false
-                        restartDialog = null
-                    },
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = stringResource(R.string.restart),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        restartAfterDialogDismiss = true
-                        restartDialog = null
-                    },
-                )
+            Column {
+                if (RestartTarget.SYS_UI in availableTargets) {
+                    CheckboxPreference(
+                        title = stringResource(R.string.restart_scope_sysui),
+                        summary = RestartTarget.SYS_UI.pkg,
+                        checked = RestartTarget.SYS_UI in selectedTargets,
+                        onCheckedChange = { checked ->
+                            selectedTargets =
+                                if (checked) selectedTargets + RestartTarget.SYS_UI
+                                else selectedTargets - RestartTarget.SYS_UI
+                        },
+                        checkboxLocation = CheckboxLocation.End,
+                        startAction = {
+                            RestartAppIcon(
+                                RestartTarget.SYS_UI.pkg,
+                                R.drawable.ic_material_symbol_dashboard,
+                            )
+                        },
+                    )
+                }
+                if (RestartTarget.SETTINGS in availableTargets) {
+                    CheckboxPreference(
+                        title = stringResource(R.string.restart_scope_settings),
+                        summary = RestartTarget.SETTINGS.pkg,
+                        checked = RestartTarget.SETTINGS in selectedTargets,
+                        onCheckedChange = { checked ->
+                            selectedTargets =
+                                if (checked) selectedTargets + RestartTarget.SETTINGS
+                                else selectedTargets - RestartTarget.SETTINGS
+                        },
+                        checkboxLocation = CheckboxLocation.End,
+                        startAction = {
+                            RestartAppIcon(
+                                RestartTarget.SETTINGS.pkg,
+                                R.drawable.ic_material_symbol_settings_applications,
+                            )
+                        },
+                    )
+                }
+                if (availableTargets.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (availableTargets.isEmpty()) {
+                    TextButton(
+                        text = stringResource(R.string.confirm),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { restartPickerOpen = false },
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        TextButton(
+                            text = stringResource(
+                                if (selectedTargets == availableTargets) {
+                                    R.string.restart_scope_clear_all
+                                } else {
+                                    R.string.restart_scope_select_all
+                                },
+                            ),
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedTargets =
+                                    if (selectedTargets == availableTargets) emptySet()
+                                    else availableTargets
+                            },
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        TextButton(
+                            text = stringResource(R.string.restart),
+                            modifier = Modifier.weight(1f),
+                            enabled = selectedTargets.isNotEmpty(),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            onClick = {
+                                queuedRestart = selectedTargets intersect availableTargets
+                                restartPickerOpen = false
+                            },
+                        )
+                    }
+                }
             }
         }
 
@@ -375,15 +496,25 @@ internal fun MainHub(
 
         OverlayDialog(
             title = stringResource(R.string.restart_scope_failed),
-            summary = stringResource(R.string.restart_scope_failed_summary),
-            show = restartDialog == RestartDialog.FAILURE,
-            onDismissRequest = { restartDialog = null },
+            summary = stringResource(
+                R.string.restart_scope_failed_summary,
+                failedTargets
+                    .map {
+                        when (it) {
+                            RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
+                            RestartTarget.SETTINGS -> context.getString(R.string.restart_scope_settings)
+                        }
+                    }
+                    .joinToString(", "),
+            ),
+            show = restartState is ScopeRestart.State.Failed,
+            onDismissRequest = ScopeRestart::clearFailure,
         ) {
             TextButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = { restartDialog = null },
+                onClick = ScopeRestart::clearFailure,
             )
         }
     }
@@ -466,7 +597,7 @@ private fun TopLevelPager(
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                restartInProgress = restartInProgress,
+                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
                 onRestart = onRestart,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,

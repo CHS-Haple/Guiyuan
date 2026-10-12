@@ -197,8 +197,8 @@ internal class BatterySchemeRepo(context: Context) {
     fun current(): BatteryColorSchemeLibrary =
         readLibrary()
 
-    fun nextAvailableCustomId(): Int? {
-        val used = current().customSchemes.mapTo(mutableSetOf()) { it.id }
+    fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? {
+        val used = library.customSchemes.mapTo(mutableSetOf()) { it.id }
         return (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { it !in used }
     }
 
@@ -219,7 +219,7 @@ internal class BatterySchemeRepo(context: Context) {
     ): Int? {
         val library = current()
         if (library.customSchemes.size >= BATTERY_COLOR_SCHEME_CUSTOM_MAX) return null
-        val id = nextAvailableCustomId() ?: return null
+        val id = nextAvailableCustomId(library) ?: return null
         val sourceBuiltIn =
             BatteryBuiltInColorScheme.fromKey(fromSchemeKey)
         val sourceCustom = library.customByKey(fromSchemeKey)

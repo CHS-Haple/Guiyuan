@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun GyApp(
     appearance: Appearance,
     dark: Boolean,
+    onPreviewThemeChange: (Boolean?) -> Unit,
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: (() -> Unit) -> Boolean,
@@ -185,6 +187,10 @@ internal fun GyApp(
             entry<AppRoute.PreviewSandbox>(swipeDismiss = swipeBackDirection) {
                 var sandboxDark by remember { mutableStateOf<Boolean?>(null) }
                 val previewDark = sandboxDark ?: dark
+                DisposableEffect(previewDark) {
+                    onPreviewThemeChange(previewDark)
+                    onDispose { onPreviewThemeChange(null) }
+                }
                 GyTheme(
                     themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
                     dynamicColorEnabled = appearance.dynamicColor,

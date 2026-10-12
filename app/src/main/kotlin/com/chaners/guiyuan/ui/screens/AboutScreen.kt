@@ -1,42 +1,57 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
+import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
+import com.chaners.guiyuan.system.XposedStatus
+import io.github.libxposed.service.HookedTarget
+import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -59,7 +74,76 @@ internal fun AboutScreen(
     onOpenThirdParty: () -> Unit,
 ) {
     val context = LocalContext.current
+    val app = remember(context.applicationContext) {
+        context.applicationContext as GyApplication
+    }
+    val xposedStatus by app.xposedStatus.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val backdrop = rememberLayerBackdrop()
+    val blur = remember { isRuntimeShaderSupported() }
+    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
+    val logoBlend = remember(isDark) {
+        if (isDark) {
+            listOf(
+                BlendColorEntry(Color(0xe6a1a1a1), BlurBlendMode.ColorDodge),
+                BlendColorEntry(Color(0x4de6e6e6), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af500), BlurBlendMode.Lab),
+            )
+        } else {
+            listOf(
+                BlendColorEntry(Color(0xcc4a4a4a), BlurBlendMode.ColorBurn),
+                BlendColorEntry(Color(0xff4f4f4f), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af200), BlurBlendMode.Lab),
+            )
+        }
+    }
+    var heroHeight by remember { mutableStateOf(200.dp) }
+    var spacerBottom by remember { mutableFloatStateOf(0f) }
+    var iconBottom by remember { mutableFloatStateOf(0f) }
+    var nameBottom by remember { mutableFloatStateOf(0f) }
+    var versionBottom by remember { mutableFloatStateOf(0f) }
+    val spacerHeight = heroHeight + 218.dp
+    // The content may exceed one screen; use a minimum, not a fixed parent height.
+    val contentMinHeight by remember(density, listState) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val available = (
+                info.viewportSize.height - info.beforeContentPadding - info.afterContentPadding
+            ).coerceAtLeast(0)
+            with(density) { available.toDp() }
+        }
+    }
+    val scrollProgress by remember(density) {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex > 0) 1f
+            else (listState.firstVisibleItemScrollOffset /
+                with(density) { (heroHeight + 218.dp).toPx() }).coerceIn(0f, 1f)
+        }
+    }
+    val visible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    val collapse by remember {
+        derivedStateOf {
+            val offset = listState.firstVisibleItemScrollOffset.toFloat()
+            if (listState.firstVisibleItemIndex > 0) {
+                Triple(1f, 1f, 1f)
+            } else if (spacerBottom <= versionBottom ||
+                versionBottom <= nameBottom || nameBottom <= iconBottom
+            ) {
+                Triple(0f, 0f, 0f)
+            } else {
+                val first = spacerBottom - versionBottom
+                val second = versionBottom - nameBottom
+                val third = nameBottom - iconBottom
+                Triple(
+                    ((offset - first * 0.5f) / (first * 0.5f)).coerceIn(0f, 1f),
+                    ((offset - first) / second).coerceIn(0f, 1f),
+                    ((offset - first - second) / third).coerceIn(0f, 1f),
+                )
+            }
+        }
+    }
     var showRepoUnavailable by rememberSaveable { mutableStateOf(false) }
     val env by
         produceState(
@@ -72,6 +156,44 @@ internal fun AboutScreen(
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
+        listState = listState,
+        titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
+        background = {
+            BgEffectBackground(
+                dynamicBackground = visible,
+                modifier = Modifier.fillMaxSize(),
+                bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
+                isFullSize = true,
+                alpha = { 1f - scrollProgress },
+            ) {}
+        },
+        foreground = { padding ->
+            AboutHero(
+                topPadding = padding.calculateTopPadding(),
+                active = visible,
+                backdrop = if (blur) backdrop else null,
+                logoBlend = logoBlend,
+                versionProgress = collapse.first,
+                nameProgress = collapse.second,
+                iconProgress = collapse.third,
+                onHeight = { if (heroHeight != it) heroHeight = it },
+                onIconBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                    ) iconBottom = it
+                },
+                onNameBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                    ) nameBottom = it
+                },
+                onVersionBottom = {
+                    if (listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                    ) versionBottom = it
+                },
+            )
+        },
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.about_repo_unavailable_title),
@@ -88,187 +210,246 @@ internal fun AboutScreen(
             }
         },
     ) {
-        Section(R.string.section_app) {
-            BasicComponent(
-                title = stringResource(R.string.product_name),
-                summary = stringResource(R.string.app_description),
-                startAction = {
-                    GuiyuanAnimatedIdentityMark()
-                },
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_version_label),
-                summary = BuildConfig.VERSION_NAME,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_tag,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_build_label),
-                summary = BuildConfig.BUILD_ID,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_deployed_code,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.diagnostics_package_label),
-                summary = BuildConfig.APPLICATION_ID,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_package_2,
-                    )
-                },
+        item(key = "logoSpacer") {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(spacerHeight)
+                    .onGloballyPositioned { coords ->
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0
+                        ) {
+                            val bottom = coords.positionInWindow().y + coords.size.height
+                            if (spacerBottom != bottom) spacerBottom = bottom
+                        }
+                    },
             )
         }
-
-        Section(R.string.section_about_project) {
-            ArrowPreference(
-                title = stringResource(R.string.about_project_home_title),
-                summary = stringResource(R.string.about_project_home_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_folder_code,
-                    )
-                },
-                onClick = {
-                    if (BuildConfig.REPO_LINK_ENABLED) {
-                        uriHandler.openUri(ABOUT_PROJECT_URL)
-                    } else {
-                        showRepoUnavailable = true
-                    }
-                },
-            )
-            ArrowPreference(
-                title = stringResource(R.string.about_open_source_license_title),
-                summary = stringResource(R.string.about_open_source_license_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_license,
-                    )
-                },
-                onClick = {
-                    uriHandler.openUri(
-                        if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
-                    )
-                },
-            )
-            ArrowPreference(
-                title = stringResource(R.string.about_third_party_title),
-                summary = stringResource(R.string.about_third_party_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_account_tree,
-                    )
-                },
-                onClick = onOpenThirdParty,
-            )
-        }
-
-        Section(R.string.section_device_system) {
-            val unavailable = stringResource(R.string.about_value_unavailable)
-            val deviceSummary =
-                listOf(
-                    env.device.trim(),
-                    env.model
-                        .trim()
-                        .takeIf { model ->
-                            model.isNotBlank() &&
-                                !model.equals(env.device.trim(), ignoreCase = true)
+        item(key = "aboutContent") {
+            Column(Modifier.fillMaxWidth().heightIn(min = contentMinHeight)) {
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 12.dp),
+                ) {
+                    ArrowPreference(
+                        title = stringResource(R.string.about_project_home_title),
+                        summary = stringResource(R.string.about_project_home_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_folder_code,
+                            )
                         },
-                )
-                    .filterNotNull()
-                    .filter(String::isNotBlank)
-                    .ifEmpty { listOf(unavailable) }
-                    .joinToString(separator = ABOUT_VALUE_SEPARATOR)
-            val androidSummary =
-                if (env.androidVersion.isNotBlank()) {
-                    buildString {
-                        append("Android ")
-                        append(env.androidVersion)
-                        append(ABOUT_VALUE_SEPARATOR)
-                        append("API ")
-                        append(env.sdk)
-                    }
-                } else {
-                    unavailable
+                        onClick = {
+                            if (BuildConfig.REPO_LINK_ENABLED) {
+                                uriHandler.openUri(ABOUT_PROJECT_URL)
+                            } else {
+                                showRepoUnavailable = true
+                            }
+                        },
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.about_open_source_license_title),
+                        summary = stringResource(R.string.about_open_source_license_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_license,
+                            )
+                        },
+                        onClick = {
+                            uriHandler.openUri(
+                                if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
+                            )
+                        },
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.about_third_party_title),
+                        summary = stringResource(R.string.about_third_party_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_account_tree,
+                            )
+                        },
+                        onClick = onOpenThirdParty,
+                    )
                 }
+                SmallTitle(stringResource(R.string.section_device_system))
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 12.dp),
+                ) {
+                    val unavailable = stringResource(R.string.about_value_unavailable)
+                    val deviceSummary =
+                        listOf(
+                            env.device.trim(),
+                            env.model
+                                .trim()
+                                .takeIf { model ->
+                                    model.isNotBlank() &&
+                                        !model.equals(env.device.trim(), ignoreCase = true)
+                                },
+                        )
+                            .filterNotNull()
+                            .filter(String::isNotBlank)
+                            .ifEmpty { listOf(unavailable) }
+                            .joinToString(separator = ABOUT_VALUE_SEPARATOR)
+                    val androidSummary =
+                        if (env.androidVersion.isNotBlank()) {
+                            buildString {
+                                append("Android ")
+                                append(env.androidVersion)
+                                append(ABOUT_VALUE_SEPARATOR)
+                                append("API ")
+                                append(env.sdk)
+                            }
+                        } else {
+                            unavailable
+                        }
 
-            BasicComponent(
-                title = stringResource(R.string.device_name_label),
-                summary = deviceSummary,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_smartphone,
+                    BasicComponent(
+                        title = stringResource(R.string.device_name_label),
+                        summary = deviceSummary,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_smartphone,
+                            )
+                        },
                     )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.android_version_label),
-                summary = androidSummary,
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_android,
+                    BasicComponent(
+                        title = stringResource(R.string.android_version_label),
+                        summary = androidSummary,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_android,
+                            )
+                        },
                     )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.os_version_label),
-                summary = env.osVersion.ifBlank { unavailable },
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_layers,
+                    BasicComponent(
+                        title = stringResource(R.string.os_version_label),
+                        summary = env.osVersion.ifBlank { unavailable },
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_layers,
+                            )
+                        },
                     )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.systemui_version_label),
-                summary = env.sysUiVersion.ifBlank { unavailable },
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_dashboard,
+                    val serviceSummary = when (val status = xposedStatus) {
+                        is XposedStatus.Connected ->
+                            stringResource(R.string.runtime_service_connected, status.apiVersion)
+                        XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
+                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
+                        XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
+                    }
+                    val connectedScopes = xposedStatus as? XposedStatus.Connected
+                    val connectedState = stringResource(R.string.runtime_scope_connected)
+                    val disabledState = stringResource(R.string.runtime_scope_disabled)
+                    val missingState = stringResource(R.string.runtime_scope_not_installed)
+                    val errorState = stringResource(R.string.runtime_scope_error)
+                    fun state(pkg: String, installed: Boolean?): Pair<String, Boolean> {
+                        if (installed == false) return missingState to false
+                        if (connectedScopes == null) return "—" to false
+                        if (pkg !in connectedScopes.scopes) return disabledState to false
+                        val failed = connectedScopes.runningTargets.any { (name, target) ->
+                            (name == pkg || name.startsWith("$pkg:")) &&
+                                target == HookedTarget.State.FAILED
+                        }
+                        return if (failed) errorState to true else connectedState to false
+                    }
+                    val scopeRows = listOf(
+                        Triple(
+                            "SystemUI",
+                            env.sysUiVersion.ifBlank { unavailable },
+                            state("com.android.systemui", env.sysUiInstalled),
+                        ),
+                        Triple(
+                            stringResource(R.string.runtime_scope_settings),
+                            env.settingsVersion.ifBlank { unavailable },
+                            state("com.android.settings", env.settingsInstalled),
+                        ),
                     )
-                },
-            )
-        }
-
-        Section(R.string.section_module_runtime) {
-            BasicComponent(
-                title = stringResource(R.string.runtime_framework_title),
-                summary = stringResource(R.string.runtime_framework_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_extension,
+                    BasicComponent(
+                        title = stringResource(R.string.runtime_service_title),
+                        summary = serviceSummary,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_extension,
+                            )
+                        },
                     )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.runtime_scope_title),
-                summary = stringResource(R.string.runtime_scope_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_target,
-                    )
-                },
-            )
-            BasicComponent(
-                title = stringResource(R.string.runtime_target_title),
-                summary = stringResource(R.string.runtime_target_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_fact_check,
-                    )
-                },
-            )
+                    BasicComponent(
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_target,
+                            )
+                        },
+                    ) {
+                        Text(
+                            text = stringResource(R.string.runtime_scope_title),
+                            fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onBackground,
+                        )
+                        val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        val summarySize = MiuixTheme.textStyles.body2.fontSize
+                        // Shared columns use the widest row text, not fixed empty slots.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(Modifier.widthIn(max = 104.dp)) {
+                                scopeRows.forEach { (name, _, _) ->
+                                    Text(
+                                        text = name,
+                                        color = summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Column {
+                                scopeRows.forEach {
+                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.widthIn(max = 104.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                scopeRows.forEach { (_, _, status) ->
+                                    Text(
+                                        text = status.first,
+                                        color = if (status.second) MiuixTheme.colorScheme.error else summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Column {
+                                scopeRows.forEach {
+                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                scopeRows.forEach { (_, version, _) ->
+                                    Text(
+                                        text = version,
+                                        color = summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-
 }
 
 @Composable
@@ -404,53 +585,3 @@ private fun AboutDependencyPreference(
     )
 }
 
-@Composable
-private fun GuiyuanAnimatedIdentityMark() {
-    val orbitRotation by
-        rememberInfiniteTransition(label = "guiyuanIdentityOrbit").animateFloat(
-            initialValue = 0f,
-            targetValue = -360f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        tween(
-                            durationMillis = 20_000,
-                            easing = LinearEasing,
-                        ),
-                ),
-            label = "guiyuanIdentityOrbitRotation",
-        )
-    val painter = painterResource(R.drawable.ic_launcher_foreground)
-    val tint = MiuixTheme.colorScheme.onSurfaceContainer
-
-    Box(
-        modifier = Modifier.size(64.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(
-            modifier = Modifier.size(64.dp),
-        ) {
-            val targetSize =
-                Size(
-                    width = size.width * 1.8f,
-                    height = size.height * 1.8f,
-                )
-            val left = (size.width - targetSize.width) / 2f
-            val top = (size.height - targetSize.height) / 2f
-
-            rotate(
-                degrees = orbitRotation,
-                pivot = center,
-            ) {
-                translate(left = left, top = top) {
-                    with(painter) {
-                        draw(
-                            size = targetSize,
-                            colorFilter = ColorFilter.tint(tint),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
