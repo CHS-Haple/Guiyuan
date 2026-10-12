@@ -35,7 +35,7 @@
     <string name="language_english">English</string>
     <string name="language_simplified_chinese">简体中文</string>
     <string name="hide_launcher_icon">隐藏桌面图标</string>
-    <string name="hide_launcher_icon_summary">隐藏桌面图标后，仍可从系统应用详情等入口打开</string>
+    <string name="hide_launcher_icon_summary">隐藏后，通常可从框架服务的模块列表打开归元</string>
     <string name="battery_fill_follow_retract">电量段跟随回收</string>
     <string name="battery_fill_follow_retract_summary">收口时，实心电量段随端点移动，剩余环长不足后再缩短</string>
     <string name="battery_top_readout">显示电量数字</string>
@@ -383,12 +383,12 @@
     <string name="settings_entry_middle">中部</string>
     <string name="settings_entry_bottom">底部</string>
     <string name="settings_entry_scope_title">启用系统设置入口</string>
-    <string name="settings_entry_scope_summary">此可选功能只需要系统设置作用域，不影响现有状态栏功能。是否向 Xposed 框架申请授权？</string>
-    <string name="settings_entry_failed_title">系统设置作用域不可用</string>
-    <string name="settings_entry_failed_summary">尚未确认授权。请在模块管理器中手动开启“系统设置”作用域，然后重新选择入口位置。状态栏功能不受影响。</string>
+    <string name="settings_entry_scope_summary">此功能需要启用「系统设置」作用域，不影响状态栏功能。是否向框架服务申请授权？</string>
+    <string name="settings_entry_failed_title">操作未完成</string>
+    <string name="settings_entry_failed_summary">请检查框架服务连接状态及「系统设置」作用域设置后重试。</string>
 
     <string name="restart_scope_dialog_title">快速重启作用域</string>
-    <string name="restart_scope_no_targets">无法确认已启用的重启作用域。请连接框架服务，并在模块管理器中勾选对应作用域。</string>
+    <string name="restart_scope_no_targets">无法确认已启用的作用域。请检查框架服务连接状态，并在模块管理器中启用对应作用域。</string>
     <string name="restart_scope_dialog_sysui_summary">需要 Root 权限，将重新启动系统界面进程，不会重启设备。</string>
     <string name="restart_scope_sysui">系统界面</string>
     <string name="restart_scope_settings">设置</string>

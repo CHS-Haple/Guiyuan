@@ -36,7 +36,7 @@
     <string name="language_english">English</string>
     <string name="language_simplified_chinese">Simplified Chinese</string>
     <string name="hide_launcher_icon">Hide launcher icon</string>
-    <string name="hide_launcher_icon_summary">Hide the launcher icon while keeping the app available from system app details and other entry points</string>
+    <string name="hide_launcher_icon_summary">After hiding, you can usually open Guiyuan from the framework service's module list.</string>
     <string name="battery_fill_follow_retract">Battery fill follows retraction</string>
     <string name="battery_fill_follow_retract_summary">Move the solid battery segment with the retract endpoint, then shorten it when the remaining ring is too short</string>
     <string name="battery_top_readout">Show battery level</string>
@@ -384,12 +384,12 @@
     <string name="settings_entry_middle">Middle</string>
     <string name="settings_entry_bottom">Bottom</string>
     <string name="settings_entry_scope_title">Enable System Settings entry</string>
-    <string name="settings_entry_scope_summary">This optional shortcut needs the Settings scope only; existing status bar functions are unaffected. Request Xposed access now?</string>
-    <string name="settings_entry_failed_title">Settings access unavailable</string>
-    <string name="settings_entry_failed_summary">Access was not confirmed. Enable Settings in the module manager and choose the entry position again. Status bar functions are unaffected.</string>
+    <string name="settings_entry_scope_summary">This feature needs the Settings scope and does not affect status bar functions. Request access through the framework service?</string>
+    <string name="settings_entry_failed_title">Action not completed</string>
+    <string name="settings_entry_failed_summary">Check the framework service connection and the Settings scope, then try again.</string>
 
     <string name="restart_scope_dialog_title">Quick restart scopes</string>
-    <string name="restart_scope_no_targets">No enabled restart targets could be confirmed. Connect the Xposed service and enable the desired scope in the module manager.</string>
+    <string name="restart_scope_no_targets">No enabled scopes could be confirmed. Check the framework service connection and enable the relevant scopes in the module manager.</string>
     <string name="restart_scope_dialog_sysui_summary">Root access is required to restart System UI. Your device will not reboot.</string>
     <string name="restart_scope_sysui">System UI</string>
     <string name="restart_scope_settings">Settings</string>
