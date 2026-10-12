@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -21,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
@@ -397,39 +397,57 @@ internal fun AboutScreen(
                         )
                         val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         val summarySize = MiuixTheme.textStyles.body2.fontSize
-                        scopeRows.forEach { (name, version, status) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
+                        // Shared columns use the widest row text, not fixed empty slots.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(Modifier.widthIn(max = 104.dp)) {
+                                scopeRows.forEach { (name, _, _) ->
+                                    Text(
+                                        text = name,
+                                        color = summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Column {
+                                scopeRows.forEach {
+                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.widthIn(max = 104.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Text(
-                                    text = name,
-                                    modifier = Modifier.width(72.dp),
-                                    color = summaryColor,
-                                    fontSize = summarySize,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                Text(
-                                    text = status,
-                                    modifier = Modifier.width(88.dp),
-                                    color = summaryColor,
-                                    fontSize = summarySize,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                Text(
-                                    text = version,
-                                    modifier = Modifier.weight(1f),
-                                    color = summaryColor,
-                                    fontSize = summarySize,
-                                    textAlign = TextAlign.Start,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                scopeRows.forEach { (_, _, status) ->
+                                    Text(
+                                        text = status,
+                                        color = summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Column {
+                                scopeRows.forEach {
+                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                scopeRows.forEach { (_, version, _) ->
+                                    Text(
+                                        text = version,
+                                        color = summaryColor,
+                                        fontSize = summarySize,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
