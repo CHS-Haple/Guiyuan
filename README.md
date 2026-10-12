@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.6.0**, improving native status transitions, Hot Reload, diagnostic exports and runtime status guidance. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.6.1**, adding an optional Settings shortcut, scoped restarts and About visuals alongside native transition and Hot Reload improvements. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -41,11 +41,12 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 - Light/dark appearance, dynamic color, and standard, floating, or Liquid Glass navigation options.
 - English and Simplified Chinese with Android 13+ per-app language selection.
 - Optional launcher-icon hiding while retaining a non-launcher app entry point.
+- Optional shortcut in Settings, with a separate Xposed scope requested only when enabled.
 
 **Diagnostics**
 - General and Detailed diagnostic levels.
 - Local diagnostic-report export and Android sharing.
-- Explicit, user-confirmed SystemUI restart when Root access is available.
+- User-confirmed restart of eligible SystemUI or Settings scopes when Root access is available.
 - No project-operated telemetry or persistent Root service. See [PRIVACY.md](PRIVACY.md).
 
 ### Current scope
@@ -88,7 +89,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.6.0**，改进原生状态过渡、热重载、诊断导出和运行状态引导。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.6.1**，新增可选设置入口与作用域重启，优化关于页动效、原生状态过渡和热重载。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -113,11 +114,12 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 - 支持亮色/深色、动态取色，以及标准、悬浮或液态玻璃导航。
 - 支持英文、简体中文和 Android 13+ 应用级语言选择。
 - 可隐藏桌面图标，同时保留非桌面入口。
+- 可选在「设置」中显示归元快捷入口，启用时才按需申请对应 Xposed 作用域。
 
 **诊断**
 - 提供一般与详细两档诊断模式。
 - 本地生成诊断报告，并通过 Android 系统导出或分享。
-- 具备 Root 权限时，可由用户明确确认后重启 SystemUI。
+- 具备 Root 权限时，可由用户明确确认后重启已授权的 SystemUI 或设置作用域。
 - 不包含项目运营的遥测，也不使用常驻 Root 服务。详见 [PRIVACY.md](PRIVACY.md)。
 
 ### 当前范围

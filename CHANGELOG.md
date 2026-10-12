@@ -8,6 +8,23 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-12
+
+### Added
+- Added an optional Guiyuan shortcut inside Settings with configurable position and icon style; it is off by default and requests only its own Xposed scope when needed.
+- Added selected-scope restart for SystemUI and Settings, with framework-verified eligibility and per-target failure reporting.
+- Reworked the About header with its animated Guiyuan mark, expanding wave, text-linked response and background presentation.
+
+### Changed
+- Refined About scope reporting to distinguish connected, not enabled, confirmed missing package and explicit runtime failure, keeping unknown conditions neutral.
+- Improved MIUIX companion-app scrolling, control alignment and contextual slider feedback, along with version and status presentation.
+- Updated user-facing guidance for Home runtime status, optional scope authorization and restart controls.
+
+### Fixed
+- Improved observed Keyguard/AOD/native-icon handoff ordering and battery/peer restoration at verified transition boundaries; ambiguous paths still fail native.
+- Improved verified 5GA native-text matching and SIM-bound mobile source updates, retaining native fallback when targets differ.
+- Hardened Hot Reload/session diagnostics, service rebind callbacks and preference mirroring so prior generations cannot overwrite newer state.
+
 ## [0.6.0] - 2026-10-11
 
 ### Changed
