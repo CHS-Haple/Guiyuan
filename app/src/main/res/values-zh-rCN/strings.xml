@@ -151,14 +151,11 @@
     <string name="runtime_service_disconnected">未连接</string>
     <string name="runtime_service_query_unavailable">已连接｜状态不可查询</string>
     <string name="runtime_scope_title">作用域</string>
-    <string name="runtime_scope_settings">系统设置</string>
-    <string name="runtime_scope_unavailable">无法查询</string>
-    <string name="runtime_scope_missing">未检测到</string>
+    <string name="runtime_scope_settings">设置</string>
     <string name="runtime_scope_connected">已连接</string>
     <string name="runtime_scope_disabled">未启用</string>
-    <string name="runtime_scope_stale">待重载</string>
-    <string name="runtime_scope_reloading">重载中</string>
-    <string name="runtime_scope_failed">重载失败</string>
+    <string name="runtime_scope_not_installed">未安装</string>
+    <string name="runtime_scope_error">异常</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>
@@ -372,20 +369,20 @@
     <string name="battery_custom_scheme_delete_summary">删除“%1$s”？若当前正在使用，将切换回创建该样式时所基于的内置方案。</string>
 
     <string name="settings_entry_icon_title">设置入口图标</string>
-    <string name="settings_entry_icon_summary">选择系统设置中的归元图标样式，重启系统设置后生效</string>
+    <string name="settings_entry_icon_summary">选择「设置」中的归元图标样式，重启「设置」后生效</string>
     <string name="settings_entry_icon_rounded">圆角矩形样式</string>
     <string name="settings_entry_icon_hollow">背景镂空样式</string>
-    <string name="settings_entry_title">系统设置入口</string>
-    <string name="settings_entry_summary">在系统设置中显示归元快捷入口</string>
-    <string name="settings_entry_restart_hint">重新启动系统设置应用后更新入口位置</string>
+    <string name="settings_entry_title">设置入口</string>
+    <string name="settings_entry_summary">在「设置」中显示归元快捷入口</string>
+    <string name="settings_entry_restart_hint">重启「设置」后更新入口位置</string>
     <string name="settings_entry_disabled">禁用</string>
     <string name="settings_entry_top">顶部</string>
     <string name="settings_entry_middle">中部</string>
     <string name="settings_entry_bottom">底部</string>
-    <string name="settings_entry_scope_title">启用系统设置入口</string>
-    <string name="settings_entry_scope_summary">此功能需要启用「系统设置」作用域，不影响状态栏功能。是否向框架服务申请授权？</string>
+    <string name="settings_entry_scope_title">启用设置入口</string>
+    <string name="settings_entry_scope_summary">此功能需要启用「设置」作用域，不影响状态栏功能。是否向框架服务申请授权？</string>
     <string name="settings_entry_failed_title">操作未完成</string>
-    <string name="settings_entry_failed_summary">请检查框架服务连接状态及「系统设置」作用域设置后重试。</string>
+    <string name="settings_entry_failed_summary">请检查框架服务连接状态及「设置」作用域后重试。</string>
 
     <string name="restart_scope_no_targets">无法确认已启用的作用域。请检查框架服务连接状态，并在模块管理器中启用对应作用域。</string>
     <string name="restart_scope_sysui">系统界面</string>

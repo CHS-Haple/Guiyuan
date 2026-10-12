@@ -342,35 +342,30 @@ internal fun AboutScreen(
                         XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
                     }
                     val connectedScopes = xposedStatus as? XposedStatus.Connected
-                    val unavailableState = stringResource(R.string.runtime_scope_unavailable)
-                    val missingState = stringResource(R.string.runtime_scope_missing)
                     val connectedState = stringResource(R.string.runtime_scope_connected)
                     val disabledState = stringResource(R.string.runtime_scope_disabled)
-                    val checkingState = stringResource(R.string.runtime_service_checking)
-                    val staleState = stringResource(R.string.runtime_scope_stale)
-                    val reloadingState = stringResource(R.string.runtime_scope_reloading)
-                    val failedState = stringResource(R.string.runtime_scope_failed)
-                    fun state(pkg: String): String {
-                        if (xposedStatus == XposedStatus.Checking) return checkingState
-                        if (connectedScopes == null) return unavailableState
-                        if (pkg !in connectedScopes.scopes) return disabledState
-                        val target = connectedScopes.runningTargets[pkg]
-                            ?: connectedScopes.runningTargets.entries
-                                .firstOrNull { it.key.startsWith("$pkg:") }?.value
-                        return when (target) {
-                            HookedTarget.State.UP_TO_DATE -> connectedState
-                            HookedTarget.State.STALE -> staleState
-                            HookedTarget.State.RELOADING -> reloadingState
-                            HookedTarget.State.FAILED -> failedState
-                            null -> missingState
+                    val missingState = stringResource(R.string.runtime_scope_not_installed)
+                    val errorState = stringResource(R.string.runtime_scope_error)
+                    fun state(pkg: String, installed: Boolean?): Pair<String, Boolean> {
+                        if (installed == false) return missingState to false
+                        if (connectedScopes == null) return "—" to false
+                        if (pkg !in connectedScopes.scopes) return disabledState to false
+                        val failed = connectedScopes.runningTargets.any { (name, target) ->
+                            (name == pkg || name.startsWith("$pkg:")) &&
+                                target == HookedTarget.State.FAILED
                         }
+                        return if (failed) errorState to true else connectedState to false
                     }
                     val scopeRows = listOf(
-                        Triple("SystemUI", env.sysUiVersion.ifBlank { unavailable }, state("com.android.systemui")),
+                        Triple(
+                            "SystemUI",
+                            env.sysUiVersion.ifBlank { unavailable },
+                            state("com.android.systemui", env.sysUiInstalled),
+                        ),
                         Triple(
                             stringResource(R.string.runtime_scope_settings),
                             env.settingsVersion.ifBlank { unavailable },
-                            state("com.android.settings"),
+                            state("com.android.settings", env.settingsInstalled),
                         ),
                     )
                     BasicComponent(
@@ -425,8 +420,8 @@ internal fun AboutScreen(
                             ) {
                                 scopeRows.forEach { (_, _, status) ->
                                     Text(
-                                        text = status,
-                                        color = summaryColor,
+                                        text = status.first,
+                                        color = if (status.second) MiuixTheme.colorScheme.error else summaryColor,
                                         fontSize = summarySize,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,

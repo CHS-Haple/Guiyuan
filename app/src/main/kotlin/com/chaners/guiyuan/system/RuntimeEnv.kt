@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
@@ -17,10 +18,19 @@ internal data class RuntimeEnv(
     val sysUiVersion: String,
     val sysUiVersionCode: Long?,
     val settingsVersion: String = "—",
+    val sysUiInstalled: Boolean? = null,
+    val settingsInstalled: Boolean? = null,
 ) {
 
     companion object {
         private const val SYS_UI_PACKAGE = "com.android.systemui"
+        // Null means the package query failed for reasons other than absence.
+        private fun installed(result: Result<PackageInfo>): Boolean? =
+            result.fold(
+                onSuccess = { true },
+                onFailure = { if (it is PackageManager.NameNotFoundException) false else null },
+            )
+
         private val revisionRe = Regex("^[A-Za-z][0-9]{1,3}$")
 
         fun basic(): RuntimeEnv =
@@ -59,14 +69,14 @@ internal data class RuntimeEnv(
                             SYS_UI_PACKAGE,
                             PackageManager.PackageInfoFlags.of(0),
                         )
-                    }.getOrNull()
+                    }
 
                 val settingsPkg = runCatching {
                     context.packageManager.getPackageInfo(
                         "com.android.settings",
                         PackageManager.PackageInfoFlags.of(0),
                     )
-                }.getOrNull()
+                }
 
                 RuntimeEnv(
                     manufacturer = Build.MANUFACTURER.orEmpty(),
@@ -76,9 +86,11 @@ internal data class RuntimeEnv(
                     androidVersion = Build.VERSION.RELEASE.orEmpty(),
                     sdk = Build.VERSION.SDK_INT,
                     osVersion = osVersion.ifBlank { Build.VERSION.INCREMENTAL.orEmpty() },
-                    sysUiVersion = sysUiPkg?.versionName.orEmpty().ifBlank { "—" },
-                    sysUiVersionCode = sysUiPkg?.longVersionCode,
-                    settingsVersion = settingsPkg?.versionName.orEmpty().ifBlank { "—" },
+                    sysUiVersion = sysUiPkg.getOrNull()?.versionName.orEmpty().ifBlank { "—" },
+                    sysUiVersionCode = sysUiPkg.getOrNull()?.longVersionCode,
+                    settingsVersion = settingsPkg.getOrNull()?.versionName.orEmpty().ifBlank { "—" },
+                    sysUiInstalled = installed(sysUiPkg),
+                    settingsInstalled = installed(settingsPkg),
                 )
             }
 
