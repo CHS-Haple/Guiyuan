@@ -307,12 +307,14 @@ internal fun BatteryColorBottomSheet(
             TextButton(
                 text = stringResource(R.string.cancel),
                 modifier = Modifier.weight(1f),
+                minHeight = 50.dp,
                 onClick = { deleteCustomId = null },
             )
             Spacer(Modifier.width(20.dp))
             TextButton(
                 text = stringResource(R.string.battery_custom_scheme_delete),
                 modifier = Modifier.weight(1f),
+                minHeight = 50.dp,
                 colors =
                     ButtonDefaults.textButtonColors(
                         textColor = MiuixTheme.colorScheme.error,
