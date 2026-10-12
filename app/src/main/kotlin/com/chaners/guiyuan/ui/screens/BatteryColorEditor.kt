@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -224,6 +225,7 @@ internal fun BatteryCustomModeEditor(
             }
         }
 
+        Spacer(Modifier.height(12.dp))
         Card(modifier = Modifier.fillMaxWidth()) {
             BasicComponent(
                 title = stringResource(R.string.battery_color_precision_title),
