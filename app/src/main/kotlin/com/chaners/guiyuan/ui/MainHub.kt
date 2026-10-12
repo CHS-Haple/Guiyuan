@@ -153,7 +153,9 @@ internal fun MainHub(
     var failedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     val app = context.applicationContext as GyApplication
     val onRestart = {
-        if (!restartInProgress) {
+        if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
+            !app.scopeRequestInFlight
+        ) {
             val scopes = app.enabledScopes()
             availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
                 scopes != null && it.pkg in scopes
@@ -348,7 +350,7 @@ internal fun MainHub(
                     }
                 },
                 onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress) {
+                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress) {
                         hotReloadInProgress = true
                         val accepted = onHotReload {
                             hotReloadInProgress = false
@@ -609,7 +611,7 @@ private fun TopLevelPager(
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                restartInProgress = restartInProgress,
+                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
                 onRestart = onRestart,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,

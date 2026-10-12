@@ -547,7 +547,7 @@ internal fun SettingsHubScreen(
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
-    restartInProgress: Boolean,
+    runtimeBusy: Boolean,
     onRestart: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
@@ -611,6 +611,7 @@ internal fun SettingsHubScreen(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
+                        enabled = !runtimeBusy && scopeApplying == null,
                         onClick = {
                             val target = pending
                             pending = null
@@ -708,10 +709,10 @@ internal fun SettingsHubScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         R.drawable.ic_material_symbol_settings_applications,
-                        enabled = scopeApplying == null,
+                        enabled = scopeApplying == null && !runtimeBusy,
                     )
                 },
-                enabled = scopeApplying == null,
+                enabled = scopeApplying == null && !runtimeBusy,
                 summary = stringResource(
                     if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
                     else R.string.settings_entry_restart_hint,
@@ -771,11 +772,11 @@ internal fun SettingsHubScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_restart_alt,
-                        enabled = !restartInProgress,
+                        enabled = !runtimeBusy && scopeApplying == null,
                     )
                 },
                 summary = stringResource(R.string.restart_scope_summary),
-                enabled = !restartInProgress,
+                enabled = !runtimeBusy && scopeApplying == null,
                 onClick = onRestart,
             )
 

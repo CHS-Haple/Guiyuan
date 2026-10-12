@@ -64,6 +64,9 @@ class GyApplication :
 
     private val handler = Handler(Looper.getMainLooper())
     private var pendingScope: ScopeRequest? = null
+    internal val scopeRequestInFlight: Boolean
+        get() = pendingScope != null
+
     private var hotReloadPending: HotReloadPending? = null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
@@ -185,7 +188,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope != null) return false
+        if (service.apiVersion < 102 || pendingScope != null || hotReloadPending != null) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -238,7 +241,7 @@ class GyApplication :
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || hotReloadPending != null) return false
+        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope != null) return false
 
         val target =
             runCatching {

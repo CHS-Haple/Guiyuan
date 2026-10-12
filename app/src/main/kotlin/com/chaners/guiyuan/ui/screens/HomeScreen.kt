@@ -149,7 +149,8 @@ internal fun HomeScreen(
                     actions = {
                         HotReloadAction(
                             inProgress = hotReloadInProgress,
-                            enabled = !restartInProgress,
+                            enabled = !restartInProgress && !scopeRequestInProgress &&
+                                !application.scopeRequestInFlight,
                             onClick = onHotReload,
                         )
                     },
