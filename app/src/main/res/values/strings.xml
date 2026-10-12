@@ -344,6 +344,7 @@
     <string name="battery_color_restore_mode_summary">Use the selected scheme color and clear this custom color</string>
     <string name="battery_color_current">Current color</string>
     <string name="battery_color_opaque_summary">Status colors are always applied as opaque</string>
+    <string name="battery_color_visual_picker">Visual color picker</string>
     <string name="battery_color_common">Common colors</string>
     <string name="battery_common_color_red">Red</string>
     <string name="battery_common_color_orange">Orange</string>
@@ -369,6 +370,11 @@
     <string name="battery_color_restore_from_scheme">Restore this mode to the %1$s scheme color</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s color</string>
+    <string name="battery_scheme_new_summary">Create a battery color scheme of your own</string>
+    <string name="battery_scheme_full_summary">You can save up to %1$d custom schemes</string>
+    <string name="battery_scheme_capacity">Custom scheme capacity</string>
+    <string name="battery_scheme_remaining">You can create %1$d more custom schemes</string>
+    <string name="battery_scheme_full_hint">Delete an existing custom scheme to create another</string>
     <string name="battery_custom_scheme_new">New custom style</string>
     <string name="battery_custom_scheme_add_page_title">New style</string>
     <string name="battery_custom_scheme_limit">Custom style limit reached</string>

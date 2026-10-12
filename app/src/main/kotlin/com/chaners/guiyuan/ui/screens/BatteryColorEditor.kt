@@ -1,11 +1,13 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -14,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,10 +70,21 @@ internal fun BatteryCustomModeEditor(
         )
     val selectedSourceIndex = sourceOptions.indexOf(entry.source).coerceAtLeast(0)
     val seed = batteryColorEditorSeed(entry, slot)
-    val visuallyInactive = entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM
 
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
+    }
+    var selectedHue by remember(custom.id, slot) {
+        mutableFloatStateOf(
+            seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
+        )
+    }
+    var selectedSaturation by remember(custom.id, slot) {
+        mutableFloatStateOf(
+            seed?.let { Color(it).toHsv() }
+                ?.takeIf { it.v > 0.01f }
+                ?.s ?: 100f,
+        )
     }
     var hexText by remember(custom.id, slot, editingColor) {
         mutableStateOf(
@@ -91,17 +105,27 @@ internal fun BatteryCustomModeEditor(
         mutableStateOf(rgb?.third?.toString().orEmpty())
     }
 
-    fun applyColor(color: Int) {
+    fun showColor(color: Int, hue: Float? = null) {
         val opaque = color or 0xFF000000.toInt()
         editingColor = opaque
+        val chosenHsv = Color(opaque).toHsv()
+        if (chosenHsv.v > 0.01f) selectedSaturation = chosenHsv.s
+        if (hue != null) {
+            selectedHue = hue
+        } else if (chosenHsv.v > 0.01f && chosenHsv.s > 0.01f) {
+            selectedHue = chosenHsv.h
+        }
         hexText = batteryColorHex(opaque).removePrefix("#")
         val value = batteryColorRgb(opaque)
         redText = value.first.toString()
         greenText = value.second.toString()
         blueText = value.third.toString()
-        // setCustomColor is the single copy-on-write path: an actual edit promotes this slot
-        // to CUSTOM while simply browsing FOLLOW_SYSTEM keeps the runtime source untouched.
-        onColorChange(opaque)
+    }
+
+    fun applyColor(color: Int, hue: Float? = null) {
+        showColor(color, hue)
+        // The repository remains the single writer; choosing a color switches the slot to CUSTOM.
+        onColorChange(color or 0xFF000000.toInt())
     }
 
     val hsv = editingColor?.let { Color(it).toHsv() }
@@ -112,31 +136,6 @@ internal fun BatteryCustomModeEditor(
                 stringResource(R.string.battery_color_custom_unset)
             else -> stringResource(R.string.battery_color_follow_inversion)
         }
-    val inactiveTitleColor =
-        if (visuallyInactive) {
-            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-        } else {
-            MiuixTheme.colorScheme.onBackgroundVariant
-        }
-    val inactiveFieldColors =
-        if (visuallyInactive) {
-            TextFieldDefaults.textFieldColors(
-                backgroundColor = MiuixTheme.colorScheme.disabledSecondaryVariant,
-                labelColor = MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                borderColor = MiuixTheme.colorScheme.disabledPrimary,
-            )
-        } else {
-            TextFieldDefaults.textFieldColors()
-        }
-    val inactiveFieldTextStyle =
-        MiuixTheme.textStyles.main.copy(
-            color =
-                if (visuallyInactive) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onBackground
-                },
-        )
 
     Column(
         modifier =
@@ -145,33 +144,43 @@ internal fun BatteryCustomModeEditor(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 24.dp),
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
             OverlayDropdownPreference(
-            items = sourceLabels,
-            selectedIndex = selectedSourceIndex,
-            title = stringResource(R.string.battery_color_source),
-            summary = currentValueText,
-            startAction = {
-                if (resolved == null) {
-                    BatteryColorMosaic(size = 24.dp)
-                } else {
-                    BatteryColorDot(
-                        color = resolved,
-                        size = 24.dp,
-                    )
-                }
-            },
-            onSelectedIndexChange = { index ->
-                sourceOptions.getOrNull(index)?.let(onSourceChange)
-            },
-        )
+                items = sourceLabels,
+                selectedIndex = selectedSourceIndex,
+                title = stringResource(R.string.battery_color_source),
+                summary = currentValueText,
+                startAction = {
+                    // Remembered custom colors must not appear as active for other sources.
+                    val shown =
+                        if (entry.source == BatteryColorSchemeSource.CUSTOM || editingColor != seed) {
+                            editingColor ?: resolved
+                        } else {
+                            resolved
+                        }
+                    if (shown == null) {
+                        BatteryColorMosaic(size = 24.dp)
+                    } else {
+                        BatteryColorDot(color = shown, size = 24.dp)
+                    }
+                },
+                onSelectedIndexChange = { index ->
+                    sourceOptions.getOrNull(index)?.let { source ->
+                        val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
+                        if (nextColor == null) {
+                            editingColor = null
+                        } else {
+                            showColor(nextColor)
+                        }
+                        onSourceChange(source)
+                    }
+                },
+            )
         }
 
         BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_common),
-            textColor = inactiveTitleColor,
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -192,7 +201,7 @@ internal fun BatteryCustomModeEditor(
                             selected =
                                 entry.source == BatteryColorSchemeSource.CUSTOM &&
                                     editingColor == color,
-                            visuallyInactive = visuallyInactive,
+                            visuallyInactive = false,
                             onClick = { applyColor(color) },
                         )
                     }
@@ -202,37 +211,56 @@ internal fun BatteryCustomModeEditor(
 
         BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_full_adjustment),
-            textColor = inactiveTitleColor,
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
         ) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 4.dp,
+                ),
+            ) {
+                BatteryColorField(
+                    color = editingColor?.let(::Color),
+                    hue = selectedHue,
+                    saturation = selectedSaturation,
+                    onColorChanged = { color, hue ->
+                        applyColor(color.toArgb(), hue)
+                    },
+                )
+            }
             if (hsv != null) {
                 BatteryHsvAdjustmentRow(
                     title = stringResource(R.string.battery_color_hue),
-                    valueText = "${hsv.h.roundToInt()}°",
-                    visuallyInactive = visuallyInactive,
+                    valueText = "${selectedHue.roundToInt()}°",
                 ) {
                     HsvHueSlider(
-                        currentHue = hsv.h,
+                        currentHue = selectedHue,
                         onHueChanged = { fraction ->
+                            val hue = fraction * 360f
+                            val current = editingColor?.let { Color(it).toHsv() }
                             applyColor(
-                                Hsv(fraction * 360f, hsv.s, hsv.v).toColor().toArgb(),
+                                Hsv(hue, selectedSaturation, current?.v ?: 100f).toColor().toArgb(),
+                                hue,
                             )
                         },
                     )
                 }
                 BatteryHsvAdjustmentRow(
                     title = stringResource(R.string.battery_color_saturation),
-                    valueText = "${hsv.s.roundToInt()}%",
-                    visuallyInactive = visuallyInactive,
+                    valueText = "${selectedSaturation.roundToInt()}%",
                 ) {
                     HsvSaturationSlider(
-                        currentHue = hsv.h,
-                        currentSaturation = hsv.s / 100f,
+                        currentHue = selectedHue,
+                        currentSaturation = selectedSaturation / 100f,
                         onSaturationChanged = { saturation ->
+                            selectedSaturation = saturation * 100f
                             applyColor(
-                                Hsv(hsv.h, saturation * 100f, hsv.v).toColor().toArgb(),
+                                Hsv(selectedHue, saturation * 100f, hsv.v).toColor().toArgb(),
                             )
                         },
                     )
@@ -240,15 +268,14 @@ internal fun BatteryCustomModeEditor(
                 BatteryHsvAdjustmentRow(
                     title = stringResource(R.string.battery_color_brightness),
                     valueText = "${hsv.v.roundToInt()}%",
-                    visuallyInactive = visuallyInactive,
                 ) {
                     HsvValueSlider(
-                        currentHue = hsv.h,
-                        currentSaturation = hsv.s / 100f,
+                        currentHue = selectedHue,
+                        currentSaturation = selectedSaturation / 100f,
                         currentValue = hsv.v / 100f,
                         onValueChanged = { value ->
                             applyColor(
-                                Hsv(hsv.h, hsv.s, value * 100f).toColor().toArgb(),
+                                Hsv(selectedHue, selectedSaturation, value * 100f).toColor().toArgb(),
                             )
                         },
                     )
@@ -264,7 +291,7 @@ internal fun BatteryCustomModeEditor(
 
         BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_precise_input),
-            textColor = inactiveTitleColor,
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -285,8 +312,8 @@ internal fun BatteryCustomModeEditor(
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.battery_color_hex),
                 singleLine = true,
-                colors = inactiveFieldColors,
-                textStyle = inactiveFieldTextStyle,
+                colors = TextFieldDefaults.textFieldColors(),
+                textStyle = MiuixTheme.textStyles.main,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             )
             Row(
@@ -307,8 +334,8 @@ internal fun BatteryCustomModeEditor(
                     modifier = Modifier.weight(1f),
                     label = "R",
                     singleLine = true,
-                    colors = inactiveFieldColors,
-                    textStyle = inactiveFieldTextStyle,
+                    colors = TextFieldDefaults.textFieldColors(),
+                    textStyle = MiuixTheme.textStyles.main,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
                 TextField(
@@ -322,8 +349,8 @@ internal fun BatteryCustomModeEditor(
                     modifier = Modifier.weight(1f),
                     label = "G",
                     singleLine = true,
-                    colors = inactiveFieldColors,
-                    textStyle = inactiveFieldTextStyle,
+                    colors = TextFieldDefaults.textFieldColors(),
+                    textStyle = MiuixTheme.textStyles.main,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
                 TextField(
@@ -337,8 +364,8 @@ internal fun BatteryCustomModeEditor(
                     modifier = Modifier.weight(1f),
                     label = "B",
                     singleLine = true,
-                    colors = inactiveFieldColors,
-                    textStyle = inactiveFieldTextStyle,
+                    colors = TextFieldDefaults.textFieldColors(),
+                    textStyle = MiuixTheme.textStyles.main,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
             }
@@ -346,26 +373,20 @@ internal fun BatteryCustomModeEditor(
     }
 }
 
+
 @Composable
 private fun BatteryHsvAdjustmentRow(
     title: String,
     valueText: String,
-    visuallyInactive: Boolean,
     slider: @Composable () -> Unit,
 ) {
     BasicComponent(
         title = title,
-        enabled = !visuallyInactive,
         endActions = {
             Text(
                 text = valueText,
                 fontSize = MiuixTheme.textStyles.body2.fontSize,
-                color =
-                    if (visuallyInactive) {
-                        MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantActions
-                    },
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 modifier = Modifier.padding(end = 8.dp),
             )
         },
