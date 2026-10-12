@@ -214,7 +214,8 @@ internal fun BatteryCustomModeEditor(
                             selected =
                                 entry.source == BatteryColorSchemeSource.CUSTOM &&
                                     editingColor == color,
-                                        onClick = { applyColor(color) },
+                            visuallyInactive = false,
+                            onClick = { applyColor(color) },
                         )
                     }
                 }
@@ -247,7 +248,7 @@ internal fun BatteryCustomModeEditor(
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_saturation),
                         valueText = "${hsv.s.roundToInt()}%",
-                            ) {
+                    ) {
                         HsvSaturationSlider(
                             currentHue = hsv.h,
                             currentSaturation = hsv.s / 100f,
@@ -261,7 +262,7 @@ internal fun BatteryCustomModeEditor(
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_brightness),
                         valueText = "${hsv.v.roundToInt()}%",
-                            ) {
+                    ) {
                         HsvValueSlider(
                             currentHue = hsv.h,
                             currentSaturation = hsv.s / 100f,
