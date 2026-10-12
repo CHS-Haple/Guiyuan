@@ -147,7 +147,7 @@ internal fun MainHub(
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val onRestart = {
         if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
-            !scopeBusy
+            !scopeBusy && app.canRestartScopes()
         ) {
             val scopes = app.enabledScopes()
             availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
@@ -389,8 +389,8 @@ internal fun MainHub(
                         selectedTargets = targets intersect availableTargets
                         restartPickerOpen = true
                     } else {
-                        ScopeRestart.start(context.applicationContext, targets) {
-                            app.refreshXposedStatus()
+                        if (!app.restartScopes(targets)) {
+                            restartPickerOpen = true
                         }
                     }
                 }

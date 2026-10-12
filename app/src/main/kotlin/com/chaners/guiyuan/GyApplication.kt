@@ -29,6 +29,7 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
@@ -185,6 +186,15 @@ class GyApplication :
     }
 
     fun settingsInScope(): Boolean = enabledScopes()?.contains(SETTINGS_PROCESS) == true
+
+    // Check both pending framework operations before taking ownership of a Root restart.
+    fun canRestartScopes(): Boolean =
+        pendingScope.value == null && hotReloadPending == null && !ScopeRestart.isRunning
+
+    fun restartScopes(targets: Set<RestartTarget>): Boolean {
+        if (!canRestartScopes()) return false
+        return ScopeRestart.start(this, targets) { refreshXposedStatus() }
+    }
 
     fun requestSettingsScope(onComplete: (Boolean) -> Unit): Boolean =
         requestScope(SETTINGS_PROCESS, onComplete)
