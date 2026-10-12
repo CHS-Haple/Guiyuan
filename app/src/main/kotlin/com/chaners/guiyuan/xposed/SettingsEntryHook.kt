@@ -15,6 +15,7 @@ import android.os.Process
 import android.util.Log
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.settings.SettingsEntryIcon
+import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
@@ -36,10 +37,10 @@ internal object SettingsEntryHook {
         loader: ClassLoader,
         entry: SettingsEntry,
         style: SettingsEntryIcon,
-    ) {
-        if (entry == SettingsEntry.Disabled) return
+    ): Boolean {
+        if (entry == SettingsEntry.Disabled) return true
 
-        runCatching {
+        return runCatching {
             val host = Class.forName(HOST_CLASS, false, loader)
             val headerClass = Class.forName(HEADER_CLASS, false, loader)
             val method = host.getDeclaredMethod("updateHeaderList", List::class.java)
@@ -88,6 +89,23 @@ internal object SettingsEntryHook {
             })
             installIcon(module, loader, headerClass, id, style)
         }.onFailure { Log.w(TAG, "Unsupported Settings header contract", it) }
+            .isSuccess
+    }
+
+    // Transfer only our native Settings hooks; stale callbacks must not retain the old module.
+    fun reload(
+        module: XposedModule,
+        handles: List<HookHandle>,
+        entry: SettingsEntry,
+        style: SettingsEntryIcon,
+    ): Boolean {
+        if (handles.any { it.id != HOOK_ID && it.id != ICON_HOOK_ID }) return false
+        val header = handles.firstOrNull { it.id == HOOK_ID }
+        val loader = header?.executable?.declaringClass?.classLoader
+        handles.forEach { it.unhook() }
+        if (entry == SettingsEntry.Disabled) return true
+        if (loader == null) return false
+        return install(module, loader, entry, style)
     }
 
     // The header exposes only iconRes. Bind the module drawable only on our row,
