@@ -25,9 +25,9 @@ import top.yukonga.miuix.kmp.color.api.toHsv
 // The pinned MIUIX ColorPalette always includes alpha. Battery colors are opaque.
 @Composable
 internal fun BatteryColorField(
-    color: Color,
+    color: Color?,
     hue: Float,
-    onPreview: (Color) -> Unit,
+    onPreview: (Color?) -> Unit,
     onSelect: (Color) -> Unit,
 ) {
     val onPreviewNow by rememberUpdatedState(onPreview)
@@ -89,24 +89,25 @@ internal fun BatteryColorField(
             cornerRadius = round,
         )
 
-        val hsv = color.toHsv()
-        val radius = 11.dp.toPx()
-        val center =
-            Offset(
-                (hsv.s / 100f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
-                ((1f - hsv.v / 100f) * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
+        color?.toHsv()?.let { hsv ->
+            val radius = 11.dp.toPx()
+            val center =
+                Offset(
+                    (hsv.s / 100f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
+                    ((1f - hsv.v / 100f) * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
+                )
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.28f),
+                radius = radius + 1.dp.toPx(),
+                center = center,
+                style = Stroke(width = 4.dp.toPx()),
             )
-        drawCircle(
-            color = Color.Black.copy(alpha = 0.28f),
-            radius = radius + 1.dp.toPx(),
-            center = center,
-            style = Stroke(width = 4.dp.toPx()),
-        )
-        drawCircle(
-            color = Color.White,
-            radius = radius,
-            center = center,
-            style = Stroke(width = 3.dp.toPx()),
-        )
+            drawCircle(
+                color = Color.White,
+                radius = radius,
+                center = center,
+                style = Stroke(width = 3.dp.toPx()),
+            )
+        }
     }
 }
