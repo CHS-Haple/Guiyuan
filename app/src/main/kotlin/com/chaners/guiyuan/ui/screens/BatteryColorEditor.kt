@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -87,13 +86,6 @@ internal fun BatteryCustomModeEditor(
                 ?.s ?: 100f,
         )
     }
-    // Black loses both hue and saturation; keep their last editable values.
-    LaunchedEffect(seed) {
-        seed?.let { Color(it).toHsv() }?.let { value ->
-            if (value.v > 0.01f) selectedSaturation = value.s
-            if (value.v > 0.01f && value.s > 0.01f) selectedHue = value.h
-        }
-    }
     var hexText by remember(custom.id, slot, editingColor) {
         mutableStateOf(
             editingColor
@@ -113,12 +105,16 @@ internal fun BatteryCustomModeEditor(
         mutableStateOf(rgb?.third?.toString().orEmpty())
     }
 
-    fun showColor(color: Int) {
+    fun showColor(color: Int, hue: Float? = null) {
         val opaque = color or 0xFF000000.toInt()
         editingColor = opaque
         val chosenHsv = Color(opaque).toHsv()
         if (chosenHsv.v > 0.01f) selectedSaturation = chosenHsv.s
-        if (chosenHsv.v > 0.01f && chosenHsv.s > 0.01f) selectedHue = chosenHsv.h
+        if (hue != null) {
+            selectedHue = hue
+        } else if (chosenHsv.v > 0.01f && chosenHsv.s > 0.01f) {
+            selectedHue = chosenHsv.h
+        }
         hexText = batteryColorHex(opaque).removePrefix("#")
         val value = batteryColorRgb(opaque)
         redText = value.first.toString()
@@ -126,8 +122,8 @@ internal fun BatteryCustomModeEditor(
         blueText = value.third.toString()
     }
 
-    fun applyColor(color: Int) {
-        showColor(color)
+    fun applyColor(color: Int, hue: Float? = null) {
+        showColor(color, hue)
         // The repository remains the single writer; choosing a color switches the slot to CUSTOM.
         onColorChange(color or 0xFF000000.toInt())
     }
@@ -169,7 +165,15 @@ internal fun BatteryCustomModeEditor(
                     }
                 },
                 onSelectedIndexChange = { index ->
-                    sourceOptions.getOrNull(index)?.let(onSourceChange)
+                    sourceOptions.getOrNull(index)?.let { source ->
+                        val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
+                        if (nextColor == null) {
+                            editingColor = null
+                        } else {
+                            showColor(nextColor)
+                        }
+                        onSourceChange(source)
+                    }
                 },
             )
         }
@@ -225,8 +229,7 @@ internal fun BatteryCustomModeEditor(
                     hue = selectedHue,
                     saturation = selectedSaturation,
                     onColorChanged = { color, hue ->
-                        selectedHue = hue
-                        applyColor(color.toArgb())
+                        applyColor(color.toArgb(), hue)
                     },
                 )
             }
@@ -239,10 +242,10 @@ internal fun BatteryCustomModeEditor(
                         currentHue = selectedHue,
                         onHueChanged = { fraction ->
                             val hue = fraction * 360f
-                            selectedHue = hue
                             val current = editingColor?.let { Color(it).toHsv() }
                             applyColor(
                                 Hsv(hue, selectedSaturation, current?.v ?: 100f).toColor().toArgb(),
+                                hue,
                             )
                         },
                     )
