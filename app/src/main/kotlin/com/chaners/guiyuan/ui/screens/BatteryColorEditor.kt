@@ -175,7 +175,6 @@ internal fun BatteryCustomModeEditor(
             BatteryHsvAdjustmentRow(
                 title = stringResource(R.string.battery_color_hue),
                 valueText = "${selectedHue.roundToInt()}°",
-                visuallyInactive = false,
                 insideMargin = PaddingValues(horizontal = 0.dp, vertical = 12.dp),
             ) {
                 HsvHueSlider(
@@ -215,8 +214,7 @@ internal fun BatteryCustomModeEditor(
                             selected =
                                 entry.source == BatteryColorSchemeSource.CUSTOM &&
                                     editingColor == color,
-                            visuallyInactive = false,
-                            onClick = { applyColor(color) },
+                                        onClick = { applyColor(color) },
                         )
                     }
                 }
@@ -249,8 +247,7 @@ internal fun BatteryCustomModeEditor(
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_saturation),
                         valueText = "${hsv.s.roundToInt()}%",
-                        visuallyInactive = false,
-                    ) {
+                            ) {
                         HsvSaturationSlider(
                             currentHue = hsv.h,
                             currentSaturation = hsv.s / 100f,
@@ -264,8 +261,7 @@ internal fun BatteryCustomModeEditor(
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_brightness),
                         valueText = "${hsv.v.roundToInt()}%",
-                        visuallyInactive = false,
-                    ) {
+                            ) {
                         HsvValueSlider(
                             currentHue = hsv.h,
                             currentSaturation = hsv.s / 100f,
@@ -376,24 +372,17 @@ internal fun BatteryCustomModeEditor(
 private fun BatteryHsvAdjustmentRow(
     title: String,
     valueText: String,
-    visuallyInactive: Boolean,
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     slider: @Composable () -> Unit,
 ) {
     BasicComponent(
         title = title,
         insideMargin = insideMargin,
-        enabled = !visuallyInactive,
         endActions = {
             Text(
                 text = valueText,
                 fontSize = MiuixTheme.textStyles.body2.fontSize,
-                color =
-                    if (visuallyInactive) {
-                        MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantActions
-                    },
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 modifier = Modifier.padding(end = 8.dp),
             )
         },
