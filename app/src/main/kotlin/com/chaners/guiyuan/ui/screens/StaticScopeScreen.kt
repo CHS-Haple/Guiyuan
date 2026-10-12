@@ -5,7 +5,8 @@ import android.graphics.Canvas as BitmapCanvas
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -133,18 +134,23 @@ private fun StaticScopeItem(
                     else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
                 }
             Surface(
-                modifier = Modifier.heightIn(min = 22.dp),
+                modifier = Modifier.height(24.dp),
                 shape = RoundedCornerShape(6.dp),
                 color = color.copy(alpha = 0.12f),
                 contentColor = color,
             ) {
-                Text(
-                    text = label,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    fontSize = MiuixTheme.textStyles.footnote2.fontSize,
-                    fontWeight = FontWeight.SemiBold,
-                    color = color,
-                )
+                Box(
+                    modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = MiuixTheme.textStyles.footnote2.fontSize,
+                        fontWeight = FontWeight.SemiBold,
+                        color = color,
+                        maxLines = 1,
+                    )
+                }
             }
         },
     ) {
