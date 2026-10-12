@@ -413,8 +413,8 @@ private fun BatteryColorGrid(
             }
         }
     }
-    val preview by rememberUpdatedState(onPreview)
-    val select by rememberUpdatedState(onSelect)
+    val onPreviewCurrent by rememberUpdatedState(onPreview)
+    val onSelectCurrent by rememberUpdatedState(onSelect)
     val selected = remember(color) {
         var closest = 0 to 0
         var distance = Float.MAX_VALUE
@@ -441,23 +441,23 @@ private fun BatteryColorGrid(
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         var lastCell: Pair<Int, Int>? = null
-                        fun preview(position: Offset) {
+                        fun previewCell(position: Offset) {
                             val column = (position.x / size.width * columns).toInt().coerceIn(0, columns - 1)
                             val row = (position.y / size.height * rows).toInt().coerceIn(0, rows - 1)
                             if (lastCell != (row to column)) {
                                 lastCell = row to column
-                                preview(palette[row][column])
+                                onPreviewCurrent(palette[row][column])
                             }
                         }
-                        preview(down.position)
+                        previewCell(down.position)
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) break
-                            preview(change.position)
+                            previewCell(change.position)
                             change.consume()
                         }
-                        lastCell?.let { (row, column) -> select(palette[row][column]) }
+                        lastCell?.let { (row, column) -> onSelectCurrent(palette[row][column]) }
                     }
                 },
     ) {
