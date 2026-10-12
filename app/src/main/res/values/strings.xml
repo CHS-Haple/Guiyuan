@@ -64,7 +64,7 @@
     <string name="diagnostics_summary">View Guiyuan runtime logs</string>
     <string name="restart_scope">Restart scopes</string>
     <string name="restart_scope_summary">Choose active targets to restart and apply changes</string>
-    <string name="restart_scope_dialog_summary">Root access is required. Selected targets will restart; Settings will reopen in the foreground. Your device will not reboot.</string>
+    <string name="restart_scope_dialog_summary">Root access is required. Selected scope processes will restart. Your device will not reboot.</string>
     <string name="restart_scope_failed">Restart failed</string>
     <string name="restart_scope_failed_summary">Could not restart: %1$s. Check Root access and try again.</string>
     <string name="restart">Restart</string>
