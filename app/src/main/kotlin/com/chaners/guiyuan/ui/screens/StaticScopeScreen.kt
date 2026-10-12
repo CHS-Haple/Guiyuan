@@ -32,8 +32,8 @@ import io.github.libxposed.service.HookedTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -119,15 +119,13 @@ private fun StaticScopeItem(
         startAction = { StaticScopeIcon(packageName, fallbackIcon) },
         endActions = {
             val label =
-                stringResource(
-                    when (status) {
-                        ScopeState.Connected -> R.string.runtime_scope_connected
-                        ScopeState.Disabled -> R.string.runtime_scope_disabled
-                        ScopeState.Missing -> R.string.runtime_scope_not_installed
-                        ScopeState.Failed -> R.string.runtime_scope_error
-                        ScopeState.Unknown -> R.string.runtime_scope_unknown
-                    },
-                )
+                when (status) {
+                    ScopeState.Connected -> stringResource(R.string.runtime_scope_connected)
+                    ScopeState.Disabled -> stringResource(R.string.runtime_scope_disabled)
+                    ScopeState.Missing -> stringResource(R.string.runtime_scope_not_installed)
+                    ScopeState.Failed -> stringResource(R.string.runtime_scope_error)
+                    ScopeState.Unknown -> "—"
+                }
             val color =
                 when (status) {
                     ScopeState.Connected -> MiuixTheme.colorScheme.primary
