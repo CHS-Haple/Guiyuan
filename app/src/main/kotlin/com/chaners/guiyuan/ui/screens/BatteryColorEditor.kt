@@ -191,7 +191,7 @@ internal fun BatteryCustomModeEditor(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
         ) {
-            BatteryColorGrid(
+            BatteryColorField(
                 color = editingColor?.let(::Color) ?: Color(0xFF3482FF),
                 hue = selectedHue,
                 onPreview = { showColor(it.toArgb()) },
