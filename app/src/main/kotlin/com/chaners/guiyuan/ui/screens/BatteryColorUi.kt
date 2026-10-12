@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -137,6 +138,7 @@ internal fun BatteryColorDot(
             } else {
                 Color(color)
             },
+        border = BorderStroke(1.dp, MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
     ) {}
 }
 
@@ -148,6 +150,7 @@ internal fun BatteryColorMosaic(
         modifier = Modifier.size(size),
         shape = CircleShape,
         color = Color.Transparent,
+        border = BorderStroke(1.dp, MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
     ) {
         Box(
             modifier =
