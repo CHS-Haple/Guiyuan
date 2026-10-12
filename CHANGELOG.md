@@ -12,10 +12,10 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Added
 - Added an optional Guiyuan shortcut inside Settings with configurable position and icon style; it is off by default and requests only its own Xposed scope when needed.
-- Added selected-scope restart for SystemUI and Settings, with framework-verified eligibility and per-target failure reporting.
 - Reworked the About header with its animated Guiyuan mark, expanding wave, text-linked response and background presentation.
 
 ### Changed
+- Expanded the existing SystemUI restart action into a selectable scope restart for SystemUI, Settings or both; only authorized targets appear, and failures are reported separately. Restarting Settings does not launch its UI.
 - Refined About scope reporting to distinguish connected, not enabled, confirmed missing package and explicit runtime failure, keeping unknown conditions neutral.
 - Improved MIUIX companion-app scrolling, control alignment and contextual slider feedback, along with version and status presentation.
 - Updated user-facing guidance for Home runtime status, optional scope authorization and restart controls.
