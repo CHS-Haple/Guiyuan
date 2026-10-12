@@ -343,6 +343,9 @@
     <string name="battery_color_restore_mode_summary">恢复方案颜色并清除该模式自定义色</string>
     <string name="battery_color_current">当前颜色</string>
     <string name="battery_color_opaque_summary">状态栏颜色始终以不透明方式应用</string>
+    <string name="battery_color_visual_picker">可视化选色</string>
+    <string name="battery_color_precision_title">精确调整</string>
+    <string name="battery_color_precision_summary">饱和度、明度、HEX 与 RGB</string>
     <string name="battery_color_common">常用色</string>
     <string name="battery_common_color_red">红色</string>
     <string name="battery_common_color_orange">橙色</string>
@@ -368,6 +371,11 @@
     <string name="battery_color_restore_from_scheme">将此模式恢复为 %1$s 方案颜色</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s颜色</string>
+    <string name="battery_scheme_new_summary">创建一套自己的电量颜色</string>
+    <string name="battery_scheme_full_summary">最多保存 %1$d 套自定义配色</string>
+    <string name="battery_scheme_capacity">自定义方案容量</string>
+    <string name="battery_scheme_remaining">还可以创建 %1$d 套自定义配色</string>
+    <string name="battery_scheme_full_hint">删除不需要的配色后可继续创建</string>
     <string name="battery_custom_scheme_new">新建自定义样式</string>
     <string name="battery_custom_scheme_add_page_title">新建样式</string>
     <string name="battery_custom_scheme_limit">已达到自定义样式数量上限</string>
