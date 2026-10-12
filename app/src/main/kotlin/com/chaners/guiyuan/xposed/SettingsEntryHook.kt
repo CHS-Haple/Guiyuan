@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -127,7 +128,7 @@ internal object SettingsEntryHook {
             val method = adapter.getDeclaredMethod("setIcon", holder, headerClass)
             val icon = holder.findField("icon")
             var artwork: Drawable.ConstantState? = null
-            var nightMode = -1
+            var artworkConfig: Configuration? = null
             var warned = false
 
             module.hook(method).setId(ICON_HOOK_ID).intercept(Hooker { chain ->
@@ -139,11 +140,12 @@ internal object SettingsEntryHook {
                         return@runCatching
                     }
                     val image = icon.get(chain.getArg(0)) as? ImageView ?: return@runCatching
-                    val night = image.resources.configuration.uiMode and
-                        android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                    if (night != nightMode) {
+                    val config = image.resources.configuration
+                    if (artworkConfig != config) {
+                        artwork = null
+                        artworkConfig = null
                         artwork = createIcon(image.context, style)?.constantState
-                        nightMode = night
+                        artworkConfig = Configuration(config)
                     }
                     artwork?.newDrawable(image.resources)?.mutate()?.let {
                         image.imageTintList = null

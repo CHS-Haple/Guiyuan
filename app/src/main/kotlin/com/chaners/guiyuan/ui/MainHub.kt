@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
@@ -101,7 +102,8 @@ private enum class RestartTarget(val pkg: String) {
 private fun RestartAppIcon(pkg: String, fallback: Int) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
-    val icon = remember(ctx, pkg, density.density) {
+    val config = LocalConfiguration.current
+    val icon = remember(ctx, pkg, density.density, config) {
         runCatching {
             val side = with(density) { 48.dp.roundToPx() }
             val drawable = ctx.packageManager.getApplicationIcon(pkg)
