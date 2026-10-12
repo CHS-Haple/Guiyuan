@@ -344,8 +344,6 @@
     <string name="battery_color_current">当前颜色</string>
     <string name="battery_color_opaque_summary">状态栏颜色始终以不透明方式应用</string>
     <string name="battery_color_visual_picker">可视化选色</string>
-    <string name="battery_color_precision_title">精确调整</string>
-    <string name="battery_color_precision_summary">色相、饱和度、明度、HEX 与 RGB</string>
     <string name="battery_color_common">常用色</string>
     <string name="battery_common_color_red">红色</string>
     <string name="battery_common_color_orange">橙色</string>
