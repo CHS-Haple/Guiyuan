@@ -89,6 +89,7 @@ internal fun AboutHero(
     val markRadius = markDiameter / 2f
     val wave = remember { Animatable(0f) }
     var wavePhase by remember { mutableFloatStateOf(0f) }
+    val markActive = active && iconProgress < 1f
     val dark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
     val accent = MiuixTheme.colorScheme.primary
     val glint = if (dark) lerp(accent, Color.Black, 0.35f) else lerp(accent, Color.White, 0.70f)
@@ -126,8 +127,8 @@ internal fun AboutHero(
                 wave = wave,
                 wavePhase = wavePhase,
                 onWaveRelease = { wavePhase = it },
-                interactive = active && iconProgress < 1f,
-                active = active,
+                interactive = markActive,
+                active = markActive,
                 effectModifier = blur,
             )
         }
