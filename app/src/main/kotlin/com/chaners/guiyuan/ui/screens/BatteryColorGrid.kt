@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.chaners.guiyuan.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -30,12 +34,14 @@ internal fun BatteryColorGrid(
     val onSelectNow by rememberUpdatedState(onSelect)
     val colorNow by rememberUpdatedState(color)
     val hueNow by rememberUpdatedState(hue)
+    val paletteDescription = stringResource(R.string.battery_color_visual_picker)
 
     Canvas(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(180.dp)
+                .semantics { contentDescription = paletteDescription }
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
