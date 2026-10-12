@@ -615,7 +615,6 @@ class GyModule : XposedModule() {
             attachHostRuntime(
                 host = capture.host,
                 source = "hotReloadRestore",
-                initialNativeHandoffActive = true,
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
             )
@@ -681,11 +680,7 @@ class GyModule : XposedModule() {
             SysUiPresentationOwner.install(
                 module = this,
                 classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 onFailNative = ::onHomeRuntimeFailure,
             )
         if (failure == null) {
@@ -719,11 +714,7 @@ class GyModule : XposedModule() {
             NativeNetworkSuppressor.install(
                 module = this,
                 classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
@@ -1570,16 +1561,7 @@ class GyModule : XposedModule() {
                             )
                         }
                 },
-                onEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        { event ->
-                            if (detailedDiagnosticsEnabled) {
-                                log(Log.INFO, TAG, event)
-                            }
-                        }
-                    } else {
-                        null
-                    },
+                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
             )
         }.onSuccess { hooks ->
             val ready = hooks == SysUiBatterySource.HOOK_COUNT
@@ -1633,15 +1615,7 @@ class GyModule : XposedModule() {
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 onKeyguardAodEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        { event ->
-                            if (detailedDiagnosticsEnabled) {
-                                log(Log.INFO, TAG, event)
-                            }
-                        }
-                    } else {
-                        null
-                    },
+                    if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
             )
         }.onSuccess { result ->
             logDiagnostic(
@@ -3068,11 +3042,7 @@ class GyModule : XposedModule() {
             KeyguardRenderSession.attach(
                 resolved = resolved,
                 sceneEligible = true,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onKeyguardReadyChanged(
@@ -3116,11 +3086,7 @@ class GyModule : XposedModule() {
             KeyguardRenderSession.attachAod(
                 resolved = resolved,
                 sceneEligible = true,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onAodReadyChanged(
@@ -3219,11 +3185,7 @@ class GyModule : XposedModule() {
                 SysUiPresentationOwner.activateKeyguard(
                     resolved = resolved.host,
                     deferNativeLayoutOwnershipUntilCommit = visualOnlyBoundary,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
+                    onEvent = ::logRuntimeEvent,
                     onFailNative = ::onKeyguardRuntimeFailure,
                     onReady = { active ->
                         if (
@@ -3444,11 +3406,7 @@ class GyModule : XposedModule() {
                 SysUiPresentationOwner.activateAod(
                     resolved = resolved.host,
                     preMaskBeforeLayout = homeTransitionPrearm,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
+                    onEvent = ::logRuntimeEvent,
                     onFailNative = ::onAodRuntimeFailure,
                     onReady = { active ->
                         completeAodCutover(
@@ -3648,7 +3606,6 @@ class GyModule : XposedModule() {
     private fun attachHostRuntime(
         host: Any,
         source: String,
-        initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
     ) {
@@ -3729,11 +3686,7 @@ class GyModule : XposedModule() {
         val stableFailure =
             StatusBarStableSession.attach(
                 host = host,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
             )
         if (stableFailure == null) {
             logDiagnostic(
@@ -3828,11 +3781,7 @@ class GyModule : XposedModule() {
         val renderFailure =
             HomeRenderSession.attach(
                 host = host,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
