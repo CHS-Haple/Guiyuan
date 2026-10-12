@@ -168,24 +168,24 @@ internal fun BatteryCustomModeEditor(
                 title = stringResource(R.string.battery_color_source),
                 summary = currentValueText,
                 startAction = {
-                if (resolved == null) {
-                    BatteryColorMosaic(size = 24.dp)
-                } else {
-                    BatteryColorDot(
-                        color = resolved,
-                        size = 24.dp,
-                    )
-                }
-            },
+                    if (resolved == null) {
+                        BatteryColorMosaic(size = 24.dp)
+                    } else {
+                        BatteryColorDot(
+                            color = resolved,
+                            size = 24.dp,
+                        )
+                    }
+                },
                 onSelectedIndexChange = { index ->
-                sourceOptions.getOrNull(index)?.let(onSourceChange)
+                    sourceOptions.getOrNull(index)?.let(onSourceChange)
                 },
             )
         }
 
         BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_visual_picker),
-            textColor = inactiveTitleColor,
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
