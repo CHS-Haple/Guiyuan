@@ -75,9 +75,6 @@ internal fun BatteryCustomModeEditor(
     var editingColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf(seed?.or(0xFF000000.toInt()))
     }
-    var previewColor by remember(custom.id, slot, entry.source, seed) {
-        mutableStateOf<Int?>(null)
-    }
     var selectedHue by remember(custom.id, slot) {
         mutableFloatStateOf(
             seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
@@ -158,7 +155,13 @@ internal fun BatteryCustomModeEditor(
                 title = stringResource(R.string.battery_color_source),
                 summary = currentValueText,
                 startAction = {
-                    val shown = previewColor ?: resolved
+                    // Remembered custom colors must not appear as active for other sources.
+                    val shown =
+                        if (entry.source == BatteryColorSchemeSource.CUSTOM || editingColor != seed) {
+                            editingColor ?: resolved
+                        } else {
+                            resolved
+                        }
                     if (shown == null) {
                         BatteryColorMosaic(size = 24.dp)
                     } else {
@@ -221,17 +224,10 @@ internal fun BatteryCustomModeEditor(
                     color = editingColor?.let(::Color),
                     hue = selectedHue,
                     saturation = selectedSaturation,
-                    onPreview = { preview, hue ->
-                        previewColor = preview?.toArgb()
-                        if (preview == null) editingColor = null else showColor(preview.toArgb())
+                    onColorChanged = { color, hue ->
                         selectedHue = hue
-                    },
-                    onSelect = { color, hue ->
-                        previewColor = color.toArgb()
                         applyColor(color.toArgb())
-                        selectedHue = hue
                     },
-                    onCancel = { previewColor = null },
                 )
             }
             if (hsv != null) {
