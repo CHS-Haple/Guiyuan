@@ -540,7 +540,7 @@ private fun BatteryAddSchemePage(
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             Text(
-                                text = "$" + "{" + "count" + "} / $" + "{" + "BATTERY_COLOR_SCHEME_CUSTOM_MAX" + "}",
+                                text = "$count / $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
                                 style = MiuixTheme.textStyles.body2,
                             )
                         }
