@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -193,37 +194,36 @@ internal fun BatteryCustomModeEditor(
         }
 
         BatterySheetSmallTitle(
-            text = stringResource(R.string.battery_color_visual_picker),
-            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            BatteryColorField(
-                color = editingColor?.let(::Color),
-                hue = selectedHue,
-                onPreview = { preview, hue ->
-                    previewColor = preview?.toArgb()
-                    if (preview == null) editingColor = null else showColor(preview.toArgb())
-                    selectedHue = hue
-                },
-                onSelect = { color, hue ->
-                    previewColor = color.toArgb()
-                    applyColor(color.toArgb())
-                    selectedHue = hue
-                },
-                onCancel = { previewColor = null },
-            )
-        }
-
-        BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_full_adjustment),
             textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
         ) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 4.dp,
+                ),
+            ) {
+                BatteryColorField(
+                    color = editingColor?.let(::Color),
+                    hue = selectedHue,
+                    onPreview = { preview, hue ->
+                        previewColor = preview?.toArgb()
+                        if (preview == null) editingColor = null else showColor(preview.toArgb())
+                        selectedHue = hue
+                    },
+                    onSelect = { color, hue ->
+                        previewColor = color.toArgb()
+                        applyColor(color.toArgb())
+                        selectedHue = hue
+                    },
+                    onCancel = { previewColor = null },
+                )
+            }
             if (hsv != null) {
                 BatteryHsvAdjustmentRow(
                     title = stringResource(R.string.battery_color_hue),
