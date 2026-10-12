@@ -1938,7 +1938,7 @@ internal object CcTransitionOwner {
             val nativeOptical =
                 target.preferredChildEntries
                     .firstNotNullOfOrNull { entry ->
-                        findDescendantByResourceEntry(
+                        NativeParticipantAccess.findResourceView(
                             root = slotRoot,
                             entryName = entry,
                         )?.takeIf { optical ->
@@ -2382,7 +2382,7 @@ internal object CcTransitionOwner {
         private fun resolveBatteryNumberTargetWitness(): TargetWitness? {
             val digitalView =
                 readViewField(finalBattery, "mBatteryDigitalView")
-                    ?: findDescendantByResourceEntry(finalBattery, "battery_icon_container")
+                    ?: NativeParticipantAccess.findResourceView(finalBattery, "battery_icon_container")
             val visibleBatteryBody =
                 resolveBatteryIconTarget(finalBattery)
                     ?.takeIf { view ->
@@ -2829,8 +2829,8 @@ internal object CcTransitionOwner {
                     fieldName = fieldName,
                 )
             }
-                ?: findDescendantByResourceEntry(battery, "battery_icon")
-                ?: findDescendantByResourceEntry(battery, "battery_icon_container")
+                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon")
+                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon_container")
         }
 
         private fun readViewField(
@@ -2895,7 +2895,7 @@ internal object CcTransitionOwner {
         ): View? {
             if (!preferredChildEntries.contains("mobile_signal")) return null
             val signalContainer =
-                findDescendantByResourceEntry(
+                NativeParticipantAccess.findResourceView(
                     root = slotRoot,
                     entryName = "mobile_signal_container",
                 ) as? ViewGroup ?: return null
@@ -2995,23 +2995,6 @@ internal object CcTransitionOwner {
             view.isAttachedToWindow &&
                 view.width > 0 &&
                 view.height > 0
-
-        private fun findDescendantByResourceEntry(
-            root: View,
-            entryName: String,
-        ): View? {
-            if (NativeParticipantAccess.resourceEntryName(root) == entryName) {
-                return root
-            }
-            val group = root as? ViewGroup ?: return null
-            for (index in 0 until group.childCount) {
-                findDescendantByResourceEntry(
-                    root = group.getChildAt(index),
-                    entryName = entryName,
-                )?.let { return it }
-            }
-            return null
-        }
 
         private fun endpointAlpha(view: View): Float {
             var current: View? = view

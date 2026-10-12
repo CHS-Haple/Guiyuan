@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
@@ -174,7 +173,7 @@ internal object NativePresentationResolver {
     ): NetworkType? {
         val root = binding.root
 
-        findViewByResourceEntry(root, MOBILE_TYPE_RESOURCE_ENTRY)
+        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->
                 val image = view as? ImageView
                 val drawable = image?.drawable
@@ -185,7 +184,7 @@ internal object NativePresentationResolver {
                 }
             }
 
-        findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
+        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
                 val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
@@ -260,31 +259,6 @@ internal object NativePresentationResolver {
             enhanced = enhanced,
             source = NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
         )
-    }
-
-    private fun findViewByResourceEntry(
-        root: View,
-        entryName: String,
-    ): View? {
-        if (resourceEntryName(root) == entryName) {
-            return root
-        }
-        val group = root as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findViewByResourceEntry(group.getChildAt(index), entryName)?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    private fun resourceEntryName(view: View): String? {
-        if (view.id == View.NO_ID) {
-            return null
-        }
-        return runCatching {
-            view.resources.getResourceEntryName(view.id)
-        }.getOrNull()
     }
 
     internal data class ActiveBindingResolution(
