@@ -151,6 +151,13 @@
     <string name="runtime_service_disconnected">未连接</string>
     <string name="runtime_service_query_unavailable">已连接｜状态不可查询</string>
     <string name="runtime_scope_title">作用域</string>
+    <string name="static_scope_title">静态作用域</string>
+    <string name="static_scope_entry_summary">查看已声明宿主及本机版本</string>
+    <string name="static_scope_group">系统组件</string>
+    <string name="static_scope_description">显示已声明宿主及本机可读取版本。\n是否启用与是否连接，请以实际状态为准。</string>
+    <string name="static_scope_sysui">系统界面</string>
+    <string name="static_scope_installed_version">已安装版本 %1$s</string>
+    <string name="static_scope_version_unavailable">版本暂不可读取</string>
     <string name="runtime_scope_settings">设置</string>
     <string name="runtime_scope_connected">已连接</string>
     <string name="runtime_scope_disabled">未启用</string>

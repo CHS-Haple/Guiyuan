@@ -152,6 +152,13 @@
     <string name="runtime_service_disconnected">Not connected</string>
     <string name="runtime_service_query_unavailable">Connected｜Status unavailable</string>
     <string name="runtime_scope_title">Scope</string>
+    <string name="static_scope_title">Static scopes</string>
+    <string name="static_scope_entry_summary">View declared hosts and local versions</string>
+    <string name="static_scope_group">System components</string>
+    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nEnabled and connected status follows the current framework state.</string>
+    <string name="static_scope_sysui">System UI</string>
+    <string name="static_scope_installed_version">Installed version %1$s</string>
+    <string name="static_scope_version_unavailable">Version unavailable</string>
     <string name="runtime_scope_settings">Settings</string>
     <string name="runtime_scope_connected">Connected</string>
     <string name="runtime_scope_disabled">Not enabled</string>
