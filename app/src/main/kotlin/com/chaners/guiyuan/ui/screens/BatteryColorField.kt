@@ -1,12 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -40,11 +38,6 @@ internal fun BatteryColorField(
             Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .border(
-                    width = 1.dp,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(16.dp),
-                )
                 .semantics { contentDescription = paletteDescription }
                 .pointerInput(Unit) {
                     awaitEachGesture {
@@ -92,19 +85,24 @@ internal fun BatteryColorField(
             brush = Brush.verticalGradient(listOf(Color.White, Color.Transparent)),
             cornerRadius = round,
         )
+        // Draw the outline below the cursor so the cursor occludes it at the edge.
+        drawRoundRect(
+            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+            cornerRadius = round,
+            style = Stroke(width = 1.dp.toPx()),
+        )
 
         if (color != null) {
             val radius = 11.dp.toPx()
-            // Keep the entire cursor inside the outline, including its outer stroke.
-            val inset = radius + 5.dp.toPx()
             val center =
                 Offset(
-                    (hue / 360f * size.width).coerceIn(inset, (size.width - inset).coerceAtLeast(inset)),
-                    (saturation / 100f * size.height).coerceIn(inset, (size.height - inset).coerceAtLeast(inset)),
+                    (hue / 360f * size.width).coerceIn(0f, size.width),
+                    (saturation / 100f * size.height).coerceIn(0f, size.height),
                 )
+            // Opaque mask hides the palette outline beneath the translucent halo.
             drawCircle(
                 color = color,
-                radius = radius,
+                radius = radius + 3.dp.toPx(),
                 center = center,
             )
             drawCircle(
