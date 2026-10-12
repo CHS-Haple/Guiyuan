@@ -53,8 +53,8 @@ import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -480,6 +480,7 @@ private fun BatterySchemeManageMenu(
     TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
         OverlayIconDropdownMenu(
             entries = entries,
+            collapseOnSelection = true,
             modifier = modifier,
         ) {
             Icon(
