@@ -617,7 +617,7 @@ private fun TopLevelPager(
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = swipeBackEnabled,
-                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
+                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
                 onRestart = onRestart,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,
