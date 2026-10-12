@@ -482,49 +482,41 @@ private fun BatteryAddSchemePage(
                         Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 22.dp),
+                    verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        contentAlignment = Alignment.Center,
+                    Surface(
+                        modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
+                        shape = CircleShape,
+                        color =
+                            if (enabled) MiuixTheme.colorScheme.primary
+                            else MiuixTheme.colorScheme.disabledPrimaryButton,
+                        shadowElevation = 0.dp,
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Surface(
-                                modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
-                                shape = CircleShape,
-                                color =
-                                    if (enabled) MiuixTheme.colorScheme.primary
-                                    else MiuixTheme.colorScheme.disabledPrimaryButton,
-                                shadowElevation = 0.dp,
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(32.dp),
-                                        tint =
-                                            if (enabled) MiuixTheme.colorScheme.onPrimary
-                                            else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                                    )
-                                }
-                            }
-                            Text(
-                                text =
-                                    if (enabled) stringResource(R.string.battery_scheme_new_summary)
-                                    else stringResource(R.string.battery_scheme_full_summary, BATTERY_COLOR_SCHEME_CUSTOM_MAX),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                textAlign = TextAlign.Center,
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint =
+                                    if (enabled) MiuixTheme.colorScheme.onPrimary
+                                    else MiuixTheme.colorScheme.disabledOnPrimaryButton,
                             )
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text =
+                            if (enabled) stringResource(R.string.battery_scheme_new_summary)
+                            else stringResource(R.string.battery_scheme_full_summary, BATTERY_COLOR_SCHEME_CUSTOM_MAX),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(24.dp))
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(9.dp),
