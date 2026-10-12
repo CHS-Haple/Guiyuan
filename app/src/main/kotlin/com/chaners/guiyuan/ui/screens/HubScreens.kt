@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
+import com.chaners.guiyuan.settings.SettingsEntryCfg
 import com.chaners.guiyuan.settings.SettingsEntryPrefs
 import com.chaners.guiyuan.settings.SettingsEntryIcon
 import com.chaners.guiyuan.settings.AppLang
@@ -558,8 +559,17 @@ internal fun SettingsHubScreen(
     val app = remember(ctx.applicationContext) {
         ctx.applicationContext as GyApplication
     }
-    var entry by remember { mutableStateOf(SettingsEntryPrefs.get(ctx)) }
-    var entryIcon by remember { mutableStateOf(SettingsEntryPrefs.icon(ctx)) }
+    val entryFlow = remember(ctx.applicationContext) {
+        SettingsEntryPrefs.observe(ctx.applicationContext)
+    }
+    val entryCfg by entryFlow.collectAsState(
+        initial = SettingsEntryCfg(
+            entry = SettingsEntryPrefs.get(ctx),
+            icon = SettingsEntryPrefs.icon(ctx),
+        ),
+    )
+    val entry = entryCfg.entry
+    val entryIcon = entryCfg.icon
     var pending by remember { mutableStateOf<SettingsEntry?>(null) }
     var scopeApplying by remember { mutableStateOf<SettingsEntry?>(null) }
     var requestFailed by remember { mutableStateOf(false) }
@@ -574,12 +584,10 @@ internal fun SettingsHubScreen(
         stringResource(R.string.settings_entry_icon_hollow),
     )
     fun saveEntryIcon(value: SettingsEntryIcon) {
-        if (SettingsEntryPrefs.setIcon(ctx, value)) entryIcon = value
-        else requestFailed = true
+        if (!SettingsEntryPrefs.setIcon(ctx, value)) requestFailed = true
     }
     fun saveEntry(value: SettingsEntry) {
-        if (SettingsEntryPrefs.set(ctx, value)) entry = value
-        else requestFailed = true
+        if (!SettingsEntryPrefs.set(ctx, value)) requestFailed = true
     }
 
     val languageOptions = listOf(
