@@ -336,6 +336,15 @@ internal fun AboutScreen(
                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
                         XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
                     }
+                    BasicComponent(
+                        title = stringResource(R.string.runtime_service_title),
+                        summary = serviceSummary,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_extension,
+                            )
+                        },
+                    )
                     ArrowPreference(
                         title = stringResource(R.string.runtime_scope_title),
                         summary = stringResource(R.string.static_scope_entry_summary),
