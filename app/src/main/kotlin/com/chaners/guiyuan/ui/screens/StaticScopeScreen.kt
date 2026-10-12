@@ -5,6 +5,7 @@ import android.graphics.Canvas as BitmapCanvas
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +32,7 @@ import io.github.libxposed.service.HookedTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -46,19 +47,15 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
     }
 
     val connected = xposedStatus as? XposedStatus.Connected
-    val connectedText = stringResource(R.string.runtime_scope_connected)
-    val disabledText = stringResource(R.string.runtime_scope_disabled)
-    val missingText = stringResource(R.string.runtime_scope_not_installed)
-    val errorText = stringResource(R.string.runtime_scope_error)
 
-    fun status(pkg: String, installed: Boolean?): Pair<String, Boolean> {
-        if (installed == false) return missingText to false
-        if (connected == null) return "—" to false
-        if (pkg !in connected.scopes) return disabledText to false
+    fun status(pkg: String, installed: Boolean?): ScopeState {
+        if (installed == false) return ScopeState.Missing
+        if (connected == null) return ScopeState.Unknown
+        if (pkg !in connected.scopes) return ScopeState.Disabled
         val failed = connected.runningTargets.any { (name, state) ->
             (name == pkg || name.startsWith("$pkg:")) && state == HookedTarget.State.FAILED
         }
-        return if (failed) errorText to true else connectedText to false
+        return if (failed) ScopeState.Failed else ScopeState.Connected
     }
 
     SettingsPage(
@@ -106,7 +103,7 @@ private fun StaticScopeItem(
     name: String,
     version: String,
     installed: Boolean?,
-    status: Pair<String, Boolean>,
+    status: ScopeState,
     @DrawableRes fallbackIcon: Int,
     usage: String,
     advice: String,
@@ -121,16 +118,35 @@ private fun StaticScopeItem(
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         startAction = { StaticScopeIcon(packageName, fallbackIcon) },
         endActions = {
-            val color = if (status.second) {
-                MiuixTheme.colorScheme.error
-            } else {
-                MiuixTheme.colorScheme.onSurfaceVariantSummary
-            }
-            Badge(
-                containerColor = color.copy(alpha = if (status.second) 0.12f else 0.10f),
+            val label =
+                stringResource(
+                    when (status) {
+                        ScopeState.Connected -> R.string.runtime_scope_connected
+                        ScopeState.Disabled -> R.string.runtime_scope_disabled
+                        ScopeState.Missing -> R.string.runtime_scope_not_installed
+                        ScopeState.Failed -> R.string.runtime_scope_error
+                        ScopeState.Unknown -> R.string.runtime_scope_unknown
+                    },
+                )
+            val color =
+                when (status) {
+                    ScopeState.Connected -> MiuixTheme.colorScheme.primary
+                    ScopeState.Failed -> MiuixTheme.colorScheme.error
+                    else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+                }
+            Surface(
+                modifier = Modifier.heightIn(min = 22.dp),
+                shape = RoundedCornerShape(6.dp),
+                color = color.copy(alpha = 0.12f),
                 contentColor = color,
             ) {
-                Text(text = status.first)
+                Text(
+                    text = label,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    fontSize = MiuixTheme.textStyles.footnote2.fontSize,
+                    fontWeight = FontWeight.SemiBold,
+                    color = color,
+                )
             }
         },
     ) {
@@ -198,4 +214,12 @@ private fun StaticScopeIcon(
             )
         }
     }
+}
+
+private enum class ScopeState {
+    Connected,
+    Disabled,
+    Missing,
+    Failed,
+    Unknown,
 }
