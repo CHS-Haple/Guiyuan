@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -42,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -193,6 +195,7 @@ internal fun PreviewSandboxScreen(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .scrollEndHaptic()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
@@ -308,6 +311,7 @@ internal fun PreviewSandboxScreen(
                                     valueRange = 0f..4f,
                                     steps = 3,
                                     showKeyPoints = true,
+                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                     keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
                                 )
                             } else {
@@ -345,6 +349,7 @@ internal fun PreviewSandboxScreen(
                                 valueRange = 0f..3f,
                                 steps = 2,
                                 showKeyPoints = true,
+                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                 keyPoints = listOf(0f, 1f, 2f, 3f),
                             )
                         }

@@ -19,6 +19,9 @@ import com.chaners.guiyuan.settings.DIAG_PREFS
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
@@ -26,12 +29,17 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.system.RestartTarget
+import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class GyApplication :
     Application(),
@@ -49,6 +57,10 @@ class GyApplication :
         getSharedPreferences(COMBINED_STATUS_VISUAL_PREFS_NAME, Context.MODE_PRIVATE)
     }
 
+    private val settingsPrefs: SharedPreferences by lazy {
+        getSharedPreferences(SETTINGS_ENTRY_PREFS, Context.MODE_PRIVATE)
+    }
+
     @Volatile
     private var xposedService: XposedService? = null
 
@@ -56,7 +68,13 @@ class GyApplication :
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
 
     private val handler = Handler(Looper.getMainLooper())
-    private var scopeRequestDone: ((Boolean) -> Unit)? = null
+    private val pendingScope = MutableStateFlow<ScopeRequest?>(null)
+    internal val scopeRequestInFlight: Flow<Boolean> =
+        pendingScope.map { it != null }.distinctUntilChanged()
+    internal val scopeRequestActive: Boolean
+        get() = pendingScope.value != null
+
+    private var hotReloadPending: HotReloadPending? = null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
     internal val xposedStatus: StateFlow<XposedStatus> =
@@ -93,12 +111,20 @@ class GyApplication :
             }
         }
 
+    private val settingsListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY) {
+                xposedService?.let(::syncRuntime)
+            }
+        }
+
     override fun onCreate() {
         super.onCreate()
         migrateBatteryTopChargingScaleReferenceIfNeeded(visualPrefs)
         diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.registerOnSharedPreferenceChangeListener(featListener)
         visualPrefs.registerOnSharedPreferenceChangeListener(visualListener)
+        settingsPrefs.registerOnSharedPreferenceChangeListener(settingsListener)
         XposedServiceHelper.registerListener(this)
         handler.postDelayed(
             bindTimeout,
@@ -107,20 +133,29 @@ class GyApplication :
     }
 
     override fun onServiceBind(service: XposedService) {
-        handler.removeCallbacks(bindTimeout)
-        if (xposedService !== service) finishScopeRequest(false)
-        xposedService = service
-        lastMirror = null
-        syncRuntime(service)
-        refreshXposedStatus(service)
+        // Framework Binder callbacks are not confined to the UI thread.
+        handler.post {
+            handler.removeCallbacks(bindTimeout)
+            if (xposedService !== service) {
+                finishScopeRequest(false)
+                finishHotReload()
+            }
+            xposedService = service
+            lastMirror = null
+            syncRuntime(service)
+            refreshXposedStatus(service)
+        }
     }
 
     override fun onServiceDied(service: XposedService) {
-        if (xposedService === service) {
-            xposedService = null
-            lastMirror = null
-            finishScopeRequest(false)
-            _xposedStatus.value = XposedStatus.FrameworkUnavailable
+        handler.post {
+            if (xposedService === service) {
+                xposedService = null
+                lastMirror = null
+                finishScopeRequest(false)
+                finishHotReload()
+                _xposedStatus.value = XposedStatus.FrameworkUnavailable
+            }
         }
     }
 
@@ -128,10 +163,12 @@ class GyApplication :
         diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
+        settingsPrefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
-        scopeRequestDone = null
+        pendingScope.value = null
+        hotReloadPending = null
         super.onTerminate()
     }
 
@@ -139,11 +176,37 @@ class GyApplication :
         xposedService?.let(::refreshXposedStatus)
     }
 
-    fun requestSysUiScope(onComplete: (Boolean) -> Unit): Boolean {
-        val service = xposedService ?: return false
-        if (service.apiVersion < 102 || scopeRequestDone != null) return false
+    // The framework's scope is authoritative, independent of UI feature toggles.
+    fun enabledScopes(): Set<String>? {
+        val service = xposedService ?: return null
+        if (service.apiVersion < 102) return null
+        return runCatching { service.scope.toSet() }
+            .onFailure { Log.w(TAG, "Unable to read enabled scopes", it) }
+            .getOrNull()
+    }
 
-        val inScope = runCatching { SYS_UI_PROCESS in service.scope }
+    fun settingsInScope(): Boolean = enabledScopes()?.contains(SETTINGS_PROCESS) == true
+
+    // Check both pending framework operations before taking ownership of a Root restart.
+    internal fun canRestartScopes(): Boolean =
+        pendingScope.value == null && hotReloadPending == null && !ScopeRestart.isRunning
+
+    internal fun restartScopes(targets: Set<RestartTarget>): Boolean {
+        if (!canRestartScopes()) return false
+        return ScopeRestart.start(this, targets) { refreshXposedStatus() }
+    }
+
+    fun requestSettingsScope(onComplete: (Boolean) -> Unit): Boolean =
+        requestScope(SETTINGS_PROCESS, onComplete)
+
+    fun requestSysUiScope(onComplete: (Boolean) -> Unit): Boolean =
+        requestScope(SYS_UI_PROCESS, onComplete)
+
+    private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
+        val service = xposedService ?: return false
+        if (service.apiVersion < 102 || pendingScope.value != null || hotReloadPending != null || ScopeRestart.isRunning) return false
+
+        val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
         if (inScope) {
             refreshXposedStatus(service)
@@ -151,17 +214,18 @@ class GyApplication :
             return true
         }
 
-        scopeRequestDone = onComplete
+        val request = ScopeRequest(service, onComplete)
+        pendingScope.value = request
         return runCatching {
             service.requestScope(
-                listOf(SYS_UI_PROCESS),
+                listOf(pkg),
                 object : XposedService.OnScopeEventListener {
                     override fun onScopeRequestApproved(scope: List<String>) {
                         mainExecutor.execute {
-                            if (xposedService === service) {
-                                refreshXposedStatus(service)
+                            if (xposedService === request.service && pendingScope.value === request) {
+                                refreshXposedStatus(request.service)
                                 finishScopeRequest(
-                                    runCatching { SYS_UI_PROCESS in service.scope }.getOrDefault(false),
+                                    runCatching { pkg in service.scope }.getOrDefault(false),
                                 )
                             }
                         }
@@ -170,28 +234,30 @@ class GyApplication :
                     override fun onScopeRequestFailed(message: String) {
                         Log.w(TAG, "Scope request failed: $message")
                         mainExecutor.execute {
-                            if (xposedService === service) finishScopeRequest(false)
+                            if (xposedService === request.service && pendingScope.value === request) {
+                                finishScopeRequest(false)
+                            }
                         }
                     }
                 },
             )
             true
         }.getOrElse { throwable ->
-            scopeRequestDone = null
-            Log.w(TAG, "Unable to request SystemUI scope: " + throwable.message)
+            if (pendingScope.value === request) pendingScope.value = null
+            Log.w(TAG, "Unable to request $pkg scope: " + throwable.message)
             false
         }
     }
 
     private fun finishScopeRequest(granted: Boolean) {
-        val callback = scopeRequestDone ?: return
-        scopeRequestDone = null
-        callback(granted)
+        val request = pendingScope.value ?: return
+        pendingScope.value = null
+        request.onComplete(granted)
     }
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102) return false
+        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope.value != null || ScopeRestart.isRunning) return false
 
         val target =
             runCatching {
@@ -201,6 +267,8 @@ class GyApplication :
                 return false
             } ?: return false
 
+        val pending = HotReloadPending(service, onComplete)
+        hotReloadPending = pending
         return runCatching {
             service.hotReloadModule(target, null) { process, result ->
                 Log.i(
@@ -208,32 +276,33 @@ class GyApplication :
                     "Hot reload completed process=" + process.processName + " result=" + result,
                 )
                 mainExecutor.execute {
-                    refreshXposedStatus()
-                    onComplete()
+                    if (xposedService === pending.service && hotReloadPending === pending) {
+                        refreshXposedStatus(pending.service)
+                        finishHotReload()
+                    }
                 }
             }
             true
         }.getOrElse { throwable ->
+            if (hotReloadPending === pending) hotReloadPending = null
             Log.w(TAG, "Unable to request hot reload: " + throwable.message)
             false
         }
     }
 
+    private fun finishHotReload() {
+        val pending = hotReloadPending ?: return
+        hotReloadPending = null
+        pending.onComplete()
+    }
+
     private fun refreshXposedStatus(service: XposedService) {
         _xposedStatus.value =
             runCatching {
-                val running =
-                    service.runningTargets.any { target ->
-                        target.processName == SYS_UI_PROCESS
-                    }
-                val inScope =
-                    service.scope.any { packageName ->
-                        packageName == SYS_UI_PROCESS
-                    }
-
                 XposedStatus.Connected(
-                    sysUiInScope = inScope,
-                    sysUiRunning = running,
+                    apiVersion = service.apiVersion,
+                    scopes = service.scope.toSet(),
+                    runningTargets = service.runningTargets.associate { it.processName to it.state },
                 )
             }.getOrElse { throwable ->
                 Log.w(
@@ -248,6 +317,8 @@ class GyApplication :
     private fun syncRuntime(service: XposedService) {
         val snapshot =
             RuntimeSnapshot(
+                settingsEntry = settingsPrefs.getInt(SETTINGS_ENTRY_KEY, 0),
+                settingsIcon = settingsPrefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0),
                 level =
                     diagPrefs.getString(
                         DIAG_LEVEL_KEY,
@@ -270,6 +341,8 @@ class GyApplication :
             val remote = service.getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME)
             val editor = remote.edit() ?: error("remote preference editor unavailable")
             editor
+                .putInt(SETTINGS_ENTRY_KEY, snapshot.settingsEntry)
+                .putInt(SETTINGS_ENTRY_ICON_KEY, snapshot.settingsIcon)
                 .putString(DIAG_LEVEL_KEY, snapshot.level)
                 .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
                 .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
@@ -287,7 +360,19 @@ class GyApplication :
         }
     }
 
+    private class ScopeRequest(
+        val service: XposedService,
+        val onComplete: (Boolean) -> Unit,
+    )
+
+    private class HotReloadPending(
+        val service: XposedService,
+        val onComplete: () -> Unit,
+    )
+
     private data class RuntimeSnapshot(
+        val settingsEntry: Int,
+        val settingsIcon: Int,
         val level: String,
         val feature: FeatureCfg,
         val changedAtNs: Long,
@@ -297,6 +382,7 @@ class GyApplication :
     private companion object {
         const val TAG = "CombinedStatus[App]"
         const val SYS_UI_PROCESS = "com.android.systemui"
+        const val SETTINGS_PROCESS = "com.android.settings"
         const val XPOSED_BIND_TIMEOUT_MS = 1_000L
     }
 }

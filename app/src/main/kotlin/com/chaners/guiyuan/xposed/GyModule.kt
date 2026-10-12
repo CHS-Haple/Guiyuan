@@ -11,6 +11,10 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
+import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
+import com.chaners.guiyuan.settings.SettingsEntryIcon
+import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -89,7 +93,13 @@ class GyModule : XposedModule() {
     @Volatile
     private var detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
 
+    private var inSettings = false
+    private var settingsHookInstalled = false
+
     override fun onModuleLoaded(param: ModuleLoadedParam) {
+        inSettings = param.processName == SETTINGS_PACKAGE
+        if (inSettings) return
+
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
@@ -106,10 +116,26 @@ class GyModule : XposedModule() {
         logCurrentDiagnosticsHealth()
     }
 
+    private fun settingsEntry(): Pair<SettingsEntry, SettingsEntryIcon> {
+        val prefs = runCatching { getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME) }
+            .getOrNull() ?: return SettingsEntry.Disabled to SettingsEntryIcon.Rounded
+        val entry = runCatching { SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)) }
+            .getOrDefault(SettingsEntry.Disabled)
+        val icon = runCatching { SettingsEntryIcon.from(prefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0)) }
+            .getOrDefault(SettingsEntryIcon.Rounded)
+        return entry to icon
+    }
+
     override fun onPackageReady(param: PackageReadyParam) {
-        if (!param.isFirstPackage || param.packageName != SYSTEM_UI_PACKAGE) {
+        if (!param.isFirstPackage) return
+        if (param.packageName == SETTINGS_PACKAGE) {
+            val (entry, icon) = settingsEntry()
+            settingsHookInstalled =
+                SettingsEntryHook.install(this, param.classLoader, entry, icon) &&
+                    entry != SettingsEntry.Disabled
             return
         }
+        if (param.packageName != SYSTEM_UI_PACKAGE) return
 
         val compatibility = SysUiCompatibilityProbe.inspect(param.classLoader)
         log(Log.INFO, TAG, compatibility.summary)
@@ -184,6 +210,21 @@ class GyModule : XposedModule() {
     }
 
     override fun onHotReloading(param: HotReloadingParam): Boolean {
+        // Settings has only its native header hooks, not the SystemUI host state.
+        if (inSettings) {
+            // A newly enabled entry needs a live Settings hook to supply its classloader.
+            if (settingsEntry().first != SettingsEntry.Disabled && !settingsHookInstalled) {
+                Log.w(TAG, "Settings entry has no live hook; restart Settings before hot reload")
+                return false
+            }
+            return runCatching {
+                param.setSavedInstanceState(SETTINGS_RELOAD)
+                true
+            }.getOrElse {
+                Log.w(TAG, "Settings hot reload preparation failed", it)
+                false
+            }
+        }
         val prepared =
             SysUiHotReload.prepare(
                 param = param,
@@ -252,6 +293,18 @@ class GyModule : XposedModule() {
     }
 
     override fun onHotReloaded(param: HotReloadedParam) {
+        if (param.savedInstanceState == SETTINGS_RELOAD) {
+            inSettings = true
+            val (entry, icon) = settingsEntry()
+            val restored = runCatching {
+                SettingsEntryHook.reload(this, param.oldHookHandles, entry, icon)
+            }.onFailure { Log.w(TAG, "Settings hot reload failed; restart Settings", it) }
+                .getOrDefault(false)
+            settingsHookInstalled = restored && entry != SettingsEntry.Disabled
+            if (!restored) Log.w(TAG, "Settings hook restoration unavailable; restart Settings")
+            return
+        }
+        if (inSettings) return
         rotateDiagnosticSession()
         val takeoverResult =
             runCatching {
@@ -4389,5 +4442,7 @@ class GyModule : XposedModule() {
     private companion object {
         const val TAG = "CombinedStatus"
         const val SYSTEM_UI_PACKAGE = "com.android.systemui"
+        const val SETTINGS_PACKAGE = "com.android.settings"
+        const val SETTINGS_RELOAD = "guiyuan.settings"
     }
 }

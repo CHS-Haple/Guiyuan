@@ -18,7 +18,7 @@ Preferences such as appearance, language choice, launcher visibility, and diagno
 
 Root access is used only for explicit maintenance or diagnostic actions that require it, currently:
 
-- restarting SystemUI after user confirmation;
+- restarting user-selected, eligible SystemUI or Settings scopes after confirmation (Settings is force-stopped and not relaunched by Guiyuan);
 - reading Guiyuan-related local runtime logs when the user opens or refreshes the Diagnostics log view, or generates a diagnostic report.
 
 Guiyuan does not run a persistent Root service.
@@ -67,7 +67,7 @@ Guiyuan 以本地运行和最小化数据处理为设计原则。
 
 仅在用户明确触发且功能确实需要时使用 Root，目前用于：
 
-- 经用户确认后重启 SystemUI；
+- 经用户确认后重启已授权且由用户选择的 SystemUI 或设置作用域（归元仅结束设置进程，不主动打开设置）；
 - 用户打开或刷新“诊断”日志视图，或主动生成诊断报告时，读取与 Guiyuan 相关的本地运行日志。
 
 归元不使用常驻 Root 服务。

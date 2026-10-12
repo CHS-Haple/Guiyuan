@@ -35,7 +35,7 @@
     <string name="language_english">English</string>
     <string name="language_simplified_chinese">简体中文</string>
     <string name="hide_launcher_icon">隐藏桌面图标</string>
-    <string name="hide_launcher_icon_summary">隐藏桌面图标后，仍可从系统应用详情等入口打开</string>
+    <string name="hide_launcher_icon_summary">隐藏后，通常可从框架服务的模块列表打开归元</string>
     <string name="battery_fill_follow_retract">电量段跟随回收</string>
     <string name="battery_fill_follow_retract_summary">收口时，实心电量段随端点移动，剩余环长不足后再缩短</string>
     <string name="battery_top_readout">显示电量数字</string>
@@ -61,11 +61,11 @@
     <string name="about_summary">版本、项目与运行环境</string>
     <string name="diagnostics_title">诊断</string>
     <string name="diagnostics_summary">查看归元运行日志</string>
-    <string name="restart_scope">重启 SystemUI</string>
-    <string name="restart_scope_summary">重启 SystemUI 以重新加载归元</string>
-    <string name="restart_scope_dialog_summary">需要 Root 权限。将重启 SystemUI 以重新加载归元，设备本身不会重启。</string>
+    <string name="restart_scope">重启作用域</string>
+    <string name="restart_scope_summary">选择并重启已启用的作用域进程</string>
+    <string name="restart_scope_dialog_summary">需要 Root 权限。将重启选中的作用域进程，设备不会重启。</string>
     <string name="restart_scope_failed">重启失败</string>
-    <string name="restart_scope_failed_summary">请确认 Root 权限可用且 SystemUI 能正常重新启动后重试</string>
+    <string name="restart_scope_failed_summary">无法重启：%1$s。请检查 Root 权限后重试。</string>
     <string name="restart">重启</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
@@ -139,20 +139,23 @@
     <string name="diagnostics_build_label">构建</string>
     <string name="diagnostics_package_label">应用包名</string>
 
-    <string name="section_device_system">设备与系统</string>
+    <string name="section_device_system">设备与环境</string>
     <string name="device_name_label">设备</string>
     <string name="device_model_label">设备型号</string>
     <string name="android_version_label">Android 版本</string>
     <string name="os_version_label">HyperOS 版本</string>
-    <string name="systemui_version_label">SystemUI 版本</string>
 
-    <string name="section_module_runtime">模块环境</string>
-    <string name="runtime_framework_title">框架</string>
-    <string name="runtime_framework_summary">Modern Xposed API 102</string>
+    <string name="runtime_service_title">框架服务</string>
+    <string name="runtime_service_connected">已连接｜API %1$d</string>
+    <string name="runtime_service_checking">正在检查…</string>
+    <string name="runtime_service_disconnected">未连接</string>
+    <string name="runtime_service_query_unavailable">已连接｜状态不可查询</string>
     <string name="runtime_scope_title">作用域</string>
-    <string name="runtime_scope_summary">系统界面｜com.android.systemui</string>
-    <string name="runtime_target_title">适配基线</string>
-    <string name="runtime_target_summary">SystemUI 17.03.260226.r</string>
+    <string name="runtime_scope_settings">设置</string>
+    <string name="runtime_scope_connected">已连接</string>
+    <string name="runtime_scope_disabled">未启用</string>
+    <string name="runtime_scope_not_installed">未安装</string>
+    <string name="runtime_scope_error">异常</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>
@@ -364,5 +367,27 @@
     <string name="battery_custom_scheme_copy">复制</string>
     <string name="battery_custom_scheme_delete">删除</string>
     <string name="battery_custom_scheme_delete_summary">删除“%1$s”？若当前正在使用，将切换回创建该样式时所基于的内置方案。</string>
+
+    <string name="settings_entry_icon_title">设置入口图标</string>
+    <string name="settings_entry_icon_summary">选择「设置」中的归元图标样式，重启「设置」后生效</string>
+    <string name="settings_entry_icon_rounded">圆角矩形样式</string>
+    <string name="settings_entry_icon_hollow">背景镂空样式</string>
+    <string name="settings_entry_title">设置入口</string>
+    <string name="settings_entry_summary">在「设置」中显示归元快捷入口</string>
+    <string name="settings_entry_restart_hint">重启「设置」后更新入口位置</string>
+    <string name="settings_entry_disabled">禁用</string>
+    <string name="settings_entry_top">顶部</string>
+    <string name="settings_entry_middle">中部</string>
+    <string name="settings_entry_bottom">底部</string>
+    <string name="settings_entry_scope_title">启用设置入口</string>
+    <string name="settings_entry_scope_summary">此功能需要启用「设置」作用域，不影响状态栏功能。是否向框架服务申请授权？</string>
+    <string name="settings_entry_failed_title">操作未完成</string>
+    <string name="settings_entry_failed_summary">请检查框架服务连接状态及「设置」作用域后重试。</string>
+
+    <string name="restart_scope_no_targets">无法确认已启用的作用域。请检查框架服务连接状态，并在模块管理器中启用对应作用域。</string>
+    <string name="restart_scope_sysui">系统界面</string>
+    <string name="restart_scope_settings">设置</string>
+    <string name="restart_scope_select_all">全选</string>
+    <string name="restart_scope_clear_all">取消全选</string>
 
 </resources>

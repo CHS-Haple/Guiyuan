@@ -3,6 +3,7 @@
 
     <queries>
         <package android:name="com.android.systemui" />
+        <package android:name="com.android.settings" />
     </queries>
 
     <application

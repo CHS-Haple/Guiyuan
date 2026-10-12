@@ -128,7 +128,7 @@ internal fun BatteryColorBottomSheet(
     var renameCustomId by remember { mutableStateOf<Int?>(null) }
     var deleteCustomId by remember { mutableStateOf<Int?>(null) }
 
-    val nextCustomId = repository.nextAvailableCustomId()
+    val nextCustomId = repository.nextAvailableCustomId(library)
     val nextCustomName =
         nextCustomId?.let {
             stringResource(R.string.battery_custom_scheme_default_name, it)

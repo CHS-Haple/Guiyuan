@@ -7,7 +7,10 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
@@ -55,6 +58,8 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 internal fun SemanticLeadingIcon(
@@ -70,12 +75,7 @@ internal fun SemanticLeadingIcon(
         ),
     )
     val main = remember(context, density.density, iconRes) {
-        opticalIcon(
-            context,
-            iconRes,
-            with(density) { 22.dp.roundToPx() },
-            with(density) { 19.dp.roundToPx() },
-        )
+        materialIcon(context, iconRes, with(density) { 22.dp.roundToPx() })
     }
     Box(
         modifier = Modifier.size(24.dp),
@@ -90,12 +90,7 @@ internal fun SemanticLeadingIcon(
             )
         } else {
             val badge = remember(context, density.density, detailRes) {
-                opticalIcon(
-                    context,
-                    detailRes,
-                    with(density) { 11.dp.roundToPx() },
-                    with(density) { 10.dp.roundToPx() },
-                )
+                materialIcon(context, detailRes, with(density) { 11.dp.roundToPx() })
             }
             val gap = with(density) { 1.dp.roundToPx() }
             val cutout = remember(badge, gap) { badgeCutout(badge, gap) }
@@ -127,51 +122,17 @@ internal fun SemanticLeadingIcon(
     }
 }
 
-// Center each glyph's visible ink, keeping the Material outline and proportions intact.
-private fun opticalIcon(
+// Material paths already include their optical spacing in the 24dp viewport.
+private fun materialIcon(
     context: Context,
     @DrawableRes res: Int,
     side: Int,
-    ink: Int,
 ): ImageBitmap {
     val drawable = requireNotNull(context.getDrawable(res)).mutate()
-    val sample = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
     drawable.setBounds(0, 0, side, side)
-    drawable.draw(BitmapCanvas(sample))
-
-    val pixels = IntArray(side * side)
-    sample.getPixels(pixels, 0, side, 0, 0, side, side)
-    var left = side
-    var top = side
-    var right = -1
-    var bottom = -1
-    for (y in 0 until side) {
-        for (x in 0 until side) {
-            if ((pixels[y * side + x] ushr 24) >= 24) {
-                left = minOf(left, x)
-                top = minOf(top, y)
-                right = maxOf(right, x)
-                bottom = maxOf(bottom, y)
-            }
-        }
-    }
-    if (right < left) return sample.asImageBitmap()
-
-    val width = right - left + 1
-    val height = bottom - top + 1
-    val scale = ink.toFloat() / maxOf(width, height)
-    val result = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-    val canvas = BitmapCanvas(result)
-    val saved = canvas.save()
-    canvas.translate(
-        (side - width * scale) / 2f - left * scale,
-        (side - height * scale) / 2f - top * scale,
-    )
-    canvas.scale(scale, scale)
-    drawable.draw(canvas)
-    canvas.restoreToCount(saved)
-    sample.recycle()
-    return result.asImageBitmap()
+    drawable.draw(BitmapCanvas(bitmap))
+    return bitmap.asImageBitmap()
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
@@ -205,14 +166,18 @@ internal fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
+    titleAlpha: Float = 1f,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
+    background: @Composable BoxScope.(PaddingValues) -> Unit = {},
+    foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val springScroll = pullToRefresh == null
 
     Scaffold(
         snackbarHost = snackbarHost,
@@ -224,6 +189,7 @@ internal fun SettingsPage(
                 SmallTopAppBar(
                     title = title,
                     color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha),
                     scrollBehavior = scrollBehavior,
                     titlePadding = titlePadding,
                     navigationIcon = {
@@ -257,6 +223,7 @@ internal fun SettingsPage(
                     innerPadding = paddingValues,
                     extraBottom = 12.dp,
                 )
+            background(contentPadding)
 
             @Composable
             fun SettingsList() {
@@ -265,8 +232,14 @@ internal fun SettingsPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
+                            .then(
+                                if (springScroll) Modifier.scrollEndHaptic().overScrollVertical()
+                                else Modifier,
+                            )
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
+                    // Pull-to-refresh remains the gesture owner on Diagnostics.
+                    overscrollEffect = if (springScroll) null else rememberOverscrollEffect(),
                     content = content,
                 )
             }
@@ -285,6 +258,7 @@ internal fun SettingsPage(
             } else {
                 SettingsList()
             }
+            foreground(contentPadding)
         }
 
         overlay()
@@ -292,11 +266,11 @@ internal fun SettingsPage(
 }
 
 internal fun androidx.compose.foundation.lazy.LazyListScope.Section(
-    @StringRes titleRes: Int,
+    @StringRes titleRes: Int? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     item {
-        SmallTitle(stringResource(titleRes))
+        titleRes?.let { SmallTitle(stringResource(it)) }
         Card(
             modifier = Modifier
                 .padding(horizontal = 12.dp)

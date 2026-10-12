@@ -27,8 +27,9 @@ for apk in "$@"; do
     exit 1
   fi
 
-  scope="$(unzip -p "$apk" META-INF/xposed/scope.list | tr -d '\r\n')"
-  if [[ "$scope" != "com.android.systemui" ]]; then
+  scope="$(unzip -p "$apk" META-INF/xposed/scope.list | tr -d '\r')"
+  expected_scope="$(printf '%s\n' "com.android.systemui" "com.android.settings")"
+  if [[ "$scope" != "$expected_scope" ]]; then
     echo "Unexpected Xposed scope in $apk." >&2
     exit 1
   fi
