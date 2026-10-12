@@ -264,22 +264,22 @@ internal fun BatteryCustomModeEditor(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (hsv != null) {
-                BatteryHsvAdjustmentRow(
-                    title = stringResource(R.string.battery_color_hue),
-                    valueText = "${selectedHue.roundToInt()}°",
-                                ) {
-                    HsvHueSlider(
-                        currentHue = selectedHue,
-                        onHueChanged = { fraction ->
-                            val hue = fraction * 360f
-                            selectedHue = hue
-                            val current = editingColor?.let { Color(it).toHsv() }
-                            applyColor(
-                                Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
-                            )
-                        },
-                    )
-                }
+                    BatteryHsvAdjustmentRow(
+                        title = stringResource(R.string.battery_color_hue),
+                        valueText = "${selectedHue.roundToInt()}°",
+                    ) {
+                        HsvHueSlider(
+                            currentHue = selectedHue,
+                            onHueChanged = { fraction ->
+                                val hue = fraction * 360f
+                                selectedHue = hue
+                                val current = editingColor?.let { Color(it).toHsv() }
+                                applyColor(
+                                    Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
+                                )
+                            },
+                        )
+                    }
                     BatteryHsvAdjustmentRow(
                         title = stringResource(R.string.battery_color_saturation),
                         valueText = "${hsv.s.roundToInt()}%",
