@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.CornerRadius
@@ -412,6 +413,8 @@ private fun BatteryColorGrid(
             }
         }
     }
+    val preview by rememberUpdatedState(onPreview)
+    val select by rememberUpdatedState(onSelect)
     val selected = remember(color) {
         var closest = 0 to 0
         var distance = Float.MAX_VALUE
@@ -434,16 +437,16 @@ private fun BatteryColorGrid(
             Modifier
                 .fillMaxWidth()
                 .height(168.dp)
-                .pointerInput(palette, onPreview, onSelect) {
+                .pointerInput(palette) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         var lastCell: Pair<Int, Int>? = null
                         fun preview(position: Offset) {
                             val column = (position.x / size.width * columns).toInt().coerceIn(0, columns - 1)
                             val row = (position.y / size.height * rows).toInt().coerceIn(0, rows - 1)
-                            if (lastCell != row to column) {
+                            if (lastCell != (row to column)) {
                                 lastCell = row to column
-                                onPreview(palette[row][column])
+                                preview(palette[row][column])
                             }
                         }
                         preview(down.position)
@@ -454,7 +457,7 @@ private fun BatteryColorGrid(
                             preview(change.position)
                             change.consume()
                         }
-                        lastCell?.let { (row, column) -> onSelect(palette[row][column]) }
+                        lastCell?.let { (row, column) -> select(palette[row][column]) }
                     }
                 },
     ) {
