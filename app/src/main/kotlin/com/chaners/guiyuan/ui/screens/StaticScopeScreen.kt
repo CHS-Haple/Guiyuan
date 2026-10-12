@@ -31,6 +31,7 @@ import io.github.libxposed.service.HookedTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -120,15 +121,17 @@ private fun StaticScopeItem(
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         startAction = { StaticScopeIcon(packageName, fallbackIcon) },
         endActions = {
-            Text(
-                text = status.first,
-                fontSize = MiuixTheme.textStyles.body2.fontSize,
-                color = if (status.second) {
-                    MiuixTheme.colorScheme.error
-                } else {
-                    MiuixTheme.colorScheme.onSurfaceVariantSummary
-                },
-            )
+            val color = if (status.second) {
+                MiuixTheme.colorScheme.error
+            } else {
+                MiuixTheme.colorScheme.onSurfaceVariantSummary
+            }
+            Badge(
+                containerColor = color.copy(alpha = if (status.second) 0.12f else 0.10f),
+                contentColor = color,
+            ) {
+                Text(text = status.first)
+            }
         },
     ) {
         Text(
