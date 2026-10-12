@@ -20,6 +20,7 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
+import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
@@ -233,10 +234,14 @@ internal fun GyApp(
                 AboutScreen(
                     onBack = ::navigateBack,
                     onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
+                    onOpenScopes = { navigate(AppRoute.StaticScopes) },
                 )
             }
             entry<AppRoute.AboutThirdParty>(swipeDismiss = swipeBackDirection) {
                 AboutThirdPartyScreen(onBack = ::navigateBack)
+            }
+            entry<AppRoute.StaticScopes>(swipeDismiss = swipeBackDirection) {
+                StaticScopeScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.Diagnostics>(swipeDismiss = swipeBackDirection) {
                 DiagnosticsScreen(

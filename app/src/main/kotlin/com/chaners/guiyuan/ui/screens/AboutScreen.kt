@@ -1,18 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -21,14 +18,12 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -39,12 +34,11 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
-import io.github.libxposed.service.HookedTarget
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -72,6 +66,7 @@ private data class AboutDependency(
 internal fun AboutScreen(
     onBack: () -> Unit,
     onOpenThirdParty: () -> Unit,
+    onOpenScopes: () -> Unit,
 ) {
     val context = LocalContext.current
     val app = remember(context.applicationContext) {
@@ -341,33 +336,6 @@ internal fun AboutScreen(
                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
                         XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
                     }
-                    val connectedScopes = xposedStatus as? XposedStatus.Connected
-                    val connectedState = stringResource(R.string.runtime_scope_connected)
-                    val disabledState = stringResource(R.string.runtime_scope_disabled)
-                    val missingState = stringResource(R.string.runtime_scope_not_installed)
-                    val errorState = stringResource(R.string.runtime_scope_error)
-                    fun state(pkg: String, installed: Boolean?): Pair<String, Boolean> {
-                        if (installed == false) return missingState to false
-                        if (connectedScopes == null) return "—" to false
-                        if (pkg !in connectedScopes.scopes) return disabledState to false
-                        val failed = connectedScopes.runningTargets.any { (name, target) ->
-                            (name == pkg || name.startsWith("$pkg:")) &&
-                                target == HookedTarget.State.FAILED
-                        }
-                        return if (failed) errorState to true else connectedState to false
-                    }
-                    val scopeRows = listOf(
-                        Triple(
-                            "SystemUI",
-                            env.sysUiVersion.ifBlank { unavailable },
-                            state("com.android.systemui", env.sysUiInstalled),
-                        ),
-                        Triple(
-                            stringResource(R.string.runtime_scope_settings),
-                            env.settingsVersion.ifBlank { unavailable },
-                            state("com.android.settings", env.settingsInstalled),
-                        ),
-                    )
                     BasicComponent(
                         title = stringResource(R.string.runtime_service_title),
                         summary = serviceSummary,
@@ -377,75 +345,16 @@ internal fun AboutScreen(
                             )
                         },
                     )
-                    BasicComponent(
+                    ArrowPreference(
+                        title = stringResource(R.string.runtime_scope_title),
+                        summary = stringResource(R.string.static_scope_entry_summary),
                         startAction = {
                             SemanticLeadingIcon(
                                 iconRes = R.drawable.ic_material_symbol_target,
                             )
                         },
-                    ) {
-                        Text(
-                            text = stringResource(R.string.runtime_scope_title),
-                            fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onBackground,
-                        )
-                        val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        val summarySize = MiuixTheme.textStyles.body2.fontSize
-                        // Shared columns use the widest row text, not fixed empty slots.
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            Column(Modifier.widthIn(max = 104.dp)) {
-                                scopeRows.forEach { (name, _, _) ->
-                                    Text(
-                                        text = name,
-                                        color = summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                            Column {
-                                scopeRows.forEach {
-                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                }
-                            }
-                            Column(
-                                modifier = Modifier.widthIn(max = 104.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                scopeRows.forEach { (_, _, status) ->
-                                    Text(
-                                        text = status.first,
-                                        color = if (status.second) MiuixTheme.colorScheme.error else summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                            Column {
-                                scopeRows.forEach {
-                                    Text(ABOUT_VALUE_SEPARATOR, color = summaryColor, fontSize = summarySize)
-                                }
-                            }
-                            Column(Modifier.weight(1f)) {
-                                scopeRows.forEach { (_, version, _) ->
-                                    Text(
-                                        text = version,
-                                        color = summaryColor,
-                                        fontSize = summarySize,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                    }
+                        onClick = onOpenScopes,
+                    )
                 }
             }
         }
