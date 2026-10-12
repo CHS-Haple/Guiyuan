@@ -164,6 +164,37 @@ internal fun BatteryCustomModeEditor(
         }
 
         BatterySheetSmallTitle(
+            text = stringResource(R.string.battery_color_common),
+            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+        ) {
+            COMMON_BATTERY_COLORS.chunked(5).forEachIndexed { index, colors ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = if (index == 0) 12.dp else 0.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    colors.forEach { color ->
+                        BatteryCommonColorButton(
+                            color = color,
+                            selected =
+                                entry.source == BatteryColorSchemeSource.CUSTOM &&
+                                    editingColor == color,
+                            visuallyInactive = false,
+                            onClick = { applyColor(color) },
+                        )
+                    }
+                }
+            }
+        }
+
+        BatterySheetSmallTitle(
             text = stringResource(R.string.battery_color_visual_picker),
             textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         )
@@ -211,37 +242,6 @@ internal fun BatteryCustomModeEditor(
                         )
                     },
                 )
-            }
-        }
-
-        BatterySheetSmallTitle(
-            text = stringResource(R.string.battery_color_common),
-            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            COMMON_BATTERY_COLORS.chunked(5).forEachIndexed { index, colors ->
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = if (index == 0) 12.dp else 0.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    colors.forEach { color ->
-                        BatteryCommonColorButton(
-                            color = color,
-                            selected =
-                                entry.source == BatteryColorSchemeSource.CUSTOM &&
-                                    editingColor == color,
-                            visuallyInactive = false,
-                            onClick = { applyColor(color) },
-                        )
-                    }
-                }
             }
         }
 
