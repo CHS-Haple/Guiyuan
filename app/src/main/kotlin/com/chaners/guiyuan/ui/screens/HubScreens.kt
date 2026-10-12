@@ -84,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -226,6 +227,7 @@ internal fun FeaturesScreen(
                 valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
                 steps = 7,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(COMBINED_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -244,6 +246,7 @@ internal fun FeaturesScreen(
                 valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
                 steps = 11,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -267,6 +270,7 @@ internal fun FeaturesScreen(
                         BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
                 steps = 19,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(0f),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -286,6 +290,7 @@ internal fun FeaturesScreen(
                 valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -303,6 +308,7 @@ internal fun FeaturesScreen(
                 valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -320,6 +326,7 @@ internal fun FeaturesScreen(
                 valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(NO_SIM_SIZE_SCALE_DEFAULT),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -337,6 +344,7 @@ internal fun FeaturesScreen(
                 valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
                 steps = 16,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints =
                     listOf(
                         mobileTypeScaleDefault(
@@ -363,6 +371,7 @@ internal fun FeaturesScreen(
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
                 steps = 19,
                 showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
@@ -429,6 +438,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_TEXT_UI_SCALE_MAX,
                     steps = 23,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints =
                         listOf(
                             topTextUiScaleDefault(
@@ -455,6 +465,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
                     steps = 19,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints = listOf(900f),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
@@ -497,6 +508,7 @@ internal fun FeaturesScreen(
                             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
                     steps = 23,
                     showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints =
                         listOf(
                             topChargingIconUiScaleDefault(
