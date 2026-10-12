@@ -22,7 +22,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // The pinned MIUIX ColorPalette always includes alpha. Battery colors are opaque.
@@ -30,6 +29,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun BatteryColorField(
     color: Color?,
     hue: Float,
+    saturation: Float,
     onPreview: (Color?, Float) -> Unit,
     onSelect: (Color, Float) -> Unit,
     onCancel: () -> Unit,
@@ -113,12 +113,12 @@ internal fun BatteryColorField(
             cornerRadius = round,
         )
 
-        color?.toHsv()?.let { hsv ->
+        if (color != null) {
             val radius = 11.dp.toPx()
             val center =
                 Offset(
                     (hue / 360f * size.width).coerceIn(radius, (size.width - radius).coerceAtLeast(radius)),
-                    (hsv.s / 100f * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
+                    (saturation / 100f * size.height).coerceIn(radius, (size.height - radius).coerceAtLeast(radius)),
                 )
             drawCircle(
                 color = Color.Black.copy(alpha = 0.28f),
