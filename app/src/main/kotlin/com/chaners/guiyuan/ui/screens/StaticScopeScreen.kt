@@ -31,6 +31,7 @@ import io.github.libxposed.service.HookedTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -63,13 +64,15 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
         title = stringResource(R.string.static_scope_title),
         onBack = onBack,
     ) {
-        Section(R.string.static_scope_group) {
+        item {
             Text(
                 text = stringResource(R.string.static_scope_description),
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
                 fontSize = MiuixTheme.textStyles.body2.fontSize,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
+        }
+        Section(R.string.static_scope_primary_group) {
             StaticScopeItem(
                 packageName = "com.android.systemui",
                 name = stringResource(R.string.static_scope_sysui),
@@ -77,7 +80,11 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 installed = env.sysUiInstalled,
                 status = status("com.android.systemui", env.sysUiInstalled),
                 fallbackIcon = R.drawable.ic_material_symbol_display_settings,
+                usage = stringResource(R.string.static_scope_sysui_usage),
+                advice = stringResource(R.string.static_scope_sysui_advice),
             )
+        }
+        Section(R.string.static_scope_optional_group) {
             StaticScopeItem(
                 packageName = "com.android.settings",
                 name = stringResource(R.string.runtime_scope_settings),
@@ -85,6 +92,8 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 installed = env.settingsInstalled,
                 status = status("com.android.settings", env.settingsInstalled),
                 fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
+                usage = stringResource(R.string.static_scope_settings_usage),
+                advice = stringResource(R.string.static_scope_settings_advice),
             )
         }
     }
@@ -98,10 +107,12 @@ private fun StaticScopeItem(
     installed: Boolean?,
     status: Pair<String, Boolean>,
     @DrawableRes fallbackIcon: Int,
+    usage: String,
+    advice: String,
 ) {
     val versionText = when {
-        installed == false -> null
-        version.isBlank() || version == "—" -> stringResource(R.string.static_scope_version_unavailable)
+        installed == false || version.isBlank() || version == "—" ->
+            stringResource(R.string.static_scope_version_unavailable)
         else -> stringResource(R.string.static_scope_installed_version, version)
     }
 
@@ -130,14 +141,26 @@ private fun StaticScopeItem(
             fontSize = MiuixTheme.textStyles.body2.fontSize,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
-        if (versionText != null) {
-            Text(
-                text = versionText,
-                fontSize = MiuixTheme.textStyles.body2.fontSize,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
+        Text(
+            text = versionText,
+            fontSize = MiuixTheme.textStyles.body2.fontSize,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
     }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+    Text(
+        text = usage,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+        fontSize = MiuixTheme.textStyles.body2.fontSize,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+    )
+    Text(
+        text = advice,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+        fontSize = MiuixTheme.textStyles.body2.fontSize,
+        fontWeight = FontWeight.Medium,
+        color = MiuixTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable

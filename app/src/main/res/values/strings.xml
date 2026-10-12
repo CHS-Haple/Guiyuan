@@ -154,7 +154,12 @@
     <string name="runtime_scope_title">Scope</string>
     <string name="static_scope_title">Static scopes</string>
     <string name="static_scope_entry_summary">View declared hosts and local versions</string>
-    <string name="static_scope_group">System components</string>
+    <string name="static_scope_primary_group">Primary scope</string>
+    <string name="static_scope_optional_group">Optional scope</string>
+    <string name="static_scope_sysui_usage">Used by Guiyuan’s status bar, lock screen, always-on display, and Control Center features.</string>
+    <string name="static_scope_sysui_advice">Enable this scope to use these core features.</string>
+    <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
+    <string name="static_scope_settings_advice">Enable only if you use that entry. Core features work without it.</string>
     <string name="static_scope_description">Shows declared hosts and their readable local versions.\nEnabled and connected status follows the current framework state.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
