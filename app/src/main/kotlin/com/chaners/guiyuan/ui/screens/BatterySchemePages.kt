@@ -554,7 +554,7 @@ private fun BatteryAddSchemePage(
                                     shape = CircleShape,
                                     color =
                                         if (index < count) MiuixTheme.colorScheme.primary
-                                        else MiuixTheme.colorScheme.surfaceContainer,
+                                        else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.14f),
                                 ) {}
                             }
                         }
@@ -635,59 +635,50 @@ private fun BatterySchemeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val entries =
-        listOf(
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.battery_custom_scheme_rename),
-                            icon = { modifier ->
-                                Icon(
-                                    imageVector = MiuixIcons.Edit,
-                                    contentDescription = null,
-                                    modifier = modifier,
-                                )
-                            },
-                            onClick = onRename,
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.battery_custom_scheme_copy),
-                            icon = { modifier ->
-                                Icon(
-                                    imageVector = MiuixIcons.Copy,
-                                    contentDescription = null,
-                                    modifier = modifier,
-                                )
-                            },
-                            enabled = canCopy,
-                            onClick = onCopy,
-                        ),
+    val entry =
+        DropdownEntry(
+            items =
+                listOf(
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_rename),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Edit,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
+                        onClick = onRename,
                     ),
-            ),
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.battery_custom_scheme_delete),
-                            icon = { modifier ->
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = null,
-                                    modifier = modifier,
-                                    tint = MiuixTheme.colorScheme.error,
-                                )
-                            },
-                            onClick = onDelete,
-                        ),
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_copy),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Copy,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
+                        enabled = canCopy,
+                        onClick = onCopy,
                     ),
-            ),
+                    DropdownItem(
+                        text = stringResource(R.string.battery_custom_scheme_delete),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Delete,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
+                        onClick = onDelete,
+                    ),
+                ),
         )
 
     TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
         OverlayIconDropdownMenu(
-            entries = entries,
-            collapseOnSelection = true,
+            entry = entry,
             modifier = modifier,
         ) {
             Icon(
