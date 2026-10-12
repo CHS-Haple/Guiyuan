@@ -37,7 +37,6 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitCustomSchemeName
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
@@ -232,7 +231,6 @@ internal fun BatteryCustomModeEditor(
                     selectedHue = hue
                 },
             )
-
         }
 
         BatterySheetSmallTitle(
@@ -386,12 +384,10 @@ internal fun BatteryCustomModeEditor(
 private fun BatteryHsvAdjustmentRow(
     title: String,
     valueText: String,
-    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     slider: @Composable () -> Unit,
 ) {
     BasicComponent(
         title = title,
-        insideMargin = insideMargin,
         endActions = {
             Text(
                 text = valueText,
