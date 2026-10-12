@@ -49,6 +49,8 @@ Current rules:
 
 The first accepted package split is now complete: `xposed.battery`, `xposed.prefs`, and `xposed.network` contain the clearest cohesive domains. Do not continue splitting the remaining root `xposed` code merely for directory symmetry; create another subpackage only when a stable maintenance boundary is evident.
 
+The focused large-runtime-class source audit [#433](https://github.com/CHS-Haple/Guiyuan/issues/433) is complete on `dev`: duplicated native View lookup, diagnostic callbacks, clip restoration/synchronization and battery-number witness construction were consolidated without moving host/session ownership. The large coordination, drawing and native-presentation methods remain intentionally cohesive where splitting would duplicate lifecycle, state or geometry authority. This source/CI audit is not a full SystemUI device or performance certification.
+
 ## Guardrails
 
 - Root cause before workaround.
@@ -60,4 +62,4 @@ The first accepted package split is now complete: `xposed.battery`, `xposed.pref
 
 ## Next
 
-Complete the evidence-based audit of large Xposed runtime classes tracked in [#433](https://github.com/CHS-Haple/Guiyuan/issues/433): begin with `GyModule` coordination and `CcTransitionOwner` target/session boundaries; inspect `StatusPainter` and `SysUiPresentationOwner` conservatively. Only refactor where it reduces real maintenance cost while keeping each native writer, session cache and Hot Reload owner intact. Do not set line-count targets, introduce replacement state owners or reopen closed #348/#359/#375 without new device evidence. Apply required CI to coherent source refactors; no Build bump or device retest for demonstrably behavior-neutral changes.
+Continue issue-driven development from the accepted 0.6.1 runtime, with targeted maintainability checks on each changed call chain. If a new native compatibility, Hot Reload, AOD, CC or rendering regression is reproducible, investigate its authoritative source, host/session lifecycle and writer before changing behavior. Keep unmeasured performance concerns observational, preserve native fallback and avoid new abstraction layers or arbitrary file-size targets. Promote `dev` separately only after its actual diff and applicable validation are reviewed.
