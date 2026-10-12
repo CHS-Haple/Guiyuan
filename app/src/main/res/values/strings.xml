@@ -332,6 +332,7 @@
     <string name="battery_color_restore_mode_summary">Use the selected scheme color and clear this custom color</string>
     <string name="battery_color_current">Current color</string>
     <string name="battery_color_opaque_summary">Status colors are always applied as opaque</string>
+    <string name="battery_color_palette">Visual palette</string>
     <string name="battery_color_common">Common colors</string>
     <string name="battery_common_color_red">Red</string>
     <string name="battery_common_color_orange">Orange</string>
