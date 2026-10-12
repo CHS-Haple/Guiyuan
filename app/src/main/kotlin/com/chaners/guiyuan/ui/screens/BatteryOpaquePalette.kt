@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.color.space.Hsv
 
+// MIUIX ColorPalette always exposes alpha; battery colors only support opaque RGB.
 private const val ROWS = 7
 private const val COLS = 13
 
@@ -56,6 +57,7 @@ internal fun BatteryOpaquePalette(
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val preview by rememberUpdatedState(onPreview)
     val commit by rememberUpdatedState(onCommit)
+    val currentColor by rememberUpdatedState(color)
 
     Canvas(
         modifier =
@@ -76,13 +78,18 @@ internal fun BatteryOpaquePalette(
                             return row * COLS + if (rtl) COLS - 1 - col else col
                         }
 
+                        val before = currentColor
                         var current = cell(down.position.x, down.position.y)
                         preview(colors[current])
+                        var saved = false
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
-                                commit(colors[current])
+                                if (!change.isConsumed) {
+                                    commit(colors[current])
+                                    saved = true
+                                }
                                 break
                             }
                             val next = cell(change.position.x, change.position.y)
@@ -92,6 +99,7 @@ internal fun BatteryOpaquePalette(
                             }
                             change.consume()
                         }
+                        if (!saved) preview(before)
                     }
                 },
     ) {
