@@ -535,7 +535,7 @@ class GyModule : XposedModule() {
             SysUiNetworkSource.seedRestoredWifiState(
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-                        ::onNetworkPipelineEvent
+                        ::logRuntimeEvent
                     } else {
                         null
                     },
@@ -806,7 +806,7 @@ class GyModule : XposedModule() {
                 onPresentationChanged = {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
                 },
-                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onNetworkPipelineEvent else null,
+                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { result ->
@@ -870,7 +870,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        ::onIslandMotionEvent
+                        ::logRuntimeEvent
                     } else {
                         null
                     },
@@ -904,13 +904,6 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onIslandMotionEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-
     private fun installCcSource(
         classLoader: ClassLoader,
         source: String,
@@ -927,7 +920,7 @@ class GyModule : XposedModule() {
                 },
                 onRuntimeFailure = ::onCcRuntimeFailure,
                 onEvent = { event ->
-                    if (ccSourceInstalled) onCcEvent(event)
+                    if (ccSourceInstalled) logRuntimeEvent(event)
                 },
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
@@ -1376,7 +1369,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.restoreAfterHotReload(
                 host = host,
-                onEvent = ::onCcEvent,
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 transferredCompactReady = transferredCompactReady,
@@ -1425,7 +1418,7 @@ class GyModule : XposedModule() {
             val result =
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    onEvent = ::onCcEvent,
+                    onEvent = ::logRuntimeEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 )
@@ -1464,7 +1457,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.attach(
                 host = host,
-                onEvent = ::onCcEvent,
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
             )
@@ -1490,12 +1483,6 @@ class GyModule : XposedModule() {
         // Projected owner is already visible when ready=true. On the reverse
         // edge Home is restored before the projected owner is removed.
         HomeRenderSession.onControlCenterAuthorityChanged(!ready)
-    }
-
-    private fun onCcEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
@@ -1642,9 +1629,9 @@ class GyModule : XposedModule() {
                         pendingMobileTypeDrawable = drawable,
                     )
                 },
-                onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onTintSourceEvent else null,
+                onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onSceneSourceEvent else null,
+                onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 onKeyguardAodEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
                         { event ->
@@ -1765,24 +1752,6 @@ class GyModule : XposedModule() {
             onPresentationStateChanged(
                 presentationTrace,
             )
-        }
-    }
-
-    private fun onSceneSourceEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-    private fun onTintSourceEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-    private fun onNetworkPipelineEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
         }
     }
 
@@ -3722,7 +3691,7 @@ class GyModule : XposedModule() {
                     },
                     onEvent =
                         if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                            ::onNetworkPipelineEvent
+                            ::logRuntimeEvent
                         } else {
                             null
                         },
@@ -4389,6 +4358,12 @@ class GyModule : XposedModule() {
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
             SystemClock.elapsedRealtime().toString(36)
+
+    private fun logRuntimeEvent(event: String) {
+        if (detailedDiagnosticsEnabled) {
+            log(Log.INFO, TAG, event)
+        }
+    }
 
     private fun logDiagnostic(
         level: Int,
