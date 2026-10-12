@@ -706,7 +706,7 @@ internal fun SettingsHubScreen(
                     selectedIndex = entryIcon.ordinal,
                     title = stringResource(R.string.settings_entry_icon_title),
                     startAction = {
-                        SemanticLeadingIcon(R.drawable.ic_material_symbol_content_copy)
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_filter_none)
                     },
                     summary = stringResource(R.string.settings_entry_icon_summary),
                     showValue = true,
