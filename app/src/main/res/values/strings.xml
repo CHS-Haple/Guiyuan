@@ -36,7 +36,7 @@
     <string name="language_english">English</string>
     <string name="language_simplified_chinese">Simplified Chinese</string>
     <string name="hide_launcher_icon">Hide launcher icon</string>
-    <string name="hide_launcher_icon_summary">After hiding, you can usually open Guiyuan from the framework service's module list.</string>
+    <string name="hide_launcher_icon_summary">After hiding, you can usually open Guiyuan from the module list in the framework service.</string>
     <string name="battery_fill_follow_retract">Battery fill follows retraction</string>
     <string name="battery_fill_follow_retract_summary">Move the solid battery segment with the retract endpoint, then shorten it when the remaining ring is too short</string>
     <string name="battery_top_readout">Show battery level</string>
