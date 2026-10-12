@@ -561,6 +561,7 @@ internal fun SettingsHubScreen(
     var entry by remember { mutableStateOf(SettingsEntryPrefs.get(ctx)) }
     var entryIcon by remember { mutableStateOf(SettingsEntryPrefs.icon(ctx)) }
     var pending by remember { mutableStateOf<SettingsEntry?>(null) }
+    var scopeApplying by remember { mutableStateOf<SettingsEntry?>(null) }
     var requestFailed by remember { mutableStateOf(false) }
     val entryOptions = listOf(
         stringResource(R.string.settings_entry_disabled),
@@ -613,12 +614,24 @@ internal fun SettingsHubScreen(
                         onClick = {
                             val target = pending
                             pending = null
-                            if (target != null) {
+                            if (target != null && scopeApplying == null) {
+                                val previous = SettingsEntryPrefs.get(ctx)
+                                scopeApplying = target
                                 val accepted = app.requestSettingsScope { approved ->
-                                    if (approved) saveEntry(target)
-                                    else requestFailed = true
+                                    if (scopeApplying == target) {
+                                        scopeApplying = null
+                                        if (approved) {
+                                            // A newer selection takes precedence over this grant.
+                                            if (SettingsEntryPrefs.get(ctx) == previous) saveEntry(target)
+                                        } else {
+                                            requestFailed = true
+                                        }
+                                    }
                                 }
-                                if (!accepted) requestFailed = true
+                                if (!accepted) {
+                                    scopeApplying = null
+                                    requestFailed = true
+                                }
                             }
                         },
                     )
@@ -693,8 +706,12 @@ internal fun SettingsHubScreen(
                 selectedIndex = entry.ordinal,
                 title = stringResource(R.string.settings_entry_title),
                 startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_applications)
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_settings_applications,
+                        enabled = scopeApplying == null,
+                    )
                 },
+                enabled = scopeApplying == null,
                 summary = stringResource(
                     if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
                     else R.string.settings_entry_restart_hint,
