@@ -45,8 +45,8 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.system.SettingsScope
-import com.chaners.guiyuan.system.SysUiScope
+import com.chaners.guiyuan.system.RestartTarget
+import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -87,16 +87,6 @@ import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
-
-private enum class RestartDialog {
-    SELECT,
-    FAILURE,
-}
-
-private enum class RestartTarget(val pkg: String) {
-    SYS_UI("com.android.systemui"),
-    SETTINGS("com.android.settings"),
-}
 
 // Use the same installed-package artwork the scope manager displays.
 @Composable
@@ -144,14 +134,15 @@ internal fun MainHub(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var hotReloadInProgress by remember { mutableStateOf(false) }
-    var restartDialog by remember { mutableStateOf<RestartDialog?>(null) }
-    var restartInProgress by remember { mutableStateOf(false) }
+    var restartPickerOpen by remember { mutableStateOf(false) }
+    val restartState by ScopeRestart.state.collectAsState()
+    val restartInProgress = restartState is ScopeRestart.State.Running
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    var failedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets.orEmpty()
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val onRestart = {
@@ -166,7 +157,7 @@ internal fun MainHub(
                 if (RestartTarget.SYS_UI in availableTargets) setOf(RestartTarget.SYS_UI)
                 else availableTargets
             queuedRestart = emptySet()
-            restartDialog = RestartDialog.SELECT
+            restartPickerOpen = true
         }
     }
     val miuixMaterialActive =
@@ -380,10 +371,10 @@ internal fun MainHub(
                 if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
                 else R.string.restart_scope_dialog_summary,
             ),
-            show = restartDialog == RestartDialog.SELECT,
+            show = restartPickerOpen,
             onDismissRequest = {
                 queuedRestart = emptySet()
-                restartDialog = null
+                restartPickerOpen = false
             },
             onDismissFinished = {
                 if (queuedRestart.isNotEmpty() && !restartInProgress) {
@@ -396,21 +387,10 @@ internal fun MainHub(
                             it.pkg in liveScopes
                         }
                         selectedTargets = targets intersect availableTargets
-                        restartDialog = RestartDialog.SELECT
+                        restartPickerOpen = true
                     } else {
-                        restartInProgress = true
-                        scope.launch {
-                            val failed = mutableSetOf<RestartTarget>()
-                            if (RestartTarget.SYS_UI in targets &&
-                                !SysUiScope.restart(context.applicationContext)
-                            ) failed += RestartTarget.SYS_UI
-                            if (RestartTarget.SETTINGS in targets &&
-                                !SettingsScope.restart(context.applicationContext)
-                            ) failed += RestartTarget.SETTINGS
-                            failedTargets = failed
-                            restartInProgress = false
+                        ScopeRestart.start(context.applicationContext, targets) {
                             app.refreshXposedStatus()
-                            if (failed.isNotEmpty()) restartDialog = RestartDialog.FAILURE
                         }
                     }
                 }
@@ -462,7 +442,7 @@ internal fun MainHub(
                     TextButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = { restartDialog = null },
+                        onClick = { restartPickerOpen = false },
                     )
                 } else {
                     Row(
@@ -492,7 +472,7 @@ internal fun MainHub(
                             colors = ButtonDefaults.textButtonColorsPrimary(),
                             onClick = {
                                 queuedRestart = selectedTargets intersect availableTargets
-                                restartDialog = null
+                                restartPickerOpen = false
                             },
                         )
                     }
@@ -527,14 +507,14 @@ internal fun MainHub(
                     }
                     .joinToString(", "),
             ),
-            show = restartDialog == RestartDialog.FAILURE,
-            onDismissRequest = { restartDialog = null },
+            show = restartState is ScopeRestart.State.Failed,
+            onDismissRequest = ScopeRestart::clearFailure,
         ) {
             TextButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = { restartDialog = null },
+                onClick = ScopeRestart::clearFailure,
             )
         }
     }

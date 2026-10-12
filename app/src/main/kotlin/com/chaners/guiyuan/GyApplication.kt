@@ -29,6 +29,7 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -193,7 +194,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope.value != null || hotReloadPending != null) return false
+        if (service.apiVersion < 102 || pendingScope.value != null || hotReloadPending != null || ScopeRestart.isRunning) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -246,7 +247,7 @@ class GyApplication :
 
     fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope.value != null) return false
+        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope.value != null || ScopeRestart.isRunning) return false
 
         val target =
             runCatching {
