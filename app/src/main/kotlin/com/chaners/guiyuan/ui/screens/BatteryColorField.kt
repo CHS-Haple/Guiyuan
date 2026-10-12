@@ -32,6 +32,7 @@ internal fun BatteryColorField(
 ) {
     val onColorChangedNow by rememberUpdatedState(onColorChanged)
     val paletteDescription = stringResource(R.string.battery_color_visual_picker)
+    val outlineColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f)
 
     Canvas(
         modifier =
@@ -87,7 +88,7 @@ internal fun BatteryColorField(
         )
         // Draw the outline below the cursor so the cursor occludes it at the edge.
         drawRoundRect(
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+            color = outlineColor,
             cornerRadius = round,
             style = Stroke(width = 1.dp.toPx()),
         )
