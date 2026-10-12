@@ -1,15 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -97,6 +97,10 @@ internal fun BatteryCommonColorButton(
     visuallyInactive: Boolean,
     onClick: () -> Unit,
 ) {
+    val dotSize by animateDpAsState(
+        targetValue = if (selected) 34.dp else 28.dp,
+        label = "battery-color-selection",
+    )
     TooltipBox(text = batteryCommonColorName(color)) {
         Surface(
             onClick = onClick,
@@ -108,34 +112,15 @@ internal fun BatteryCommonColorButton(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                if (selected) {
-                    Surface(
-                        modifier = Modifier.size(34.dp),
-                        shape = CircleShape,
-                        color = Color.Transparent,
-                        border = BorderStroke(3.dp, Color.White),
-                        shadowElevation = 2.dp,
-                    ) {}
-                }
                 BatteryColorDot(
                     color = color,
-                    size = 28.dp,
+                    size = dotSize,
                     visuallyInactive = visuallyInactive,
                 )
             }
         }
     }
 }
-
-private const val BATTERY_SWATCH_BORDER_RATIO = 1f / 14f
-private const val BATTERY_SWATCH_BORDER_ALPHA = 0.26f
-
-@Composable
-private fun batterySwatchBorder(size: Dp): BorderStroke =
-    BorderStroke(
-        width = (size.value * BATTERY_SWATCH_BORDER_RATIO).dp,
-        color = MiuixTheme.colorScheme.onSurface.copy(alpha = BATTERY_SWATCH_BORDER_ALPHA),
-    )
 
 @Composable
 internal fun BatteryColorDot(
@@ -152,15 +137,6 @@ internal fun BatteryColorDot(
             } else {
                 Color(color)
             },
-        border =
-            if (visuallyInactive) {
-                BorderStroke(
-                    width = (size.value * BATTERY_SWATCH_BORDER_RATIO).dp,
-                    color = MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                )
-            } else {
-                batterySwatchBorder(size)
-            },
     ) {}
 }
 
@@ -172,7 +148,6 @@ internal fun BatteryColorMosaic(
         modifier = Modifier.size(size),
         shape = CircleShape,
         color = Color.Transparent,
-        border = batterySwatchBorder(size),
     ) {
         Box(
             modifier =
