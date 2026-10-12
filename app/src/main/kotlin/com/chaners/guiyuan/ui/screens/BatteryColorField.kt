@@ -46,9 +46,9 @@ internal fun BatteryColorField(
                         if (size.width <= 0 || size.height <= 0) return@awaitEachGesture
 
                         fun sample(point: Offset): Pair<Color, Float> {
-                            val hue = (point.x / size.width).coerceIn(0f, 1f) * 359.99f
+                            val hue = (point.x / size.width).coerceIn(0f, 1f) * 360f
                             val saturation = (point.y / size.height).coerceIn(0f, 1f)
-                            return Color.hsv(hue, saturation, 1f) to hue
+                            return Color.hsv(hue % 360f, saturation, 1f) to hue
                         }
 
                         var last = sample(down.position)
