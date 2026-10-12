@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,10 +78,24 @@ internal fun BatteryCustomModeEditor(
     var previewColor by remember(custom.id, slot, entry.source, seed) {
         mutableStateOf<Int?>(null)
     }
-    var selectedHue by remember(custom.id, slot, entry.source, seed) {
+    var selectedHue by remember(custom.id, slot) {
         mutableFloatStateOf(
             seed?.let { Color(it).toHsv().h } ?: Color(0xFF3482FF).toHsv().h,
         )
+    }
+    var selectedSaturation by remember(custom.id, slot) {
+        mutableFloatStateOf(
+            seed?.let { Color(it).toHsv() }
+                ?.takeIf { it.v > 0.01f }
+                ?.s ?: 100f,
+        )
+    }
+    // Black loses both hue and saturation; keep their last editable values.
+    LaunchedEffect(seed) {
+        seed?.let { Color(it).toHsv() }?.let { value ->
+            if (value.v > 0.01f) selectedSaturation = value.s
+            if (value.v > 0.01f && value.s > 0.01f) selectedHue = value.h
+        }
     }
     var hexText by remember(custom.id, slot, editingColor) {
         mutableStateOf(
@@ -105,7 +120,8 @@ internal fun BatteryCustomModeEditor(
         val opaque = color or 0xFF000000.toInt()
         editingColor = opaque
         val chosenHsv = Color(opaque).toHsv()
-        if (chosenHsv.s > 0.01f) selectedHue = chosenHsv.h
+        if (chosenHsv.v > 0.01f) selectedSaturation = chosenHsv.s
+        if (chosenHsv.v > 0.01f && chosenHsv.s > 0.01f) selectedHue = chosenHsv.h
         hexText = batteryColorHex(opaque).removePrefix("#")
         val value = batteryColorRgb(opaque)
         redText = value.first.toString()
@@ -204,6 +220,7 @@ internal fun BatteryCustomModeEditor(
                 BatteryColorField(
                     color = editingColor?.let(::Color),
                     hue = selectedHue,
+                    saturation = selectedSaturation,
                     onPreview = { preview, hue ->
                         previewColor = preview?.toArgb()
                         if (preview == null) editingColor = null else showColor(preview.toArgb())
@@ -229,19 +246,20 @@ internal fun BatteryCustomModeEditor(
                             selectedHue = hue
                             val current = editingColor?.let { Color(it).toHsv() }
                             applyColor(
-                                Hsv(hue, current?.s ?: 100f, current?.v ?: 100f).toColor().toArgb(),
+                                Hsv(hue, selectedSaturation, current?.v ?: 100f).toColor().toArgb(),
                             )
                         },
                     )
                 }
                 BatteryHsvAdjustmentRow(
                     title = stringResource(R.string.battery_color_saturation),
-                    valueText = "${hsv.s.roundToInt()}%",
+                    valueText = "${selectedSaturation.roundToInt()}%",
                 ) {
                     HsvSaturationSlider(
                         currentHue = selectedHue,
-                        currentSaturation = hsv.s / 100f,
+                        currentSaturation = selectedSaturation / 100f,
                         onSaturationChanged = { saturation ->
+                            selectedSaturation = saturation * 100f
                             applyColor(
                                 Hsv(selectedHue, saturation * 100f, hsv.v).toColor().toArgb(),
                             )
@@ -254,11 +272,11 @@ internal fun BatteryCustomModeEditor(
                 ) {
                     HsvValueSlider(
                         currentHue = selectedHue,
-                        currentSaturation = hsv.s / 100f,
+                        currentSaturation = selectedSaturation / 100f,
                         currentValue = hsv.v / 100f,
                         onValueChanged = { value ->
                             applyColor(
-                                Hsv(selectedHue, hsv.s, value * 100f).toColor().toArgb(),
+                                Hsv(selectedHue, selectedSaturation, value * 100f).toColor().toArgb(),
                             )
                         },
                     )
