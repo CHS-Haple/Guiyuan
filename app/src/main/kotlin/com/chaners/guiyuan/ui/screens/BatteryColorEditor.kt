@@ -167,9 +167,11 @@ internal fun BatteryCustomModeEditor(
             insideMargin = PaddingValues(16.dp),
         ) {
             BatteryColorField(
-                color = editingColor?.let(::Color) ?: Color(0xFF3482FF),
+                color = editingColor?.let(::Color),
                 hue = selectedHue,
-                onPreview = { showColor(it.toArgb()) },
+                onPreview = { preview ->
+                    if (preview == null) editingColor = null else showColor(preview.toArgb())
+                },
                 onSelect = { applyColor(it.toArgb()) },
             )
             BatteryHsvAdjustmentRow(
@@ -250,11 +252,11 @@ internal fun BatteryCustomModeEditor(
                         valueText = "${hsv.s.roundToInt()}%",
                     ) {
                         HsvSaturationSlider(
-                            currentHue = hsv.h,
+                            currentHue = selectedHue,
                             currentSaturation = hsv.s / 100f,
                             onSaturationChanged = { saturation ->
                                 applyColor(
-                                    Hsv(hsv.h, saturation * 100f, hsv.v).toColor().toArgb(),
+                                    Hsv(selectedHue, saturation * 100f, hsv.v).toColor().toArgb(),
                                 )
                             },
                         )
@@ -264,12 +266,12 @@ internal fun BatteryCustomModeEditor(
                         valueText = "${hsv.v.roundToInt()}%",
                     ) {
                         HsvValueSlider(
-                            currentHue = hsv.h,
+                            currentHue = selectedHue,
                             currentSaturation = hsv.s / 100f,
                             currentValue = hsv.v / 100f,
                             onValueChanged = { value ->
                                 applyColor(
-                                    Hsv(hsv.h, hsv.s, value * 100f).toColor().toArgb(),
+                                    Hsv(selectedHue, hsv.s, value * 100f).toColor().toArgb(),
                                 )
                             },
                         )
