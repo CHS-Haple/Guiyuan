@@ -7,6 +7,17 @@ import org.junit.Test
 
 class PreviewSandboxPolicyTest {
     @Test
+    fun dualSignalPreviewIsOptInAndPreservesBothLevels() {
+        val basic = PreviewSandboxUiState()
+        assertEquals(false, basic.dualMobile)
+        val dual = basic.copy(dualMobile = true, mobileSignalLevel = 3, sim2SignalLevel = 1)
+        assertEquals(true, dual.dualMobile)
+        assertEquals(3, dual.mobileSignalLevel)
+        assertEquals(1, dual.sim2SignalLevel)
+    }
+
+
+    @Test
     fun networkTabsKeepSavedIndicesAndShowNoneFirst() {
         assertEquals(0, PreviewNetworkMode.MOBILE.ordinal)
         assertEquals(1, PreviewNetworkMode.WIFI.ordinal)

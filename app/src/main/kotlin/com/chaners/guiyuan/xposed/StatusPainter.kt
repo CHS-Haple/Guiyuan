@@ -3268,6 +3268,30 @@ internal class StatusPainter(
         opacity: Float,
         geometry: OuterGeometry.Resolved,
     ) {
+        val dualLevels = model.dualMobileLevels
+        if (dualLevels != null && !model.mobileUnavailableMark) {
+            for (row in 0..1) {
+                val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
+                val radius =
+                    if (row == 0) OuterGeometry.DUAL_INNER_ORBIT_RADIUS
+                    else OuterGeometry.DUAL_OUTER_ORBIT_RADIUS
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    fill(
+                        color = tint,
+                        alpha = if (level > index) 255 else 48,
+                        opacity = opacity,
+                    )
+                    val angle = geometry.bottomDotAngle(index)
+                    canvas.drawCircle(
+                        MOBILE_CENTER_X + cos(angle).toFloat() * radius,
+                        MOBILE_CENTER_Y + sin(angle).toFloat() * radius,
+                        geometry.dualMobileDotRadius,
+                        paint,
+                    )
+                }
+            }
+            return
+        }
         val level = model.mobileLevel
 
         for (index in 0 until MOBILE_DOT_COUNT) {

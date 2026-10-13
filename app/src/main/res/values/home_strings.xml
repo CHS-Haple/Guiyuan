@@ -86,4 +86,8 @@
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
+    <string name="home_preview_dual_mobile_title">Dual-SIM signal preview</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner arc, SIM2 outer arc. Preview only.</string>
+    <string name="home_preview_sim1_signal_title">SIM1 signal</string>
+    <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>

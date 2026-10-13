@@ -64,6 +64,8 @@ internal fun PreviewSandboxScreen(
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
     onMobileNetworkChange: (PreviewMobileNetwork) -> Unit,
     onMobileSignalLevelChange: (Int) -> Unit,
+    onDualMobileChange: (Boolean) -> Unit,
+    onSim2SignalLevelChange: (Int) -> Unit,
     onWifiStateChange: (PreviewWifiState) -> Unit,
     onWifiSignalLevelChange: (Int) -> Unit,
     onBatteryPercentChange: (Int) -> Unit,
@@ -329,12 +331,25 @@ internal fun PreviewSandboxScreen(
                             modifier = Modifier,
                         )
                         if (state.mobileControlsEnabled) {
+                            SwitchPreference(
+                                title = stringResource(R.string.home_preview_dual_mobile_title),
+                                summary = stringResource(R.string.home_preview_dual_mobile_summary),
+                                checked = state.dualMobile,
+                                onCheckedChange = onDualMobileChange,
+                                startAction = {
+                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card)
+                                },
+                                insideMargin = SandboxPreferenceInsideMargin,
+                            )
                             SliderPreference(
                                 value = state.mobileSignalLevel.toFloat(),
                                 onValueChange = { value ->
                                     onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
                                 },
-                                title = stringResource(R.string.home_preview_mobile_signal_title),
+                                title = stringResource(
+                                    if (state.dualMobile) R.string.home_preview_sim1_signal_title
+                                    else R.string.home_preview_mobile_signal_title,
+                                ),
                                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
                                 valueText = signalValueText(state.mobileSignalLevel),
                                 insideMargin = SandboxPreferenceInsideMargin,
@@ -344,6 +359,25 @@ internal fun PreviewSandboxScreen(
                                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                 keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
                             )
+                            if (state.dualMobile) {
+                                SliderPreference(
+                                    value = state.sim2SignalLevel.toFloat(),
+                                    onValueChange = { value ->
+                                        onSim2SignalLevelChange(value.roundToInt().coerceIn(0, 4))
+                                    },
+                                    title = stringResource(R.string.home_preview_sim2_signal_title),
+                                    startAction = {
+                                        SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt)
+                                    },
+                                    valueText = signalValueText(state.sim2SignalLevel),
+                                    insideMargin = SandboxPreferenceInsideMargin,
+                                    valueRange = 0f..4f,
+                                    steps = 3,
+                                    showKeyPoints = true,
+                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                                    keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                                )
+                            }
                         } else {
                             BasicComponent(
                                 title = stringResource(R.string.home_preview_mobile_signal_title),
