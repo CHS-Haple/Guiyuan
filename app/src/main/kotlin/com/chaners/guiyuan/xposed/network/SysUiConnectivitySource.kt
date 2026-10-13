@@ -6,12 +6,18 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Handler
 import android.os.Looper
+import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 
 internal object SysUiConnectivitySource {
     private var manager: ConnectivityManager? = null
     @Volatile
     private var callback: ConnectivityManager.NetworkCallback? = null
+    private var dataContext: Context? = null
+    private var dataTelephony: TelephonyManager? = null
+    private var dataCallback: TelephonyCallback? = null
+    private var dataSubscriptionId = -1
+    private var onDataChanged: (() -> Unit)? = null
 
     @Synchronized
     fun attach(
@@ -88,14 +94,24 @@ internal object SysUiConnectivitySource {
 
         manager = connectivityManager
         callback = networkCallback
+        dataContext = context.applicationContext
+        onDataChanged = {
+            if (callback === networkCallback) {
+                val capabilities =
+                    runCatching {
+                        connectivityManager.activeNetwork?.let(
+                            connectivityManager::getNetworkCapabilities,
+                        )
+                    }.getOrNull()
+                publish(source = "mobile-data", capabilities = capabilities)
+            }
+        }
         return runCatching {
             connectivityManager.registerDefaultNetworkCallback(networkCallback, handler)
             if (connectivityManager.activeNetwork == null) {
-                publish(
-                    source = "initial-none",
-                    capabilities = null,
-                )
+                publish(source = "initial-none", capabilities = null)
             }
+            refreshDataSubscription()
             true
         }.getOrElse {
             detach()
@@ -103,8 +119,57 @@ internal object SysUiConnectivitySource {
         }
     }
 
+    // Default data SIM can change while the network stays connected.
+    @Synchronized
+    fun refreshDataSubscription() {
+        val subId = SysUiDefaultDataSubSource.currentSubscriptionId()
+        if (subId != dataSubscriptionId || dataCallback == null) {
+            dataTelephony?.let { telephony ->
+                dataCallback?.let { old ->
+                    runCatching { telephony.unregisterTelephonyCallback(old) }
+                }
+            }
+            dataCallback = null
+            dataTelephony = null
+            dataSubscriptionId = subId
+
+            val context = dataContext
+            if (subId >= 0 && context != null) {
+                val telephony =
+                    context.getSystemService(TelephonyManager::class.java)
+                        ?.createForSubscriptionId(subId)
+                if (telephony != null) {
+                    val observer =
+                        object : TelephonyCallback(), TelephonyCallback.UserMobileDataStateListener {
+                            override fun onUserMobileDataStateChanged(enabled: Boolean) {
+                                if (dataCallback === this) onDataChanged?.invoke()
+                            }
+                        }
+                    if (runCatching {
+                            telephony.registerTelephonyCallback(context.mainExecutor, observer)
+                        }.isSuccess
+                    ) {
+                        dataTelephony = telephony
+                        dataCallback = observer
+                    }
+                }
+            }
+        }
+        onDataChanged?.invoke()
+    }
+
     @Synchronized
     fun detach() {
+        dataTelephony?.let { telephony ->
+            dataCallback?.let { old ->
+                runCatching { telephony.unregisterTelephonyCallback(old) }
+            }
+        }
+        dataTelephony = null
+        dataCallback = null
+        dataContext = null
+        onDataChanged = null
+        dataSubscriptionId = -1
         val currentManager = manager
         val currentCallback = callback
         if (currentManager != null && currentCallback != null) {

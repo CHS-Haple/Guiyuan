@@ -76,7 +76,10 @@ internal object ConnectivityPolicy {
                 }
 
             SysUiConnectivitySource.Transport.VPN ->
-                if (wifi == StatusStateStore.WifiState.Hidden) {
+                if (
+                    wifi == StatusStateStore.WifiState.Hidden &&
+                    connectivity.mobileDataEnabled != false
+                ) {
                     mobileType?.let {
                         CenterIndicator.MobileType(
                             label = it.label,

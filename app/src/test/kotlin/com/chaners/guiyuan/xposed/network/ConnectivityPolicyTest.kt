@@ -276,7 +276,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun vpnDefaultNetworkDoesNotSuppressAuthoritativeMobileTypeAtBootstrap() {
+    fun vpnDoesNotShowMobileTypeWhenMobileDataIsDisabled() {
         val result =
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
@@ -299,6 +299,35 @@ class ConnectivityPolicyTest {
             )
 
         assertEquals(
+            CenterIndicator.Empty,
+            result,
+        )
+    }
+
+    @Test
+    fun vpnCanStillUseCellularTypeWhenDataIsEnabledAndWifiIsAbsent() {
+        val result =
+            ConnectivityPolicy.resolve(
+                wifi = StatusStateStore.WifiState.Hidden,
+                airplaneMode = false,
+                connectivity =
+                    SysUiConnectivitySource.State(
+                        known = true,
+                        transport = SysUiConnectivitySource.Transport.VPN,
+                        validated = true,
+                        hasInternetCapability = true,
+                        mobileDataEnabled = true,
+                    ),
+                mobileType =
+                    NativePresentationResolver.NetworkType(
+                        label = "5G",
+                        enhanced = false,
+                        source =
+                            NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+                    ),
+            )
+
+        assertEquals(
             CenterIndicator.MobileType(
                 label = "5G",
                 enhanced = false,
@@ -306,6 +335,32 @@ class ConnectivityPolicyTest {
             ),
             result,
         )
+    }
+
+    @Test
+    fun cellularWithDataDisabledDoesNotShowNetworkType() {
+        val result =
+            ConnectivityPolicy.resolve(
+                wifi = StatusStateStore.WifiState.Hidden,
+                airplaneMode = false,
+                connectivity =
+                    SysUiConnectivitySource.State(
+                        known = true,
+                        transport = SysUiConnectivitySource.Transport.CELLULAR,
+                        validated = false,
+                        hasInternetCapability = false,
+                        mobileDataEnabled = false,
+                    ),
+                mobileType =
+                    NativePresentationResolver.NetworkType(
+                        label = "5G",
+                        enhanced = false,
+                        source =
+                            NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+                    ),
+            )
+
+        assertEquals(CenterIndicator.Empty, result)
     }
 
     @Test
