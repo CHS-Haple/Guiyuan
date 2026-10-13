@@ -743,7 +743,11 @@ internal object CcRenderSession {
                 if (sceneEligible) host.get()?.context?.let(SandboxHost::model) else null
             val result = renderController.update(snapshot, preview = preview)
             val real = renderController.currentRealModel()
-            if (currentModel != result.model || currentReal != real || previewActive != (preview != null)) {
+            if (
+                currentModel != result.model ||
+                currentReal != real ||
+                previewActive != (preview != null)
+            ) {
                 currentModel = result.model
                 currentReal = real
                 previewActive = preview != null
@@ -764,12 +768,12 @@ internal object CcRenderSession {
         }
 
         fun setSceneEligible(eligible: Boolean) {
-            if (sceneEligible == eligible) return
+            val changed = sceneEligible != eligible
             sceneEligible = eligible
             if (!eligible) {
                 nativePresentationReady = false
             }
-            refresh()
+            if (changed) refresh()
             syncPresentation("scene")
         }
 
@@ -1000,11 +1004,11 @@ internal object CcRenderSession {
         val view: View,
         val anchorView: View,
         val model: RenderModel,
-        val realModel: RenderModel? = null,
-        val previewActive: Boolean = false,
         val colors: RenderColors,
         val visual: VisualCfg,
         val stateVersion: Long,
+        val realModel: RenderModel? = null,
+        val previewActive: Boolean = false,
     )
 
     internal sealed interface PrearmResult {
