@@ -353,14 +353,13 @@ internal fun PreviewSandboxScreen(
                                 keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
                             )
                         } else {
-                            Text(
-                                text = mobileDisabledSummary.orEmpty(),
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp, vertical = 14.dp),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                            BasicComponent(
+                                title = stringResource(R.string.home_preview_mobile_signal_title),
+                                summary = mobileDisabledSummary.orEmpty(),
+                                startAction = {
+                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt)
+                                },
+                                insideMargin = SandboxPreferenceInsideMargin,
                             )
                         }
                         SwitchPreference(
