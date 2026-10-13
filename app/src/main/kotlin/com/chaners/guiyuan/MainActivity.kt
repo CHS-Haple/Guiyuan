@@ -27,6 +27,11 @@ import com.chaners.guiyuan.ui.GyApp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    override fun onPause() {
+        (application as GyApplication).stopSandbox()
+        super.onPause()
+    }
+
     override fun onResume() {
         super.onResume()
         (application as GyApplication).refreshXposedStatus()
@@ -56,6 +61,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appearance by repo.settings.collectAsState(initial = Appearance())
+            val sandboxActive by (application as GyApplication).sandboxActive.collectAsState()
             val scope = rememberCoroutineScope()
             val sysDark = isSystemInDarkTheme()
             val dark =
@@ -82,6 +88,13 @@ class MainActivity : ComponentActivity() {
                 appearance = appearance,
                 dark = dark,
                 onPreviewThemeChange = { previewBarDark = it },
+                sandboxActive = sandboxActive,
+                onSandboxToggle = { enabled, state ->
+                    val app = application as GyApplication
+                    if (enabled) app.startSandbox(state) else app.stopSandbox()
+                },
+                onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
+                onSandboxStop = { (application as GyApplication).stopSandbox() },
                 lang = lang,
                 iconHidden = iconHidden,
                 onHotReload = { onComplete ->

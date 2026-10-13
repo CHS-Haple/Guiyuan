@@ -67,6 +67,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
+    parasiteActive: Boolean,
+    onParasiteChange: (Boolean) -> Unit,
     onSimPresentChange: (Boolean) -> Unit,
     onAirplaneModeChange: (Boolean) -> Unit,
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
@@ -256,6 +258,27 @@ internal fun PreviewSandboxScreen(
                         PreviewStatusLine(
                             label = stringResource(R.string.home_preview_section_battery),
                             value = previewBatterySummary(state),
+                        )
+                    }
+                }
+
+                item {
+                    Card(
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 12.dp)
+                                .padding(bottom = 12.dp),
+                        insideMargin = PaddingValues(vertical = 8.dp),
+                    ) {
+                        SwitchPreference(
+                            checked = parasiteActive,
+                            onCheckedChange = onParasiteChange,
+                            title = stringResource(R.string.home_preview_parasite_title),
+                            summary = stringResource(R.string.home_preview_parasite_summary),
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_layers)
+                            },
+                            insideMargin = SandboxPreferenceInsideMargin,
                         )
                     }
                 }
