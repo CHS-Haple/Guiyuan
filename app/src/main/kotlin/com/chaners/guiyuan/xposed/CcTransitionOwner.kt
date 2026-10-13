@@ -1856,6 +1856,12 @@ internal object CcTransitionOwner {
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
+                            target != StatusPainter.TransitionTarget.BatteryNumber ||
+                                (witness.slotView.isShown &&
+                                    witness.slotView.width > 0 &&
+                                    witness.slotView.height > 0)
+                        ) &&
+                        (
                             (witness.slot != MOBILE_SLOT && witness.slot != STACKED_MOBILE_SLOT) ||
                                 witness.subscriptionId == readMobileSubId(witness.slotView)
                         ) &&
@@ -2382,14 +2388,18 @@ internal object CcTransitionOwner {
             val digitalView =
                 readViewField(finalBattery, "mBatteryDigitalView")
                     ?: NativeParticipantAccess.findResourceView(finalBattery, "battery_icon_container")
+            // Only the native hollow-number style may borrow the battery body's Paint.
             val visibleBatteryBody =
-                resolveBatteryIconTarget(finalBattery)
-                    ?.takeIf { view ->
-                        view.visibility == View.VISIBLE &&
-                            view.width > 0 &&
-                            view.height > 0
-                    }
-            val legacyIconView = readViewField(finalBattery, "mBatteryIconView")
+                if (readIntField(finalBattery, "mBatteryStyle") == 1) {
+                    readViewField(finalBattery, "mHollowBatteryIconView")
+                        ?.takeIf { view ->
+                            view.isShown &&
+                                view.width > 0 &&
+                                view.height > 0
+                        }
+                } else {
+                    null
+                }
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
@@ -2403,6 +2413,7 @@ internal object CcTransitionOwner {
             // Best case: the native percentage TextView itself is laid out.
             if (
                 textView != null &&
+                textView.isShown &&
                 textView.width > 0 &&
                 textView.height > 0
             ) {
@@ -2459,24 +2470,8 @@ internal object CcTransitionOwner {
                 }
             }
 
-            // Compatibility fallback for variants where mBatteryIconView itself
-            // remains the visible/measured presentation authority.
-            val legacyIcon =
-                legacyIconView
-                    ?.takeIf { view -> view.width > 0 && view.height > 0 }
-                    ?: return null
-            val paint = resolveBatteryNumberPaint(legacyIcon) ?: return null
-            val bounds =
-                centeredBatteryNumberPaintBounds(
-                    view = legacyIcon,
-                    paint = paint,
-                    text = expected,
-                ) ?: return null
-            return batteryNumberWitness(
-                view = legacyIcon,
-                bounds = bounds,
-                paint = paint,
-            )
+            // A battery icon without visible numbers is not a number endpoint.
+            return null
         }
 
         private fun batteryNumberWitness(
@@ -2524,7 +2519,7 @@ internal object CcTransitionOwner {
                     if (entry.contains("text")) score += 1
                     if (view.width > 0 && view.height > 0) score += 4
                     if ((view.layout?.lineCount ?: 0) > 0) score += 2
-                    if (score > 0) {
+                    if (digits == expected && score > 0) {
                         candidates += Candidate(view, score)
                     }
                 }
