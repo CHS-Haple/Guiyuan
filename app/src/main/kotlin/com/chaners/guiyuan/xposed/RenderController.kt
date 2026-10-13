@@ -7,7 +7,7 @@ internal class RenderController(
     private val view: RenderView,
 ) {
     private var stableModel: RenderModel? = null
-    private var previewShown = false
+    private var stableReal: RenderModel? = null
     private var stableTint: TintState? = null
 
     fun update(
@@ -23,11 +23,12 @@ internal class RenderController(
                 presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
             )
-        // A preview must not become the fallback for incomplete native state.
+        if (real != null) stableReal = real
+        // Keep the last actual model separately, so an expired preview is never retained.
+        val actual = real ?: stableReal
         val candidate = if (real != null) preview ?: real else null
         val previous = stableModel
-        val model = candidate ?: previous.takeUnless { previewShown }
-        previewShown = preview != null && real != null
+        val model = if (actual != null) preview ?: actual else null
 
         if (model != previous) {
             stableModel = model
