@@ -7,6 +7,42 @@ import org.junit.Test
 
 class PreviewSandboxPolicyTest {
     @Test
+    fun networkTabsKeepSavedIndicesAndShowNoneFirst() {
+        assertEquals(0, PreviewNetworkMode.MOBILE.ordinal)
+        assertEquals(1, PreviewNetworkMode.WIFI.ordinal)
+        assertEquals(2, PreviewNetworkMode.NONE.ordinal)
+        assertEquals(
+            listOf(PreviewNetworkMode.NONE, PreviewNetworkMode.MOBILE, PreviewNetworkMode.WIFI),
+            previewNetworkTabs,
+        )
+    }
+
+    @Test
+    fun noNetworkStillShowsSimSignalWithoutDataConnection() {
+        val state = PreviewSandboxUiState(networkMode = PreviewNetworkMode.NONE)
+        assertEquals(PreviewCenterSource.EMPTY, state.previewCenterSource())
+        assertTrue(state.mobileControlsEnabled)
+        assertFalse(state.mobileOptionsVisible)
+        assertTrue(state.copy(networkMode = PreviewNetworkMode.WIFI).mobileControlsEnabled)
+        assertTrue(state.copy(networkMode = PreviewNetworkMode.MOBILE).mobileOptionsVisible)
+    }
+
+    @Test
+    fun noNetworkRetainsAirplaneAndNoSimPriority() {
+        val state = PreviewSandboxUiState(networkMode = PreviewNetworkMode.NONE)
+        assertEquals(
+            PreviewCenterSource.NO_SIM,
+            state.copy(simPresent = false).previewCenterSource(),
+        )
+        assertEquals(
+            PreviewCenterSource.AIRPLANE,
+            state.copy(airplaneMode = true).previewCenterSource(),
+        )
+        assertFalse(state.copy(simPresent = false).mobileControlsEnabled)
+        assertFalse(state.copy(airplaneMode = true).mobileControlsEnabled)
+    }
+
+    @Test
     fun mobileNetworkSandboxCoversCommonNativeLabelsWithoutChangingLegacyOrdinals() {
         assertEquals(0, PreviewMobileNetwork.NONE.ordinal)
         assertEquals(1, PreviewMobileNetwork.FOUR_G.ordinal)
