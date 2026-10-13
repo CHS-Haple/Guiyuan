@@ -240,7 +240,7 @@ internal fun PreviewSandboxScreen(
                                         .height(184.dp),
                             )
                         }
-                        PreviewSummary(state, modifier = Modifier.padding(top = 7.dp))
+                        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
 

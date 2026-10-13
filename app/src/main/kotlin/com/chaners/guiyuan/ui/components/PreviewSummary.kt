@@ -1,12 +1,17 @@
 package com.chaners.guiyuan.ui.components
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,23 +63,34 @@ internal fun PreviewSummary(
             PreviewCenterSource.MOBILE -> signalValueText(state.mobileSignalLevel)
             else -> null
         }
+    val networkIcon =
+        when (center) {
+            PreviewCenterSource.WIFI -> R.drawable.ic_material_symbol_wifi
+            PreviewCenterSource.MOBILE,
+            PreviewCenterSource.EMPTY -> R.drawable.ic_material_symbol_signal_cellular_alt
+            PreviewCenterSource.AIRPLANE -> R.drawable.ic_material_symbol_airplanemode_active
+            PreviewCenterSource.NO_SIM -> R.drawable.ic_material_symbol_sim_card
+        }
     val networkDetails =
         listOfNotNull(
             if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
-                stringResource(
-                    R.string.home_preview_summary_mobile_signal,
-                    signalValueText(state.mobileSignalLevel),
-                )
+                R.drawable.ic_material_symbol_signal_cellular_alt to
+                    stringResource(
+                        R.string.home_preview_summary_mobile_signal,
+                        signalValueText(state.mobileSignalLevel),
+                    )
             } else {
                 null
             },
             if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
-                stringResource(R.string.home_preview_airplane_title)
+                R.drawable.ic_material_symbol_airplanemode_active to
+                    stringResource(R.string.home_preview_airplane_title)
             } else {
                 null
             },
             if (!state.simPresent && center != PreviewCenterSource.NO_SIM) {
-                stringResource(R.string.home_preview_sim_absent)
+                R.drawable.ic_material_symbol_sim_card to
+                    stringResource(R.string.home_preview_sim_absent)
             } else {
                 null
             },
@@ -98,17 +114,20 @@ internal fun PreviewSummary(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SummaryField(
-            label = stringResource(R.string.home_preview_section_network),
+            icon = networkIcon,
             value = network,
             alongside = networkSignal,
             details = networkDetails,
             modifier = Modifier.weight(1f),
         )
         SummaryField(
-            label = stringResource(R.string.home_preview_section_battery),
+            icon = R.drawable.ic_material_symbol_battery_5_bar,
             value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
             alongside = stringResource(batteryMode),
-            details = listOf(stringResource(charging)),
+            details =
+                listOf(
+                    R.drawable.ic_material_symbol_bolt to stringResource(charging),
+                ),
             modifier = Modifier.weight(1f),
         )
     }
@@ -116,46 +135,51 @@ internal fun PreviewSummary(
 
 @Composable
 private fun SummaryField(
-    label: String,
+    @DrawableRes icon: Int,
     value: String,
     alongside: String?,
-    details: List<String>,
+    details: List<Pair<Int, String>>,
     modifier: Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = 1,
-        )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceContainer),
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = value,
+                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+            )
+            if (alongside != null) {
+                Text(
+                    text = alongside,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+        }
+        details.forEach { (detailIcon, detail) ->
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = value,
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                Image(
+                    painter = painterResource(detailIcon),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceContainerVariant),
+                    modifier = Modifier.size(16.dp),
                 )
-                if (alongside != null) {
-                    Text(
-                        text = alongside,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-            }
-            details.forEach { detail ->
                 Text(
                     text = detail,
                     style = MiuixTheme.textStyles.body2,
