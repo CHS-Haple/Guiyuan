@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
@@ -461,30 +460,16 @@ private fun RuntimeStatusMark(
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         val ringProgress = ring.coerceIn(0f, 1f)
-        // Unmount the indefinite MIUIX spinner once the handoff is complete.
-        if (ringProgress < 0.999f) {
-            CircularProgressIndicator(
-                modifier = Modifier.graphicsLayer { alpha = 1f - ringProgress },
-                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
-                strokeWidth = 6.4.dp,
-                colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                    foregroundColor = color.copy(alpha = 0.58f),
-                    backgroundColor = color.copy(alpha = 0.13f),
-                ),
-            )
-        }
-
-        if (ringProgress > 0f) {
-            CircularProgressIndicator(
-                progress = ringProgress,
-                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
-                strokeWidth = 6.4.dp,
-                colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                    foregroundColor = color.copy(alpha = 0.58f),
-                    backgroundColor = Color.Transparent,
-                ),
-            )
-        }
+        // MIUIX keeps its rotating arc until the ring starts growing or resumes it after retraction.
+        CircularProgressIndicator(
+            progress = if (ringProgress <= 0.001f) null else 1f / 12f + ringProgress * (11f / 12f),
+            size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+            strokeWidth = 6.4.dp,
+            colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                foregroundColor = color.copy(alpha = 0.58f),
+                backgroundColor = color.copy(alpha = 0.13f),
+            ),
+        )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val markColor = color.copy(alpha = 0.58f)
