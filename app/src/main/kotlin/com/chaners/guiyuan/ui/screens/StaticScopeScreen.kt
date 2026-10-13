@@ -5,8 +5,7 @@ import android.graphics.Canvas as BitmapCanvas
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,18 +46,6 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
         value = RuntimeEnv.resolve(context)
     }
 
-    val connected = xposedStatus as? XposedStatus.Connected
-
-    fun status(pkg: String, installed: Boolean?): ScopeState {
-        if (installed == false) return ScopeState.Missing
-        if (connected == null) return ScopeState.Unknown
-        if (pkg !in connected.scopes) return ScopeState.Disabled
-        val failed = connected.runningTargets.any { (name, state) ->
-            (name == pkg || name.startsWith("$pkg:")) && state == HookedTarget.State.FAILED
-        }
-        return if (failed) ScopeState.Failed else ScopeState.Connected
-    }
-
     SettingsPage(
         title = stringResource(R.string.static_scope_title),
         onBack = onBack,
@@ -77,7 +64,7 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 name = stringResource(R.string.static_scope_sysui),
                 version = env.sysUiVersion,
                 installed = env.sysUiInstalled,
-                status = status("com.android.systemui", env.sysUiInstalled),
+                status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
                 fallbackIcon = R.drawable.ic_material_symbol_display_settings,
                 usage = stringResource(R.string.static_scope_sysui_usage),
                 advice = stringResource(R.string.static_scope_sysui_advice),
@@ -89,7 +76,7 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 name = stringResource(R.string.runtime_scope_settings),
                 version = env.settingsVersion,
                 installed = env.settingsInstalled,
-                status = status("com.android.settings", env.settingsInstalled),
+                status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
                 fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
                 usage = stringResource(R.string.static_scope_settings_usage),
                 advice = stringResource(R.string.static_scope_settings_advice),
@@ -121,26 +108,31 @@ private fun StaticScopeItem(
         endActions = {
             val label =
                 when (status) {
-                    ScopeState.Connected -> stringResource(R.string.runtime_scope_connected)
-                    ScopeState.Disabled -> stringResource(R.string.runtime_scope_disabled)
+                    ScopeState.Authorized -> stringResource(R.string.runtime_scope_authorized)
+                    ScopeState.Unauthorized -> stringResource(R.string.runtime_scope_disabled)
                     ScopeState.Missing -> stringResource(R.string.runtime_scope_not_installed)
                     ScopeState.Failed -> stringResource(R.string.runtime_scope_error)
                     ScopeState.Unknown -> "—"
                 }
             val color =
                 when (status) {
-                    ScopeState.Connected -> MiuixTheme.colorScheme.primary
+                    ScopeState.Authorized -> MiuixTheme.colorScheme.primary
                     ScopeState.Failed -> MiuixTheme.colorScheme.error
                     else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
                 }
+            val backgroundAlpha =
+                when (status) {
+                    ScopeState.Authorized, ScopeState.Failed -> 0.12f
+                    else -> 0.07f
+                }
             Surface(
-                modifier = Modifier.height(24.dp),
-                shape = RoundedCornerShape(6.dp),
-                color = color.copy(alpha = 0.12f),
+                modifier = Modifier.heightIn(min = 20.dp),
+                shape = RoundedCornerShape(5.dp),
+                color = color.copy(alpha = backgroundAlpha),
                 contentColor = color,
             ) {
                 Box(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -220,9 +212,21 @@ private fun StaticScopeIcon(
     }
 }
 
-private enum class ScopeState {
-    Connected,
-    Disabled,
+internal fun scopeState(pkg: String, installed: Boolean?, status: XposedStatus): ScopeState {
+    if (installed == false) return ScopeState.Missing
+    val connected = status as? XposedStatus.Connected ?: return ScopeState.Unknown
+    if (pkg !in connected.scopes) return ScopeState.Unauthorized
+
+    val failed = connected.runningTargets.any { (name, state) ->
+        (name == pkg || name.startsWith("$pkg:")) && state == HookedTarget.State.FAILED
+    }
+    // Reported targets are a snapshot, not proof that a host is running now.
+    return if (failed) ScopeState.Failed else ScopeState.Authorized
+}
+
+internal enum class ScopeState {
+    Authorized,
+    Unauthorized,
     Missing,
     Failed,
     Unknown,
