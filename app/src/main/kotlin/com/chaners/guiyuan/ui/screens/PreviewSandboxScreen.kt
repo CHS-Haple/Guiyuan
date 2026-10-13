@@ -3,9 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
+import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -240,15 +239,7 @@ internal fun PreviewSandboxScreen(
                                         .height(184.dp),
                             )
                         }
-                        PreviewStatusLine(
-                            label = stringResource(R.string.home_preview_section_network),
-                            value = previewNetworkSummary(state),
-                            modifier = Modifier.padding(top = 7.dp),
-                        )
-                        PreviewStatusLine(
-                            label = stringResource(R.string.home_preview_section_battery),
-                            value = previewBatterySummary(state),
-                        )
+                        PreviewSummary(state, modifier = Modifier.padding(top = 7.dp))
                     }
                 }
 
@@ -426,35 +417,6 @@ internal fun PreviewSandboxScreen(
 }
 
 @Composable
-private fun PreviewStatusLine(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = 1,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = value,
-            modifier = Modifier.weight(1f),
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-        )
-    }
-}
-
-@Composable
 private fun SandboxSegmentedField(
     title: String,
     @DrawableRes iconRes: Int,
@@ -495,133 +457,3 @@ private val SandboxPreferenceInsideMargin =
         vertical = 10.dp,
     )
 
-@Composable
-internal fun previewNetworkSummary(
-    state: PreviewSandboxUiState,
-): String {
-    if (state.networkMode == PreviewNetworkMode.WIFI) {
-        val wifi =
-            when (state.wifiState) {
-                PreviewWifiState.CONNECTED ->
-                    stringResource(
-                        R.string.home_preview_network_summary_wifi,
-                        signalValueText(state.wifiSignalLevel),
-                    )
-                PreviewWifiState.NO_INTERNET ->
-                    stringResource(
-                        R.string.home_preview_network_summary_wifi_no_internet,
-                        signalValueText(state.wifiSignalLevel),
-                    )
-                PreviewWifiState.HOTSPOT ->
-                    stringResource(
-                        R.string.home_preview_network_summary_hotspot,
-                        signalValueText(state.wifiSignalLevel),
-                    )
-            }
-        val withAirplane =
-            if (state.airplaneMode) {
-                stringResource(R.string.home_preview_network_summary_airplane_wifi, wifi)
-            } else {
-                wifi
-            }
-        return if (!state.simPresent) {
-            stringResource(
-                R.string.home_preview_network_summary_with_sim_state,
-                withAirplane,
-                stringResource(R.string.home_preview_sim_absent),
-            )
-        } else {
-            if (state.mobileControlsEnabled) {
-                stringResource(
-                    R.string.home_preview_network_summary_with_mobile_signal,
-                    withAirplane,
-                    signalValueText(state.mobileSignalLevel),
-                )
-            } else {
-                withAirplane
-            }
-        }
-    }
-
-    if (state.airplaneMode) {
-        return if (!state.simPresent) {
-            stringResource(
-                R.string.home_preview_network_summary_with_sim_state,
-                stringResource(R.string.home_preview_airplane_title),
-                stringResource(R.string.home_preview_sim_absent),
-            )
-        } else {
-            stringResource(R.string.home_preview_airplane_title)
-        }
-    }
-    if (!state.simPresent) {
-        return stringResource(R.string.home_preview_sim_absent)
-    }
-
-    if (state.networkMode == PreviewNetworkMode.NONE) {
-        return stringResource(
-            R.string.home_preview_network_summary_with_mobile_signal,
-            stringResource(R.string.home_preview_network_none),
-            signalValueText(state.mobileSignalLevel),
-        )
-    }
-
-    val mobileType =
-        when (state.mobileNetwork) {
-            PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
-            PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
-            PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
-            PreviewMobileNetwork.THREE_G -> stringResource(R.string.home_preview_network_3g)
-            PreviewMobileNetwork.H_PLUS -> stringResource(R.string.home_preview_network_h_plus)
-            PreviewMobileNetwork.FOUR_G -> stringResource(R.string.home_preview_network_4g)
-            PreviewMobileNetwork.LTE -> stringResource(R.string.home_preview_network_lte)
-            PreviewMobileNetwork.FIVE_G -> stringResource(R.string.home_preview_network_5g)
-            PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
-        }
-    return stringResource(
-        R.string.home_preview_network_summary_mobile,
-        mobileType,
-        signalValueText(state.mobileSignalLevel),
-    )
-}
-
-@Composable
-internal fun previewBatterySummary(
-    state: PreviewSandboxUiState,
-): String {
-    val mode =
-        when (state.batteryMode) {
-            PreviewBatteryMode.BALANCED ->
-                stringResource(R.string.home_preview_battery_mode_balanced)
-            PreviewBatteryMode.POWER_SAVE ->
-                stringResource(R.string.home_preview_battery_mode_power_save)
-            PreviewBatteryMode.PERFORMANCE ->
-                stringResource(R.string.home_preview_battery_mode_performance)
-            PreviewBatteryMode.SUPER_POWER_SAVE ->
-                stringResource(R.string.home_preview_battery_mode_super_power_save)
-        }
-    val charging =
-        when (state.chargingState) {
-            PreviewChargingState.NOT_CHARGING ->
-                stringResource(R.string.home_preview_charging_none)
-            PreviewChargingState.CHARGING ->
-                stringResource(R.string.home_preview_charging_normal)
-            PreviewChargingState.SUPER_FAST_CHARGING ->
-                stringResource(R.string.home_preview_charging_super_fast)
-        }
-
-    return stringResource(
-        R.string.home_preview_battery_summary_format,
-        state.batteryPercent,
-        mode,
-        charging,
-    )
-}
-
-@Composable
-private fun signalValueText(level: Int): String =
-    if (level <= 0) {
-        stringResource(R.string.home_preview_signal_none)
-    } else {
-        stringResource(R.string.home_preview_signal_level, level)
-    }

@@ -68,13 +68,8 @@
 
     <string name="home_preview_signal_none">None</string>
     <string name="home_preview_signal_level">%1$d bars</string>
-    <string name="home_preview_network_summary_wifi">Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_wifi_no_internet">Wi‑Fi (no internet) · %1$s</string>
-    <string name="home_preview_network_summary_hotspot">Hotspot Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_airplane_wifi">Airplane · %1$s</string>
-    <string name="home_preview_network_summary_mobile">%1$s · %2$s</string>
-    <string name="home_preview_network_summary_with_mobile_signal">%1$s | Mobile signal %2$s</string>
-    <string name="home_preview_network_summary_with_sim_state">%1$s · %2$s</string>
+    <string name="home_preview_summary_wifi_signal">Wi-Fi %1$s</string>
+    <string name="home_preview_summary_mobile_signal">Mobile signal %1$s</string>
 
     <string name="home_preview_battery_level_title">Battery level</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
@@ -92,5 +87,4 @@
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
-    <string name="home_preview_battery_summary_format">%1$d%% · %2$s · %3$s</string>
 </resources>

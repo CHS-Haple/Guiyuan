@@ -49,6 +49,7 @@ import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
+import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -417,21 +418,7 @@ private fun HomePreviewSandboxCard(
                         .height(HomePreviewSurfaceHeight),
             )
         }
-        Text(
-            text = previewNetworkSummary(state),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-        )
-        Text(
-            text = previewBatterySummary(state),
-            modifier =
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 1.dp),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        )
+        PreviewSummary(state, modifier = Modifier.padding(top = 7.dp))
     }
 }
 
