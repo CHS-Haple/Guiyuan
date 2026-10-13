@@ -76,19 +76,17 @@ internal object ConnectivityPolicy {
                 }
 
             SysUiConnectivitySource.Transport.VPN ->
-                if (
-                    wifi == StatusStateStore.WifiState.Hidden &&
-                    connectivity.mobileDataEnabled != false
-                ) {
-                    mobileType?.let {
-                        CenterIndicator.MobileType(
-                            label = it.label,
-                            enhanced = it.enhanced,
-                            internet = connectivity.internetState(),
-                        )
-                    } ?: CenterIndicator.Empty
-                } else {
-                    null
+                when {
+                    wifi != StatusStateStore.WifiState.Hidden -> null
+                    connectivity.mobileDataEnabled == false -> CenterIndicator.Empty
+                    else ->
+                        mobileType?.let {
+                            CenterIndicator.MobileType(
+                                label = it.label,
+                                enhanced = it.enhanced,
+                                internet = connectivity.internetState(),
+                            )
+                        } ?: CenterIndicator.Empty
                 }
 
             SysUiConnectivitySource.Transport.OTHER ->
