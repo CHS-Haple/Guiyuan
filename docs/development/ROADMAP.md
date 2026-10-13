@@ -29,6 +29,66 @@ Likely areas:
 
 Do not add controls merely because a renderer parameter exists.
 
+## Optional dual-SIM signal presentation (future)
+
+**Product intent:** Keep the current four-dot **single-SIM presentation as the default and
+unchanged baseline**. A user may later opt in to dual-SIM status display and choose a
+visual style. This is a future, experimental UI capability, not a current feature or
+permission to modify SystemUI's native final Control Center.
+
+Preparation and acceptance should be incremental:
+
+1. **Separate identities before appearances.** The existing subscription-keyed
+   `StatusStateStore.mobile`, `SysUiDefaultDataSubSource`, and
+   `NativePresentationResolver` already provide relevant sources. Maintain
+   distinct facts for *active subscription identity*, *default data subscription*,
+   *per-subscription signal availability*, *native aggregation mode*, and
+   *display selection*. In particular, the current `RenderModel.from` fallback
+   to another known subscription if the preferred subscription is unknown is a
+   semantic boundary to review; never silently label a secondary SIM's bars
+   as the data SIM. Verify behavior on actual dual-SIM SystemUI before changing
+   the shipped single-SIM policy.
+2. **Opt-in configuration, only when designs are ready.** Use one stable,
+   versioned persisted choice with `single` as the fallback/default; only add
+   selectable dual-style values after the actual layouts and capability checks
+   exist. Prefer an MIUIX single/dual presentation selection plus a conditional
+   dual-style selector; do not add a speculative switch/flag matrix. Existing
+   single-SIM settings, saved keys, and render path must not change.
+3. **Presentation-only variants.** Reuse the event-driven per-subscription
+   state; derive a small immutable display input with explicit data-SIM/other-SIM
+   identity, known/unavailable/unknown signal states and SIM removal. Keep style
+   selection separate from signal observation and from network-type authority.
+   No duplicated SystemUI hooks, timers, telephony observers or global state
+   spoofing. Treat one SIM, airplane mode, hot-swap, eSIM changes and uncertain
+   native binding as defined fallback cases.
+4. **Bounded geometry and transitions.** The current `StatusPainter`
+   `MOBILE_DOT_COUNT=4` source geometry, dot-to-native morph, logical viewport
+   and reservation are **single-group contracts**, not automatic dual-style
+   constraints. Verify width, AOD/Keyguard and QS_FAKE ownership for each style.
+   If the native target does not prove a per-card correspondence, use a
+   reversible, visually bounded no-target exit for the affected mobile group
+   or fall back to single/native; never invent target geometry or modify the
+   final Control Center. Preserve the original single-card transition untouched.
+5. **Prototype in the sandbox first.** When a style is approved, preview two
+   independently adjustable simulated SIM strengths, default-data assignment,
+   absent/unavailable cases and appearance/theme variants without modifying
+   real system state. Evaluate visual hierarchy and density before implementing
+   runtime variants. Do not extend persisted sandbox ordinals by insertion or
+   reuse values with changed meanings.
+6. **Evidence required before enabling.** Cover data-SIM swap while connected,
+   two active subscriptions with different strength/network types, independent
+   versus aggregated native icons, mobile-data off with calls available, VPN,
+   Wi-Fi, airplane and restoration, one SIM removed or disabled, unknown signal,
+   SystemUI/Hot Reload and Home→QS_FAKE→native QS, Keyguard and AOD. Verify both
+   selected identity and drawn bars, not only screenshots. If safe native
+   presentation ownership cannot be established, revert the optional variant
+   to the existing single-SIM path (Fail native for uncertain host ownership).
+
+**Not approved at this stage:** any particular dual-SIM artwork or style catalog,
+a second dot row in the current renderer, new preference keys, runtime callbacks,
+native icon suppression, or Build bump. Do not build abstractions for hypothetical
+future styles.
+
 ## Compatibility work
 
 For a new SystemUI target:
