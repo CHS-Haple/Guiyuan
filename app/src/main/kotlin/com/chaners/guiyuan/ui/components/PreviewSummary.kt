@@ -95,7 +95,7 @@ internal fun PreviewSummary(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SummaryField(
             label = stringResource(R.string.home_preview_section_network),
@@ -122,39 +122,46 @@ private fun SummaryField(
     details: List<String>,
     modifier: Modifier,
 ) {
-    Column(
+    Row(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = label,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = 1,
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text(
-                text = value,
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            if (alongside != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = alongside,
-                    modifier = Modifier.weight(1f, fill = false),
+                    text = value,
+                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                if (alongside != null) {
+                    Text(
+                        text = alongside,
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+            }
+            details.forEach { detail ->
+                Text(
+                    text = detail,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 )
             }
-        }
-        details.forEach { detail ->
-            Text(
-                text = detail,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
         }
     }
 }
