@@ -35,7 +35,7 @@ class ParticipantVisualSnapshotTest {
             ParticipantVisualSnapshot.NormalizedRect(x, 0.40f - i * 0.07f, x + 0.08f, 0.49f)
         }
         val bottom = xs.mapIndexed { i, x ->
-            ParticipantVisualSnapshot.NormalizedRect(x, 0.82f - i * 0.06f, x + 0.08f, 0.90f)
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.78f - i * 0.06f, x + 0.08f, 0.90f)
         }
         val snapshot = ParticipantVisualSnapshot.Snapshot(
             envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),

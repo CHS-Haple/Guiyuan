@@ -301,7 +301,12 @@ internal object NativePresentationResolver {
             platformSubscriptions
                 ?.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
                 ?: return emptyMap()
-        if (pairs.size != 2 || pairs.map { it.second }.toSet() != setOf(0, 1)) {
+        if (
+            activeSubscriptionIds.size != 2 ||
+            pairs.size != 2 ||
+            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
+            pairs.map { it.second }.toSet() != setOf(0, 1)
+        ) {
             return emptyMap()
         }
         return pairs.associate { (id, slot) -> slot to id }

@@ -25,6 +25,7 @@ class NativePresentationResolverTest {
             listOf(3 to -1, 14 to 1),
             listOf(3 to 0),
             listOf(3 to 0, 14 to 1, 3 to 1),
+            listOf(3 to 0, 3 to 1),
         )
         for (pairList in cases) {
             assertEquals(
@@ -261,6 +262,17 @@ class NativePresentationResolverTest {
                 boundRoots = 1,
                 visibleRoots = 1,
                 activeSubscriptions = resolved.subscriptionIds.size,
+            ),
+        )
+    }
+
+    @Test
+    fun ambiguousMultiSubscriptionSetCannotMasqueradeAsTwoRows() {
+        assertEquals(
+            emptyMap<Int, Int>(),
+            NativePresentationResolver.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(3, 14, 27),
+                platformSubscriptions = listOf(3 to 0, 14 to 1, 27 to -1),
             ),
         )
     }
