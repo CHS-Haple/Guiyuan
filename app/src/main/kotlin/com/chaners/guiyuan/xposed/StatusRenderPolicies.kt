@@ -313,9 +313,9 @@ internal object OuterGeometry {
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
     const val DUAL_DOT_SPAN = 56f
-    private const val DUAL_BASE_ROW_GAP = 14.95f
+    private const val DUAL_BASE_ROW_GAP = 14.3f
     private const val DUAL_BASE_OPTICAL_RISE = 1.6f
-    private const val DUAL_BASE_DOT_RADIUS = 4.7725f
+    private const val DUAL_BASE_DOT_RADIUS = 4.565f
     private const val DUAL_BOTTOM_MARGIN = 2.5f
     private const val CANVAS_BOTTOM = 120f
     private const val MOBILE_CENTER_Y = 58f
