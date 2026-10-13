@@ -462,7 +462,7 @@ private fun RuntimeStatusMark(
         val ringProgress = ring.coerceIn(0f, 1f)
         // MIUIX keeps its rotating arc until the ring starts growing or resumes it after retraction.
         CircularProgressIndicator(
-            progress = if (ringProgress <= 0.001f) null else 1f / 12f + ringProgress * (11f / 12f),
+            progress = if (ringProgress == 0f) null else MinSpinnerSweep + ringProgress * (1f - MinSpinnerSweep),
             size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
             strokeWidth = 6.4.dp,
             colors = ProgressIndicatorDefaults.progressIndicatorColors(
@@ -630,6 +630,8 @@ private fun resolveHomeRuntimeCardState(
 }
 
 private const val StatusColorAnimMillis = 220
+// MIUIX's indeterminate arc starts with a 30-degree sweep.
+private const val MinSpinnerSweep = 30f / 360f
 private val RuntimeCardHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
