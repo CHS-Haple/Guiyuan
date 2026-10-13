@@ -29,12 +29,16 @@ Likely areas:
 
 Do not add controls merely because a renderer parameter exists.
 
-## Optional dual-SIM signal presentation (future)
+## Optional dual-SIM signal presentation (in progress)
 
-**Product intent:** Keep the current four-dot **single-SIM presentation as the default and
-unchanged baseline**. A user may later opt in to dual-SIM status display and choose a
-visual style. This is a future, experimental UI capability, not a current feature or
-permission to modify SystemUI's native final Control Center.
+**Product intent:** Preserve the current four-dot **single-SIM presentation as the default
+and unchanged baseline**. The first approved *visual prototype* is now available only
+inside Preview Sandbox (B980, #467): four dots each for SIM1 upper/inner and SIM2
+lower/outer, with uniform corresponding-pair spacing and weight-aware optical geometry.
+Read-only active-subscription slot mapping and a cautious eight-component native-shape
+classifier were also integrated as groundwork. **None of these enable live dual-SIM
+rendering or authorize taking over native final Control Center.** A later user opt-in
+must remain separate from the sandbox's saved preview state.
 
 Preparation and acceptance should be incremental:
 
@@ -69,12 +73,11 @@ Preparation and acceptance should be incremental:
    reversible, visually bounded no-target exit for the affected mobile group
    or fall back to single/native; never invent target geometry or modify the
    final Control Center. Preserve the original single-card transition untouched.
-5. **Prototype in the sandbox first.** When a style is approved, preview two
-   independently adjustable simulated SIM strengths, default-data assignment,
-   absent/unavailable cases and appearance/theme variants without modifying
-   real system state. Evaluate visual hierarchy and density before implementing
-   runtime variants. Do not extend persisted sandbox ordinals by insertion or
-   reuse values with changed meanings.
+5. **Extend the accepted sandbox prototype only when needed.** B980 already supports
+   two independently adjustable simulated SIM signal levels and a default-off
+   dual-row preview. Remaining pre-runtime scenarios include default-data assignment,
+   absent/unavailable states and appearance/theme variants. No preview state may
+   become live SystemUI state. Preserve persisted ordinal compatibility.
 6. **Evidence required before enabling.** Cover data-SIM swap while connected,
    two active subscriptions with different strength/network types, independent
    versus aggregated native icons, mobile-data off with calls available, VPN,
@@ -84,10 +87,10 @@ Preparation and acceptance should be incremental:
    presentation ownership cannot be established, revert the optional variant
    to the existing single-SIM path (Fail native for uncertain host ownership).
 
-**Not approved at this stage:** any particular dual-SIM artwork or style catalog,
-a second dot row in the current renderer, new preference keys, runtime callbacks,
-native icon suppression, or Build bump. Do not build abstractions for hypothetical
-future styles.
+**Not yet approved:** runtime dual-SIM preference keys, new live callbacks,
+native icon suppression, a catalog of untested styles or a dual-row CC transition.
+Observe actual SystemUI per-subscription targets and verify live data identity
+before enabling any of these. No abstractions for hypothetical future styles.
 
 ## Compatibility work
 
