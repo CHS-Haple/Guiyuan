@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
@@ -475,32 +474,21 @@ private fun RuntimeStatusMark(
             )
         }
 
+        if (ringProgress > 0f) {
+            CircularProgressIndicator(
+                progress = ringProgress,
+                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+                strokeWidth = 6.4.dp,
+                colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                    foregroundColor = color.copy(alpha = 0.58f),
+                    backgroundColor = Color.Transparent,
+                ),
+            )
+        }
+
         Canvas(modifier = Modifier.fillMaxSize()) {
             val markColor = color.copy(alpha = 0.58f)
-            val ringStroke = 6.4.dp.toPx()
             val symbolStroke = 7.2.dp.toPx()
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val radius = size.minDimension * 0.40f
-            val ringSize = Size(radius * 2f, radius * 2f)
-
-            if (ringProgress >= 0.999f) {
-                drawCircle(
-                    color = markColor,
-                    radius = radius,
-                    center = center,
-                    style = Stroke(width = ringStroke),
-                )
-            } else if (ringProgress > 0f) {
-                drawArc(
-                    color = markColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f * ringProgress,
-                    useCenter = false,
-                    topLeft = Offset(center.x - radius, center.y - radius),
-                    size = ringSize,
-                    style = Stroke(width = ringStroke, cap = StrokeCap.Round),
-                )
-            }
 
             // The outer ring stays shared while center strokes retract or grow.
             val reveal = ((ringProgress - 0.15f) / 0.85f).coerceIn(0f, 1f)
