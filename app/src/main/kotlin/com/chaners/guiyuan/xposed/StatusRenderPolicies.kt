@@ -313,10 +313,9 @@ internal object OuterGeometry {
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
     const val DUAL_DOT_SPAN = 56f
-    private const val DUAL_BASE_ROW_GAP = 13f
+    private const val DUAL_BASE_ROW_GAP = 14.95f
     private const val DUAL_BASE_OPTICAL_RISE = 1.6f
-    private const val DUAL_BASE_DOT_RADIUS = 4.15f
-    private const val DUAL_MAX_DOT_RADIUS = 6.2f
+    private const val DUAL_BASE_DOT_RADIUS = 4.7725f
     private const val DUAL_BOTTOM_MARGIN = 2.5f
     private const val CANVAS_BOTTOM = 120f
     private const val MOBILE_CENTER_Y = 58f
@@ -338,6 +337,7 @@ internal object OuterGeometry {
         val ringStroke: Float,
         val mobileDotRadius: Float,
         val dualMobileDotRadius: Float,
+        val dualDotSpan: Float,
         val dualRowGap: Float,
         val dualOpticalRise: Float,
         val unavailableMarkStroke: Float,
@@ -402,13 +402,11 @@ internal object OuterGeometry {
                 dotRadius = dotRadius,
             )
 
-        val dualDotRadius =
-            DUAL_BASE_DOT_RADIUS +
-                (DUAL_MAX_DOT_RADIUS - DUAL_BASE_DOT_RADIUS) *
-                    (normalized - DEFAULT_WEIGHT_SCALE) /
-                    (MAX_WEIGHT_SCALE - DEFAULT_WEIGHT_SCALE)
-        val dualRowGap = DUAL_BASE_ROW_GAP * dualDotRadius / DUAL_BASE_DOT_RADIUS
-        val middleColumnX = DUAL_DOT_SPAN / (DOT_COUNT - 1) / 2f
+        val dualDotRadius = DUAL_BASE_DOT_RADIUS * normalized
+        // Wider only at extreme weights, when neighboring dots would otherwise touch.
+        val dualDotSpan = max(DUAL_DOT_SPAN, 6f * dualDotRadius + 2f)
+        val dualRowGap = DUAL_BASE_ROW_GAP * normalized
+        val middleColumnX = dualDotSpan / (DOT_COUNT - 1) / 2f
         val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
         val dualOpticalRise =
             max(
@@ -422,6 +420,7 @@ internal object OuterGeometry {
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
             dualMobileDotRadius = dualDotRadius,
+            dualDotSpan = dualDotSpan,
             dualRowGap = dualRowGap,
             dualOpticalRise = dualOpticalRise,
             unavailableMarkStroke = unavailableMarkStroke,

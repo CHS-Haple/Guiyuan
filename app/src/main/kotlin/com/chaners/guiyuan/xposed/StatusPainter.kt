@@ -3283,7 +3283,7 @@ internal class StatusPainter(
                     )
                     val x =
                         (index - (MOBILE_DOT_COUNT - 1) / 2f) *
-                            (OuterGeometry.DUAL_DOT_SPAN / (MOBILE_DOT_COUNT - 1))
+                            (geometry.dualDotSpan / (MOBILE_DOT_COUNT - 1))
                     val y =
                         sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x) +
                             rowOffset - geometry.dualOpticalRise
