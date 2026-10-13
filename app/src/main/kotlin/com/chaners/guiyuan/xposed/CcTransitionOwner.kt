@@ -510,7 +510,7 @@ internal object CcTransitionOwner {
                 specs.firstOrNull {
                     it.component == StatusPainter.TransitionComponent.CENTER &&
                         (!currentSnapshot.previewActive ||
-                            CcTransitionPolicy.sameNativeEndpoint(
+                            CcTransitionPolicy.canMatchNative(
                                 it.component, model, currentSnapshot.realModel,
                             ))
                 }?.let { centerSpec ->
@@ -617,7 +617,7 @@ internal object CcTransitionOwner {
                     it.component ==
                         StatusPainter.TransitionComponent.BATTERY_NUMBER &&
                         (!currentSnapshot.previewActive ||
-                            CcTransitionPolicy.sameNativeEndpoint(
+                            CcTransitionPolicy.canMatchNative(
                                 it.component, model, currentSnapshot.realModel,
                             ))
                 }?.let { numberSpec ->
@@ -669,7 +669,7 @@ internal object CcTransitionOwner {
                     ) ?: return@forEach
                 val nativeTargetMatches =
                     !currentSnapshot.previewActive ||
-                        CcTransitionPolicy.sameNativeEndpoint(
+                        CcTransitionPolicy.canMatchNative(
                             spec.component, model, currentSnapshot.realModel,
                         )
                 val witness =

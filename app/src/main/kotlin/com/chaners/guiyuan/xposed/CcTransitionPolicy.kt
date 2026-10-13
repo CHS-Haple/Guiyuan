@@ -39,28 +39,25 @@ internal object CcTransitionPolicy {
             shown(target.label, target.enhanced)
     }
 
-    // Simulated values may not belong to a native CC icon. Use unmatched exit for those parts.
-    fun sameNativeEndpoint(
+    // The ring and signal icons share native geometry even when their values differ.
+    fun canMatchNative(
         component: StatusPainter.TransitionComponent,
         preview: RenderModel,
         real: RenderModel?,
     ): Boolean {
         real ?: return false
         return when (component) {
-            StatusPainter.TransitionComponent.BATTERY ->
-                preview.batteryPercent == real.batteryPercent &&
-                    preview.batterySemanticState == real.batterySemanticState
+            StatusPainter.TransitionComponent.BATTERY -> true
             StatusPainter.TransitionComponent.BATTERY_NUMBER ->
                 preview.batteryPercent == real.batteryPercent
             StatusPainter.TransitionComponent.CHARGING_ICON ->
                 preview.charging == real.charging &&
                     preview.chargingIconResId == real.chargingIconResId
             StatusPainter.TransitionComponent.CENTER ->
-                preview.centerIndicator == real.centerIndicator
+                preview.centerIndicator.javaClass == real.centerIndicator.javaClass
             StatusPainter.TransitionComponent.MOBILE ->
-                preview.mobileLevel == real.mobileLevel &&
-                    preview.mobileUnavailableMark == real.mobileUnavailableMark &&
-                    preview.effectiveDataSubscriptionId == real.effectiveDataSubscriptionId
+                preview.mobileLevel != null && real.mobileLevel != null &&
+                    !preview.mobileUnavailableMark && !real.mobileUnavailableMark
         }
     }
 
