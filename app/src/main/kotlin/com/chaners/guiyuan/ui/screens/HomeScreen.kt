@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -435,83 +436,89 @@ private fun RuntimeStatusMark(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
-    if (kind == RuntimeStatusMarkKind.Loading) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
-                strokeWidth = 6.4.dp,
-                colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                    foregroundColor = color.copy(alpha = 0.58f),
-                    backgroundColor = color.copy(alpha = 0.13f),
-                ),
-            )
-        }
-        return
-    }
-
-    Canvas(modifier = modifier) {
-        val markColor = color.copy(alpha = 0.58f)
-        val ringStrokeWidth = 6.4.dp.toPx()
-        val symbolStrokeWidth = 7.2.dp.toPx()
-        val center = Offset(size.width / 2f, size.height / 2f)
-        val radius = size.minDimension * 0.40f
-
-        drawCircle(
-            color = markColor,
-            radius = radius,
-            center = center,
-            style =
-                Stroke(
-                    width = ringStrokeWidth,
-                    cap = StrokeCap.Round,
-                ),
-        )
-
-        when (kind) {
-            RuntimeStatusMarkKind.Loading -> Unit
-
-            RuntimeStatusMarkKind.Check -> {
-                val checkPath =
-                    Path().apply {
-                        moveTo(size.width * 0.29f, size.height * 0.52f)
-                        lineTo(size.width * 0.44f, size.height * 0.66f)
-                        lineTo(size.width * 0.72f, size.height * 0.35f)
-                    }
-                drawPath(
-                    path = checkPath,
-                    color = markColor,
-                    style =
-                        Stroke(
-                            width = symbolStrokeWidth,
-                            cap = StrokeCap.Round,
-                            join = StrokeJoin.Round,
-                        ),
+    Crossfade(
+        targetState = kind,
+        modifier = modifier,
+        animationSpec = tween(StatusMarkAnimMillis),
+        label = "runtimeMark",
+    ) { shownKind ->
+        if (shownKind == RuntimeStatusMarkKind.Loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+                    strokeWidth = 6.4.dp,
+                    colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                        foregroundColor = color.copy(alpha = 0.58f),
+                        backgroundColor = color.copy(alpha = 0.13f),
+                    ),
                 )
             }
-
-            RuntimeStatusMarkKind.Alert -> {
-                drawLine(
-                    color = markColor,
-                    start = Offset(size.width * 0.50f, size.height * 0.29f),
-                    end = Offset(size.width * 0.50f, size.height * 0.56f),
-                    strokeWidth = symbolStrokeWidth,
-                    cap = StrokeCap.Round,
-                )
+        } else {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val markColor = color.copy(alpha = 0.58f)
+                val ringStrokeWidth = 6.4.dp.toPx()
+                val symbolStrokeWidth = 7.2.dp.toPx()
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val radius = size.minDimension * 0.40f
+        
                 drawCircle(
                     color = markColor,
-                    radius = symbolStrokeWidth * 0.58f,
-                    center = Offset(size.width * 0.50f, size.height * 0.70f),
+                    radius = radius,
+                    center = center,
+                    style =
+                        Stroke(
+                            width = ringStrokeWidth,
+                            cap = StrokeCap.Round,
+                        ),
                 )
-            }
-
-            RuntimeStatusMarkKind.Minus -> {
-                drawLine(
-                    color = markColor,
-                    start = Offset(size.width * 0.31f, size.height * 0.50f),
-                    end = Offset(size.width * 0.69f, size.height * 0.50f),
-                    strokeWidth = symbolStrokeWidth,
-                    cap = StrokeCap.Round,
-                )
+        
+                when (shownKind) {
+                    RuntimeStatusMarkKind.Loading -> Unit
+        
+                    RuntimeStatusMarkKind.Check -> {
+                        val checkPath =
+                            Path().apply {
+                                moveTo(size.width * 0.29f, size.height * 0.52f)
+                                lineTo(size.width * 0.44f, size.height * 0.66f)
+                                lineTo(size.width * 0.72f, size.height * 0.35f)
+                            }
+                        drawPath(
+                            path = checkPath,
+                            color = markColor,
+                            style =
+                                Stroke(
+                                    width = symbolStrokeWidth,
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round,
+                                ),
+                        )
+                    }
+        
+                    RuntimeStatusMarkKind.Alert -> {
+                        drawLine(
+                            color = markColor,
+                            start = Offset(size.width * 0.50f, size.height * 0.29f),
+                            end = Offset(size.width * 0.50f, size.height * 0.56f),
+                            strokeWidth = symbolStrokeWidth,
+                            cap = StrokeCap.Round,
+                        )
+                        drawCircle(
+                            color = markColor,
+                            radius = symbolStrokeWidth * 0.58f,
+                            center = Offset(size.width * 0.50f, size.height * 0.70f),
+                        )
+                    }
+        
+                    RuntimeStatusMarkKind.Minus -> {
+                        drawLine(
+                            color = markColor,
+                            start = Offset(size.width * 0.31f, size.height * 0.50f),
+                            end = Offset(size.width * 0.69f, size.height * 0.50f),
+                            strokeWidth = symbolStrokeWidth,
+                            cap = StrokeCap.Round,
+                        )
+                    }
+                }
             }
         }
     }
@@ -617,6 +624,7 @@ private fun resolveHomeRuntimeCardState(
 }
 
 private const val StatusColorAnimMillis = 220
+private const val StatusMarkAnimMillis = 300
 private val RuntimeCardHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
