@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import com.chaners.guiyuan.sandbox.SANDBOX_DATA_KEY
+import com.chaners.guiyuan.sandbox.SANDBOX_LEASE_MS
 import com.chaners.guiyuan.sandbox.SandboxLease
 import com.chaners.guiyuan.sandbox.PreviewSysUiResources
 import com.chaners.guiyuan.sandbox.toRenderModel
@@ -83,7 +84,7 @@ internal object SandboxHost {
         val previous = current
         current = next
         if (next != null) {
-            val remaining = (next.elapsedAt + 3_000L - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+            val remaining = (next.elapsedAt + SANDBOX_LEASE_MS - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
             handler.postDelayed(expiry, remaining + 1L)
         }
         if ((previous?.state != next?.state) || (previous == null) != (next == null)) {

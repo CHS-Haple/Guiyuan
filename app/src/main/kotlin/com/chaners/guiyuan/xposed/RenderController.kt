@@ -7,22 +7,27 @@ internal class RenderController(
     private val view: RenderView,
 ) {
     private var stableModel: RenderModel? = null
+    private var previewShown = false
     private var stableTint: TintState? = null
 
     fun update(
         snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
+        preview: RenderModel? = null,
     ): ModelUpdate {
         val defaultDataSubscriptionId =
             SysUiDefaultDataSubSource.currentSubscriptionId()
-        val candidate =
+        val real =
             RenderModel.from(
                 snapshot = snapshot,
                 presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
             )
+        // A preview must not become the fallback for incomplete native state.
+        val candidate = if (real != null) preview ?: real else null
         val previous = stableModel
-        val model = candidate ?: previous
+        val model = candidate ?: previous.takeUnless { previewShown }
+        previewShown = preview != null && real != null
 
         if (model != previous) {
             stableModel = model
@@ -31,7 +36,7 @@ internal class RenderController(
 
         return ModelUpdate(
             candidateComplete = candidate != null,
-            retainedStable = candidate == null && previous != null,
+            retainedStable = candidate == null && model != null,
             model = model,
             changed = model != previous,
             defaultDataSubscriptionId = defaultDataSubscriptionId,

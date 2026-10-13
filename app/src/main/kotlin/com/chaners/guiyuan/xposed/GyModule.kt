@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -103,6 +104,7 @@ class GyModule : XposedModule() {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
+        bindSandbox()
         logDiagnostic(
             level = Log.INFO,
             event = "module.loaded",
@@ -319,6 +321,7 @@ class GyModule : XposedModule() {
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
+            bindSandbox()
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -360,6 +363,7 @@ class GyModule : XposedModule() {
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
+            bindSandbox()
             logDiagnostic(
                 level = Log.INFO,
                 event = "module.reloaded",
@@ -3601,6 +3605,7 @@ class GyModule : XposedModule() {
         unbindRuntimeDiagnostics()
         FeaturePrefsOwner.unbind()
         VisualPrefsOwner.unbind()
+        SandboxHost.unbind()
     }
 
     private fun attachHostRuntime(
@@ -4127,6 +4132,17 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivate(source)
         NativeNetworkSuppressor.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
+    }
+
+    private fun bindSandbox() {
+        runCatching {
+            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
+                HomeRenderSession.onPresentationStateChanged()
+            }
+        }.onFailure {
+            SandboxHost.unbind()
+            log(Log.WARN, TAG, "Sandbox preview unavailable", it)
+        }
     }
 
     private fun bindVisualCfg() {

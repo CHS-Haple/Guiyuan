@@ -500,9 +500,14 @@ internal object HomeRenderSession {
                 renderController.update(
                     snapshot = snapshot,
                     trace = visibleTrace,
+                    preview = SandboxHost.model(probeView.context),
                 )
 
             if (!update.candidateComplete) {
+                if (update.model == null && modelReady) {
+                    modelReady = false
+                    dispatchPresentationReadiness("model-unavailable")
+                }
                 if (update.retainedStable && !deferredStateLogged) {
                     deferredStateLogged = true
                     emitEvent {
