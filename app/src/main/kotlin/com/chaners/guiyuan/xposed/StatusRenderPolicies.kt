@@ -313,10 +313,13 @@ internal object OuterGeometry {
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
     const val DUAL_DOT_SPAN = 56f
-    const val DUAL_ROW_GAP = 12f
-    const val DUAL_OPTICAL_RISE = 1.6f
-    private const val DUAL_BASE_DOT_RADIUS = 3.65f
-    private const val DUAL_MAX_DOT_RADIUS = 5f
+    private const val DUAL_BASE_ROW_GAP = 13f
+    private const val DUAL_BASE_OPTICAL_RISE = 1.6f
+    private const val DUAL_BASE_DOT_RADIUS = 4.15f
+    private const val DUAL_MAX_DOT_RADIUS = 6.2f
+    private const val DUAL_BOTTOM_MARGIN = 2.5f
+    private const val CANVAS_BOTTOM = 120f
+    private const val MOBILE_CENTER_Y = 58f
     const val BASE_MOBILE_DOT_RADIUS = 4.9f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_STROKE = 3.2f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_HALF_EXTENT = 3.7f * PREVIOUS_DEFAULT_WEIGHT_SCALE
@@ -335,6 +338,8 @@ internal object OuterGeometry {
         val ringStroke: Float,
         val mobileDotRadius: Float,
         val dualMobileDotRadius: Float,
+        val dualRowGap: Float,
+        val dualOpticalRise: Float,
         val unavailableMarkStroke: Float,
         val unavailableMarkHalfExtent: Float,
         val firstDotCenterDegrees: Float,
@@ -397,11 +402,24 @@ internal object OuterGeometry {
                 dotRadius = dotRadius,
             )
 
+        val dualDotRadius = min(DUAL_BASE_DOT_RADIUS * normalized, DUAL_MAX_DOT_RADIUS)
+        val dualRowGap = DUAL_BASE_ROW_GAP * dualDotRadius / DUAL_BASE_DOT_RADIUS
+        val middleColumnX = DUAL_DOT_SPAN / (DOT_COUNT - 1) / 2f
+        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
+        val dualOpticalRise =
+            max(
+                DUAL_BASE_OPTICAL_RISE,
+                MOBILE_CENTER_Y + middleArcY + dualRowGap / 2f + dualDotRadius +
+                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
+            )
+
         return Resolved(
             weightScale = normalized,
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
-            dualMobileDotRadius = min(DUAL_BASE_DOT_RADIUS * normalized, DUAL_MAX_DOT_RADIUS),
+            dualMobileDotRadius = dualDotRadius,
+            dualRowGap = dualRowGap,
+            dualOpticalRise = dualOpticalRise,
             unavailableMarkStroke = unavailableMarkStroke,
             unavailableMarkHalfExtent = unavailableMarkHalfExtent,
             firstDotCenterDegrees = firstCenter,

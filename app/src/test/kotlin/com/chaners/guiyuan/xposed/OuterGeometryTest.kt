@@ -39,45 +39,69 @@ class OuterGeometryTest {
 
 
     @Test
-    fun dualRowsShareArcWithFixedVerticalGapAndStayInsideCanvas() {
-        val expectedX = listOf(-28f, -28f / 3f, 28f / 3f, 28f)
+    fun dualRowsKeepTheirOpticalSpacingAcrossWeights() {
         val width = OuterGeometry.DUAL_DOT_SPAN
-        val gap = OuterGeometry.DUAL_ROW_GAP
-
         assertEquals(56f, width, 0f)
-        assertEquals(12f, gap, 0f)
-        assertEquals(1.6f, OuterGeometry.DUAL_OPTICAL_RISE, 0f)
-        for (scale in TEST_SCALES) {
+        var lastDotRadius = 0f
+
+        for (step in 0..28) {
+            val scale = 0.6f + step * 0.05f
             val geometry = OuterGeometry.resolve(scale)
             val dotRadius = geometry.dualMobileDotRadius
-            assertEquals(minOf(3.65f * scale, 5f), dotRadius, 0.0001f)
-            assertTrue("vertical clearance scale=$scale", gap > 2f * dotRadius)
+            val gap = geometry.dualRowGap
 
-            val rowXs = mutableListOf<Float>()
+            assertTrue("radius grows with weight $scale", dotRadius >= lastDotRadius)
+            lastDotRadius = dotRadius
+            assertTrue("two rows stay apart at $scale", gap > 2f * dotRadius)
+            assertEquals(
+                "row size/spacing ratio at $scale",
+                13f / 4.15f,
+                gap / dotRadius,
+                0.0002f,
+            )
+
+            val dots = mutableListOf<Pair<Float, Float>>()
             for (index in 0..3) {
                 val x = (index - 1.5f) * (width / 3f)
-                rowXs += x
-                assertEquals("column $index scale=$scale", expectedX[index], x, 0.0001f)
-                val ringY = sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x)
-                val innerY = ringY - gap / 2f - OuterGeometry.DUAL_OPTICAL_RISE
-                val outerY = ringY + gap / 2f - OuterGeometry.DUAL_OPTICAL_RISE
-                assertEquals("same vertical gap scale=$scale", gap, outerY - innerY, 0.0001f)
+                val centerline = sqrt(
+                    OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x,
+                )
+                val innerY = centerline - gap / 2f - geometry.dualOpticalRise
+                val outerY = centerline + gap / 2f - geometry.dualOpticalRise
+
+                assertEquals("pair gap at $scale", gap, outerY - innerY, 0.0001f)
                 assertEquals(
-                    "arc midpoint scale=$scale",
-                    ringY - OuterGeometry.DUAL_OPTICAL_RISE,
+                    "arc midpoint at $scale",
+                    centerline - geometry.dualOpticalRise,
                     (innerY + outerY) / 2f,
                     0.0001f,
                 )
-                assertTrue("x scale=$scale", 60f + x - dotRadius > 0f &&
-                    60f + x + dotRadius < 120f)
+                assertTrue("within canvas x at $scale",
+                    60f + x - dotRadius > 0f && 60f + x + dotRadius < 120f)
                 for (y in listOf(innerY, outerY)) {
-                    assertTrue("y scale=$scale", 58f + y - dotRadius > 0f &&
-                        58f + y + dotRadius < 120f)
+                    assertTrue("within canvas y at $scale",
+                        58f + y - dotRadius > 0f && 58f + y + dotRadius <= 117.5f)
+                    dots += x to y
                 }
             }
-            // Both rows use the same four x coordinates, no matter their signal level.
-            assertEquals(width, rowXs.last() - rowXs.first(), 0.0001f)
+            for (i in dots.indices) {
+                for (j in i + 1 until dots.size) {
+                    val dx = dots[i].first - dots[j].first
+                    val dy = dots[i].second - dots[j].second
+                    assertTrue("separate dots at $scale",
+                        sqrt(dx * dx + dy * dy) > 2f * dotRadius)
+                }
+            }
         }
+
+        val default = OuterGeometry.resolve(1f)
+        assertEquals(4.15f, default.dualMobileDotRadius, 0.0001f)
+        assertEquals(13f, default.dualRowGap, 0.0001f)
+        assertEquals(1.6f, default.dualOpticalRise, 0.0001f)
+
+        val max = OuterGeometry.resolve(2f)
+        assertEquals(6.2f, max.dualMobileDotRadius, 0.0001f)
+        assertTrue(max.dualOpticalRise > default.dualOpticalRise)
     }
 
     @Test
