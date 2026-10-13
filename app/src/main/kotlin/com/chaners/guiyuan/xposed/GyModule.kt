@@ -20,6 +20,7 @@ import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import com.chaners.guiyuan.xposed.network.NetworkSuppressionPolicy
 import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
@@ -3625,6 +3626,7 @@ class GyModule : XposedModule() {
                         refreshStatusIconObservation("airplane")
                     },
                     onDefaultDataSubscriptionChanged = {
+                        SysUiConnectivitySource.refreshDataSubscription()
                         refreshMobilePresentation(
                             beginRenderTrace("defaultDataSubscription"),
                         )
