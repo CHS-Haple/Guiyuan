@@ -503,6 +503,8 @@ internal object HomeRenderSession {
                     preview = SandboxHost.model(probeView.context),
                 )
 
+            // An expired preview can restore a cached real model while the newest native state is incomplete.
+            if (update.changed) layoutProbe()
             if (!update.candidateComplete) {
                 if (update.model == null && modelReady) {
                     modelReady = false
@@ -521,9 +523,6 @@ internal object HomeRenderSession {
             val model = update.model
             if (update.candidateComplete && model != null) {
                 modelReady = true
-            }
-            if (update.changed) {
-                layoutProbe()
             }
             if (model != null && !readyLogged) {
                 readyLogged = true

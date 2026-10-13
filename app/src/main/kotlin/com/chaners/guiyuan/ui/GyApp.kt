@@ -138,7 +138,6 @@ internal fun GyApp(
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
         val topRoute = backStack.lastOrNull()
         DisposableEffect(topRoute) {
-            if (topRoute != AppRoute.PreviewSandbox) onSandboxStop()
             onDispose {
                 if (topRoute == AppRoute.PreviewSandbox) onSandboxStop()
             }
