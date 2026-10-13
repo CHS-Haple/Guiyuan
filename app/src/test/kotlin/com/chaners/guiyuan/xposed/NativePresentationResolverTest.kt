@@ -4,6 +4,36 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class NativePresentationResolverTest {
+
+    @Test
+    fun slotMappingUsesPlatformSimSlotRatherThanSubscriptionIdOrder() {
+        assertEquals(
+            mapOf(0 to 14, 1 to 3),
+            NativePresentationResolver.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(3, 14),
+                platformSubscriptions = listOf(3 to 1, 14 to 0),
+            ),
+        )
+    }
+
+    @Test
+    fun ambiguousOrUnavailableSimSlotsDoNotBecomeGuessedRows() {
+        val active = setOf(3, 14)
+        val cases = listOf(
+            null,
+            listOf(3 to 0, 14 to 0),
+            listOf(3 to -1, 14 to 1),
+            listOf(3 to 0),
+            listOf(3 to 0, 14 to 1, 3 to 1),
+        )
+        for (pairList in cases) {
+            assertEquals(
+                emptyMap<Int, Int>(),
+                NativePresentationResolver.resolveSlotSubscriptions(active, pairList),
+            )
+        }
+    }
+
     @Test
     fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
         assertEquals(
