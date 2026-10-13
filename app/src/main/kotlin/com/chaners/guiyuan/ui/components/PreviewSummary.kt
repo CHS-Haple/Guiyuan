@@ -74,23 +74,27 @@ internal fun PreviewSummary(
     val networkDetails =
         listOfNotNull(
             if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
-                R.drawable.ic_material_symbol_signal_cellular_alt to
-                    stringResource(
-                        R.string.home_preview_summary_mobile_signal,
-                        signalValueText(state.mobileSignalLevel),
-                    )
+                SummaryDetail(
+                    icon = R.drawable.ic_material_symbol_signal_cellular_alt,
+                    value = stringResource(R.string.home_preview_mobile_signal_title),
+                    alongside = signalValueText(state.mobileSignalLevel),
+                )
             } else {
                 null
             },
             if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
-                R.drawable.ic_material_symbol_airplanemode_active to
-                    stringResource(R.string.home_preview_airplane_title)
+                SummaryDetail(
+                    icon = R.drawable.ic_material_symbol_airplanemode_active,
+                    value = stringResource(R.string.home_preview_airplane_title),
+                )
             } else {
                 null
             },
             if (!state.simPresent && center != PreviewCenterSource.NO_SIM) {
-                R.drawable.ic_material_symbol_sim_card to
-                    stringResource(R.string.home_preview_sim_absent)
+                SummaryDetail(
+                    icon = R.drawable.ic_material_symbol_sim_card,
+                    value = stringResource(R.string.home_preview_sim_absent),
+                )
             } else {
                 null
             },
@@ -126,19 +130,28 @@ internal fun PreviewSummary(
             alongside = stringResource(batteryMode),
             details =
                 listOf(
-                    R.drawable.ic_material_symbol_bolt to stringResource(charging),
+                    SummaryDetail(
+                        icon = R.drawable.ic_material_symbol_bolt,
+                        value = stringResource(charging),
+                    ),
                 ),
             modifier = Modifier.weight(1f),
         )
     }
 }
 
+private data class SummaryDetail(
+    @DrawableRes val icon: Int,
+    val value: String,
+    val alongside: String? = null,
+)
+
 @Composable
 private fun SummaryField(
     @DrawableRes icon: Int,
     value: String,
     alongside: String?,
-    details: List<Pair<Int, String>>,
+    details: List<SummaryDetail>,
     modifier: Modifier,
 ) {
     val primary = MiuixTheme.colorScheme.onSurfaceContainer
@@ -172,22 +185,30 @@ private fun SummaryField(
                 )
             }
         }
-        details.forEach { (detailIcon, detail) ->
+        details.forEach { detail ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Image(
-                    painter = painterResource(detailIcon),
+                    painter = painterResource(detail.icon),
                     contentDescription = null,
                     colorFilter = ColorFilter.tint(primary),
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = detail,
+                    text = detail.value,
                     style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
                     color = primary,
                 )
+                if (detail.alongside != null) {
+                    Text(
+                        text = detail.alongside,
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MiuixTheme.textStyles.body2,
+                        color = companion,
+                    )
+                }
             }
         }
     }
