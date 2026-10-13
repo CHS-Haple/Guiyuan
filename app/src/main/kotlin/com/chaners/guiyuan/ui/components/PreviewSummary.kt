@@ -143,7 +143,6 @@ private fun SummaryField(
 ) {
     val primary = MiuixTheme.colorScheme.onSurfaceContainer
     val companion = primary.copy(alpha = 0.76f)
-    val secondary = primary.copy(alpha = 0.66f)
 
     Column(
         modifier = modifier,
@@ -181,13 +180,13 @@ private fun SummaryField(
                 Image(
                     painter = painterResource(detailIcon),
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(secondary),
-                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(primary),
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = detail,
-                    style = MiuixTheme.textStyles.body2,
-                    color = secondary,
+                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                    color = primary,
                 )
             }
         }
