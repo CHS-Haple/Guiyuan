@@ -8,13 +8,13 @@ class MobileSignalMorphPolicyTest {
     private val morph = MobileSignalMorphPolicy
 
     @Test
-    fun collapseEndsAtFortyPercentWithoutChangingLaterPhases() {
+    fun collapseEndsAtThirtyPercentWithoutChangingLaterPhases() {
         fun phase(p: Float): Float = morph.handoffProgress(p * p)
         assertEquals(0f, morph.trimProgress(phase(0f)), 0f)
-        assertEquals(0.5f, morph.trimProgress(phase(0.20f)), 0.0001f)
-        assertEquals(1f, morph.trimProgress(phase(0.40f)), 0.0001f)
-        assertEquals(0f, morph.moveProgress(phase(0.40f)), 0.0001f)
-        assertEquals(0.5f, morph.moveProgress(phase(0.485f)), 0.0001f)
+        assertEquals(0.5f, morph.trimProgress(phase(0.15f)), 0.0001f)
+        assertEquals(1f, morph.trimProgress(phase(0.30f)), 0.0001f)
+        assertEquals(0f, morph.moveProgress(phase(0.30f)), 0.0001f)
+        assertEquals(0.5f, morph.moveProgress(phase(0.435f)), 0.0001f)
         assertEquals(1f, morph.moveProgress(phase(0.57f)), 0.0001f)
         assertEquals(0f, morph.rowProgress(phase(0.57f)), 0.0001f)
         assertEquals(0.5f, morph.rowProgress(phase(0.645f)), 0.0001f)
