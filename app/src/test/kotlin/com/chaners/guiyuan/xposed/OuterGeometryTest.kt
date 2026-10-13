@@ -37,6 +37,35 @@ class OuterGeometryTest {
         )
     }
 
+
+    @Test
+    fun dualRowsAreConcentricWithTheBatteryRingAndStayInsideCanvas() {
+        assertEquals(
+            OuterGeometry.RING_RADIUS,
+            (OuterGeometry.DUAL_INNER_ORBIT_RADIUS +
+                OuterGeometry.DUAL_OUTER_ORBIT_RADIUS) / 2f,
+            0f,
+        )
+        for (scale in TEST_SCALES) {
+            val geometry = OuterGeometry.resolve(scale)
+            val dotRadius = geometry.dualMobileDotRadius
+            assertEquals(minOf(4f * scale, 5f), dotRadius, 0.0001f)
+            assertTrue("distinct rows scale=$scale", 12f > dotRadius * 2f)
+            for (index in 0..3) {
+                val angle = geometry.bottomDotAngle(index)
+                for (orbit in listOf(
+                    OuterGeometry.DUAL_INNER_ORBIT_RADIUS,
+                    OuterGeometry.DUAL_OUTER_ORBIT_RADIUS,
+                )) {
+                    val x = 60f + cos(angle).toFloat() * orbit
+                    val y = 58f + sin(angle).toFloat() * orbit
+                    assertTrue("x scale=$scale", x - dotRadius > 0f && x + dotRadius < 120f)
+                    assertTrue("y scale=$scale", y - dotRadius > 0f && y + dotRadius < 120f)
+                }
+            }
+        }
+    }
+
     @Test
     fun outerWeightScalesRingDotsAndUnavailableMarkAsOneVisualFamily() {
         val base =

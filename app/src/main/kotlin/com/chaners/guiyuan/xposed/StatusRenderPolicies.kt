@@ -312,6 +312,10 @@ internal object OuterGeometry {
     const val RING_RADIUS = 50f
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
+    const val DUAL_INNER_ORBIT_RADIUS = 44f
+    const val DUAL_OUTER_ORBIT_RADIUS = 56f
+    private const val DUAL_BASE_DOT_RADIUS = 4f
+    private const val DUAL_MAX_DOT_RADIUS = 5f
     const val BASE_MOBILE_DOT_RADIUS = 4.9f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_STROKE = 3.2f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_HALF_EXTENT = 3.7f * PREVIOUS_DEFAULT_WEIGHT_SCALE
@@ -329,6 +333,7 @@ internal object OuterGeometry {
         val weightScale: Float,
         val ringStroke: Float,
         val mobileDotRadius: Float,
+        val dualMobileDotRadius: Float,
         val unavailableMarkStroke: Float,
         val unavailableMarkHalfExtent: Float,
         val firstDotCenterDegrees: Float,
@@ -395,6 +400,7 @@ internal object OuterGeometry {
             weightScale = normalized,
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
+            dualMobileDotRadius = min(DUAL_BASE_DOT_RADIUS * normalized, DUAL_MAX_DOT_RADIUS),
             unavailableMarkStroke = unavailableMarkStroke,
             unavailableMarkHalfExtent = unavailableMarkHalfExtent,
             firstDotCenterDegrees = firstCenter,
