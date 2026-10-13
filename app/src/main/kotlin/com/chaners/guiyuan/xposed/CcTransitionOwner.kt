@@ -776,7 +776,10 @@ internal object CcTransitionOwner {
                             )
                     }
                 val componentVisibleFraction =
-                    if (
+                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
+                        // The ring retracts independently of the final native battery target.
+                        1f
+                    } else if (
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
@@ -879,19 +882,15 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
-                        if (!hasTarget) {
-                            0f
-                        } else {
-                            when (spec.shapePolicy) {
-                                StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
-                                    motionProgress
+                        when {
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
+                                motionProgress
 
-                                StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
-                                    mobileSignalShapeProgress
+                            !hasTarget -> 0f
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
+                                mobileSignalShapeProgress
 
-                                StatusPainter.TransitionShapePolicy.RIGID ->
-                                    0f
-                            }
+                            else -> 0f
                         },
                     mobileTargetWidthRatio =
                         if (
