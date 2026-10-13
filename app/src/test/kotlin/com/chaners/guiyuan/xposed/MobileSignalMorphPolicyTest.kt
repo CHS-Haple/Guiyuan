@@ -11,14 +11,16 @@ class MobileSignalMorphPolicyTest {
     fun trimAndSpreadHaveTheSameShortDuration() {
         fun phase(p: Float): Float = morph.handoffProgress(p * p)
         assertEquals(0f, morph.trimProgress(phase(0f)), 0f)
-        assertEquals(1f, morph.trimProgress(phase(0.12f)), 0.0001f)
-        assertEquals(0f, morph.moveProgress(phase(0.12f)), 0.0001f)
-        assertEquals(1f, morph.moveProgress(phase(0.60f)), 0.0001f)
-        assertEquals(0f, morph.rowProgress(phase(0.60f)), 0.0001f)
+        assertEquals(0.5f, morph.trimProgress(phase(0.075f)), 0.0001f)
+        assertEquals(1f, morph.trimProgress(phase(0.15f)), 0.0001f)
+        assertEquals(0f, morph.moveProgress(phase(0.15f)), 0.0001f)
+        assertEquals(1f, morph.moveProgress(phase(0.57f)), 0.0001f)
+        assertEquals(0f, morph.rowProgress(phase(0.57f)), 0.0001f)
+        assertEquals(0.5f, morph.rowProgress(phase(0.645f)), 0.0001f)
         assertEquals(1f, morph.rowProgress(phase(0.72f)), 0.0001f)
         assertEquals(0f, morph.barProgress(phase(0.72f)), 0.0001f)
         assertEquals(1f, morph.barProgress(phase(1f)), 0f)
-        assertEquals(0.12f, 0.72f - 0.60f, 0.0001f)
+        assertEquals(0.15f, 0.72f - 0.57f, 0.0001f)
     }
 
     @Test
@@ -94,7 +96,7 @@ class MobileSignalMorphPolicyTest {
                 0.0001f,
             )
         }
-        assertEquals(0f, morph.rowProgress(0.60f), 0f)
+        assertEquals(0f, morph.rowProgress(0.57f), 0f)
         assertEquals(1f, morph.rowProgress(0.72f), 0.0001f)
     }
 }

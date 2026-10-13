@@ -232,7 +232,7 @@ class SysUiCcSourceTest {
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.rowProgress(0.66f),
+            MobileSignalMorphPolicy.rowProgress(0.645f),
             0.0001f,
         )
         assertEquals(
