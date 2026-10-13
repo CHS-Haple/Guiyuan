@@ -125,22 +125,24 @@ internal object MobileSignalMorphPolicy {
 
     fun barProgress(progress: Float): Float = smoothPhase(progress, SPREAD_END, 1f)
 
-    // Cut the existing dotted arc right-to-left rather than stacking dots.
+    // Shrink the arc around its first dot; adjacent dots never stack into a dark blob.
     fun dotScale(index: Int, trim: Float, spread: Float): Float {
         if (index == 0) return 1f
-        val retained = 1f - smoothPhase(trim, (3f - index) / 3f, (4f - index) / 3f)
         val restored = smoothPhase(spread, (index - 1f) / 3f, index / 3f)
-        return max(retained, restored)
+        return maxOf(1f - trim.coerceIn(0f, 1f), restored)
     }
 
     fun dotCoordinate(
         source: Float,
-        leftTarget: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
         target: Float,
+        trim: Float,
         move: Float,
         spread: Float,
     ): Float {
-        val moved = source + (leftTarget - source) * move
+        val packed = source + (sourceAnchor - source) * trim
+        val moved = packed + (targetAnchor - packed) * move
         return moved + (target - moved) * spread
     }
 

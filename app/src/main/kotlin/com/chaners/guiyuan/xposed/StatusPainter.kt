@@ -3093,6 +3093,7 @@ internal class StatusPainter(
         val level = model.mobileLevel
 
         val first = layout.targetCenters[0]
+        val anchor = layout.sourceCenters[0]
         for (index in 0 until MOBILE_DOT_COUNT) {
             val radius =
                 geometry.mobileDotRadius *
@@ -3102,11 +3103,11 @@ internal class StatusPainter(
             val target = layout.targetCenters[index]
             val centerX =
                 MobileSignalMorphPolicy.dotCoordinate(
-                    source.x, first.x, target.x, move, spread,
+                    source.x, anchor.x, first.x, target.x, trim, move, spread,
                 )
             val centerY =
                 MobileSignalMorphPolicy.dotCoordinate(
-                    source.y, first.y, target.y, move, spread,
+                    source.y, anchor.y, first.y, target.y, trim, move, spread,
                 )
             val targetBarHeight =
                 MobileSignalMorphPolicy.targetBarHeight(
@@ -3174,6 +3175,7 @@ internal class StatusPainter(
             )
         val targetCenterX = layout.bounds.centerX
         val targetCenterY = layout.bounds.centerY
+        val anchor = layout.sourceCenters[0]
         val firstBar = targetBars.first()
         val firstX =
             targetCenterX +
@@ -3185,10 +3187,10 @@ internal class StatusPainter(
                     layout.bounds.height * heightCompensation -
                 diameter / 2f
         targetBars.forEachIndexed { index, normalized ->
-            val radius =
+            val dotRadius =
                 geometry.mobileDotRadius *
                     MobileSignalMorphPolicy.dotScale(index, trim, spread)
-            if (radius <= 0f) return@forEachIndexed
+            if (dotRadius <= 0f) return@forEachIndexed
             val source = layout.sourceCenters[index]
             val targetLeft =
                 targetCenterX +
@@ -3219,22 +3221,22 @@ internal class StatusPainter(
 
             val rowCenterX =
                 MobileSignalMorphPolicy.dotCoordinate(
-                    source.x, firstX, targetBarCenterX, move, spread,
+                    source.x, anchor.x, firstX, targetBarCenterX, trim, move, spread,
                 )
             val rowCenterY =
                 MobileSignalMorphPolicy.dotCoordinate(
-                    source.y, firstY, targetBottomCenterY, move, spread,
+                    source.y, anchor.y, firstY, targetBottomCenterY, trim, move, spread,
                 )
-            val startLeft = rowCenterX - radius
-            val startRight = rowCenterX + radius
-            val startTop = rowCenterY - radius
-            val startBottom = rowCenterY + radius
+            val startLeft = rowCenterX - dotRadius
+            val startRight = rowCenterX + dotRadius
+            val startTop = rowCenterY - dotRadius
+            val startBottom = rowCenterY + dotRadius
 
             val left = lerp(startLeft, targetBarCenterX - targetWidth / 2f, barProgress)
             val right = lerp(startRight, targetBarCenterX + targetWidth / 2f, barProgress)
             val top = lerp(startTop, targetBottom - targetHeight, barProgress)
             val bottom = lerp(startBottom, targetBottom, barProgress)
-            val radius =
+            val cornerRadius =
                 min(
                     (right - left).coerceAtLeast(0f) / 2f,
                     (bottom - top).coerceAtLeast(0f) / 2f,
@@ -3250,8 +3252,8 @@ internal class StatusPainter(
                 top,
                 right,
                 bottom,
-                radius,
-                radius,
+                cornerRadius,
+                cornerRadius,
                 paint,
             )
         }
