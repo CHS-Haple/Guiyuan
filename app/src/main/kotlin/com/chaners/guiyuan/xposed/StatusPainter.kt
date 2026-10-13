@@ -30,6 +30,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 internal class StatusPainter(
     private val context: Context,
@@ -3282,9 +3283,12 @@ internal class StatusPainter(
                         opacity = opacity,
                     )
                     val angle = geometry.bottomDotAngle(index)
+                    // Share each column with the original arc; concentric angles would stagger the rows.
+                    val x = cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
+                    val y = sqrt((radius * radius - x * x).coerceAtLeast(0f))
                     canvas.drawCircle(
-                        MOBILE_CENTER_X + cos(angle).toFloat() * radius,
-                        MOBILE_CENTER_Y + sin(angle).toFloat() * radius,
+                        MOBILE_CENTER_X + x,
+                        MOBILE_CENTER_Y + y,
                         geometry.dualMobileDotRadius,
                         paint,
                     )

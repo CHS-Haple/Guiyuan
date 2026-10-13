@@ -53,14 +53,26 @@ class OuterGeometryTest {
             assertTrue("distinct rows scale=$scale", 12f > dotRadius * 2f)
             for (index in 0..3) {
                 val angle = geometry.bottomDotAngle(index)
-                for (orbit in listOf(
-                    OuterGeometry.DUAL_INNER_ORBIT_RADIUS,
-                    OuterGeometry.DUAL_OUTER_ORBIT_RADIUS,
-                )) {
-                    val x = 60f + cos(angle).toFloat() * orbit
-                    val y = 58f + sin(angle).toFloat() * orbit
-                    assertTrue("x scale=$scale", x - dotRadius > 0f && x + dotRadius < 120f)
-                    assertTrue("y scale=$scale", y - dotRadius > 0f && y + dotRadius < 120f)
+                val x = cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
+                val innerY = sqrt(
+                    OuterGeometry.DUAL_INNER_ORBIT_RADIUS *
+                        OuterGeometry.DUAL_INNER_ORBIT_RADIUS - x * x,
+                )
+                val outerY = sqrt(
+                    OuterGeometry.DUAL_OUTER_ORBIT_RADIUS *
+                        OuterGeometry.DUAL_OUTER_ORBIT_RADIUS - x * x,
+                )
+                val ringY = sqrt(
+                    OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x,
+                )
+                assertTrue("SIM1 above SIM2 scale=$scale", innerY < outerY)
+                assertTrue("rows do not overlap scale=$scale",
+                    outerY - innerY > 2f * dotRadius)
+                assertEquals("row midpoint scale=$scale", ringY, (innerY + outerY) / 2f, 0.5f)
+                assertTrue("x scale=$scale", 60f + x - dotRadius > 0f && 60f + x + dotRadius < 120f)
+                for (y in listOf(innerY, outerY)) {
+                    assertTrue("y scale=$scale", 58f + y - dotRadius > 0f &&
+                        58f + y + dotRadius < 120f)
                 }
             }
         }
