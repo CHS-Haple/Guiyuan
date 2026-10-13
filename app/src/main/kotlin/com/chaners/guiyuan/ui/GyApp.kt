@@ -82,24 +82,28 @@ internal fun GyApp(
         var previewChargingStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewChargingState.NOT_CHARGING.ordinal)
         }
+        val savedNetworkMode =
+            PreviewNetworkMode.entries[
+                previewNetworkModeIndex.coerceIn(0, PreviewNetworkMode.entries.lastIndex)
+            ]
+        val savedMobileNetwork =
+            PreviewMobileNetwork.entries[
+                previewMobileNetworkIndex.coerceIn(0, PreviewMobileNetwork.entries.lastIndex)
+            ]
         val previewState =
             PreviewSandboxUiState(
                 simPresent = previewSimPresent,
                 airplaneMode = previewAirplaneMode,
                 networkMode =
-                    PreviewNetworkMode.entries[
-                        previewNetworkModeIndex.coerceIn(
-                            0,
-                            PreviewNetworkMode.entries.lastIndex,
-                        )
-                    ],
-                mobileNetwork =
-                    PreviewMobileNetwork.entries[
-                        previewMobileNetworkIndex.coerceIn(
-                            0,
-                            PreviewMobileNetwork.entries.lastIndex,
-                        )
-                    ],
+                    if (
+                        savedNetworkMode == PreviewNetworkMode.MOBILE &&
+                        savedMobileNetwork == PreviewMobileNetwork.NONE
+                    ) {
+                        PreviewNetworkMode.NONE
+                    } else {
+                        savedNetworkMode
+                    },
+                mobileNetwork = savedMobileNetwork,
                 mobileSignalLevel = previewMobileSignalLevel,
                 wifiState =
                     PreviewWifiState.entries[
@@ -201,6 +205,12 @@ internal fun GyApp(
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
+                            if (
+                                it == PreviewNetworkMode.MOBILE &&
+                                previewMobileNetworkIndex == PreviewMobileNetwork.NONE.ordinal
+                            ) {
+                                previewMobileNetworkIndex = PreviewMobileNetwork.FIVE_G.ordinal
+                            }
                             previewNetworkModeIndex = it.ordinal
                         },
                         onMobileNetworkChange = {

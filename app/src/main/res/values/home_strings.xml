@@ -73,6 +73,7 @@
     <string name="home_preview_network_summary_hotspot">Hotspot Wi‑Fi · %1$s</string>
     <string name="home_preview_network_summary_airplane_wifi">Airplane · %1$s</string>
     <string name="home_preview_network_summary_mobile">%1$s · %2$s</string>
+    <string name="home_preview_network_summary_with_mobile_signal">%1$s | Mobile signal %2$s</string>
     <string name="home_preview_network_summary_with_sim_state">%1$s · %2$s</string>
 
     <string name="home_preview_battery_level_title">Battery level</string>
