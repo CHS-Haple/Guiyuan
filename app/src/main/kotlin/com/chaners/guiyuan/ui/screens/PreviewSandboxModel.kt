@@ -11,7 +11,11 @@ import com.chaners.guiyuan.xposed.network.InternetState
 internal enum class PreviewNetworkMode {
     MOBILE,
     WIFI,
+    NONE, // Keep the two saved ordinals stable.
 }
+
+internal val previewNetworkTabs =
+    listOf(PreviewNetworkMode.NONE, PreviewNetworkMode.MOBILE, PreviewNetworkMode.WIFI)
 
 internal enum class PreviewMobileNetwork(
     val systemLabel: String,
@@ -132,7 +136,8 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
         networkMode == PreviewNetworkMode.WIFI -> PreviewCenterSource.WIFI
         airplaneMode -> PreviewCenterSource.AIRPLANE
         !simPresent -> PreviewCenterSource.NO_SIM
-        mobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
+        networkMode == PreviewNetworkMode.NONE ||
+            mobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
         else -> PreviewCenterSource.MOBILE
     }
 
