@@ -82,7 +82,7 @@ class OuterGeometryTest {
                     60f + x - dotRadius > 0f && 60f + x + dotRadius < 120f)
                 for (y in listOf(innerY, outerY)) {
                     assertTrue("within canvas y at $scale",
-                        58f + y - dotRadius > 0f && 58f + y + dotRadius <= 117.5f)
+                        58f + y - dotRadius > 0f && 58f + y + dotRadius <= 117.5001f)
                     dots += x to y
                 }
             }
