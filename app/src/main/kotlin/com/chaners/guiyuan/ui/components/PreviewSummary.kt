@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -51,17 +52,15 @@ internal fun PreviewSummary(
                     PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
                 }
         }
+    val networkSignal =
+        when (center) {
+            PreviewCenterSource.WIFI -> signalValueText(state.wifiSignalLevel)
+            PreviewCenterSource.MOBILE -> signalValueText(state.mobileSignalLevel)
+            else -> null
+        }
     val networkDetails =
         listOfNotNull(
-            if (state.networkMode == PreviewNetworkMode.WIFI) {
-                stringResource(
-                    R.string.home_preview_summary_wifi_signal,
-                    signalValueText(state.wifiSignalLevel),
-                )
-            } else {
-                null
-            },
-            if (state.mobileControlsEnabled) {
+            if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
                 stringResource(
                     R.string.home_preview_summary_mobile_signal,
                     signalValueText(state.mobileSignalLevel),
@@ -101,13 +100,15 @@ internal fun PreviewSummary(
         SummaryField(
             label = stringResource(R.string.home_preview_section_network),
             value = network,
+            alongside = networkSignal,
             details = networkDetails,
             modifier = Modifier.weight(1f),
         )
         SummaryField(
             label = stringResource(R.string.home_preview_section_battery),
             value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
-            details = listOf(stringResource(batteryMode), stringResource(charging)),
+            alongside = stringResource(batteryMode),
+            details = listOf(stringResource(charging)),
             modifier = Modifier.weight(1f),
         )
     }
@@ -117,6 +118,7 @@ internal fun PreviewSummary(
 private fun SummaryField(
     label: String,
     value: String,
+    alongside: String?,
     details: List<String>,
     modifier: Modifier,
 ) {
@@ -129,11 +131,24 @@ private fun SummaryField(
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = value,
+                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+            )
+            if (alongside != null) {
+                Text(
+                    text = alongside,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+        }
         details.forEach { detail ->
             Text(
                 text = detail,

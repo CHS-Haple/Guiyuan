@@ -68,7 +68,6 @@
 
     <string name="home_preview_signal_none">None</string>
     <string name="home_preview_signal_level">%1$d bars</string>
-    <string name="home_preview_summary_wifi_signal">Wi-Fi %1$s</string>
     <string name="home_preview_summary_mobile_signal">Mobile signal %1$s</string>
 
     <string name="home_preview_battery_level_title">Battery level</string>
