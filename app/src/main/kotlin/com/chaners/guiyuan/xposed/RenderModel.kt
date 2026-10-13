@@ -40,9 +40,24 @@ internal data class RenderModel(
                     ?.takeIf { subscriptionId -> subscriptionId >= 0 }
                     ?: defaultDataSubscriptionId
 
+            val singleDetectedSubId =
+                presentation.mobilePresentation
+                    ?.takeIf { native ->
+                        dualSignalEnabled &&
+                            native.mode == NativePresentationResolver.Mode.SINGLE &&
+                            native.activeSubscriptionAuthority == "subscription-manager" &&
+                            native.activeSubscriptionIds.size == 1
+                    }
+                    ?.activeSubscriptionIds
+                    ?.single()
+
             val selectedMobile =
                 if (nativeNoSimVisible) {
                     null
+                } else if (singleDetectedSubId != null) {
+                    snapshot.mobile[singleDetectedSubId]
+                        ?.takeIf { it.signal !is SignalStrength.Unknown }
+                        ?.let { singleDetectedSubId to it }
                 } else {
                     snapshot.mobile[preferredDataSubscriptionId]
                         ?.takeIf { it.signal !is SignalStrength.Unknown }
@@ -57,6 +72,7 @@ internal data class RenderModel(
                     -1
                 } else {
                     selectedMobile?.first
+                        ?: singleDetectedSubId
                         ?: preferredDataSubscriptionId.takeIf { it >= 0 }
                         ?: snapshot.mobile.keys.firstOrNull()
                         ?: -1

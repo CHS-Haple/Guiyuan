@@ -22,7 +22,8 @@ class ParticipantVisualSnapshotTest {
             topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
         )
         val resolved = snapshot.dualMobileRowsWithinEnvelope()
-        assertEquals(ParticipantVisualSnapshot.DualBottomShape.DOTS, resolved?.bottomShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, resolved?.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, resolved?.bottomShape)
         assertEquals(4, resolved?.top?.size)
         assertEquals(4, resolved?.bottom?.size)
         assertEquals(0.70f, resolved?.bottom?.first()?.top ?: -1f, 0.0001f)
@@ -42,9 +43,62 @@ class ParticipantVisualSnapshotTest {
             components = top + bottom,
             topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
         )
-        assertEquals(
-            ParticipantVisualSnapshot.DualBottomShape.BARS,
-            snapshot.dualMobileRowsWithinEnvelope()?.bottomShape,
+        val resolved = snapshot.dualMobileRowsWithinEnvelope()
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, resolved?.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, resolved?.bottomShape)
+    }
+
+    @Test
+    fun recognizesOtherModulesWithDotsOnTopAndBarsBelow() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val dots = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.17f, x + 0.08f, 0.25f)
+        }
+        val bars = xs.mapIndexed { i, x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.70f - i * 0.07f, x + 0.08f, 0.79f)
+        }
+        val resolved = ParticipantVisualSnapshot.Snapshot(
+            envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+            components = dots + bars,
+            topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+        ).dualMobileRowsWithinEnvelope()
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, resolved?.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, resolved?.bottomShape)
+    }
+
+    @Test
+    fun twoDotRowsAreNeverMistakenForSignalBars() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val dots = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.12f, x + 0.08f, 0.20f)
+        }
+        val bottom = dots.map { it.copy(top = 0.65f, bottom = 0.73f) }
+        val resolved = ParticipantVisualSnapshot.Snapshot(
+            envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+            components = dots + bottom,
+            topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+        ).dualMobileRowsWithinEnvelope()
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, resolved?.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, resolved?.bottomShape)
+    }
+
+    @Test
+    fun unknownMixedRowReturnsNullInsteadOfGuessingBars() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val bars = xs.mapIndexed { i, x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.38f - i * 0.04f, x + 0.08f, 0.47f)
+        }
+        val mixed = xs.mapIndexed { i, x ->
+            ParticipantVisualSnapshot.NormalizedRect(
+                x, 0.81f - i * 0.035f, x + 0.08f, 0.87f,
+            )
+        }
+        assertNull(
+            ParticipantVisualSnapshot.Snapshot(
+                envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+                components = bars + mixed,
+                topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+            ).dualMobileRowsWithinEnvelope(),
         )
     }
 

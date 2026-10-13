@@ -50,12 +50,13 @@ internal object ParticipantVisualSnapshot {
             get() = (top + bottom) / 2f
     }
 
-    internal enum class DualBottomShape { DOTS, BARS }
+    internal enum class RowShape { DOTS, BARS }
 
     internal data class DualMobileRows(
         val top: List<NormalizedRect>,
         val bottom: List<NormalizedRect>,
-        val bottomShape: DualBottomShape,
+        val topShape: RowShape,
+        val bottomShape: RowShape,
     )
 
     internal data class Snapshot(
@@ -74,7 +75,6 @@ internal object ParticipantVisualSnapshot {
             val top = byBottom.take(4).sortedBy { it.centerX }
             val bottom = byBottom.drop(4).sortedBy { it.centerX }
             if (top.maxOf { it.bottom } >= bottom.minOf { it.top }) return null
-            if (classifyComponents(top) != Topology.FOUR_VERTICAL_BARS) return null
 
             val pitch = (top.last().centerX - top.first().centerX) / 3f
             if (pitch <= 0f || top.zip(bottom).any { (a, b) ->
@@ -82,20 +82,23 @@ internal object ParticipantVisualSnapshot {
                 }
             ) return null
 
-            val bottomIsDots =
-                bottom.all { rect ->
-                    rect.width > 0f && rect.height > 0f &&
-                        rect.height in (rect.width * 0.75f)..(rect.width * 1.3f)
-                } && (bottom.maxOf { it.height } - bottom.minOf { it.height }) <
-                envelope.height * 0.12f
-            val shape =
-                when {
-                    bottomIsDots -> DualBottomShape.DOTS
-                    classifyComponents(bottom) == Topology.FOUR_VERTICAL_BARS &&
-                        bottom.any { it.height > it.width * 1.5f } ->
-                        DualBottomShape.BARS
-                    else -> return null
+            fun rowShape(row: List<NormalizedRect>): RowShape? {
+                val dots =
+                    row.all { rect ->
+                        rect.width > 0f && rect.height > 0f &&
+                            rect.height in (rect.width * 0.75f)..(rect.width * 1.3f)
+                    } && (row.maxOf { it.height } - row.minOf { it.height }) <
+                    envelope.height * 0.12f
+                return when {
+                    dots -> RowShape.DOTS
+                    classifyComponents(row) == Topology.FOUR_VERTICAL_BARS &&
+                        row.any { it.height > it.width * 1.5f } -> RowShape.BARS
+                    else -> null
                 }
+            }
+
+            val topShape = rowShape(top) ?: return null
+            val bottomShape = rowShape(bottom) ?: return null
 
             fun relative(rect: NormalizedRect): NormalizedRect =
                 NormalizedRect(
@@ -104,7 +107,12 @@ internal object ParticipantVisualSnapshot {
                     right = (rect.right - envelope.left) / envelope.width,
                     bottom = (rect.bottom - envelope.top) / envelope.height,
                 )
-            return DualMobileRows(top.map(::relative), bottom.map(::relative), shape)
+            return DualMobileRows(
+                top = top.map(::relative),
+                bottom = bottom.map(::relative),
+                topShape = topShape,
+                bottomShape = bottomShape,
+            )
         }
 
         fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
