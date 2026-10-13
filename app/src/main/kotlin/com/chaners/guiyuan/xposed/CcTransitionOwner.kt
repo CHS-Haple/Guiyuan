@@ -508,7 +508,11 @@ internal object CcTransitionOwner {
                     ?.presentationRootSubscriptionId
             val liveCenterExitDirection =
                 specs.firstOrNull {
-                    it.component == StatusPainter.TransitionComponent.CENTER
+                    it.component == StatusPainter.TransitionComponent.CENTER &&
+                        (!currentSnapshot.previewActive ||
+                            CcTransitionPolicy.sameNativeEndpoint(
+                                it.component, model, currentSnapshot.realModel,
+                            ))
                 }?.let { centerSpec ->
                     val source =
                         CcTransitionPolicy.componentGeometry(
@@ -611,7 +615,11 @@ internal object CcTransitionOwner {
             val batteryNumberFollowerFrames =
                 specs.firstOrNull {
                     it.component ==
-                        StatusPainter.TransitionComponent.BATTERY_NUMBER
+                        StatusPainter.TransitionComponent.BATTERY_NUMBER &&
+                        (!currentSnapshot.previewActive ||
+                            CcTransitionPolicy.sameNativeEndpoint(
+                                it.component, model, currentSnapshot.realModel,
+                            ))
                 }?.let { numberSpec ->
                     val numberSource =
                         CcTransitionPolicy.componentGeometry(
@@ -659,11 +667,20 @@ internal object CcTransitionOwner {
                         parentHeight = sourceHeight,
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
+                val nativeTargetMatches =
+                    !currentSnapshot.previewActive ||
+                        CcTransitionPolicy.sameNativeEndpoint(
+                            spec.component, model, currentSnapshot.realModel,
+                        )
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
+                    if (nativeTargetMatches) {
+                        resolveTarget(
+                            target = spec.target,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    } else {
+                        null
+                    }
                 val targetGeometry =
                     witness?.let { target ->
                         resolveTargetGeometry(

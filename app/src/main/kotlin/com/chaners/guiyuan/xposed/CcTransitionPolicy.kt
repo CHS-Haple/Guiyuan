@@ -39,6 +39,31 @@ internal object CcTransitionPolicy {
             shown(target.label, target.enhanced)
     }
 
+    // Simulated values may not belong to a native CC icon. Use unmatched exit for those parts.
+    fun sameNativeEndpoint(
+        component: StatusPainter.TransitionComponent,
+        preview: RenderModel,
+        real: RenderModel?,
+    ): Boolean {
+        real ?: return false
+        return when (component) {
+            StatusPainter.TransitionComponent.BATTERY ->
+                preview.batteryPercent == real.batteryPercent &&
+                    preview.batterySemanticState == real.batterySemanticState
+            StatusPainter.TransitionComponent.BATTERY_NUMBER ->
+                preview.batteryPercent == real.batteryPercent
+            StatusPainter.TransitionComponent.CHARGING_ICON ->
+                preview.charging == real.charging &&
+                    preview.chargingIconResId == real.chargingIconResId
+            StatusPainter.TransitionComponent.CENTER ->
+                preview.centerIndicator == real.centerIndicator
+            StatusPainter.TransitionComponent.MOBILE ->
+                preview.mobileLevel == real.mobileLevel &&
+                    preview.mobileUnavailableMark == real.mobileUnavailableMark &&
+                    preview.effectiveDataSubscriptionId == real.effectiveDataSubscriptionId
+        }
+    }
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p
