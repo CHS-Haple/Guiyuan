@@ -460,7 +460,7 @@ private fun RuntimeStatusMark(
                 val symbolStrokeWidth = 7.2.dp.toPx()
                 val center = Offset(size.width / 2f, size.height / 2f)
                 val radius = size.minDimension * 0.40f
-        
+
                 drawCircle(
                     color = markColor,
                     radius = radius,
@@ -471,10 +471,10 @@ private fun RuntimeStatusMark(
                             cap = StrokeCap.Round,
                         ),
                 )
-        
+
                 when (shownKind) {
                     RuntimeStatusMarkKind.Loading -> Unit
-        
+
                     RuntimeStatusMarkKind.Check -> {
                         val checkPath =
                             Path().apply {
@@ -493,7 +493,7 @@ private fun RuntimeStatusMark(
                                 ),
                         )
                     }
-        
+
                     RuntimeStatusMarkKind.Alert -> {
                         drawLine(
                             color = markColor,
@@ -508,7 +508,7 @@ private fun RuntimeStatusMark(
                             center = Offset(size.width * 0.50f, size.height * 0.70f),
                         )
                     }
-        
+
                     RuntimeStatusMarkKind.Minus -> {
                         drawLine(
                             color = markColor,
