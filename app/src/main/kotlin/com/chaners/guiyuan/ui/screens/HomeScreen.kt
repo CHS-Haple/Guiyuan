@@ -37,6 +37,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -458,7 +459,8 @@ private fun RuntimeStatusMark(
         if (it == RuntimeStatusMarkKind.Minus) 1f else 0f
     }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    // The ring fill is decorative, not a measured framework-check percentage.
+    Box(modifier = modifier.clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
         val ringProgress = ring.coerceIn(0f, 1f)
         // MIUIX keeps its rotating arc until the ring starts growing or resumes it after retraction.
         CircularProgressIndicator(
