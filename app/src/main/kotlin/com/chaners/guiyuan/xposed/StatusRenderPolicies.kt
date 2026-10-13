@@ -402,7 +402,11 @@ internal object OuterGeometry {
                 dotRadius = dotRadius,
             )
 
-        val dualDotRadius = min(DUAL_BASE_DOT_RADIUS * normalized, DUAL_MAX_DOT_RADIUS)
+        val dualDotRadius =
+            DUAL_BASE_DOT_RADIUS +
+                (DUAL_MAX_DOT_RADIUS - DUAL_BASE_DOT_RADIUS) *
+                    (normalized - DEFAULT_WEIGHT_SCALE) /
+                    (MAX_WEIGHT_SCALE - DEFAULT_WEIGHT_SCALE)
         val dualRowGap = DUAL_BASE_ROW_GAP * dualDotRadius / DUAL_BASE_DOT_RADIUS
         val middleColumnX = DUAL_DOT_SPAN / (DOT_COUNT - 1) / 2f
         val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)

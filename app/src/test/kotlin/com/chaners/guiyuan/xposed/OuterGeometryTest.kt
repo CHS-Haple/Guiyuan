@@ -50,7 +50,7 @@ class OuterGeometryTest {
             val dotRadius = geometry.dualMobileDotRadius
             val gap = geometry.dualRowGap
 
-            assertTrue("radius grows with weight $scale", dotRadius >= lastDotRadius)
+            assertTrue("radius grows with weight $scale", dotRadius > lastDotRadius)
             lastDotRadius = dotRadius
             assertTrue("two rows stay apart at $scale", gap > 2f * dotRadius)
             assertEquals(
@@ -101,6 +101,7 @@ class OuterGeometryTest {
 
         val max = OuterGeometry.resolve(2f)
         assertEquals(6.2f, max.dualMobileDotRadius, 0.0001f)
+        assertEquals(5.175f, OuterGeometry.resolve(1.5f).dualMobileDotRadius, 0.0001f)
         assertTrue(max.dualOpticalRise > default.dualOpticalRise)
     }
 
