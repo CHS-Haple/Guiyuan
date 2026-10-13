@@ -325,15 +325,30 @@ internal object CcTransitionOwner {
                 sourceViewRef.get() === sourceView &&
                 sourceAnchorRef.get() === sourceAnchor
 
-        fun visualState(): String =
-            "started=" + started +
+        fun visualState(): String {
+            // Sample the real final surface only when diagnostics request it.
+            val nativeAirplaneSlots =
+                if (currentSnapshot.previewActive) {
+                    slotViews(finalStatusIcons, AIRPLANE_SLOT)
+                        .count { it.isAttachedToWindow && it.visibility == View.VISIBLE }
+                } else {
+                    null
+                }
+            return "started=" + started +
                 ":rootShown=" + (rootRef.get()?.isShown ?: "unavailable") +
                 ":fakeOpacity=" +
                 (fakeRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
                 ":finalOpacity=" +
                 (finalRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
                 ":sourceWidth=" + (sourceViewRef.get()?.width ?: "unavailable") +
-                ":progress=" + progress
+                ":progress=" + progress +
+                ":preview=" + currentSnapshot.previewActive +
+                ":finalStatusShown=" + finalStatusIcons.isShown +
+                ":finalStatusWidth=" + finalStatusIcons.width +
+                ":finalBatteryShown=" + finalBattery.isShown +
+                ":finalBatteryWidth=" + finalBattery.width +
+                ":nativeAirplaneSlots=" + (nativeAirplaneSlots ?: "not-preview")
+        }
 
         fun batteryNumberProbe(): String =
             resolveBatteryNumberProbe(finalBattery)
