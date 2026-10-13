@@ -202,13 +202,18 @@ class SysUiCcSourceTest {
             0.0001f,
         )
         assertEquals(
-            1f,
+            0f,
             MobileSignalMorphPolicy.rowProgress(0.5f),
             0.0001f,
         )
         assertEquals(
+            1f,
+            MobileSignalMorphPolicy.rowProgress(0.72f),
+            0.0001f,
+        )
+        assertEquals(
             0f,
-            MobileSignalMorphPolicy.barProgress(0.5f),
+            MobileSignalMorphPolicy.barProgress(0.72f),
             0.0001f,
         )
         assertEquals(
@@ -227,12 +232,12 @@ class SysUiCcSourceTest {
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.rowProgress(0.25f),
+            MobileSignalMorphPolicy.rowProgress(0.645f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.barProgress(0.75f),
+            MobileSignalMorphPolicy.barProgress(0.86f),
             0.0001f,
         )
     }
