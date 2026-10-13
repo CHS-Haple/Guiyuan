@@ -3273,19 +3273,20 @@ internal class StatusPainter(
         if (dualLevels != null && !model.mobileUnavailableMark) {
             for (row in 0..1) {
                 val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
-                val radius =
-                    if (row == 0) OuterGeometry.DUAL_INNER_ORBIT_RADIUS
-                    else OuterGeometry.DUAL_OUTER_ORBIT_RADIUS
+                val rowOffset = if (row == 0) -OuterGeometry.DUAL_ROW_GAP / 2f
+                    else OuterGeometry.DUAL_ROW_GAP / 2f
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     fill(
                         color = tint,
                         alpha = if (level > index) 255 else 48,
                         opacity = opacity,
                     )
-                    val angle = geometry.bottomDotAngle(index)
-                    // Share each column with the original arc; concentric angles would stagger the rows.
-                    val x = cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
-                    val y = sqrt((radius * radius - x * x).coerceAtLeast(0f))
+                    val x =
+                        (index - (MOBILE_DOT_COUNT - 1) / 2f) *
+                            (OuterGeometry.DUAL_DOT_SPAN / (MOBILE_DOT_COUNT - 1))
+                    val y =
+                        sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x) +
+                            rowOffset - OuterGeometry.DUAL_OPTICAL_RISE
                     canvas.drawCircle(
                         MOBILE_CENTER_X + x,
                         MOBILE_CENTER_Y + y,

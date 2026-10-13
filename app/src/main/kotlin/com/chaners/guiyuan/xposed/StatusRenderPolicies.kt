@@ -312,9 +312,10 @@ internal object OuterGeometry {
     const val RING_RADIUS = 50f
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
-    const val DUAL_INNER_ORBIT_RADIUS = 44f
-    const val DUAL_OUTER_ORBIT_RADIUS = 56f
-    private const val DUAL_BASE_DOT_RADIUS = 4f
+    const val DUAL_DOT_SPAN = 56f
+    const val DUAL_ROW_GAP = 12f
+    const val DUAL_OPTICAL_RISE = 1.6f
+    private const val DUAL_BASE_DOT_RADIUS = 3.65f
     private const val DUAL_MAX_DOT_RADIUS = 5f
     const val BASE_MOBILE_DOT_RADIUS = 4.9f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_STROKE = 3.2f * PREVIOUS_DEFAULT_WEIGHT_SCALE

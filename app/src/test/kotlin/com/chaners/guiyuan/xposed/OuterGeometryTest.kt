@@ -39,42 +39,44 @@ class OuterGeometryTest {
 
 
     @Test
-    fun dualRowsAreConcentricWithTheBatteryRingAndStayInsideCanvas() {
-        assertEquals(
-            OuterGeometry.RING_RADIUS,
-            (OuterGeometry.DUAL_INNER_ORBIT_RADIUS +
-                OuterGeometry.DUAL_OUTER_ORBIT_RADIUS) / 2f,
-            0f,
-        )
+    fun dualRowsShareArcWithFixedVerticalGapAndStayInsideCanvas() {
+        val expectedX = listOf(-28f, -28f / 3f, 28f / 3f, 28f)
+        val width = OuterGeometry.DUAL_DOT_SPAN
+        val gap = OuterGeometry.DUAL_ROW_GAP
+
+        assertEquals(56f, width, 0f)
+        assertEquals(12f, gap, 0f)
+        assertEquals(1.6f, OuterGeometry.DUAL_OPTICAL_RISE, 0f)
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             val dotRadius = geometry.dualMobileDotRadius
-            assertEquals(minOf(4f * scale, 5f), dotRadius, 0.0001f)
-            assertTrue("distinct rows scale=$scale", 12f > dotRadius * 2f)
+            assertEquals(minOf(3.65f * scale, 5f), dotRadius, 0.0001f)
+            assertTrue("vertical clearance scale=$scale", gap > 2f * dotRadius)
+
+            val rowXs = mutableListOf<Float>()
             for (index in 0..3) {
-                val angle = geometry.bottomDotAngle(index)
-                val x = cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
-                val innerY = sqrt(
-                    OuterGeometry.DUAL_INNER_ORBIT_RADIUS *
-                        OuterGeometry.DUAL_INNER_ORBIT_RADIUS - x * x,
+                val x = (index - 1.5f) * (width / 3f)
+                rowXs += x
+                assertEquals("column $index scale=$scale", expectedX[index], x, 0.0001f)
+                val ringY = sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x)
+                val innerY = ringY - gap / 2f - OuterGeometry.DUAL_OPTICAL_RISE
+                val outerY = ringY + gap / 2f - OuterGeometry.DUAL_OPTICAL_RISE
+                assertEquals("same vertical gap scale=$scale", gap, outerY - innerY, 0.0001f)
+                assertEquals(
+                    "arc midpoint scale=$scale",
+                    ringY - OuterGeometry.DUAL_OPTICAL_RISE,
+                    (innerY + outerY) / 2f,
+                    0.0001f,
                 )
-                val outerY = sqrt(
-                    OuterGeometry.DUAL_OUTER_ORBIT_RADIUS *
-                        OuterGeometry.DUAL_OUTER_ORBIT_RADIUS - x * x,
-                )
-                val ringY = sqrt(
-                    OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x,
-                )
-                assertTrue("SIM1 above SIM2 scale=$scale", innerY < outerY)
-                assertTrue("rows do not overlap scale=$scale",
-                    outerY - innerY > 2f * dotRadius)
-                assertEquals("row midpoint scale=$scale", ringY, (innerY + outerY) / 2f, 0.5f)
-                assertTrue("x scale=$scale", 60f + x - dotRadius > 0f && 60f + x + dotRadius < 120f)
+                assertTrue("x scale=$scale", 60f + x - dotRadius > 0f &&
+                    60f + x + dotRadius < 120f)
                 for (y in listOf(innerY, outerY)) {
                     assertTrue("y scale=$scale", 58f + y - dotRadius > 0f &&
                         58f + y + dotRadius < 120f)
                 }
             }
+            // Both rows use the same four x coordinates, no matter their signal level.
+            assertEquals(width, rowXs.last() - rowXs.first(), 0.0001f)
         }
     }
 
