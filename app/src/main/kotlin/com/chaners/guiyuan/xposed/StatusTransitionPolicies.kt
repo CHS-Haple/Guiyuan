@@ -125,7 +125,11 @@ internal object MobileSignalMorphPolicy {
 
     fun barProgress(progress: Float): Float = smoothPhase(progress, SPREAD_END, 1f)
 
-    // Shrink the arc around its first dot; adjacent dots never stack into a dark blob.
+    // Mirror the dot-by-dot reveal in reverse: fourth, third, then second.
+    fun dotTrim(index: Int, trim: Float): Float =
+        if (index == 0) 0f
+        else smoothPhase(trim, (3f - index) / 3f, (4f - index) / 3f)
+
     fun dotScale(index: Int, trim: Float, spread: Float): Float {
         if (index == 0) return 1f
         val restored = smoothPhase(spread, (index - 1f) / 3f, index / 3f)

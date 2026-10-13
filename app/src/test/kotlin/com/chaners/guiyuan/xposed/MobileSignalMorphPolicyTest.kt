@@ -22,17 +22,53 @@ class MobileSignalMorphPolicyTest {
     }
 
     @Test
-    fun dotsShrinkTowardTheFirstDotWithoutStacking() {
-        for (i in 0..3) assertEquals(1f, morph.dotScale(i, 0f, 0f), 0f)
-        assertEquals(1f, morph.dotScale(0, 1f, 0f), 0f)
+    fun dotsCollapseInReverseRevealOrderWithoutMovingTheAnchor() {
+        for (i in 0..3) assertEquals(1f, morph.dotScale(i, morph.dotTrim(i, 0f), 0f), 0f)
+        assertEquals(0f, morph.dotTrim(0, 1f), 0f)
+        assertEquals(1f, morph.dotScale(0, morph.dotTrim(0, 1f), 0f), 0f)
+
+        // Each third of the trim stage removes just one dot, right-to-left.
+        val first = 1f / 6f
+        val middle = 0.5f
+        val last = 5f / 6f
+        assertEquals(0.5f, morph.dotTrim(3, first), 0.0001f)
+        assertEquals(0f, morph.dotTrim(2, first), 0f)
+        assertEquals(0f, morph.dotTrim(1, first), 0f)
+        assertEquals(1f, morph.dotTrim(3, middle), 0f)
+        assertEquals(0.5f, morph.dotTrim(2, middle), 0.0001f)
+        assertEquals(0f, morph.dotTrim(1, middle), 0f)
+        assertEquals(1f, morph.dotTrim(2, last), 0f)
+        assertEquals(0.5f, morph.dotTrim(1, last), 0.0001f)
+
         for (i in 1..3) {
-            assertEquals(0.5f, morph.dotScale(i, 0.5f, 0f), 0.0001f)
-            assertEquals(0f, morph.dotScale(i, 1f, 0f), 0f)
+            assertEquals(0f, morph.dotScale(i, morph.dotTrim(i, 1f), 0f), 0f)
         }
-        // Both the distance from the first dot and its radius shrink by the same ratio.
-        assertEquals(40f, morph.dotCoordinate(70f, 10f, 100f, 130f, 0.5f, 0f, 0f), 0.0001f)
-        assertEquals(10f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 0f, 0f), 0f)
-        assertEquals(10f, morph.dotCoordinate(10f, 10f, 100f, 100f, 0.5f, 0f, 0f), 0f)
+        // Position and radius use the same local trim; untouched dots stay still.
+        assertEquals(
+            40f,
+            morph.dotCoordinate(70f, 10f, 100f, 130f, morph.dotTrim(3, first), 0f, 0f),
+            0.0001f,
+        )
+        assertEquals(
+            70f,
+            morph.dotCoordinate(70f, 10f, 100f, 130f, morph.dotTrim(2, first), 0f, 0f),
+            0f,
+        )
+        assertEquals(10f, morph.dotCoordinate(10f, 10f, 100f, 100f, 0f, 0f, 0f), 0f)
+    }
+
+    @Test
+    fun collapseUsesTheExactReverseOfDotReveal() {
+        for (index in 1..3) {
+            for (step in 0..12) {
+                val progress = step / 12f
+                val shrinking =
+                    morph.dotScale(index, morph.dotTrim(index, progress), 0f)
+                val revealing =
+                    morph.dotScale(index, 1f, 1f - progress)
+                assertEquals(revealing, shrinking, 0.0001f)
+            }
+        }
     }
 
     @Test
