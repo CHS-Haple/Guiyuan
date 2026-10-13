@@ -27,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -503,32 +506,22 @@ private fun RuntimeStatusMark(
             val reveal = ((ringProgress - 0.15f) / 0.85f).coerceIn(0f, 1f)
             val checkProgress = (check * reveal).coerceIn(0f, 1f)
             if (checkProgress > 0f) {
-                val start = Offset(size.width * 0.29f, size.height * 0.52f)
-                val corner = Offset(size.width * 0.44f, size.height * 0.66f)
-                val end = Offset(size.width * 0.72f, size.height * 0.35f)
-                val first = (checkProgress * 2f).coerceIn(0f, 1f)
-                val second = (checkProgress * 2f - 1f).coerceIn(0f, 1f)
-                val tint = markColor.copy(alpha = markColor.alpha * checkProgress)
-                drawLine(
-                    color = tint,
-                    start = start,
-                    end = Offset(
-                        start.x + (corner.x - start.x) * first,
-                        start.y + (corner.y - start.y) * first,
-                    ),
-                    strokeWidth = symbolStroke,
-                    cap = StrokeCap.Round,
-                )
-                if (second > 0f) {
-                    drawLine(
-                        color = tint,
-                        start = corner,
-                        end = Offset(
-                            corner.x + (end.x - corner.x) * second,
-                            corner.y + (end.y - corner.y) * second,
+                val path = Path().apply {
+                    moveTo(size.width * 0.29f, size.height * 0.52f)
+                    lineTo(size.width * 0.44f, size.height * 0.66f)
+                    lineTo(size.width * 0.72f, size.height * 0.35f)
+                }
+                val measure = PathMeasure().apply { setPath(path, false) }
+                val visible = Path()
+                if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
+                    drawPath(
+                        path = visible,
+                        color = markColor.copy(alpha = markColor.alpha * checkProgress),
+                        style = Stroke(
+                            width = symbolStroke,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
                         ),
-                        strokeWidth = symbolStroke,
-                        cap = StrokeCap.Round,
                     )
                 }
             }
