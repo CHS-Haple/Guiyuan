@@ -107,7 +107,7 @@ internal object BatteryNumberFollowerPolicy {
 internal object MobileSignalMorphPolicy {
     private const val STABLE_MAX_BAR_HEIGHT = 54f
     private val BAR_HEIGHT_RATIOS = floatArrayOf(0.56f, 0.70f, 0.84f, 1f)
-    private const val TRIM_END = 0.15f
+    private const val TRIM_END = BatteryRingTransitionPolicy.TRANSITION_COMPLETE_PROGRESS
     private const val MOVE_END = 0.57f
     private const val SPREAD_END = 0.72f
 

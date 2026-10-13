@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,12 +9,15 @@ class MobileSignalMorphPolicyTest {
     private val morph = MobileSignalMorphPolicy
 
     @Test
-    fun trimAndSpreadHaveTheSameShortDuration() {
+    fun collapseFinishesWithBatteryRingWhileLaterPhasesStayFixed() {
         fun phase(p: Float): Float = morph.handoffProgress(p * p)
+        val ringEnd = BatteryRingTransitionPolicy.transitionProgress(0.45f)
+        assertEquals(1f, ringEnd, 0.0001f)
         assertEquals(0f, morph.trimProgress(phase(0f)), 0f)
-        assertEquals(0.5f, morph.trimProgress(phase(0.075f)), 0.0001f)
-        assertEquals(1f, morph.trimProgress(phase(0.15f)), 0.0001f)
-        assertEquals(0f, morph.moveProgress(phase(0.15f)), 0.0001f)
+        assertEquals(0.5f, morph.trimProgress(phase(0.225f)), 0.0001f)
+        assertEquals(ringEnd, morph.trimProgress(phase(0.45f)), 0.0001f)
+        assertEquals(0f, morph.moveProgress(phase(0.45f)), 0.0001f)
+        assertEquals(0.5f, morph.moveProgress(phase(0.51f)), 0.0001f)
         assertEquals(1f, morph.moveProgress(phase(0.57f)), 0.0001f)
         assertEquals(0f, morph.rowProgress(phase(0.57f)), 0.0001f)
         assertEquals(0.5f, morph.rowProgress(phase(0.645f)), 0.0001f)
