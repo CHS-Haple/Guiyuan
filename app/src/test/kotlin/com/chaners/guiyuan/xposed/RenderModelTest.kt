@@ -649,6 +649,165 @@ class RenderModelTest {
         assertTrue(model?.mobileUnavailableMark == false)
     }
 
+
+    @Test
+    fun optInDualSignalsFollowPhysicalSlotsNotSubscriptionIdOrDataSim() {
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+            ),
+        )
+        val presentation = dualPresentation(
+            slotSubscriptionIds = mapOf(0 to 14, 1 to 3),
+        )
+
+        val single = RenderModel.from(state, presentation, 3)
+        assertNull(single?.dualMobileLevels)
+        assertEquals(1, single?.mobileLevel)
+
+        val dual = RenderModel.from(state, presentation, 3, dualSignalEnabled = true)
+        assertEquals(DualMobileLevels(sim1 = 4, sim2 = 1), dual?.dualMobileLevels)
+        assertEquals(3, dual?.effectiveDataSubscriptionId)
+        assertEquals(1, dual?.mobileLevel)
+    }
+
+    @Test
+    fun unknownUnavailableOrStaleDualSignalsNeverBecomeZeroBarRows() {
+        val source = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+            ),
+        )
+        val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
+        val unavailable = listOf(SignalStrength.Unknown, SignalStrength.Unavailable)
+        for (signal in unavailable) {
+            val changed = source.copy(
+                mobile = source.mobile + (3 to StatusStateStore.MobileState(signal = signal)),
+            )
+            assertNull(
+                RenderModel.from(changed, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+            )
+        }
+        assertNull(
+            RenderModel.from(
+                source.copy(mobile = source.mobile - 3),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+    }
+
+    @Test
+    fun dualSignalOptInRequiresAuthoritativeUnambiguousSlotsAndTwoNativeSubscriptions() {
+        val source = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val valid = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
+        val unresolved = listOf(
+            valid.copy(mobilePresentation =
+                valid.mobilePresentation?.copy(slotSubscriptionIds = emptyMap())),
+            valid.copy(mobilePresentation =
+                valid.mobilePresentation?.copy(slotSubscriptionIds = mapOf(0 to 3, 1 to 3))),
+            valid.copy(mobilePresentation =
+                valid.mobilePresentation?.copy(mode = NativePresentationResolver.Mode.SINGLE)),
+            valid.copy(mobilePresentation =
+                valid.mobilePresentation?.copy(activeSubscriptionIds = listOf(3, 14, 27))),
+            valid.copy(mobilePresentation = null),
+        )
+        for (presentation in unresolved) {
+            assertNull(
+                RenderModel.from(source, presentation, 14, dualSignalEnabled = true)
+                    ?.dualMobileLevels,
+            )
+        }
+        assertEquals(
+            DualMobileLevels(4, 2),
+            RenderModel.from(
+                source,
+                valid.copy(mobilePresentation =
+                    valid.mobilePresentation?.copy(
+                        mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+                        visibleRoots = 2,
+                    )),
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+    }
+
+    @Test
+    fun airplaneRecoveryAndNoSimSuppressDualRowsWithoutChangingSingleFallback() {
+        val source = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
+        assertNull(
+            RenderModel.from(
+                source.copy(airplaneMode = true),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                source.copy(mobileRecoveryPending = true),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                source,
+                native.copy(statusIcons = PresentationStore.StatusIconPresentation(
+                    noSimVisible = true,
+                )),
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+        assertEquals(
+            DualMobileLevels(4, 2),
+            RenderModel.from(source, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+    }
+
+    private fun dualPresentation(
+        slotSubscriptionIds: Map<Int, Int>,
+    ) = PresentationStore.Snapshot(
+        connectivity = connectivity(
+            transport = SysUiConnectivitySource.Transport.CELLULAR,
+            validated = true,
+        ),
+        mobilePresentation = NativePresentationResolver.Snapshot(
+            mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
+            boundRoots = 2,
+            activeBoundRoots = 2,
+            visibleRoots = 1,
+            activeSubscriptionIds = listOf(3, 14),
+            slotSubscriptionIds = slotSubscriptionIds,
+            activeSubscriptionAuthority = "subscription-manager",
+            presentationRootSubscriptionId = 14,
+            effectiveDataSubscriptionId = 3,
+            networkTypeSubscriptionId = 3,
+            networkType = mobileType("5G"),
+        ),
+    )
+
     private fun snapshot(
         wifi: StatusStateStore.WifiState,
         mobile: Map<Int, StatusStateStore.MobileState>,

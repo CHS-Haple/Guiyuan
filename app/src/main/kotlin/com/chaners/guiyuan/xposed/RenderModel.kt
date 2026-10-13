@@ -25,6 +25,7 @@ internal data class RenderModel(
             snapshot: StatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
+            dualSignalEnabled: Boolean = false,
         ): RenderModel? {
             val battery = snapshot.battery ?: return null
 
@@ -105,6 +106,38 @@ internal data class RenderModel(
                     else -> false
                 }
 
+            // Use platform slot identity; subscription IDs and data-SIM preference
+            // are not the SIM1/SIM2 row order.
+            val dualLevels =
+                if (dualSignalEnabled && snapshot.airplaneMode == false &&
+                    !mobileRecoveryPending && !nativeNoSimVisible
+                ) {
+                    val native = presentation.mobilePresentation
+                    val slots = native?.slotSubscriptionIds
+                    val sim1Id = slots?.get(0)
+                    val sim2Id = slots?.get(1)
+                    if (native != null &&
+                        (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
+                            native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
+                        native.activeSubscriptionIds.size == 2 &&
+                        slots?.size == 2 &&
+                        sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
+                        sim1Id in native.activeSubscriptionIds &&
+                        sim2Id in native.activeSubscriptionIds
+                    ) {
+                        val first =
+                            (snapshot.mobile[sim1Id]?.signal as? SignalStrength.Level)?.value
+                        val second =
+                            (snapshot.mobile[sim2Id]?.signal as? SignalStrength.Level)?.value
+                        if (first != null && second != null) {
+                            DualMobileLevels(
+                                sim1 = first.coerceIn(0, 4),
+                                sim2 = second.coerceIn(0, 4),
+                            )
+                        } else null
+                    } else null
+                } else null
+
             val batteryPercent = battery.percent.coerceIn(0, 100)
             val batterySemanticState =
                 battery.semanticState
@@ -118,6 +151,7 @@ internal data class RenderModel(
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
                 effectiveDataSubscriptionId = selectedSubscriptionId,
+                dualMobileLevels = dualLevels,
                 batterySemanticState = batterySemanticState,
                 batterySystemSemanticColor = battery.systemSemanticColor,
             )
