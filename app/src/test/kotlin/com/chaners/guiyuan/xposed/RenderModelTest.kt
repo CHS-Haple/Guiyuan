@@ -786,6 +786,99 @@ class RenderModelTest {
         )
     }
 
+
+    @Test
+    fun optInDualFallsBackToCurrentSingleSimAfterOtherSimIsRemoved() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val single = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                mode = NativePresentationResolver.Mode.SINGLE,
+                activeSubscriptionIds = listOf(3),
+                slotSubscriptionIds = emptyMap(),
+                visibleRoots = 1,
+                activeBoundRoots = 1,
+                effectiveDataSubscriptionId = 14,
+            ),
+        )
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+            ),
+        )
+        val optedIn = RenderModel.from(state, single, 14, dualSignalEnabled = true)
+        assertNull(optedIn?.dualMobileLevels)
+        assertEquals(1, optedIn?.mobileLevel)
+        assertEquals(3, optedIn?.effectiveDataSubscriptionId)
+
+        // The original single-card selection stays unchanged without opt-in.
+        val legacy = RenderModel.from(state, single, 14)
+        assertNull(legacy?.dualMobileLevels)
+        assertEquals(4, legacy?.mobileLevel)
+    }
+
+    @Test
+    fun optInSingleNeverShowsStaleRemovedSubscriptionWhenOnlyActiveIsUnknown() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val single = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                mode = NativePresentationResolver.Mode.SINGLE,
+                activeSubscriptionIds = listOf(3),
+                slotSubscriptionIds = emptyMap(),
+                visibleRoots = 1,
+                activeBoundRoots = 1,
+            ),
+        )
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
+            ),
+        )
+        val model = RenderModel.from(state, single, 14, dualSignalEnabled = true)
+        assertNull(model?.dualMobileLevels)
+        assertNull(model?.mobileLevel)
+        assertEquals(3, model?.effectiveDataSubscriptionId)
+
+        val recovered = RenderModel.from(
+            state.copy(mobile = state.mobile + (
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2))
+            )),
+            single,
+            14,
+            dualSignalEnabled = true,
+        )
+        assertEquals(2, recovered?.mobileLevel)
+        assertNull(recovered?.dualMobileLevels)
+    }
+
+    @Test
+    fun optInSingleRespectsPhysicalSecondSlotWhenItIsOnlyRemainingSim() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val single = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                mode = NativePresentationResolver.Mode.SINGLE,
+                activeSubscriptionIds = listOf(3),
+                slotSubscriptionIds = emptyMap(),
+                visibleRoots = 1,
+                activeBoundRoots = 1,
+            ),
+        )
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val model = RenderModel.from(state, single, 14, dualSignalEnabled = true)
+        assertNull(model?.dualMobileLevels)
+        assertEquals(2, model?.mobileLevel)
+        assertEquals(3, model?.effectiveDataSubscriptionId)
+    }
+
     private fun dualPresentation(
         slotSubscriptionIds: Map<Int, Int>,
     ) = PresentationStore.Snapshot(
