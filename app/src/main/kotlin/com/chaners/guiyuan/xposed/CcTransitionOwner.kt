@@ -796,7 +796,10 @@ internal object CcTransitionOwner {
                             )
                     }
                 val componentVisibleFraction =
-                    if (
+                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
+                        // The ring closes through its own shape animation, never via unmatched fade.
+                        1f
+                    } else if (
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
@@ -899,19 +902,15 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
-                        if (!hasTarget) {
-                            0f
-                        } else {
-                            when (spec.shapePolicy) {
-                                StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
-                                    motionProgress
+                        when {
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
+                                motionProgress
 
-                                StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
-                                    mobileSignalShapeProgress
+                            !hasTarget -> 0f
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
+                                mobileSignalShapeProgress
 
-                                StatusPainter.TransitionShapePolicy.RIGID ->
-                                    0f
-                            }
+                            else -> 0f
                         },
                     mobileTargetWidthRatio =
                         if (
@@ -2411,15 +2410,18 @@ internal object CcTransitionOwner {
                             view.height > 0
                     }
             val legacyIconView = readViewField(finalBattery, "mBatteryIconView")
-            val expected =
-                currentSnapshot.model.batteryPercent
-                    .coerceIn(0, 100)
-                    .toString()
+            val nativePercent =
+                if (currentSnapshot.previewActive) {
+                    currentSnapshot.realModel?.batteryPercent ?: return null
+                } else {
+                    currentSnapshot.model.batteryPercent
+                }
+            val expected = nativePercent.coerceIn(0, 100).toString()
 
             val textView =
                 digitalView
-                    ?.let(::findBatteryNumberTextView)
-                    ?: findBatteryNumberTextView(finalBattery)
+                    ?.let { findBatteryNumberTextView(it, expected) }
+                    ?: findBatteryNumberTextView(finalBattery, expected)
 
             // Best case: the native percentage TextView itself is laid out.
             if (
@@ -2517,11 +2519,7 @@ internal object CcTransitionOwner {
                 preferFallbackGeometry = true,
             )
 
-        private fun findBatteryNumberTextView(root: View): TextView? {
-            val expected =
-                currentSnapshot.model.batteryPercent
-                    .coerceIn(0, 100)
-                    .toString()
+        private fun findBatteryNumberTextView(root: View, expected: String): TextView? {
             data class Candidate(
                 val view: TextView,
                 val score: Int,

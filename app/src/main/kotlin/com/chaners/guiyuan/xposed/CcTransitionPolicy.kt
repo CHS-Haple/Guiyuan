@@ -45,11 +45,16 @@ internal object CcTransitionPolicy {
         preview: RenderModel,
         real: RenderModel?,
     ): Boolean {
+        // The real view geometry decides whether the ring/number target exists.
+        if (
+            component == StatusPainter.TransitionComponent.BATTERY ||
+            component == StatusPainter.TransitionComponent.BATTERY_NUMBER
+        ) return true
         real ?: return false
         return when (component) {
-            StatusPainter.TransitionComponent.BATTERY -> true
-            StatusPainter.TransitionComponent.BATTERY_NUMBER ->
-                preview.batteryPercent == real.batteryPercent
+            StatusPainter.TransitionComponent.BATTERY,
+            StatusPainter.TransitionComponent.BATTERY_NUMBER,
+            -> true
             StatusPainter.TransitionComponent.CHARGING_ICON ->
                 preview.charging == real.charging &&
                     preview.chargingIconResId == real.chargingIconResId

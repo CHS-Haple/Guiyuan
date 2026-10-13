@@ -24,10 +24,10 @@ class SandboxCcTransitionTest {
     }
 
     @Test
-    fun differentBatteryPercentOnlySeparatesNumberFromRing() {
+    fun differentBatteryPercentCanStillUseNativeNumberGeometry() {
         val preview = real.copy(batteryPercent = 87)
         assertTrue(CcTransitionPolicy.canMatchNative(StatusPainter.TransitionComponent.BATTERY, preview, real))
-        assertFalse(CcTransitionPolicy.canMatchNative(StatusPainter.TransitionComponent.BATTERY_NUMBER, preview, real))
+        assertTrue(CcTransitionPolicy.canMatchNative(StatusPainter.TransitionComponent.BATTERY_NUMBER, preview, real))
     }
 
     @Test
@@ -64,9 +64,15 @@ class SandboxCcTransitionTest {
     }
 
     @Test
-    fun missingNativeModelNeverProvidesAnEndpoint() {
+    fun missingRealModelStillAllowsNativeGeometryProbeForBattery() {
+        assertTrue(CcTransitionPolicy.canMatchNative(StatusPainter.TransitionComponent.BATTERY, real, null))
+        assertTrue(CcTransitionPolicy.canMatchNative(StatusPainter.TransitionComponent.BATTERY_NUMBER, real, null))
         for (part in StatusPainter.TransitionComponent.entries) {
-            assertFalse(CcTransitionPolicy.canMatchNative(part, real, null))
+            if (part != StatusPainter.TransitionComponent.BATTERY &&
+                part != StatusPainter.TransitionComponent.BATTERY_NUMBER
+            ) {
+                assertFalse(CcTransitionPolicy.canMatchNative(part, real, null))
+            }
         }
     }
 
