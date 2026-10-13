@@ -44,6 +44,9 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.sandbox.PreviewSandboxUiState
+import com.chaners.guiyuan.sandbox.PreviewSysUiResources
+import com.chaners.guiyuan.sandbox.toRenderModel
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo

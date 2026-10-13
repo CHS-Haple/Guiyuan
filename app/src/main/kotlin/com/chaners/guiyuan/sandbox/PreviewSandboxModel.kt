@@ -1,4 +1,4 @@
-package com.chaners.guiyuan.ui.screens
+package com.chaners.guiyuan.sandbox
 
 import android.content.Context
 import android.content.res.Resources

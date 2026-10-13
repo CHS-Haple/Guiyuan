@@ -60,7 +60,7 @@ import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
 import com.chaners.guiyuan.ui.screens.HomeScreen
-import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
+import com.chaners.guiyuan.sandbox.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch

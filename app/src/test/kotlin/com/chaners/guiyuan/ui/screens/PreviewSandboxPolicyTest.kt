@@ -1,5 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
+import com.chaners.guiyuan.sandbox.PreviewMobileNetwork
+import com.chaners.guiyuan.sandbox.PreviewWifiState
+import com.chaners.guiyuan.sandbox.PreviewChargingState
+import com.chaners.guiyuan.sandbox.PreviewSandboxUiState
+import com.chaners.guiyuan.sandbox.previewWifiResourceNames
+import com.chaners.guiyuan.sandbox.previewChargingResourceNames
+import com.chaners.guiyuan.sandbox.previewCenterSource
+import com.chaners.guiyuan.sandbox.PreviewNetworkMode
+import com.chaners.guiyuan.sandbox.PreviewCenterSource
+import com.chaners.guiyuan.sandbox.PreviewBatteryMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

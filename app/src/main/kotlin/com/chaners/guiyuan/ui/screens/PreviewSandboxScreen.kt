@@ -30,6 +30,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.sandbox.PreviewBatteryMode
+import com.chaners.guiyuan.sandbox.PreviewChargingState
+import com.chaners.guiyuan.sandbox.PreviewMobileNetwork
+import com.chaners.guiyuan.sandbox.PreviewNetworkMode
+import com.chaners.guiyuan.sandbox.PreviewSandboxUiState
+import com.chaners.guiyuan.sandbox.PreviewSysUiResources
+import com.chaners.guiyuan.sandbox.PreviewWifiState
+import com.chaners.guiyuan.sandbox.toRenderModel
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
