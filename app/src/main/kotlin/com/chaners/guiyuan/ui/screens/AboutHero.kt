@@ -360,21 +360,28 @@ private fun DrawScope.drawGlint(
     strength: Float,
 ) {
     if (progress <= 0f || progress >= 1f) return
-    val radius = flowRadius(progress, (PI / 2).toFloat(), diameter, phase)
+    val radius = diameter * (0.55f + 1.15f * progress)
     val feather = diameter * (0.20f + 0.07f * progress)
-    val front = size.height / 2f + radius - distance
-    if (front < -feather || front > size.height + feather) return
+    val edge = radius + feather
+    val turn = phase - 0.55f * progress
+    val shift = diameter * 0.025f * progress
+    // Use the ripple's moving circle, not an unrelated diagonal sweep.
+    val front =
+        Offset(
+            size.width / 2f + cos(turn) * shift,
+            size.height / 2f - distance + sin(turn) * shift,
+        )
     val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
     drawRect(
-        brush = Brush.linearGradient(
+        brush = Brush.radialGradient(
             0f to Color.Transparent,
-            0.25f to accent.copy(alpha = intensity * 0.22f),
-            0.43f to glint.copy(alpha = intensity * 0.90f),
-            0.53f to glint.copy(alpha = intensity),
-            0.67f to accent.copy(alpha = intensity * 0.32f),
+            ((radius - feather) / edge) to Color.Transparent,
+            ((radius - 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.22f),
+            (radius / edge) to glint.copy(alpha = intensity),
+            ((radius + 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.32f),
             1f to Color.Transparent,
-            start = Offset(0f, front - feather),
-            end = Offset(size.width * 0.20f, front + feather),
+            center = front,
+            radius = edge,
         ),
         blendMode = BlendMode.SrcAtop,
     )
