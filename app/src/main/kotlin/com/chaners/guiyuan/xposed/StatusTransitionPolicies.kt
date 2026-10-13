@@ -107,20 +107,42 @@ internal object BatteryNumberFollowerPolicy {
 internal object MobileSignalMorphPolicy {
     private const val STABLE_MAX_BAR_HEIGHT = 54f
     private val BAR_HEIGHT_RATIOS = floatArrayOf(0.56f, 0.70f, 0.84f, 1f)
+    private const val TRIM_END = 0.12f
+    private const val MOVE_END = 0.60f
+    private const val SPREAD_END = 0.72f
 
-    fun rowProgress(shapeProgress: Float): Float =
-        smoothPhase(
-            value = shapeProgress,
-            start = 0f,
-            end = 0.5f,
+    // Use native handoff time, not its squared shape fraction, for equal stage durations.
+    fun handoffProgress(shapeProgress: Float): Float =
+        kotlin.math.sqrt(
+            shapeProgress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f,
         )
 
-    fun barProgress(shapeProgress: Float): Float =
-        smoothPhase(
-            value = shapeProgress,
-            start = 0.5f,
-            end = 1f,
-        )
+    fun trimProgress(progress: Float): Float = smoothPhase(progress, 0f, TRIM_END)
+
+    fun moveProgress(progress: Float): Float = smoothPhase(progress, TRIM_END, MOVE_END)
+
+    fun rowProgress(progress: Float): Float = smoothPhase(progress, MOVE_END, SPREAD_END)
+
+    fun barProgress(progress: Float): Float = smoothPhase(progress, SPREAD_END, 1f)
+
+    // Cut the existing dotted arc right-to-left rather than stacking dots.
+    fun dotScale(index: Int, trim: Float, spread: Float): Float {
+        if (index == 0) return 1f
+        val retained = 1f - smoothPhase(trim, (3f - index) / 3f, (4f - index) / 3f)
+        val restored = smoothPhase(spread, (index - 1f) / 3f, index / 3f)
+        return max(retained, restored)
+    }
+
+    fun dotCoordinate(
+        source: Float,
+        leftTarget: Float,
+        target: Float,
+        move: Float,
+        spread: Float,
+    ): Float {
+        val moved = source + (leftTarget - source) * move
+        return moved + (target - moved) * spread
+    }
 
     fun outerSimilarityScale(
         targetWidthRatio: Float?,
