@@ -141,6 +141,10 @@ private fun SummaryField(
     details: List<Pair<Int, String>>,
     modifier: Modifier,
 ) {
+    val primary = MiuixTheme.colorScheme.onSurfaceContainer
+    val companion = primary.copy(alpha = 0.76f)
+    val secondary = primary.copy(alpha = 0.66f)
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -152,20 +156,20 @@ private fun SummaryField(
             Image(
                 painter = painterResource(icon),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceContainer),
+                colorFilter = ColorFilter.tint(primary),
                 modifier = Modifier.size(18.dp),
             )
             Text(
                 text = value,
                 style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                color = primary,
             )
             if (alongside != null) {
                 Text(
                     text = alongside,
                     modifier = Modifier.weight(1f, fill = false),
                     style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    color = companion,
                 )
             }
         }
@@ -177,13 +181,13 @@ private fun SummaryField(
                 Image(
                     painter = painterResource(detailIcon),
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceContainerVariant),
+                    colorFilter = ColorFilter.tint(secondary),
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
                     text = detail,
                     style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    color = secondary,
                 )
             }
         }
