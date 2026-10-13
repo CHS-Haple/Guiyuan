@@ -168,7 +168,7 @@
     <string name="runtime_scope_authorized">已授权</string>
     <string name="runtime_scope_disabled">未授权</string>
     <string name="runtime_scope_not_installed">未安装</string>
-    <string name="runtime_scope_error">异常</string>
+    <string name="runtime_scope_error">上次异常</string>
     <string name="diagnostics_mode_title">诊断等级</string>
     <string name="diagnostics_mode_summary">选择模块运行时诊断信息的详细程度</string>
     <string name="diagnostics_mode_basic">一般</string>

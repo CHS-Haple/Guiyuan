@@ -169,7 +169,7 @@
     <string name="runtime_scope_authorized">Authorized</string>
     <string name="runtime_scope_disabled">Not authorized</string>
     <string name="runtime_scope_not_installed">Not installed</string>
-    <string name="runtime_scope_error">Error</string>
+    <string name="runtime_scope_error">Last error</string>
     <string name="diagnostics_mode_title">Diagnostics level</string>
     <string name="diagnostics_mode_summary">Choose the level of runtime diagnostic detail</string>
     <string name="diagnostics_mode_basic">General</string>

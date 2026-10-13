@@ -10,7 +10,7 @@ class StaticScopeScreenTest {
     private val settings = "com.android.settings"
 
     @Test
-    fun authorizedScopeWithoutReportedTargetIsNotConnected() {
+    fun authorizedScopeWithoutReportedTargetIsStillAuthorized() {
         val state =
             XposedStatus.Connected(
                 apiVersion = 102,
@@ -31,6 +31,18 @@ class StaticScopeScreenTest {
             )
         assertEquals(ScopeState.Failed, scopeState(sysUi, true, state))
         assertEquals(ScopeState.Authorized, scopeState(settings, true, state))
+    }
+
+    @Test
+    fun unrelatedRunningTargetDoesNotChangeAuthorization() {
+        val state =
+            XposedStatus.Connected(
+                apiVersion = 102,
+                scopes = setOf(sysUi, settings),
+                runningTargets = mapOf("$settings:remote" to HookedTarget.State.FAILED),
+            )
+        assertEquals(ScopeState.Authorized, scopeState(sysUi, true, state))
+        assertEquals(ScopeState.Failed, scopeState(settings, true, state))
     }
 
     @Test

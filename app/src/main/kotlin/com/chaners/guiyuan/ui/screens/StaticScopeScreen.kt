@@ -108,7 +108,6 @@ private fun StaticScopeItem(
         endActions = {
             val label =
                 when (status) {
-                    ScopeState.Connected -> stringResource(R.string.runtime_scope_connected)
                     ScopeState.Authorized -> stringResource(R.string.runtime_scope_authorized)
                     ScopeState.Unauthorized -> stringResource(R.string.runtime_scope_disabled)
                     ScopeState.Missing -> stringResource(R.string.runtime_scope_not_installed)
@@ -117,13 +116,13 @@ private fun StaticScopeItem(
                 }
             val color =
                 when (status) {
-                    ScopeState.Connected -> MiuixTheme.colorScheme.primary
+                    ScopeState.Authorized -> MiuixTheme.colorScheme.primary
                     ScopeState.Failed -> MiuixTheme.colorScheme.error
                     else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
                 }
             val backgroundAlpha =
                 when (status) {
-                    ScopeState.Connected, ScopeState.Failed -> 0.12f
+                    ScopeState.Authorized, ScopeState.Failed -> 0.12f
                     else -> 0.07f
                 }
             Surface(
@@ -218,18 +217,14 @@ internal fun scopeState(pkg: String, installed: Boolean?, status: XposedStatus):
     val connected = status as? XposedStatus.Connected ?: return ScopeState.Unknown
     if (pkg !in connected.scopes) return ScopeState.Unauthorized
 
-    var hasTarget = false
-    for ((name, state) in connected.runningTargets) {
-        if (name != pkg && !name.startsWith("$pkg:")) continue
-        if (state == HookedTarget.State.FAILED) return ScopeState.Failed
-        hasTarget = true
+    val failed = connected.runningTargets.any { (name, state) ->
+        (name == pkg || name.startsWith("$pkg:")) && state == HookedTarget.State.FAILED
     }
-    // An authorized scope does not prove the host is running.
-    return if (hasTarget) ScopeState.Connected else ScopeState.Authorized
+    // Reported targets are a snapshot, not proof that a host is running now.
+    return if (failed) ScopeState.Failed else ScopeState.Authorized
 }
 
 internal enum class ScopeState {
-    Connected,
     Authorized,
     Unauthorized,
     Missing,
