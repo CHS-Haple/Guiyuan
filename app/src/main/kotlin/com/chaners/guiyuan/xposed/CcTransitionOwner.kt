@@ -85,6 +85,9 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
+    fun onSandboxChanged() = sync("sandbox")
+
+    @Synchronized
     fun setSceneEligible(eligible: Boolean) {
         sceneEligible = eligible
         sync("scene")
@@ -122,6 +125,12 @@ internal object CcTransitionOwner {
     }
 
     private fun sync(source: String) {
+        // Simulated Home data must not animate toward native Control Center targets.
+        if (sourceScene == SourceScene.HOME && SandboxHost.active()) {
+            current?.stop("sandbox:" + source)
+            current = null
+            return
+        }
         val progress = nativeProgress
         val endpoint = endpoints
         val shouldRun =

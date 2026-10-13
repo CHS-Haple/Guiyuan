@@ -58,12 +58,19 @@ internal object SandboxHost {
         resources = null
     }
 
-    fun model(context: Context): RenderModel? {
+    fun active(): Boolean = validLease() != null
+
+    private fun validLease(): SandboxLease? {
         val lease = current ?: return null
         if (!lease.valid(SystemClock.elapsedRealtime(), System.currentTimeMillis())) {
             handler.post { refresh() }
             return null
         }
+        return lease
+    }
+
+    fun model(context: Context): RenderModel? {
+        val lease = validLease() ?: return null
         return runCatching {
             val resolver = resources ?: PreviewSysUiResources(context.applicationContext).also {
                 resources = it
