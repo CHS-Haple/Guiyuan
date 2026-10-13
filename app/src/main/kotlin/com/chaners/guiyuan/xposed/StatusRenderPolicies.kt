@@ -312,6 +312,15 @@ internal object OuterGeometry {
     const val RING_RADIUS = 50f
     const val BASE_RING_STROKE = 8.25f
     const val MOBILE_ORBIT_RADIUS = 51f
+    const val DUAL_DOT_SPAN = 56f
+    private const val DUAL_BASE_ROW_GAP = 14.3f
+    private const val DUAL_BASE_OPTICAL_RISE = 2.2f
+    private const val DUAL_BASE_DOT_RADIUS = 4.565f
+    private const val DUAL_BOTTOM_MARGIN = 3.1f
+    private const val DUAL_MAX_ROW_TIGHTENING = 0.9f
+    private const val DUAL_ROW_TIGHTENING_RATE = 3f
+    private const val CANVAS_BOTTOM = 120f
+    private const val MOBILE_CENTER_Y = 58f
     const val BASE_MOBILE_DOT_RADIUS = 4.9f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_STROKE = 3.2f * PREVIOUS_DEFAULT_WEIGHT_SCALE
     const val BASE_UNAVAILABLE_MARK_HALF_EXTENT = 3.7f * PREVIOUS_DEFAULT_WEIGHT_SCALE
@@ -329,6 +338,10 @@ internal object OuterGeometry {
         val weightScale: Float,
         val ringStroke: Float,
         val mobileDotRadius: Float,
+        val dualMobileDotRadius: Float,
+        val dualDotSpan: Float,
+        val dualRowGap: Float,
+        val dualOpticalRise: Float,
         val unavailableMarkStroke: Float,
         val unavailableMarkHalfExtent: Float,
         val firstDotCenterDegrees: Float,
@@ -391,10 +404,31 @@ internal object OuterGeometry {
                 dotRadius = dotRadius,
             )
 
+        val dualDotRadius = DUAL_BASE_DOT_RADIUS * normalized
+        // Wider only at extreme weights, when neighboring dots would otherwise touch.
+        val dualDotSpan = max(DUAL_DOT_SPAN, 6f * dualDotRadius + 2f)
+        val naturalRowGap = DUAL_BASE_ROW_GAP * normalized
+        val rowTightening =
+            ((normalized - DEFAULT_WEIGHT_SCALE) * DUAL_ROW_TIGHTENING_RATE)
+                .coerceIn(0f, DUAL_MAX_ROW_TIGHTENING)
+        val dualRowGap = naturalRowGap - rowTightening
+        val middleColumnX = dualDotSpan / (DOT_COUNT - 1) / 2f
+        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
+        val dualOpticalRise =
+            max(
+                DUAL_BASE_OPTICAL_RISE,
+                MOBILE_CENTER_Y + middleArcY + naturalRowGap / 2f + dualDotRadius +
+                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
+            )
+
         return Resolved(
             weightScale = normalized,
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
+            dualMobileDotRadius = dualDotRadius,
+            dualDotSpan = dualDotSpan,
+            dualRowGap = dualRowGap,
+            dualOpticalRise = dualOpticalRise,
             unavailableMarkStroke = unavailableMarkStroke,
             unavailableMarkHalfExtent = unavailableMarkHalfExtent,
             firstDotCenterDegrees = firstCenter,

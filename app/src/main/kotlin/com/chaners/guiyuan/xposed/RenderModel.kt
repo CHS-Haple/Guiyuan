@@ -5,6 +5,8 @@ import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
+internal data class DualMobileLevels(val sim1: Int, val sim2: Int)
+
 internal data class RenderModel(
     val batteryPercent: Int,
     val charging: Boolean,
@@ -16,6 +18,7 @@ internal data class RenderModel(
     val batterySemanticState: BatterySemanticState =
         BatterySemanticState.NORMAL,
     val batterySystemSemanticColor: Int? = null,
+    val dualMobileLevels: DualMobileLevels? = null,
 ) {
     companion object {
         fun from(

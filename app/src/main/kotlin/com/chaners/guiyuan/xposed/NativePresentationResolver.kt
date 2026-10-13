@@ -37,12 +37,13 @@ internal object NativePresentationResolver {
                         ?: false
                 }
                 .toSet()
-        val platformActive =
+        val platformSubscriptions =
             bindings
                 .firstOrNull()
                 ?.root
                 ?.context
-                ?.let(::activeSubscriptionIds)
+                ?.let(::activeSubscriptions)
+        val platformActive = platformSubscriptions?.map { it.first }?.toSet()
         val resolvedActive =
             resolveActiveSubIds(
                 boundSubscriptionIds =
@@ -52,6 +53,11 @@ internal object NativePresentationResolver {
                     platformActive,
             )
         val activeBindingSubIds = resolvedActive.subscriptionIds
+        val slotSubscriptionIds =
+            resolveSlotSubscriptions(
+                activeBindingSubIds,
+                platformSubscriptions,
+            )
         val activeBindings =
             bindings.filter { binding ->
                 binding.subscriptionId in activeBindingSubIds
@@ -114,6 +120,7 @@ internal object NativePresentationResolver {
             activeBoundRoots = activeBindings.size,
             visibleRoots = visible.size,
             activeSubscriptionIds = activeBindingSubIds.sorted(),
+            slotSubscriptionIds = slotSubscriptionIds,
             activeSubscriptionAuthority =
                 if (resolvedActive.authoritative) {
                     "subscription-manager"
@@ -285,17 +292,36 @@ internal object NativePresentationResolver {
     )
 
 
-    private fun activeSubscriptionIds(context: Context): Set<Int>? {
+    // Slot order is physical SIM1/SIM2 order, not numeric subscription-ID order.
+    internal fun resolveSlotSubscriptions(
+        activeSubscriptionIds: Set<Int>,
+        platformSubscriptions: List<Pair<Int, Int>>?,
+    ): Map<Int, Int> {
+        val pairs =
+            platformSubscriptions
+                ?.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
+                ?: return emptyMap()
+        if (
+            activeSubscriptionIds.size != 2 ||
+            pairs.size != 2 ||
+            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
+            pairs.map { it.second }.toSet() != setOf(0, 1)
+        ) {
+            return emptyMap()
+        }
+        return pairs.associate { (id, slot) -> slot to id }
+    }
+
+    private fun activeSubscriptions(context: Context): List<Pair<Int, Int>>? {
         val manager =
             context.getSystemService(SubscriptionManager::class.java)
                 ?: return null
 
-        // null means the platform source is unavailable; an empty set is still authoritative.
+        // null means the platform source is unavailable; an empty list is authoritative.
         return runCatching {
             manager.activeSubscriptionInfoList
-                ?.map { info -> info.subscriptionId }
-                ?.filter { subscriptionId -> subscriptionId >= 0 }
-                ?.toSet()
+                ?.filter { info -> info.subscriptionId >= 0 }
+                ?.map { info -> info.subscriptionId to info.simSlotIndex }
         }.getOrNull()
     }
 
@@ -305,6 +331,7 @@ internal object NativePresentationResolver {
         val activeBoundRoots: Int = boundRoots,
         val visibleRoots: Int,
         val activeSubscriptionIds: List<Int>,
+        val slotSubscriptionIds: Map<Int, Int> = emptyMap(),
         val activeSubscriptionAuthority: String = "pipeline-semantic-fallback",
         val presentationRootSubscriptionId: Int?,
         val effectiveDataSubscriptionId: Int?,

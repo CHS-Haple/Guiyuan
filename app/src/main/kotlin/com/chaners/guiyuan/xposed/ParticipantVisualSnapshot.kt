@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import java.util.WeakHashMap
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -49,6 +50,14 @@ internal object ParticipantVisualSnapshot {
             get() = (top + bottom) / 2f
     }
 
+    internal enum class DualBottomShape { DOTS, BARS }
+
+    internal data class DualMobileRows(
+        val top: List<NormalizedRect>,
+        val bottom: List<NormalizedRect>,
+        val bottomShape: DualBottomShape,
+    )
+
     internal data class Snapshot(
         val envelope: NormalizedRect,
         val components: List<NormalizedRect>,
@@ -56,6 +65,48 @@ internal object ParticipantVisualSnapshot {
         val inkCenterX: Float? = null,
         val inkCenterY: Float? = null,
     ) {
+        // Only resolve independent rows when all eight native shapes are separable.
+        fun dualMobileRowsWithinEnvelope(): DualMobileRows? {
+            if (components.size != 8 || envelope.width <= 0f || envelope.height <= 0f) {
+                return null
+            }
+            val byBottom = components.sortedBy { it.bottom }
+            val top = byBottom.take(4).sortedBy { it.centerX }
+            val bottom = byBottom.drop(4).sortedBy { it.centerX }
+            if (top.maxOf { it.bottom } >= bottom.minOf { it.top }) return null
+            if (classifyComponents(top) != Topology.FOUR_VERTICAL_BARS) return null
+
+            val pitch = (top.last().centerX - top.first().centerX) / 3f
+            if (pitch <= 0f || top.zip(bottom).any { (a, b) ->
+                    abs(a.centerX - b.centerX) > pitch * 0.2f
+                }
+            ) return null
+
+            val bottomIsDots =
+                bottom.all { rect ->
+                    rect.width > 0f && rect.height > 0f &&
+                        rect.height in (rect.width * 0.75f)..(rect.width * 1.3f)
+                } && (bottom.maxOf { it.height } - bottom.minOf { it.height }) <
+                envelope.height * 0.12f
+            val shape =
+                when {
+                    bottomIsDots -> DualBottomShape.DOTS
+                    classifyComponents(bottom) == Topology.FOUR_VERTICAL_BARS &&
+                        bottom.any { it.height > it.width * 1.5f } ->
+                        DualBottomShape.BARS
+                    else -> return null
+                }
+
+            fun relative(rect: NormalizedRect): NormalizedRect =
+                NormalizedRect(
+                    left = (rect.left - envelope.left) / envelope.width,
+                    top = (rect.top - envelope.top) / envelope.height,
+                    right = (rect.right - envelope.left) / envelope.width,
+                    bottom = (rect.bottom - envelope.top) / envelope.height,
+                )
+            return DualMobileRows(top.map(::relative), bottom.map(::relative), shape)
+        }
+
         fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
             if (topology != Topology.FOUR_VERTICAL_BARS || components.size != 4) {
                 return null

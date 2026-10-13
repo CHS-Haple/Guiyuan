@@ -86,4 +86,8 @@
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
     <string name="home_preview_charging_super_fast_compact">超级快充</string>
+    <string name="home_preview_dual_mobile_title">双卡信号预览</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 内排，SIM2 外排。仅限预览。</string>
+    <string name="home_preview_sim1_signal_title">SIM1 信号</string>
+    <string name="home_preview_sim2_signal_title">SIM2 信号</string>
 </resources>

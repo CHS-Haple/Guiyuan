@@ -71,6 +71,8 @@ internal fun GyApp(
             mutableIntStateOf(PreviewMobileNetwork.FIVE_G.ordinal)
         }
         var previewMobileSignalLevel by rememberSaveable { mutableIntStateOf(4) }
+        var previewDualMobile by rememberSaveable { mutableStateOf(false) }
+        var previewSim2SignalLevel by rememberSaveable { mutableIntStateOf(4) }
         var previewWifiStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
         }
@@ -105,6 +107,8 @@ internal fun GyApp(
                     },
                 mobileNetwork = savedMobileNetwork,
                 mobileSignalLevel = previewMobileSignalLevel,
+                dualMobile = previewDualMobile,
+                sim2SignalLevel = previewSim2SignalLevel,
                 wifiState =
                     PreviewWifiState.entries[
                         previewWifiStateIndex.coerceIn(
@@ -219,6 +223,8 @@ internal fun GyApp(
                         onMobileSignalLevelChange = {
                             previewMobileSignalLevel = it
                         },
+                        onDualMobileChange = { previewDualMobile = it },
+                        onSim2SignalLevelChange = { previewSim2SignalLevel = it },
                         onWifiStateChange = {
                             previewWifiStateIndex = it.ordinal
                         },

@@ -30,6 +30,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 internal class StatusPainter(
     private val context: Context,
@@ -3268,6 +3269,34 @@ internal class StatusPainter(
         opacity: Float,
         geometry: OuterGeometry.Resolved,
     ) {
+        val dualLevels = model.dualMobileLevels
+        if (dualLevels != null && !model.mobileUnavailableMark) {
+            for (row in 0..1) {
+                val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
+                val rowOffset = if (row == 0) -geometry.dualRowGap / 2f
+                    else geometry.dualRowGap / 2f
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    fill(
+                        color = tint,
+                        alpha = if (level > index) 255 else 48,
+                        opacity = opacity,
+                    )
+                    val x =
+                        (index - (MOBILE_DOT_COUNT - 1) / 2f) *
+                            (geometry.dualDotSpan / (MOBILE_DOT_COUNT - 1))
+                    val y =
+                        sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x) +
+                            rowOffset - geometry.dualOpticalRise
+                    canvas.drawCircle(
+                        MOBILE_CENTER_X + x,
+                        MOBILE_CENTER_Y + y,
+                        geometry.dualMobileDotRadius,
+                        paint,
+                    )
+                }
+            }
+            return
+        }
         val level = model.mobileLevel
 
         for (index in 0 until MOBILE_DOT_COUNT) {

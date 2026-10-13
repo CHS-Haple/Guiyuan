@@ -5,6 +5,7 @@ import android.content.res.Resources
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.DualMobileLevels
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.network.InternetState
 
@@ -66,6 +67,8 @@ internal data class PreviewSandboxUiState(
     val networkMode: PreviewNetworkMode = PreviewNetworkMode.WIFI,
     val mobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FIVE_G,
     val mobileSignalLevel: Int = 4,
+    val dualMobile: Boolean = false,
+    val sim2SignalLevel: Int = 4,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
     val batteryPercent: Int = 87,
@@ -220,6 +223,13 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 state = chargingState,
             ),
         mobileLevel = mobileLevel,
+        dualMobileLevels =
+            if (dualMobile && mobileControlsEnabled) {
+                DualMobileLevels(
+                    sim1 = mobileSignalLevel.coerceIn(0, 4),
+                    sim2 = sim2SignalLevel.coerceIn(0, 4),
+                )
+            } else null,
         mobileUnavailableMark = airplaneMode || !simPresent,
         effectiveDataSubscriptionId = -1,
         batterySemanticState = semanticState,
