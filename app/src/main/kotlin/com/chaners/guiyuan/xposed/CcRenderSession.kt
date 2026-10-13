@@ -481,6 +481,8 @@ internal object CcRenderSession {
         private val statusAreaLocationScratch = IntArray(2)
 
         private var currentModel: RenderModel? = null
+        private var currentReal: RenderModel? = null
+        private var previewActive = false
         private var currentTint: TintState? = null
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
@@ -545,6 +547,8 @@ internal object CcRenderSession {
                 view = renderView,
                 anchorView = anchorView,
                 model = model,
+                realModel = currentReal,
+                previewActive = previewActive,
                 colors =
                     ColorPolicy.resolve(
                         model = model,
@@ -735,9 +739,14 @@ internal object CcRenderSession {
         }
 
         fun update(snapshot: StatusStateStore.Snapshot) {
-            val result = renderController.update(snapshot)
-            if (currentModel != result.model) {
+            val preview =
+                if (sceneEligible) host.get()?.context?.let(SandboxHost::model) else null
+            val result = renderController.update(snapshot, preview = preview)
+            val real = renderController.currentRealModel()
+            if (currentModel != result.model || currentReal != real || previewActive != (preview != null)) {
                 currentModel = result.model
+                currentReal = real
+                previewActive = preview != null
                 transitionStateVersion += 1
             }
             modelReady = result.model != null
@@ -755,10 +764,12 @@ internal object CcRenderSession {
         }
 
         fun setSceneEligible(eligible: Boolean) {
+            if (sceneEligible == eligible) return
             sceneEligible = eligible
             if (!eligible) {
                 nativePresentationReady = false
             }
+            refresh()
             syncPresentation("scene")
         }
 
@@ -989,6 +1000,8 @@ internal object CcRenderSession {
         val view: View,
         val anchorView: View,
         val model: RenderModel,
+        val realModel: RenderModel? = null,
+        val previewActive: Boolean = false,
         val colors: RenderColors,
         val visual: VisualCfg,
         val stateVersion: Long,

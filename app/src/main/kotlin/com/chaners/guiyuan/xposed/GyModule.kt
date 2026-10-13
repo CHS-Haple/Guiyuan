@@ -4138,6 +4138,7 @@ class GyModule : XposedModule() {
         runCatching {
             SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
                 HomeRenderSession.onPresentationStateChanged()
+                CcRenderSession.onPresentationStateChanged()
                 CcTransitionOwner.onSandboxChanged()
             }
         }.onFailure {

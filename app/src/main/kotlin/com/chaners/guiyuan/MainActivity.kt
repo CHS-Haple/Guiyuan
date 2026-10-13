@@ -27,9 +27,10 @@ import com.chaners.guiyuan.ui.GyApp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    override fun onPause() {
+    // The system shade can pause this Activity while the sandbox is still the current page.
+    override fun onStop() {
         (application as GyApplication).stopSandbox()
-        super.onPause()
+        super.onStop()
     }
 
     override fun onResume() {

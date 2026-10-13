@@ -48,6 +48,8 @@ internal class RenderController(
         view.setVisualCfg(visual)
     }
 
+    fun currentRealModel(): RenderModel? = stableReal
+
     fun currentTintState(): TintState? = stableTint
 
     fun updateTint(state: TintState): TintUpdate {

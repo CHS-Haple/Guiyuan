@@ -125,12 +125,6 @@ internal object CcTransitionOwner {
     }
 
     private fun sync(source: String) {
-        // Unknown or Home origin cannot safely match simulated data to native CC targets.
-        if (sourceScene != SourceScene.KEYGUARD && SandboxHost.active()) {
-            current?.stop("sandbox:" + source)
-            current = null
-            return
-        }
         val progress = nativeProgress
         val endpoint = endpoints
         val shouldRun =
