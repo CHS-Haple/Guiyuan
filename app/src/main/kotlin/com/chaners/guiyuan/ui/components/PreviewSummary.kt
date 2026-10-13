@@ -56,7 +56,7 @@ internal fun PreviewSummary(
             if (state.networkMode == PreviewNetworkMode.WIFI) {
                 stringResource(
                     R.string.home_preview_summary_wifi_signal,
-                    signalText(state.wifiSignalLevel),
+                    signalValueText(state.wifiSignalLevel),
                 )
             } else {
                 null
@@ -64,7 +64,7 @@ internal fun PreviewSummary(
             if (state.mobileControlsEnabled) {
                 stringResource(
                     R.string.home_preview_summary_mobile_signal,
-                    signalText(state.mobileSignalLevel),
+                    signalValueText(state.mobileSignalLevel),
                 )
             } else {
                 null
@@ -145,7 +145,7 @@ private fun SummaryField(
 }
 
 @Composable
-private fun signalText(level: Int): String =
+internal fun signalValueText(level: Int): String =
     if (level <= 0) {
         stringResource(R.string.home_preview_signal_none)
     } else {

@@ -31,6 +31,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
+import com.chaners.guiyuan.ui.components.signalValueText
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
