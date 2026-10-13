@@ -26,7 +26,7 @@ internal class SandboxClient(
     private val _active = MutableStateFlow(false)
     val active = _active.asStateFlow()
 
-    // Session and channel publication share this monitor; Clear cannot be displaced by a late Show.
+    // Keep cancellation and renewal ordered; an interrupted write still expires in SystemUI.
     private var id = 0L
     private var latest: PreviewSandboxUiState? = null
     private var heartbeat: Job? = null

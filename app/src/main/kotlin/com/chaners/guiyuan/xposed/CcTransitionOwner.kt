@@ -125,8 +125,8 @@ internal object CcTransitionOwner {
     }
 
     private fun sync(source: String) {
-        // Simulated Home data must not animate toward native Control Center targets.
-        if (sourceScene == SourceScene.HOME && SandboxHost.active()) {
+        // Unknown or Home origin cannot safely match simulated data to native CC targets.
+        if (sourceScene != SourceScene.KEYGUARD && SandboxHost.active()) {
             current?.stop("sandbox:" + source)
             current = null
             return
