@@ -26,8 +26,9 @@ internal class SandboxClient(
     private val _active = MutableStateFlow(false)
     val active = _active.asStateFlow()
 
-    @Volatile private var id = 0L
-    @Volatile private var latest: PreviewSandboxUiState? = null
+    // Session and channel publication share this monitor; Clear cannot be displaced by a late Show.
+    private var id = 0L
+    private var latest: PreviewSandboxUiState? = null
     private var heartbeat: Job? = null
 
     init {
@@ -41,7 +42,9 @@ internal class SandboxClient(
                         val editor = remote?.edit() ?: return@runCatching false
                         when (update) {
                             is Update.Show -> {
-                                if (update.id != id) return@runCatching false
+                                if (synchronized(this@SandboxClient) { update.id != id }) {
+                                    return@runCatching false
+                                }
                                 editor.putString(
                                     SANDBOX_DATA_KEY,
                                     SandboxLease(
@@ -57,14 +60,19 @@ internal class SandboxClient(
                         editor.commit()
                     }.getOrDefault(false)
 
-                if (update is Update.Show && update.id == id) {
-                    _active.value = written
-                    if (!written) stop()
+                if (update is Update.Show) {
+                    synchronized(this@SandboxClient) {
+                        if (update.id == id) {
+                            _active.value = written
+                            if (!written) stop()
+                        }
+                    }
                 }
             }
         }
     }
 
+    @Synchronized
     fun start(state: PreviewSandboxUiState) {
         if (id != 0L) {
             update(state)
@@ -76,20 +84,28 @@ internal class SandboxClient(
         updates.trySend(Update.Show(session, state))
         heartbeat?.cancel()
         heartbeat = scope.launch {
-            while (isActive && id == session) {
+            while (isActive) {
                 delay(SANDBOX_RENEW_MS)
-                if (id != session) break
-                latest?.let { updates.trySend(Update.Show(session, it)) }
+                val current = synchronized(this@SandboxClient) {
+                    if (id == session) {
+                        latest?.also { updates.trySend(Update.Show(session, it)) }
+                    } else {
+                        null
+                    }
+                }
+                if (current == null) break
             }
         }
     }
 
+    @Synchronized
     fun update(state: PreviewSandboxUiState) {
         latest = state
         val session = id
         if (session != 0L) updates.trySend(Update.Show(session, state))
     }
 
+    @Synchronized
     fun stop() {
         if (id == 0L && !_active.value) return
         id = 0L
