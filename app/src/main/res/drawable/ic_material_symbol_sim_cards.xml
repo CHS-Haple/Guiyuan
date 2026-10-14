@@ -1,25 +1,35 @@
-<!-- Double SIM glyph based on Material Symbols sim_card (Outlined W400, Apache-2.0).
-     Draw only the exposed edge of the rear card so its outline cannot cross the front. -->
+<!-- Two transformed copies of the existing Material Symbols Outlined W400 sim_card.
+     Only the rear outline is exposed; its overlap is clipped behind the front card.
+     Original SIM path and chip geometry remain unchanged (Apache-2.0). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="960"
     android:viewportHeight="960">
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FF000000"
-        android:strokeWidth="65"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M674,228 L674,156 Q674,117 635,117 H324 L118,323 V753 Q118,786 151,786 H279" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FF000000"
-        android:strokeWidth="65"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M511,251 H805 Q837,251 837,283 V818 Q837,853 805,853 H339 Q307,853 307,821 V455 Z" />
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M405,535 h58 v72 h-58 Z M560,535 h58 v72 h-58 Z M712,535 h58 v72 h-58 Z M405,665 h58 v72 h-58 Z M560,665 h58 v72 h-58 Z M712,665 h58 v72 h-58 Z" />
+    <group>
+        <clip-path
+            android:pathData="M0,0 H960 V162 H476 L274,364 V960 H0 Z" />
+        <group
+            android:scaleX="0.84"
+            android:scaleY="0.84"
+            android:translateX="30"
+            android:translateY="20">
+            <group android:translateY="960">
+                <path
+                    android:fillColor="#FF000000"
+                    android:pathData="M240-80q-33 0-56.5-23.5T160-160v-480l240-240h320q33 0 56.5 23.5T800-800v640q0 33-23.5 56.5T720-80H240Zm0-80h480v-640H434L240-606v446Zm0 0h480-480Z" />
+            </group>
+        </group>
+    </group>
+    <group
+        android:scaleX="0.84"
+        android:scaleY="0.84"
+        android:translateX="140"
+        android:translateY="95">
+        <group android:translateY="960">
+            <path
+                android:fillColor="#FF000000"
+                android:pathData="M280-200h80v-80h-80v80Zm0-160h80v-160h-80v160Zm160 160h80v-160h-80v160Zm0-240h80v-80h-80v80Zm160 240h80v-80h-80v80Zm0-160h80v-160h-80v160ZM240-80q-33 0-56.5-23.5T160-160v-480l240-240h320q33 0 56.5 23.5T800-800v640q0 33-23.5 56.5T720-80H240Zm0-80h480v-640H434L240-606v446Zm0 0h480-480Z" />
+        </group>
+    </group>
 </vector>
