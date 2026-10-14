@@ -25,6 +25,7 @@ import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
+import com.chaners.guiyuan.ui.screens.PreviewDataSim
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
