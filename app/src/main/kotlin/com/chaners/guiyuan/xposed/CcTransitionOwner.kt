@@ -710,10 +710,18 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
+                    if (
+                        spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                        model.dualMobileLevels != null
+                    ) {
+                        // A composite native target does not prove a per-SIM endpoint.
+                        null
+                    } else {
+                        resolveTarget(
+                            target = spec.target,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    }
                 val targetGeometry =
                     witness?.let { target ->
                         resolveTargetGeometry(
