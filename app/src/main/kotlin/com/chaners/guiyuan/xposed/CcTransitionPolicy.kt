@@ -133,9 +133,10 @@ internal object CcTransitionPolicy {
         targetSubId: Int?,
         source: CenterIndicator.MobileType,
         target: NativePresentationResolver.NetworkType?,
+        verifiedAggregateRoot: Boolean = false,
     ): Boolean =
         dataSubId >= 0 &&
-            targetSubId == dataSubId &&
+            (targetSubId == dataSubId || verifiedAggregateRoot) &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
 
     // Order optical roots by the platform's physical SIM slots, never by View order.
