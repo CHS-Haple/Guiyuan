@@ -92,6 +92,12 @@ internal data class RenderModel(
             val airplaneMode = snapshot.airplaneMode == true
             val mobileRecoveryPending = snapshot.mobileRecoveryPending
             val selectedSignal = selectedMobile?.second?.signal
+            // The native aggregate root may belong to a different SIM.
+            val dualTypeMismatch =
+                dualSignalEnabled &&
+                    (presentation.mobilePresentation?.activeSubscriptionIds?.size ?: 0) > 1 &&
+                    presentation.mobilePresentation?.networkTypeSubscriptionId !=
+                        selectedSubscriptionId
 
             val mobileLevel =
                 if (airplaneMode || mobileRecoveryPending || nativeNoSimVisible) {
@@ -111,14 +117,17 @@ internal data class RenderModel(
                     airplaneMode = airplaneMode,
                     connectivity = presentation.connectivity,
                     mobileType =
-                        if (mobileRecoveryPending || nativeNoSimVisible) {
+                        if (mobileRecoveryPending || nativeNoSimVisible || dualTypeMismatch) {
                             null
                         } else {
                             presentation.mobilePresentation?.networkType
                         },
                     noSimIcon = noSimIcon,
                 )
-                    ?: if (mobileRecoveryPending || nativeNoSimVisible) {
+                    ?: if (
+                        mobileRecoveryPending || nativeNoSimVisible ||
+                        (dualTypeMismatch && !presentation.connectivity.known)
+                    ) {
                         CenterIndicator.Empty
                     } else {
                         return null
