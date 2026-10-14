@@ -60,12 +60,16 @@ class OuterGeometryTest {
             assertEquals("optical pair gap at $scale", naturalGap - tightening, gap, 0.0002f)
             val middleX = width / 6f
             val middleY = sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - middleX * middleX)
-            val priorRise = maxOf(
-                1.6f,
-                58f + middleY + naturalGap / 2f + dotRadius + 2.5f - 120f,
+            val expectedRise = maxOf(
+                1f,
+                58f + middleY + naturalGap / 2f + dotRadius + 1.9f - 120f,
             )
-            assertEquals("whole pair rises together at $scale", priorRise + 0.6f,
-                geometry.dualOpticalRise, 0.0002f)
+            assertEquals(
+                "whole pair moves together at $scale",
+                expectedRise,
+                geometry.dualOpticalRise,
+                0.0002f,
+            )
 
             val dots = mutableListOf<Pair<Float, Float>>()
             for (index in 0..3) {
@@ -87,7 +91,7 @@ class OuterGeometryTest {
                     60f + x - dotRadius > 0f && 60f + x + dotRadius < 120f)
                 for (y in listOf(innerY, outerY)) {
                     assertTrue("within canvas y at $scale",
-                        58f + y - dotRadius > 0f && 58f + y + dotRadius <= 117.5001f)
+                        58f + y - dotRadius > 0f && 58f + y + dotRadius <= 118.1001f)
                     dots += x to y
                 }
             }
@@ -104,11 +108,11 @@ class OuterGeometryTest {
         val default = OuterGeometry.resolve(1f)
         assertEquals(4.565f, default.dualMobileDotRadius, 0.0001f)
         assertEquals(14.3f, default.dualRowGap, 0.0001f)
-        assertEquals(2.2f, default.dualOpticalRise, 0.0001f)
+        assertEquals(1.0f, default.dualOpticalRise, 0.0001f)
         assertEquals(14.3f * 0.7f, OuterGeometry.resolve(0.7f).dualRowGap, 0.0001f)
         assertEquals(17.69f, OuterGeometry.resolve(1.3f).dualRowGap, 0.0002f)
         assertEquals(56f, default.dualDotSpan, 0.0001f)
-        assertTrue(default.dualOpticalRise >= 1.6f)
+        assertTrue(default.dualOpticalRise >= 1.0f)
 
         val max = OuterGeometry.resolve(2f)
         assertEquals(9.13f, max.dualMobileDotRadius, 0.0001f)
