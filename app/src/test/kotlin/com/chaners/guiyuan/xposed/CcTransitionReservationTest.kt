@@ -79,6 +79,64 @@ class CcTransitionReservationTest {
     }
 
     @Test
+    fun wifiWithTwoSeparateMobileRootsDoesNotMoveNativePeersBeforeVisualOverlap() {
+        val spans = listOf(
+            CcTransitionPolicy.ReservationSpan(
+                sourceLeft = -45f, sourceRight = -10f,
+                targetLeft = -75f, targetRight = -25f,
+            ),
+            CcTransitionPolicy.ReservationSpan(
+                sourceLeft = 0f, sourceRight = 0f,
+                targetLeft = -230f, targetRight = -145f,
+            ),
+        )
+        val compact = 105
+        val early = 0.25f
+        val semantic = CcTransitionPolicy.resolveTransitionReservationWidth(
+            compactWidthPx = compact,
+            spans = spans,
+            progress = early,
+        )
+        val native = CcTransitionPolicy.resolveNativePeerReservationWidth(
+            compactWidthPx = compact,
+            spans = spans,
+            semanticWidthPx = semantic,
+            progress = early,
+        )
+        assertTrue(semantic > compact)
+        assertEquals(compact, native)
+        // Semantic width still describes the projected, not-yet-visible dots.
+        assertEquals(230,
+            CcTransitionPolicy.resolveNativePeerReservationWidth(
+                compactWidthPx = compact,
+                spans = spans,
+                semanticWidthPx = 230,
+                progress = 1f,
+            ),
+        )
+    }
+
+    @Test
+    fun nativePeerReservationExcludesGuiyuanOccupancyBeyondFakeEnd() {
+        val spans = listOf(
+            CcTransitionPolicy.ReservationSpan(
+                sourceLeft = -40f, sourceRight = 0f,
+                targetLeft = -140f, targetRight = 50f,
+            ),
+        )
+        val semantic = CcTransitionPolicy.resolveTransitionReservationWidth(
+            compactWidthPx = 40, spans = spans, progress = 1f,
+        )
+        assertEquals(190, semantic)
+        assertEquals(140,
+            CcTransitionPolicy.resolveNativePeerReservationWidth(
+                compactWidthPx = 40, spans = spans,
+                semanticWidthPx = semantic, progress = 1f,
+            ),
+        )
+    }
+
+    @Test
     fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
         val spans =
             listOf(
@@ -98,7 +156,7 @@ class CcTransitionReservationTest {
                 )
         val native =
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = semantic,
@@ -123,7 +181,7 @@ class CcTransitionReservationTest {
 
         val unprojected =
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 220,
@@ -131,7 +189,7 @@ class CcTransitionReservationTest {
                 )
         val projected =
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 220,
@@ -158,7 +216,7 @@ class CcTransitionReservationTest {
         assertEquals(
             80,
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 40,
                     spans = spans,
                     semanticWidthPx = 140,
@@ -183,7 +241,7 @@ class CcTransitionReservationTest {
         assertEquals(
             135,
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 161,
@@ -193,7 +251,7 @@ class CcTransitionReservationTest {
         assertEquals(
             180,
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     semanticWidthPx = 180,
@@ -203,7 +261,7 @@ class CcTransitionReservationTest {
         assertEquals(
             150,
             CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
+                .resolveNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans =
                         listOf(
