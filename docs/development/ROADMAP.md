@@ -75,11 +75,13 @@ Preparation and acceptance should be incremental:
    style. If the native target does not prove per-card correspondence, retain
    the bounded group fade or fall back to single/native; never invent target
    geometry or modify the final Control Center.
-5. **Extend the accepted sandbox prototype only when needed.** B980 already supports
-   two independently adjustable simulated SIM signal levels and a default-off
-   dual-row preview. Remaining pre-runtime scenarios include default-data assignment,
-   absent/unavailable states and appearance/theme variants. No preview state may
-   become live SystemUI state. Preserve persisted ordinal compatibility.
+5. **Extend the accepted sandbox prototype only when needed.** B982 adds
+   separate simulated SIM1/SIM2 strengths and network types plus selected data-SIM
+   center switching, with physical inner/outer rows unchanged. Its interaction is
+   accepted; the B983 eight-dot optical adjustment remains awaiting visual approval.
+   Remaining pre-runtime scenarios include SIM absence/unknown signal and
+   appearance/theme variants. No preview state may become live SystemUI state.
+   Preserve saved ordinal compatibility.
 6. **Evidence required before enabling.** Cover data-SIM swap while connected,
    two active subscriptions with different strength/network types, independent
    versus aggregated native icons, mobile-data off with calls available, VPN,
