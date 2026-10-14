@@ -143,6 +143,47 @@ class ParticipantVisualSnapshotTest {
     }
 
     @Test
+    fun fourEqualDotsAreNotNativeSignalBars() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val dots = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.65f, x + 0.08f, 0.73f)
+        }
+        val topology = ParticipantVisualSnapshot.classifyComponents(dots)
+        assertEquals(ParticipantVisualSnapshot.Topology.COMPOSITE, topology)
+        assertNull(
+            ParticipantVisualSnapshot.Snapshot(
+                envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+                components = dots,
+                topology = topology,
+            ).fourVerticalBarsWithinEnvelope(),
+        )
+    }
+
+    @Test
+    fun nativeFourBarsRequireDistinctHorizontalColumns() {
+        fun bars(xs: List<Float>) = xs.mapIndexed { index, x ->
+            ParticipantVisualSnapshot.NormalizedRect(
+                left = x,
+                top = 0.65f - index * 0.11f,
+                right = x + 0.08f,
+                bottom = 0.80f,
+            )
+        }
+        assertEquals(
+            ParticipantVisualSnapshot.Topology.FOUR_VERTICAL_BARS,
+            ParticipantVisualSnapshot.classifyComponents(
+                bars(listOf(0.12f, 0.35f, 0.58f, 0.81f)),
+            ),
+        )
+        assertEquals(
+            ParticipantVisualSnapshot.Topology.COMPOSITE,
+            ParticipantVisualSnapshot.classifyComponents(
+                bars(listOf(0.12f, 0.18f, 0.58f, 0.81f)),
+            ),
+        )
+    }
+
+    @Test
     fun alphaWeightedCenterTracksInkMassInsteadOfEnvelopeMidpoint() {
         val center =
             ParticipantVisualSnapshot.resolveAlphaWeightedCenter(
