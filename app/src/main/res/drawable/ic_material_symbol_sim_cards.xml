@@ -8,12 +8,12 @@
     android:viewportHeight="960">
     <group>
         <clip-path
-            android:pathData="M0,0 H960 V162 H476 L274,364 V960 H0 Z" />
+            android:pathData="M0,0 H960 V125 H486 L260,351 V960 H0 Z" />
         <group
-            android:scaleX="0.84"
-            android:scaleY="0.84"
-            android:translateX="30"
-            android:translateY="20">
+            android:scaleX="0.90"
+            android:scaleY="0.90"
+            android:translateX="20"
+            android:translateY="8">
             <group android:translateY="960">
                 <path
                     android:fillColor="#FF000000"
@@ -22,10 +22,10 @@
         </group>
     </group>
     <group
-        android:scaleX="0.84"
-        android:scaleY="0.84"
-        android:translateX="140"
-        android:translateY="95">
+        android:scaleX="0.94"
+        android:scaleY="0.94"
+        android:translateX="110"
+        android:translateY="50">
         <group android:translateY="960">
             <path
                 android:fillColor="#FF000000"

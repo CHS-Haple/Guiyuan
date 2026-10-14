@@ -96,7 +96,7 @@
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
     <string name="home_preview_dual_mobile_title">Dual-SIM signal preview</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer; center network type follows the data SIM.</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer\nCenter network type follows the data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>
