@@ -17,8 +17,11 @@ class CcTransitionOwnerTest {
                 false,
                 NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
             )
-        fun matches(dataSubId: Int, targetSubId: Int?, nativeType: NativePresentationResolver.NetworkType?) =
-            CcTransitionPolicy.matchesDualMobileTypeTarget(
+        fun matches(
+            dataSubId: Int,
+            targetSubId: Int?,
+            nativeType: NativePresentationResolver.NetworkType?,
+        ) = CcTransitionPolicy.matchesDualMobileTypeTarget(
                 dataSubId = dataSubId,
                 targetSubId = targetSubId,
                 source = source,
