@@ -726,13 +726,24 @@ internal object CcTransitionOwner {
                         preferredMobileSubId = preferredMobileSubId,
                     )
                 val targetGeometry =
-                    witness?.let { target ->
-                        resolveTargetGeometry(
-                            witness = target,
+                    if (model.dualMobileLevels != null &&
+                        spec.component == StatusPainter.TransitionComponent.MOBILE
+                    ) {
+                        resolveDualMobileTargetGeometry(
+                            spec = spec,
+                            model = model,
                             root = rootView,
                             sourceGeometry = sourceGeometry,
-                            targetOpticalBounds = spec.targetOpticalBounds,
                         )
+                    } else {
+                        witness?.let { target ->
+                            resolveTargetGeometry(
+                                witness = target,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                                targetOpticalBounds = spec.targetOpticalBounds,
+                            )
+                        }
                     }
                 val nativeTypeMatch =
                     if (
@@ -1887,6 +1898,61 @@ internal object CcTransitionOwner {
             // but it never becomes geometry authority. Projected endpoints stay in
             // absolute root space.
             return result.takeIf { it.isNotEmpty() }
+        }
+
+        // A dual source is one visual group until native slot ownership is proven.
+        private fun resolveDualMobileTargetGeometry(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+            root: View,
+            sourceGeometry: FloatArray,
+        ): FloatArray? {
+            val target = spec.target as? StatusPainter.TransitionTarget.Slots ?: return null
+            val presentation = PresentationStore.snapshot().mobilePresentation ?: return null
+            val platformIds = presentation.platformActiveSubscriptionIds ?: return null
+            if (model.dualMobileLevels == null ||
+                platformIds != presentation.activeSubscriptionIds.toSet()
+            ) return null
+
+            val visibleRoots = target.preferredSlots
+                .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                .filter { view -> view.visibility == View.VISIBLE && isUsableSlotView(view) }
+                .distinct()
+            if (visibleRoots.size !in 1..2) return null
+
+            val primary = resolveTarget(
+                target = target,
+                preferredMobileSubId = model.effectiveDataSubscriptionId.takeIf { it >= 0 },
+            ) ?: return null
+            val witnesses = listOf(primary) + resolveFrozenAdditionalMobileTargets(primary)
+            if (witnesses.size != visibleRoots.size ||
+                witnesses.map { it.slotView }.toSet() != visibleRoots.toSet() ||
+                witnesses.any { it.opticalView?.let(::isReliableSemanticTarget) != true }
+            ) return null
+
+            val aggregateVisual = witnesses.singleOrNull()?.opticalView?.let { optical ->
+                ParticipantVisualSnapshot.resolveView(optical)
+                    ?.dualMobileRowsWithinEnvelope() != null
+            } == true
+            val mode = CcTransitionPolicy.dualMobileTarget(
+                activeSubIds = platformIds,
+                targetSubIds = witnesses.map { it.subscriptionId },
+                aggregateProven =
+                    aggregateVisual ||
+                        (witnesses.size == 1 &&
+                            presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED),
+            )
+            if (mode == CcTransitionPolicy.DualMobileTarget.NONE) return null
+
+            val targets = witnesses.map { witness ->
+                resolveTargetGeometry(
+                    witness = witness,
+                    root = root,
+                    sourceGeometry = sourceGeometry,
+                    targetOpticalBounds = spec.targetOpticalBounds,
+                ) ?: return null
+            }
+            return CcTransitionPolicy.dualMobileGroupGeometry(targets)
         }
 
         private fun resolveSpecTarget(
