@@ -417,29 +417,6 @@ internal object CcTransitionOwner {
                 (0 until min(group.childCount, 10))
                     .joinToString(",") { index -> viewPos(group.getChildAt(index)) }
 
-            val specs = painter.transitionComponentSpecs(
-                width = frozenSource?.width ?: source.width,
-                height = frozenSource?.height ?: source.height,
-                model = currentSnapshot.model,
-                visual = currentSnapshot.visual,
-            )
-            val center = specs.firstOrNull {
-                it.component == StatusPainter.TransitionComponent.CENTER
-            }
-            val target = center?.let { spec ->
-                resolveSpecTarget(spec, currentSnapshot.model, null)
-                    ?.let { witness ->
-                        val shape = resolveTargetGeometry(
-                            witness = witness,
-                            root = root,
-                            sourceGeometry = frozenSource?.geometry
-                                ?: sample(source, root)
-                                ?: return@let null,
-                            targetOpticalBounds = spec.targetOpticalBounds,
-                        )
-                        shape?.let { "${it[0].roundToInt()},${it[1].roundToInt()}" }
-                    }
-            }
             val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {
                 it.visibility == View.VISIBLE && isUsableSlotView(it)
             }
@@ -457,7 +434,7 @@ internal object CcTransitionOwner {
                     NativeParticipantAccess.findResourceView(wifi, "wifi_signal")
                 })}" +
                 " source=${viewPos(source)} finalBattery=${viewPos(finalBattery)}" +
-                " target=$target fakePeers=[${peers(fakeStatusIcons)}]" +
+                " fakePeers=[${peers(fakeStatusIcons)}]" +
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
 
