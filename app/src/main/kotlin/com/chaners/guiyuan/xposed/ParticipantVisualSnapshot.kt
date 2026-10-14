@@ -87,14 +87,8 @@ internal object ParticipantVisualSnapshot {
             ) return null
 
             fun rowShape(row: List<NormalizedRect>): RowShape? {
-                val dots =
-                    row.all { rect ->
-                        rect.width > 0f && rect.height > 0f &&
-                            rect.height in (rect.width * 0.75f)..(rect.width * 1.3f)
-                    } && (row.maxOf { it.height } - row.minOf { it.height }) <
-                    envelope.height * 0.12f
                 return when {
-                    dots -> RowShape.DOTS
+                    hasDotRow(row) -> RowShape.DOTS
                     classifyComponents(row) == Topology.FOUR_VERTICAL_BARS &&
                         row.any { it.height > it.width * 1.5f } -> RowShape.BARS
                     else -> null
@@ -119,18 +113,19 @@ internal object ParticipantVisualSnapshot {
             )
         }
 
+        private fun hasDotRow(row: List<NormalizedRect>): Boolean =
+            row.size == 4 && envelope.height > 0f &&
+                row.all { dot ->
+                    dot.width > 0f && dot.height > 0f &&
+                        dot.height in (dot.width * 0.75f)..(dot.width * 1.3f)
+                } && (row.maxOf { it.height } - row.minOf { it.height }) <
+                envelope.height * 0.12f
+
         // A sampled four-dot glyph is known not to be the four-bar native endpoint.
         fun hasFourDots(): Boolean {
-            if (components.size != 4 || envelope.width <= 0f || envelope.height <= 0f) {
-                return false
-            }
+            if (envelope.width <= 0f || !hasDotRow(components)) return false
             val dots = components.sortedBy { it.centerX }
-            return dots.all { dot ->
-                dot.width > 0f && dot.height > 0f &&
-                    dot.height in (dot.width * 0.75f)..(dot.width * 1.3f)
-            } && (dots.maxOf { it.height } - dots.minOf { it.height }) <
-                envelope.height * 0.12f &&
-                dots.zipWithNext().all { (left, right) -> left.right < right.left }
+            return dots.zipWithNext().all { (left, right) -> left.right < right.left }
         }
 
         fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
