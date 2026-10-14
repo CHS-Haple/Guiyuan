@@ -156,7 +156,7 @@ internal object CcTransitionPolicy {
         return active.size == 2 &&
             active == state.platformActiveSubscriptionIds &&
             dataSubId in active &&
-            targetSubId in active &&
+            targetSubId != null && targetSubId in active &&
             state.effectiveDataSubscriptionId == dataSubId &&
             state.networkTypeSubscriptionId == dataSubId &&
             state.presentationRootSubscriptionId == targetSubId
