@@ -166,6 +166,8 @@ internal data class RenderModel(
                         (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
                             native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
                         native.activeSubscriptionIds.size == 2 &&
+                        native.platformActiveSubscriptionIds ==
+                            native.activeSubscriptionIds.toSet() &&
                         slots?.size == 2 &&
                         sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
                         sim1Id in native.activeSubscriptionIds &&

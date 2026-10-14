@@ -278,6 +278,19 @@ internal fun FeaturesScreen(
             )
         }
         Section(R.string.section_network) {
+            SwitchPreference(
+                title = stringResource(R.string.dual_signal_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_sim_cards,
+                        featureCfg.enabled,
+                    )
+                },
+                summary = stringResource(R.string.dual_signal_summary),
+                checked = visual.dualSignal,
+                enabled = featureCfg.enabled,
+                onCheckedChange = visualRepo::setDualSignal,
+            )
             SliderPreference(
                 value = visual.wifiScale,
                 onValueChange = visualRepo::setWifiScale,

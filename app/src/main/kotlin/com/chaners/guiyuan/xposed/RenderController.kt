@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
+import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 
 internal class RenderController(
     private val view: RenderView,
@@ -20,6 +21,7 @@ internal class RenderController(
                 snapshot = snapshot,
                 presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
+                dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
             )
         val previous = stableModel
         val model = candidate ?: previous

@@ -829,6 +829,32 @@ class RenderModelTest {
     }
 
     @Test
+    fun dualSwitchNeedsFullPlatformIdentityAndKeepsSingleDefault() {
+        val source = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        assertNull(RenderModel.from(source, native, 3)?.dualMobileLevels)
+        assertEquals(
+            DualMobileLevels(4, 2),
+            RenderModel.from(source, native, 3, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        val extraPlatform = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                platformActiveSubscriptionIds = setOf(14, 3, 27),
+            ),
+        )
+        assertNull(
+            RenderModel.from(source, extraPlatform, 3, dualSignalEnabled = true)
+                ?.dualMobileLevels,
+        )
+    }
+
+    @Test
     fun airplaneRecoveryAndNoSimSuppressDualRowsWithoutChangingSingleFallback() {
         val source = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
