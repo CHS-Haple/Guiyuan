@@ -423,7 +423,16 @@ internal object CcTransitionOwner {
                     }
                     .take(16)
                     .joinToString(",") { index ->
-                        "$index:" + viewPos(group.getChildAt(index))
+                        val child = group.getChildAt(index)
+                        val slot =
+                            runCatching { NativeParticipantAccess.slotOf(child) }
+                                .getOrNull() ?: "-"
+                        val clip = child.clipBounds
+                        val mask = clip?.let {
+                            "${it.left}/${it.top}/${it.right}/${it.bottom}"
+                        } ?: "-"
+                        "$index:$slot:" + viewPos(child) +
+                            ":shown=${child.isShown}:clip=$mask"
                     }
 
             val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {
