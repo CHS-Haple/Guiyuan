@@ -414,8 +414,17 @@ internal object CcTransitionOwner {
                     "pEnd=${view.paddingEnd}"
             }
             fun peers(group: ViewGroup): String =
-                (0 until min(group.childCount, 10))
-                    .joinToString(",") { index -> viewPos(group.getChildAt(index)) }
+                (0 until group.childCount)
+                    .asSequence()
+                    .filter { index ->
+                        val child = group.getChildAt(index)
+                        child.visibility == View.VISIBLE &&
+                            child.width > 0 && child.height > 0
+                    }
+                    .take(16)
+                    .joinToString(",") { index ->
+                        "$index:" + viewPos(group.getChildAt(index))
+                    }
 
             val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {
                 it.visibility == View.VISIBLE && isUsableSlotView(it)
