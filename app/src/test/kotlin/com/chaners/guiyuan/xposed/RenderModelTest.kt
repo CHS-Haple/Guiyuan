@@ -651,7 +651,7 @@ class RenderModelTest {
 
 
     @Test
-    fun dataSimSwitchChangesCenterTypeButNeverSwapsPhysicalRows() {
+    fun dataSimSwitchKeepsRowsAndUpdatesCenterType() {
         val state = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
             mobile = mapOf(
