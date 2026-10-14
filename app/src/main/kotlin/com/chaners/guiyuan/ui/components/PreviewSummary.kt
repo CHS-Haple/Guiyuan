@@ -60,7 +60,7 @@ internal fun PreviewSummary(
     val networkSignal =
         when (center) {
             PreviewCenterSource.WIFI -> signalValueText(state.wifiSignalLevel)
-            PreviewCenterSource.MOBILE -> signalValueText(state.dataSignalLevel)
+            PreviewCenterSource.MOBILE -> signalValueText(state.displayedSignalLevel)
             else -> null
         }
     val networkIcon =
@@ -77,7 +77,7 @@ internal fun PreviewSummary(
                 SummaryDetail(
                     icon = R.drawable.ic_material_symbol_signal_cellular_alt,
                     value = stringResource(R.string.home_preview_mobile_signal_title),
-                    alongside = signalValueText(state.dataSignalLevel),
+                    alongside = signalValueText(state.displayedSignalLevel),
                 )
             } else {
                 null
@@ -90,7 +90,7 @@ internal fun PreviewSummary(
             } else {
                 null
             },
-            if (!state.simPresent && center != PreviewCenterSource.NO_SIM) {
+            if (!state.hasSim && center != PreviewCenterSource.NO_SIM) {
                 SummaryDetail(
                     icon = R.drawable.ic_material_symbol_sim_card,
                     value = stringResource(R.string.home_preview_sim_absent),
