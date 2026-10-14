@@ -910,6 +910,11 @@ class GyModule : XposedModule() {
                 onUpdate = { update ->
                     if (ccSourceInstalled) onCcUpdate(update)
                 },
+                onAfterNativeExpansion = { progress ->
+                    if (ccSourceInstalled && detailedDiagnosticsEnabled) {
+                        onCcNativeGeometry(progress)
+                    }
+                },
                 onFakePresentationAttached = { host ->
                     if (ccSourceInstalled) onCcFakeAttached(host)
                 },
@@ -954,6 +959,34 @@ class GyModule : XposedModule() {
         }
     }
 
+    private fun onCcNativeGeometry(progress: Float) {
+        val fraction = progress.coerceIn(0f, 1f)
+        val stage = when {
+            fraction >= 1f -> 5
+            fraction >= 0.98f -> 4
+            fraction >= 0.85f -> 3
+            fraction >= 0.6f -> 2
+            fraction >= 0.3f -> 1
+            else -> 0
+        }
+        if (stage == ccWifiGeometryStage || ccWifiGeometrySamples >= 12) return
+        CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
+            val direction = if (stage < ccWifiGeometryStage) "closing" else "opening"
+            ccWifiGeometryStage = stage
+            ccWifiGeometrySamples++
+            logDiagnostic(
+                level = Log.INFO,
+                event = "transition.geometry",
+                component = "ccWifi",
+                state = "sampled",
+                "sample" to stage,
+                "direction" to direction,
+                "phase" to "after-native-expansion",
+                "snapshot" to snapshot,
+            )
+        }
+    }
+
     private fun onCcUpdate(
         update: SysUiCcSource.Update,
     ) {
@@ -969,33 +1002,6 @@ class GyModule : XposedModule() {
             lastMobileTargetProbeSummary = null
             ccWifiGeometryStage = -1
             ccWifiGeometrySamples = 0
-        }
-        if (detailedDiagnosticsEnabled && update.fraction != null) {
-            val fraction = update.fraction.coerceIn(0f, 1f)
-            val stage = when {
-                fraction >= 1f -> 5
-                fraction >= 0.98f -> 4
-                fraction >= 0.85f -> 3
-                fraction >= 0.6f -> 2
-                fraction >= 0.3f -> 1
-                else -> 0
-            }
-            if (stage != ccWifiGeometryStage && ccWifiGeometrySamples < 12) {
-                CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
-                    val direction = if (stage < ccWifiGeometryStage) "closing" else "opening"
-                    ccWifiGeometryStage = stage
-                    ccWifiGeometrySamples++
-                    logDiagnostic(
-                        level = Log.INFO,
-                        event = "transition.geometry",
-                        component = "ccWifi",
-                        state = "sampled",
-                        "sample" to stage,
-                        "direction" to direction,
-                        "snapshot" to snapshot,
-                    )
-                }
-            }
         }
         if (
             detailedDiagnosticsEnabled &&
