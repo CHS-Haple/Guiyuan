@@ -918,6 +918,36 @@ class RenderModelTest {
     }
 
     @Test
+    fun optInDualRejectsStaleDataSimOutsideAuthoritativeActiveSet() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                99 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+            ),
+        )
+
+        val stale = RenderModel.from(state, native, 99, dualSignalEnabled = true)
+        assertEquals(DualMobileLevels(sim1 = 2, sim2 = 4), stale?.dualMobileLevels)
+        assertEquals(-1, stale?.effectiveDataSubscriptionId)
+        assertNull(stale?.mobileLevel)
+        assertTrue(stale?.centerIndicator is CenterIndicator.Empty)
+
+        val switched = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        assertEquals(DualMobileLevels(sim1 = 2, sim2 = 4), switched?.dualMobileLevels)
+        assertEquals(3, switched?.effectiveDataSubscriptionId)
+        assertEquals(4, switched?.mobileLevel)
+        assertEquals("5G", (switched?.centerIndicator as? CenterIndicator.MobileType)?.label)
+
+        // The shipped single-row path still follows the native presentation policy.
+        val legacy = RenderModel.from(state, native, 99)
+        assertEquals(3, legacy?.effectiveDataSubscriptionId)
+        assertEquals(4, legacy?.mobileLevel)
+    }
+
+    @Test
     fun optInDualNeverBorrowsOtherCardWhenDataSignalIsUnknown() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
         val state = snapshot(

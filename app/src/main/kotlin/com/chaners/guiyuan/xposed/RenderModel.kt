@@ -36,8 +36,13 @@ internal data class RenderModel(
 
             val preferredDataSubscriptionId =
                 if (dualSignalEnabled) {
-                    // An unknown data SIM cannot borrow the native presentation root.
-                    defaultDataSubscriptionId
+                    val native = presentation.mobilePresentation
+                    // A removed data SIM can outlive its platform subscription event.
+                    defaultDataSubscriptionId.takeIf { subId ->
+                        subId >= 0 &&
+                            (native?.activeSubsAuthoritative != true ||
+                                subId in native.activeSubscriptionIds)
+                    } ?: -1
                 } else {
                     presentation.mobilePresentation
                         ?.effectiveDataSubscriptionId
