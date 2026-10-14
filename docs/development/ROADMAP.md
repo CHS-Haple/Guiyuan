@@ -39,9 +39,11 @@ optical geometry. These positions
 never swap when the default data SIM changes; the center network-type label
 follows the default data SIM only when that subscription's native type is known.
 Read-only active-subscription slot mapping and a cautious eight-component native-shape
-classifier were also integrated as groundwork. **None of these enable live dual-SIM
-rendering or authorize taking over native final Control Center.** A later user opt-in
-must remain separate from the sandbox's saved preview state.
+classifier were also integrated as groundwork. B992 later added an opt-in
+live dual-SIM candidate on a feature branch and the maintainer found its
+functionality normal on device; visual adjustments remain under review.
+This does not authorize taking over native final Control Center.
+The user opt-in remains separate from sandbox saved preview state.
 
 Preparation and acceptance should be incremental:
 
@@ -95,8 +97,9 @@ Preparation and acceptance should be incremental:
    presentation ownership cannot be established, revert the optional variant
    to the existing single-SIM path (Fail native for uncertain host ownership).
 
-**Not yet approved:** runtime dual-SIM preference keys, new live callbacks,
-native icon suppression, a catalog of untested styles or a dual-row CC transition.
+**Not yet approved for dev integration:** the opt-in dual-SIM runtime feature,
+extra native icon suppression, a catalog of untested styles or a dual-row
+CC transition.
 Observe actual SystemUI per-subscription targets and verify live data identity
 before enabling any of these. No abstractions for hypothetical future styles.
 

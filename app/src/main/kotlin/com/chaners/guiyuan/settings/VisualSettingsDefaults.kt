@@ -5,6 +5,7 @@ import kotlin.math.abs
 
 internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
+internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
 internal const val CENTER_FOLLOWS_BATTERY_COLOR_KEY = "center_follows_battery_color"
 internal const val BATTERY_TOP_READOUT_ENABLED_KEY = "battery_top_readout_enabled"

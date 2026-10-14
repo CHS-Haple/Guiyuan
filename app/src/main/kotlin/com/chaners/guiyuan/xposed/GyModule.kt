@@ -4233,6 +4233,8 @@ class GyModule : XposedModule() {
         KeyguardRenderSession.onVisualCfgChanged(visual)
         CcRenderSession.onVisualCfgChanged(visual)
         SysUiPresentationOwner.onVisualCfgChanged()
+        // A changed SIM display preference needs no additional radio event.
+        onPresentationStateChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,

@@ -12,6 +12,8 @@
     <string name="section_display_transition">Display &amp; transitions</string>
     <string name="section_layout_size">Layout &amp; size</string>
     <string name="section_network">Network icons</string>
+    <string name="dual_signal_title">Dual SIM signal</string>
+    <string name="dual_signal_summary">Show two signal rows when both SIMs are recognized, otherwise use one row. Each mode remembers its own settings</string>
     <string name="section_battery">Battery &amp; charging</string>
     <string name="section_management">Management</string>
     <string name="content_layout_title">Content layout</string>
