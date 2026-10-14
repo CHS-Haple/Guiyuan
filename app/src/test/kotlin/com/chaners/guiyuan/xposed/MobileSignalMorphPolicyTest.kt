@@ -74,6 +74,26 @@ class MobileSignalMorphPolicyTest {
     }
 
     @Test
+    fun dualSimRowsUseTheSameNativeProgressPhases() {
+        for (row in 0..1) {
+            for (step in 0..100) {
+                val fraction = step / 100f
+                val phase = morph.handoffProgress(fraction * fraction)
+                if (fraction <= 0.30f) {
+                    assertEquals(0f, morph.moveProgress(phase), 0f)
+                }
+                if (fraction <= 0.57f) {
+                    assertEquals(0f, morph.rowProgress(phase), 0f)
+                }
+                if (fraction <= 0.72f) {
+                    assertEquals(0f, morph.barProgress(phase), 0f)
+                }
+            }
+            assertEquals(1f, morph.barProgress(1f), 0f)
+        }
+    }
+
+    @Test
     fun oneDotMovesThenExpandsBeforeBarsGrow() {
         assertEquals(100f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 0f), 0f)
         assertEquals(130f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 1f), 0f)
