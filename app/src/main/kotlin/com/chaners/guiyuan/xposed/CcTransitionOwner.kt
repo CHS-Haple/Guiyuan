@@ -1767,6 +1767,10 @@ internal object CcTransitionOwner {
 
             val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
+                if (
+                    spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                    currentSnapshot.model.dualMobileLevels != null
+                ) return@forEach
                 val witness =
                     resolveTarget(
                         target = spec.target,
@@ -1798,6 +1802,7 @@ internal object CcTransitionOwner {
                 }
             if (
                 mobileSpec != null &&
+                currentSnapshot.model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 val primary =
