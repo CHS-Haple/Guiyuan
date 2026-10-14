@@ -832,7 +832,11 @@ internal object CcTransitionOwner {
                 val matchedTextStyle =
                     if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
-                    mobileSample?.let { mobileTargetBars(witness!!, it) }
+                    if (witness != null && mobileSample != null) {
+                        mobileTargetBars(witness, mobileSample)
+                    } else {
+                        null
+                    }
                 val exactTextGeometry =
                     spec.component ==
                         StatusPainter.TransitionComponent.BATTERY_NUMBER ||
