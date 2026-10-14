@@ -171,6 +171,78 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun aggregateBarsAboveDotsKeepPairedFlightAndReachNativeRowGap() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val top = xs.mapIndexed { i, x ->
+            ParticipantVisualSnapshot.NormalizedRect(
+                x, 0.47f - i * 0.08f, x + 0.08f, 0.52f,
+            )
+        }
+        val bottom = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.73f, x + 0.08f, 0.81f)
+        }
+        val rows = ParticipantVisualSnapshot.Snapshot(
+            envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+            components = top + bottom,
+            topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+        ).dualMobileRowsWithinEnvelope()
+        requireNotNull(rows)
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, rows.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, rows.bottomShape)
+
+        val bounds = StatusPainter.TransitionBounds(0f, 0f, 80f, 70f)
+        val anchors = CcTransitionPolicy.aggregateAnchors(
+            bounds = bounds,
+            top = rows.top.first(),
+            bottom = rows.bottom.first(),
+            topShape = rows.topShape,
+            bottomShape = rows.bottomShape,
+            widthCompensation = 1f,
+            heightCompensation = 1f,
+            dotDiameter = 6f,
+        )
+        assertEquals(12.8f, anchors[0], 0.0001f)
+        assertEquals(20.5f, anchors[2] - anchors[1], 0.0001f)
+
+        val sourceX = 10f
+        val upperY = 15f
+        val lowerY = 29f
+        fun pairedDots(p: Float): FloatArray {
+            val move = MobileSignalMorphPolicy.moveProgress(p)
+            val spread = MobileSignalMorphPolicy.rowProgress(p)
+            return floatArrayOf(
+                MobileSignalMorphPolicy.dotCoordinate(
+                    sourceX, sourceX, anchors[0], anchors[0], 0f, move, spread,
+                ),
+                MobileSignalMorphPolicy.dotCoordinate(
+                    upperY, upperY, anchors[1], anchors[1], 0f, move, spread,
+                ),
+                MobileSignalMorphPolicy.dotCoordinate(
+                    sourceX, sourceX, anchors[0], anchors[0], 0f, move, spread,
+                ),
+                MobileSignalMorphPolicy.dotCoordinate(
+                    lowerY, lowerY, anchors[2], anchors[2], 0f, move, spread,
+                ),
+            )
+        }
+        var lastGap = 14f
+        for (p in listOf(0f, 0.15f, 0.30f, 0.38f, 0.47f, 0.57f)) {
+            val paired = pairedDots(p)
+            assertEquals(paired[0], paired[2], 0.0001f)
+            val gap = paired[3] - paired[1]
+            assertTrue(gap >= lastGap - 0.0001f)
+            lastGap = gap
+        }
+        assertEquals(anchors[0], pairedDots(0.57f)[0], 0.0001f)
+        assertEquals(anchors[2] - anchors[1],
+            pairedDots(0.57f)[3] - pairedDots(0.57f)[1], 0.0001f)
+        // Reverse uses the same native fractions, with no independent row clock.
+        for (p in listOf(0.57f, 0.38f, 0.15f, 0f)) {
+            assertEquals(pairedDots(p)[0], pairedDots(p)[2], 0.0001f)
+        }
+    }
+
+    @Test
     fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
         val source =
             CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
