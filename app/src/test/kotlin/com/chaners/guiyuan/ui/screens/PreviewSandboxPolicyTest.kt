@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import com.chaners.guiyuan.xposed.DualMobileLevels
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,6 +47,67 @@ class PreviewSandboxPolicyTest {
         val single = sim2Data.copy(dualMobile = false)
         assertEquals(PreviewMobileNetwork.FIVE_G, single.dataMobileNetwork)
         assertEquals(4, single.dataSignalLevel)
+        assertEquals(PreviewCenterSource.MOBILE, single.previewCenterSource())
+    }
+
+    @Test
+    fun dualCardPresenceUsesOnlyAvailablePhysicalSignals() {
+        val both =
+            PreviewSandboxUiState(
+                networkMode = PreviewNetworkMode.MOBILE,
+                dualMobile = true,
+                mobileNetwork = PreviewMobileNetwork.FIVE_G,
+                sim2MobileNetwork = PreviewMobileNetwork.FOUR_G,
+                mobileSignalLevel = 4,
+                sim2SignalLevel = 1,
+            )
+        assertEquals(0, PreviewSimCards.BOTH.ordinal)
+        assertEquals(1, PreviewSimCards.SIM1_ONLY.ordinal)
+        assertEquals(2, PreviewSimCards.SIM2_ONLY.ordinal)
+        assertEquals(3, PreviewSimCards.NONE.ordinal)
+        assertEquals(DualMobileLevels(4, 1), both.dualLevels)
+        assertEquals(PreviewCenterSource.MOBILE, both.previewCenterSource())
+        // The previous single-card switch is independent from dual insertion simulation.
+        assertEquals(
+            PreviewCenterSource.MOBILE,
+            both.copy(simPresent = false).previewCenterSource(),
+        )
+
+        val sim1Only = both.copy(simCards = PreviewSimCards.SIM1_ONLY)
+        assertEquals(null, sim1Only.dualLevels)
+        assertEquals(4, sim1Only.displayedSignalLevel)
+        assertEquals(PreviewMobileNetwork.FIVE_G, sim1Only.dataMobileNetwork)
+        assertEquals(PreviewCenterSource.MOBILE, sim1Only.previewCenterSource())
+        val missingDataSim = sim1Only.copy(dataSim = PreviewDataSim.SIM2)
+        assertEquals(4, missingDataSim.displayedSignalLevel)
+        assertEquals(PreviewMobileNetwork.NONE, missingDataSim.dataMobileNetwork)
+        assertEquals(PreviewCenterSource.EMPTY, missingDataSim.previewCenterSource())
+
+        val sim2Only = both.copy(simCards = PreviewSimCards.SIM2_ONLY)
+        assertEquals(null, sim2Only.dualLevels)
+        assertEquals(1, sim2Only.displayedSignalLevel)
+        assertEquals(PreviewCenterSource.EMPTY, sim2Only.previewCenterSource())
+        val sim2Data = sim2Only.copy(dataSim = PreviewDataSim.SIM2)
+        assertEquals(PreviewMobileNetwork.FOUR_G, sim2Data.dataMobileNetwork)
+        assertEquals(PreviewCenterSource.MOBILE, sim2Data.previewCenterSource())
+
+        val neither = both.copy(simCards = PreviewSimCards.NONE)
+        assertEquals(null, neither.dualLevels)
+        assertFalse(neither.hasSim)
+        assertFalse(neither.mobileControlsEnabled)
+        assertEquals(PreviewCenterSource.NO_SIM, neither.previewCenterSource())
+        assertEquals(
+            PreviewCenterSource.WIFI,
+            neither.copy(networkMode = PreviewNetworkMode.WIFI).previewCenterSource(),
+        )
+
+        // Sandbox-only card combinations never modify the saved single-card scenario.
+        val single = neither.copy(dualMobile = false)
+        assertTrue(single.sim1Active)
+        assertFalse(single.sim2Active)
+        assertTrue(single.mobileControlsEnabled)
+        assertEquals(null, single.dualLevels)
+        assertEquals(4, single.displayedSignalLevel)
         assertEquals(PreviewCenterSource.MOBILE, single.previewCenterSource())
     }
 

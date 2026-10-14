@@ -26,6 +26,7 @@ import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
 import com.chaners.guiyuan.ui.screens.PreviewDataSim
+import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
@@ -80,6 +81,9 @@ internal fun GyApp(
         var previewDataSimIndex by rememberSaveable {
             mutableIntStateOf(PreviewDataSim.SIM1.ordinal)
         }
+        var previewSimCardsIndex by rememberSaveable {
+            mutableIntStateOf(PreviewSimCards.BOTH.ordinal)
+        }
         var previewWifiStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
         }
@@ -126,6 +130,10 @@ internal fun GyApp(
                 dataSim =
                     PreviewDataSim.entries[
                         previewDataSimIndex.coerceIn(0, PreviewDataSim.entries.lastIndex)
+                    ],
+                simCards =
+                    PreviewSimCards.entries[
+                        previewSimCardsIndex.coerceIn(0, PreviewSimCards.entries.lastIndex)
                     ],
                 wifiState =
                     PreviewWifiState.entries[
@@ -245,6 +253,7 @@ internal fun GyApp(
                         onSim2SignalLevelChange = { previewSim2SignalLevel = it },
                         onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
                         onDataSimChange = { previewDataSimIndex = it.ordinal },
+                        onSimCardsChange = { previewSimCardsIndex = it.ordinal },
                         onWifiStateChange = {
                             previewWifiStateIndex = it.ordinal
                         },

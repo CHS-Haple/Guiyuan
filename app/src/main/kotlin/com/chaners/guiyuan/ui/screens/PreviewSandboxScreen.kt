@@ -68,6 +68,7 @@ internal fun PreviewSandboxScreen(
     onSim2SignalLevelChange: (Int) -> Unit,
     onSim2NetworkChange: (PreviewMobileNetwork) -> Unit,
     onDataSimChange: (PreviewDataSim) -> Unit,
+    onSimCardsChange: (PreviewSimCards) -> Unit,
     onWifiStateChange: (PreviewWifiState) -> Unit,
     onWifiSignalLevelChange: (Int) -> Unit,
     onBatteryPercentChange: (Int) -> Unit,
@@ -110,6 +111,13 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_data_sim1),
             stringResource(R.string.home_preview_data_sim2),
         )
+    val dualSimOptions =
+        listOf(
+            stringResource(R.string.home_preview_sim_both),
+            stringResource(R.string.home_preview_sim1_only),
+            stringResource(R.string.home_preview_sim2_only),
+            stringResource(R.string.home_preview_sim_none),
+        )
     val mobileNetworkChoices =
         listOf(
             PreviewMobileNetwork.TWO_G to stringResource(R.string.home_preview_network_2g),
@@ -144,7 +152,7 @@ internal fun PreviewSandboxScreen(
     val mobileDisabledSummary =
         when {
             state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
-            !state.simPresent -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
+            !state.hasSim -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
             else -> null
         }
 
@@ -291,32 +299,34 @@ internal fun PreviewSandboxScreen(
                                     modifier = Modifier.padding(top = 4.dp),
                                 )
                             }
-                            OverlayDropdownPreference(
-                                title = stringResource(
-                                    if (state.dualMobile) R.string.home_preview_sim1_network_title
-                                    else R.string.home_preview_mobile_network_title,
-                                ),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                        detailRes = R.drawable.ic_material_symbol_category,
-                                    )
-                                },
-                                items = mobileNetworkChoices.map { it.second },
-                                selectedIndex =
-                                    mobileNetworkChoices.indexOfFirst {
-                                        it.first == state.mobileNetwork
-                                    }.coerceAtLeast(0),
-                                onSelectedIndexChange = { index ->
-                                    mobileNetworkChoices.getOrNull(index)
-                                        ?.first
-                                        ?.let(onMobileNetworkChange)
-                                },
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                maxHeight = 360.dp,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                            if (state.dualMobile) {
+                            if (state.sim1Active) {
+                                OverlayDropdownPreference(
+                                    title = stringResource(
+                                        if (state.dualMobile) R.string.home_preview_sim1_network_title
+                                        else R.string.home_preview_mobile_network_title,
+                                    ),
+                                    startAction = {
+                                        SemanticLeadingIcon(
+                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                            detailRes = R.drawable.ic_material_symbol_category,
+                                        )
+                                    },
+                                    items = mobileNetworkChoices.map { it.second },
+                                    selectedIndex =
+                                        mobileNetworkChoices.indexOfFirst {
+                                            it.first == state.mobileNetwork
+                                        }.coerceAtLeast(0),
+                                    onSelectedIndexChange = { index ->
+                                        mobileNetworkChoices.getOrNull(index)
+                                            ?.first
+                                            ?.let(onMobileNetworkChange)
+                                    },
+                                    insideMargin = SandboxPreferenceInsideMargin,
+                                    maxHeight = 360.dp,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                            if (state.sim2Active) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.home_preview_sim2_network_title),
                                     startAction = {
@@ -372,13 +382,22 @@ internal fun PreviewSandboxScreen(
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_sim_title),
                             iconRes = R.drawable.ic_material_symbol_sim_card,
-                            options = simOptions,
-                            selectedIndex = if (state.simPresent) 0 else 1,
-                            onSelected = { onSimPresentChange(it == 0) },
+                            options = if (state.dualMobile) dualSimOptions else simOptions,
+                            selectedIndex =
+                                if (state.dualMobile) state.simCards.ordinal
+                                else if (state.simPresent) 0 else 1,
+                            onSelected = { index ->
+                                if (state.dualMobile) {
+                                    PreviewSimCards.entries.getOrNull(index)
+                                        ?.let(onSimCardsChange)
+                                } else {
+                                    onSimPresentChange(index == 0)
+                                }
+                            },
                             maxWidth = 300.dp,
                             modifier = Modifier,
                         )
-                        if (state.mobileControlsEnabled) {
+                        if (state.mobileControlsEnabled || state.dualMobile) {
                             SwitchPreference(
                                 title = stringResource(R.string.home_preview_dual_mobile_title),
                                 summary = stringResource(R.string.home_preview_dual_mobile_summary),
@@ -389,25 +408,29 @@ internal fun PreviewSandboxScreen(
                                 },
                                 insideMargin = SandboxPreferenceInsideMargin,
                             )
-                            SliderPreference(
-                                value = state.mobileSignalLevel.toFloat(),
-                                onValueChange = { value ->
-                                    onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
-                                },
-                                title = stringResource(
-                                    if (state.dualMobile) R.string.home_preview_sim1_signal_title
-                                    else R.string.home_preview_mobile_signal_title,
-                                ),
-                                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
-                                valueText = signalValueText(state.mobileSignalLevel),
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                valueRange = 0f..4f,
-                                steps = 3,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
-                            )
-                            if (state.dualMobile) {
+                        }
+                        if (state.mobileControlsEnabled) {
+                            if (state.sim1Active) {
+                                SliderPreference(
+                                    value = state.mobileSignalLevel.toFloat(),
+                                    onValueChange = { value ->
+                                        onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
+                                    },
+                                    title = stringResource(
+                                        if (state.dualMobile) R.string.home_preview_sim1_signal_title
+                                        else R.string.home_preview_mobile_signal_title,
+                                    ),
+                                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
+                                    valueText = signalValueText(state.mobileSignalLevel),
+                                    insideMargin = SandboxPreferenceInsideMargin,
+                                    valueRange = 0f..4f,
+                                    steps = 3,
+                                    showKeyPoints = true,
+                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                                    keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                                )
+                            }
+                            if (state.sim2Active) {
                                 SliderPreference(
                                     value = state.sim2SignalLevel.toFloat(),
                                     onValueChange = { value ->
