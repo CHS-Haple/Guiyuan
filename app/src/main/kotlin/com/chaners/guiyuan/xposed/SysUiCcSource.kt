@@ -49,6 +49,7 @@ internal object SysUiCcSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onUpdate: ((Update) -> Unit)? = null,
+        onAfterNativeExpansion: ((Float) -> Unit)? = null,
         onFakePresentationAttached: ((ViewGroup) -> Unit)? = null,
         onRuntimeFailure: ((Throwable) -> Unit)? = null,
         onEvent: ((String) -> Unit)? = null,
@@ -244,7 +245,16 @@ internal object SysUiCcSource {
                                     },
                                 onFailure = onRuntimeFailure,
                             )
-                            chain.proceed()
+                            val result = chain.proceed()
+                            if (fraction != null && isProbeEnabled()) {
+                                dispatchRuntimeCallback(
+                                    callback = onAfterNativeExpansion?.let { observer ->
+                                        { observer(fraction) }
+                                    },
+                                    onFailure = onRuntimeFailure,
+                                )
+                            }
+                            result
                         },
                     )
 
