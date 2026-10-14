@@ -8,6 +8,54 @@ import org.junit.Test
 
 class CcTransitionOwnerTest {
     @Test
+    fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
+        val policy = CcTransitionPolicy
+        val active = setOf(1, 4)
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.AGGREGATED,
+            policy.dualMobileTarget(active, listOf(null), aggregateProven = true),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(active, listOf(1), aggregateProven = false),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.SEPARATE,
+            policy.dualMobileTarget(active, listOf(4, 1), aggregateProven = false),
+        )
+        listOf(listOf(1, 1), listOf(1, null), listOf(1, 7), emptyList(), listOf(1, 4, 7))
+            .forEach { ids ->
+                assertEquals(
+                    CcTransitionPolicy.DualMobileTarget.NONE,
+                    policy.dualMobileTarget(active, ids, aggregateProven = true),
+                )
+            }
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(setOf(1), listOf(null), aggregateProven = true),
+        )
+    }
+
+    @Test
+    fun dualNativeGroupUsesBothTargetsWithoutGuessingRows() {
+        val first = floatArrayOf(10f, 20f, 8f, 0f, 0f, 6f)
+        val second = floatArrayOf(30f, 20f, 8f, 0f, 0f, 6f)
+        val merged = CcTransitionPolicy.dualMobileGroupGeometry(listOf(first, second))
+        val bounds = requireNotNull(merged)
+        listOf(20f, 20f, 28f, 0f, 0f, 6f).forEachIndexed { index, value ->
+            assertEquals(value, bounds[index], 0.0001f)
+        }
+        assertTrue(CcTransitionPolicy.dualMobileGroupGeometry(listOf(first))!!.contentEquals(first))
+        assertEquals(null, CcTransitionPolicy.dualMobileGroupGeometry(listOf(first, second, first)))
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualMobileGroupGeometry(
+                listOf(first, floatArrayOf(Float.NaN, 2f, 8f, 0f, 0f, 6f)),
+            ),
+        )
+    }
+
+    @Test
     fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
         val source =
             CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)

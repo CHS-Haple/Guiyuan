@@ -26,6 +26,59 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    internal enum class DualMobileTarget {
+        NONE,
+        AGGREGATED,
+        SEPARATE,
+    }
+
+    // The target group needs no row identity; separate native slots do.
+    fun dualMobileTarget(
+        activeSubIds: Set<Int>,
+        targetSubIds: List<Int?>,
+        aggregateProven: Boolean,
+    ): DualMobileTarget {
+        if (activeSubIds.size != 2 || activeSubIds.any { it < 0 }) {
+            return DualMobileTarget.NONE
+        }
+        return when (targetSubIds.size) {
+            1 -> if (aggregateProven) DualMobileTarget.AGGREGATED else DualMobileTarget.NONE
+            2 -> if (targetSubIds.all { it != null && it in activeSubIds } &&
+                targetSubIds.toSet() == activeSubIds
+            ) DualMobileTarget.SEPARATE else DualMobileTarget.NONE
+            else -> DualMobileTarget.NONE
+        }
+    }
+
+    // Both native views have already been sampled into the same root coordinates.
+    fun dualMobileGroupGeometry(parts: List<FloatArray>): FloatArray? {
+        if (parts.size !in 1..2 || parts.any { part ->
+                part.size != 6 || part.any { !it.isFinite() } ||
+                    kotlin.math.hypot(part[2], part[3]) <= 0f ||
+                    kotlin.math.hypot(part[4], part[5]) <= 0f
+            }
+        ) return null
+        if (parts.size == 1) return parts.single().copyOf()
+
+        val extents = parts.map { part ->
+            val halfWidth = (kotlin.math.abs(part[2]) + kotlin.math.abs(part[4])) / 2f
+            val halfHeight = (kotlin.math.abs(part[3]) + kotlin.math.abs(part[5])) / 2f
+            floatArrayOf(
+                part[0] - halfWidth, part[1] - halfHeight,
+                part[0] + halfWidth, part[1] + halfHeight,
+            )
+        }
+        val left = extents.minOf { it[0] }
+        val top = extents.minOf { it[1] }
+        val right = extents.maxOf { it[2] }
+        val bottom = extents.maxOf { it[3] }
+        if (right <= left || bottom <= top) return null
+        return floatArrayOf(
+            (left + right) / 2f, (top + bottom) / 2f,
+            right - left, 0f, 0f, bottom - top,
+        )
+    }
+
     fun matchesDualMobileTypeTarget(
         dataSubId: Int,
         targetSubId: Int?,
