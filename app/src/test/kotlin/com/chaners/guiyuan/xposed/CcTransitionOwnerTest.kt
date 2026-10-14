@@ -175,7 +175,7 @@ class CcTransitionOwnerTest {
         val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
         val top = xs.mapIndexed { i, x ->
             ParticipantVisualSnapshot.NormalizedRect(
-                x, 0.47f - i * 0.08f, x + 0.08f, 0.52f,
+                x, 0.43f - i * 0.07f, x + 0.08f, 0.52f,
             )
         }
         val bottom = xs.map { x ->
