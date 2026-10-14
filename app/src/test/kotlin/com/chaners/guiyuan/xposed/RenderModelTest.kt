@@ -878,6 +878,7 @@ class RenderModelTest {
             mobilePresentation = native.mobilePresentation?.copy(
                 mode = NativePresentationResolver.Mode.SINGLE,
                 activeSubscriptionIds = listOf(3),
+                platformActiveSubscriptionIds = setOf(3),
                 slotSubscriptionIds = emptyMap(),
                 visibleRoots = 1,
                 activeBoundRoots = 1,
@@ -909,6 +910,7 @@ class RenderModelTest {
             mobilePresentation = native.mobilePresentation?.copy(
                 mode = NativePresentationResolver.Mode.SINGLE,
                 activeSubscriptionIds = listOf(3),
+                platformActiveSubscriptionIds = setOf(3),
                 slotSubscriptionIds = emptyMap(),
                 visibleRoots = 1,
                 activeBoundRoots = 1,
@@ -945,6 +947,7 @@ class RenderModelTest {
             mobilePresentation = native.mobilePresentation?.copy(
                 mode = NativePresentationResolver.Mode.SINGLE,
                 activeSubscriptionIds = listOf(3),
+                platformActiveSubscriptionIds = setOf(3),
                 slotSubscriptionIds = emptyMap(),
                 visibleRoots = 1,
                 activeBoundRoots = 1,
@@ -961,6 +964,51 @@ class RenderModelTest {
         assertNull(model?.dualMobileLevels)
         assertEquals(2, model?.mobileLevel)
         assertEquals(3, model?.effectiveDataSubscriptionId)
+    }
+
+    @Test
+    fun optInPartialNativeBindingDoesNotClaimOnlyPhysicalSim() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        // Native SystemUI exposes one root while SubscriptionManager still reports two cards.
+        val partial = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                mode = NativePresentationResolver.Mode.SINGLE,
+                activeSubscriptionIds = listOf(3),
+                slotSubscriptionIds = emptyMap(),
+                visibleRoots = 1,
+                activeBoundRoots = 1,
+                networkTypeSubscriptionId = 3,
+            ),
+        )
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+            ),
+        )
+
+        val optIn = RenderModel.from(state, partial, 14, dualSignalEnabled = true)
+        assertNull(optIn?.dualMobileLevels)
+        assertNull(optIn?.mobileLevel)
+        assertEquals(-1, optIn?.effectiveDataSubscriptionId)
+        assertTrue(optIn?.centerIndicator is CenterIndicator.Empty)
+
+        // The already-shipped single-SIM path must not change.
+        val legacy = RenderModel.from(state, partial, 14)
+        assertEquals(4, legacy?.mobileLevel)
+
+        // Only after the platform reports a truly removed SIM may opt-in use
+        // the one surviving bound subscription as single-card fallback.
+        val removed = partial.copy(
+            mobilePresentation = partial.mobilePresentation?.copy(
+                platformActiveSubscriptionIds = setOf(3),
+            ),
+        )
+        val restored = RenderModel.from(state, removed, 14, dualSignalEnabled = true)
+        assertNull(restored?.dualMobileLevels)
+        assertEquals(1, restored?.mobileLevel)
+        assertEquals(3, restored?.effectiveDataSubscriptionId)
     }
 
     @Test
@@ -1139,6 +1187,7 @@ class RenderModelTest {
             activeSubscriptionIds = listOf(3, 14),
             slotSubscriptionIds = slotSubscriptionIds,
             activeSubsAuthoritative = true,
+            platformActiveSubscriptionIds = setOf(3, 14),
             presentationRootSubscriptionId = 14,
             effectiveDataSubscriptionId = 3,
             networkTypeSubscriptionId = 3,
