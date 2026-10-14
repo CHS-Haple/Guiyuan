@@ -324,7 +324,7 @@ internal fun PreviewSandboxScreen(
                                     insideMargin = SandboxPreferenceInsideMargin,
                                     maxHeight = 360.dp,
                                     modifier = Modifier.padding(top = 4.dp),
-                                    )
+                                )
                             }
                             if (state.sim2Active) {
                                 OverlayDropdownPreference(
@@ -426,7 +426,7 @@ internal fun PreviewSandboxScreen(
                                     showKeyPoints = true,
                                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                     keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
-                                    )
+                                )
                             }
                             if (state.sim2Active) {
                                 SliderPreference(
