@@ -297,10 +297,11 @@ internal object NativePresentationResolver {
         activeSubscriptionIds: Set<Int>,
         platformSubscriptions: List<Pair<Int, Int>>?,
     ): Map<Int, Int> {
+        val platform = platformSubscriptions ?: return emptyMap()
+        // Bound roots can lag behind an additional active platform subscription.
+        if (platform.size != 2) return emptyMap()
         val pairs =
-            platformSubscriptions
-                ?.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
-                ?: return emptyMap()
+            platform.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
         if (
             activeSubscriptionIds.size != 2 ||
             pairs.size != 2 ||

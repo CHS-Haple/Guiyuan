@@ -144,6 +144,7 @@ internal data class RenderModel(
                     val sim1Id = slots?.get(0)
                     val sim2Id = slots?.get(1)
                     if (native != null &&
+                        native.activeSubscriptionAuthority == "subscription-manager" &&
                         (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
                             native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
                         native.activeSubscriptionIds.size == 2 &&

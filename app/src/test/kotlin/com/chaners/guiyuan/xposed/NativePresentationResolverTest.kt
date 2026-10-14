@@ -36,6 +36,17 @@ class NativePresentationResolverTest {
     }
 
     @Test
+    fun extraPlatformSubscriptionCannotDisguiseIncompleteDualBinding() {
+        assertEquals(
+            emptyMap<Int, Int>(),
+            NativePresentationResolver.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(1, 4),
+                platformSubscriptions = listOf(1 to 0, 4 to 1, 7 to 2),
+            ),
+        )
+    }
+
+    @Test
     fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
         assertEquals(
             4,

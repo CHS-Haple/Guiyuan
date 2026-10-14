@@ -720,6 +720,8 @@ class RenderModelTest {
             valid.copy(mobilePresentation =
                 valid.mobilePresentation?.copy(mode = NativePresentationResolver.Mode.SINGLE)),
             valid.copy(mobilePresentation =
+                valid.mobilePresentation?.copy(activeSubscriptionAuthority = "pipeline-semantic-fallback")),
+            valid.copy(mobilePresentation =
                 valid.mobilePresentation?.copy(activeSubscriptionIds = listOf(3, 14, 27))),
             valid.copy(mobilePresentation = null),
         )
