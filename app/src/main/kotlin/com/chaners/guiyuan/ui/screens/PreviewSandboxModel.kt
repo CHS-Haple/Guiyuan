@@ -91,7 +91,8 @@ internal data class PreviewSandboxUiState(
     val chargingState: PreviewChargingState = PreviewChargingState.NOT_CHARGING,
 ) {
     val sim1Active: Boolean
-        get() = if (!dualMobile) simPresent
+        get() =
+            if (!dualMobile) simPresent
             else simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
 
     val sim2Active: Boolean
@@ -105,7 +106,8 @@ internal data class PreviewSandboxUiState(
         get() = hasSim && !airplaneMode
 
     val dataSimAvailable: Boolean
-        get() = if (!dualMobile) simPresent
+        get() =
+            if (!dualMobile) simPresent
             else if (dataSim == PreviewDataSim.SIM1) sim1Active else sim2Active
 
     val dataMobileNetwork: PreviewMobileNetwork
@@ -121,19 +123,21 @@ internal data class PreviewSandboxUiState(
             else mobileSignalLevel
 
     val displayedSignalLevel: Int
-        get() = when {
-            sim1Active && !sim2Active -> mobileSignalLevel
-            sim2Active && !sim1Active -> sim2SignalLevel
-            else -> dataSignalLevel
-        }
+        get() =
+            when {
+                sim1Active && !sim2Active -> mobileSignalLevel
+                sim2Active && !sim1Active -> sim2SignalLevel
+                else -> dataSignalLevel
+            }
 
     val dualLevels: DualMobileLevels?
-        get() = if (mobileControlsEnabled && sim1Active && sim2Active) {
-            DualMobileLevels(
-                sim1 = mobileSignalLevel.coerceIn(0, 4),
-                sim2 = sim2SignalLevel.coerceIn(0, 4),
-            )
-        } else null
+        get() =
+            if (mobileControlsEnabled && sim1Active && sim2Active) {
+                DualMobileLevels(
+                    sim1 = mobileSignalLevel.coerceIn(0, 4),
+                    sim2 = sim2SignalLevel.coerceIn(0, 4),
+                )
+            } else null
 
     val mobileOptionsVisible: Boolean
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
