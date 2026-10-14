@@ -710,7 +710,7 @@ class RenderModelTest {
     }
 
     @Test
-    fun unknownUnavailableOrStaleDualSignalsNeverBecomeZeroBarRows() {
+    fun unknownDualSignalKeepsOtherRowButUnavailableOrMissingFallsBack() {
         val source = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
             mobile = mapOf(
@@ -719,15 +719,61 @@ class RenderModelTest {
             ),
         )
         val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
-        val unavailable = listOf(SignalStrength.Unknown, SignalStrength.Unavailable)
-        for (signal in unavailable) {
-            val changed = source.copy(
-                mobile = source.mobile + (3 to StatusStateStore.MobileState(signal = signal)),
+        val unknownSim2 =
+            source.copy(
+                mobile =
+                    source.mobile +
+                        (3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown)),
             )
-            assertNull(
-                RenderModel.from(changed, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        val unknownSim1 =
+            source.copy(
+                mobile =
+                    source.mobile +
+                        (14 to StatusStateStore.MobileState(signal = SignalStrength.Unknown)),
             )
-        }
+        val bothUnknown =
+            source.copy(
+                mobile = mapOf(
+                    14 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
+                    3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
+                ),
+            )
+        assertEquals(
+            DualMobileLevels(4, null),
+            RenderModel.from(unknownSim2, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertEquals(
+            DualMobileLevels(null, 1),
+            RenderModel.from(unknownSim1, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertEquals(
+            DualMobileLevels(null, null),
+            RenderModel.from(bothUnknown, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertNull(RenderModel.from(bothUnknown, native, 14, dualSignalEnabled = true)?.mobileLevel)
+
+        val zeroSim2 =
+            source.copy(
+                mobile =
+                    source.mobile +
+                        (3 to StatusStateStore.MobileState(signal = SignalStrength.Level(0))),
+            )
+        assertEquals(
+            DualMobileLevels(4, 0),
+            RenderModel.from(zeroSim2, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                source.copy(
+                    mobile =
+                        source.mobile +
+                            (3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)),
+                ),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
         assertNull(
             RenderModel.from(
                 source.copy(mobile = source.mobile - 3),
