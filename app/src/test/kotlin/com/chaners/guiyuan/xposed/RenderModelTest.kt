@@ -933,6 +933,62 @@ class RenderModelTest {
         assertEquals(3, legacy?.effectiveDataSubscriptionId)
     }
 
+    @Test
+    fun optInDualNetworkTypeNeverBorrowsAggregateRootsOtherSim() {
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val wrong = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                networkTypeSubscriptionId = 14,
+            ),
+        )
+        val dual = RenderModel.from(state, wrong, 3, dualSignalEnabled = true)
+
+        assertTrue(dual?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(DualMobileLevels(4, 2), dual?.dualMobileLevels)
+        assertEquals(3, dual?.effectiveDataSubscriptionId)
+
+        val correct = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        assertEquals("5G", (correct?.centerIndicator as? CenterIndicator.MobileType)?.label)
+
+        // The shipped single-row path continues to show the observed native label.
+        val legacy = RenderModel.from(state, wrong, 3)
+        assertEquals("5G", (legacy?.centerIndicator as? CenterIndicator.MobileType)?.label)
+    }
+
+    @Test
+    fun optInUnknownDataIdentityCannotShowArbitraryMobileType() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        val model = RenderModel.from(state, native, -1, dualSignalEnabled = true)
+        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(DualMobileLevels(4, 2), model?.dualMobileLevels)
+        assertEquals(-1, model?.effectiveDataSubscriptionId)
+
+        // Unknown data-SIM identity must not suppress an unrelated Wi-Fi indicator.
+        val wifi = state.copy(
+            wifi = StatusStateStore.WifiState.Visible(
+                iconResId = 12,
+                signal = SignalStrength.Level(3),
+                internetValidated = true,
+            ),
+        )
+        val withWifi = RenderModel.from(wifi, native, -1, dualSignalEnabled = true)
+        assertTrue(withWifi?.centerIndicator is CenterIndicator.Wifi)
+    }
+
     private fun dualPresentation(
         slotSubscriptionIds: Map<Int, Int>,
     ) = PresentationStore.Snapshot(

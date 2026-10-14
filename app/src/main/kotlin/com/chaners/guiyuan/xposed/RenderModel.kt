@@ -114,7 +114,13 @@ internal data class RenderModel(
                         if (mobileRecoveryPending || nativeNoSimVisible) {
                             null
                         } else {
-                            presentation.mobilePresentation?.networkType
+                            presentation.mobilePresentation?.let { native ->
+                                native.networkType?.takeUnless {
+                                    dualSignalEnabled &&
+                                        native.activeSubscriptionIds.size > 1 &&
+                                        native.networkTypeSubscriptionId != selectedSubscriptionId
+                                }
+                            }
                         },
                     noSimIcon = noSimIcon,
                 )
