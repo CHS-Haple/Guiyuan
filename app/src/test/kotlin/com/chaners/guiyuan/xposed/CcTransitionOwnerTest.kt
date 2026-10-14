@@ -16,6 +16,14 @@ class CcTransitionOwnerTest {
             policy.dualMobileTarget(active, listOf(null), aggregateProven = true),
         )
         assertEquals(
+            CcTransitionPolicy.DualMobileTarget.AGGREGATED,
+            policy.dualMobileTarget(active, listOf(4), aggregateProven = true),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(active, listOf(7), aggregateProven = true),
+        )
+        assertEquals(
             CcTransitionPolicy.DualMobileTarget.NONE,
             policy.dualMobileTarget(active, listOf(1), aggregateProven = false),
         )

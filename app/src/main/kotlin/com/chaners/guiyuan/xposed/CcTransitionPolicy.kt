@@ -42,7 +42,14 @@ internal object CcTransitionPolicy {
             return DualMobileTarget.NONE
         }
         return when (targetSubIds.size) {
-            1 -> if (aggregateProven) DualMobileTarget.AGGREGATED else DualMobileTarget.NONE
+            1 -> {
+                val subId = targetSubIds.single()
+                if (aggregateProven && (subId == null || subId in activeSubIds)) {
+                    DualMobileTarget.AGGREGATED
+                } else {
+                    DualMobileTarget.NONE
+                }
+            }
             2 -> if (targetSubIds.all { it != null && it in activeSubIds } &&
                 targetSubIds.toSet() == activeSubIds
             ) DualMobileTarget.SEPARATE else DualMobileTarget.NONE
