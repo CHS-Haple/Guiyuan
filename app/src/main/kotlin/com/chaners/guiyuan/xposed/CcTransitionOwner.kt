@@ -811,9 +811,18 @@ internal object CcTransitionOwner {
                     } else {
                         null
                     }
-                // Different text cannot share the native endpoint's scale or position.
+                // A proven native dot glyph must not grow fabricated signal bars.
+                // An unavailable optical sample still uses the existing fallback.
+                val knownMobileDots =
+                    spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                        spec.shapePolicy == StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
+                        witness?.let { target ->
+                            ParticipantVisualSnapshot.resolveView(
+                                target.opticalView ?: target.slotView,
+                            )?.hasFourDots()
+                        } == true
                 val matchedTargetGeometry =
-                    targetGeometry.takeUnless { nativeTypeMatch == false }
+                    targetGeometry.takeUnless { nativeTypeMatch == false || knownMobileDots }
                 val matchedTextWeight =
                     if (nativeTypeMatch == true) witness?.textWeight else null
                 val matchedTextStyle =

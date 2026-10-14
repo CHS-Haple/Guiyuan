@@ -119,6 +119,20 @@ internal object ParticipantVisualSnapshot {
             )
         }
 
+        // A sampled four-dot glyph is known not to be the four-bar native endpoint.
+        fun hasFourDots(): Boolean {
+            if (components.size != 4 || envelope.width <= 0f || envelope.height <= 0f) {
+                return false
+            }
+            val dots = components.sortedBy { it.centerX }
+            return dots.all { dot ->
+                dot.width > 0f && dot.height > 0f &&
+                    dot.height in (dot.width * 0.75f)..(dot.width * 1.3f)
+            } && (dots.maxOf { it.height } - dots.minOf { it.height }) <
+                envelope.height * 0.12f &&
+                dots.zipWithNext().all { (left, right) -> left.right < right.left }
+        }
+
         fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
             if (topology != Topology.FOUR_VERTICAL_BARS || components.size != 4) {
                 return null

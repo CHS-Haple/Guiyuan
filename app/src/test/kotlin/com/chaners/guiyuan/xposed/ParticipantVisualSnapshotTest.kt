@@ -150,13 +150,53 @@ class ParticipantVisualSnapshotTest {
         }
         val topology = ParticipantVisualSnapshot.classifyComponents(dots)
         assertEquals(ParticipantVisualSnapshot.Topology.COMPOSITE, topology)
-        assertNull(
-            ParticipantVisualSnapshot.Snapshot(
-                envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
-                components = dots,
-                topology = topology,
-            ).fourVerticalBarsWithinEnvelope(),
+        val snapshot = ParticipantVisualSnapshot.Snapshot(
+            envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f),
+            components = dots,
+            topology = topology,
         )
+        assertNull(snapshot.fourVerticalBarsWithinEnvelope())
+        assertEquals(true, snapshot.hasFourDots())
+        assertEquals(
+            true,
+            snapshot.copy(components = dots.reversed()).hasFourDots(),
+        )
+    }
+
+    @Test
+    fun nativeNonBarEvidenceRejectsOnlyUnambiguousDotGlyphs() {
+        val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
+        val dots = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.65f, x + 0.08f, 0.73f)
+        }
+        val envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f)
+        fun known(shapes: List<ParticipantVisualSnapshot.NormalizedRect>): Boolean =
+            ParticipantVisualSnapshot.Snapshot(
+                envelope = envelope,
+                components = shapes,
+                topology = ParticipantVisualSnapshot.classifyComponents(shapes),
+            ).hasFourDots()
+
+        assertEquals(false, known(emptyList())) // Unavailable native sample
+        assertEquals(false, known(dots.take(3))) // Incomplete optical components
+        assertEquals(
+            false,
+            known(dots.mapIndexed { index, rect ->
+                if (index == 3) rect.copy(top = 0.44f) else rect
+            }),
+        )
+        assertEquals(
+            false,
+            known(dots.mapIndexed { index, rect ->
+                if (index == 2) rect.copy(left = 0.39f, right = 0.47f) else rect
+            }),
+        )
+        val bars = xs.mapIndexed { index, x ->
+            ParticipantVisualSnapshot.NormalizedRect(
+                x, 0.62f - index * 0.1f, x + 0.08f, 0.80f,
+            )
+        }
+        assertEquals(false, known(bars))
     }
 
     @Test
