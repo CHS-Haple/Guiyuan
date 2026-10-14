@@ -5,6 +5,7 @@ import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
+// Null is an observed unknown level; absent or unavailable signals do not form dual rows.
 internal data class DualMobileLevels(val sim1: Int?, val sim2: Int?)
 
 internal data class RenderModel(
