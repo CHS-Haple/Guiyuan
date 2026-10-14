@@ -284,18 +284,16 @@ internal fun PreviewSandboxScreen(
                                     .padding(horizontal = 6.dp),
                         )
 
-                        if (state.mobileControlsEnabled || state.dualMobile) {
-                            SwitchPreference(
-                                title = stringResource(R.string.home_preview_dual_mobile_title),
-                                summary = stringResource(R.string.home_preview_dual_mobile_summary),
-                                checked = state.dualMobile,
-                                onCheckedChange = onDualMobileChange,
-                                startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
-                                },
-                                insideMargin = SandboxPreferenceInsideMargin,
-                            )
-                        }
+                        SwitchPreference(
+                            title = stringResource(R.string.home_preview_dual_mobile_title),
+                            summary = stringResource(R.string.home_preview_dual_mobile_summary),
+                            checked = state.dualMobile,
+                            onCheckedChange = onDualMobileChange,
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
+                            },
+                            insideMargin = SandboxPreferenceInsideMargin,
+                        )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_sim_title),
                             iconRes = R.drawable.ic_material_symbol_sim_card,
