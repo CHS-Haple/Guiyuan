@@ -272,6 +272,79 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun aggregateTypeCanUseTheSoleNativeRootWithoutChangingDataSubscription() {
+        val target = NativePresentationResolver.NetworkType(
+            "5G", false, NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+        )
+        val source = CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
+        val presentation = NativePresentationResolver.Snapshot(
+            mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
+            boundRoots = 2,
+            visibleRoots = 1,
+            activeSubscriptionIds = listOf(1, 4),
+            activeSubsAuthoritative = true,
+            platformActiveSubscriptionIds = setOf(1, 4),
+            presentationRootSubscriptionId = 1,
+            effectiveDataSubscriptionId = 4,
+            networkTypeSubscriptionId = 4,
+            networkType = target,
+        )
+        fun verified(
+            state: NativePresentationResolver.Snapshot? = presentation,
+            dataSubId: Int = 4,
+            targetSubId: Int? = 1,
+            soleNativeRoot: Boolean = true,
+        ) = CcTransitionPolicy.verifiedAggregateTypeRoot(
+                state, dataSubId, targetSubId, soleNativeRoot,
+            )
+        assertTrue(verified())
+        assertEquals(false, verified(soleNativeRoot = false))
+        assertEquals(false, verified(state = presentation.copy(
+            mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+        )))
+        assertEquals(false, verified(state = presentation.copy(visibleRoots = 2)))
+        assertEquals(false, verified(state = presentation.copy(activeSubsAuthoritative = false)))
+        assertEquals(false, verified(state = presentation.copy(
+            platformActiveSubscriptionIds = setOf(1, 7),
+        )))
+        assertEquals(false, verified(state = presentation.copy(networkTypeSubscriptionId = 1)))
+        assertEquals(false, verified(state = presentation.copy(
+            presentationRootSubscriptionId = 4,
+        )))
+        assertEquals(false, verified(dataSubId = 7))
+        assertEquals(false, verified(targetSubId = 7))
+        assertEquals(false, verified(state = null))
+        assertTrue(CcTransitionPolicy.matchesDualMobileTypeTarget(
+            dataSubId = 4,
+            targetSubId = 1,
+            source = source,
+            target = target,
+            verifiedAggregateRoot = verified(),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            dataSubId = 4,
+            targetSubId = 1,
+            source = source,
+            target = target.copy(label = "4G"),
+            verifiedAggregateRoot = verified(),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            dataSubId = 4,
+            targetSubId = 1,
+            source = source,
+            target = null,
+            verifiedAggregateRoot = verified(),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            dataSubId = 4,
+            targetSubId = 1,
+            source = source,
+            target = target.copy(enhanced = true),
+            verifiedAggregateRoot = verified(),
+        ))
+    }
+
+    @Test
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(
             0f,
