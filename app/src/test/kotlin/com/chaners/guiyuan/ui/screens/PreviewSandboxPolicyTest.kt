@@ -67,6 +67,11 @@ class PreviewSandboxPolicyTest {
         assertEquals(3, PreviewSimCards.NONE.ordinal)
         assertEquals(DualMobileLevels(4, 1), both.dualLevels)
         assertEquals(PreviewCenterSource.MOBILE, both.previewCenterSource())
+        // The previous single-card switch is independent from dual insertion simulation.
+        assertEquals(
+            PreviewCenterSource.MOBILE,
+            both.copy(simPresent = false).previewCenterSource(),
+        )
 
         val sim1Only = both.copy(simCards = PreviewSimCards.SIM1_ONLY)
         assertEquals(null, sim1Only.dualLevels)
