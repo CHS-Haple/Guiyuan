@@ -346,7 +346,12 @@ internal object NativePresentationResolver {
 
         val nativeMobileReplacementReady: Boolean
             get() =
-                when (mode) {
+                // A partially bound dual-SIM host must not masquerade as single SIM.
+                (platformActiveSubscriptionIds?.let { active ->
+                    active.size == activeSubscriptionIds.size &&
+                        activeSubscriptionIds.all { it in active }
+                } ?: true) &&
+                    when (mode) {
                     Mode.SINGLE ->
                         activeSubscriptionIds.size == 1 &&
                             visibleRoots == 1
