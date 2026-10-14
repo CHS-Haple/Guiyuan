@@ -25,6 +25,16 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    fun matchesDualMobileTypeTarget(
+        dataSubId: Int,
+        targetSubId: Int?,
+        source: com.chaners.guiyuan.xposed.network.CenterIndicator.MobileType,
+        target: NativePresentationResolver.NetworkType?,
+    ): Boolean =
+        dataSubId >= 0 &&
+            targetSubId == dataSubId &&
+            mobileTypeMatches(source.label, source.enhanced, target) == true
+
     fun mobileTypeMatches(
         sourceLabel: String,
         sourceEnhanced: Boolean,

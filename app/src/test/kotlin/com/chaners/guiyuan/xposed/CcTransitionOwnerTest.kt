@@ -1,10 +1,38 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.InternetState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionOwnerTest {
+    @Test
+    fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
+        val source =
+            CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
+        val target =
+            NativePresentationResolver.NetworkType(
+                "5G",
+                false,
+                NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+            )
+        fun matches(dataSubId: Int, targetSubId: Int?, nativeType: NativePresentationResolver.NetworkType?) =
+            CcTransitionPolicy.matchesDualMobileTypeTarget(
+                dataSubId = dataSubId,
+                targetSubId = targetSubId,
+                source = source,
+                target = nativeType,
+            )
+
+        assertEquals(true, matches(4, 4, target))
+        assertEquals(false, matches(4, 1, target))
+        assertEquals(false, matches(-1, 4, target))
+        assertEquals(false, matches(4, null, target))
+        assertEquals(false, matches(4, 4, target.copy(label = "4G")))
+        assertEquals(false, matches(4, 4, null))
+    }
+
     @Test
     fun targetTypographyStyleConvergesBeforeNativeHandoff() {
         assertEquals(

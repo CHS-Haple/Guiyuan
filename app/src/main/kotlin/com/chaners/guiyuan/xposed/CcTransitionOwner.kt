@@ -446,7 +446,12 @@ internal object CcTransitionOwner {
                     TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
                 )
             }
-            if ((previous.dualMobileLevels == null) != (model.dualMobileLevels == null)) {
+            if (
+                (previous.dualMobileLevels == null) != (model.dualMobileLevels == null) ||
+                (previous.dualMobileLevels != null && model.dualMobileLevels != null &&
+                    (previous.effectiveDataSubscriptionId != model.effectiveDataSubscriptionId ||
+                        previous.centerIndicator != model.centerIndicator))
+            ) {
                 frozenReservationSpans = null
                 frozenAdditionalMobileTargets = null
             }
@@ -572,8 +577,9 @@ internal object CcTransitionOwner {
                             bounds = centerSpec.sourceBounds,
                         ) ?: return@let null
                     val witness =
-                        resolveTarget(
-                            target = centerSpec.target,
+                        resolveSpecTarget(
+                            spec = centerSpec,
+                            model = model,
                             preferredMobileSubId = preferredMobileSubId,
                         ) ?: return@let null
                     val target =
@@ -714,18 +720,11 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    if (
-                        spec.component == StatusPainter.TransitionComponent.MOBILE &&
-                        model.dualMobileLevels != null
-                    ) {
-                        // A composite native target does not prove a per-SIM endpoint.
-                        null
-                    } else {
-                        resolveTarget(
-                            target = spec.target,
-                            preferredMobileSubId = preferredMobileSubId,
-                        )
-                    }
+                    resolveSpecTarget(
+                        spec = spec,
+                        model = model,
+                        preferredMobileSubId = preferredMobileSubId,
+                    )
                 val targetGeometry =
                     witness?.let { target ->
                         resolveTargetGeometry(
@@ -1771,13 +1770,10 @@ internal object CcTransitionOwner {
 
             val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
-                if (
-                    spec.component == StatusPainter.TransitionComponent.MOBILE &&
-                    currentSnapshot.model.dualMobileLevels != null
-                ) return@forEach
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
+                    resolveSpecTarget(
+                        spec = spec,
+                        model = currentSnapshot.model,
                         preferredMobileSubId = preferredMobileSubId,
                     ) ?: return@forEach
                 val slot = witness.slotView
@@ -1891,6 +1887,41 @@ internal object CcTransitionOwner {
             // but it never becomes geometry authority. Projected endpoints stay in
             // absolute root space.
             return result.takeIf { it.isNotEmpty() }
+        }
+
+        private fun resolveSpecTarget(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+            preferredMobileSubId: Int?,
+        ): TargetWitness? {
+            if (
+                model.dualMobileLevels != null &&
+                spec.component == StatusPainter.TransitionComponent.MOBILE
+            ) return null
+
+            val centerType = model.centerIndicator as? CenterIndicator.MobileType
+            val dualCenter =
+                model.dualMobileLevels != null &&
+                    spec.component == StatusPainter.TransitionComponent.CENTER &&
+                    centerType != null
+            val witness =
+                resolveTarget(
+                    target = spec.target,
+                    preferredMobileSubId =
+                        if (dualCenter) model.effectiveDataSubscriptionId
+                        else preferredMobileSubId,
+                ) ?: return null
+
+            if (dualCenter &&
+                !CcTransitionPolicy.matchesDualMobileTypeTarget(
+                    dataSubId = model.effectiveDataSubscriptionId,
+                    targetSubId = witness.subscriptionId,
+                    source = centerType ?: return null,
+                    target = NativePresentationResolver.nativeTargetType(witness.opticalView),
+                )
+            ) return null
+
+            return witness
         }
 
         private fun resolveTarget(
