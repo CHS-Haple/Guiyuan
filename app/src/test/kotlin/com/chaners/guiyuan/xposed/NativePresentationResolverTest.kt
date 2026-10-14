@@ -6,6 +6,25 @@ import org.junit.Test
 class NativePresentationResolverTest {
 
     @Test
+    fun platformAuthorityKeepsExistingDiagnosticLabels() {
+        val snapshot = NativePresentationResolver.Snapshot(
+            mode = NativePresentationResolver.Mode.UNKNOWN,
+            boundRoots = 0,
+            visibleRoots = 0,
+            activeSubscriptionIds = emptyList(),
+            presentationRootSubscriptionId = null,
+            effectiveDataSubscriptionId = null,
+            networkTypeSubscriptionId = null,
+            networkType = null,
+        )
+        assertEquals("pipeline-semantic-fallback", snapshot.activeSubscriptionAuthority)
+        assertEquals(
+            "subscription-manager",
+            snapshot.copy(activeSubsAuthoritative = true).activeSubscriptionAuthority,
+        )
+    }
+
+    @Test
     fun slotMappingUsesPlatformSimSlotRatherThanSubscriptionIdOrder() {
         assertEquals(
             mapOf(0 to 14, 1 to 3),

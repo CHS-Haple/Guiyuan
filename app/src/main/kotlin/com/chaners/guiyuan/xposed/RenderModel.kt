@@ -50,7 +50,7 @@ internal data class RenderModel(
                     ?.takeIf { native ->
                         dualSignalEnabled &&
                             native.mode == NativePresentationResolver.Mode.SINGLE &&
-                            native.activeSubscriptionAuthority == "subscription-manager" &&
+                            native.activeSubsAuthoritative &&
                             native.activeSubscriptionIds.size == 1
                     }
                     ?.activeSubscriptionIds
@@ -153,7 +153,7 @@ internal data class RenderModel(
                     val sim1Id = slots?.get(0)
                     val sim2Id = slots?.get(1)
                     if (native != null &&
-                        native.activeSubscriptionAuthority == "subscription-manager" &&
+                        native.activeSubsAuthoritative &&
                         (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
                             native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
                         native.activeSubscriptionIds.size == 2 &&

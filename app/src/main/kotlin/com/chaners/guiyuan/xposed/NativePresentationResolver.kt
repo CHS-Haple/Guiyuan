@@ -121,12 +121,7 @@ internal object NativePresentationResolver {
             visibleRoots = visible.size,
             activeSubscriptionIds = activeBindingSubIds.sorted(),
             slotSubscriptionIds = slotSubscriptionIds,
-            activeSubscriptionAuthority =
-                if (resolvedActive.authoritative) {
-                    "subscription-manager"
-                } else {
-                    "pipeline-semantic-fallback"
-                },
+            activeSubsAuthoritative = resolvedActive.authoritative,
             presentationRootSubscriptionId = target?.subscriptionId,
             effectiveDataSubscriptionId = effectiveDataSubscriptionId,
             networkTypeSubscriptionId = networkTypeSubscriptionId,
@@ -333,12 +328,20 @@ internal object NativePresentationResolver {
         val visibleRoots: Int,
         val activeSubscriptionIds: List<Int>,
         val slotSubscriptionIds: Map<Int, Int> = emptyMap(),
-        val activeSubscriptionAuthority: String = "pipeline-semantic-fallback",
+        val activeSubsAuthoritative: Boolean = false,
         val presentationRootSubscriptionId: Int?,
         val effectiveDataSubscriptionId: Int?,
         val networkTypeSubscriptionId: Int?,
         val networkType: NetworkType?,
     ) {
+        // Diagnostic values are stable; only the source fact controls rendering.
+        val activeSubscriptionAuthority: String
+            get() = if (activeSubsAuthoritative) {
+                "subscription-manager"
+            } else {
+                "pipeline-semantic-fallback"
+            }
+
         val nativeMobileReplacementReady: Boolean
             get() =
                 when (mode) {

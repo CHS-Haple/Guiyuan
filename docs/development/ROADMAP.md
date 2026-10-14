@@ -33,8 +33,11 @@ Do not add controls merely because a renderer parameter exists.
 
 **Product intent:** Preserve the current four-dot **single-SIM presentation as the default
 and unchanged baseline**. The first approved *visual prototype* is now available only
-inside Preview Sandbox (B980, #467): four dots each for SIM1 upper/inner and SIM2
-lower/outer, with uniform corresponding-pair spacing and weight-aware optical geometry.
+inside Preview Sandbox (B980, #467): four dots each for physical SIM1 inner
+and SIM2 outer, with uniform corresponding-pair spacing and weight-aware
+optical geometry. These positions
+never swap when the default data SIM changes; the center network-type label
+follows the default data SIM only when that subscription's native type is known.
 Read-only active-subscription slot mapping and a cautious eight-component native-shape
 classifier were also integrated as groundwork. **None of these enable live dual-SIM
 rendering or authorize taking over native final Control Center.** A later user opt-in

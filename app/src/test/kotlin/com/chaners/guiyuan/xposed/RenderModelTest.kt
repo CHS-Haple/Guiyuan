@@ -651,6 +651,42 @@ class RenderModelTest {
 
 
     @Test
+    fun dataSimSwitchKeepsRowsAndUpdatesCenterType() {
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+            ),
+        )
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val dataSim2 = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        val sim1Type = native.copy(
+            mobilePresentation = native.mobilePresentation?.copy(
+                effectiveDataSubscriptionId = 14,
+                networkTypeSubscriptionId = 14,
+                networkType = mobileType("4G"),
+            ),
+        )
+        val dataSim1 = RenderModel.from(state, sim1Type, 14, dualSignalEnabled = true)
+
+        val fixedRows = DualMobileLevels(sim1 = 2, sim2 = 4)
+        assertEquals(fixedRows, dataSim2?.dualMobileLevels)
+        assertEquals(fixedRows, dataSim1?.dualMobileLevels)
+        assertEquals(3, dataSim2?.effectiveDataSubscriptionId)
+        assertEquals(14, dataSim1?.effectiveDataSubscriptionId)
+        assertEquals(4, dataSim2?.mobileLevel)
+        assertEquals(2, dataSim1?.mobileLevel)
+        assertEquals("5G", (dataSim2?.centerIndicator as? CenterIndicator.MobileType)?.label)
+        assertEquals("4G", (dataSim1?.centerIndicator as? CenterIndicator.MobileType)?.label)
+
+        // Switching data SIM without a matching native type does not borrow a label.
+        val switchedWithoutType = RenderModel.from(state, native, 14, dualSignalEnabled = true)
+        assertEquals(fixedRows, switchedWithoutType?.dualMobileLevels)
+        assertTrue(switchedWithoutType?.centerIndicator is CenterIndicator.Empty)
+    }
+
+    @Test
     fun optInDualSignalsFollowPhysicalSlotsNotSubscriptionIdOrDataSim() {
         val state = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
@@ -720,7 +756,7 @@ class RenderModelTest {
             valid.copy(mobilePresentation =
                 valid.mobilePresentation?.copy(mode = NativePresentationResolver.Mode.SINGLE)),
             valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(activeSubscriptionAuthority = "pipeline-semantic-fallback")),
+                valid.mobilePresentation?.copy(activeSubsAuthoritative = false)),
             valid.copy(mobilePresentation =
                 valid.mobilePresentation?.copy(activeSubscriptionIds = listOf(3, 14, 27))),
             valid.copy(mobilePresentation = null),
@@ -1025,7 +1061,7 @@ class RenderModelTest {
             visibleRoots = 1,
             activeSubscriptionIds = listOf(3, 14),
             slotSubscriptionIds = slotSubscriptionIds,
-            activeSubscriptionAuthority = "subscription-manager",
+            activeSubsAuthoritative = true,
             presentationRootSubscriptionId = 14,
             effectiveDataSubscriptionId = 3,
             networkTypeSubscriptionId = 3,
