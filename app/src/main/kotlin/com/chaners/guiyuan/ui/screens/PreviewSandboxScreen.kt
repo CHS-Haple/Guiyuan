@@ -111,12 +111,19 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_data_sim1),
             stringResource(R.string.home_preview_data_sim2),
         )
+    val dualSimStates =
+        listOf(
+            PreviewSimCards.NONE,
+            PreviewSimCards.SIM1_ONLY,
+            PreviewSimCards.SIM2_ONLY,
+            PreviewSimCards.BOTH,
+        )
     val dualSimOptions =
         listOf(
-            stringResource(R.string.home_preview_sim_both),
+            stringResource(R.string.home_preview_sim_none),
             stringResource(R.string.home_preview_sim1_only),
             stringResource(R.string.home_preview_sim2_only),
-            stringResource(R.string.home_preview_sim_none),
+            stringResource(R.string.home_preview_sim_both),
         )
     val mobileNetworkChoices =
         listOf(
@@ -296,41 +303,22 @@ internal fun PreviewSandboxScreen(
                                 insideMargin = SandboxPreferenceInsideMargin,
                             )
                         }
-                        if (state.dualMobile) {
-                            OverlayDropdownPreference(
-                                title = stringResource(R.string.home_preview_sim_title),
-                                startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card)
-                                },
-                                items = dualSimOptions,
-                                selectedIndex = state.simCards.ordinal,
-                                onSelectedIndexChange = { index ->
-                                    PreviewSimCards.entries.getOrNull(index)?.let(onSimCardsChange)
-                                },
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                maxHeight = 300.dp,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        } else {
-                            SandboxSegmentedField(
-                                title = stringResource(R.string.home_preview_sim_title),
-                                iconRes = R.drawable.ic_material_symbol_sim_card,
-                                options = if (state.dualMobile) dualSimOptions else simOptions,
-                                selectedIndex =
-                                    if (state.dualMobile) state.simCards.ordinal
-                                    else if (state.simPresent) 0 else 1,
-                                onSelected = { index ->
-                                    if (state.dualMobile) {
-                                        PreviewSimCards.entries.getOrNull(index)
-                                            ?.let(onSimCardsChange)
-                                    } else {
-                                        onSimPresentChange(index == 0)
-                                    }
-                                },
-                                maxWidth = 300.dp,
-                                modifier = Modifier,
-                            )
-                        }
+                        SandboxSegmentedField(
+                            title = stringResource(R.string.home_preview_sim_title),
+                            iconRes = R.drawable.ic_material_symbol_sim_card,
+                            options = if (state.dualMobile) dualSimOptions else simOptions,
+                            selectedIndex =
+                                if (state.dualMobile) dualSimStates.indexOf(state.simCards)
+                                else if (state.simPresent) 0 else 1,
+                            onSelected = { index ->
+                                if (state.dualMobile) {
+                                    dualSimStates.getOrNull(index)?.let(onSimCardsChange)
+                                } else {
+                                    onSimPresentChange(index == 0)
+                                }
+                            },
+                            maxWidth = 300.dp,
+                        )
                         if (state.mobileOptionsVisible && state.dualMobile) {
                             OverlayDropdownPreference(
                                 title = stringResource(R.string.home_preview_data_sim_title),
