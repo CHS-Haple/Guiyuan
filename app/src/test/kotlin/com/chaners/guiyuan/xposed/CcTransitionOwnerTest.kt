@@ -145,17 +145,23 @@ class CcTransitionOwnerTest {
         val separatedTop = frame(top, topTarget, 0.435f)
         val separatedBottom = frame(bottom, bottomTarget, 0.435f)
         assertTrue(separatedTop[0] < separatedBottom[0])
+        // Once the anchors split, each row rejoins the single-SIM projection.
         for (progress in listOf(0.57f, 0.72f, 1f)) {
-            val a = frame(top, topTarget, progress)
-            val b = frame(bottom, bottomTarget, progress)
-            assertEquals(topTarget[0], a[0], 0.0001f)
-            assertEquals(topTarget[1], a[1], 0.0001f)
-            assertEquals(bottomTarget[0], b[0], 0.0001f)
-            assertEquals(bottomTarget[1], b[1], 0.0001f)
-            // SHRINK_ONLY uses one similarity scale rather than stretching to the target.
-            assertEquals(12f, a[2], 0.0001f)
-            assertEquals(8f, b[2], 0.0001f)
+            for ((source, target) in listOf(top to topTarget, bottom to bottomTarget)) {
+                val actual = frame(source, target, progress)
+                val single = CcTransitionPolicy.interpolateSimilarityGeometry(
+                    source = source,
+                    target = target,
+                    progress = progress,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                )
+                for (axis in actual.indices) {
+                    assertEquals(single[axis], actual[axis], 0.0001f)
+                }
+            }
         }
+        assertTrue(frame(top, topTarget, 0.57f)[0] < frame(top, topTarget, 1f)[0])
+        assertTrue(frame(bottom, bottomTarget, 0.57f)[0] < frame(bottom, bottomTarget, 1f)[0])
         for (boundary in listOf(0.30f, 0.57f)) {
             val before = frame(top, topTarget, boundary - 0.00001f)
             val after = frame(top, topTarget, boundary + 0.00001f)
