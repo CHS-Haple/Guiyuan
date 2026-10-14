@@ -317,7 +317,7 @@ internal object CcTransitionPolicy {
             ).roundToInt().coerceAtLeast(compact)
     }
 
-    fun resolveBatteryIslandNativePeerReservationWidth(
+    fun resolveNativePeerReservationWidth(
         compactWidthPx: Int,
         spans: List<ReservationSpan>,
         semanticWidthPx: Int,
