@@ -813,14 +813,18 @@ internal object CcTransitionOwner {
                     }
                 // A proven native dot glyph must not grow fabricated signal bars.
                 // An unavailable optical sample still uses the existing fallback.
-                val knownMobileDots =
-                    spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                val mobileSample =
+                    if (spec.component == StatusPainter.TransitionComponent.MOBILE &&
                         spec.shapePolicy == StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
-                        witness?.let { target ->
-                            ParticipantVisualSnapshot.resolveView(
-                                target.opticalView ?: target.slotView,
-                            )?.hasFourDots()
-                        } == true
+                        witness != null
+                    ) {
+                        ParticipantVisualSnapshot.resolveView(
+                            witness.opticalView ?: witness.slotView,
+                        )
+                    } else {
+                        null
+                    }
+                val knownMobileDots = mobileSample?.hasFourDots() == true
                 val matchedTargetGeometry =
                     targetGeometry.takeUnless { nativeTypeMatch == false || knownMobileDots }
                 val matchedTextWeight =
@@ -828,15 +832,7 @@ internal object CcTransitionOwner {
                 val matchedTextStyle =
                     if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
-                    if (
-                        spec.shapePolicy ==
-                        StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
-                        witness != null
-                    ) {
-                        mobileTargetBars(witness)
-                    } else {
-                        null
-                    }
+                    mobileSample?.let { mobileTargetBars(witness!!, it) }
                 val exactTextGeometry =
                     spec.component ==
                         StatusPainter.TransitionComponent.BATTERY_NUMBER ||
@@ -2460,13 +2456,13 @@ internal object CcTransitionOwner {
 
         private fun mobileTargetBars(
             witness: TargetWitness,
+            sample: ParticipantVisualSnapshot.Snapshot? =
+                ParticipantVisualSnapshot.resolveView(
+                    witness.opticalView ?: witness.slotView,
+                ),
         ): List<StatusPainter.TransitionNormalizedBounds>? {
-            val visualView = witness.opticalView ?: witness.slotView
-            val snapshot =
-                ParticipantVisualSnapshot.resolveView(visualView)
-                    ?: return null
-            return snapshot
-                .fourVerticalBarsWithinEnvelope()
+            return sample
+                ?.fourVerticalBarsWithinEnvelope()
                 ?.map { bar ->
                     StatusPainter.TransitionNormalizedBounds(
                         left = bar.left,
