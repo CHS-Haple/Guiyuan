@@ -80,7 +80,7 @@ class NetworkSuppressionPolicyTest {
             activeBoundRoots = activeBoundRoots,
             visibleRoots = visibleRoots,
             activeSubscriptionIds = activeSubscriptionIds,
-            activeSubscriptionAuthority = "subscription-manager",
+            activeSubsAuthoritative = true,
             presentationRootSubscriptionId = 4,
             effectiveDataSubscriptionId = 4,
             networkTypeSubscriptionId = 4,
