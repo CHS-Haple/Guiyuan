@@ -81,7 +81,7 @@ Preparation and acceptance should be incremental:
    1.0 canvas unit lower than accepted B982. Remaining pre-runtime scenarios
    include theme variants. Unknown signal is a runtime anomaly, not a
    Preview Sandbox option: an unknown SIM row stays dim without claiming a
-   real 0-bar reading; unavailable or unbound sources still fail native.
+   real 0-bar reading; unavailable or unbound sources still invalidate dual rows.
    Preview state must never become live SystemUI state. Preserve saved enum
    ordinals and the existing single-SIM behavior.
 6. **Evidence required before enabling.** Cover data-SIM swap while connected,
