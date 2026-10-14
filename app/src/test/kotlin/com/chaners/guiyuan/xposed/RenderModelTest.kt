@@ -954,6 +954,14 @@ class RenderModelTest {
         assertEquals(DualMobileLevels(4, 2), dual?.dualMobileLevels)
         assertEquals(3, dual?.effectiveDataSubscriptionId)
 
+        val unknownTransport = RenderModel.from(
+            state,
+            wrong.copy(connectivity = SysUiConnectivitySource.State.Unknown),
+            3,
+            dualSignalEnabled = true,
+        )
+        assertTrue(unknownTransport?.centerIndicator is CenterIndicator.Empty)
+
         val correct = RenderModel.from(state, native, 3, dualSignalEnabled = true)
         assertEquals("5G", (correct?.centerIndicator as? CenterIndicator.MobileType)?.label)
 
