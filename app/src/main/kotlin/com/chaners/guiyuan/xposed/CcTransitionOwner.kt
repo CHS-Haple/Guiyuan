@@ -541,14 +541,61 @@ internal object CcTransitionOwner {
                     }
                 }
             val model = currentSnapshot.model
-            val specs =
+            val baseSpecs =
                 painter.transitionComponentSpecs(
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
                     visual = currentSnapshot.visual,
                 )
-            if (specs.isEmpty()) return
+            if (baseSpecs.isEmpty()) return
+            val dualRowWitnesses =
+                baseSpecs.firstOrNull {
+                    it.component == StatusPainter.TransitionComponent.MOBILE
+                }?.let { mobileSpec ->
+                    val presentation = PresentationStore.snapshot().mobilePresentation
+                    if (model.dualMobileLevels == null || presentation == null) {
+                        null
+                    } else {
+                        val native = resolveDualMobileTargets(mobileSpec, model)
+                        val order = CcTransitionPolicy.dualRootRowIndices(
+                            mode = presentation.mode,
+                            slots = presentation.slotSubscriptionIds,
+                            rootSubIds = native?.map { it.subscriptionId }.orEmpty(),
+                        )
+                        if (order == null || native == null) {
+                            null
+                        } else {
+                            val rows =
+                                painter.dualMobileRowSpecs(mobileSpec, currentSnapshot.visual)
+                            val witnesses = order.map { native[it] }
+                            if (rows.size != 2 || !rows.zip(witnesses).all { (spec, target) ->
+                                    mobileTargetBars(target)?.size == 4 &&
+                                        CcTransitionPolicy.componentGeometry(
+                                            parentGeometry = sourceParentGeometry,
+                                            parentWidth = sourceWidth,
+                                            parentHeight = sourceHeight,
+                                            bounds = spec.sourceBounds,
+                                        )?.let { rowSource ->
+                                            resolveTargetGeometry(
+                                                witness = target,
+                                                root = rootView,
+                                                sourceGeometry = rowSource,
+                                                targetOpticalBounds = spec.targetOpticalBounds,
+                                            )
+                                        } != null
+                                }
+                            ) null else witnesses
+                        }
+                    }
+                }
+            val specs =
+                if (dualRowWitnesses == null) baseSpecs
+                else baseSpecs.flatMap { spec ->
+                    if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                        painter.dualMobileRowSpecs(spec, currentSnapshot.visual)
+                    } else listOf(spec)
+                }
 
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
@@ -720,19 +767,35 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    resolveSpecTarget(
-                        spec = spec,
-                        model = model,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
+                    if (spec.mobileRow != null) {
+                        dualRowWitnesses?.getOrNull(spec.mobileRow)
+                    } else {
+                        resolveSpecTarget(
+                            spec = spec,
+                            model = model,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    }
                 val targetGeometry =
-                    witness?.let { target ->
-                        resolveTargetGeometry(
-                            witness = target,
+                    if (model.dualMobileLevels != null &&
+                        spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                        spec.mobileRow == null
+                    ) {
+                        resolveDualMobileTargetGeometry(
+                            spec = spec,
+                            model = model,
                             root = rootView,
                             sourceGeometry = sourceGeometry,
-                            targetOpticalBounds = spec.targetOpticalBounds,
                         )
+                    } else {
+                        witness?.let { target ->
+                            resolveTargetGeometry(
+                                witness = target,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                                targetOpticalBounds = spec.targetOpticalBounds,
+                            )
+                        }
                     }
                 val nativeTypeMatch =
                     if (
@@ -983,6 +1046,7 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
+                    mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
                             spec.component ==
@@ -1025,6 +1089,7 @@ internal object CcTransitionOwner {
                 }
             if (
                 mobileSpec != null &&
+                model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 drawAdditionalMobileLatent(
@@ -1735,6 +1800,7 @@ internal object CcTransitionOwner {
                     width = source.width,
                     height = source.height,
                     model = currentSnapshot.model,
+                    visual = currentSnapshot.visual,
                 )
             if (specs.isEmpty()) return null
 
@@ -1800,6 +1866,25 @@ internal object CcTransitionOwner {
                 specs.firstOrNull { spec ->
                     spec.component == StatusPainter.TransitionComponent.MOBILE
                 }
+            if (mobileSpec != null && currentSnapshot.model.dualMobileLevels != null) {
+                val targets = resolveDualMobileTargets(mobileSpec, currentSnapshot.model)
+                if (targets != null) {
+                    val targetEdges = targets.map { witness ->
+                        val window = IntArray(2)
+                        witness.slotView.getLocationInWindow(window)
+                        logicalTargetX(window[0].toFloat()) to
+                            logicalTargetX((window[0] + witness.slotView.width).toFloat())
+                    }
+                    val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
+                    val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
+                    result += CcTransitionPolicy.ReservationSpan(
+                        sourceLeft = min(sourceA, sourceB),
+                        sourceRight = maxOf(sourceA, sourceB),
+                        targetLeft = targetEdges.minOf { edge -> min(edge.first, edge.second) },
+                        targetRight = targetEdges.maxOf { edge -> maxOf(edge.first, edge.second) },
+                    )
+                }
+            }
             if (
                 mobileSpec != null &&
                 currentSnapshot.model.dualMobileLevels == null &&
@@ -1887,6 +1972,68 @@ internal object CcTransitionOwner {
             // but it never becomes geometry authority. Projected endpoints stay in
             // absolute root space.
             return result.takeIf { it.isNotEmpty() }
+        }
+
+        // A dual source is one visual group until native slot ownership is proven.
+        private fun resolveDualMobileTargets(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+        ): List<TargetWitness>? {
+            val target = spec.target as? StatusPainter.TransitionTarget.Slots ?: return null
+            val presentation = PresentationStore.snapshot().mobilePresentation ?: return null
+            val platformIds = presentation.platformActiveSubscriptionIds ?: return null
+            if (model.dualMobileLevels == null ||
+                platformIds != presentation.activeSubscriptionIds.toSet()
+            ) return null
+
+            val visibleRoots = target.preferredSlots
+                .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                .filter { view -> view.visibility == View.VISIBLE && isUsableSlotView(view) }
+                .distinct()
+            if (visibleRoots.size !in 1..2) return null
+
+            val primary = resolveTarget(
+                target = target,
+                preferredMobileSubId = model.effectiveDataSubscriptionId.takeIf { it >= 0 },
+            ) ?: return null
+            val witnesses = listOf(primary) + resolveFrozenAdditionalMobileTargets(primary)
+            if (witnesses.size != visibleRoots.size ||
+                witnesses.map { it.slotView }.toSet() != visibleRoots.toSet() ||
+                witnesses.any { it.opticalView?.let(::isReliableSemanticTarget) != true }
+            ) return null
+
+            val aggregateVisual = witnesses.singleOrNull()?.opticalView?.let { optical ->
+                ParticipantVisualSnapshot.resolveView(optical)
+                    ?.dualMobileRowsWithinEnvelope() != null
+            } == true
+            val mode = CcTransitionPolicy.dualMobileTarget(
+                activeSubIds = platformIds,
+                targetSubIds = witnesses.map { it.subscriptionId },
+                aggregateProven =
+                    aggregateVisual ||
+                        (witnesses.size == 1 &&
+                            presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED),
+            )
+            if (mode == CcTransitionPolicy.DualMobileTarget.NONE) return null
+            return witnesses
+        }
+
+        private fun resolveDualMobileTargetGeometry(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+            root: View,
+            sourceGeometry: FloatArray,
+        ): FloatArray? {
+            val witnesses = resolveDualMobileTargets(spec, model) ?: return null
+            val targets = witnesses.map { witness ->
+                resolveTargetGeometry(
+                    witness = witness,
+                    root = root,
+                    sourceGeometry = sourceGeometry,
+                    targetOpticalBounds = spec.targetOpticalBounds,
+                ) ?: return null
+            }
+            return CcTransitionPolicy.dualMobileGroupGeometry(targets)
         }
 
         private fun resolveSpecTarget(

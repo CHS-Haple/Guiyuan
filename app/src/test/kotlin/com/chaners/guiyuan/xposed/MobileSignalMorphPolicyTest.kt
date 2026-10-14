@@ -74,6 +74,34 @@ class MobileSignalMorphPolicyTest {
     }
 
     @Test
+    fun bothSimRowsReuseTheSingleDotAnchorPathInEitherDirection() {
+        // These distinct row geometries still follow the same four movement stages.
+        val rows = listOf(
+            listOf(40f, 10f, 100f, 130f),
+            listOf(62f, 28f, 205f, 236f),
+        )
+        val phases = listOf(0f, 0.30f, 0.57f, 0.72f)
+        for (row in rows) {
+            val (source, sourceAnchor, targetAnchor, target) = row
+            val expected = listOf(source, sourceAnchor, targetAnchor, target)
+            val actual = phases.map { progress ->
+                morph.dotCoordinate(
+                    source, sourceAnchor, targetAnchor, target,
+                    morph.trimProgress(progress),
+                    morph.moveProgress(progress),
+                    morph.rowProgress(progress),
+                )
+            }
+            expected.zip(actual).forEach { (value, position) ->
+                assertEquals(value, position, 0.0001f)
+            }
+            assertEquals(expected.reversed(), actual.reversed())
+        }
+        assertEquals(0f, morph.barProgress(0.72f), 0f)
+        assertEquals(1f, morph.barProgress(1f), 0f)
+    }
+
+    @Test
     fun oneDotMovesThenExpandsBeforeBarsGrow() {
         assertEquals(100f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 0f), 0f)
         assertEquals(130f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 1f), 0f)

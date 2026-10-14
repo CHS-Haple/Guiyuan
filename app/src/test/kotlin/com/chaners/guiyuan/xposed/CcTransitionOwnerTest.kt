@@ -8,6 +8,111 @@ import org.junit.Test
 
 class CcTransitionOwnerTest {
     @Test
+    fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
+        val policy = CcTransitionPolicy
+        val active = setOf(1, 4)
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.AGGREGATED,
+            policy.dualMobileTarget(active, listOf(null), aggregateProven = true),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.AGGREGATED,
+            policy.dualMobileTarget(active, listOf(4), aggregateProven = true),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(active, listOf(7), aggregateProven = true),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(active, listOf(1), aggregateProven = false),
+        )
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.SEPARATE,
+            policy.dualMobileTarget(active, listOf(4, 1), aggregateProven = false),
+        )
+        listOf(listOf(1, 1), listOf(1, null), listOf(1, 7), emptyList(), listOf(1, 4, 7))
+            .forEach { ids ->
+                assertEquals(
+                    CcTransitionPolicy.DualMobileTarget.NONE,
+                    policy.dualMobileTarget(active, ids, aggregateProven = true),
+                )
+            }
+        assertEquals(
+            CcTransitionPolicy.DualMobileTarget.NONE,
+            policy.dualMobileTarget(setOf(1), listOf(null), aggregateProven = true),
+        )
+    }
+
+    @Test
+    fun physicalSimSlotIdentityMapsTwoNativeRootsRegardlessOfViewOrder() {
+        val slots = mapOf(0 to 4, 1 to 1)
+        val separate = NativePresentationResolver.Mode.DUAL_SEPARATE
+        assertEquals(
+            listOf(1, 0),
+            CcTransitionPolicy.dualRootRowIndices(separate, slots, listOf(1, 4)),
+        )
+        assertEquals(
+            listOf(0, 1),
+            CcTransitionPolicy.dualRootRowIndices(separate, slots, listOf(4, 1)),
+        )
+        for (ids in listOf(listOf(1, 1), listOf(1, null), listOf(1, 7))) {
+            assertEquals(
+                null,
+                CcTransitionPolicy.dualRootRowIndices(separate, slots, ids),
+            )
+        }
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualRootRowIndices(
+                NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                slots,
+                listOf(1, 4),
+            ),
+        )
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualRootRowIndices(
+                separate,
+                mapOf(0 to 4),
+                listOf(1, 4),
+            ),
+        )
+    }
+
+    @Test
+    fun dualNativeGroupUsesBothTargetsWithoutGuessingRows() {
+        val first = floatArrayOf(10f, 20f, 8f, 0f, 0f, 6f)
+        val second = floatArrayOf(30f, 20f, 8f, 0f, 0f, 6f)
+        val merged = CcTransitionPolicy.dualMobileGroupGeometry(listOf(first, second))
+        val bounds = requireNotNull(merged)
+        listOf(20f, 20f, 28f, 0f, 0f, 6f).forEachIndexed { index, value ->
+            assertEquals(value, bounds[index], 0.0001f)
+        }
+        assertTrue(CcTransitionPolicy.dualMobileGroupGeometry(listOf(first))!!.contentEquals(first))
+        assertEquals(null, CcTransitionPolicy.dualMobileGroupGeometry(listOf(first, second, first)))
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualMobileGroupGeometry(
+                listOf(first, second.copyOf().also { it[3] = 6f }),
+            ),
+        )
+        val mirrored = CcTransitionPolicy.dualMobileGroupGeometry(
+            listOf(
+                first.copyOf().also { it[2] = -8f },
+                second.copyOf().also { it[2] = -8f },
+            ),
+        )
+        assertEquals(-28f, requireNotNull(mirrored)[2], 0.0001f)
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualMobileGroupGeometry(
+                listOf(first, floatArrayOf(Float.NaN, 2f, 8f, 0f, 0f, 6f)),
+            ),
+        )
+    }
+
+    @Test
     fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
         val source =
             CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
