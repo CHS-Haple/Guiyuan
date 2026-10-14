@@ -994,9 +994,10 @@ class RenderModelTest {
         assertEquals(-1, optIn?.effectiveDataSubscriptionId)
         assertTrue(optIn?.centerIndicator is CenterIndicator.Empty)
 
-        // The already-shipped single-SIM path must not change.
+        // The shipped single-SIM path retains native's selected data sub (3).
         val legacy = RenderModel.from(state, partial, 14)
-        assertEquals(4, legacy?.mobileLevel)
+        assertEquals(1, legacy?.mobileLevel)
+        assertEquals(3, legacy?.effectiveDataSubscriptionId)
 
         // Only after the platform reports a truly removed SIM may opt-in use
         // the one surviving bound subscription as single-card fallback.
