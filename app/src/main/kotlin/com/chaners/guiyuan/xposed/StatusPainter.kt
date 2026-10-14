@@ -3301,7 +3301,7 @@ internal class StatusPainter(
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     fill(
                         color = tint,
-                        alpha = if (level > index) 255 else 48,
+                        alpha = if (level != null && level > index) 255 else 48,
                         opacity = opacity,
                     )
                     val x = geometry.dualDotX(index)
