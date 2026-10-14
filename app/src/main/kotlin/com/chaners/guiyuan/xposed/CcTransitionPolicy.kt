@@ -139,6 +139,29 @@ internal object CcTransitionPolicy {
             (targetSubId == dataSubId || verifiedAggregateRoot) &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
 
+    // The visible aggregate root has presentation ownership, not data-SIM ownership.
+    fun verifiedAggregateTypeRoot(
+        presentation: NativePresentationResolver.Snapshot?,
+        dataSubId: Int,
+        targetSubId: Int?,
+        soleNativeRoot: Boolean,
+    ): Boolean {
+        val state = presentation ?: return false
+        if (state.mode != NativePresentationResolver.Mode.DUAL_AGGREGATED ||
+            !state.activeSubsAuthoritative || state.visibleRoots != 1 ||
+            !soleNativeRoot
+        ) return false
+
+        val active = state.activeSubscriptionIds.toSet()
+        return active.size == 2 &&
+            active == state.platformActiveSubscriptionIds &&
+            dataSubId in active &&
+            targetSubId in active &&
+            state.effectiveDataSubscriptionId == dataSubId &&
+            state.networkTypeSubscriptionId == dataSubId &&
+            state.presentationRootSubscriptionId == targetSubId
+    }
+
     // Order optical roots by the platform's physical SIM slots, never by View order.
     fun dualRootRowIndices(
         mode: NativePresentationResolver.Mode,
