@@ -45,7 +45,7 @@ internal fun PreviewSummary(
             PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
             PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
             PreviewCenterSource.MOBILE ->
-                when (state.mobileNetwork) {
+                when (state.dataMobileNetwork) {
                     PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
                     PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
                     PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
@@ -60,7 +60,7 @@ internal fun PreviewSummary(
     val networkSignal =
         when (center) {
             PreviewCenterSource.WIFI -> signalValueText(state.wifiSignalLevel)
-            PreviewCenterSource.MOBILE -> signalValueText(state.mobileSignalLevel)
+            PreviewCenterSource.MOBILE -> signalValueText(state.dataSignalLevel)
             else -> null
         }
     val networkIcon =
@@ -77,7 +77,7 @@ internal fun PreviewSummary(
                 SummaryDetail(
                     icon = R.drawable.ic_material_symbol_signal_cellular_alt,
                     value = stringResource(R.string.home_preview_mobile_signal_title),
-                    alongside = signalValueText(state.mobileSignalLevel),
+                    alongside = signalValueText(state.dataSignalLevel),
                 )
             } else {
                 null
