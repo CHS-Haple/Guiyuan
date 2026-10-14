@@ -108,6 +108,10 @@ internal object CcTransitionOwner {
         current?.batteryNumberProbe()
 
     @Synchronized
+    fun latestMobileTargetProbeDiagnostic(): String? =
+        current?.mobileTargetProbe()
+
+    @Synchronized
     fun detach(source: String = "detach") {
         current?.stop(source)
         current = null
@@ -334,6 +338,55 @@ internal object CcTransitionOwner {
 
         fun batteryNumberProbe(): String =
             resolveBatteryNumberProbe(finalBattery)
+
+        fun mobileTargetProbe(): String? {
+            val targets =
+                listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT).flatMap { slot ->
+                    slotViews(finalStatusIcons, slot).map { slot to it }
+                }.filter { (_, root) ->
+                    root.visibility == View.VISIBLE && isUsableSlotView(root)
+                }
+            if (targets.isEmpty()) return null
+
+            return "targets=${targets.size};" +
+                targets.take(4).joinToString(";") { (slot, root) ->
+                    val signal =
+                        NativeParticipantAccess.findResourceView(
+                            root = root,
+                            entryName = "mobile_signal_container",
+                        ) as? ViewGroup
+                    val children =
+                        if (signal == null) {
+                            "missing"
+                        } else {
+                            (0 until min(signal.childCount, 12)).joinToString(",") { index ->
+                                val child = signal.getChildAt(index)
+                                val visual =
+                                    if (child.isShown && child.width > 0 && child.height > 0) {
+                                        runCatching { ParticipantVisualSnapshot.resolveView(child) }
+                                            .getOrElse { error ->
+                                                if (error is VirtualMachineError || error is ThreadDeath) {
+                                                    throw error
+                                                }
+                                                null
+                                            }
+                                    } else {
+                                        null
+                                    }
+                                val rows = visual?.dualMobileRowsWithinEnvelope()
+                                val name =
+                                    NativeParticipantAccess.resourceEntryName(child)
+                                        ?: child.javaClass.simpleName
+                                "$name:${child.visibility}:${child.width}x${child.height}:" +
+                                    "${visual?.topology ?: "unknown"}:" +
+                                    "${visual?.components?.size ?: 0}:" +
+                                    "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
+                            }
+                        }
+                    "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
+                        "size=${root.width}x${root.height}:signal=[$children]"
+                }
+        }
 
         fun start() {
             if (started) return

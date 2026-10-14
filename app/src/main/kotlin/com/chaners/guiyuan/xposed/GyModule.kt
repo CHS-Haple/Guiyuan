@@ -87,6 +87,7 @@ class GyModule : XposedModule() {
     // CC can keep this lease while a Keyguard readiness edge is being handed off.
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
+    private var lastMobileTargetProbeSummary: String? = null
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -962,6 +963,24 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
+        if (update.visible == false) lastMobileTargetProbeSummary = null
+        if (
+            detailedDiagnosticsEnabled &&
+            update.fraction != null &&
+            lastMobileTargetProbeSummary == null
+        ) {
+            CcTransitionOwner.latestMobileTargetProbeDiagnostic()?.let { summary ->
+                lastMobileTargetProbeSummary = summary
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "target.probe",
+                    component = "mobileTarget",
+                    state = "observed",
+                    "surface" to "native-cc-final",
+                    "summary" to summary,
+                )
+            }
+        }
         if (detailedDiagnosticsEnabled && update.appearance != null) {
             val keyguard =
                 (SysUiKeyguardHostResolver.current()
@@ -1705,6 +1724,8 @@ class GyModule : XposedModule() {
                     "visibleRoots" to presentation.visibleRoots,
                     "activeSubAuthority" to presentation.activeSubscriptionAuthority,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
+                    "simSlots" to presentation.slotSubscriptionIds
+                        .toSortedMap().entries.joinToString(",") { (slot, id) -> "$slot:$id" },
                     "presentationRootSubId" to presentation.presentationRootSubscriptionId,
                     "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
                     "networkTypeSubId" to presentation.networkTypeSubscriptionId,
@@ -4261,6 +4282,7 @@ class GyModule : XposedModule() {
         diagnosticSequence.set(0L)
         renderTraceSequence.set(0L)
         lastBatteryNumberProbeSummary = null
+        lastMobileTargetProbeSummary = null
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
