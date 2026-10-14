@@ -88,6 +88,7 @@ class GyModule : XposedModule() {
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
     private var lastMobileTargetProbeSummary: String? = null
+    private var ccWifiGeometryStage = -1
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -963,7 +964,34 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
-        if (update.visible == false) lastMobileTargetProbeSummary = null
+        if (update.visible == false) {
+            lastMobileTargetProbeSummary = null
+            ccWifiGeometryStage = -1
+        }
+        if (detailedDiagnosticsEnabled && update.fraction != null) {
+            val fraction = update.fraction.coerceIn(0f, 1f)
+            val stage = when {
+                fraction >= 1f -> 5
+                fraction >= 0.98f -> 4
+                fraction >= 0.85f -> 3
+                fraction >= 0.6f -> 2
+                fraction >= 0.3f -> 1
+                else -> 0
+            }
+            if (stage > ccWifiGeometryStage) {
+                CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
+                    ccWifiGeometryStage = stage
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "transition.geometry",
+                        component = "ccWifi",
+                        state = "sampled",
+                        "sample" to stage,
+                        "snapshot" to snapshot,
+                    )
+                }
+            }
+        }
         if (
             detailedDiagnosticsEnabled &&
             update.fraction != null &&
@@ -4298,6 +4326,7 @@ class GyModule : XposedModule() {
         renderTraceSequence.set(0L)
         lastBatteryNumberProbeSummary = null
         lastMobileTargetProbeSummary = null
+        ccWifiGeometryStage = -1
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
