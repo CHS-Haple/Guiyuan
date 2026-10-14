@@ -251,7 +251,8 @@ internal object SysUiCcSource {
                                     callback = onAfterNativeExpansion?.let { observer ->
                                         { observer(fraction) }
                                     },
-                                    onFailure = onRuntimeFailure,
+                                    // A diagnostic read must never trip CC runtime fallback.
+                                    onFailure = null,
                                 )
                             }
                             result
