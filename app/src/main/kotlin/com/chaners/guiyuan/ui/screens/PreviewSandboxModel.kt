@@ -281,7 +281,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
             ),
         mobileLevel = mobileLevel,
         dualMobileLevels = dualLevels,
-        mobileUnavailableMark = airplaneMode || !simPresent,
+        mobileUnavailableMark = airplaneMode || !hasSim,
         effectiveDataSubscriptionId = -1,
         batterySemanticState = semanticState,
         batterySystemSemanticColor =
