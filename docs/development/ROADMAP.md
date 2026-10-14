@@ -29,79 +29,17 @@ Likely areas:
 
 Do not add controls merely because a renderer parameter exists.
 
-## Optional dual-SIM signal presentation (in progress)
+## Optional dual-SIM signal presentation (integrated, compatibility ongoing)
 
-**Product intent:** Preserve the current four-dot **single-SIM presentation as the default
-and unchanged baseline**. The first approved *visual prototype* is now available only
-inside Preview Sandbox (B980, #467): four dots each for physical SIM1 inner
-and SIM2 outer, with uniform corresponding-pair spacing and weight-aware
-optical geometry. These positions
-never swap when the default data SIM changes; the center network-type label
-follows the default data SIM only when that subscription's native type is known.
-Read-only active-subscription slot mapping and a cautious eight-component native-shape
-classifier were also integrated as groundwork. B992 later added an opt-in
-live dual-SIM candidate on a feature branch and the maintainer found its
-functionality normal on device; visual adjustments remain under review.
-This does not authorize taking over native final Control Center.
-The user opt-in remains separate from sandbox saved preview state.
+The default is still the accepted single four-dot presentation. [#502](https://github.com/CHS-Haple/Guiyuan/pull/502) integrated an opt-in eight-dot live mode (Build 993): physical SIM1 upper/SIM2 lower, provided **two authoritative active subscriptions** and complete slot mapping are available. The center network-type label follows the verified data SIM; native Control Center remains SystemUI-owned. Missing/ambiguous identity or unavailable signal data uses existing single/native-safe behavior without silently changing the user's opt-in preference. Single/dual visual configurations use separate saved profiles; Preview Sandbox data never becomes SystemUI input.
 
-Preparation and acceptance should be incremental:
+Remaining work is evidence-led, not speculative:
+1. Verify integration on other SystemUI topologies (especially third-party composite dual-row signal icons) before any per-row exact CC morph. A composite View's row order or graphical bar/dot pattern does not prove `subscriptionId`. Continue to prefer whole-group unmatched handoff/fade over inventing endpoints.
+2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown/unavailable strength, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC transitions. Keep the current device acceptance distinct from these untested cases.
+3. Add optional alternative eight-dot styles only after concrete designs, capability checks and a maintainable single-choice selector exist. Do not add speculative flags/hooks or parallel observers.
+4. Revisit the separate single/dual **settings-bank** selection only if real device behavior demonstrates an unwanted visual shift during transient single-SIM fallback. The chosen dual preference must persist through temporary SIM loss.
 
-1. **Separate identities before appearances.** The existing subscription-keyed
-   `StatusStateStore.mobile`, `SysUiDefaultDataSubSource`, and
-   `NativePresentationResolver` already provide relevant sources. Maintain
-   distinct facts for *active subscription identity*, *default data subscription*,
-   *per-subscription signal availability*, *native aggregation mode*, and
-   *display selection*. The optional dual input now refuses to borrow another
-   SIM's signal or an aggregate root's identity when data-SIM authority is
-   unknown. The shipped single-SIM fallback is unchanged; future live dual
-   selection still needs focused SystemUI verification.
-2. **Opt-in configuration, only when designs are ready.** Use one stable,
-   versioned persisted choice with `single` as the fallback/default; only add
-   selectable dual-style values after the actual layouts and capability checks
-   exist. Prefer an MIUIX single/dual presentation selection plus a conditional
-   dual-style selector; do not add a speculative switch/flag matrix. Existing
-   single-SIM settings, saved keys, and render path must not change.
-3. **Presentation-only variants.** Reuse the event-driven per-subscription
-   state; derive a small immutable display input with explicit data-SIM/other-SIM
-   identity, known/unavailable/unknown signal states and SIM removal. Keep style
-   selection separate from signal observation and from network-type authority.
-   No duplicated SystemUI hooks, timers, telephony observers or global state
-   spoofing. Treat one SIM, airplane mode, hot-swap, eSIM changes and uncertain
-   native binding as defined fallback cases.
-4. **Bounded geometry and transitions.** The original four-dot
-   dot-to-native morph remains a single-SIM contract. Optional eight-dot source
-   bounds and whole-group no-target fade now share the steady dual geometry
-   without claiming a per-SIM native endpoint or reserving space for one.
-   Verify width, AOD/Keyguard and QS_FAKE ownership before enabling each live
-   style. If the native target does not prove per-card correspondence, retain
-   the bounded group fade or fall back to single/native; never invent target
-   geometry or modify the final Control Center.
-5. **Extend the accepted sandbox prototype only when needed.** B984 introduced
-   independent SIM1/SIM2 strengths, network types, selected data SIM, and
-   both/SIM1-only/SIM2-only/no-SIM insertion simulation. B987 groups these
-   controls and reuses the original-path stacked SIM icon and two-line summary.
-   The eight-dot group remains 1.0 canvas unit lower than B982. Independent
-   light/dark theme simulation already restores the theme on route exit.
-   Unknown signal is a runtime anomaly, not a Preview Sandbox option: an
-   unknown SIM row stays dim without claiming a real 0-bar reading; missing
-   or unavailable signal sources still invalidate dual rows.
-   Preview state must never become live SystemUI state. Preserve saved enum
-   ordinals and the existing single-SIM behavior.
-6. **Evidence required before enabling.** Cover data-SIM swap while connected,
-   two active subscriptions with different strength/network types, independent
-   versus aggregated native icons, mobile-data off with calls available, VPN,
-   Wi-Fi, airplane and restoration, one SIM removed or disabled, unknown signal,
-   SystemUI/Hot Reload and Home→QS_FAKE→native QS, Keyguard and AOD. Verify both
-   selected identity and drawn bars, not only screenshots. If safe native
-   presentation ownership cannot be established, revert the optional variant
-   to the existing single-SIM path (Fail native for uncertain host ownership).
-
-**Not yet approved for dev integration:** the opt-in dual-SIM runtime feature,
-extra native icon suppression, a catalog of untested styles or a dual-row
-CC transition.
-Observe actual SystemUI per-subscription targets and verify live data identity
-before enabling any of these. No abstractions for hypothetical future styles.
+Current native CC per-row identity is **not established**, and optional dual mode does not authorize mutation of the native final Control Center.
 
 ## Compatibility work
 
