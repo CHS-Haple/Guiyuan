@@ -26,6 +26,7 @@ import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -1713,6 +1714,8 @@ class GyModule : XposedModule() {
         if (changed != null || recoveryCompleted != null) {
             val presentationTrace = markPresentationCommitted(trace)
             if (detailedDiagnosticsEnabled && changed != null) {
+                val platformIds = presentation.platformActiveSubscriptionIds?.sorted()
+                val mobile = StatusStateStore.snapshot().mobile
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.resolve",
@@ -1724,6 +1727,17 @@ class GyModule : XposedModule() {
                     "visibleRoots" to presentation.visibleRoots,
                     "activeSubAuthority" to presentation.activeSubscriptionAuthority,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
+                    "platformSubIds" to platformIds?.joinToString(","),
+                    "platformSignals" to platformIds?.joinToString(",") { id ->
+                        val signal = mobile[id]?.signal
+                        val level = when (signal) {
+                            is SignalStrength.Level -> signal.value.toString()
+                            SignalStrength.Unknown -> "unknown"
+                            SignalStrength.Unavailable -> "unavailable"
+                            null -> "missing"
+                        }
+                        "$id:$level"
+                    },
                     "simSlots" to presentation.slotSubscriptionIds
                         .toSortedMap().entries.joinToString(",") { (slot, id) -> "$slot:$id" },
                     "presentationRootSubId" to presentation.presentationRootSubscriptionId,
