@@ -492,7 +492,10 @@ internal fun SharedPreferences.Editor.putVisualCfg(
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
     val layout = normalized.layout
-    return putString(
+    return putBoolean(
+        DUAL_SIGNAL_ENABLED_KEY,
+        normalized.dualSignal,
+    ).putString(
         visualModeKey(normalized.dualSignal, CONTENT_LAYOUT_KEY),
         layout.persistedValue,
     ).putBoolean(
