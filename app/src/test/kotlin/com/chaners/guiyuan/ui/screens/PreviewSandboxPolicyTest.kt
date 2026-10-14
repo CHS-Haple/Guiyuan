@@ -18,6 +18,37 @@ class PreviewSandboxPolicyTest {
 
 
     @Test
+    fun changingDualDataSimOnlyChangesCenterSourceNotPhysicalRows() {
+        val sim1Data = PreviewSandboxUiState(
+            networkMode = PreviewNetworkMode.MOBILE,
+            dualMobile = true,
+            mobileNetwork = PreviewMobileNetwork.FIVE_G,
+            sim2MobileNetwork = PreviewMobileNetwork.FOUR_G,
+            mobileSignalLevel = 4,
+            sim2SignalLevel = 1,
+        )
+        val sim2Data = sim1Data.copy(dataSim = PreviewDataSim.SIM2)
+
+        assertEquals(PreviewMobileNetwork.FIVE_G, sim1Data.dataMobileNetwork)
+        assertEquals(PreviewMobileNetwork.FOUR_G, sim2Data.dataMobileNetwork)
+        assertEquals(4, sim1Data.dataSignalLevel)
+        assertEquals(1, sim2Data.dataSignalLevel)
+        assertEquals(4, sim2Data.mobileSignalLevel)
+        assertEquals(1, sim2Data.sim2SignalLevel)
+        assertEquals(PreviewCenterSource.MOBILE, sim2Data.previewCenterSource())
+        assertEquals(
+            PreviewCenterSource.EMPTY,
+            sim2Data.copy(sim2MobileNetwork = PreviewMobileNetwork.NONE)
+                .previewCenterSource(),
+        )
+
+        val single = sim2Data.copy(dualMobile = false)
+        assertEquals(PreviewMobileNetwork.FIVE_G, single.dataMobileNetwork)
+        assertEquals(4, single.dataSignalLevel)
+        assertEquals(PreviewCenterSource.MOBILE, single.previewCenterSource())
+    }
+
+    @Test
     fun networkTabsKeepSavedIndicesAndShowNoneFirst() {
         assertEquals(0, PreviewNetworkMode.MOBILE.ordinal)
         assertEquals(1, PreviewNetworkMode.WIFI.ordinal)
