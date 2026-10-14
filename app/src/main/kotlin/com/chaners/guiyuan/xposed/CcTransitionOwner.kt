@@ -595,7 +595,9 @@ internal object CcTransitionOwner {
                 }
             // The aggregate has one optical endpoint; its rows have no verified SIM IDs.
             val aggregateTarget =
-                if (dualSpec == null || dualRowTargets != null) null
+                if (dualSpec == null || dualRowTargets != null ||
+                    model.mobileUnavailableMark
+                ) null
                 else resolveDualMobileTargets(dualSpec, model)
                     ?.singleOrNull()
                     ?.opticalView
