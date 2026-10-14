@@ -45,6 +45,42 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun physicalSimSlotIdentityMapsTwoNativeRootsRegardlessOfViewOrder() {
+        val slots = mapOf(0 to 4, 1 to 1)
+        val separate = NativePresentationResolver.Mode.DUAL_SEPARATE
+        assertEquals(
+            listOf(1, 0),
+            CcTransitionPolicy.dualRootRowIndices(separate, slots, listOf(1, 4)),
+        )
+        assertEquals(
+            listOf(0, 1),
+            CcTransitionPolicy.dualRootRowIndices(separate, slots, listOf(4, 1)),
+        )
+        for (ids in listOf(listOf(1, 1), listOf(1, null), listOf(1, 7))) {
+            assertEquals(
+                null,
+                CcTransitionPolicy.dualRootRowIndices(separate, slots, ids),
+            )
+        }
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualRootRowIndices(
+                NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                slots,
+                listOf(1, 4),
+            ),
+        )
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualRootRowIndices(
+                separate,
+                mapOf(0 to 4),
+                listOf(1, 4),
+            ),
+        )
+    }
+
+    @Test
     fun dualNativeGroupUsesBothTargetsWithoutGuessingRows() {
         val first = floatArrayOf(10f, 20f, 8f, 0f, 0f, 6f)
         val second = floatArrayOf(30f, 20f, 8f, 0f, 0f, 6f)

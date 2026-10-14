@@ -541,14 +541,61 @@ internal object CcTransitionOwner {
                     }
                 }
             val model = currentSnapshot.model
-            val specs =
+            val baseSpecs =
                 painter.transitionComponentSpecs(
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
                     visual = currentSnapshot.visual,
                 )
-            if (specs.isEmpty()) return
+            if (baseSpecs.isEmpty()) return
+            val dualRowWitnesses =
+                baseSpecs.firstOrNull {
+                    it.component == StatusPainter.TransitionComponent.MOBILE
+                }?.let { mobileSpec ->
+                    val presentation = PresentationStore.snapshot().mobilePresentation
+                    if (model.dualMobileLevels == null || presentation == null) {
+                        null
+                    } else {
+                        val native = resolveDualMobileTargets(mobileSpec, model)
+                        val order = CcTransitionPolicy.dualRootRowIndices(
+                            mode = presentation.mode,
+                            slots = presentation.slotSubscriptionIds,
+                            rootSubIds = native?.map { it.subscriptionId }.orEmpty(),
+                        )
+                        if (order == null || native == null) {
+                            null
+                        } else {
+                            val rows =
+                                painter.dualMobileRowSpecs(mobileSpec, currentSnapshot.visual)
+                            val witnesses = order.map { native[it] }
+                            if (rows.size != 2 || !rows.zip(witnesses).all { (spec, target) ->
+                                    mobileTargetBars(target)?.size == 4 &&
+                                        CcTransitionPolicy.componentGeometry(
+                                            parentGeometry = sourceParentGeometry,
+                                            parentWidth = sourceWidth,
+                                            parentHeight = sourceHeight,
+                                            bounds = spec.sourceBounds,
+                                        )?.let { rowSource ->
+                                            resolveTargetGeometry(
+                                                witness = target,
+                                                root = rootView,
+                                                sourceGeometry = rowSource,
+                                                targetOpticalBounds = spec.targetOpticalBounds,
+                                            )
+                                        } != null
+                                }
+                            ) null else witnesses
+                        }
+                    }
+                }
+            val specs =
+                if (dualRowWitnesses == null) baseSpecs
+                else baseSpecs.flatMap { spec ->
+                    if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                        painter.dualMobileRowSpecs(spec, currentSnapshot.visual)
+                    } else listOf(spec)
+                }
 
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
@@ -720,14 +767,19 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    resolveSpecTarget(
-                        spec = spec,
-                        model = model,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
+                    if (spec.mobileRow != null) {
+                        dualRowWitnesses?.getOrNull(spec.mobileRow)
+                    } else {
+                        resolveSpecTarget(
+                            spec = spec,
+                            model = model,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    }
                 val targetGeometry =
                     if (model.dualMobileLevels != null &&
-                        spec.component == StatusPainter.TransitionComponent.MOBILE
+                        spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                        spec.mobileRow == null
                     ) {
                         resolveDualMobileTargetGeometry(
                             spec = spec,
@@ -994,6 +1046,7 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
+                    mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
                             spec.component ==
@@ -1036,6 +1089,7 @@ internal object CcTransitionOwner {
                 }
             if (
                 mobileSpec != null &&
+                model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 drawAdditionalMobileLatent(

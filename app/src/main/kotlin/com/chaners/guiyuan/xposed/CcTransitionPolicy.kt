@@ -102,6 +102,21 @@ internal object CcTransitionPolicy {
             targetSubId == dataSubId &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
 
+    // Order optical roots by the platform's physical SIM slots, never by View order.
+    fun dualRootRowIndices(
+        mode: NativePresentationResolver.Mode,
+        slots: Map<Int, Int>,
+        rootSubIds: List<Int?>,
+    ): List<Int>? {
+        if (mode != NativePresentationResolver.Mode.DUAL_SEPARATE ||
+            slots.size != 2 || rootSubIds.size != 2
+        ) return null
+        val first = slots[0] ?: return null
+        val second = slots[1] ?: return null
+        if (first == second || rootSubIds.toSet() != setOf(first, second)) return null
+        return listOf(rootSubIds.indexOf(first), rootSubIds.indexOf(second))
+    }
+
     fun mobileTypeMatches(
         sourceLabel: String,
         sourceEnhanced: Boolean,
