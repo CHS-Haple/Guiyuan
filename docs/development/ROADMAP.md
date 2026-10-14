@@ -79,7 +79,9 @@ Preparation and acceptance should be incremental:
    independent SIM1/SIM2 strength and network types, data-SIM selection, and
    both/SIM1-only/SIM2-only/no-SIM insertion simulation. Its eight-dot group is
    1.0 canvas unit lower than accepted B982. Remaining pre-runtime scenarios
-   include unknown (not zero-strength) signal input and theme variants.
+   include theme variants. Unknown signal is a runtime anomaly, not a
+   Preview Sandbox option: an unknown SIM row stays dim without claiming a
+   real 0-bar reading; unavailable or unbound sources still fail native.
    Preview state must never become live SystemUI state. Preserve saved enum
    ordinals and the existing single-SIM behavior.
 6. **Evidence required before enabling.** Cover data-SIM swap while connected,
