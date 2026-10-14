@@ -248,6 +248,7 @@ internal class StatusPainter(
         mobileTargetWidthRatio: Float? = null,
         mobileTargetHeightRatio: Float? = null,
         mobileTargetBars: List<TransitionNormalizedBounds>? = null,
+        mobileTargetDualRows: List<List<TransitionNormalizedBounds>>? = null,
         mobileRow: Int? = null,
         batteryNumberTargetWeight: Int? = null,
         batteryNumberTargetStyle: TransitionTextStyle? = null,
@@ -380,6 +381,7 @@ internal class StatusPainter(
                         targetWidthRatio = mobileTargetWidthRatio,
                         targetHeightRatio = mobileTargetHeightRatio,
                         targetBars = mobileTargetBars,
+                        dualGroupRows = mobileTargetDualRows,
                         row = mobileRow,
                     )
                 } else {
@@ -3148,6 +3150,7 @@ internal class StatusPainter(
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>?,
+        dualGroupRows: List<List<TransitionNormalizedBounds>>?,
         row: Int?,
     ) {
         val layout =
@@ -3166,6 +3169,35 @@ internal class StatusPainter(
         val spread = MobileSignalMorphPolicy.rowProgress(phase)
         val barProgress = MobileSignalMorphPolicy.barProgress(phase)
         val diameter = radius * 2f
+        if (row == null && model.dualMobileLevels != null &&
+            dualGroupRows?.size == 2 &&
+            dualGroupRows.all { targets -> targets.size == MOBILE_DOT_COUNT }
+        ) {
+            val groupBounds = dualMobileTransitionBounds(geometry)
+            dualGroupRows.forEachIndexed { index, targets ->
+                val rowLayout =
+                    resolveDualMobileSignalTransitionLayout(geometry, index)
+                        .copy(bounds = groupBounds)
+                drawMobileSignalTransitionToExactBars(
+                    canvas = canvas,
+                    level =
+                        if (index == 0) model.dualMobileLevels.sim1
+                        else model.dualMobileLevels.sim2,
+                    tint = tint,
+                    opacity = opacity,
+                    radius = geometry.dualMobileDotRadius,
+                    layout = rowLayout,
+                    trim = trim,
+                    move = move,
+                    spread = spread,
+                    barProgress = barProgress,
+                    targetWidthRatio = targetWidthRatio,
+                    targetHeightRatio = targetHeightRatio,
+                    targetBars = targets.sortedBy { rect -> (rect.left + rect.right) / 2f },
+                )
+            }
+            return
+        }
         val exactBars =
             targetBars
                 ?.takeIf { bars -> bars.size == MOBILE_DOT_COUNT }
