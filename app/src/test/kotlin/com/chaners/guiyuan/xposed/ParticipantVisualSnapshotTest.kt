@@ -30,6 +30,31 @@ class ParticipantVisualSnapshotTest {
     }
 
     @Test
+    fun aggregateVisualRowsUseSharedOpticalEnvelopeRatherThanSimSlotBounds() {
+        val xs = listOf(0.28f, 0.42f, 0.56f, 0.70f)
+        val top = xs.mapIndexed { index, x ->
+            ParticipantVisualSnapshot.NormalizedRect(
+                x, 0.43f - index * 0.035f, x + 0.045f, 0.50f,
+            )
+        }
+        val bottom = xs.map { x ->
+            ParticipantVisualSnapshot.NormalizedRect(x, 0.68f, x + 0.045f, 0.725f)
+        }
+        val optical = ParticipantVisualSnapshot.NormalizedRect(0.25f, 0.20f, 0.80f, 0.80f)
+        val rows = ParticipantVisualSnapshot.Snapshot(
+            envelope = optical,
+            components = top + bottom,
+            topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+        ).dualMobileRowsWithinEnvelope()
+        requireNotNull(rows)
+        assertEquals(ParticipantVisualSnapshot.RowShape.BARS, rows.topShape)
+        assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, rows.bottomShape)
+        assertEquals((0.28f - optical.left) / optical.width, rows.top[0].left, 0.0001f)
+        assertEquals((0.725f - optical.top) / optical.height, rows.bottom[0].bottom, 0.0001f)
+        assertEquals(rows.top[0].centerX, rows.bottom[0].centerX, 0.0001f)
+    }
+
+    @Test
     fun aggregatedMobileTargetAlsoRecognizesTwoSeparateBarRows() {
         val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
         val top = xs.mapIndexed { i, x ->
