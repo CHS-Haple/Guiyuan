@@ -344,16 +344,16 @@ internal object NativePresentationResolver {
                 "pipeline-semantic-fallback"
             }
 
+        // Only known platform bindings can prove this incomplete.
+        val platformBindingIncomplete: Boolean
+            get() = platformActiveSubscriptionIds?.let { platform ->
+                platform.size != activeSubscriptionIds.size ||
+                    activeSubscriptionIds.any { it !in platform }
+            } ?: false
+
         val nativeMobileReplacementReady: Boolean
             get() {
-                val platform = platformActiveSubscriptionIds
-                // A partially bound dual-SIM host must not masquerade as single SIM.
-                if (platform != null &&
-                    (platform.size != activeSubscriptionIds.size ||
-                        activeSubscriptionIds.any { it !in platform })
-                ) {
-                    return false
-                }
+                if (platformBindingIncomplete) return false
                 return when (mode) {
                     Mode.SINGLE ->
                         activeSubscriptionIds.size == 1 &&

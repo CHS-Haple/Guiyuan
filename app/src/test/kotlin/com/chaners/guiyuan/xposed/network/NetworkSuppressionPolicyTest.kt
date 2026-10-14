@@ -136,6 +136,54 @@ class NetworkSuppressionPolicyTest {
     }
 
     @Test
+    fun incompletePlatformBindingOverridesStickyUnknownSuppression() {
+        val partial =
+            NativePresentationResolver.Snapshot(
+                mode = NativePresentationResolver.Mode.UNKNOWN,
+                boundRoots = 2,
+                activeBoundRoots = 2,
+                visibleRoots = 2,
+                activeSubscriptionIds = listOf(1),
+                activeSubsAuthoritative = true,
+                platformActiveSubscriptionIds = setOf(1, 4),
+                presentationRootSubscriptionId = 1,
+                effectiveDataSubscriptionId = 4,
+                networkTypeSubscriptionId = 1,
+                networkType = null,
+            )
+        assertTrue(partial.platformBindingIncomplete)
+        assertFalse(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = partial,
+                wasSuppressed = true,
+            ),
+        )
+        // Without contradictory platform evidence, preserve the original rebind behavior.
+        assertTrue(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = partial.copy(platformActiveSubscriptionIds = null),
+                wasSuppressed = true,
+            ),
+        )
+        assertTrue(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = partial.copy(platformActiveSubscriptionIds = setOf(1)),
+                wasSuppressed = true,
+            ),
+        )
+        assertTrue(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = true,
+                presentation = partial,
+                wasSuppressed = true,
+            ),
+        )
+    }
+
+    @Test
     fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
         assertEquals(
             true,

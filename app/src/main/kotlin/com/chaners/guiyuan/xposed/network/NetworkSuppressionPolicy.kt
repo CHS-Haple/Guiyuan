@@ -12,6 +12,10 @@ internal object NetworkSuppressionPolicy {
         if (airplaneMode == true) {
             return true
         }
+        // A known incomplete binding must override the temporary sticky fallback.
+        if (presentation?.platformBindingIncomplete == true) {
+            return false
+        }
         if (presentation?.nativeMobileReplacementReady == true) {
             return true
         }
