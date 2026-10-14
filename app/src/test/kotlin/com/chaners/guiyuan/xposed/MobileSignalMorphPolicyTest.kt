@@ -74,23 +74,31 @@ class MobileSignalMorphPolicyTest {
     }
 
     @Test
-    fun dualSimRowsUseTheSameNativeProgressPhases() {
-        for (row in 0..1) {
-            for (step in 0..100) {
-                val fraction = step / 100f
-                val phase = morph.handoffProgress(fraction * fraction)
-                if (fraction <= 0.30f) {
-                    assertEquals(0f, morph.moveProgress(phase), 0f)
-                }
-                if (fraction <= 0.57f) {
-                    assertEquals(0f, morph.rowProgress(phase), 0f)
-                }
-                if (fraction <= 0.72f) {
-                    assertEquals(0f, morph.barProgress(phase), 0f)
-                }
+    fun bothSimRowsReuseTheSingleDotAnchorPathInEitherDirection() {
+        // These distinct row geometries still follow the same four movement stages.
+        val rows = listOf(
+            listOf(40f, 10f, 100f, 130f),
+            listOf(62f, 28f, 205f, 236f),
+        )
+        val phases = listOf(0f, 0.30f, 0.57f, 0.72f)
+        for (row in rows) {
+            val (source, sourceAnchor, targetAnchor, target) = row
+            val expected = listOf(source, sourceAnchor, targetAnchor, target)
+            val actual = phases.map { progress ->
+                morph.dotCoordinate(
+                    source, sourceAnchor, targetAnchor, target,
+                    morph.trimProgress(progress),
+                    morph.moveProgress(progress),
+                    morph.rowProgress(progress),
+                )
             }
-            assertEquals(1f, morph.barProgress(1f), 0f)
+            expected.zip(actual).forEach { (value, position) ->
+                assertEquals(value, position, 0.0001f)
+            }
+            assertEquals(expected.reversed(), actual.reversed())
         }
+        assertEquals(0f, morph.barProgress(0.72f), 0f)
+        assertEquals(1f, morph.barProgress(1f), 0f)
     }
 
     @Test
