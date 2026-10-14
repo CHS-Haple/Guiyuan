@@ -35,10 +35,15 @@ internal data class RenderModel(
                     ?.takeIf { nativeNoSimVisible }
 
             val preferredDataSubscriptionId =
-                presentation.mobilePresentation
-                    ?.effectiveDataSubscriptionId
-                    ?.takeIf { subscriptionId -> subscriptionId >= 0 }
-                    ?: defaultDataSubscriptionId
+                if (dualSignalEnabled) {
+                    // An unknown data SIM cannot borrow the native presentation root.
+                    defaultDataSubscriptionId
+                } else {
+                    presentation.mobilePresentation
+                        ?.effectiveDataSubscriptionId
+                        ?.takeIf { subscriptionId -> subscriptionId >= 0 }
+                        ?: defaultDataSubscriptionId
+                }
 
             val singleDetectedSubId =
                 presentation.mobilePresentation
@@ -59,12 +64,17 @@ internal data class RenderModel(
                         ?.takeIf { it.signal !is SignalStrength.Unknown }
                         ?.let { singleDetectedSubId to it }
                 } else {
-                    snapshot.mobile[preferredDataSubscriptionId]
-                        ?.takeIf { it.signal !is SignalStrength.Unknown }
-                        ?.let { preferredDataSubscriptionId to it }
-                        ?: snapshot.mobile.entries
+                    val preferred =
+                        snapshot.mobile[preferredDataSubscriptionId]
+                            ?.takeIf { it.signal !is SignalStrength.Unknown }
+                            ?.let { preferredDataSubscriptionId to it }
+                    preferred ?: if (dualSignalEnabled) {
+                        null
+                    } else {
+                        snapshot.mobile.entries
                             .firstOrNull { it.value.signal !is SignalStrength.Unknown }
                             ?.let { it.key to it.value }
+                    }
                 }
 
             val selectedSubscriptionId =
@@ -75,6 +85,7 @@ internal data class RenderModel(
                         ?: singleDetectedSubId
                         ?: preferredDataSubscriptionId.takeIf { it >= 0 }
                         ?: snapshot.mobile.keys.firstOrNull()
+                            ?.takeUnless { dualSignalEnabled }
                         ?: -1
                 }
 
