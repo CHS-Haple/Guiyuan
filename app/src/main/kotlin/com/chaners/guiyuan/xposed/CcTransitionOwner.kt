@@ -446,6 +446,10 @@ internal object CcTransitionOwner {
                     TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
                 )
             }
+            if ((previous.dualMobileLevels == null) != (model.dualMobileLevels == null)) {
+                frozenReservationSpans = null
+                frozenAdditionalMobileTargets = null
+            }
             currentSnapshot = next
         }
 
@@ -710,10 +714,18 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
+                    if (
+                        spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                        model.dualMobileLevels != null
+                    ) {
+                        // A composite native target does not prove a per-SIM endpoint.
+                        null
+                    } else {
+                        resolveTarget(
+                            target = spec.target,
+                            preferredMobileSubId = preferredMobileSubId,
+                        )
+                    }
                 val targetGeometry =
                     witness?.let { target ->
                         resolveTargetGeometry(
@@ -1759,6 +1771,10 @@ internal object CcTransitionOwner {
 
             val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
+                if (
+                    spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                    currentSnapshot.model.dualMobileLevels != null
+                ) return@forEach
                 val witness =
                     resolveTarget(
                         target = spec.target,
@@ -1790,6 +1806,7 @@ internal object CcTransitionOwner {
                 }
             if (
                 mobileSpec != null &&
+                currentSnapshot.model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 val primary =

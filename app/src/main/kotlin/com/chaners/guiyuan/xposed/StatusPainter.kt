@@ -693,22 +693,26 @@ internal class StatusPainter(
                 }
         }
 
-        val mobileLayout =
-            resolveMobileSignalTransitionLayout(
-                geometry = outerGeometry,
-                model = model,
-            )
+        val mobileBounds =
+            if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
+                dualMobileTransitionBounds(outerGeometry)
+            } else {
+                resolveMobileSignalTransitionLayout(
+                    geometry = outerGeometry,
+                    model = model,
+                ).bounds
+            }
         specs +=
             TransitionComponentSpec(
                 component = TransitionComponent.MOBILE,
-                sourceBounds = toViewBounds(mobileLayout.bounds),
+                sourceBounds = toViewBounds(mobileBounds),
                 target =
                     TransitionTarget.Slots(
                         preferredSlots = listOf("mobile", "stacked_mobile"),
                         preferredChildEntries = listOf("mobile_signal"),
                     ),
                 shapePolicy =
-                    if (model.mobileUnavailableMark) {
+                    if (model.mobileUnavailableMark || model.dualMobileLevels != null) {
                         TransitionShapePolicy.RIGID
                     } else {
                         TransitionShapePolicy.MOBILE_SIGNAL
@@ -2990,6 +2994,27 @@ internal class StatusPainter(
         return cachedMobileTypeTypeface
     }
 
+    private fun dualMobileTransitionBounds(
+        geometry: OuterGeometry.Resolved,
+    ): TransitionBounds {
+        val radius = geometry.dualMobileDotRadius
+        var left = Float.POSITIVE_INFINITY
+        var top = Float.POSITIVE_INFINITY
+        var right = Float.NEGATIVE_INFINITY
+        var bottom = Float.NEGATIVE_INFINITY
+        for (row in 0..1) {
+            for (index in 0 until MOBILE_DOT_COUNT) {
+                val x = MOBILE_CENTER_X + geometry.dualDotX(index)
+                val y = MOBILE_CENTER_Y + geometry.dualDotY(index, row)
+                left = min(left, x - radius)
+                top = min(top, y - radius)
+                right = max(right, x + radius)
+                bottom = max(bottom, y + radius)
+            }
+        }
+        return TransitionBounds(left, top, right, bottom)
+    }
+
     private fun resolveMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
@@ -3273,20 +3298,14 @@ internal class StatusPainter(
         if (dualLevels != null && !model.mobileUnavailableMark) {
             for (row in 0..1) {
                 val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
-                val rowOffset = if (row == 0) -geometry.dualRowGap / 2f
-                    else geometry.dualRowGap / 2f
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     fill(
                         color = tint,
                         alpha = if (level > index) 255 else 48,
                         opacity = opacity,
                     )
-                    val x =
-                        (index - (MOBILE_DOT_COUNT - 1) / 2f) *
-                            (geometry.dualDotSpan / (MOBILE_DOT_COUNT - 1))
-                    val y =
-                        sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x) +
-                            rowOffset - geometry.dualOpticalRise
+                    val x = geometry.dualDotX(index)
+                    val y = geometry.dualDotY(index, row)
                     canvas.drawCircle(
                         MOBILE_CENTER_X + x,
                         MOBILE_CENTER_Y + y,

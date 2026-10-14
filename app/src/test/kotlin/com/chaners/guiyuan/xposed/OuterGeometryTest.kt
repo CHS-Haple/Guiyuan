@@ -119,6 +119,39 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun dualRowSourceCoordinatesRemainSharedAcrossWeights() {
+        for (scale in TEST_SCALES) {
+            val geometry = OuterGeometry.resolve(scale)
+            val positions = (0 until 4).map(geometry::dualDotX)
+            assertEquals(-positions[3], positions[0], 0.0001f)
+            assertEquals(-positions[2], positions[1], 0.0001f)
+            assertEquals(-geometry.dualDotSpan / 2f, positions.first(), 0.0001f)
+            assertEquals(geometry.dualDotSpan / 2f, positions.last(), 0.0001f)
+
+            for (index in 0 until 4) {
+                val x = positions[index]
+                val baseline =
+                    sqrt(OuterGeometry.RING_RADIUS * OuterGeometry.RING_RADIUS - x * x) -
+                        geometry.dualOpticalRise
+                assertEquals(
+                    baseline - geometry.dualRowGap / 2f,
+                    geometry.dualDotY(index, 0),
+                    0.0001f,
+                )
+                assertEquals(
+                    baseline + geometry.dualRowGap / 2f,
+                    geometry.dualDotY(index, 1),
+                    0.0001f,
+                )
+            }
+            assertTrue(
+                geometry.dualDotY(0, 0) < geometry.dualDotY(1, 0) &&
+                    geometry.dualDotY(1, 1) > geometry.dualDotY(0, 1),
+            )
+        }
+    }
+
+    @Test
     fun outerWeightScalesRingDotsAndUnavailableMarkAsOneVisualFamily() {
         val base =
             OuterGeometry.resolve(

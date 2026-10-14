@@ -358,6 +358,16 @@ internal object OuterGeometry {
                 ).toDouble(),
             )
         }
+
+        fun dualDotX(index: Int): Float =
+            (index - (DOT_COUNT - 1) / 2f) * (dualDotSpan / (DOT_COUNT - 1))
+
+        fun dualDotY(index: Int, row: Int): Float {
+            val x = dualDotX(index)
+            val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
+            return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
+                offset - dualOpticalRise
+        }
     }
 
     fun normalizeWeightScale(value: Float): Float =
