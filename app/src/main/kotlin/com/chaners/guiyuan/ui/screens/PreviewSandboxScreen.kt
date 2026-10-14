@@ -397,7 +397,7 @@ internal fun PreviewSandboxScreen(
                             maxWidth = 300.dp,
                             modifier = Modifier,
                         )
-                        if (state.mobileControlsEnabled) {
+                        if (state.mobileControlsEnabled || state.dualMobile) {
                             SwitchPreference(
                                 title = stringResource(R.string.home_preview_dual_mobile_title),
                                 summary = stringResource(R.string.home_preview_dual_mobile_summary),
@@ -408,6 +408,8 @@ internal fun PreviewSandboxScreen(
                                 },
                                 insideMargin = SandboxPreferenceInsideMargin,
                             )
+                        }
+                        if (state.mobileControlsEnabled) {
                             if (state.sim1Active) {
                                 SliderPreference(
                                     value = state.mobileSignalLevel.toFloat(),
