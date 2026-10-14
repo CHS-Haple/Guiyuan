@@ -879,6 +879,58 @@ class RenderModelTest {
         assertEquals(3, model?.effectiveDataSubscriptionId)
     }
 
+    @Test
+    fun optInDualNeverBorrowsOtherCardWhenDataSignalIsUnknown() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
+            ),
+        )
+
+        val dual = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        assertNull(dual?.dualMobileLevels)
+        assertNull(dual?.mobileLevel)
+        assertEquals(3, dual?.effectiveDataSubscriptionId)
+
+        val missing = RenderModel.from(
+            state.copy(mobile = state.mobile - 3),
+            native,
+            3,
+            dualSignalEnabled = true,
+        )
+        assertNull(missing?.mobileLevel)
+        assertEquals(3, missing?.effectiveDataSubscriptionId)
+
+        // The shipped single-row path retains its existing fallback.
+        val legacy = RenderModel.from(state, native, 3)
+        assertEquals(4, legacy?.mobileLevel)
+        assertEquals(14, legacy?.effectiveDataSubscriptionId)
+    }
+
+    @Test
+    fun optInDualDoesNotTreatNativeFallbackAsDefaultDataSim() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+
+        val dual = RenderModel.from(state, native, -1, dualSignalEnabled = true)
+        assertEquals(DualMobileLevels(sim1 = 4, sim2 = 2), dual?.dualMobileLevels)
+        assertNull(dual?.mobileLevel)
+        assertEquals(-1, dual?.effectiveDataSubscriptionId)
+
+        val legacy = RenderModel.from(state, native, -1)
+        assertEquals(2, legacy?.mobileLevel)
+        assertEquals(3, legacy?.effectiveDataSubscriptionId)
+    }
+
     private fun dualPresentation(
         slotSubscriptionIds: Map<Int, Int>,
     ) = PresentationStore.Snapshot(
