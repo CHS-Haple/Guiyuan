@@ -412,6 +412,29 @@ internal object CcTransitionPolicy {
         }
     }
 
+    // The carried dot pair shares one translation before its native rows split.
+    fun dualMobileRowMotionGeometry(
+        source: FloatArray,
+        target: FloatArray,
+        groupTravelX: Float,
+        groupTravelY: Float,
+        progress: Float,
+        scalePolicy: StatusPainter.TransitionScalePolicy,
+    ): FloatArray {
+        require(source.size == 6 && target.size == 6)
+        val together = MobileSignalMorphPolicy.lockstepProgress(progress)
+        val paired = source.copyOf().apply {
+            this[0] += groupTravelX * together
+            this[1] += groupTravelY * together
+        }
+        return interpolateSimilarityGeometry(
+            source = paired,
+            target = target,
+            progress = MobileSignalMorphPolicy.moveProgress(progress),
+            scalePolicy = scalePolicy,
+        )
+    }
+
     fun interpolateSimilarityGeometry(
         source: FloatArray,
         target: FloatArray,

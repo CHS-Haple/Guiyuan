@@ -117,6 +117,9 @@ internal object MobileSignalMorphPolicy {
             shapeProgress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f,
         )
 
+    fun lockstepProgress(progress: Float): Float =
+        smoothPhase(progress, 0f, TRIM_END) * TRIM_END
+
     fun trimProgress(progress: Float): Float = smoothPhase(progress, 0f, TRIM_END)
 
     fun moveProgress(progress: Float): Float = smoothPhase(progress, TRIM_END, MOVE_END)

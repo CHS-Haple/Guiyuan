@@ -113,6 +113,58 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun dualRowsStayVerticallyPairedDuringMovingCollapse() {
+        val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
+        val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
+        val topTarget = transitionGeometry(centerX = 100f, centerY = 5f, width = 12f, height = 18f)
+        val bottomTarget = transitionGeometry(centerX = 135f, centerY = 49f, width = 8f, height = 20f)
+
+        fun frame(source: FloatArray, target: FloatArray, progress: Float): FloatArray =
+            CcTransitionPolicy.dualMobileRowMotionGeometry(
+                source = source,
+                target = target,
+                groupTravelX = 60f,
+                groupTravelY = 15f,
+                progress = progress,
+                scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+            )
+
+        for (progress in listOf(0f, 0.08f, 0.15f, 0.24f, 0.30f)) {
+            val a = frame(top, topTarget, progress)
+            val b = frame(bottom, bottomTarget, progress)
+            assertEquals(a[0], b[0], 0.0001f)
+            assertEquals(22f, b[1] - a[1], 0.0001f)
+            assertEquals(a[2], b[2], 0.0001f)
+            assertEquals(a[5], b[5], 0.0001f)
+            assertEquals(
+                20f + 60f * MobileSignalMorphPolicy.lockstepProgress(progress),
+                a[0], 0.0001f,
+            )
+        }
+
+        val separatedTop = frame(top, topTarget, 0.435f)
+        val separatedBottom = frame(bottom, bottomTarget, 0.435f)
+        assertTrue(separatedTop[0] < separatedBottom[0])
+        for (progress in listOf(0.57f, 0.72f, 1f)) {
+            val a = frame(top, topTarget, progress)
+            val b = frame(bottom, bottomTarget, progress)
+            assertEquals(topTarget[0], a[0], 0.0001f)
+            assertEquals(topTarget[1], a[1], 0.0001f)
+            assertEquals(bottomTarget[0], b[0], 0.0001f)
+            assertEquals(bottomTarget[1], b[1], 0.0001f)
+            // SHRINK_ONLY uses one similarity scale rather than stretching to the target.
+            assertEquals(12f, a[2], 0.0001f)
+            assertEquals(8f, b[2], 0.0001f)
+        }
+        for (boundary in listOf(0.30f, 0.57f)) {
+            val before = frame(top, topTarget, boundary - 0.00001f)
+            val after = frame(top, topTarget, boundary + 0.00001f)
+            assertEquals(before[0], after[0], 0.01f)
+            assertEquals(before[1], after[1], 0.01f)
+        }
+    }
+
+    @Test
     fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
         val source =
             CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
