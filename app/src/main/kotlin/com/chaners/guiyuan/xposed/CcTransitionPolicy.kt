@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
+import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -35,6 +36,61 @@ internal object CcTransitionPolicy {
         dataSubId >= 0 &&
             targetSubId == dataSubId &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
+
+    fun matchesDualMobileTargets(
+        mode: NativePresentationResolver.Mode,
+        activeSubIds: Set<Int>,
+        targetSubIds: List<Int?>,
+    ): Boolean {
+        if (activeSubIds.size != 2 || activeSubIds.any { it < 0 } ||
+            (mode != NativePresentationResolver.Mode.DUAL_AGGREGATED &&
+                mode != NativePresentationResolver.Mode.DUAL_SEPARATE)
+        ) return false
+        if (targetSubIds.size == 2) {
+            return targetSubIds.all { it != null && it in activeSubIds } &&
+                targetSubIds.toSet() == activeSubIds
+        }
+        return mode == NativePresentationResolver.Mode.DUAL_AGGREGATED &&
+            targetSubIds.size == 1 &&
+            targetSubIds.single()?.let { it in activeSubIds } == true
+    }
+
+    fun dualMobileTargetGeometry(targets: List<FloatArray>): FloatArray? {
+        if (targets.isEmpty() || targets.size > 2 ||
+            targets.any { it.size != 6 || it.any { n -> !n.isFinite() } }
+        ) return null
+        if (targets.size == 1) {
+            val t = targets[0]
+            return t.takeIf {
+                sqrt(t[2] * t[2] + t[3] * t[3]) > 0f &&
+                    sqrt(t[4] * t[4] + t[5] * t[5]) > 0f
+            }?.copyOf()
+        }
+
+        // A two-root target is one envelope only when both views share axes.
+        val first = targets[0]
+        if (targets.any { t ->
+                abs(t[2]) <= 0f || abs(t[5]) <= 0f ||
+                    abs(t[3]) > abs(t[2]) * 0.05f ||
+                    abs(t[4]) > abs(t[5]) * 0.05f ||
+                    (t[2] < 0f) != (first[2] < 0f) ||
+                    (t[5] < 0f) != (first[5] < 0f)
+            }
+        ) return null
+        val left = targets.minOf { it[0] - abs(it[2]) / 2f }
+        val right = targets.maxOf { it[0] + abs(it[2]) / 2f }
+        val top = targets.minOf { it[1] - abs(it[5]) / 2f }
+        val bottom = targets.maxOf { it[1] + abs(it[5]) / 2f }
+        if (right <= left || bottom <= top) return null
+        return floatArrayOf(
+            (left + right) / 2f,
+            (top + bottom) / 2f,
+            (right - left) * if (first[2] < 0f) -1f else 1f,
+            0f,
+            0f,
+            (bottom - top) * if (first[5] < 0f) -1f else 1f,
+        )
+    }
 
     fun mobileTypeMatches(
         sourceLabel: String,

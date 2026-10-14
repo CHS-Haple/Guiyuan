@@ -3,10 +3,61 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.InternetState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionOwnerTest {
+    @Test
+    fun dualSignalUsesKnownWholeGroupOrBothIdentifiedNativeRoots() {
+        val dual = setOf(1, 4)
+        fun allowed(mode: NativePresentationResolver.Mode, vararg ids: Int?) =
+            CcTransitionPolicy.matchesDualMobileTargets(mode, dual, ids.toList())
+
+        assertTrue(allowed(NativePresentationResolver.Mode.DUAL_AGGREGATED, 4))
+        assertTrue(allowed(NativePresentationResolver.Mode.DUAL_AGGREGATED, 1, 4))
+        assertTrue(allowed(NativePresentationResolver.Mode.DUAL_SEPARATE, 4, 1))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.DUAL_SEPARATE, 4))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.UNKNOWN, 4))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.UNKNOWN, 4, 1))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.DUAL_SEPARATE, 4, 4))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.DUAL_SEPARATE, 4, null))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.DUAL_AGGREGATED, null))
+        assertEquals(false, allowed(NativePresentationResolver.Mode.DUAL_AGGREGATED, 4, 8))
+        assertEquals(
+            false,
+            CcTransitionPolicy.matchesDualMobileTargets(
+                NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                setOf(4),
+                listOf(4),
+            ),
+        )
+    }
+
+    @Test
+    fun separateNativeMobileRootsUseTheirCombinedGeometry() {
+        val a = transitionGeometry(centerX = 12f, centerY = 20f, width = 8f, height = 16f)
+        val b = transitionGeometry(centerX = 34f, centerY = 21f, width = 10f, height = 18f)
+        val combined = requireNotNull(CcTransitionPolicy.dualMobileTargetGeometry(listOf(a, b)))
+        assertEquals(23.5f, combined[0], 0.0001f)
+        assertEquals(21f, combined[1], 0.0001f)
+        assertEquals(31f, combined[2], 0.0001f)
+        assertEquals(0f, combined[3], 0f)
+        assertEquals(0f, combined[4], 0f)
+        assertEquals(18f, combined[5], 0.0001f)
+
+        val aggregate = CcTransitionPolicy.dualMobileTargetGeometry(listOf(a))
+        a.forEachIndexed { index, value ->
+            assertEquals(value, requireNotNull(aggregate)[index], 0.0001f)
+        }
+        assertNull(CcTransitionPolicy.dualMobileTargetGeometry(emptyList()))
+        assertNull(
+            CcTransitionPolicy.dualMobileTargetGeometry(
+                listOf(a, b.copyOf().also { it[3] = 6f }),
+            ),
+        )
+    }
+
     @Test
     fun dualCenterNeedsMatchingDataSubscriptionAndNativeType() {
         val source =

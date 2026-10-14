@@ -719,20 +719,32 @@ internal object CcTransitionOwner {
                         parentHeight = sourceHeight,
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
+                val dualMobile =
+                    model.dualMobileLevels != null &&
+                        spec.component == StatusPainter.TransitionComponent.MOBILE
                 val witness =
-                    resolveSpecTarget(
+                    if (dualMobile) null else resolveSpecTarget(
                         spec = spec,
                         model = model,
                         preferredMobileSubId = preferredMobileSubId,
                     )
                 val targetGeometry =
-                    witness?.let { target ->
-                        resolveTargetGeometry(
-                            witness = target,
+                    if (dualMobile) {
+                        resolveDualMobileTargetGeometry(
+                            spec = spec,
                             root = rootView,
                             sourceGeometry = sourceGeometry,
-                            targetOpticalBounds = spec.targetOpticalBounds,
+                            preferredMobileSubId = preferredMobileSubId,
                         )
+                    } else {
+                        witness?.let { target ->
+                            resolveTargetGeometry(
+                                witness = target,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                                targetOpticalBounds = spec.targetOpticalBounds,
+                            )
+                        }
                     }
                 val nativeTypeMatch =
                     if (
@@ -1889,16 +1901,46 @@ internal object CcTransitionOwner {
             return result.takeIf { it.isNotEmpty() }
         }
 
+        private fun resolveDualMobileTargetGeometry(
+            spec: StatusPainter.TransitionComponentSpec,
+            root: View,
+            sourceGeometry: FloatArray,
+            preferredMobileSubId: Int?,
+        ): FloatArray? {
+            val presentation =
+                PresentationStore.snapshot().mobilePresentation ?: return null
+            val platform = presentation.platformActiveSubscriptionIds ?: return null
+            val active = presentation.activeSubscriptionIds.toSet()
+            if (!presentation.activeSubsAuthoritative ||
+                active.size != 2 || platform != active
+            ) return null
+
+            // Native mobile slots provide group geometry, not an inferred row order.
+            val primary = resolveTarget(spec.target, preferredMobileSubId)
+            val targets = listOfNotNull(primary) + resolveFrozenAdditionalMobileTargets(primary)
+            if (!CcTransitionPolicy.matchesDualMobileTargets(
+                    mode = presentation.mode,
+                    activeSubIds = active,
+                    targetSubIds = targets.map { it.subscriptionId },
+                )
+            ) return null
+
+            val geometry = targets.map { witness ->
+                resolveTargetGeometry(
+                    witness = witness,
+                    root = root,
+                    sourceGeometry = sourceGeometry,
+                    targetOpticalBounds = spec.targetOpticalBounds,
+                ) ?: return null
+            }
+            return CcTransitionPolicy.dualMobileTargetGeometry(geometry)
+        }
+
         private fun resolveSpecTarget(
             spec: StatusPainter.TransitionComponentSpec,
             model: RenderModel,
             preferredMobileSubId: Int?,
         ): TargetWitness? {
-            if (
-                model.dualMobileLevels != null &&
-                spec.component == StatusPainter.TransitionComponent.MOBILE
-            ) return null
-
             val centerType = model.centerIndicator as? CenterIndicator.MobileType
             val dualCenter =
                 model.dualMobileLevels != null &&
