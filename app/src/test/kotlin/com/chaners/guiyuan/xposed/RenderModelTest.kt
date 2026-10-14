@@ -1005,7 +1005,7 @@ class RenderModelTest {
         )
 
         val dual = RenderModel.from(state, native, 3, dualSignalEnabled = true)
-        assertNull(dual?.dualMobileLevels)
+        assertEquals(DualMobileLevels(4, null), dual?.dualMobileLevels)
         assertNull(dual?.mobileLevel)
         assertEquals(3, dual?.effectiveDataSubscriptionId)
 
@@ -1015,6 +1015,7 @@ class RenderModelTest {
             3,
             dualSignalEnabled = true,
         )
+        assertNull(missing?.dualMobileLevels)
         assertNull(missing?.mobileLevel)
         assertEquals(3, missing?.effectiveDataSubscriptionId)
 
