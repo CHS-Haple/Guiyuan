@@ -291,7 +291,7 @@ internal fun PreviewSandboxScreen(
                                 checked = state.dualMobile,
                                 onCheckedChange = onDualMobileChange,
                                 startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_layers)
+                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
                                 },
                                 insideMargin = SandboxPreferenceInsideMargin,
                             )
