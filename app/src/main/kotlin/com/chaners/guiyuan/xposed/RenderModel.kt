@@ -57,7 +57,10 @@ internal data class RenderModel(
                         dualSignalEnabled &&
                             native.mode == NativePresentationResolver.Mode.SINGLE &&
                             native.activeSubsAuthoritative &&
-                            native.activeSubscriptionIds.size == 1
+                            native.activeSubscriptionIds.size == 1 &&
+                            // A bound native root need not be the only active platform SIM.
+                            native.platformActiveSubscriptionIds?.singleOrNull() ==
+                                native.activeSubscriptionIds[0]
                     }
                     ?.activeSubscriptionIds
                     ?.single()
@@ -101,7 +104,7 @@ internal data class RenderModel(
             // The native aggregate root may belong to a different SIM.
             val dualTypeMismatch =
                 dualSignalEnabled &&
-                    (presentation.mobilePresentation?.activeSubscriptionIds?.size ?: 0) > 1 &&
+                    (presentation.mobilePresentation?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
                     presentation.mobilePresentation?.networkTypeSubscriptionId !=
                         selectedSubscriptionId
 
