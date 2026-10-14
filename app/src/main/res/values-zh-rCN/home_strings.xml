@@ -44,6 +44,10 @@
     <string name="home_preview_sim_title">SIM 状态</string>
     <string name="home_preview_sim_present">已插卡</string>
     <string name="home_preview_sim_absent">未插卡</string>
+    <string name="home_preview_sim_both">双卡</string>
+    <string name="home_preview_sim1_only">仅 SIM1</string>
+    <string name="home_preview_sim2_only">仅 SIM2</string>
+    <string name="home_preview_sim_none">无卡</string>
     <string name="home_preview_airplane_title">飞行模式</string>
     <string name="home_preview_airplane_summary">开启后暂停移动网络模拟，Wi‑Fi 仍可独立开启。</string>
     <string name="home_preview_mobile_network_title">移动网络</string>
