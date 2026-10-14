@@ -365,6 +365,8 @@ private fun SharedPreferences.profileBoolean(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getBoolean(profileKey, defaultValue)
+    } else if (dual) {
+        defaultValue
     } else {
         getBoolean(baseKey, defaultValue)
     }
@@ -379,6 +381,8 @@ private fun SharedPreferences.profileFloat(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getFloat(profileKey, defaultValue)
+    } else if (dual) {
+        defaultValue
     } else {
         getFloat(baseKey, defaultValue)
     }
@@ -393,6 +397,8 @@ private fun SharedPreferences.profileInt(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getInt(profileKey, defaultValue)
+    } else if (dual) {
+        defaultValue
     } else {
         getInt(baseKey, defaultValue)
     }
@@ -432,7 +438,7 @@ internal fun SharedPreferences.readVisualCfg(
         batteryColorPreset =
             BatteryColorPreset.fromPersisted(
                 getString(
-                    BATTERY_COLOR_PRESET_KEY,
+                    visualModeKey(dual, BATTERY_COLOR_PRESET_KEY),
                     BatteryColorPreset.HYPEROS.persistedValue,
                 ),
             ),
