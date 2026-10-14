@@ -446,6 +446,10 @@ internal object CcTransitionOwner {
                     TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
                 )
             }
+            if ((previous.dualMobileLevels == null) != (model.dualMobileLevels == null)) {
+                frozenReservationSpans = null
+                frozenAdditionalMobileTargets = null
+            }
             currentSnapshot = next
         }
 
