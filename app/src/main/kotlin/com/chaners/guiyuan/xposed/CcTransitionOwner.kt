@@ -556,12 +556,16 @@ internal object CcTransitionOwner {
                 }
             val rowSpecs =
                 dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual) }
+            val nativeDualTargets =
+                if (rowSpecs?.size == 2 && dualSpec != null) {
+                    resolveDualMobileTargets(dualSpec, model)
+                } else null
             val dualRowTargets =
                 if (rowSpecs?.size != 2 || dualSpec == null) {
                     null
                 } else {
                     val presentation = PresentationStore.snapshot().mobilePresentation
-                    val native = resolveDualMobileTargets(dualSpec, model)
+                    val native = nativeDualTargets
                     val order = presentation?.let {
                         CcTransitionPolicy.dualRootRowIndices(
                             mode = it.mode,
@@ -597,9 +601,7 @@ internal object CcTransitionOwner {
             val aggregateGroup =
                 if (dualSpec == null || dualRowTargets != null) null
                 else run {
-                    val witness =
-                        resolveDualMobileTargets(dualSpec, model)?.singleOrNull()
-                            ?: return@run null
+                    val witness = nativeDualTargets?.singleOrNull() ?: return@run null
                     val optical = witness.opticalView ?: return@run null
                     val rows =
                         ParticipantVisualSnapshot.resolveView(optical)
