@@ -50,6 +50,19 @@ class CcTransitionOwnerTest {
         assertEquals(
             null,
             CcTransitionPolicy.dualMobileGroupGeometry(
+                listOf(first, second.copyOf().also { it[3] = 6f }),
+            ),
+        )
+        val mirrored = CcTransitionPolicy.dualMobileGroupGeometry(
+            listOf(
+                first.copyOf().also { it[2] = -8f },
+                second.copyOf().also { it[2] = -8f },
+            ),
+        )
+        assertEquals(-28f, requireNotNull(mirrored)[2], 0.0001f)
+        assertEquals(
+            null,
+            CcTransitionPolicy.dualMobileGroupGeometry(
                 listOf(first, floatArrayOf(Float.NaN, 2f, 8f, 0f, 0f, 6f)),
             ),
         )

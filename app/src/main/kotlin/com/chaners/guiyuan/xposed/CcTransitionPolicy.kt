@@ -60,22 +60,28 @@ internal object CcTransitionPolicy {
         ) return null
         if (parts.size == 1) return parts.single().copyOf()
 
-        val extents = parts.map { part ->
-            val halfWidth = (kotlin.math.abs(part[2]) + kotlin.math.abs(part[4])) / 2f
-            val halfHeight = (kotlin.math.abs(part[3]) + kotlin.math.abs(part[5])) / 2f
-            floatArrayOf(
-                part[0] - halfWidth, part[1] - halfHeight,
-                part[0] + halfWidth, part[1] + halfHeight,
-            )
-        }
-        val left = extents.minOf { it[0] }
-        val top = extents.minOf { it[1] }
-        val right = extents.maxOf { it[2] }
-        val bottom = extents.maxOf { it[3] }
+        // Keep the native root axes: merging unrelated rotations would invent geometry.
+        val first = parts[0]
+        if (parts.any { part ->
+                kotlin.math.abs(part[2]) <= 0f ||
+                    kotlin.math.abs(part[5]) <= 0f ||
+                    kotlin.math.abs(part[3]) > kotlin.math.abs(part[2]) * 0.05f ||
+                    kotlin.math.abs(part[4]) > kotlin.math.abs(part[5]) * 0.05f ||
+                    (part[2] < 0f) != (first[2] < 0f) ||
+                    (part[5] < 0f) != (first[5] < 0f)
+            }
+        ) return null
+
+        val left = parts.minOf { it[0] - kotlin.math.abs(it[2]) / 2f }
+        val top = parts.minOf { it[1] - kotlin.math.abs(it[5]) / 2f }
+        val right = parts.maxOf { it[0] + kotlin.math.abs(it[2]) / 2f }
+        val bottom = parts.maxOf { it[1] + kotlin.math.abs(it[5]) / 2f }
         if (right <= left || bottom <= top) return null
         return floatArrayOf(
             (left + right) / 2f, (top + bottom) / 2f,
-            right - left, 0f, 0f, bottom - top,
+            (right - left) * if (first[2] < 0f) -1f else 1f,
+            0f, 0f,
+            (bottom - top) * if (first[5] < 0f) -1f else 1f,
         )
     }
 

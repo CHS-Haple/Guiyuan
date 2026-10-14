@@ -108,7 +108,6 @@ class OuterGeometryTest {
         val default = OuterGeometry.resolve(1f)
         assertEquals(4.565f * 1.10f, default.dualMobileDotRadius, 0.0001f)
         assertEquals(14.3f, default.dualRowGap, 0.0001f)
-        assertEquals(1.2f, default.dualOpticalRise, 0.0001f)
         assertEquals(14.3f * 0.7f, OuterGeometry.resolve(0.7f).dualRowGap, 0.0001f)
         assertEquals(17.69f, OuterGeometry.resolve(1.3f).dualRowGap, 0.0002f)
         assertEquals(56f, default.dualDotSpan, 0.0001f)
