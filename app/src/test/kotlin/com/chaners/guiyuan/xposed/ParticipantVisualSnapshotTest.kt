@@ -83,6 +83,29 @@ class ParticipantVisualSnapshotTest {
     }
 
     @Test
+    fun overlappingSignalColumnsRejectIndependentDualRows() {
+        val envelope = ParticipantVisualSnapshot.NormalizedRect(0f, 0f, 1f, 1f)
+        val overlapCases = listOf(
+            listOf(0.12f, 0.18f, 0.58f, 0.81f),
+            listOf(0.12f, 0.35f, 0.39f, 0.81f),
+        )
+        for (xs in overlapCases) {
+            val top = xs.map { x ->
+                ParticipantVisualSnapshot.NormalizedRect(x, 0.15f, x + 0.08f, 0.23f)
+            }
+            val bottom = xs.map { x ->
+                ParticipantVisualSnapshot.NormalizedRect(x, 0.65f, x + 0.08f, 0.73f)
+            }
+            val snapshot = ParticipantVisualSnapshot.Snapshot(
+                envelope = envelope,
+                components = top + bottom,
+                topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+            )
+            assertNull(snapshot.dualMobileRowsWithinEnvelope())
+        }
+    }
+
+    @Test
     fun unknownMixedRowReturnsNullInsteadOfGuessingBars() {
         val xs = listOf(0.12f, 0.35f, 0.58f, 0.81f)
         val bars = xs.mapIndexed { i, x ->

@@ -75,6 +75,10 @@ internal object ParticipantVisualSnapshot {
             val top = byBottom.take(4).sortedBy { it.centerX }
             val bottom = byBottom.drop(4).sortedBy { it.centerX }
             if (top.maxOf { it.bottom } >= bottom.minOf { it.top }) return null
+            // Overlapping columns cannot prove four independent signal elements.
+            if (top.zipWithNext().any { (left, right) -> left.right >= right.left } ||
+                bottom.zipWithNext().any { (left, right) -> left.right >= right.left }
+            ) return null
 
             val pitch = (top.last().centerX - top.first().centerX) / 3f
             if (pitch <= 0f || top.zip(bottom).any { (a, b) ->
