@@ -5,7 +5,7 @@ import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
-internal data class DualMobileLevels(val sim1: Int, val sim2: Int)
+internal data class DualMobileLevels(val sim1: Int?, val sim2: Int?)
 
 internal data class RenderModel(
     val batteryPercent: Int,
@@ -167,14 +167,17 @@ internal data class RenderModel(
                         sim1Id in native.activeSubscriptionIds &&
                         sim2Id in native.activeSubscriptionIds
                     ) {
-                        val first =
-                            (snapshot.mobile[sim1Id]?.signal as? SignalStrength.Level)?.value
-                        val second =
-                            (snapshot.mobile[sim2Id]?.signal as? SignalStrength.Level)?.value
-                        if (first != null && second != null) {
+                        val first = snapshot.mobile[sim1Id]?.signal
+                        val second = snapshot.mobile[sim2Id]?.signal
+                        if (
+                            first != null && second != null &&
+                            first !is SignalStrength.Unavailable &&
+                            second !is SignalStrength.Unavailable
+                        ) {
+                            // An unknown level is dim, not a confirmed zero-bar reading.
                             DualMobileLevels(
-                                sim1 = first.coerceIn(0, 4),
-                                sim2 = second.coerceIn(0, 4),
+                                sim1 = (first as? SignalStrength.Level)?.value?.coerceIn(0, 4),
+                                sim2 = (second as? SignalStrength.Level)?.value?.coerceIn(0, 4),
                             )
                         } else null
                     } else null
