@@ -345,8 +345,16 @@ internal object NativePresentationResolver {
             }
 
         val nativeMobileReplacementReady: Boolean
-            get() =
-                when (mode) {
+            get() {
+                val platform = platformActiveSubscriptionIds
+                // A partially bound dual-SIM host must not masquerade as single SIM.
+                if (platform != null &&
+                    (platform.size != activeSubscriptionIds.size ||
+                        activeSubscriptionIds.any { it !in platform })
+                ) {
+                    return false
+                }
+                return when (mode) {
                     Mode.SINGLE ->
                         activeSubscriptionIds.size == 1 &&
                             visibleRoots == 1
@@ -359,6 +367,7 @@ internal object NativePresentationResolver {
                     Mode.UNKNOWN,
                     -> false
                 }
+            }
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"

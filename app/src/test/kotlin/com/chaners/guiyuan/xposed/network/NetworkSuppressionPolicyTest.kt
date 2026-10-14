@@ -93,6 +93,49 @@ class NetworkSuppressionPolicyTest {
         )
 
     @Test
+    fun incompletePlatformDualBindingRestoresNativeMobileIcon() {
+        val partiallyBound =
+            NativePresentationResolver.Snapshot(
+                mode = NativePresentationResolver.Mode.SINGLE,
+                boundRoots = 1,
+                visibleRoots = 1,
+                activeSubscriptionIds = listOf(1),
+                activeSubsAuthoritative = true,
+                platformActiveSubscriptionIds = setOf(1, 4),
+                presentationRootSubscriptionId = 1,
+                effectiveDataSubscriptionId = 4,
+                networkTypeSubscriptionId = 1,
+                networkType = null,
+            )
+        assertFalse(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = partiallyBound,
+                wasSuppressed = true,
+            ),
+        )
+        assertFalse(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation = partiallyBound,
+                wasSuppressed = false,
+            ),
+        )
+        assertTrue(
+            NetworkSuppressionPolicy.suppressMobile(
+                airplaneMode = false,
+                presentation =
+                    partiallyBound.copy(
+                        mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
+                        boundRoots = 2,
+                        activeSubscriptionIds = listOf(1, 4),
+                    ),
+                wasSuppressed = false,
+            ),
+        )
+    }
+
+    @Test
     fun airplaneModeKeepsNativeMobileSuppressedWhileRootsDisappear() {
         assertEquals(
             true,
