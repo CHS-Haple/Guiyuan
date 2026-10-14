@@ -75,11 +75,12 @@ Preparation and acceptance should be incremental:
    style. If the native target does not prove per-card correspondence, retain
    the bounded group fade or fall back to single/native; never invent target
    geometry or modify the final Control Center.
-5. **Extend the accepted sandbox prototype only when needed.** B984 supports
-   independent SIM1/SIM2 strength and network types, data-SIM selection, and
-   both/SIM1-only/SIM2-only/no-SIM insertion simulation. Its eight-dot group is
-   1.0 canvas unit lower than accepted B982. The sandbox already supports
-   independent light/dark theme simulation, restored when leaving its route.
+5. **Extend the accepted sandbox prototype only when needed.** B984 introduced
+   independent SIM1/SIM2 strengths, network types, selected data SIM, and
+   both/SIM1-only/SIM2-only/no-SIM insertion simulation. B987 groups these
+   controls and reuses the original-path stacked SIM icon and two-line summary.
+   The eight-dot group remains 1.0 canvas unit lower than B982. Independent
+   light/dark theme simulation already restores the theme on route exit.
    Unknown signal is a runtime anomaly, not a Preview Sandbox option: an
    unknown SIM row stays dim without claiming a real 0-bar reading; missing
    or unavailable signal sources still invalidate dual rows.
