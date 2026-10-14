@@ -3181,9 +3181,20 @@ internal class StatusPainter(
                 targetAxisRatio = targetWidthRatio,
                 outerScale = outerScale,
             )
-            val firstX = bounds.centerX +
-                ((top.first().centerX + bottom.first().centerX) / 2f - 0.5f) *
-                bounds.width * widthCompensation
+            val anchors = CcTransitionPolicy.aggregateAnchors(
+                bounds = bounds,
+                top = top.first(),
+                bottom = bottom.first(),
+                topShape = aggregateRows.topShape,
+                bottomShape = aggregateRows.bottomShape,
+                widthCompensation = widthCompensation,
+                heightCompensation =
+                    MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                        targetAxisRatio = targetHeightRatio,
+                        outerScale = outerScale,
+                    ),
+                dotDiameter = geometry.dualMobileDotRadius * 2f,
+            )
             for ((index, targets) in listOf(top, bottom).withIndex()) {
                 val shapes = targets.map { rect ->
                     TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
@@ -3206,7 +3217,8 @@ internal class StatusPainter(
                     targetWidthRatio = targetWidthRatio,
                     targetHeightRatio = targetHeightRatio,
                     targetBars = shapes,
-                    pairedAnchorX = firstX,
+                    pairedAnchorX = anchors[0],
+                    pairedAnchorY = anchors[index + 1],
                     targetDots = if (index == 0) {
                         aggregateRows.topShape == ParticipantVisualSnapshot.RowShape.DOTS
                     } else {
@@ -3308,6 +3320,7 @@ internal class StatusPainter(
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>,
         pairedAnchorX: Float? = null,
+        pairedAnchorY: Float? = null,
         targetDots: Boolean = false,
     ) {
         val diameter = radius * 2f
@@ -3341,7 +3354,7 @@ internal class StatusPainter(
                 (firstBar.bottom - 0.5f) *
                     layout.bounds.height * heightCompensation
         val firstY =
-            if (targetDots) {
+            pairedAnchorY ?: if (targetDots) {
                 targetCenterY +
                     ((firstBar.top + firstBar.bottom) / 2f - 0.5f) *
                         layout.bounds.height * heightCompensation
