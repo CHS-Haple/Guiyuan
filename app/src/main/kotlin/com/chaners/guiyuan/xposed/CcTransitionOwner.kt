@@ -593,6 +593,45 @@ internal object CcTransitionOwner {
                         }.takeIf { it.size == 2 }
                     }
                 }
+            // An aggregate root has one optical envelope, not two SIM-owned endpoints.
+            val aggregateGroup =
+                if (dualSpec == null || dualRowTargets != null) null
+                else run {
+                    val witness =
+                        resolveDualMobileTargets(dualSpec, model)?.singleOrNull()
+                            ?: return@run null
+                    val optical = witness.opticalView ?: return@run null
+                    val rows =
+                        ParticipantVisualSnapshot.resolveView(optical)
+                            ?.dualMobileRowsWithinEnvelope()
+                            ?: return@run null
+                    val source =
+                        CcTransitionPolicy.componentGeometry(
+                            parentGeometry = sourceParentGeometry,
+                            parentWidth = sourceWidth,
+                            parentHeight = sourceHeight,
+                            bounds = dualSpec.sourceBounds,
+                        ) ?: return@run null
+                    val target =
+                        resolveTargetGeometry(
+                            witness = witness,
+                            root = rootView,
+                            sourceGeometry = source,
+                            targetOpticalBounds = null,
+                        ) ?: return@run null
+                    val shapes =
+                        listOf(rows.top, rows.bottom).map { row ->
+                            row.map { rect ->
+                                StatusPainter.TransitionNormalizedBounds(
+                                    left = rect.left,
+                                    top = rect.top,
+                                    right = rect.right,
+                                    bottom = rect.bottom,
+                                )
+                            }
+                        }
+                    target to shapes
+                }
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
                 CcTransitionPolicy.handoffMotionProgress(
@@ -620,11 +659,20 @@ internal object CcTransitionOwner {
                 }
 
             val specs =
-                if (dualRowTargets == null || dualRowTravel == null) baseSpecs
-                else baseSpecs.flatMap { spec ->
-                    if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
-                        rowSpecs.orEmpty()
-                    } else listOf(spec)
+                when {
+                    dualRowTargets != null && dualRowTravel != null ->
+                        baseSpecs.flatMap { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                rowSpecs.orEmpty()
+                            } else listOf(spec)
+                        }
+                    aggregateGroup != null ->
+                        baseSpecs.map { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                spec.copy(shapePolicy = StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL)
+                            } else spec
+                        }
+                    else -> baseSpecs
                 }
 
             val preferredMobileSubId =
@@ -802,12 +850,13 @@ internal object CcTransitionOwner {
                     } else if (model.dualMobileLevels != null &&
                         spec.component == StatusPainter.TransitionComponent.MOBILE
                     ) {
-                        resolveDualMobileTargetGeometry(
-                            spec = spec,
-                            model = model,
-                            root = rootView,
-                            sourceGeometry = sourceGeometry,
-                        )
+                        aggregateGroup?.first
+                            ?: resolveDualMobileTargetGeometry(
+                                spec = spec,
+                                model = model,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                            )
                     } else {
                         witness?.let { target ->
                             resolveTargetGeometry(
@@ -1078,6 +1127,10 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
+                    mobileTargetDualRows =
+                        if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                            aggregateGroup?.second
+                        } else null,
                     mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
