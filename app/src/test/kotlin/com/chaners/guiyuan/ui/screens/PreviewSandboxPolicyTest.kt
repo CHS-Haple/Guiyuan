@@ -20,6 +20,30 @@ class PreviewSandboxPolicyTest {
 
 
     @Test
+    fun dualModeCanBeSelectedWhileSingleSimIsAbsentOrAirplaneIsEnabled() {
+        val absent =
+            PreviewSandboxUiState(
+                simPresent = false,
+                networkMode = PreviewNetworkMode.MOBILE,
+            )
+        assertFalse(absent.mobileControlsEnabled)
+        assertEquals(PreviewCenterSource.NO_SIM, absent.previewCenterSource())
+
+        val switched = absent.copy(dualMobile = true)
+        assertTrue(switched.hasSim)
+        assertEquals(DualMobileLevels(4, 4), switched.dualLevels)
+        assertEquals(PreviewCenterSource.MOBILE, switched.previewCenterSource())
+
+        val airplane = absent.copy(airplaneMode = true)
+        assertFalse(airplane.mobileControlsEnabled)
+        val configured = airplane.copy(dualMobile = true)
+        assertTrue(configured.hasSim)
+        assertEquals(null, configured.dualLevels)
+        assertEquals(PreviewCenterSource.AIRPLANE, configured.previewCenterSource())
+        assertEquals(DualMobileLevels(4, 4), configured.copy(airplaneMode = false).dualLevels)
+    }
+
+    @Test
     fun changingDualDataSimOnlyChangesCenterSourceNotPhysicalRows() {
         val sim1Data = PreviewSandboxUiState(
             networkMode = PreviewNetworkMode.MOBILE,
