@@ -427,11 +427,16 @@ internal object CcTransitionPolicy {
             this[0] += groupTravelX * together
             this[1] += groupTravelY * together
         }
-        return interpolateSimilarityGeometry(
-            source = paired,
+        val normal = interpolateSimilarityGeometry(
+            source = source,
             target = target,
-            progress = MobileSignalMorphPolicy.moveProgress(progress),
+            progress = progress,
             scalePolicy = scalePolicy,
+        )
+        return interpolateGeometry(
+            source = paired,
+            target = normal,
+            progress = MobileSignalMorphPolicy.moveProgress(progress),
         )
     }
 
