@@ -47,6 +47,11 @@
     <string name="home_preview_airplane_title">Airplane mode</string>
     <string name="home_preview_airplane_summary">Mobile controls pause in airplane mode; Wi‑Fi can still be simulated independently.</string>
     <string name="home_preview_mobile_network_title">Mobile network</string>
+    <string name="home_preview_data_sim_title">Data SIM</string>
+    <string name="home_preview_data_sim1">SIM 1</string>
+    <string name="home_preview_data_sim2">SIM 2</string>
+    <string name="home_preview_sim1_network_title">SIM 1 network type</string>
+    <string name="home_preview_sim2_network_title">SIM 2 network type</string>
     <string name="home_preview_network_none">None</string>
     <string name="home_preview_network_2g">2G</string>
     <string name="home_preview_network_edge">E</string>
@@ -87,7 +92,7 @@
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
     <string name="home_preview_dual_mobile_title">Dual-SIM signal preview</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 inner arc, SIM2 outer arc. Preview only.</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer; center network type follows the selected data SIM. Preview only.</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>

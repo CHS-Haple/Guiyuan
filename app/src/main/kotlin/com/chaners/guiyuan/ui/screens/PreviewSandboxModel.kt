@@ -34,6 +34,11 @@ internal enum class PreviewMobileNetwork(
     LTE("LTE"),
 }
 
+internal enum class PreviewDataSim {
+    SIM1,
+    SIM2,
+}
+
 internal enum class PreviewWifiState {
     CONNECTED,
     NO_INTERNET,
@@ -69,6 +74,8 @@ internal data class PreviewSandboxUiState(
     val mobileSignalLevel: Int = 4,
     val dualMobile: Boolean = false,
     val sim2SignalLevel: Int = 4,
+    val sim2MobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FOUR_G,
+    val dataSim: PreviewDataSim = PreviewDataSim.SIM1,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
     val batteryPercent: Int = 87,
@@ -77,6 +84,16 @@ internal data class PreviewSandboxUiState(
 ) {
     val mobileControlsEnabled: Boolean
         get() = simPresent && !airplaneMode
+
+    val dataMobileNetwork: PreviewMobileNetwork
+        get() =
+            if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2MobileNetwork
+            else mobileNetwork
+
+    val dataSignalLevel: Int
+        get() =
+            if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2SignalLevel
+            else mobileSignalLevel
 
     val mobileOptionsVisible: Boolean
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
@@ -140,7 +157,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
         airplaneMode -> PreviewCenterSource.AIRPLANE
         !simPresent -> PreviewCenterSource.NO_SIM
         networkMode == PreviewNetworkMode.NONE ||
-            mobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
+            dataMobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
         else -> PreviewCenterSource.MOBILE
     }
 
@@ -150,7 +167,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
         if (mobileControlsEnabled) {
-            mobileSignalLevel.coerceIn(0, 4)
+            dataSignalLevel.coerceIn(0, 4)
         } else {
             null
         }
@@ -193,7 +210,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
 
             PreviewCenterSource.MOBILE ->
                 CenterIndicator.MobileType(
-                    label = mobileNetwork.systemLabel,
+                    label = dataMobileNetwork.systemLabel,
                     enhanced = false,
                     internet = InternetState.VALIDATED,
                 )

@@ -66,6 +66,8 @@ internal fun PreviewSandboxScreen(
     onMobileSignalLevelChange: (Int) -> Unit,
     onDualMobileChange: (Boolean) -> Unit,
     onSim2SignalLevelChange: (Int) -> Unit,
+    onSim2NetworkChange: (PreviewMobileNetwork) -> Unit,
+    onDataSimChange: (PreviewDataSim) -> Unit,
     onWifiStateChange: (PreviewWifiState) -> Unit,
     onWifiSignalLevelChange: (Int) -> Unit,
     onBatteryPercentChange: (Int) -> Unit,
@@ -102,6 +104,11 @@ internal fun PreviewSandboxScreen(
         listOf(
             stringResource(R.string.home_preview_sim_present),
             stringResource(R.string.home_preview_sim_absent),
+        )
+    val dataSimOptions =
+        listOf(
+            stringResource(R.string.home_preview_data_sim1),
+            stringResource(R.string.home_preview_data_sim2),
         )
     val mobileNetworkChoices =
         listOf(
@@ -270,8 +277,25 @@ internal fun PreviewSandboxScreen(
                         )
 
                         if (state.mobileOptionsVisible) {
+                            if (state.dualMobile) {
+                                SandboxSegmentedField(
+                                    title = stringResource(R.string.home_preview_data_sim_title),
+                                    iconRes = R.drawable.ic_material_symbol_sim_card,
+                                    detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                    options = dataSimOptions,
+                                    selectedIndex = state.dataSim.ordinal,
+                                    onSelected = { index ->
+                                        PreviewDataSim.entries.getOrNull(index)
+                                            ?.let(onDataSimChange)
+                                    },
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
                             OverlayDropdownPreference(
-                                title = stringResource(R.string.home_preview_mobile_network_title),
+                                title = stringResource(
+                                    if (state.dualMobile) R.string.home_preview_sim1_network_title
+                                    else R.string.home_preview_mobile_network_title,
+                                ),
                                 startAction = {
                                     SemanticLeadingIcon(
                                         iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
@@ -292,6 +316,30 @@ internal fun PreviewSandboxScreen(
                                 maxHeight = 360.dp,
                                 modifier = Modifier.padding(top = 4.dp),
                             )
+                            if (state.dualMobile) {
+                                OverlayDropdownPreference(
+                                    title = stringResource(R.string.home_preview_sim2_network_title),
+                                    startAction = {
+                                        SemanticLeadingIcon(
+                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                            detailRes = R.drawable.ic_material_symbol_category,
+                                        )
+                                    },
+                                    items = mobileNetworkChoices.map { it.second },
+                                    selectedIndex =
+                                        mobileNetworkChoices.indexOfFirst {
+                                            it.first == state.sim2MobileNetwork
+                                        }.coerceAtLeast(0),
+                                    onSelectedIndexChange = { index ->
+                                        mobileNetworkChoices.getOrNull(index)
+                                            ?.first
+                                            ?.let(onSim2NetworkChange)
+                                    },
+                                    insideMargin = SandboxPreferenceInsideMargin,
+                                    maxHeight = 360.dp,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
                         } else if (state.networkMode == PreviewNetworkMode.WIFI) {
                             SandboxSegmentedField(
                                 title = stringResource(R.string.home_preview_wifi_state_title),
