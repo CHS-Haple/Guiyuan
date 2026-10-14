@@ -79,7 +79,7 @@ class CcTransitionReservationTest {
     }
 
     @Test
-    fun wifiWithTwoSeparateMobileRootsDoesNotMoveNativePeersBeforeVisualOverlap() {
+    fun dualSimWifiKeepsPeersStillUntilOverlap() {
         val spans = listOf(
             CcTransitionPolicy.ReservationSpan(
                 sourceLeft = -45f, sourceRight = -10f,
@@ -105,7 +105,6 @@ class CcTransitionReservationTest {
         )
         assertTrue(semantic > compact)
         assertEquals(compact, native)
-        // Semantic width still describes the projected, not-yet-visible dots.
         assertEquals(230,
             CcTransitionPolicy.resolveNativePeerReservationWidth(
                 compactWidthPx = compact,
@@ -117,7 +116,7 @@ class CcTransitionReservationTest {
     }
 
     @Test
-    fun nativePeerReservationExcludesGuiyuanOccupancyBeyondFakeEnd() {
+    fun nativeReservationIgnoresEndSideOccupancy() {
         val spans = listOf(
             CcTransitionPolicy.ReservationSpan(
                 sourceLeft = -40f, sourceRight = 0f,
