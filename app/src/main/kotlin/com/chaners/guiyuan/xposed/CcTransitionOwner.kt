@@ -2133,12 +2133,40 @@ internal object CcTransitionOwner {
                         else preferredMobileSubId,
                 ) ?: return null
 
+            // An aggregate root can belong to the other SIM while showing the
+            // data SIM's network type. Verify the sole live root and glyph.
+            val aggregateRootVerified =
+                if (dualCenter) {
+                    val presentation = PresentationStore.snapshot().mobilePresentation
+                    presentation != null &&
+                        presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED &&
+                        presentation.activeSubsAuthoritative &&
+                        presentation.platformActiveSubscriptionIds ==
+                            presentation.activeSubscriptionIds.toSet() &&
+                        presentation.activeSubscriptionIds.size == 2 &&
+                        presentation.visibleRoots == 1 &&
+                        presentation.effectiveDataSubscriptionId ==
+                            model.effectiveDataSubscriptionId &&
+                        presentation.networkTypeSubscriptionId ==
+                            model.effectiveDataSubscriptionId &&
+                        presentation.presentationRootSubscriptionId == witness.subscriptionId &&
+                        model.effectiveDataSubscriptionId in presentation.activeSubscriptionIds &&
+                        witness.subscriptionId in presentation.activeSubscriptionIds &&
+                        listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
+                            .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                            .filter { root ->
+                                root.visibility == View.VISIBLE && isUsableSlotView(root)
+                            }
+                            .distinct()
+                            .singleOrNull() === witness.slotView
+                } else false
             if (dualCenter &&
                 !CcTransitionPolicy.matchesDualMobileTypeTarget(
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
                     source = centerType ?: return null,
                     target = NativePresentationResolver.nativeTargetType(witness.opticalView),
+                    verifiedAggregateRoot = aggregateRootVerified,
                 )
             ) return null
 
