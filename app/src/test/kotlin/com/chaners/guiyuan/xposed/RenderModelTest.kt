@@ -962,6 +962,20 @@ class RenderModelTest {
         )
         assertTrue(unknownTransport?.centerIndicator is CenterIndicator.Empty)
 
+        // Wi-Fi handoff remains unresolved rather than being cleared by a SIM mismatch.
+        val wifiHandoff = RenderModel.from(
+            state,
+            wrong.copy(
+                connectivity = connectivity(
+                    transport = SysUiConnectivitySource.Transport.WIFI,
+                    validated = true,
+                ),
+            ),
+            3,
+            dualSignalEnabled = true,
+        )
+        assertNull(wifiHandoff)
+
         val correct = RenderModel.from(state, native, 3, dualSignalEnabled = true)
         assertEquals("5G", (correct?.centerIndicator as? CenterIndicator.MobileType)?.label)
 

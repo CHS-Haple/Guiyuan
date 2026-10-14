@@ -124,7 +124,10 @@ internal data class RenderModel(
                         },
                     noSimIcon = noSimIcon,
                 )
-                    ?: if (mobileRecoveryPending || nativeNoSimVisible || dualTypeMismatch) {
+                    ?: if (
+                        mobileRecoveryPending || nativeNoSimVisible ||
+                        (dualTypeMismatch && !presentation.connectivity.known)
+                    ) {
                         CenterIndicator.Empty
                     } else {
                         return null
