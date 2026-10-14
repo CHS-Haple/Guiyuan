@@ -47,11 +47,10 @@ Preparation and acceptance should be incremental:
    `NativePresentationResolver` already provide relevant sources. Maintain
    distinct facts for *active subscription identity*, *default data subscription*,
    *per-subscription signal availability*, *native aggregation mode*, and
-   *display selection*. In particular, the current `RenderModel.from` fallback
-   to another known subscription if the preferred subscription is unknown is a
-   semantic boundary to review; never silently label a secondary SIM's bars
-   as the data SIM. Verify behavior on actual dual-SIM SystemUI before changing
-   the shipped single-SIM policy.
+   *display selection*. The optional dual input now refuses to borrow another
+   SIM's signal or an aggregate root's identity when data-SIM authority is
+   unknown. The shipped single-SIM fallback is unchanged; future live dual
+   selection still needs focused SystemUI verification.
 2. **Opt-in configuration, only when designs are ready.** Use one stable,
    versioned persisted choice with `single` as the fallback/default; only add
    selectable dual-style values after the actual layouts and capability checks
@@ -65,14 +64,14 @@ Preparation and acceptance should be incremental:
    No duplicated SystemUI hooks, timers, telephony observers or global state
    spoofing. Treat one SIM, airplane mode, hot-swap, eSIM changes and uncertain
    native binding as defined fallback cases.
-4. **Bounded geometry and transitions.** The current `StatusPainter`
-   `MOBILE_DOT_COUNT=4` source geometry, dot-to-native morph, logical viewport
-   and reservation are **single-group contracts**, not automatic dual-style
-   constraints. Verify width, AOD/Keyguard and QS_FAKE ownership for each style.
-   If the native target does not prove a per-card correspondence, use a
-   reversible, visually bounded no-target exit for the affected mobile group
-   or fall back to single/native; never invent target geometry or modify the
-   final Control Center. Preserve the original single-card transition untouched.
+4. **Bounded geometry and transitions.** The original four-dot
+   dot-to-native morph remains a single-SIM contract. Optional eight-dot source
+   bounds and whole-group no-target fade now share the steady dual geometry
+   without claiming a per-SIM native endpoint or reserving space for one.
+   Verify width, AOD/Keyguard and QS_FAKE ownership before enabling each live
+   style. If the native target does not prove per-card correspondence, retain
+   the bounded group fade or fall back to single/native; never invent target
+   geometry or modify the final Control Center.
 5. **Extend the accepted sandbox prototype only when needed.** B980 already supports
    two independently adjustable simulated SIM signal levels and a default-off
    dual-row preview. Remaining pre-runtime scenarios include default-data assignment,
