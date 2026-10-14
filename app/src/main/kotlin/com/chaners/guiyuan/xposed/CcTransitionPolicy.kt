@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -24,6 +25,16 @@ internal object CcTransitionPolicy {
                 ?: 0f
         return expansion + (1f - expansion) * appearance
     }
+
+    fun matchesDualMobileTypeTarget(
+        dataSubId: Int,
+        targetSubId: Int?,
+        source: CenterIndicator.MobileType,
+        target: NativePresentationResolver.NetworkType?,
+    ): Boolean =
+        dataSubId >= 0 &&
+            targetSubId == dataSubId &&
+            mobileTypeMatches(source.label, source.enhanced, target) == true
 
     fun mobileTypeMatches(
         sourceLabel: String,
