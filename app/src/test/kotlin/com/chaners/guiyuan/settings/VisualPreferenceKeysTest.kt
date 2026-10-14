@@ -9,6 +9,10 @@ class VisualPreferenceKeysTest {
     fun acceptsLayoutGlobalAndLegacyKeys() {
         assertTrue(isVisualPreferenceKey(null)) // SharedPreferences.clear()
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
+        assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
+        assertTrue(isVisualPreferenceKey(visualModeKey(true, CONTENT_LAYOUT_KEY)))
+        assertTrue(isVisualPreferenceKey(visualModeKey(true, BATTERY_COLOR_PRESET_KEY)))
+        assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, true)))
         assertTrue(isVisualPreferenceKey(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY))
         assertTrue(isVisualPreferenceKey(BATTERY_TOP_TEXT_SCALE_KEY))
         assertTrue(isVisualPreferenceKey("network_center.battery_top_text_scale"))

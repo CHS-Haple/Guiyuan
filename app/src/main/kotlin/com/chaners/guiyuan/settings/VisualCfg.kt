@@ -172,6 +172,7 @@ internal object IosStyleBatteryPalette {
 
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
+    val dualSignal: Boolean = false,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = false,
