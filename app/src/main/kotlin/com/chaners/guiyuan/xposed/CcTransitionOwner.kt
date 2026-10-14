@@ -1731,41 +1731,40 @@ internal object CcTransitionOwner {
             // capacity and island collision remain HyperOS-owned.
             lastReservationWidthPx = requestedWidth
 
-            val nativeRequestedWidth =
+            // The full visual width can extend beyond the fake carrier's end.
+            // Only the peer-side footprint belongs in native statusIcons padding.
+            val targetEndOffsetPx =
                 if (nativeBatteryIslandActive) {
-                    // Reservation spans store target X in the final-Battery end frame.
-                    // HyperOS translates the visible QS_FAKE carrier independently for
-                    // Battery Island, so project that target end into the current fake
-                    // end frame before measuring the current projected occupancy.
-                    lastNativePeerTargetEndOffsetPx = null
-                    val targetEndOffsetPx =
-                        batteryIslandPeerEndOffsetPx()
-                            ?: run {
-                                lastNativeReservationWidthPx = null
-                                val presentationFailed =
-                                    SysUiPresentationOwner
-                                        .failCcPresentation(
-                                            "battery-island-peer-end-frame-unavailable",
-                                        )
-                                if (!presentationFailed) {
-                                    CcTransitionOwner.detach(
+                    // Battery Island moves the fake end independently of the target.
+                    batteryIslandPeerEndOffsetPx()
+                        ?: run {
+                            lastNativePeerTargetEndOffsetPx = null
+                            lastNativeReservationWidthPx = null
+                            val presentationFailed =
+                                SysUiPresentationOwner
+                                    .failCcPresentation(
                                         "battery-island-peer-end-frame-unavailable",
                                     )
-                                }
-                                return
+                            if (!presentationFailed) {
+                                CcTransitionOwner.detach(
+                                    "battery-island-peer-end-frame-unavailable",
+                                )
                             }
-                    lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
-                    CcTransitionPolicy.resolveBatteryIslandNativePeerReservationWidth(
-                        compactWidthPx = compactWidth,
-                        spans = spans,
-                        semanticWidthPx = requestedWidth,
-                        progress = progress,
-                        targetEndOffsetPx = targetEndOffsetPx,
-                    )
+                            return
+                        }
                 } else {
-                    lastNativePeerTargetEndOffsetPx = null
-                    requestedWidth
+                    0f
                 }
+            lastNativePeerTargetEndOffsetPx =
+                targetEndOffsetPx.takeIf { nativeBatteryIslandActive }
+            val nativeRequestedWidth =
+                CcTransitionPolicy.resolveNativePeerReservationWidth(
+                    compactWidthPx = compactWidth,
+                    spans = spans,
+                    semanticWidthPx = requestedWidth,
+                    progress = progress,
+                    targetEndOffsetPx = targetEndOffsetPx,
+                )
 
             if (lastNativeReservationWidthPx != nativeRequestedWidth) {
                 val applied =
