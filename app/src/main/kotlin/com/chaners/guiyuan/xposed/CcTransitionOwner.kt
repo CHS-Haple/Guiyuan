@@ -377,10 +377,13 @@ internal object CcTransitionOwner {
                                 val name =
                                     NativeParticipantAccess.resourceEntryName(child)
                                         ?: child.javaClass.simpleName
+                                val nativeType = NativePresentationResolver.nativeTargetType(child)
                                 "$name:${child.visibility}:${child.width}x${child.height}:" +
                                     "${visual?.topology ?: "unknown"}:" +
                                     "${visual?.components?.size ?: 0}:" +
-                                    "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
+                                    "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}:" +
+                                    "${nativeType?.label ?: "type-unreadable"}:" +
+                                    "${nativeType?.enhanced ?: "unknown"}"
                             }
                         }
                     "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
