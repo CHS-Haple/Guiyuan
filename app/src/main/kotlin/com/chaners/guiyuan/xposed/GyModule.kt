@@ -89,6 +89,7 @@ class GyModule : XposedModule() {
     private var lastBatteryNumberProbeSummary: String? = null
     private var lastMobileTargetProbeSummary: String? = null
     private var ccWifiGeometryStage = -1
+    private var ccWifiGeometrySamples = 0
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -967,6 +968,7 @@ class GyModule : XposedModule() {
         if (update.visible == false) {
             lastMobileTargetProbeSummary = null
             ccWifiGeometryStage = -1
+            ccWifiGeometrySamples = 0
         }
         if (detailedDiagnosticsEnabled && update.fraction != null) {
             val fraction = update.fraction.coerceIn(0f, 1f)
@@ -978,15 +980,18 @@ class GyModule : XposedModule() {
                 fraction >= 0.3f -> 1
                 else -> 0
             }
-            if (stage > ccWifiGeometryStage) {
+            if (stage != ccWifiGeometryStage && ccWifiGeometrySamples < 12) {
                 CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
+                    val direction = if (stage < ccWifiGeometryStage) "closing" else "opening"
                     ccWifiGeometryStage = stage
+                    ccWifiGeometrySamples++
                     logDiagnostic(
                         level = Log.INFO,
                         event = "transition.geometry",
                         component = "ccWifi",
                         state = "sampled",
                         "sample" to stage,
+                        "direction" to direction,
                         "snapshot" to snapshot,
                     )
                 }
@@ -4327,6 +4332,7 @@ class GyModule : XposedModule() {
         lastBatteryNumberProbeSummary = null
         lastMobileTargetProbeSummary = null
         ccWifiGeometryStage = -1
+        ccWifiGeometrySamples = 0
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
