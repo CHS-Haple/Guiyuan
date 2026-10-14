@@ -427,6 +427,10 @@ internal object CcTransitionOwner {
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
                 " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
                 " endOffset=$lastNativePeerTargetEndOffsetPx" +
+                " fakeRoot=${viewPos(fakeRootRef.get())}" +
+                " finalRoot=${viewPos(finalRootRef.get())}" +
+                " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
+                " finalParent=${viewPos(finalStatusIcons.parent as? View)}" +
                 " fake=${viewPos(fakeStatusIcons)}" +
                 " final=${viewPos(finalStatusIcons)}" +
                 " fakeWifi=${viewPos(fakeWifi)} finalWifi=${viewPos(finalWifi)}" +
