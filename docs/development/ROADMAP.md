@@ -34,12 +34,12 @@ Do not add controls merely because a renderer parameter exists.
 The default is still the accepted single four-dot presentation. [#502](https://github.com/CHS-Haple/Guiyuan/pull/502) integrated an opt-in eight-dot live mode (Build 993): physical SIM1 upper/SIM2 lower, provided **two authoritative active subscriptions** and complete slot mapping are available. The center network-type label follows the verified data SIM; native Control Center remains SystemUI-owned. Missing/ambiguous identity or unavailable signal data uses existing single/native-safe behavior without silently changing the user's opt-in preference. Single/dual visual configurations use separate saved profiles; Preview Sandbox data never becomes SystemUI input.
 
 Remaining work is evidence-led, not speculative:
-1. Verify integration on other SystemUI topologies (especially third-party composite dual-row signal icons) before any per-row exact CC morph. A composite View's row order or graphical bar/dot pattern does not prove `subscriptionId`. Continue to prefer whole-group unmatched handoff/fade over inventing endpoints.
+1. Investigate third-party composite dual-row CC targets separately. B996 already supports two individually identified native `subId` roots with the single-SIM staged morph. A composite View's top/bottom row order, including data-SIM-first layouts, does not prove fixed SIM1/SIM2 ownership; preserve verified whole-group handoff/fade until an authoritative row map is available.
 2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown/unavailable strength, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC transitions. Keep the current device acceptance distinct from these untested cases.
 3. Add optional alternative eight-dot styles only after concrete designs, capability checks and a maintainable single-choice selector exist. Do not add speculative flags/hooks or parallel observers.
 4. Revisit the separate single/dual **settings-bank** selection only if real device behavior demonstrates an unwanted visual shift during transient single-SIM fallback. The chosen dual preference must persist through temporary SIM loss.
 
-Current native CC per-row identity is **not established**, and optional dual mode does not authorize mutation of the native final Control Center.
+Native CC per-row identity is established **only** for two separate, individually bound roots; not for one aggregated third-party root. Optional dual mode never authorizes mutation of the native final Control Center.
 
 ## Compatibility work
 
