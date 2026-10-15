@@ -40,12 +40,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.math.sqrt
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import kotlin.math.sqrt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -98,7 +98,7 @@ internal fun SemanticLeadingIcon(
                 val detailArea = paintedIconArea(detail)
                 if (mainArea > 0 && detailArea > 0) {
                     // Match a quarter of the main glyph's painted area, not its height alone.
-                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(12f, 17f).dp
+                    (11f * sqrt(mainArea.toFloat() / detailArea.toFloat())).coerceIn(12f, 17f).dp
                 } else {
                     12.dp
                 }
