@@ -305,7 +305,9 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
-                if (mobileTargetsDirty.getAndSet(false)) {
+                if (mobileTargetsDirty.getAndSet(false) &&
+                    currentSnapshot.model.dualMobileLevels == null
+                ) {
                     targetCache.keys.removeAll { key ->
                         (key.target as? StatusPainter.TransitionTarget.Slots)
                             ?.preferredSlots
@@ -314,6 +316,7 @@ internal object CcTransitionOwner {
                     frozenAdditionalMobileTargets = null
                     // Reuse the existing width-retarget path if native membership changed.
                     reservationLayout = null
+                    drawable.invalidateSelf()
                 }
                 val previousSnapshot = currentSnapshot
                 val latest =

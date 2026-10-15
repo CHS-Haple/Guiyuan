@@ -790,8 +790,10 @@ class GyModule : XposedModule() {
                 onMobileSignalWillApply = { image ->
                     NativeNetworkSuppressor.preMaskMobileSignal(image)
                 },
-                onPresentationChanged = {
+                onMobileBound = {
                     CcTransitionOwner.onNativeMobileRefresh()
+                },
+                onPresentationChanged = {
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
                 },
                 onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,

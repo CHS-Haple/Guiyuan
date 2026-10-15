@@ -144,6 +144,7 @@ internal object SysUiNetworkSource {
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
+        onMobileBound: (() -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -162,6 +163,7 @@ internal object SysUiNetworkSource {
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
                 onMobileSignalWillApply = onMobileSignalWillApply,
+                onMobileBound = onMobileBound,
                 onPresentationChanged = onPresentationChanged,
                 onEvent = onEvent,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
@@ -310,6 +312,7 @@ internal object SysUiNetworkSource {
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileSignalWillApply: ((ImageView) -> Unit)?,
+        onMobileBound: (() -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -383,6 +386,7 @@ internal object SysUiNetworkSource {
                             mobileBindHooker(
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
+                                onMobileBound = onMobileBound,
                                 onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
                                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
@@ -996,6 +1000,7 @@ internal object SysUiNetworkSource {
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
+        onMobileBound: (() -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -1035,12 +1040,15 @@ internal object SysUiNetworkSource {
         }
 
         val result = chain.proceed()
-        if (bindingChanged) bindingLog?.let { onEvent?.invoke(it) }
-        // A binder can replace a native child without changing its subscription ID.
+        if (bindingChanged) {
+            bindingLog?.let { onEvent?.invoke(it) }
+            onPresentationChanged?.invoke()
+        }
+        // Rebound optical children require a target refresh, not a presentation refresh.
         if (root != null &&
             locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
         ) {
-            onPresentationChanged?.invoke()
+            onMobileBound?.invoke()
         }
         result
     }
