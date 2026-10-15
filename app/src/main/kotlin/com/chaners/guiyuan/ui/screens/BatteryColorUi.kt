@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -127,16 +126,6 @@ internal fun BatteryCommonColorButton(
     }
 }
 
-private const val BATTERY_SWATCH_BORDER_RATIO = 1f / 14f
-private const val BATTERY_SWATCH_BORDER_ALPHA = 0.26f
-
-@Composable
-private fun batterySwatchBorder(size: Dp): BorderStroke =
-    BorderStroke(
-        width = (size.value * BATTERY_SWATCH_BORDER_RATIO).dp,
-        color = MiuixTheme.colorScheme.onSurface.copy(alpha = BATTERY_SWATCH_BORDER_ALPHA),
-    )
-
 @Composable
 internal fun BatteryColorDot(
     color: Int,
@@ -152,15 +141,7 @@ internal fun BatteryColorDot(
             } else {
                 Color(color)
             },
-        border =
-            if (visuallyInactive) {
-                BorderStroke(
-                    width = (size.value * BATTERY_SWATCH_BORDER_RATIO).dp,
-                    color = MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                )
-            } else {
-                batterySwatchBorder(size)
-            },
+        border = BorderStroke(1.dp, MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
     ) {}
 }
 
@@ -172,7 +153,7 @@ internal fun BatteryColorMosaic(
         modifier = Modifier.size(size),
         shape = CircleShape,
         color = Color.Transparent,
-        border = batterySwatchBorder(size),
+        border = BorderStroke(1.dp, MiuixTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
     ) {
         Box(
             modifier =

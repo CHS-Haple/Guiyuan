@@ -20,10 +20,13 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
+import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
+import com.chaners.guiyuan.ui.screens.PreviewDataSim
+import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
@@ -45,7 +48,7 @@ internal fun GyApp(
     onPreviewThemeChange: (Boolean?) -> Unit,
     lang: AppLang,
     iconHidden: Boolean,
-    onHotReload: (() -> Unit) -> Boolean,
+    onHotReload: () -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
@@ -70,6 +73,17 @@ internal fun GyApp(
             mutableIntStateOf(PreviewMobileNetwork.FIVE_G.ordinal)
         }
         var previewMobileSignalLevel by rememberSaveable { mutableIntStateOf(4) }
+        var previewDualMobile by rememberSaveable { mutableStateOf(false) }
+        var previewSim2SignalLevel by rememberSaveable { mutableIntStateOf(4) }
+        var previewSim2NetworkIndex by rememberSaveable {
+            mutableIntStateOf(PreviewMobileNetwork.FOUR_G.ordinal)
+        }
+        var previewDataSimIndex by rememberSaveable {
+            mutableIntStateOf(PreviewDataSim.SIM1.ordinal)
+        }
+        var previewSimCardsIndex by rememberSaveable {
+            mutableIntStateOf(PreviewSimCards.BOTH.ordinal)
+        }
         var previewWifiStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
         }
@@ -81,25 +95,46 @@ internal fun GyApp(
         var previewChargingStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewChargingState.NOT_CHARGING.ordinal)
         }
+        val savedNetworkMode =
+            PreviewNetworkMode.entries[
+                previewNetworkModeIndex.coerceIn(0, PreviewNetworkMode.entries.lastIndex)
+            ]
+        val savedMobileNetwork =
+            PreviewMobileNetwork.entries[
+                previewMobileNetworkIndex.coerceIn(0, PreviewMobileNetwork.entries.lastIndex)
+            ]
         val previewState =
             PreviewSandboxUiState(
                 simPresent = previewSimPresent,
                 airplaneMode = previewAirplaneMode,
                 networkMode =
-                    PreviewNetworkMode.entries[
-                        previewNetworkModeIndex.coerceIn(
-                            0,
-                            PreviewNetworkMode.entries.lastIndex,
-                        )
-                    ],
-                mobileNetwork =
-                    PreviewMobileNetwork.entries[
-                        previewMobileNetworkIndex.coerceIn(
-                            0,
-                            PreviewMobileNetwork.entries.lastIndex,
-                        )
-                    ],
+                    if (
+                        savedNetworkMode == PreviewNetworkMode.MOBILE &&
+                        !previewDualMobile &&
+                        savedMobileNetwork == PreviewMobileNetwork.NONE
+                    ) {
+                        PreviewNetworkMode.NONE
+                    } else {
+                        savedNetworkMode
+                    },
+                mobileNetwork = savedMobileNetwork,
                 mobileSignalLevel = previewMobileSignalLevel,
+                dualMobile = previewDualMobile,
+                sim2SignalLevel = previewSim2SignalLevel,
+                sim2MobileNetwork =
+                    PreviewMobileNetwork.entries[
+                        previewSim2NetworkIndex.coerceIn(
+                            0, PreviewMobileNetwork.entries.lastIndex,
+                        )
+                    ],
+                dataSim =
+                    PreviewDataSim.entries[
+                        previewDataSimIndex.coerceIn(0, PreviewDataSim.entries.lastIndex)
+                    ],
+                simCards =
+                    PreviewSimCards.entries[
+                        previewSimCardsIndex.coerceIn(0, PreviewSimCards.entries.lastIndex)
+                    ],
                 wifiState =
                     PreviewWifiState.entries[
                         previewWifiStateIndex.coerceIn(
@@ -200,6 +235,12 @@ internal fun GyApp(
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
+                            if (
+                                it == PreviewNetworkMode.MOBILE &&
+                                previewMobileNetworkIndex == PreviewMobileNetwork.NONE.ordinal
+                            ) {
+                                previewMobileNetworkIndex = PreviewMobileNetwork.FIVE_G.ordinal
+                            }
                             previewNetworkModeIndex = it.ordinal
                         },
                         onMobileNetworkChange = {
@@ -208,6 +249,11 @@ internal fun GyApp(
                         onMobileSignalLevelChange = {
                             previewMobileSignalLevel = it
                         },
+                        onDualMobileChange = { previewDualMobile = it },
+                        onSim2SignalLevelChange = { previewSim2SignalLevel = it },
+                        onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
+                        onDataSimChange = { previewDataSimIndex = it.ordinal },
+                        onSimCardsChange = { previewSimCardsIndex = it.ordinal },
                         onWifiStateChange = {
                             previewWifiStateIndex = it.ordinal
                         },
@@ -233,10 +279,14 @@ internal fun GyApp(
                 AboutScreen(
                     onBack = ::navigateBack,
                     onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
+                    onOpenScopes = { navigate(AppRoute.StaticScopes) },
                 )
             }
             entry<AppRoute.AboutThirdParty>(swipeDismiss = swipeBackDirection) {
                 AboutThirdPartyScreen(onBack = ::navigateBack)
+            }
+            entry<AppRoute.StaticScopes>(swipeDismiss = swipeBackDirection) {
+                StaticScopeScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.Diagnostics>(swipeDismiss = swipeBackDirection) {
                 DiagnosticsScreen(

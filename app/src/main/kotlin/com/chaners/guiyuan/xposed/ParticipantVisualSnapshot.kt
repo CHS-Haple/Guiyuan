@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import java.util.WeakHashMap
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -49,6 +50,15 @@ internal object ParticipantVisualSnapshot {
             get() = (top + bottom) / 2f
     }
 
+    internal enum class RowShape { DOTS, BARS }
+
+    internal data class DualMobileRows(
+        val top: List<NormalizedRect>,
+        val bottom: List<NormalizedRect>,
+        val topShape: RowShape,
+        val bottomShape: RowShape,
+    )
+
     internal data class Snapshot(
         val envelope: NormalizedRect,
         val components: List<NormalizedRect>,
@@ -56,6 +66,59 @@ internal object ParticipantVisualSnapshot {
         val inkCenterX: Float? = null,
         val inkCenterY: Float? = null,
     ) {
+        // Only resolve independent rows when all eight native shapes are separable.
+        fun dualMobileRowsWithinEnvelope(): DualMobileRows? {
+            if (components.size != 8 || envelope.width <= 0f || envelope.height <= 0f) {
+                return null
+            }
+            val byBottom = components.sortedBy { it.bottom }
+            val top = byBottom.take(4).sortedBy { it.centerX }
+            val bottom = byBottom.drop(4).sortedBy { it.centerX }
+            if (top.maxOf { it.bottom } >= bottom.minOf { it.top }) return null
+            // Overlapping columns cannot prove four independent signal elements.
+            if (top.zipWithNext().any { (left, right) -> left.right >= right.left } ||
+                bottom.zipWithNext().any { (left, right) -> left.right >= right.left }
+            ) return null
+
+            val pitch = (top.last().centerX - top.first().centerX) / 3f
+            if (pitch <= 0f || top.zip(bottom).any { (a, b) ->
+                    abs(a.centerX - b.centerX) > pitch * 0.2f
+                }
+            ) return null
+
+            fun rowShape(row: List<NormalizedRect>): RowShape? {
+                val dots =
+                    row.all { rect ->
+                        rect.width > 0f && rect.height > 0f &&
+                            rect.height in (rect.width * 0.75f)..(rect.width * 1.3f)
+                    } && (row.maxOf { it.height } - row.minOf { it.height }) <
+                    envelope.height * 0.12f
+                return when {
+                    dots -> RowShape.DOTS
+                    classifyComponents(row) == Topology.FOUR_VERTICAL_BARS &&
+                        row.any { it.height > it.width * 1.5f } -> RowShape.BARS
+                    else -> null
+                }
+            }
+
+            val topShape = rowShape(top) ?: return null
+            val bottomShape = rowShape(bottom) ?: return null
+
+            fun relative(rect: NormalizedRect): NormalizedRect =
+                NormalizedRect(
+                    left = (rect.left - envelope.left) / envelope.width,
+                    top = (rect.top - envelope.top) / envelope.height,
+                    right = (rect.right - envelope.left) / envelope.width,
+                    bottom = (rect.bottom - envelope.top) / envelope.height,
+                )
+            return DualMobileRows(
+                top = top.map(::relative),
+                bottom = bottom.map(::relative),
+                topShape = topShape,
+                bottomShape = bottomShape,
+            )
+        }
+
         fun fourVerticalBarsWithinEnvelope(): List<NormalizedRect>? {
             if (topology != Topology.FOUR_VERTICAL_BARS || components.size != 4) {
                 return null
@@ -80,6 +143,9 @@ internal object ParticipantVisualSnapshot {
         val level: Int,
         val stateHash: Int,
         val layoutDirection: Int,
+        val resourceConfigHash: Int,
+        val intrinsicWidth: Int,
+        val intrinsicHeight: Int,
     )
 
     private val drawableCache =
@@ -99,6 +165,9 @@ internal object ParticipantVisualSnapshot {
                 level = drawable.level,
                 stateHash = drawable.state.contentHashCode(),
                 layoutDirection = drawable.layoutDirection,
+                resourceConfigHash = resources.configuration.hashCode(),
+                intrinsicWidth = drawable.intrinsicWidth,
+                intrinsicHeight = drawable.intrinsicHeight,
             )
         drawableCache[state]
             ?.takeIf { perVariant -> perVariant.containsKey(variant) }
@@ -195,7 +264,11 @@ internal object ParticipantVisualSnapshot {
                     component.height > 0f &&
                     component.height >= component.width
             }
-        if (!vertical) return Topology.COMPOSITE
+        // Equal-sized dots or crossing columns cannot be exact bar endpoints.
+        if (!vertical ||
+            ordered.none { it.height > it.width * 1.5f } ||
+            ordered.zipWithNext().any { (a, b) -> a.right >= b.left }
+        ) return Topology.COMPOSITE
 
         val bottoms = ordered.map { component -> component.bottom }
         val bottomSpread =

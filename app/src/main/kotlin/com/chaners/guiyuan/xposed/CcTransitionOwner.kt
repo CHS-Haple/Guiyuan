@@ -21,6 +21,7 @@ import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -91,6 +92,11 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
+    fun onNativeMobileRefresh() {
+        current?.markMobileTargetsDirty()
+    }
+
+    @Synchronized
     fun onProjectionReadinessChanged(ready: Boolean) {
         projectionReady = ready
         sync("projection-readiness")
@@ -106,6 +112,13 @@ internal object CcTransitionOwner {
     @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
         current?.batteryNumberProbe()
+
+    @Synchronized
+    fun latestMobileTargetProbeDiagnostic(): String? =
+        current?.mobileTargetProbe()
+
+    @Synchronized
+    fun wifiMotionProbe(): String? = current?.wifiMotionProbe()
 
     @Synchronized
     fun detach(source: String = "detach") {
@@ -204,7 +217,6 @@ internal object CcTransitionOwner {
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
                 CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
-            genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -236,6 +248,7 @@ internal object CcTransitionOwner {
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
+        private val mobileTargetsDirty = AtomicBoolean(false)
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -248,14 +261,21 @@ internal object CcTransitionOwner {
         private var started = false
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
+        private var reservationLayout: ChargeLayout? = null
+        private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
-        private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
+        private val chargeRootLocation = IntArray(2)
+        private val chargePeerLocation = IntArray(2)
+        private val chargeBatteryLocation = IntArray(2)
+        private var lastChargeLayout: ChargeLayout? = null
+        private var chargeRetarget: ChargeRetarget? = null
+        private var fakeCarrierRootOffsetX: Float? = null
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
@@ -285,6 +305,16 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                if (mobileTargetsDirty.getAndSet(false)) {
+                    targetCache.keys.removeAll { key ->
+                        (key.target as? StatusPainter.TransitionTarget.Slots)
+                            ?.preferredSlots
+                            ?.any { it == MOBILE_SLOT || it == STACKED_MOBILE_SLOT } == true
+                    }
+                    frozenAdditionalMobileTargets = null
+                    // Reuse the existing width-retarget path if native membership changed.
+                    reservationLayout = null
+                }
                 val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
@@ -308,6 +338,10 @@ internal object CcTransitionOwner {
                 }
                 true
             }
+
+        fun markMobileTargetsDirty() {
+            mobileTargetsDirty.set(true)
+        }
 
         fun matches(
             root: ViewGroup,
@@ -335,6 +369,124 @@ internal object CcTransitionOwner {
         fun batteryNumberProbe(): String =
             resolveBatteryNumberProbe(finalBattery)
 
+        fun mobileTargetProbe(): String? {
+            val targets =
+                listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT).flatMap { slot ->
+                    slotViews(finalStatusIcons, slot).map { slot to it }
+                }.filter { (_, root) ->
+                    root.visibility == View.VISIBLE && isUsableSlotView(root)
+                }
+            if (targets.isEmpty()) return null
+
+            return "targets=${targets.size};" +
+                targets.take(4).joinToString(";") { (slot, root) ->
+                    val signal =
+                        NativeParticipantAccess.findResourceView(
+                            root = root,
+                            entryName = "mobile_signal_container",
+                        ) as? ViewGroup
+                    val children =
+                        if (signal == null) {
+                            "missing"
+                        } else {
+                            (0 until min(signal.childCount, 12)).joinToString(",") { index ->
+                                val child = signal.getChildAt(index)
+                                val visual =
+                                    if (child.isShown && child.width > 0 && child.height > 0) {
+                                        runCatching { ParticipantVisualSnapshot.resolveView(child) }
+                                            .getOrElse { error ->
+                                                if (error is VirtualMachineError || error is ThreadDeath) {
+                                                    throw error
+                                                }
+                                                null
+                                            }
+                                    } else {
+                                        null
+                                    }
+                                val rows = visual?.dualMobileRowsWithinEnvelope()
+                                val name =
+                                    NativeParticipantAccess.resourceEntryName(child)
+                                        ?: child.javaClass.simpleName
+                                "$name:${child.visibility}:${child.width}x${child.height}:" +
+                                    "${visual?.topology ?: "unknown"}:" +
+                                    "${visual?.components?.size ?: 0}:" +
+                                    "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
+                            }
+                        }
+                    "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
+                        "size=${root.width}x${root.height}:signal=[$children]"
+                }
+        }
+
+        // Sample both native carriers in one frame; neither layer is a stable
+        // proxy for the other while HyperOS switches CC presentation.
+        fun wifiMotionProbe(): String? {
+            val native = PresentationStore.snapshot().mobilePresentation
+            if (currentSnapshot.model.centerIndicator !is CenterIndicator.Wifi ||
+                native?.mode != NativePresentationResolver.Mode.DUAL_SEPARATE
+            ) return null
+            val root = rootRef.get() ?: return null
+            val source = sourceViewRef.get() ?: return null
+
+            fun viewPos(view: View?): String {
+                if (view == null) return "missing"
+                val geometry = sample(view, root)
+                val name = NativeParticipantAccess.resourceEntryName(view)
+                    ?: view.javaClass.simpleName
+                return "$name@" +
+                    (geometry?.let { "${it[0].roundToInt()},${it[1].roundToInt()}" }
+                        ?: "unmeasured") +
+                    ":${view.width}x${view.height}:a=${view.alpha}:" +
+                    "t=${view.translationX.roundToInt()},${view.translationY.roundToInt()}:" +
+                    "pEnd=${view.paddingEnd}"
+            }
+            fun peers(group: ViewGroup): String =
+                (0 until group.childCount)
+                    .asSequence()
+                    .filter { index ->
+                        val child = group.getChildAt(index)
+                        child.visibility == View.VISIBLE &&
+                            child.width > 0 && child.height > 0
+                    }
+                    .take(16)
+                    .joinToString(",") { index ->
+                        val child = group.getChildAt(index)
+                        val slot =
+                            runCatching { NativeParticipantAccess.slotOf(child) }
+                                .getOrNull() ?: "-"
+                        val clip = child.clipBounds
+                        val mask = clip?.let {
+                            "${it.left}/${it.top}/${it.right}/${it.bottom}"
+                        } ?: "-"
+                        "$index:$slot:" + viewPos(child) +
+                            ":shown=${child.isShown}:clip=$mask"
+                    }
+
+            val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {
+                it.visibility == View.VISIBLE && isUsableSlotView(it)
+            }
+            val finalWifi = slotViews(finalStatusIcons, WIFI_SLOT).firstOrNull {
+                it.visibility == View.VISIBLE && isUsableSlotView(it)
+            }
+            return "progress=$progress fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
+                " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
+                " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
+                " endOffset=$lastNativePeerTargetEndOffsetPx" +
+                " fakeRoot=${viewPos(fakeRootRef.get())}" +
+                " finalRoot=${viewPos(finalRootRef.get())}" +
+                " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
+                " finalParent=${viewPos(finalStatusIcons.parent as? View)}" +
+                " fake=${viewPos(fakeStatusIcons)}" +
+                " final=${viewPos(finalStatusIcons)}" +
+                " fakeWifi=${viewPos(fakeWifi)} finalWifi=${viewPos(finalWifi)}" +
+                " finalWifiSignal=${viewPos(finalWifi?.let { wifi ->
+                    NativeParticipantAccess.findResourceView(wifi, "wifi_signal")
+                })}" +
+                " source=${viewPos(source)} finalBattery=${viewPos(finalBattery)}" +
+                " fakePeers=[${peers(fakeStatusIcons)}]" +
+                " finalPeers=[${peers(finalStatusIcons)}]"
+        }
+
         fun start() {
             if (started) return
             val rootView = rootRef.get() ?: return
@@ -355,7 +507,6 @@ internal object CcTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
             val appearanceChanged =
@@ -366,7 +517,6 @@ internal object CcTransitionOwner {
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
-            this.genericIslandShowing = genericIslandShowing
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
             if (appearanceChanged) {
@@ -393,6 +543,17 @@ internal object CcTransitionOwner {
                     TargetCacheKey(StatusPainter.TransitionTarget.BatteryChargingIcon, null),
                 )
             }
+            if (
+                (previous.dualMobileLevels == null) != (model.dualMobileLevels == null) ||
+                (previous.dualMobileLevels != null && model.dualMobileLevels != null &&
+                    (previous.effectiveDataSubscriptionId != model.effectiveDataSubscriptionId ||
+                        previous.centerIndicator != model.centerIndicator))
+            ) {
+                frozenReservationSpans = null
+                reservationLayout = null
+                reservationRetarget = null
+                frozenAdditionalMobileTargets = null
+            }
             currentSnapshot = next
         }
 
@@ -400,7 +561,6 @@ internal object CcTransitionOwner {
             SysUiPresentationOwner.clearCcTransitionReservation(
                 "transition-" + source,
             )
-            genericIslandShowing = null
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
@@ -468,26 +628,111 @@ internal object CcTransitionOwner {
                                     fakeStatusIcons.layoutDirection ==
                                         View.LAYOUT_DIRECTION_RTL,
                             )
-                        if (currentCarrier == null) {
+                        val fakeFrame = sample(view = fake, root = rootView)
+                        if (currentCarrier == null || fakeFrame == null) {
                             null
                         } else {
+                            // Battery remeasurement moves the fake icon row's edge,
+                            // even while its root and represented Wi-Fi stay in place.
+                            val rootOffset =
+                                fakeCarrierRootOffsetX
+                                    ?: (currentCarrier[0] - fakeFrame[0]).also {
+                                        fakeCarrierRootOffsetX = it
+                                    }
                             CarrierFrames(
                                 source = frozen.motionCarrierGeometry,
-                                current = currentCarrier,
+                                current =
+                                    CcTransitionPolicy.rootAnchoredCarrier(
+                                        carrier = currentCarrier,
+                                        root = fakeFrame,
+                                        rootRelativeX = rootOffset,
+                                    ),
                             )
                         }
                     }
                 }
             val model = currentSnapshot.model
-            val specs =
+            val baseSpecs =
                 painter.transitionComponentSpecs(
                     width = sourceWidth,
                     height = sourceHeight,
                     model = model,
                     visual = currentSnapshot.visual,
                 )
-            if (specs.isEmpty()) return
-
+            if (baseSpecs.isEmpty()) return
+            val dualSpec =
+                baseSpecs.firstOrNull {
+                    it.component == StatusPainter.TransitionComponent.MOBILE &&
+                        model.dualMobileLevels != null
+                }
+            val rowSpecs =
+                dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual) }
+            val nativeDualTargets =
+                dualSpec?.let { resolveDualMobileTargets(it, model) }
+            val dualRowTargets =
+                if (rowSpecs?.size != 2 || nativeDualTargets == null) {
+                    null
+                } else {
+                    val presentation = PresentationStore.snapshot().mobilePresentation
+                    val order = presentation?.let {
+                        CcTransitionPolicy.dualRootRowIndices(
+                            mode = it.mode,
+                            slots = it.slotSubscriptionIds,
+                            rootSubIds = nativeDualTargets.map { target -> target.subscriptionId },
+                        )
+                    }
+                    if (order == null) {
+                        null
+                    } else {
+                        rowSpecs.zip(order.map { nativeDualTargets[it] }).mapNotNull { (spec, witness) ->
+                            if (mobileTargetBars(witness)?.size != 4) {
+                                null
+                            } else {
+                                CcTransitionPolicy.componentGeometry(
+                                    parentGeometry = sourceParentGeometry,
+                                    parentWidth = sourceWidth,
+                                    parentHeight = sourceHeight,
+                                    bounds = spec.sourceBounds,
+                                )?.let { source ->
+                                    resolveTargetGeometry(
+                                        witness = witness,
+                                        root = rootView,
+                                        sourceGeometry = source,
+                                        targetOpticalBounds = spec.targetOpticalBounds,
+                                    )?.let { target -> witness to target }
+                                }
+                            }
+                        }.takeIf { it.size == 2 }
+                    }
+                }
+            // The aggregate has one optical endpoint; its rows have no verified SIM IDs.
+            val aggregateTarget =
+                if (dualSpec == null || dualRowTargets != null ||
+                    model.mobileUnavailableMark
+                ) null
+                else nativeDualTargets
+                    ?.singleOrNull()
+                    ?.opticalView
+                    ?.let { optical ->
+                        val snapshot = ParticipantVisualSnapshot.resolveView(optical)
+                            ?: return@let null
+                        val rows = snapshot.dualMobileRowsWithinEnvelope()
+                            ?: return@let null
+                        val sample = sample(optical, rootView) ?: return@let null
+                        val bounds = snapshot.envelope
+                        val target = CcTransitionPolicy.componentGeometry(
+                            parentGeometry = sample,
+                            parentWidth = optical.width,
+                            parentHeight = optical.height,
+                            bounds = StatusPainter.TransitionBounds(
+                                bounds.left * optical.width,
+                                bounds.top * optical.height,
+                                bounds.right * optical.width,
+                                bounds.bottom * optical.height,
+                            ),
+                        )?.takeIf { geometry -> geometry.all(Float::isFinite) }
+                        target?.let { it to rows }
+                    }
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
                 CcTransitionPolicy.handoffMotionProgress(
@@ -495,39 +740,87 @@ internal object CcTransitionOwner {
                     finalAppearanceAlpha = finalOpacity,
                     finalAppearanceActive = nativeAppearance,
                 )
+            syncChargeLayout(motionProgress)
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
+            val dualRowTravel =
+                if (dualRowTargets == null) null
+                else rowSpecs?.mapNotNull { spec ->
+                    CcTransitionPolicy.componentGeometry(
+                        parentGeometry = sourceParentGeometry,
+                        parentWidth = sourceWidth,
+                        parentHeight = sourceHeight,
+                        bounds = spec.sourceBounds,
+                    )?.let { carriedSourceGeometry(it, carrierFrames) }
+                }?.takeIf { it.size == 2 }?.let { sources ->
+                    val targets = dualRowTargets.map { it.second }
+                    floatArrayOf(
+                        (targets[0][0] + targets[1][0] - sources[0][0] - sources[1][0]) / 2f,
+                        (targets[0][1] + targets[1][1] - sources[0][1] - sources[1][1]) / 2f,
+                    ).takeIf { offset -> offset.all { it.isFinite() } }
+                }
+
+            val specs =
+                when {
+                    dualRowTargets != null && dualRowTravel != null ->
+                        baseSpecs.flatMap { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                rowSpecs.orEmpty()
+                            } else listOf(spec)
+                        }
+                    aggregateTarget != null ->
+                        baseSpecs.map { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                spec.copy(shapePolicy = StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL)
+                            } else spec
+                        }
+                    else -> baseSpecs
+                }
 
             val preferredMobileSubId =
                 PresentationStore
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
-            val liveCenterExitDirection =
-                specs.firstOrNull {
-                    it.component == StatusPainter.TransitionComponent.CENTER
-                }?.let { centerSpec ->
-                    val source =
-                        CcTransitionPolicy.componentGeometry(
-                            parentGeometry = sourceParentGeometry,
-                            parentWidth = sourceWidth,
-                            parentHeight = sourceHeight,
-                            bounds = centerSpec.sourceBounds,
-                        ) ?: return@let null
-                    val witness =
-                        resolveTarget(
-                            target = centerSpec.target,
+            val centerSpec = specs.firstOrNull {
+                it.component == StatusPainter.TransitionComponent.CENTER
+            }
+            val centerSource = centerSpec?.let { spec ->
+                CcTransitionPolicy.componentGeometry(
+                    parentGeometry = sourceParentGeometry,
+                    parentWidth = sourceWidth,
+                    parentHeight = sourceHeight,
+                    bounds = spec.sourceBounds,
+                )
+            }
+            val centerWitness =
+                if (centerSource != null) {
+                    centerSpec?.let { spec ->
+                        resolveSpecTarget(
+                            spec = spec,
+                            model = model,
                             preferredMobileSubId = preferredMobileSubId,
-                        ) ?: return@let null
-                    val target =
+                        )
+                    }
+                } else null
+            val centerTargetGeometry =
+                if (centerSource != null) {
+                    centerWitness?.let { witness ->
                         resolveTargetGeometry(
                             witness = witness,
                             root = rootView,
-                            sourceGeometry = source,
-                            targetOpticalBounds = centerSpec.targetOpticalBounds,
-                        ) ?: return@let null
-                    CcTransitionPolicy.horizontalExitDirection(source, target)
-                } ?: BatteryRingTransitionPolicy.ExitDirection.NONE
+                            sourceGeometry = centerSource,
+                            targetOpticalBounds = centerSpec?.targetOpticalBounds,
+                        )
+                    }
+                } else null
+            val liveCenterExitDirection =
+                if (centerSource != null && centerTargetGeometry != null) {
+                    CcTransitionPolicy.horizontalExitDirection(
+                        centerSource,
+                        centerTargetGeometry,
+                    )
+                } else BatteryRingTransitionPolicy.ExitDirection.NONE
             val batteryRingExitDirection =
                 CcTransitionPolicy.batteryRingExitDirection(
                     liveCenterDirection = liveCenterExitDirection,
@@ -633,9 +926,18 @@ internal object CcTransitionOwner {
                         }
                     val numberCurrent =
                         if (numberTarget != null) {
+                            val offset =
+                                chargeTargetOffset(
+                                    component = StatusPainter.TransitionComponent.BATTERY_NUMBER,
+                                    witness = numberWitness,
+                                    progress = motionProgress,
+                                )
+                            val adjustedTarget =
+                                if (offset == 0f) numberTarget
+                                else numberTarget.copyOf().apply { this[0] += offset }
                             projectedExactGeometry(
                                 source = numberSource,
-                                target = numberTarget,
+                                target = adjustedTarget,
                                 progress = motionProgress,
                                 carrierFrames = carrierFrames,
                             )
@@ -657,18 +959,43 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
-                        preferredMobileSubId = preferredMobileSubId,
-                    )
-                val targetGeometry =
-                    witness?.let { target ->
-                        resolveTargetGeometry(
-                            witness = target,
-                            root = rootView,
-                            sourceGeometry = sourceGeometry,
-                            targetOpticalBounds = spec.targetOpticalBounds,
+                    if (spec === centerSpec) {
+                        centerWitness
+                    } else if (spec.mobileRow != null) {
+                        dualRowTargets?.getOrNull(spec.mobileRow)?.first
+                    } else {
+                        resolveSpecTarget(
+                            spec = spec,
+                            model = model,
+                            preferredMobileSubId = preferredMobileSubId,
                         )
+                    }
+                val targetGeometry =
+                    if (spec === centerSpec) {
+                        centerTargetGeometry
+                    } else if (spec.mobileRow != null) {
+                        dualRowTargets?.getOrNull(spec.mobileRow)?.second
+                    } else if (model.dualMobileLevels != null &&
+                        spec.component == StatusPainter.TransitionComponent.MOBILE
+                    ) {
+                        aggregateTarget?.first
+                            ?: nativeDualTargets?.let { witnesses ->
+                                resolveDualMobileTargetGeometry(
+                                    spec = spec,
+                                    witnesses = witnesses,
+                                    root = rootView,
+                                    sourceGeometry = sourceGeometry,
+                                )
+                            }
+                    } else {
+                        witness?.let { target ->
+                            resolveTargetGeometry(
+                                witness = target,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                                targetOpticalBounds = spec.targetOpticalBounds,
+                            )
+                        }
                     }
                 val nativeTypeMatch =
                     if (
@@ -687,6 +1014,16 @@ internal object CcTransitionOwner {
                 // Different text cannot share the native endpoint's scale or position.
                 val matchedTargetGeometry =
                     targetGeometry.takeUnless { nativeTypeMatch == false }
+                        ?.let { target ->
+                            val shift =
+                                chargeTargetOffset(
+                                    component = spec.component,
+                                    witness = witness,
+                                    progress = motionProgress,
+                                )
+                            if (shift == 0f) target
+                            else target.copyOf().apply { this[0] += shift }
+                        }
                 val matchedTextWeight =
                     if (nativeTypeMatch == true) witness?.textWeight else null
                 val matchedTextStyle =
@@ -750,6 +1087,23 @@ internal object CcTransitionOwner {
                                 )
                         }
 
+                        matchedTargetGeometry != null &&
+                            spec.mobileRow != null && dualRowTravel != null ->
+                            CcTransitionPolicy.dualMobileRowMotionGeometry(
+                                source = carriedSourceGeometry(sourceGeometry, carrierFrames),
+                                target = matchedTargetGeometry,
+                                groupTravelX =
+                                    dualRowTravel[0] +
+                                        chargeTargetOffset(
+                                            component = spec.component,
+                                            witness = witness,
+                                            progress = motionProgress,
+                                        ),
+                                groupTravelY = dualRowTravel[1],
+                                progress = motionProgress,
+                                scalePolicy = spec.scalePolicy,
+                            )
+
                         matchedTargetGeometry != null -> {
                             if (exactTextGeometry) {
                                 projectedExactGeometry(
@@ -776,7 +1130,10 @@ internal object CcTransitionOwner {
                             )
                     }
                 val componentVisibleFraction =
-                    if (
+                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
+                        // The ring retracts independently of the final native battery target.
+                        1f
+                    } else if (
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
@@ -879,19 +1236,15 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                     motionProgress = motionProgress,
                     shapeProgress =
-                        if (!hasTarget) {
-                            0f
-                        } else {
-                            when (spec.shapePolicy) {
-                                StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
-                                    motionProgress
+                        when {
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.BATTERY_RETRACT ->
+                                motionProgress
 
-                                StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
-                                    mobileSignalShapeProgress
+                            !hasTarget -> 0f
+                            spec.shapePolicy == StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL ->
+                                mobileSignalShapeProgress
 
-                                StatusPainter.TransitionShapePolicy.RIGID ->
-                                    0f
-                            }
+                            else -> 0f
                         },
                     mobileTargetWidthRatio =
                         if (
@@ -920,6 +1273,11 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
+                    mobileAggregateRows =
+                        if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                            aggregateTarget?.second
+                        } else null,
+                    mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
                             spec.component ==
@@ -962,6 +1320,7 @@ internal object CcTransitionOwner {
                 }
             if (
                 mobileSpec != null &&
+                model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 drawAdditionalMobileLatent(
@@ -1345,6 +1704,88 @@ internal object CcTransitionOwner {
             canvas.restoreToCount(save)
         }
 
+        // Continuous native target position belongs to the input of each
+        // component's existing morph, not a screen-space shift after drawing.
+        private fun chargeTargetOffset(
+            component: StatusPainter.TransitionComponent,
+            witness: TargetWitness?,
+            progress: Float,
+        ): Float {
+            val retarget = chargeRetarget ?: return 0f
+            val delta =
+                when {
+                    component == StatusPainter.TransitionComponent.MOBILE ||
+                        witness?.slotView?.parent === finalStatusIcons ->
+                        retarget.peerShift
+                    component == StatusPainter.TransitionComponent.BATTERY_NUMBER ||
+                        component == StatusPainter.TransitionComponent.CHARGING_ICON ->
+                        retarget.batteryShift
+                    else -> 0f
+                }
+            return delta * CcTransitionPolicy.retargetWeight(progress, retarget.progress)
+        }
+
+        // FINAL is independent of the native FAKE icon-padding writer.
+        private fun readFinalLayout(): ChargeLayout? {
+            val root = finalRootRef.get() ?: return null
+            if (!root.isAttachedToWindow || !finalStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow || finalBattery.width <= 0 ||
+                finalStatusIcons.width <= 0
+            ) return null
+            root.getLocationInWindow(chargeRootLocation)
+            finalStatusIcons.getLocationInWindow(chargePeerLocation)
+            finalBattery.getLocationInWindow(chargeBatteryLocation)
+            return ChargeLayout(
+                batteryWidth = finalBattery.width,
+                peerWidth = finalStatusIcons.width,
+                peerX = chargePeerLocation[0] - chargeRootLocation[0],
+                batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
+            )
+        }
+
+        private fun syncChargeLayout(progress: Float) {
+            // Home's global charging island is not the Control Center's island layout.
+            if (nativeBatteryIslandActive) {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            val next = readFinalLayout() ?: run {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            val previous = lastChargeLayout
+            lastChargeLayout = next
+            if (progress <= 0f || progress >= 1f) {
+                chargeRetarget = null
+                return
+            }
+            if (
+                previous == null ||
+                (
+                    previous.peerX == next.peerX &&
+                        previous.batteryX == next.batteryX
+                )
+            ) return
+
+            // The native row can finish moving after battery measurement.
+            val old = chargeRetarget
+            val peerShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.peerShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.peerX - previous.peerX).toFloat(),
+            )
+            val batteryShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.batteryShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.batteryX - previous.batteryX).toFloat(),
+            )
+            chargeRetarget = ChargeRetarget(progress, peerShift, batteryShift)
+        }
+
         private fun projectedExactGeometry(
             source: FloatArray,
             target: FloatArray,
@@ -1548,24 +1989,59 @@ internal object CcTransitionOwner {
             }
             val source = sourceViewRef.get() ?: return
             if (source.width <= 0) return
-            val spans =
-                frozenReservationSpans
-                    ?: resolveReservationSpans()
-                        ?.also { resolved ->
-                            frozenReservationSpans = resolved
-                        }
-                    ?: return
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
                     userScale = currentSnapshot.visual.combinedScale,
                 )
-            val requestedWidth =
-                CcTransitionPolicy.resolveTransitionReservationWidth(
-                    compactWidthPx = compactWidth,
-                    spans = spans,
-                    progress = progress,
-                )
+            val layout = readFinalLayout()
+            var spans = frozenReservationSpans
+            if (spans == null) {
+                spans = resolveReservationSpans() ?: return
+                frozenReservationSpans = spans
+                reservationLayout = layout
+                reservationRetarget = null
+            } else if (layout != null && reservationLayout != layout) {
+                // Reflow changes FINAL targets even when this CC session survives.
+                // Freeze source semantics, not FINAL geometry across charge modes.
+                val refreshed = resolveReservationSpans()
+                if (refreshed != null) {
+                    val oldWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = spans,
+                        progress = progress,
+                    )
+                    val newWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = refreshed,
+                        progress = progress,
+                    )
+                    val previous = reservationRetarget
+                    reservationRetarget = ReservationRetarget(
+                        progress = progress,
+                        shift = CcTransitionPolicy.retargetShift(
+                            priorShift = previous?.shift ?: 0f,
+                            priorAnchor = previous?.progress,
+                            progress = progress,
+                            nativeDelta = (newWidth - oldWidth).toFloat(),
+                        ),
+                    )
+                    frozenReservationSpans = refreshed
+                    reservationLayout = layout
+                    spans = refreshed
+                }
+            }
+            val baseWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                compactWidthPx = compactWidth,
+                spans = spans,
+                progress = progress,
+            )
+            val correction = reservationRetarget?.let {
+                it.shift * CcTransitionPolicy.retargetWeight(progress, it.progress)
+            } ?: 0f
+            val requestedWidth = (baseWidth + correction).roundToInt()
+                .coerceAtLeast(compactWidth)
+            if (progress <= 0f || progress >= 1f) reservationRetarget = null
 
             // The logical transition width is Guiyuan-owned. Native status-icon
             // capacity and island collision remain HyperOS-owned.
@@ -1672,6 +2148,7 @@ internal object CcTransitionOwner {
                     width = source.width,
                     height = source.height,
                     model = currentSnapshot.model,
+                    visual = currentSnapshot.visual,
                 )
             if (specs.isEmpty()) return null
 
@@ -1708,8 +2185,9 @@ internal object CcTransitionOwner {
             val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
                 val witness =
-                    resolveTarget(
-                        target = spec.target,
+                    resolveSpecTarget(
+                        spec = spec,
+                        model = currentSnapshot.model,
                         preferredMobileSubId = preferredMobileSubId,
                     ) ?: return@forEach
                 val slot = witness.slotView
@@ -1736,8 +2214,28 @@ internal object CcTransitionOwner {
                 specs.firstOrNull { spec ->
                     spec.component == StatusPainter.TransitionComponent.MOBILE
                 }
+            if (mobileSpec != null && currentSnapshot.model.dualMobileLevels != null) {
+                val targets = resolveDualMobileTargets(mobileSpec, currentSnapshot.model)
+                if (targets != null) {
+                    val targetEdges = targets.map { witness ->
+                        val window = IntArray(2)
+                        witness.slotView.getLocationInWindow(window)
+                        logicalTargetX(window[0].toFloat()) to
+                            logicalTargetX((window[0] + witness.slotView.width).toFloat())
+                    }
+                    val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
+                    val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
+                    result += CcTransitionPolicy.ReservationSpan(
+                        sourceLeft = min(sourceA, sourceB),
+                        sourceRight = maxOf(sourceA, sourceB),
+                        targetLeft = targetEdges.minOf { edge -> min(edge.first, edge.second) },
+                        targetRight = targetEdges.maxOf { edge -> maxOf(edge.first, edge.second) },
+                    )
+                }
+            }
             if (
                 mobileSpec != null &&
+                currentSnapshot.model.dualMobileLevels == null &&
                 sourceRepresentsAny(MOBILE_SLOT, STACKED_MOBILE_SLOT)
             ) {
                 val primary =
@@ -1824,6 +2322,119 @@ internal object CcTransitionOwner {
             return result.takeIf { it.isNotEmpty() }
         }
 
+        // A dual source is one visual group until native slot ownership is proven.
+        private fun resolveDualMobileTargets(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+        ): List<TargetWitness>? {
+            val target = spec.target as? StatusPainter.TransitionTarget.Slots ?: return null
+            val presentation = PresentationStore.snapshot().mobilePresentation ?: return null
+            val platformIds = presentation.platformActiveSubscriptionIds ?: return null
+            if (model.dualMobileLevels == null ||
+                platformIds != presentation.activeSubscriptionIds.toSet()
+            ) return null
+
+            val visibleRoots = target.preferredSlots
+                .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                .filter { view -> view.visibility == View.VISIBLE && isUsableSlotView(view) }
+                .distinct()
+            if (visibleRoots.size !in 1..2) return null
+
+            val primary = resolveTarget(
+                target = target,
+                preferredMobileSubId = model.effectiveDataSubscriptionId.takeIf { it >= 0 },
+            ) ?: return null
+            val witnesses = listOf(primary) + resolveFrozenAdditionalMobileTargets(primary)
+            if (witnesses.size != visibleRoots.size ||
+                witnesses.map { it.slotView }.toSet() != visibleRoots.toSet() ||
+                witnesses.any { it.opticalView?.let(::isReliableSemanticTarget) != true }
+            ) return null
+
+            val aggregateVisual = witnesses.singleOrNull()?.opticalView?.let { optical ->
+                ParticipantVisualSnapshot.resolveView(optical)
+                    ?.dualMobileRowsWithinEnvelope() != null
+            } == true
+            val mode = CcTransitionPolicy.dualMobileTarget(
+                activeSubIds = platformIds,
+                targetSubIds = witnesses.map { it.subscriptionId },
+                aggregateProven =
+                    aggregateVisual ||
+                        (witnesses.size == 1 &&
+                            presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED),
+            )
+            if (mode == CcTransitionPolicy.DualMobileTarget.NONE) return null
+            return witnesses
+        }
+
+        private fun resolveDualMobileTargetGeometry(
+            spec: StatusPainter.TransitionComponentSpec,
+            witnesses: List<TargetWitness>,
+            root: View,
+            sourceGeometry: FloatArray,
+        ): FloatArray? {
+            val targets = witnesses.map { witness ->
+                resolveTargetGeometry(
+                    witness = witness,
+                    root = root,
+                    sourceGeometry = sourceGeometry,
+                    targetOpticalBounds = spec.targetOpticalBounds,
+                ) ?: return null
+            }
+            return CcTransitionPolicy.dualMobileGroupGeometry(targets)
+        }
+
+        private fun resolveSpecTarget(
+            spec: StatusPainter.TransitionComponentSpec,
+            model: RenderModel,
+            preferredMobileSubId: Int?,
+        ): TargetWitness? {
+            if (
+                model.dualMobileLevels != null &&
+                spec.component == StatusPainter.TransitionComponent.MOBILE
+            ) return null
+
+            val centerType = model.centerIndicator as? CenterIndicator.MobileType
+            val dualCenter =
+                model.dualMobileLevels != null &&
+                    spec.component == StatusPainter.TransitionComponent.CENTER &&
+                    centerType != null
+            val witness =
+                resolveTarget(
+                    target = spec.target,
+                    preferredMobileSubId =
+                        if (dualCenter) model.effectiveDataSubscriptionId
+                        else preferredMobileSubId,
+                ) ?: return null
+
+            // An aggregate root need not belong to the data SIM.
+            val aggregateRootVerified =
+                dualCenter &&
+                    CcTransitionPolicy.verifiedAggregateTypeRoot(
+                        presentation = PresentationStore.snapshot().mobilePresentation,
+                        dataSubId = model.effectiveDataSubscriptionId,
+                        targetSubId = witness.subscriptionId,
+                        soleNativeRoot =
+                            listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
+                                .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                                .filter { root ->
+                                    root.visibility == View.VISIBLE && isUsableSlotView(root)
+                                }
+                                .distinct()
+                                .singleOrNull() === witness.slotView,
+                    )
+            if (dualCenter &&
+                !CcTransitionPolicy.matchesDualMobileTypeTarget(
+                    dataSubId = model.effectiveDataSubscriptionId,
+                    targetSubId = witness.subscriptionId,
+                    source = centerType ?: return null,
+                    target = NativePresentationResolver.nativeTargetType(witness.opticalView),
+                    verifiedAggregateRoot = aggregateRootVerified,
+                )
+            ) return null
+
+            return witness
+        }
+
         private fun resolveTarget(
             target: StatusPainter.TransitionTarget,
             preferredMobileSubId: Int?,
@@ -1856,6 +2467,12 @@ internal object CcTransitionOwner {
                             witness.slotView.visibility == View.VISIBLE
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
+                        (
+                            target != StatusPainter.TransitionTarget.BatteryNumber ||
+                                (witness.slotView.isShown &&
+                                    witness.slotView.width > 0 &&
+                                    witness.slotView.height > 0)
+                        ) &&
                         (
                             (witness.slot != MOBILE_SLOT && witness.slot != STACKED_MOBILE_SLOT) ||
                                 witness.subscriptionId == readMobileSubId(witness.slotView)
@@ -1938,7 +2555,7 @@ internal object CcTransitionOwner {
             val nativeOptical =
                 target.preferredChildEntries
                     .firstNotNullOfOrNull { entry ->
-                        findDescendantByResourceEntry(
+                        NativeParticipantAccess.findResourceView(
                             root = slotRoot,
                             entryName = entry,
                         )?.takeIf { optical ->
@@ -2382,15 +2999,19 @@ internal object CcTransitionOwner {
         private fun resolveBatteryNumberTargetWitness(): TargetWitness? {
             val digitalView =
                 readViewField(finalBattery, "mBatteryDigitalView")
-                    ?: findDescendantByResourceEntry(finalBattery, "battery_icon_container")
+                    ?: NativeParticipantAccess.findResourceView(finalBattery, "battery_icon_container")
+            // Only the native hollow-number style may borrow the battery body's Paint.
             val visibleBatteryBody =
-                resolveBatteryIconTarget(finalBattery)
-                    ?.takeIf { view ->
-                        view.visibility == View.VISIBLE &&
-                            view.width > 0 &&
-                            view.height > 0
-                    }
-            val legacyIconView = readViewField(finalBattery, "mBatteryIconView")
+                if (readIntField(finalBattery, "mBatteryStyle") == 1) {
+                    readViewField(finalBattery, "mHollowBatteryIconView")
+                        ?.takeIf { view ->
+                            view.isShown &&
+                                view.width > 0 &&
+                                view.height > 0
+                        }
+                } else {
+                    null
+                }
             val expected =
                 currentSnapshot.model.batteryPercent
                     .coerceIn(0, 100)
@@ -2404,21 +3025,16 @@ internal object CcTransitionOwner {
             // Best case: the native percentage TextView itself is laid out.
             if (
                 textView != null &&
+                textView.isShown &&
                 textView.width > 0 &&
                 textView.height > 0
             ) {
                 val bounds = textViewBatteryNumberBounds(textView)
                 if (bounds != null) {
-                    return TargetWitness(
-                        slot = BATTERY_NUMBER_SLOT,
-                        slotView = textView,
-                        opticalView = null,
-                        subscriptionId = null,
-                        requiresOpticalGeometry = true,
-                        fallbackBounds = bounds,
-                        textWeight = batteryNumberTypefaceWeight(textView.paint),
-                        textStyle = captureTextStyle(textView.paint),
-                        preferFallbackGeometry = true,
+                    return batteryNumberWitness(
+                        view = textView,
+                        bounds = bounds,
+                        paint = textView.paint,
                     )
                 }
             }
@@ -2437,16 +3053,10 @@ internal object CcTransitionOwner {
                             text = expected,
                         )
                     if (bounds != null) {
-                        return TargetWitness(
-                            slot = BATTERY_NUMBER_SLOT,
-                            slotView = visibleBatteryBody,
-                            opticalView = null,
-                            subscriptionId = null,
-                            requiresOpticalGeometry = true,
-                            fallbackBounds = bounds,
-                            textWeight = batteryNumberTypefaceWeight(nativeBodyPaint),
-                            textStyle = captureTextStyle(nativeBodyPaint),
-                            preferFallbackGeometry = true,
+                        return batteryNumberWitness(
+                            view = visibleBatteryBody,
+                            bounds = bounds,
+                            paint = nativeBodyPaint,
                         )
                     }
                 }
@@ -2463,37 +3073,27 @@ internal object CcTransitionOwner {
                             text = expected,
                         )
                     if (bounds != null) {
-                        return TargetWitness(
-                            slot = BATTERY_NUMBER_SLOT,
-                            slotView = visibleBatteryBody,
-                            opticalView = null,
-                            subscriptionId = null,
-                            requiresOpticalGeometry = true,
-                            fallbackBounds = bounds,
-                            textWeight = batteryNumberTypefaceWeight(textView.paint),
-                            textStyle = captureTextStyle(textView.paint),
-                            preferFallbackGeometry = true,
+                        return batteryNumberWitness(
+                            view = visibleBatteryBody,
+                            bounds = bounds,
+                            paint = textView.paint,
                         )
                     }
                 }
             }
 
-            // Compatibility fallback for variants where mBatteryIconView itself
-            // remains the visible/measured presentation authority.
-            val legacyIcon =
-                legacyIconView
-                    ?.takeIf { view -> view.width > 0 && view.height > 0 }
-                    ?: return null
-            val paint = resolveBatteryNumberPaint(legacyIcon) ?: return null
-            val bounds =
-                centeredBatteryNumberPaintBounds(
-                    view = legacyIcon,
-                    paint = paint,
-                    text = expected,
-                ) ?: return null
-            return TargetWitness(
+            // A battery icon without visible numbers is not a number endpoint.
+            return null
+        }
+
+        private fun batteryNumberWitness(
+            view: View,
+            bounds: StatusPainter.TransitionNormalizedBounds,
+            paint: Paint,
+        ): TargetWitness =
+            TargetWitness(
                 slot = BATTERY_NUMBER_SLOT,
-                slotView = legacyIcon,
+                slotView = view,
                 opticalView = null,
                 subscriptionId = null,
                 requiresOpticalGeometry = true,
@@ -2502,7 +3102,6 @@ internal object CcTransitionOwner {
                 textStyle = captureTextStyle(paint),
                 preferFallbackGeometry = true,
             )
-        }
 
         private fun findBatteryNumberTextView(root: View): TextView? {
             val expected =
@@ -2532,7 +3131,7 @@ internal object CcTransitionOwner {
                     if (entry.contains("text")) score += 1
                     if (view.width > 0 && view.height > 0) score += 4
                     if ((view.layout?.lineCount ?: 0) > 0) score += 2
-                    if (score > 0) {
+                    if (digits == expected && score > 0) {
                         candidates += Candidate(view, score)
                     }
                 }
@@ -2829,8 +3428,8 @@ internal object CcTransitionOwner {
                     fieldName = fieldName,
                 )
             }
-                ?: findDescendantByResourceEntry(battery, "battery_icon")
-                ?: findDescendantByResourceEntry(battery, "battery_icon_container")
+                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon")
+                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon_container")
         }
 
         private fun readViewField(
@@ -2895,7 +3494,7 @@ internal object CcTransitionOwner {
         ): View? {
             if (!preferredChildEntries.contains("mobile_signal")) return null
             val signalContainer =
-                findDescendantByResourceEntry(
+                NativeParticipantAccess.findResourceView(
                     root = slotRoot,
                     entryName = "mobile_signal_container",
                 ) as? ViewGroup ?: return null
@@ -2996,23 +3595,6 @@ internal object CcTransitionOwner {
                 view.width > 0 &&
                 view.height > 0
 
-        private fun findDescendantByResourceEntry(
-            root: View,
-            entryName: String,
-        ): View? {
-            if (NativeParticipantAccess.resourceEntryName(root) == entryName) {
-                return root
-            }
-            val group = root as? ViewGroup ?: return null
-            for (index in 0 until group.childCount) {
-                findDescendantByResourceEntry(
-                    root = group.getChildAt(index),
-                    entryName = entryName,
-                )?.let { return it }
-            }
-            return null
-        }
-
         private fun endpointAlpha(view: View): Float {
             var current: View? = view
             var alpha = 1f
@@ -3086,6 +3668,24 @@ internal object CcTransitionOwner {
         private data class TargetCacheKey(
             val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
+        )
+
+        private data class ChargeLayout(
+            val batteryWidth: Int,
+            val peerWidth: Int,
+            val peerX: Int,
+            val batteryX: Int,
+        )
+
+        private data class ChargeRetarget(
+            val progress: Float,
+            val peerShift: Float,
+            val batteryShift: Float,
+        )
+
+        private data class ReservationRetarget(
+            val progress: Float,
+            val shift: Float,
         )
 
         private data class CarrierFrames(

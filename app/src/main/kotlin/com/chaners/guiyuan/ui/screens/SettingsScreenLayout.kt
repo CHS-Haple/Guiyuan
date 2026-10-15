@@ -89,8 +89,20 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
         } else {
-            val badge = remember(context, density.density, detailRes) {
-                materialIcon(context, detailRes, with(density) { 11.dp.roundToPx() })
+            val detail = remember(context, density.density, detailRes) {
+                materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
+            }
+            val badgeSize = remember(main, detail) {
+                val mainHeight = visibleIconHeight(main)
+                val detailHeight = visibleIconHeight(detail)
+                if (mainHeight > 0 && detailHeight > 0) {
+                    (11f * mainHeight / detailHeight).coerceIn(12f, 14f).dp
+                } else {
+                    12.dp
+                }
+            }
+            val badge = remember(context, density.density, detailRes, badgeSize) {
+                materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() })
             }
             val gap = with(density) { 1.dp.roundToPx() }
             val cutout = remember(badge, gap) { badgeCutout(badge, gap) }
@@ -106,7 +118,10 @@ internal fun SemanticLeadingIcon(
                             // Erase only the badge outline; keep the MIUIX surface untouched.
                             drawImage(
                                 image = cutout,
-                                topLeft = Offset(12.dp.toPx() - gap, 12.dp.toPx() - gap),
+                                topLeft = Offset(
+                                    23.dp.toPx() - badgeSize.toPx() - gap,
+                                    23.dp.toPx() - badgeSize.toPx() - gap,
+                                ),
                                 blendMode = BlendMode.DstOut,
                             )
                         },
@@ -115,7 +130,7 @@ internal fun SemanticLeadingIcon(
             Image(
                 bitmap = badge,
                 contentDescription = null,
-                modifier = Modifier.align(Alignment.BottomEnd).size(11.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).size(badgeSize),
                 colorFilter = tint,
             )
         }
@@ -133,6 +148,22 @@ private fun materialIcon(
     drawable.setBounds(0, 0, side, side)
     drawable.draw(BitmapCanvas(bitmap))
     return bitmap.asImageBitmap()
+}
+
+// Compare painted height, not the transparent margins in the Material viewport.
+private fun visibleIconHeight(icon: ImageBitmap): Int {
+    val bitmap = icon.asAndroidBitmap()
+    var first = bitmap.height
+    var last = -1
+    for (y in 0 until bitmap.height) {
+        for (x in 0 until bitmap.width) {
+            if (bitmap.getPixel(x, y) ushr 24 > 16) {
+                first = minOf(first, y)
+                last = maxOf(last, y)
+            }
+        }
+    }
+    return if (last < first) 0 else last - first + 1
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.

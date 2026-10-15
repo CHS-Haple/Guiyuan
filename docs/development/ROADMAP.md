@@ -29,6 +29,21 @@ Likely areas:
 
 Do not add controls merely because a renderer parameter exists.
 
+## Optional dual-row signal presentation (integrated, compatibility ongoing)
+
+The default is still the accepted single four-dot presentation. [#502](https://github.com/CHS-Haple/Guiyuan/pull/502) integrated an opt-in eight-dot live mode (Build 993): physical SIM1 upper/SIM2 lower, provided **two authoritative active subscriptions** and complete slot mapping are available. The center network-type label follows the verified data SIM; native Control Center remains SystemUI-owned. Missing/ambiguous identity or unavailable signal data uses existing single/native-safe behavior without silently changing the user's opt-in preference. Single/dual visual configurations use separate saved profiles; Preview Sandbox data never becomes SystemUI input.
+
+The one-root aggregate shape morph from historic [#511](https://github.com/CHS-Haple/Guiyuan/pull/511) was selectively reintroduced and device-accepted through [#531](https://github.com/CHS-Haple/Guiyuan/pull/531). Two distinct native subscriber roots still support separately verified row morphing. A single composite root can supply two exact optical row shapes and grouped motion, **not** independent per-SIM identity; its top/bottom positions must never be treated as an authoritative SIM mapping. Native Control Center remains SystemUI-owned.
+
+Remaining work is evidence-led:
+1. Validate new third-party native child/rebind paths only when authoritative callbacks or reproducible device evidence establish a real membership change; [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) tracks that boundary.
+2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown signal, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC reversals on new topologies; keep this separate from B1023 focused acceptance.
+3. Add optional alternative eight-dot styles only with a concrete UX design, a single-choice selector and demonstrated compatibility value.
+4. Reconsider single/dual **settings-bank** selection only if a transient SIM fallback produces an observed unwanted visual shift. The chosen dual preference must survive SIM loss.
+5. Track abnormal Hot Reload framework generation cleanup under [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) without guessed cleanup, polling or a second writer.
+
+
+
 ## Compatibility work
 
 For a new SystemUI target:

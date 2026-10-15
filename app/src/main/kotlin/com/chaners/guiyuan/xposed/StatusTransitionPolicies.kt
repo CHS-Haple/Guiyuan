@@ -107,20 +107,51 @@ internal object BatteryNumberFollowerPolicy {
 internal object MobileSignalMorphPolicy {
     private const val STABLE_MAX_BAR_HEIGHT = 54f
     private val BAR_HEIGHT_RATIOS = floatArrayOf(0.56f, 0.70f, 0.84f, 1f)
+    private const val TRIM_END = 0.30f
+    private const val MOVE_END = 0.57f
+    private const val SPREAD_END = 0.72f
 
-    fun rowProgress(shapeProgress: Float): Float =
-        smoothPhase(
-            value = shapeProgress,
-            start = 0f,
-            end = 0.5f,
+    // Use native handoff time, not its squared shape fraction, for equal stage durations.
+    fun handoffProgress(shapeProgress: Float): Float =
+        kotlin.math.sqrt(
+            shapeProgress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f,
         )
 
-    fun barProgress(shapeProgress: Float): Float =
-        smoothPhase(
-            value = shapeProgress,
-            start = 0.5f,
-            end = 1f,
-        )
+    fun lockstepProgress(progress: Float): Float =
+        smoothPhase(progress, 0f, TRIM_END) * TRIM_END
+
+    fun trimProgress(progress: Float): Float = smoothPhase(progress, 0f, TRIM_END)
+
+    fun moveProgress(progress: Float): Float = smoothPhase(progress, TRIM_END, MOVE_END)
+
+    fun rowProgress(progress: Float): Float = smoothPhase(progress, MOVE_END, SPREAD_END)
+
+    fun barProgress(progress: Float): Float = smoothPhase(progress, SPREAD_END, 1f)
+
+    // Mirror the dot-by-dot reveal in reverse: fourth, third, then second.
+    fun dotTrim(index: Int, trim: Float): Float =
+        if (index == 0) 0f
+        else smoothPhase(trim, (3f - index) / 3f, (4f - index) / 3f)
+
+    fun dotScale(index: Int, trim: Float, spread: Float): Float {
+        if (index == 0) return 1f
+        val restored = smoothPhase(spread, (index - 1f) / 3f, index / 3f)
+        return maxOf(1f - trim.coerceIn(0f, 1f), restored)
+    }
+
+    fun dotCoordinate(
+        source: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
+        target: Float,
+        trim: Float,
+        move: Float,
+        spread: Float,
+    ): Float {
+        val packed = source + (sourceAnchor - source) * trim
+        val moved = packed + (targetAnchor - packed) * move
+        return moved + (target - moved) * spread
+    }
 
     fun outerSimilarityScale(
         targetWidthRatio: Float?,

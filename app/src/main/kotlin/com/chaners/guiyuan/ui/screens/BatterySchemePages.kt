@@ -34,11 +34,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
@@ -61,6 +63,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -198,6 +203,7 @@ internal fun BatterySchemeOverview(
                     )
                 BatterySchemePage.Add ->
                     BatteryAddSchemePage(
+                        count = library.customSchemes.size,
                         enabled = canCreateCustom,
                         name =
                             nextCustomName
@@ -334,6 +340,7 @@ private fun BatterySchemeHeader(
         Text(
             text = name,
             style = MiuixTheme.textStyles.title2,
+            fontWeight = FontWeight.SemiBold,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -412,6 +419,7 @@ private fun BatteryModeSettingItem(
 
 @Composable
 private fun BatteryAddSchemePage(
+    count: Int,
     enabled: Boolean,
     name: String,
     settingsCardHeightPx: Int,
@@ -462,34 +470,27 @@ private fun BatteryAddSchemePage(
                             if (settingsCardHeightPx > 0) {
                                 Modifier.height(with(density) { settingsCardHeightPx.toDp() })
                             } else {
-                                Modifier.heightIn(min = 144.dp)
+                                Modifier.heightIn(min = 400.dp)
                             },
                         ),
                 pressFeedbackType =
-                    if (enabled) {
-                        PressFeedbackType.Sink
-                    } else {
-                        PressFeedbackType.None
-                    },
+                    if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
                 onClick = if (enabled) onClick else null,
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 22.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Surface(
-                        modifier =
-                            Modifier.size(
-                                width = FloatingActionButtonDefaults.MinWidth,
-                                height = FloatingActionButtonDefaults.MinHeight,
-                            ),
+                        modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
                         shape = CircleShape,
                         color =
-                            if (enabled) {
-                                MiuixTheme.colorScheme.primary
-                            } else {
-                                MiuixTheme.colorScheme.disabledPrimaryButton
-                            },
+                            if (enabled) MiuixTheme.colorScheme.primary
+                            else MiuixTheme.colorScheme.disabledPrimaryButton,
                         shadowElevation = 0.dp,
                     ) {
                         Box(
@@ -501,13 +502,65 @@ private fun BatteryAddSchemePage(
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
                                 tint =
-                                    if (enabled) {
-                                        MiuixTheme.colorScheme.onPrimary
-                                    } else {
-                                        MiuixTheme.colorScheme.disabledOnPrimaryButton
-                                    },
+                                    if (enabled) MiuixTheme.colorScheme.onPrimary
+                                    else MiuixTheme.colorScheme.disabledOnPrimaryButton,
                             )
                         }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text =
+                            if (enabled) stringResource(R.string.battery_scheme_new_summary)
+                            else stringResource(R.string.battery_scheme_full_summary, BATTERY_COLOR_SCHEME_CUSTOM_MAX),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(9.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.battery_scheme_capacity),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            Text(
+                                text = "$count / $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
+                                style = MiuixTheme.textStyles.body2,
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
+                        ) {
+                            repeat(BATTERY_COLOR_SCHEME_CUSTOM_MAX) { index ->
+                                Surface(
+                                    modifier = Modifier.weight(1f).height(6.dp),
+                                    shape = CircleShape,
+                                    color =
+                                        if (index < count) MiuixTheme.colorScheme.primary
+                                        else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                                ) {}
+                            }
+                        }
+                        Text(
+                            text =
+                                if (enabled) stringResource(
+                                    R.string.battery_scheme_remaining,
+                                    BATTERY_COLOR_SCHEME_CUSTOM_MAX - count,
+                                ) else stringResource(R.string.battery_scheme_full_hint),
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
             }
@@ -524,8 +577,8 @@ private fun BatterySchemeIndicatorRail(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(28.dp),
-        contentAlignment = Alignment.Center,
+                .height(20.dp),
+        contentAlignment = Alignment.TopCenter,
     ) {
         BatteryPagerIndicator(
             pageCount = pageCount,
@@ -580,15 +633,36 @@ private fun BatterySchemeManageMenu(
                 listOf(
                     DropdownItem(
                         text = stringResource(R.string.battery_custom_scheme_rename),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Edit,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
                         onClick = onRename,
                     ),
                     DropdownItem(
                         text = stringResource(R.string.battery_custom_scheme_copy),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Copy,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
                         enabled = canCopy,
                         onClick = onCopy,
                     ),
                     DropdownItem(
                         text = stringResource(R.string.battery_custom_scheme_delete),
+                        icon = { modifier ->
+                            Icon(
+                                imageVector = MiuixIcons.Delete,
+                                contentDescription = null,
+                                modifier = modifier,
+                            )
+                        },
                         onClick = onDelete,
                     ),
                 ),

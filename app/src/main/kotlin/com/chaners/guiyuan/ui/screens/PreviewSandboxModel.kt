@@ -5,13 +5,18 @@ import android.content.res.Resources
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.DualMobileLevels
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.xposed.network.InternetState
 
 internal enum class PreviewNetworkMode {
     MOBILE,
     WIFI,
+    NONE, // Keep the two saved ordinals stable.
 }
+
+internal val previewNetworkTabs =
+    listOf(PreviewNetworkMode.NONE, PreviewNetworkMode.MOBILE, PreviewNetworkMode.WIFI)
 
 internal enum class PreviewMobileNetwork(
     val systemLabel: String,
@@ -27,6 +32,18 @@ internal enum class PreviewMobileNetwork(
     THREE_G("3G"),
     H_PLUS("H+"),
     LTE("LTE"),
+}
+
+internal enum class PreviewDataSim {
+    SIM1,
+    SIM2,
+}
+
+internal enum class PreviewSimCards {
+    BOTH,
+    SIM1_ONLY,
+    SIM2_ONLY,
+    NONE,
 }
 
 internal enum class PreviewWifiState {
@@ -62,14 +79,65 @@ internal data class PreviewSandboxUiState(
     val networkMode: PreviewNetworkMode = PreviewNetworkMode.WIFI,
     val mobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FIVE_G,
     val mobileSignalLevel: Int = 4,
+    val dualMobile: Boolean = false,
+    val sim2SignalLevel: Int = 4,
+    val sim2MobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FOUR_G,
+    val dataSim: PreviewDataSim = PreviewDataSim.SIM1,
+    val simCards: PreviewSimCards = PreviewSimCards.BOTH,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
     val batteryPercent: Int = 87,
     val batteryMode: PreviewBatteryMode = PreviewBatteryMode.BALANCED,
     val chargingState: PreviewChargingState = PreviewChargingState.NOT_CHARGING,
 ) {
+    val sim1Active: Boolean
+        get() =
+            if (!dualMobile) simPresent
+            else simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
+
+    val sim2Active: Boolean
+        get() = dualMobile &&
+            (simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM2_ONLY)
+
+    val hasSim: Boolean
+        get() = sim1Active || sim2Active
+
     val mobileControlsEnabled: Boolean
-        get() = simPresent && !airplaneMode
+        get() = hasSim && !airplaneMode
+
+    val dataSimAvailable: Boolean
+        get() =
+            if (!dualMobile) simPresent
+            else if (dataSim == PreviewDataSim.SIM1) sim1Active else sim2Active
+
+    val dataMobileNetwork: PreviewMobileNetwork
+        get() =
+            if (!dataSimAvailable) PreviewMobileNetwork.NONE
+            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2MobileNetwork
+            else mobileNetwork
+
+    val dataSignalLevel: Int
+        get() =
+            if (!dataSimAvailable) 0
+            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2SignalLevel
+            else mobileSignalLevel
+
+    val displayedSignalLevel: Int
+        get() =
+            when {
+                sim1Active && !sim2Active -> mobileSignalLevel
+                sim2Active && !sim1Active -> sim2SignalLevel
+                else -> dataSignalLevel
+            }
+
+    val dualLevels: DualMobileLevels?
+        get() =
+            if (mobileControlsEnabled && sim1Active && sim2Active) {
+                DualMobileLevels(
+                    sim1 = mobileSignalLevel.coerceIn(0, 4),
+                    sim2 = sim2SignalLevel.coerceIn(0, 4),
+                )
+            } else null
 
     val mobileOptionsVisible: Boolean
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
@@ -131,8 +199,9 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
     when {
         networkMode == PreviewNetworkMode.WIFI -> PreviewCenterSource.WIFI
         airplaneMode -> PreviewCenterSource.AIRPLANE
-        !simPresent -> PreviewCenterSource.NO_SIM
-        mobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
+        !hasSim -> PreviewCenterSource.NO_SIM
+        networkMode == PreviewNetworkMode.NONE ||
+            dataMobileNetwork == PreviewMobileNetwork.NONE -> PreviewCenterSource.EMPTY
         else -> PreviewCenterSource.MOBILE
     }
 
@@ -142,7 +211,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
         if (mobileControlsEnabled) {
-            mobileSignalLevel.coerceIn(0, 4)
+            displayedSignalLevel.coerceIn(0, 4)
         } else {
             null
         }
@@ -185,7 +254,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
 
             PreviewCenterSource.MOBILE ->
                 CenterIndicator.MobileType(
-                    label = mobileNetwork.systemLabel,
+                    label = dataMobileNetwork.systemLabel,
                     enhanced = false,
                     internet = InternetState.VALIDATED,
                 )
@@ -215,7 +284,8 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 state = chargingState,
             ),
         mobileLevel = mobileLevel,
-        mobileUnavailableMark = airplaneMode || !simPresent,
+        dualMobileLevels = dualLevels,
+        mobileUnavailableMark = airplaneMode || !hasSim,
         effectiveDataSubscriptionId = -1,
         batterySemanticState = semanticState,
         batterySystemSemanticColor =

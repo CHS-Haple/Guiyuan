@@ -20,11 +20,12 @@ import com.chaners.guiyuan.xposed.prefs.DiagPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
-import com.chaners.guiyuan.xposed.network.NetworkSuppressionPolicy
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
@@ -86,6 +87,9 @@ class GyModule : XposedModule() {
     // CC can keep this lease while a Keyguard readiness edge is being handed off.
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
+    private var lastMobileTargetProbeSummary: String? = null
+    private var ccWifiGeometryStage = -1
+    private var ccWifiGeometrySamples = 0
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -306,6 +310,24 @@ class GyModule : XposedModule() {
         }
         if (inSettings) return
         rotateDiagnosticSession()
+        val restored =
+            runCatching { SysUiHotReload.restoreTransfer(param) }
+                .onFailure { error ->
+                    Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
+                }.getOrNull()
+        if (restored == null) {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "hotReload.complete",
+                component = "hotReload",
+                state = "unavailable",
+                "reason" to "saved-state-missing-or-unsupported-generation",
+                "statusHostHook" to "untouched",
+                "restartScope" to true,
+            )
+            return
+        }
+
         val takeoverResult =
             runCatching {
                 SysUiHotReload.takeOverHooks(
@@ -316,9 +338,7 @@ class GyModule : XposedModule() {
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
-            bindRuntimeDiagnostics()
-            bindFeatureCfg()
-            bindVisualCfg()
+            Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -414,30 +434,6 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-
-            val restored = SysUiHotReload.restoreTransfer(param)
-            if (restored == null) {
-                StatusStateStore.restoreHotReloadState(null)
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "hotReload.restore",
-                    component = "hotReload",
-                    state = "unavailable",
-                    "reason" to "saved-state-missing-or-unsupported-generation",
-                    "restartScope" to true,
-                )
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "hotReload.complete",
-                    component = "hotReload",
-                    state = "partial",
-                    "build" to BuildConfig.BUILD_ID,
-                    "statusHostHook" to "replaced",
-                    "staleHooks" to removed,
-                    "restartScope" to true,
-                )
-                return@runCatching
-            }
 
             val capture = SysUiHostRegistry.restore(restored.host)
             if (capture == null) {
@@ -535,7 +531,7 @@ class GyModule : XposedModule() {
             SysUiNetworkSource.seedRestoredWifiState(
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-                        ::onNetworkPipelineEvent
+                        ::logRuntimeEvent
                     } else {
                         null
                     },
@@ -615,7 +611,6 @@ class GyModule : XposedModule() {
             attachHostRuntime(
                 host = capture.host,
                 source = "hotReloadRestore",
-                initialNativeHandoffActive = true,
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
             )
@@ -681,11 +676,7 @@ class GyModule : XposedModule() {
             SysUiPresentationOwner.install(
                 module = this,
                 classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 onFailNative = ::onHomeRuntimeFailure,
             )
         if (failure == null) {
@@ -719,11 +710,7 @@ class GyModule : XposedModule() {
             NativeNetworkSuppressor.install(
                 module = this,
                 classLoader = classLoader,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
@@ -804,9 +791,10 @@ class GyModule : XposedModule() {
                     NativeNetworkSuppressor.preMaskMobileSignal(image)
                 },
                 onPresentationChanged = {
+                    CcTransitionOwner.onNativeMobileRefresh()
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
                 },
-                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onNetworkPipelineEvent else null,
+                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { result ->
@@ -870,7 +858,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 onEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        ::onIslandMotionEvent
+                        ::logRuntimeEvent
                     } else {
                         null
                     },
@@ -904,13 +892,6 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onIslandMotionEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-
     private fun installCcSource(
         classLoader: ClassLoader,
         source: String,
@@ -922,12 +903,17 @@ class GyModule : XposedModule() {
                 onUpdate = { update ->
                     if (ccSourceInstalled) onCcUpdate(update)
                 },
+                onAfterNativeExpansion = { progress ->
+                    if (ccSourceInstalled && detailedDiagnosticsEnabled) {
+                        onCcNativeGeometry(progress)
+                    }
+                },
                 onFakePresentationAttached = { host ->
                     if (ccSourceInstalled) onCcFakeAttached(host)
                 },
                 onRuntimeFailure = ::onCcRuntimeFailure,
                 onEvent = { event ->
-                    if (ccSourceInstalled) onCcEvent(event)
+                    if (ccSourceInstalled) logRuntimeEvent(event)
                 },
                 isProbeEnabled = {
                     BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
@@ -966,6 +952,34 @@ class GyModule : XposedModule() {
         }
     }
 
+    private fun onCcNativeGeometry(progress: Float) {
+        val fraction = progress.coerceIn(0f, 1f)
+        val stage = when {
+            fraction >= 1f -> 5
+            fraction >= 0.98f -> 4
+            fraction >= 0.85f -> 3
+            fraction >= 0.6f -> 2
+            fraction >= 0.3f -> 1
+            else -> 0
+        }
+        if (stage == ccWifiGeometryStage || ccWifiGeometrySamples >= 12) return
+        CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
+            val direction = if (stage < ccWifiGeometryStage) "closing" else "opening"
+            ccWifiGeometryStage = stage
+            ccWifiGeometrySamples++
+            logDiagnostic(
+                level = Log.INFO,
+                event = "transition.geometry",
+                component = "ccWifi",
+                state = "sampled",
+                "sample" to stage,
+                "direction" to direction,
+                "phase" to "after-native-expansion",
+                "snapshot" to snapshot,
+            )
+        }
+    }
+
     private fun onCcUpdate(
         update: SysUiCcSource.Update,
     ) {
@@ -977,6 +991,28 @@ class GyModule : XposedModule() {
                 update
             }
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
+        if (update.visible == false) {
+            lastMobileTargetProbeSummary = null
+            ccWifiGeometryStage = -1
+            ccWifiGeometrySamples = 0
+        }
+        if (
+            detailedDiagnosticsEnabled &&
+            update.fraction != null &&
+            lastMobileTargetProbeSummary == null
+        ) {
+            CcTransitionOwner.latestMobileTargetProbeDiagnostic()?.let { summary ->
+                lastMobileTargetProbeSummary = summary
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "target.probe",
+                    component = "mobileTarget",
+                    state = "observed",
+                    "surface" to "native-cc-final",
+                    "summary" to summary,
+                )
+            }
+        }
         if (detailedDiagnosticsEnabled && update.appearance != null) {
             val keyguard =
                 (SysUiKeyguardHostResolver.current()
@@ -1376,7 +1412,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.restoreAfterHotReload(
                 host = host,
-                onEvent = ::onCcEvent,
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 transferredCompactReady = transferredCompactReady,
@@ -1425,7 +1461,7 @@ class GyModule : XposedModule() {
             val result =
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    onEvent = ::onCcEvent,
+                    onEvent = ::logRuntimeEvent,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 )
@@ -1464,7 +1500,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.attach(
                 host = host,
-                onEvent = ::onCcEvent,
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
             )
@@ -1490,12 +1526,6 @@ class GyModule : XposedModule() {
         // Projected owner is already visible when ready=true. On the reverse
         // edge Home is restored before the projected owner is removed.
         HomeRenderSession.onControlCenterAuthorityChanged(!ready)
-    }
-
-    private fun onCcEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
@@ -1583,16 +1613,7 @@ class GyModule : XposedModule() {
                             )
                         }
                 },
-                onEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        { event ->
-                            if (detailedDiagnosticsEnabled) {
-                                log(Log.INFO, TAG, event)
-                            }
-                        }
-                    } else {
-                        null
-                    },
+                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
             )
         }.onSuccess { hooks ->
             val ready = hooks == SysUiBatterySource.HOOK_COUNT
@@ -1642,19 +1663,11 @@ class GyModule : XposedModule() {
                         pendingMobileTypeDrawable = drawable,
                     )
                 },
-                onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onTintSourceEvent else null,
+                onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
-                onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::onSceneSourceEvent else null,
+                onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 onKeyguardAodEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                        { event ->
-                            if (detailedDiagnosticsEnabled) {
-                                log(Log.INFO, TAG, event)
-                            }
-                        }
-                    } else {
-                        null
-                    },
+                    if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
             )
         }.onSuccess { result ->
             logDiagnostic(
@@ -1732,6 +1745,8 @@ class GyModule : XposedModule() {
         if (changed != null || recoveryCompleted != null) {
             val presentationTrace = markPresentationCommitted(trace)
             if (detailedDiagnosticsEnabled && changed != null) {
+                val platformIds = presentation.platformActiveSubscriptionIds?.sorted()
+                val mobile = StatusStateStore.snapshot().mobile
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.resolve",
@@ -1743,6 +1758,19 @@ class GyModule : XposedModule() {
                     "visibleRoots" to presentation.visibleRoots,
                     "activeSubAuthority" to presentation.activeSubscriptionAuthority,
                     "activeSubIds" to presentation.activeSubscriptionIds.joinToString(","),
+                    "platformSubIds" to platformIds?.joinToString(","),
+                    "platformSignals" to platformIds?.joinToString(",") { id ->
+                        val signal = mobile[id]?.signal
+                        val level = when (signal) {
+                            is SignalStrength.Level -> signal.value.toString()
+                            SignalStrength.Unknown -> "unknown"
+                            SignalStrength.Unavailable -> "unavailable"
+                            null -> "missing"
+                        }
+                        "$id:$level"
+                    },
+                    "simSlots" to presentation.slotSubscriptionIds
+                        .toSortedMap().entries.joinToString(",") { (slot, id) -> "$slot:$id" },
                     "presentationRootSubId" to presentation.presentationRootSubscriptionId,
                     "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
                     "networkTypeSubId" to presentation.networkTypeSubscriptionId,
@@ -1765,24 +1793,6 @@ class GyModule : XposedModule() {
             onPresentationStateChanged(
                 presentationTrace,
             )
-        }
-    }
-
-    private fun onSceneSourceEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-    private fun onTintSourceEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
-        }
-    }
-
-    private fun onNetworkPipelineEvent(event: String) {
-        if (detailedDiagnosticsEnabled) {
-            log(Log.INFO, TAG, event)
         }
     }
 
@@ -3099,11 +3109,7 @@ class GyModule : XposedModule() {
             KeyguardRenderSession.attach(
                 resolved = resolved,
                 sceneEligible = true,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onKeyguardReadyChanged(
@@ -3147,11 +3153,7 @@ class GyModule : XposedModule() {
             KeyguardRenderSession.attachAod(
                 resolved = resolved,
                 sceneEligible = true,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onAodReadyChanged(
@@ -3250,11 +3252,7 @@ class GyModule : XposedModule() {
                 SysUiPresentationOwner.activateKeyguard(
                     resolved = resolved.host,
                     deferNativeLayoutOwnershipUntilCommit = visualOnlyBoundary,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
+                    onEvent = ::logRuntimeEvent,
                     onFailNative = ::onKeyguardRuntimeFailure,
                     onReady = { active ->
                         if (
@@ -3475,11 +3473,7 @@ class GyModule : XposedModule() {
                 SysUiPresentationOwner.activateAod(
                     resolved = resolved.host,
                     preMaskBeforeLayout = homeTransitionPrearm,
-                    onEvent = { event ->
-                        if (detailedDiagnosticsEnabled) {
-                            log(Log.INFO, TAG, event)
-                        }
-                    },
+                    onEvent = ::logRuntimeEvent,
                     onFailNative = ::onAodRuntimeFailure,
                     onReady = { active ->
                         completeAodCutover(
@@ -3679,7 +3673,6 @@ class GyModule : XposedModule() {
     private fun attachHostRuntime(
         host: Any,
         source: String,
-        initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
     ) {
@@ -3699,6 +3692,7 @@ class GyModule : XposedModule() {
                         refreshStatusIconObservation("airplane")
                     },
                     onDefaultDataSubscriptionChanged = {
+                        SysUiConnectivitySource.refreshDataSubscription()
                         refreshMobilePresentation(
                             beginRenderTrace("defaultDataSubscription"),
                         )
@@ -3722,7 +3716,7 @@ class GyModule : XposedModule() {
                     },
                     onEvent =
                         if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                            ::onNetworkPipelineEvent
+                            ::logRuntimeEvent
                         } else {
                             null
                         },
@@ -3760,11 +3754,7 @@ class GyModule : XposedModule() {
         val stableFailure =
             StatusBarStableSession.attach(
                 host = host,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
             )
         if (stableFailure == null) {
             logDiagnostic(
@@ -3859,11 +3849,7 @@ class GyModule : XposedModule() {
         val renderFailure =
             HomeRenderSession.attach(
                 host = host,
-                onEvent = { event ->
-                    if (detailedDiagnosticsEnabled) {
-                        log(Log.INFO, TAG, event)
-                    }
-                },
+                onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
@@ -4279,6 +4265,8 @@ class GyModule : XposedModule() {
         KeyguardRenderSession.onVisualCfgChanged(visual)
         CcRenderSession.onVisualCfgChanged(visual)
         SysUiPresentationOwner.onVisualCfgChanged()
+        // A changed SIM display preference needs no additional radio event.
+        onPresentationStateChanged()
         if (detailedDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,
@@ -4341,6 +4329,9 @@ class GyModule : XposedModule() {
         diagnosticSequence.set(0L)
         renderTraceSequence.set(0L)
         lastBatteryNumberProbeSummary = null
+        lastMobileTargetProbeSummary = null
+        ccWifiGeometryStage = -1
+        ccWifiGeometrySamples = 0
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
@@ -4389,6 +4380,12 @@ class GyModule : XposedModule() {
         BuildConfig.BUILD_ID + "-" +
             Process.myPid() + "-" +
             SystemClock.elapsedRealtime().toString(36)
+
+    private fun logRuntimeEvent(event: String) {
+        if (detailedDiagnosticsEnabled) {
+            log(Log.INFO, TAG, event)
+        }
+    }
 
     private fun logDiagnostic(
         level: Int,

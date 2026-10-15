@@ -30,6 +30,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 internal class StatusPainter(
     private val context: Context,
@@ -45,6 +46,7 @@ internal class StatusPainter(
         )
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
+    private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
@@ -84,11 +86,18 @@ internal class StatusPainter(
         }
 
     fun clearNativeResources() {
+        nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+    }
+
+    private fun checkNativeResources() {
+        if (nativeConfigHash != context.resources.configuration.hashCode()) {
+            clearNativeResources()
+        }
     }
 
     fun draw(
@@ -247,6 +256,8 @@ internal class StatusPainter(
         mobileTargetWidthRatio: Float? = null,
         mobileTargetHeightRatio: Float? = null,
         mobileTargetBars: List<TransitionNormalizedBounds>? = null,
+        mobileAggregateRows: ParticipantVisualSnapshot.DualMobileRows? = null,
+        mobileRow: Int? = null,
         batteryNumberTargetWeight: Int? = null,
         batteryNumberTargetStyle: TransitionTextStyle? = null,
         centerTargetTextWeight: Int? = null,
@@ -374,11 +385,12 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
-                        motionProgress = motion,
                         shapeProgress = shape,
                         targetWidthRatio = mobileTargetWidthRatio,
                         targetHeightRatio = mobileTargetHeightRatio,
                         targetBars = mobileTargetBars,
+                        aggregateRows = mobileAggregateRows,
+                        row = mobileRow,
                     )
                 } else {
                     drawMobile(
@@ -452,6 +464,7 @@ internal class StatusPainter(
         val shapePolicy: TransitionShapePolicy,
         val scalePolicy: TransitionScalePolicy,
         val targetOpticalBounds: TransitionNormalizedBounds? = null,
+        val mobileRow: Int? = null,
     )
 
     internal data class TransitionNormalizedBounds(
@@ -693,22 +706,26 @@ internal class StatusPainter(
                 }
         }
 
-        val mobileLayout =
-            resolveMobileSignalTransitionLayout(
-                geometry = outerGeometry,
-                model = model,
-            )
+        val mobileBounds =
+            if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
+                dualMobileTransitionBounds(outerGeometry)
+            } else {
+                resolveMobileSignalTransitionLayout(
+                    geometry = outerGeometry,
+                    model = model,
+                ).bounds
+            }
         specs +=
             TransitionComponentSpec(
                 component = TransitionComponent.MOBILE,
-                sourceBounds = toViewBounds(mobileLayout.bounds),
+                sourceBounds = toViewBounds(mobileBounds),
                 target =
                     TransitionTarget.Slots(
                         preferredSlots = listOf("mobile", "stacked_mobile"),
                         preferredChildEntries = listOf("mobile_signal"),
                     ),
                 shapePolicy =
-                    if (model.mobileUnavailableMark) {
+                    if (model.mobileUnavailableMark || model.dualMobileLevels != null) {
                         TransitionShapePolicy.RIGID
                     } else {
                         TransitionShapePolicy.MOBILE_SIGNAL
@@ -717,6 +734,30 @@ internal class StatusPainter(
             )
 
         return specs
+    }
+
+    // Each native SIM root gets the same single-SIM transition spec and timing.
+    internal fun dualMobileRowSpecs(
+        source: TransitionComponentSpec,
+        visual: VisualCfg,
+    ): List<TransitionComponentSpec> {
+        val geometry = resolveOuterGeometry(visual.outerWeightScale)
+        val group = dualMobileTransitionBounds(geometry)
+        if (group.width <= 0f || group.height <= 0f) return emptyList()
+        return (0..1).map { row ->
+            val local = dualMobileRowBounds(geometry, row)
+            fun x(value: Float) = source.sourceBounds.left +
+                (value - group.left) / group.width * source.sourceBounds.width
+            fun y(value: Float) = source.sourceBounds.top +
+                (value - group.top) / group.height * source.sourceBounds.height
+            source.copy(
+                sourceBounds = TransitionBounds(
+                    x(local.left), y(local.top), x(local.right), y(local.bottom),
+                ),
+                shapePolicy = TransitionShapePolicy.MOBILE_SIGNAL,
+                mobileRow = row,
+            )
+        }
     }
 
     fun transitionAirplaneSourceBounds(
@@ -2368,6 +2409,7 @@ internal class StatusPainter(
     private fun wifiOpticalReferenceResource(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2401,6 +2443,7 @@ internal class StatusPainter(
     private fun resolveNativeTintVariant(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2429,6 +2472,7 @@ internal class StatusPainter(
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
+        checkNativeResources()
         nativeCenterAssets[resource]?.let { return it }
 
         val asset =
@@ -2717,6 +2761,7 @@ internal class StatusPainter(
     }
 
     private fun airplaneResourceId(): Int? {
+        checkNativeResources()
         if (airplaneDrawableResolved) {
             return cachedAirplaneResourceId.takeIf { it != 0 }
         }
@@ -2990,6 +3035,43 @@ internal class StatusPainter(
         return cachedMobileTypeTypeface
     }
 
+    private fun dualMobileRowBounds(
+        geometry: OuterGeometry.Resolved,
+        row: Int,
+    ): TransitionBounds {
+        val radius = geometry.dualMobileDotRadius
+        val ys = (0 until MOBILE_DOT_COUNT).map { index ->
+            MOBILE_CENTER_Y + geometry.dualDotY(index, row)
+        }
+        return TransitionBounds(
+            MOBILE_CENTER_X + geometry.dualDotX(0) - radius,
+            ys.min() - radius,
+            MOBILE_CENTER_X + geometry.dualDotX(MOBILE_DOT_COUNT - 1) + radius,
+            ys.max() + radius,
+        )
+    }
+
+    private fun dualMobileTransitionBounds(
+        geometry: OuterGeometry.Resolved,
+    ): TransitionBounds {
+        val radius = geometry.dualMobileDotRadius
+        var left = Float.POSITIVE_INFINITY
+        var top = Float.POSITIVE_INFINITY
+        var right = Float.NEGATIVE_INFINITY
+        var bottom = Float.NEGATIVE_INFINITY
+        for (row in 0..1) {
+            for (index in 0 until MOBILE_DOT_COUNT) {
+                val x = MOBILE_CENTER_X + geometry.dualDotX(index)
+                val y = MOBILE_CENTER_Y + geometry.dualDotY(index, row)
+                left = min(left, x - radius)
+                top = min(top, y - radius)
+                right = max(right, x + radius)
+                bottom = max(bottom, y + radius)
+            }
+        }
+        return TransitionBounds(left, top, right, bottom)
+    }
+
     private fun resolveMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
@@ -3045,25 +3127,119 @@ internal class StatusPainter(
         )
     }
 
+    private fun resolveDualMobileSignalTransitionLayout(
+        geometry: OuterGeometry.Resolved,
+        row: Int,
+    ): MobileSignalTransitionLayout {
+        val bounds = dualMobileRowBounds(geometry, row)
+        val centers = (0 until MOBILE_DOT_COUNT).map { index ->
+            TransitionPoint(
+                MOBILE_CENTER_X + geometry.dualDotX(index),
+                MOBILE_CENTER_Y + geometry.dualDotY(index, row),
+            )
+        }
+        return MobileSignalTransitionLayout(
+            bounds = bounds,
+            sourceCenters = centers,
+            targetCenters = (0 until MOBILE_DOT_COUNT).map { index ->
+                TransitionPoint(
+                    bounds.left + geometry.dualMobileDotRadius +
+                        index * (bounds.width - 2f * geometry.dualMobileDotRadius) /
+                            (MOBILE_DOT_COUNT - 1),
+                    bounds.centerY,
+                )
+            },
+        )
+    }
+
     private fun drawMobileSignalTransition(
         canvas: Canvas,
         model: RenderModel,
         tint: Int,
         opacity: Float,
         geometry: OuterGeometry.Resolved,
-        motionProgress: Float,
         shapeProgress: Float,
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>?,
+        aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
+        row: Int?,
     ) {
-        val layout = resolveMobileSignalTransitionLayout(geometry, model)
-        @Suppress("UNUSED_VARIABLE")
-        val motion = motionProgress.coerceIn(0f, 1f)
-        val shape = shapeProgress.coerceIn(0f, 1f)
-        val rowProgress = MobileSignalMorphPolicy.rowProgress(shape)
-        val barProgress = MobileSignalMorphPolicy.barProgress(shape)
-        val diameter = geometry.mobileDotRadius * 2f
+        val layout =
+            if (row != null) resolveDualMobileSignalTransitionLayout(geometry, row)
+            else resolveMobileSignalTransitionLayout(geometry, model)
+        val radius =
+            if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+        val level = when (row) {
+            0 -> model.dualMobileLevels?.sim1
+            1 -> model.dualMobileLevels?.sim2
+            else -> model.mobileLevel
+        }
+        val phase = MobileSignalMorphPolicy.handoffProgress(shapeProgress)
+        val trim = MobileSignalMorphPolicy.trimProgress(phase)
+        val move = MobileSignalMorphPolicy.moveProgress(phase)
+        val spread = MobileSignalMorphPolicy.rowProgress(phase)
+        val barProgress = MobileSignalMorphPolicy.barProgress(phase)
+        val diameter = radius * 2f
+        if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
+            val bounds = dualMobileTransitionBounds(geometry)
+            val top = aggregateRows.top
+            val bottom = aggregateRows.bottom
+            val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
+                targetWidthRatio = targetWidthRatio,
+                targetHeightRatio = targetHeightRatio,
+            )
+            val widthCompensation = MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                targetAxisRatio = targetWidthRatio,
+                outerScale = outerScale,
+            )
+            val anchors = CcTransitionPolicy.aggregateAnchors(
+                bounds = bounds,
+                top = top.first(),
+                bottom = bottom.first(),
+                topShape = aggregateRows.topShape,
+                bottomShape = aggregateRows.bottomShape,
+                widthCompensation = widthCompensation,
+                heightCompensation =
+                    MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                        targetAxisRatio = targetHeightRatio,
+                        outerScale = outerScale,
+                    ),
+                dotDiameter = geometry.dualMobileDotRadius * 2f,
+            )
+            for ((index, targets) in listOf(top, bottom).withIndex()) {
+                val shapes = targets.map { rect ->
+                    TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
+                }
+                val rowLayout =
+                    resolveDualMobileSignalTransitionLayout(geometry, index)
+                        .copy(bounds = bounds)
+                drawMobileSignalTransitionToExactBars(
+                    canvas = canvas,
+                    level = if (index == 0) model.dualMobileLevels.sim1
+                        else model.dualMobileLevels.sim2,
+                    tint = tint,
+                    opacity = opacity,
+                    radius = geometry.dualMobileDotRadius,
+                    layout = rowLayout,
+                    trim = trim,
+                    move = move,
+                    spread = spread,
+                    barProgress = barProgress,
+                    targetWidthRatio = targetWidthRatio,
+                    targetHeightRatio = targetHeightRatio,
+                    targetBars = shapes,
+                    pairedAnchorX = anchors[0],
+                    pairedAnchorY = anchors[index + 1],
+                    targetDots = if (index == 0) {
+                        aggregateRows.topShape == ParticipantVisualSnapshot.RowShape.DOTS
+                    } else {
+                        aggregateRows.bottomShape == ParticipantVisualSnapshot.RowShape.DOTS
+                    },
+                )
+            }
+            return
+        }
         val exactBars =
             targetBars
                 ?.takeIf { bars -> bars.size == MOBILE_DOT_COUNT }
@@ -3071,12 +3247,14 @@ internal class StatusPainter(
         if (exactBars != null) {
             drawMobileSignalTransitionToExactBars(
                 canvas = canvas,
-                model = model,
+                level = level,
                 tint = tint,
                 opacity = opacity,
-                geometry = geometry,
+                radius = radius,
                 layout = layout,
-                rowProgress = rowProgress,
+                trim = trim,
+                move = move,
+                spread = spread,
                 barProgress = barProgress,
                 targetWidthRatio = targetWidthRatio,
                 targetHeightRatio = targetHeightRatio,
@@ -3090,13 +3268,23 @@ internal class StatusPainter(
                 diameter = diameter,
                 targetHeightRatio = targetHeightRatio,
             )
-        val level = model.mobileLevel
-
+        val first = layout.targetCenters[0]
+        val anchor = layout.sourceCenters[0]
         for (index in 0 until MOBILE_DOT_COUNT) {
+            val dotTrim = MobileSignalMorphPolicy.dotTrim(index, trim)
+            val dotRadius =
+                radius * MobileSignalMorphPolicy.dotScale(index, dotTrim, spread)
+            if (dotRadius <= 0f) continue
             val source = layout.sourceCenters[index]
             val target = layout.targetCenters[index]
-            val centerX = lerp(source.x, target.x, rowProgress)
-            val centerY = lerp(source.y, target.y, rowProgress)
+            val centerX =
+                MobileSignalMorphPolicy.dotCoordinate(
+                    source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
+                )
+            val centerY =
+                MobileSignalMorphPolicy.dotCoordinate(
+                    source.y, anchor.y, first.y, target.y, dotTrim, move, spread,
+                )
             val targetBarHeight =
                 MobileSignalMorphPolicy.targetBarHeight(
                     index = index,
@@ -3104,11 +3292,9 @@ internal class StatusPainter(
                     diameter = diameter,
                 )
             val barHeight =
-                diameter +
-                    (targetBarHeight - diameter) * barProgress
+                2f * dotRadius + (targetBarHeight - 2f * dotRadius) * barProgress
             val bottom =
-                centerY +
-                    geometry.mobileDotRadius +
+                centerY + dotRadius +
                     MobileSignalMorphPolicy.sharedBottomExpansion(
                         maxBarHeight = maxBarHeight,
                         diameter = diameter,
@@ -3120,12 +3306,12 @@ internal class StatusPainter(
                 opacity = opacity,
             )
             canvas.drawRoundRect(
-                centerX - geometry.mobileDotRadius,
+                centerX - dotRadius,
                 bottom - barHeight,
-                centerX + geometry.mobileDotRadius,
+                centerX + dotRadius,
                 bottom,
-                geometry.mobileDotRadius,
-                geometry.mobileDotRadius,
+                dotRadius,
+                dotRadius,
                 paint,
             )
         }
@@ -3133,19 +3319,23 @@ internal class StatusPainter(
 
     private fun drawMobileSignalTransitionToExactBars(
         canvas: Canvas,
-        model: RenderModel,
+        level: Int?,
         tint: Int,
         opacity: Float,
-        geometry: OuterGeometry.Resolved,
+        radius: Float,
         layout: MobileSignalTransitionLayout,
-        rowProgress: Float,
+        trim: Float,
+        move: Float,
+        spread: Float,
         barProgress: Float,
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>,
+        pairedAnchorX: Float? = null,
+        pairedAnchorY: Float? = null,
+        targetDots: Boolean = false,
     ) {
-        val diameter = geometry.mobileDotRadius * 2f
-        val level = model.mobileLevel
+        val diameter = radius * 2f
         val outerScale =
             MobileSignalMorphPolicy.outerSimilarityScale(
                 targetWidthRatio = targetWidthRatio,
@@ -3163,7 +3353,31 @@ internal class StatusPainter(
             )
         val targetCenterX = layout.bounds.centerX
         val targetCenterY = layout.bounds.centerY
+        val anchor = layout.sourceCenters[0]
+        val firstBar = targetBars.first()
+        val firstX =
+            pairedAnchorX ?: (
+                targetCenterX +
+                    ((firstBar.left + firstBar.right) / 2f - 0.5f) *
+                        layout.bounds.width * widthCompensation
+                )
+        val firstBottomY =
+            targetCenterY +
+                (firstBar.bottom - 0.5f) *
+                    layout.bounds.height * heightCompensation
+        val firstY =
+            pairedAnchorY ?: if (targetDots) {
+                targetCenterY +
+                    ((firstBar.top + firstBar.bottom) / 2f - 0.5f) *
+                        layout.bounds.height * heightCompensation
+            } else {
+                firstBottomY - diameter / 2f
+            }
         targetBars.forEachIndexed { index, normalized ->
+            val dotTrim = MobileSignalMorphPolicy.dotTrim(index, trim)
+            val dotRadius =
+                radius * MobileSignalMorphPolicy.dotScale(index, dotTrim, spread)
+            if (dotRadius <= 0f) return@forEachIndexed
             val source = layout.sourceCenters[index]
             val targetLeft =
                 targetCenterX +
@@ -3190,20 +3404,28 @@ internal class StatusPainter(
             val targetHeight =
                 (targetBottom - targetTop).coerceAtLeast(0.001f)
             val targetBarCenterX = (targetLeft + targetRight) / 2f
-            val targetBottomCenterY = targetBottom - diameter / 2f
+            val targetBottomCenterY =
+                if (targetDots) (targetTop + targetBottom) / 2f
+                else targetBottom - diameter / 2f
 
-            val rowCenterX = lerp(source.x, targetBarCenterX, rowProgress)
-            val rowCenterY = lerp(source.y, targetBottomCenterY, rowProgress)
-            val startLeft = rowCenterX - diameter / 2f
-            val startRight = rowCenterX + diameter / 2f
-            val startTop = rowCenterY - diameter / 2f
-            val startBottom = rowCenterY + diameter / 2f
+            val rowCenterX =
+                MobileSignalMorphPolicy.dotCoordinate(
+                    source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
+                )
+            val rowCenterY =
+                MobileSignalMorphPolicy.dotCoordinate(
+                    source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, spread,
+                )
+            val startLeft = rowCenterX - dotRadius
+            val startRight = rowCenterX + dotRadius
+            val startTop = rowCenterY - dotRadius
+            val startBottom = rowCenterY + dotRadius
 
             val left = lerp(startLeft, targetBarCenterX - targetWidth / 2f, barProgress)
             val right = lerp(startRight, targetBarCenterX + targetWidth / 2f, barProgress)
             val top = lerp(startTop, targetBottom - targetHeight, barProgress)
             val bottom = lerp(startBottom, targetBottom, barProgress)
-            val radius =
+            val cornerRadius =
                 min(
                     (right - left).coerceAtLeast(0f) / 2f,
                     (bottom - top).coerceAtLeast(0f) / 2f,
@@ -3219,8 +3441,8 @@ internal class StatusPainter(
                 top,
                 right,
                 bottom,
-                radius,
-                radius,
+                cornerRadius,
+                cornerRadius,
                 paint,
             )
         }
@@ -3233,6 +3455,28 @@ internal class StatusPainter(
         opacity: Float,
         geometry: OuterGeometry.Resolved,
     ) {
+        val dualLevels = model.dualMobileLevels
+        if (dualLevels != null && !model.mobileUnavailableMark) {
+            for (row in 0..1) {
+                val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    fill(
+                        color = tint,
+                        alpha = if (level != null && level > index) 255 else 48,
+                        opacity = opacity,
+                    )
+                    val x = geometry.dualDotX(index)
+                    val y = geometry.dualDotY(index, row)
+                    canvas.drawCircle(
+                        MOBILE_CENTER_X + x,
+                        MOBILE_CENTER_Y + y,
+                        geometry.dualMobileDotRadius,
+                        paint,
+                    )
+                }
+            }
+            return
+        }
         val level = model.mobileLevel
 
         for (index in 0 until MOBILE_DOT_COUNT) {

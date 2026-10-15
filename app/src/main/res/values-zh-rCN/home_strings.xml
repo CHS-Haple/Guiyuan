@@ -44,9 +44,18 @@
     <string name="home_preview_sim_title">SIM 状态</string>
     <string name="home_preview_sim_present">已插卡</string>
     <string name="home_preview_sim_absent">未插卡</string>
+    <string name="home_preview_sim_both">双卡</string>
+    <string name="home_preview_sim1_only">仅 SIM1</string>
+    <string name="home_preview_sim2_only">仅 SIM2</string>
+    <string name="home_preview_sim_none">无卡</string>
     <string name="home_preview_airplane_title">飞行模式</string>
-    <string name="home_preview_airplane_summary">开启后暂停移动网络模拟，Wi‑Fi 仍可独立开启。</string>
+    <string name="home_preview_airplane_summary">开启后暂停移动网络模拟\nWi‑Fi 仍可独立模拟</string>
     <string name="home_preview_mobile_network_title">移动网络</string>
+    <string name="home_preview_data_sim_title">流量卡</string>
+    <string name="home_preview_data_sim1">SIM 1</string>
+    <string name="home_preview_data_sim2">SIM 2</string>
+    <string name="home_preview_sim1_network_title">SIM 1 网络制式</string>
+    <string name="home_preview_sim2_network_title">SIM 2 网络制式</string>
     <string name="home_preview_network_none">无</string>
     <string name="home_preview_network_2g">2G</string>
     <string name="home_preview_network_edge">E</string>
@@ -57,6 +66,7 @@
     <string name="home_preview_network_5g">5G</string>
     <string name="home_preview_network_5ga">5G-A</string>
     <string name="home_preview_mobile_signal_title">移动信号</string>
+    <string name="home_preview_summary_mobile_title">移动信号</string>
     <string name="home_preview_mobile_disabled_no_sim">未插卡时不可调节</string>
     <string name="home_preview_mobile_disabled_airplane">飞行模式下不可调节</string>
 
@@ -68,12 +78,8 @@
 
     <string name="home_preview_signal_none">无</string>
     <string name="home_preview_signal_level">%1$d 格</string>
-    <string name="home_preview_network_summary_wifi">Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_wifi_no_internet">无网 Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_hotspot">热点 Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_airplane_wifi">飞行模式 · %1$s</string>
-    <string name="home_preview_network_summary_mobile">%1$s · %2$s</string>
-    <string name="home_preview_network_summary_with_sim_state">%1$s · %2$s</string>
+    <string name="home_preview_signal_dual">%1$d格｜%2$d格</string>
+    <string name="home_preview_summary_mobile_signal">移动信号 %1$s</string>
 
     <string name="home_preview_battery_level_title">电量</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
@@ -91,5 +97,8 @@
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
     <string name="home_preview_charging_super_fast_compact">超级快充</string>
-    <string name="home_preview_battery_summary_format">%1$d%% · %2$s · %3$s</string>
+    <string name="home_preview_dual_mobile_title">双排信号预览</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 内排，SIM2 外排\n网络制式跟随流量卡</string>
+    <string name="home_preview_sim1_signal_title">SIM1 信号</string>
+    <string name="home_preview_sim2_signal_title">SIM2 信号</string>
 </resources>

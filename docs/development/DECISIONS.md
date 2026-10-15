@@ -60,6 +60,14 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** unknown/AOD source conditions fall back to native presentation for the bridge instead of inventing a source.
 
+## Dual-SIM row shape and SIM identity are separate facts
+
+**Decision:** show two Guiyuan signal rows only after an explicit user choice and two authoritative active SIM subscriptions. When only one SIM is recognized, use the existing single-row presentation without clearing the user's optional preference. For Control Center targets, read native View structure and classify each visible row's actual geometry independently; bind a row to a SIM only when a trusted per-subscription View/semantic link proves it.
+
+**Why:** a composite icon's upper/lower order is not necessarily physical SIM1/SIM2. In [HyperCeiler's public dual-row implementation](https://github.com/ReChronoRain/HyperCeiler/blob/5e4686069dd7ab1f3697e256d5fc7d68fb73e317/library/libhook/src/main/java/com/sevtinge/hyperceiler/libhook/rules/systemui/statusbar/mobile/DualRowSignalHookV.kt), `getSignalLevelsForRender` orders the **data SIM first**, then the physical slot; [its base hook](https://github.com/ReChronoRain/HyperCeiler/blob/5e4686069dd7ab1f3697e256d5fc7d68fb73e317/library/libhook/src/main/java/com/sevtinge/hyperceiler/libhook/appbase/systemui/StatusBarHook.kt) assigns injected child IDs with `View.generateViewId()`. These are implementation details, not a native per-SIM View contract. Other modules may invert dot/bar order or provide a single composite drawable with no individual subscription provenance.
+
+**Consequence:** never infer a SIM identity from row index, bar/dot shape, third-party package name or generated ID. Two separately verified subscription roots may use independent per-row exact morph. A single composite root with two verified four-glyph optical rows may use **grouped geometry-only** morph with shared X and row-specific native Y; it must not assign SIM identity to either native row. If geometry or source provenance is uncertain, retain the bounded no-target/native fallback. Do not add a second SystemUI signal observer or mutate final Control Center.
+
 ## Control Center final surface remains native
 
 **Decision:** Guiyuan may project its compact semantics only through the bounded QS_FAKE transition bridge; the fully expanded Control Center remains native.

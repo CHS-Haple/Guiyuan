@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
@@ -38,12 +37,13 @@ internal object NativePresentationResolver {
                         ?: false
                 }
                 .toSet()
-        val platformActive =
+        val platformSubscriptions =
             bindings
                 .firstOrNull()
                 ?.root
                 ?.context
-                ?.let(::activeSubscriptionIds)
+                ?.let(::activeSubscriptions)
+        val platformActive = platformSubscriptions?.map { it.first }?.toSet()
         val resolvedActive =
             resolveActiveSubIds(
                 boundSubscriptionIds =
@@ -53,6 +53,11 @@ internal object NativePresentationResolver {
                     platformActive,
             )
         val activeBindingSubIds = resolvedActive.subscriptionIds
+        val slotSubscriptionIds =
+            resolveSlotSubscriptions(
+                activeBindingSubIds,
+                platformSubscriptions,
+            )
         val activeBindings =
             bindings.filter { binding ->
                 binding.subscriptionId in activeBindingSubIds
@@ -115,12 +120,9 @@ internal object NativePresentationResolver {
             activeBoundRoots = activeBindings.size,
             visibleRoots = visible.size,
             activeSubscriptionIds = activeBindingSubIds.sorted(),
-            activeSubscriptionAuthority =
-                if (resolvedActive.authoritative) {
-                    "subscription-manager"
-                } else {
-                    "pipeline-semantic-fallback"
-                },
+            slotSubscriptionIds = slotSubscriptionIds,
+            activeSubsAuthoritative = resolvedActive.authoritative,
+            platformActiveSubscriptionIds = platformActive,
             presentationRootSubscriptionId = target?.subscriptionId,
             effectiveDataSubscriptionId = effectiveDataSubscriptionId,
             networkTypeSubscriptionId = networkTypeSubscriptionId,
@@ -174,7 +176,7 @@ internal object NativePresentationResolver {
     ): NetworkType? {
         val root = binding.root
 
-        findViewByResourceEntry(root, MOBILE_TYPE_RESOURCE_ENTRY)
+        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->
                 val image = view as? ImageView
                 val drawable = image?.drawable
@@ -185,7 +187,7 @@ internal object NativePresentationResolver {
                 }
             }
 
-        findViewByResourceEntry(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
+        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
                 val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
@@ -262,31 +264,6 @@ internal object NativePresentationResolver {
         )
     }
 
-    private fun findViewByResourceEntry(
-        root: View,
-        entryName: String,
-    ): View? {
-        if (resourceEntryName(root) == entryName) {
-            return root
-        }
-        val group = root as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findViewByResourceEntry(group.getChildAt(index), entryName)?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    private fun resourceEntryName(view: View): String? {
-        if (view.id == View.NO_ID) {
-            return null
-        }
-        return runCatching {
-            view.resources.getResourceEntryName(view.id)
-        }.getOrNull()
-    }
-
     internal data class ActiveBindingResolution(
         val subscriptionIds: Set<Int>,
         val authoritative: Boolean,
@@ -311,17 +288,37 @@ internal object NativePresentationResolver {
     )
 
 
-    private fun activeSubscriptionIds(context: Context): Set<Int>? {
+    // Slot order is physical SIM1/SIM2 order, not numeric subscription-ID order.
+    internal fun resolveSlotSubscriptions(
+        activeSubscriptionIds: Set<Int>,
+        platformSubscriptions: List<Pair<Int, Int>>?,
+    ): Map<Int, Int> {
+        val platform = platformSubscriptions ?: return emptyMap()
+        // Bound roots can lag behind an additional active platform subscription.
+        if (platform.size != 2) return emptyMap()
+        val pairs =
+            platform.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
+        if (
+            activeSubscriptionIds.size != 2 ||
+            pairs.size != 2 ||
+            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
+            pairs.map { it.second }.toSet() != setOf(0, 1)
+        ) {
+            return emptyMap()
+        }
+        return pairs.associate { (id, slot) -> slot to id }
+    }
+
+    private fun activeSubscriptions(context: Context): List<Pair<Int, Int>>? {
         val manager =
             context.getSystemService(SubscriptionManager::class.java)
                 ?: return null
 
-        // null means the platform source is unavailable; an empty set is still authoritative.
+        // null means the platform source is unavailable; an empty list is authoritative.
         return runCatching {
             manager.activeSubscriptionInfoList
-                ?.map { info -> info.subscriptionId }
-                ?.filter { subscriptionId -> subscriptionId >= 0 }
-                ?.toSet()
+                ?.filter { info -> info.subscriptionId >= 0 }
+                ?.map { info -> info.subscriptionId to info.simSlotIndex }
         }.getOrNull()
     }
 
@@ -331,15 +328,33 @@ internal object NativePresentationResolver {
         val activeBoundRoots: Int = boundRoots,
         val visibleRoots: Int,
         val activeSubscriptionIds: List<Int>,
-        val activeSubscriptionAuthority: String = "pipeline-semantic-fallback",
+        val slotSubscriptionIds: Map<Int, Int> = emptyMap(),
+        val activeSubsAuthoritative: Boolean = false,
+        val platformActiveSubscriptionIds: Set<Int>? = null,
         val presentationRootSubscriptionId: Int?,
         val effectiveDataSubscriptionId: Int?,
         val networkTypeSubscriptionId: Int?,
         val networkType: NetworkType?,
     ) {
+        // Diagnostic values are stable; only the source fact controls rendering.
+        val activeSubscriptionAuthority: String
+            get() = if (activeSubsAuthoritative) {
+                "subscription-manager"
+            } else {
+                "pipeline-semantic-fallback"
+            }
+
         val nativeMobileReplacementReady: Boolean
-            get() =
-                when (mode) {
+            get() {
+                val platform = platformActiveSubscriptionIds
+                // A partially bound dual-SIM host must not masquerade as single SIM.
+                if (platform != null &&
+                    (platform.size != activeSubscriptionIds.size ||
+                        activeSubscriptionIds.any { it !in platform })
+                ) {
+                    return false
+                }
+                return when (mode) {
                     Mode.SINGLE ->
                         activeSubscriptionIds.size == 1 &&
                             visibleRoots == 1
@@ -352,6 +367,7 @@ internal object NativePresentationResolver {
                     Mode.UNKNOWN,
                     -> false
                 }
+            }
     }
 
     private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"

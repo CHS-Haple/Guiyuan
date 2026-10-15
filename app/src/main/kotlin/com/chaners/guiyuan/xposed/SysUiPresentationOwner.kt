@@ -1398,6 +1398,20 @@ internal object SysUiPresentationOwner {
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String> = emptyList()
         private var transitionRequestedSlotWidthPx: Int? = null
+        private val fakePeerMetrics =
+            if (
+                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                statusIcons.javaClass.name ==
+                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
+            ) {
+                runCatching {
+                    val cls = statusIcons.javaClass
+                    cls.getDeclaredField("measureViews").apply { isAccessible = true } to
+                        cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
+                }.getOrNull()
+            } else {
+                null
+            }
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
         private val batteryLayoutListener =
@@ -1772,7 +1786,7 @@ internal object SysUiPresentationOwner {
                 restorePersistentIgnoredSlots(
                     requestLayout = requestLayout,
                 )
-            val restored = restoreClipMasks() + restoreMirroredPeerClipMasks()
+            val restored = restoreClipMasks(clipStates) + restoreClipMasks(mirroredPeerClipStates)
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
@@ -2020,6 +2034,32 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
+        private fun measuredNativePeerWidth(group: ViewGroup): Int? {
+            val (viewsField, spacingField) = fakePeerMetrics ?: return null
+            val views = runCatching { viewsField.get(group) as? List<*> }
+                .getOrNull() ?: return null
+            val spacing = runCatching { spacingField.getInt(group) }.getOrNull()
+                ?: return null
+            if (spacing < 0 || views.size > group.childCount) return null
+
+            // Match the native onMeasure inputs, including its ignored-slot filter.
+            var width = group.paddingStart.toLong()
+            views.forEachIndexed { index, item ->
+                val view = item as? View ?: return null
+                if (view.parent !== group || view.measuredWidth < 0) return null
+                val measured =
+                    view.measuredWidth.toLong() + view.paddingStart + view.paddingEnd
+                if (measured < 0L) return null
+                if (measured > 0L) {
+                    width += measured
+                    if (index > 0) width += spacing
+                }
+            }
+            return width.takeIf {
+                it >= 0L && it <= Int.MAX_VALUE.toLong()
+            }?.toInt()
+        }
+
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
@@ -2108,30 +2148,42 @@ internal object SysUiPresentationOwner {
             val capacityDeltaPx =
                 ensureFakeCarrierCapacityLease(hostView)
                     ?: return false
-            val reservationDelta =
-                if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                val capacityBound =
                     EndReservationPolicy.resolveCapacityBoundedReservationDelta(
                         nativeHide = nativeHide,
                         compactSlotWidthPx = compactSlotWidthPx,
                         requestedReservationDeltaPx = requestedReservationDelta,
                         capacityDeltaPx = capacityDeltaPx,
                     )
-                } else {
-                    requestedReservationDelta
+                if (requestedReservationDelta > capacityBound) {
+                    // A fake carrier's width lease does not bound the icon row's
+                    // end padding when the native measured peers still fit.
+                    val contentWidth =
+                        measuredNativePeerWidth(group)
+                            ?: run {
+                                onFailNative("fake-native-peer-measure-unavailable")
+                                return false
+                            }
+                    if (
+                        !EndReservationPolicy.fitsFakeNativePeerRow(
+                            rowWidthPx = group.width,
+                            contentWidthPx = contentWidth,
+                            targetPaddingEndPx = baseline.end + requestedReservationDelta,
+                        )
+                    ) {
+                        onFailNative("fake-native-peer-row-overflow")
+                        return false
+                    }
                 }
+            }
+            val reservationDelta = requestedReservationDelta
             val capacityReservationDeltaPx =
                 EndReservationPolicy.resolveFakeCarrierCapacityRequirement(
                     nativeHide = nativeHide,
                     compactSlotWidthPx = compactSlotWidthPx,
                     reservationDeltaPx = reservationDelta,
                 )
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                capacityReservationDeltaPx > capacityDeltaPx
-            ) {
-                onFailNative("fake-carrier-capacity-insufficient")
-                return false
-            }
             val target =
                 PaddingState(
                     baseline.start,
@@ -2697,26 +2749,7 @@ internal object SysUiPresentationOwner {
                 }
             }
 
-            val iterator = mirroredPeerClipStates.iterator()
-            while (iterator.hasNext()) {
-                val state = iterator.next()
-                val view = state.view.get()
-                if (view == null || view !in targets) {
-                    if (view != null) {
-                        restoreClipState(state)
-                    }
-                    iterator.remove()
-                }
-            }
-
-            targets.forEach { view ->
-                if (mirroredPeerClipStates.none { state -> state.view.get() === view }) {
-                    val nativeClip = view.clipBounds?.let(::Rect)
-                    val applied = Rect(0, 0, 0, 0)
-                    view.clipBounds = applied
-                    mirroredPeerClipStates += ClipState(WeakReference(view), nativeClip, applied)
-                }
-            }
+            syncClipMasks(mirroredPeerClipStates, targets)
             return mirroredPeerClipStates.count { state -> state.view.get() != null }
         }
         fun refreshClipMasks(): Int {
@@ -2745,7 +2778,16 @@ internal object SysUiPresentationOwner {
                 }
             }
 
-            val iterator = clipStates.iterator()
+            syncClipMasks(clipStates, targets)
+            refreshMirroredPeerClipMasks()
+            return clipStates.count { state -> state.view.get() != null }
+        }
+
+        private fun syncClipMasks(
+            states: MutableList<ClipState>,
+            targets: Set<View>,
+        ) {
+            val iterator = states.iterator()
             while (iterator.hasNext()) {
                 val state = iterator.next()
                 val view = state.view.get()
@@ -2758,15 +2800,13 @@ internal object SysUiPresentationOwner {
             }
 
             targets.forEach { view ->
-                if (clipStates.none { state -> state.view.get() === view }) {
+                if (states.none { state -> state.view.get() === view }) {
                     val nativeClip = view.clipBounds?.let(::Rect)
                     val applied = Rect(0, 0, 0, 0)
                     view.clipBounds = applied
-                    clipStates += ClipState(WeakReference(view), nativeClip, applied)
+                    states += ClipState(WeakReference(view), nativeClip, applied)
                 }
             }
-            refreshMirroredPeerClipMasks()
-            return clipStates.count { state -> state.view.get() != null }
         }
 
         override fun onViewAttachedToWindow(view: View) = Unit
@@ -2777,23 +2817,11 @@ internal object SysUiPresentationOwner {
             }
         }
 
-        private fun restoreClipMasks(): Int {
-            val states = clipStates.toList()
-            clipStates.clear()
+        private fun restoreClipMasks(states: MutableList<ClipState>): Int {
+            val snapshot = states.toList()
+            states.clear()
             var restored = 0
-            states.forEach { state ->
-                if (restoreClipState(state)) {
-                    restored += 1
-                }
-            }
-            return restored
-        }
-
-        private fun restoreMirroredPeerClipMasks(): Int {
-            val states = mirroredPeerClipStates.toList()
-            mirroredPeerClipStates.clear()
-            var restored = 0
-            states.forEach { state ->
+            snapshot.forEach { state ->
                 if (restoreClipState(state)) {
                     restored += 1
                 }

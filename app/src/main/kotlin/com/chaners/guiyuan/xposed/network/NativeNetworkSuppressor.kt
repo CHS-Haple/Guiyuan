@@ -716,7 +716,7 @@ internal object NativeNetworkSuppressor {
             )
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
-        return NetworkSuppressionPolicy.statusIconTint(
+        return StatusIconTintPolicy.statusIconTint(
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
             managerFallbackTint = managerFallbackTint,
@@ -756,7 +756,7 @@ internal object NativeNetworkSuppressor {
         val managerFallbackTint =
             resolveManagerFallbackTint(activeManager)
         val appliedTint =
-            NetworkSuppressionPolicy.statusIconTint(
+            StatusIconTintPolicy.statusIconTint(
                 locationAwareTint = locationAwareTint,
                 peerAppliedTint = peerTint,
                 managerFallbackTint = managerFallbackTint,
@@ -878,7 +878,7 @@ internal object NativeNetworkSuppressor {
                 ?: return null
         val iconTint =
             readIntField(dispatcher, "mIconTint")
-                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
                 ?: return null
         val tintAreas =
             readObjectField(dispatcher, "mTintAreas")
@@ -905,7 +905,7 @@ internal object NativeNetworkSuppressor {
                     ?: return@runCatching null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
-                ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
+                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
         }.getOrNull()
     }
 
@@ -913,14 +913,14 @@ internal object NativeNetworkSuppressor {
         manager ?: return null
 
         readIntField(manager, "mColor")
-            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
             ?.let { return it }
 
         val dispatcher =
             readObjectField(manager, "mDarkIconDispatcher")
                 ?: return null
         return readIntField(dispatcher, "mIconTint")
-            ?.takeIf(NetworkSuppressionPolicy::isVisibleTint)
+            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
     }
 
     private fun resolveTintAnchorView(group: ViewGroup): View? {

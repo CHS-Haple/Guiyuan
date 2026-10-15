@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.6.1**, adding an optional Settings shortcut, scoped restarts and About visuals alongside native transition and Hot Reload improvements. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.7.0**, adding an opt-in dual-row SIM indicator, native Control Center signal morphing, and improvements to cache, charging handoff, and Hot Reload. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -34,6 +34,7 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 **Status-bar integration**
 - Combines battery, mobile network, and Wi-Fi information in a single compact status indicator.
 - Responds to battery, connectivity, SIM/data, airplane mode, tint, and relevant SystemUI state.
+- Offers opt-in dual-row SIM signal dots with independent settings profiles; exact Control Center morphing requires verified native geometry.
 - Falls back to native SystemUI presentation whenever Guiyuan cannot establish a safe replacement.
 
 **Companion app**
@@ -89,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.6.1**，新增可选设置入口与作用域重启，优化关于页动效、原生状态过渡和热重载。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.7.0**，新增可选双排 SIM 信号显示，完善控制中心原生信号过渡、缓存、充电切换及热重载。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -107,6 +108,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 **状态栏集成**
 - 将电池、移动网络和 Wi-Fi 信息整合为一个紧凑的状态栏图标。
 - 跟随电池、连接、SIM/数据、飞行模式、着色与相关 SystemUI 状态变化。
+- 可主动开启双排 SIM 信号及独立配置记忆；控制中心仅对已验证的原生几何目标执行精确过渡。
 - 无法安全建立替换状态时，保留或恢复系统原生显示。
 
 **配套应用**

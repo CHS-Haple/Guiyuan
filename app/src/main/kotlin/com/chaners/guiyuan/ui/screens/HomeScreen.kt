@@ -1,7 +1,11 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,16 +26,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,6 +49,7 @@ import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
+import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -411,21 +418,7 @@ private fun HomePreviewSandboxCard(
                         .height(HomePreviewSurfaceHeight),
             )
         }
-        Text(
-            text = previewNetworkSummary(state),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-        )
-        Text(
-            text = previewBatterySummary(state),
-            modifier =
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 1.dp),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        )
+        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -435,81 +428,90 @@ private fun RuntimeStatusMark(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
-    if (kind == RuntimeStatusMarkKind.Loading) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
-                strokeWidth = 6.4.dp,
-                colors = ProgressIndicatorDefaults.progressIndicatorColors(
-                    foregroundColor = color.copy(alpha = 0.58f),
-                    backgroundColor = color.copy(alpha = 0.13f),
-                ),
-            )
-        }
-        return
+    val transition = updateTransition(kind, label = "runtimeMark")
+    val motion = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMedium,
+    )
+    val ring by transition.animateFloat(transitionSpec = { motion }, label = "ring") {
+        if (it == RuntimeStatusMarkKind.Loading) 0f else 1f
+    }
+    val check by transition.animateFloat(transitionSpec = { motion }, label = "check") {
+        if (it == RuntimeStatusMarkKind.Check) 1f else 0f
+    }
+    val alert by transition.animateFloat(transitionSpec = { motion }, label = "alert") {
+        if (it == RuntimeStatusMarkKind.Alert) 1f else 0f
+    }
+    val minus by transition.animateFloat(transitionSpec = { motion }, label = "minus") {
+        if (it == RuntimeStatusMarkKind.Minus) 1f else 0f
     }
 
-    Canvas(modifier = modifier) {
-        val markColor = color.copy(alpha = 0.58f)
-        val ringStrokeWidth = 6.4.dp.toPx()
-        val symbolStrokeWidth = 7.2.dp.toPx()
-        val center = Offset(size.width / 2f, size.height / 2f)
-        val radius = size.minDimension * 0.40f
-
-        drawCircle(
-            color = markColor,
-            radius = radius,
-            center = center,
-            style =
-                Stroke(
-                    width = ringStrokeWidth,
-                    cap = StrokeCap.Round,
-                ),
+    // The ring fill is decorative, not a measured framework-check percentage.
+    Box(modifier = modifier.clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
+        val ringProgress = ring.coerceIn(0f, 1f)
+        // MIUIX keeps its rotating arc until the ring starts growing or resumes it after retraction.
+        CircularProgressIndicator(
+            progress = if (ringProgress == 0f) null else MinSpinnerSweep + ringProgress * (1f - MinSpinnerSweep),
+            size = RuntimeStatusMarkSize * 0.8f + 6.4.dp,
+            strokeWidth = 6.4.dp,
+            colors = ProgressIndicatorDefaults.progressIndicatorColors(
+                foregroundColor = color.copy(alpha = 0.58f),
+                backgroundColor = color.copy(alpha = 0.13f),
+            ),
         )
 
-        when (kind) {
-            RuntimeStatusMarkKind.Loading -> Unit
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val markColor = color.copy(alpha = 0.58f)
+            val symbolStroke = 7.2.dp.toPx()
 
-            RuntimeStatusMarkKind.Check -> {
-                val checkPath =
-                    Path().apply {
-                        moveTo(size.width * 0.29f, size.height * 0.52f)
-                        lineTo(size.width * 0.44f, size.height * 0.66f)
-                        lineTo(size.width * 0.72f, size.height * 0.35f)
-                    }
-                drawPath(
-                    path = checkPath,
-                    color = markColor,
-                    style =
-                        Stroke(
-                            width = symbolStrokeWidth,
+            // The outer ring stays shared while center strokes retract or grow.
+            val reveal = ((ringProgress - 0.15f) / 0.85f).coerceIn(0f, 1f)
+            val checkProgress = (check * reveal).coerceIn(0f, 1f)
+            if (checkProgress > 0f) {
+                val path = Path().apply {
+                    moveTo(size.width * 0.29f, size.height * 0.52f)
+                    lineTo(size.width * 0.44f, size.height * 0.66f)
+                    lineTo(size.width * 0.72f, size.height * 0.35f)
+                }
+                val measure = PathMeasure().apply { setPath(path, false) }
+                val visible = Path()
+                if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
+                    drawPath(
+                        path = visible,
+                        color = markColor.copy(alpha = markColor.alpha * checkProgress),
+                        style = Stroke(
+                            width = symbolStroke,
                             cap = StrokeCap.Round,
                             join = StrokeJoin.Round,
                         ),
-                )
+                    )
+                }
             }
 
-            RuntimeStatusMarkKind.Alert -> {
+            val alertProgress = (alert * reveal).coerceIn(0f, 1f)
+            if (alertProgress > 0f) {
+                val tint = markColor.copy(alpha = markColor.alpha * alertProgress)
                 drawLine(
-                    color = markColor,
+                    color = tint,
                     start = Offset(size.width * 0.50f, size.height * 0.29f),
-                    end = Offset(size.width * 0.50f, size.height * 0.56f),
-                    strokeWidth = symbolStrokeWidth,
+                    end = Offset(size.width * 0.50f, size.height * (0.29f + 0.27f * alertProgress)),
+                    strokeWidth = symbolStroke,
                     cap = StrokeCap.Round,
                 )
                 drawCircle(
-                    color = markColor,
-                    radius = symbolStrokeWidth * 0.58f,
+                    color = tint,
+                    radius = symbolStroke * 0.58f * alertProgress,
                     center = Offset(size.width * 0.50f, size.height * 0.70f),
                 )
             }
 
-            RuntimeStatusMarkKind.Minus -> {
+            val minusProgress = (minus * reveal).coerceIn(0f, 1f)
+            if (minusProgress > 0f) {
                 drawLine(
-                    color = markColor,
-                    start = Offset(size.width * 0.31f, size.height * 0.50f),
-                    end = Offset(size.width * 0.69f, size.height * 0.50f),
-                    strokeWidth = symbolStrokeWidth,
+                    color = markColor.copy(alpha = markColor.alpha * minusProgress),
+                    start = Offset(size.width * (0.50f - 0.19f * minusProgress), size.height * 0.50f),
+                    end = Offset(size.width * (0.50f + 0.19f * minusProgress), size.height * 0.50f),
+                    strokeWidth = symbolStroke,
                     cap = StrokeCap.Round,
                 )
             }
@@ -617,6 +619,8 @@ private fun resolveHomeRuntimeCardState(
 }
 
 private const val StatusColorAnimMillis = 220
+// MIUIX's indeterminate arc starts with a 30-degree sweep.
+private const val MinSpinnerSweep = 30f / 360f
 private val RuntimeCardHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp

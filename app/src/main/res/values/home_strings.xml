@@ -44,9 +44,18 @@
     <string name="home_preview_sim_title">SIM state</string>
     <string name="home_preview_sim_present">SIM inserted</string>
     <string name="home_preview_sim_absent">No SIM</string>
+    <string name="home_preview_sim_both">Both</string>
+    <string name="home_preview_sim1_only">SIM 1</string>
+    <string name="home_preview_sim2_only">SIM 2</string>
+    <string name="home_preview_sim_none">None</string>
     <string name="home_preview_airplane_title">Airplane mode</string>
-    <string name="home_preview_airplane_summary">Mobile controls pause in airplane mode; Wi‑Fi can still be simulated independently.</string>
+    <string name="home_preview_airplane_summary">Pauses mobile simulation\nWi‑Fi remains available</string>
     <string name="home_preview_mobile_network_title">Mobile network</string>
+    <string name="home_preview_data_sim_title">Data SIM</string>
+    <string name="home_preview_data_sim1">SIM 1</string>
+    <string name="home_preview_data_sim2">SIM 2</string>
+    <string name="home_preview_sim1_network_title">SIM 1 network type</string>
+    <string name="home_preview_sim2_network_title">SIM 2 network type</string>
     <string name="home_preview_network_none">None</string>
     <string name="home_preview_network_2g">2G</string>
     <string name="home_preview_network_edge">E</string>
@@ -57,6 +66,7 @@
     <string name="home_preview_network_5g">5G</string>
     <string name="home_preview_network_5ga">5G-A</string>
     <string name="home_preview_mobile_signal_title">Mobile signal</string>
+    <string name="home_preview_summary_mobile_title">Mobile</string>
     <string name="home_preview_mobile_disabled_no_sim">Unavailable while no SIM is inserted</string>
     <string name="home_preview_mobile_disabled_airplane">Unavailable while airplane mode is on</string>
 
@@ -68,12 +78,8 @@
 
     <string name="home_preview_signal_none">None</string>
     <string name="home_preview_signal_level">%1$d bars</string>
-    <string name="home_preview_network_summary_wifi">Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_wifi_no_internet">Wi‑Fi (no internet) · %1$s</string>
-    <string name="home_preview_network_summary_hotspot">Hotspot Wi‑Fi · %1$s</string>
-    <string name="home_preview_network_summary_airplane_wifi">Airplane · %1$s</string>
-    <string name="home_preview_network_summary_mobile">%1$s · %2$s</string>
-    <string name="home_preview_network_summary_with_sim_state">%1$s · %2$s</string>
+    <string name="home_preview_signal_dual">%1$d｜%2$d bars</string>
+    <string name="home_preview_summary_mobile_signal">Mobile signal %1$s</string>
 
     <string name="home_preview_battery_level_title">Battery level</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
@@ -91,5 +97,8 @@
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
-    <string name="home_preview_battery_summary_format">%1$d%% · %2$s · %3$s</string>
+    <string name="home_preview_dual_mobile_title">Dual-row signal preview</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer\nNetwork type follows data SIM</string>
+    <string name="home_preview_sim1_signal_title">SIM1 signal</string>
+    <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>

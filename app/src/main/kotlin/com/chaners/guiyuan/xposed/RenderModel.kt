@@ -5,6 +5,9 @@ import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
+// Null is an observed unknown level; absent or unavailable signals do not form dual rows.
+internal data class DualMobileLevels(val sim1: Int?, val sim2: Int?)
+
 internal data class RenderModel(
     val batteryPercent: Int,
     val charging: Boolean,
@@ -16,12 +19,14 @@ internal data class RenderModel(
     val batterySemanticState: BatterySemanticState =
         BatterySemanticState.NORMAL,
     val batterySystemSemanticColor: Int? = null,
+    val dualMobileLevels: DualMobileLevels? = null,
 ) {
     companion object {
         fun from(
             snapshot: StatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
+            dualSignalEnabled: Boolean = false,
         ): RenderModel? {
             val battery = snapshot.battery ?: return null
 
@@ -31,21 +36,54 @@ internal data class RenderModel(
                     ?.takeIf { nativeNoSimVisible }
 
             val preferredDataSubscriptionId =
+                if (dualSignalEnabled) {
+                    val native = presentation.mobilePresentation
+                    // A removed data SIM can outlive its platform subscription event.
+                    defaultDataSubscriptionId.takeIf { subId ->
+                        subId >= 0 &&
+                            (native?.activeSubsAuthoritative != true ||
+                                subId in native.activeSubscriptionIds)
+                    } ?: -1
+                } else {
+                    presentation.mobilePresentation
+                        ?.effectiveDataSubscriptionId
+                        ?.takeIf { subscriptionId -> subscriptionId >= 0 }
+                        ?: defaultDataSubscriptionId
+                }
+
+            val singleDetectedSubId =
                 presentation.mobilePresentation
-                    ?.effectiveDataSubscriptionId
-                    ?.takeIf { subscriptionId -> subscriptionId >= 0 }
-                    ?: defaultDataSubscriptionId
+                    ?.takeIf { native ->
+                        dualSignalEnabled &&
+                            native.mode == NativePresentationResolver.Mode.SINGLE &&
+                            native.activeSubsAuthoritative &&
+                            native.activeSubscriptionIds.size == 1 &&
+                            // A bound native root need not be the only active platform SIM.
+                            native.platformActiveSubscriptionIds?.singleOrNull() ==
+                                native.activeSubscriptionIds[0]
+                    }
+                    ?.activeSubscriptionIds
+                    ?.single()
 
             val selectedMobile =
                 if (nativeNoSimVisible) {
                     null
-                } else {
-                    snapshot.mobile[preferredDataSubscriptionId]
+                } else if (singleDetectedSubId != null) {
+                    snapshot.mobile[singleDetectedSubId]
                         ?.takeIf { it.signal !is SignalStrength.Unknown }
-                        ?.let { preferredDataSubscriptionId to it }
-                        ?: snapshot.mobile.entries
+                        ?.let { singleDetectedSubId to it }
+                } else {
+                    val preferred =
+                        snapshot.mobile[preferredDataSubscriptionId]
+                            ?.takeIf { it.signal !is SignalStrength.Unknown }
+                            ?.let { preferredDataSubscriptionId to it }
+                    preferred ?: if (dualSignalEnabled) {
+                        null
+                    } else {
+                        snapshot.mobile.entries
                             .firstOrNull { it.value.signal !is SignalStrength.Unknown }
                             ?.let { it.key to it.value }
+                    }
                 }
 
             val selectedSubscriptionId =
@@ -53,14 +91,22 @@ internal data class RenderModel(
                     -1
                 } else {
                     selectedMobile?.first
+                        ?: singleDetectedSubId
                         ?: preferredDataSubscriptionId.takeIf { it >= 0 }
                         ?: snapshot.mobile.keys.firstOrNull()
+                            ?.takeUnless { dualSignalEnabled }
                         ?: -1
                 }
 
             val airplaneMode = snapshot.airplaneMode == true
             val mobileRecoveryPending = snapshot.mobileRecoveryPending
             val selectedSignal = selectedMobile?.second?.signal
+            // The native aggregate root may belong to a different SIM.
+            val dualTypeMismatch =
+                dualSignalEnabled &&
+                    (presentation.mobilePresentation?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
+                    presentation.mobilePresentation?.networkTypeSubscriptionId !=
+                        selectedSubscriptionId
 
             val mobileLevel =
                 if (airplaneMode || mobileRecoveryPending || nativeNoSimVisible) {
@@ -80,14 +126,17 @@ internal data class RenderModel(
                     airplaneMode = airplaneMode,
                     connectivity = presentation.connectivity,
                     mobileType =
-                        if (mobileRecoveryPending || nativeNoSimVisible) {
+                        if (mobileRecoveryPending || nativeNoSimVisible || dualTypeMismatch) {
                             null
                         } else {
                             presentation.mobilePresentation?.networkType
                         },
                     noSimIcon = noSimIcon,
                 )
-                    ?: if (mobileRecoveryPending || nativeNoSimVisible) {
+                    ?: if (
+                        mobileRecoveryPending || nativeNoSimVisible ||
+                        (dualTypeMismatch && !presentation.connectivity.known)
+                    ) {
                         CenterIndicator.Empty
                     } else {
                         return null
@@ -102,6 +151,44 @@ internal data class RenderModel(
                     else -> false
                 }
 
+            // Use platform slot identity; subscription IDs and data-SIM preference
+            // are not the SIM1/SIM2 row order.
+            val dualLevels =
+                if (dualSignalEnabled && snapshot.airplaneMode == false &&
+                    !mobileRecoveryPending && !nativeNoSimVisible
+                ) {
+                    val native = presentation.mobilePresentation
+                    val slots = native?.slotSubscriptionIds
+                    val sim1Id = slots?.get(0)
+                    val sim2Id = slots?.get(1)
+                    if (native != null &&
+                        native.activeSubsAuthoritative &&
+                        (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
+                            native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
+                        native.activeSubscriptionIds.size == 2 &&
+                        native.platformActiveSubscriptionIds ==
+                            native.activeSubscriptionIds.toSet() &&
+                        slots?.size == 2 &&
+                        sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
+                        sim1Id in native.activeSubscriptionIds &&
+                        sim2Id in native.activeSubscriptionIds
+                    ) {
+                        val first = snapshot.mobile[sim1Id]?.signal
+                        val second = snapshot.mobile[sim2Id]?.signal
+                        if (
+                            first != null && second != null &&
+                            first !is SignalStrength.Unavailable &&
+                            second !is SignalStrength.Unavailable
+                        ) {
+                            // An unknown level is dim, not a confirmed zero-bar reading.
+                            DualMobileLevels(
+                                sim1 = (first as? SignalStrength.Level)?.value?.coerceIn(0, 4),
+                                sim2 = (second as? SignalStrength.Level)?.value?.coerceIn(0, 4),
+                            )
+                        } else null
+                    } else null
+                } else null
+
             val batteryPercent = battery.percent.coerceIn(0, 100)
             val batterySemanticState =
                 battery.semanticState
@@ -115,6 +202,7 @@ internal data class RenderModel(
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
                 effectiveDataSubscriptionId = selectedSubscriptionId,
+                dualMobileLevels = dualLevels,
                 batterySemanticState = batterySemanticState,
                 batterySystemSemanticColor = battery.systemSemanticColor,
             )
