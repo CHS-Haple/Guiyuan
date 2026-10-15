@@ -276,7 +276,7 @@ internal fun FeaturesScreen(
                         SemanticLeadingIcon(
                             R.drawable.ic_material_symbol_wifi,
                             featureCfg.enabled,
-                            R.drawable.ic_material_symbol_height,
+                            R.drawable.ic_material_symbol_height_w500,
                         )
                     },
                     valueText = stringResource(R.string.battery_top_offset_value, visual.wifiOffsetY.roundToInt()),
@@ -296,7 +296,7 @@ internal fun FeaturesScreen(
                         SemanticLeadingIcon(
                             R.drawable.ic_material_symbol_5g,
                             featureCfg.enabled,
-                            R.drawable.ic_material_symbol_height,
+                            R.drawable.ic_material_symbol_height_w500,
                         )
                     },
                     valueText = stringResource(R.string.battery_top_offset_value, visual.mobileTypeOffsetY.roundToInt()),
