@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas as BitmapCanvas
 import android.graphics.Paint
+import android.graphics.Rect
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
@@ -45,6 +46,7 @@ import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import kotlin.math.sqrt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -93,12 +95,14 @@ internal fun SemanticLeadingIcon(
                 materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
             }
             val badgeSize = remember(main, detail) {
-                val mainHeight = visibleIconHeight(main)
-                val detailHeight = visibleIconHeight(detail)
-                if (mainHeight > 0 && detailHeight > 0) {
-                    (11f * mainHeight / detailHeight).coerceIn(12f, 14f).dp
+                val mainBounds = visibleIconBounds(main)
+                val detailBounds = visibleIconBounds(detail)
+                if (mainBounds != null && detailBounds != null) {
+                    val mainArea = mainBounds.width() * mainBounds.height()
+                    val detailArea = detailBounds.width() * detailBounds.height()
+                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 18f).dp
                 } else {
-                    12.dp
+                    13.dp
                 }
             }
             val badge = remember(context, density.density, detailRes, badgeSize) {
@@ -150,20 +154,24 @@ private fun materialIcon(
     return bitmap.asImageBitmap()
 }
 
-// Compare painted height, not the transparent margins in the Material viewport.
-private fun visibleIconHeight(icon: ImageBitmap): Int {
+// Use the visible contour, not ink coverage: an outlined icon's weight is not its size.
+private fun visibleIconBounds(icon: ImageBitmap): Rect? {
     val bitmap = icon.asAndroidBitmap()
-    var first = bitmap.height
-    var last = -1
+    var left = bitmap.width
+    var top = bitmap.height
+    var right = -1
+    var bottom = -1
     for (y in 0 until bitmap.height) {
         for (x in 0 until bitmap.width) {
             if (bitmap.getPixel(x, y) ushr 24 > 16) {
-                first = minOf(first, y)
-                last = maxOf(last, y)
+                left = minOf(left, x)
+                top = minOf(top, y)
+                right = maxOf(right, x)
+                bottom = maxOf(bottom, y)
             }
         }
     }
-    return if (last < first) 0 else last - first + 1
+    return if (right < left) null else Rect(left, top, right + 1, bottom + 1)
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
