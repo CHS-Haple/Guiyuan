@@ -131,6 +131,58 @@ class CcTransitionReservationTest {
     }
 
     @Test
+    fun chargingPeerReservationHoldsThenConvergesToLiveNativeEndpoint() {
+        val compact = 105
+        val unplugged = listOf(
+            CcTransitionPolicy.ReservationSpan(
+                sourceLeft = -105f, sourceRight = 0f,
+                targetLeft = -220f, targetRight = 0f,
+            ),
+        )
+        val plugged = listOf(
+            CcTransitionPolicy.ReservationSpan(
+                sourceLeft = -105f, sourceRight = 0f,
+                targetLeft = -250f, targetRight = 0f,
+            ),
+        )
+        fun width(spans: List<CcTransitionPolicy.ReservationSpan>, p: Float) =
+            CcTransitionPolicy.resolveTransitionReservationWidth(
+                compactWidthPx = compact, spans = spans, progress = p,
+            )
+        val held = 0.6f
+        val oldWidth = width(unplugged, held)
+        val newWidth = width(plugged, held)
+        val shift = CcTransitionPolicy.retargetShift(
+            priorShift = 0f,
+            priorAnchor = null,
+            progress = held,
+            nativeDelta = (newWidth - oldWidth).toFloat(),
+        )
+        assertEquals(oldWidth, (newWidth + shift).toInt())
+
+        // Retargeting from the same held fraction in the reverse direction
+        // restores the earlier gap without accumulating another displacement.
+        val restored = CcTransitionPolicy.retargetShift(
+            priorShift = shift,
+            priorAnchor = held,
+            progress = held,
+            nativeDelta = (oldWidth - newWidth).toFloat(),
+        )
+        assertEquals(0f, restored, 0.0001f)
+
+        // The original compact endpoint and the new fully-expanded native
+        // endpoint remain authoritative, regardless of the starting charge.
+        assertEquals(compact, width(plugged, 0f))
+        assertEquals(0f, CcTransitionPolicy.retargetWeight(0f, held), 0.0001f)
+        assertEquals(0f, CcTransitionPolicy.retargetWeight(1f, held), 0.0001f)
+        val nearEnd = 0.98f
+        val visual = width(plugged, nearEnd) +
+            (shift * CcTransitionPolicy.retargetWeight(nearEnd, held))
+                .toInt()
+        assertTrue(kotlin.math.abs(visual - width(plugged, 1f)) < 10)
+    }
+
+    @Test
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(
