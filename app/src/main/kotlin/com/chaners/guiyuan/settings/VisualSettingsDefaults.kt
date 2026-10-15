@@ -22,6 +22,8 @@ internal const val CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY =
 internal const val BATTERY_TOP_TEXT_SCALE_KEY = "battery_top_text_scale"
 internal const val BATTERY_TOP_TEXT_WEIGHT_KEY = "battery_top_text_weight"
 internal const val BATTERY_TOP_VERTICAL_OFFSET_KEY = "battery_top_vertical_offset"
+internal const val WIFI_VERTICAL_OFFSET_KEY = "wifi_vertical_offset"
+internal const val MOBILE_TYPE_VERTICAL_OFFSET_KEY = "mobile_type_vertical_offset"
 internal const val BATTERY_TOP_CHARGING_ICON_SCALE_KEY = "battery_top_charging_icon_scale"
 internal const val COMBINED_SCALE_KEY = "combined_scale"
 internal const val OUTER_WEIGHT_SCALE_KEY = "outer_weight_scale"
@@ -56,6 +58,8 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_TEXT_SCALE_KEY,
         BATTERY_TOP_TEXT_WEIGHT_KEY,
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
+        WIFI_VERTICAL_OFFSET_KEY,
+        MOBILE_TYPE_VERTICAL_OFFSET_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
@@ -108,6 +112,9 @@ internal const val BATTERY_TOP_VERTICAL_OFFSET_MIN =
     BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE + BATTERY_TOP_VERTICAL_OFFSET_UI_MIN
 internal const val BATTERY_TOP_VERTICAL_OFFSET_MAX =
     BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE + BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
+internal const val NETWORK_TOP_OFFSET_DEFAULT = 0f
+internal const val NETWORK_TOP_OFFSET_MIN = -10f
+internal const val NETWORK_TOP_OFFSET_MAX = 10f
 
 // Persisted charging scale is physical. UI 100% maps to 1.65x so migrated
 // 1.5x × 110% values keep the same visual size.
