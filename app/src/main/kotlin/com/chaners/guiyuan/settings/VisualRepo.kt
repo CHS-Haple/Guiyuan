@@ -202,6 +202,22 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setWifiOffsetY(offset: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
+                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
+    fun setMobileTypeOffsetY(offset: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
+                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
     fun setCombinedScale(scale: Float) {
         preferences.edit()
             .putFloat(
@@ -412,6 +428,10 @@ internal fun SharedPreferences.readVisualCfg(
     fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default, dual)
     fun size(key: String, default: Float) = profileFloat(layout, key, default, dual)
     fun weight(key: String, default: Int) = profileInt(layout, key, default, dual)
+    val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT)
+    // Preserve existing battery-centered network position when split keys are first read.
+    val oldNetworkOffset =
+        if (layout == ContentLayout.BATTERY_CENTER) -topOffsetYUi(topOffset) else 0f
 
     return VisualCfg(
         layout = layout,
@@ -426,7 +446,9 @@ internal fun SharedPreferences.readVisualCfg(
         ccTintTransition = getBoolean(visualModeKey(dual, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true),
         topTextScale = size(BATTERY_TOP_TEXT_SCALE_KEY, topTextScaleDefault(layout)),
         topTextWeight = weight(BATTERY_TOP_TEXT_WEIGHT_KEY, BATTERY_TOP_TEXT_WEIGHT_DEFAULT),
-        topOffsetY = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT),
+        topOffsetY = topOffset,
+        wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
+        mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -531,6 +553,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.topOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        normalized.wifiOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        normalized.mobileTypeOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,
