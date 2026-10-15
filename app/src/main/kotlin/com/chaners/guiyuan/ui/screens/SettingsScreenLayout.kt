@@ -232,16 +232,23 @@ internal fun SettingsPage(
 
             @Composable
             fun SettingsList() {
+                val canScroll = resolvedListState.canScrollForward || resolvedListState.canScrollBackward
                 LazyColumn(
                     state = resolvedListState,
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .then(
-                                if (springScroll) Modifier.scrollEndHaptic().overScrollVertical()
+                                if (springScroll && canScroll) Modifier.scrollEndHaptic().overScrollVertical()
                                 else Modifier,
                             )
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                            .then(
+                                if (canScroll || !springScroll) {
+                                    Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     contentPadding = contentPadding,
                     // Pull-to-refresh remains the gesture owner on Diagnostics.
                     overscrollEffect = if (springScroll) null else rememberOverscrollEffect(),
