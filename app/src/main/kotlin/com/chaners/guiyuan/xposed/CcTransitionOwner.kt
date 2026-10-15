@@ -451,13 +451,6 @@ internal object CcTransitionOwner {
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
                 " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
                 " endOffset=$lastNativePeerTargetEndOffsetPx" +
-                " ccIsland=$nativeBatteryIslandActive" +
-                " chargeRetarget=" +
-                (chargeRetarget?.let {
-                    "${it.progress}:${it.peerShift}:${it.batteryShift}"
-                } ?: "none") +
-                " chargeBatteryWidth=${lastChargeLayout?.batteryWidth}" +
-                " fakeCarrierRootOffset=${fakeCarrierRootOffsetX}" +
                 " fakeRoot=${viewPos(fakeRootRef.get())}" +
                 " finalRoot=${viewPos(finalRootRef.get())}" +
                 " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
