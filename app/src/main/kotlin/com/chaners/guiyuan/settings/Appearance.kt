@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
@@ -45,6 +46,7 @@ internal data class Appearance(
     val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Clear,
     val swipeBack: Boolean = true,
+    val uiScalePercent: Int = 100,
 ) {
     val activeNavContent: NavContent
         get() = if (navStyle == NavStyle.Liquid) liquidContent else navContent
@@ -91,6 +93,8 @@ internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
     LiquidMode.entries
         .firstOrNull { it.name == storedMode }
         ?: LiquidMode.Clear
+
+internal fun uiScalePercent(value: Int?): Int = (value ?: 100).coerceIn(80, 110)
 
 internal fun decodeTheme(
     storedMode: String?,
@@ -148,6 +152,7 @@ internal class AppearanceRepo(context: Context) {
                     ),
                 liquidMode = decodeLiquidMode(prefs[liquidModeKey]),
                 swipeBack = prefs[swipeBackKey] ?: true,
+                uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
             )
         }
 
@@ -211,6 +216,12 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
+    suspend fun setUiScalePercent(value: Int) {
+        store.edit { prefs ->
+            prefs[uiScaleKey] = uiScalePercent(value)
+        }
+    }
+
     private companion object {
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
@@ -223,6 +234,7 @@ internal class AppearanceRepo(context: Context) {
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
         val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")
+        val uiScaleKey = intPreferencesKey("ui_scale_percent")
     }
 }
 
