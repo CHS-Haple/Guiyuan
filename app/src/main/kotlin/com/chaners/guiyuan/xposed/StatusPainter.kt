@@ -45,7 +45,7 @@ internal class StatusPainter(
             true,
         )
     private val nativeTintVariantIds = HashMap<Int, Int>()
-    private val nativeWifiReferenceIds = HashMap<Int, Int>()
+    private val nativeWifiOptics = HashMap<Int, WifiOptics>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
@@ -89,7 +89,7 @@ internal class StatusPainter(
         nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
         nativeTintVariantIds.clear()
-        nativeWifiReferenceIds.clear()
+        nativeWifiOptics.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
@@ -939,11 +939,12 @@ internal class StatusPainter(
                 packageName = SYSTEM_UI_PACKAGE,
                 resourceId = resourceId,
             )
+        val optics = wifiOptics(resource)
         return transitionNativeCenterMetrics(
             resource = resource,
-            opticalReferenceResource = wifiOpticalReferenceResource(resource),
-            maxWidth = geometry.wifiMaxWidth,
-            maxHeight = geometry.wifiMaxHeight,
+            opticalReferenceResource = optics.reference,
+            maxWidth = geometry.wifiMaxWidth * optics.scale,
+            maxHeight = geometry.wifiMaxHeight * optics.scale,
         )
     }
 
@@ -1248,13 +1249,14 @@ internal class StatusPainter(
                                 packageName = SYSTEM_UI_PACKAGE,
                                 resourceId = resourceId,
                             )
+                        val optics = wifiOptics(resource)
                         resolveNativeCenterDrawGeometry(
                             resource = resource,
-                            opticalReferenceResource = wifiOpticalReferenceResource(resource),
+                            opticalReferenceResource = optics.reference,
                             centerX = WIFI_CENTER_X,
                             centerY = WIFI_CENTER_Y,
-                            maxWidth = geometry.wifiMaxWidth,
-                            maxHeight = geometry.wifiMaxHeight,
+                            maxWidth = geometry.wifiMaxWidth * optics.scale,
+                            maxHeight = geometry.wifiMaxHeight * optics.scale,
                         )
                     } else {
                         null
@@ -2375,18 +2377,18 @@ internal class StatusPainter(
                     packageName = SYSTEM_UI_PACKAGE,
                     resourceId = nativeResourceId,
                 )
+            val optics = wifiOptics(nativeResource)
             if (
                 drawNativeCenterResource(
                     canvas = canvas,
                     resource = nativeResource,
-                    opticalReferenceResource =
-                        wifiOpticalReferenceResource(nativeResource),
+                    opticalReferenceResource = optics.reference,
                     tint = tint,
                     opacity = opacity,
                     centerX = WIFI_CENTER_X,
                     centerY = WIFI_CENTER_Y,
-                    maxWidth = geometry.wifiMaxWidth,
-                    maxHeight = geometry.wifiMaxHeight,
+                    maxWidth = geometry.wifiMaxWidth * optics.scale,
+                    maxHeight = geometry.wifiMaxHeight * optics.scale,
                     nativeTransform = nativeTransform,
                     pixelAligned = pixelAligned,
                 )
@@ -2411,38 +2413,30 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
-    private fun wifiOpticalReferenceResource(
-        resource: PresentationStore.NativeIconResource,
-    ): PresentationStore.NativeIconResource? {
+    private fun wifiOptics(resource: PresentationStore.NativeIconResource): WifiOptics {
         checkNativeResources()
-        if (resource.packageName != SYSTEM_UI_PACKAGE) {
-            return null
-        }
+        if (resource.packageName != SYSTEM_UI_PACKAGE) return WifiOptics(null, 1f)
 
-        val referenceId =
-            nativeWifiReferenceIds.getOrPut(resource.resourceId) {
-                runCatching {
-                    val drawableContext =
-                        if (resource.packageName == context.packageName) {
-                            context
-                        } else {
-                            context.createPackageContext(resource.packageName, 0)
-                        }
-                    val entryName =
-                        drawableContext.resources.getResourceEntryName(resource.resourceId)
-                    val referenceEntry =
-                        WifiOpticalReference.connectedReferenceEntry(entryName)
-                            ?: return@runCatching 0
-                    drawableContext.resources.getIdentifier(
-                        referenceEntry,
-                        "drawable",
-                        resource.packageName,
-                    )
-                }.getOrDefault(0)
-            }
-        return referenceId
-            .takeIf { it != 0 }
-            ?.let { resource.copy(resourceId = it) }
+        return nativeWifiOptics.getOrPut(resource.resourceId) {
+            runCatching {
+                val drawableContext =
+                    if (resource.packageName == context.packageName) {
+                        context
+                    } else {
+                        context.createPackageContext(resource.packageName, 0)
+                    }
+                val name = drawableContext.resources.getResourceEntryName(resource.resourceId)
+                val referenceId =
+                    WifiOpticalReference.connectedReferenceEntry(name)?.let { entry ->
+                        drawableContext.resources.getIdentifier(entry, "drawable", resource.packageName)
+                    } ?: 0
+                WifiOptics(
+                    reference = referenceId.takeIf { it != 0 }
+                        ?.let { resource.copy(resourceId = it) },
+                    scale = WifiOpticalReference.opticalScale(name),
+                )
+            }.getOrDefault(WifiOptics(null, 1f))
+        }
     }
 
     private fun resolveNativeTintVariant(
@@ -3704,6 +3698,11 @@ internal class StatusPainter(
         val bounds: TransitionBounds,
         val sourceCenters: List<TransitionPoint>,
         val targetCenters: List<TransitionPoint>,
+    )
+
+    private data class WifiOptics(
+        val reference: PresentationStore.NativeIconResource?,
+        val scale: Float,
     )
 
     private data class TransitionWifiMetrics(
