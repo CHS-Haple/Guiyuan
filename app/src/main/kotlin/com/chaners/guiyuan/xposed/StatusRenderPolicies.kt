@@ -42,8 +42,8 @@ internal object TopInfoOffsetPolicy {
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
             when (indicator) {
-                is CenterIndicator.Wifi -> wifiOffset
-                is CenterIndicator.MobileType -> mobileTypeOffset
+                is CenterIndicator.Wifi -> -wifiOffset
+                is CenterIndicator.MobileType -> -mobileTypeOffset
                 else -> -topOffsetYUi(rawOffset)
             }
         } else {
