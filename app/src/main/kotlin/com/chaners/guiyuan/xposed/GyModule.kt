@@ -338,9 +338,7 @@ class GyModule : XposedModule() {
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
-            bindRuntimeDiagnostics()
-            bindFeatureCfg()
-            bindVisualCfg()
+            Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
