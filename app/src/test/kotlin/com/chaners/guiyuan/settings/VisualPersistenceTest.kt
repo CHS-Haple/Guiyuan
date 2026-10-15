@@ -107,15 +107,15 @@ class VisualPersistenceTest {
             .apply()
 
         val initial = prefs.readVisualCfg()
-        assertEquals(-5f, initial.wifiOffsetY, 0f)
-        assertEquals(-5f, initial.mobileTypeOffsetY, 0f)
+        assertEquals(5f, initial.wifiOffsetY, 0f)
+        assertEquals(5f, initial.mobileTypeOffsetY, 0f)
         assertEquals(topOffsetYRaw(5f), initial.topOffsetY, 0f)
 
         prefs.edit()
             .putFloat(visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY), -1f)
             .apply()
         assertEquals(-1f, prefs.readVisualCfg().wifiOffsetY, 0f)
-        assertEquals(-5f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+        assertEquals(5f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
 
         val result = prefs.readVisualCfg().copy(mobileTypeOffsetY = 3f)
         prefs.edit().putVisualCfg(result).apply()
