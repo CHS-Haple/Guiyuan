@@ -103,16 +103,16 @@ class CcTransitionReservationTest {
         val rebasedTarget = nativeTarget.copyOf().apply {
             this[0] += 15f + correction
         }
-        val before = CcTransitionPolicy.followAnchorGeometry(
+        val before = requireNotNull(CcTransitionPolicy.followAnchorGeometry(
             follower = follower,
             sourceAnchor = numberSource,
             currentAnchor = nativeTarget,
-        )
-        val after = CcTransitionPolicy.followAnchorGeometry(
+        ))
+        val after = requireNotNull(CcTransitionPolicy.followAnchorGeometry(
             follower = follower,
             sourceAnchor = numberSource,
             currentAnchor = rebasedTarget,
-        )
+        ))
         assertEquals(before[0], after[0], 0.0001f)
     }
 
