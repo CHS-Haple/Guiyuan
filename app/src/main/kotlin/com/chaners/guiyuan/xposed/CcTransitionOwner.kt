@@ -112,6 +112,9 @@ internal object CcTransitionOwner {
         current?.mobileTargetProbe()
 
     @Synchronized
+    fun wifiMotionProbe(): String? = current?.wifiMotionProbe()
+
+    @Synchronized
     fun detach(source: String = "detach") {
         current?.stop(source)
         current = null
@@ -386,6 +389,75 @@ internal object CcTransitionOwner {
                     "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
                         "size=${root.width}x${root.height}:signal=[$children]"
                 }
+        }
+
+        // Sample both native carriers in one frame; neither layer is a stable
+        // proxy for the other while HyperOS switches CC presentation.
+        fun wifiMotionProbe(): String? {
+            val native = PresentationStore.snapshot().mobilePresentation
+            if (currentSnapshot.model.centerIndicator !is CenterIndicator.Wifi ||
+                native?.mode != NativePresentationResolver.Mode.DUAL_SEPARATE
+            ) return null
+            val root = rootRef.get() ?: return null
+            val source = sourceViewRef.get() ?: return null
+
+            fun viewPos(view: View?): String {
+                if (view == null) return "missing"
+                val geometry = sample(view, root)
+                val name = NativeParticipantAccess.resourceEntryName(view)
+                    ?: view.javaClass.simpleName
+                return "$name@" +
+                    (geometry?.let { "${it[0].roundToInt()},${it[1].roundToInt()}" }
+                        ?: "unmeasured") +
+                    ":${view.width}x${view.height}:a=${view.alpha}:" +
+                    "t=${view.translationX.roundToInt()},${view.translationY.roundToInt()}:" +
+                    "pEnd=${view.paddingEnd}"
+            }
+            fun peers(group: ViewGroup): String =
+                (0 until group.childCount)
+                    .asSequence()
+                    .filter { index ->
+                        val child = group.getChildAt(index)
+                        child.visibility == View.VISIBLE &&
+                            child.width > 0 && child.height > 0
+                    }
+                    .take(16)
+                    .joinToString(",") { index ->
+                        val child = group.getChildAt(index)
+                        val slot =
+                            runCatching { NativeParticipantAccess.slotOf(child) }
+                                .getOrNull() ?: "-"
+                        val clip = child.clipBounds
+                        val mask = clip?.let {
+                            "${it.left}/${it.top}/${it.right}/${it.bottom}"
+                        } ?: "-"
+                        "$index:$slot:" + viewPos(child) +
+                            ":shown=${child.isShown}:clip=$mask"
+                    }
+
+            val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {
+                it.visibility == View.VISIBLE && isUsableSlotView(it)
+            }
+            val finalWifi = slotViews(finalStatusIcons, WIFI_SLOT).firstOrNull {
+                it.visibility == View.VISIBLE && isUsableSlotView(it)
+            }
+            return "progress=$progress fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
+                " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
+                " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
+                " endOffset=$lastNativePeerTargetEndOffsetPx" +
+                " fakeRoot=${viewPos(fakeRootRef.get())}" +
+                " finalRoot=${viewPos(finalRootRef.get())}" +
+                " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
+                " finalParent=${viewPos(finalStatusIcons.parent as? View)}" +
+                " fake=${viewPos(fakeStatusIcons)}" +
+                " final=${viewPos(finalStatusIcons)}" +
+                " fakeWifi=${viewPos(fakeWifi)} finalWifi=${viewPos(finalWifi)}" +
+                " finalWifiSignal=${viewPos(finalWifi?.let { wifi ->
+                    NativeParticipantAccess.findResourceView(wifi, "wifi_signal")
+                })}" +
+                " source=${viewPos(source)} finalBattery=${viewPos(finalBattery)}" +
+                " fakePeers=[${peers(fakeStatusIcons)}]" +
+                " finalPeers=[${peers(finalStatusIcons)}]"
         }
 
         fun start() {

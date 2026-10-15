@@ -121,6 +121,17 @@ internal object EndReservationPolicy {
         return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
     }
 
+    // Native icon-row occupancy is distinct from the fake carrier width lease.
+    fun fitsFakeNativePeerRow(
+        rowWidthPx: Int,
+        contentWidthPx: Int,
+        targetPaddingEndPx: Int,
+    ): Boolean =
+        rowWidthPx > 0 &&
+            contentWidthPx >= 0 &&
+            targetPaddingEndPx >= 0 &&
+            contentWidthPx.toLong() + targetPaddingEndPx <= rowWidthPx.toLong()
+
     fun resolveFakeCarrierCapacityRequirement(
         nativeHide: Boolean,
         compactSlotWidthPx: Int,
