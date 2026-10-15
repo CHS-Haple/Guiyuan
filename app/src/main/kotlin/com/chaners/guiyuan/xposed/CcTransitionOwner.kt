@@ -21,6 +21,7 @@ import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -88,6 +89,11 @@ internal object CcTransitionOwner {
     fun setSceneEligible(eligible: Boolean) {
         sceneEligible = eligible
         sync("scene")
+    }
+
+    @Synchronized
+    fun onNativeMobileRefresh() {
+        current?.markMobileTargetsDirty()
     }
 
     @Synchronized
@@ -242,6 +248,7 @@ internal object CcTransitionOwner {
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
+        private val mobileTargetsDirty = AtomicBoolean(false)
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -298,6 +305,16 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                if (mobileTargetsDirty.getAndSet(false)) {
+                    targetCache.keys.removeAll { key ->
+                        (key.target as? StatusPainter.TransitionTarget.Slots)
+                            ?.preferredSlots
+                            ?.any { it == MOBILE_SLOT || it == STACKED_MOBILE_SLOT } == true
+                    }
+                    frozenAdditionalMobileTargets = null
+                    // Reuse the existing width-retarget path if native membership changed.
+                    reservationLayout = null
+                }
                 val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
@@ -321,6 +338,10 @@ internal object CcTransitionOwner {
                 }
                 true
             }
+
+        fun markMobileTargetsDirty() {
+            mobileTargetsDirty.set(true)
+        }
 
         fun matches(
             root: ViewGroup,
