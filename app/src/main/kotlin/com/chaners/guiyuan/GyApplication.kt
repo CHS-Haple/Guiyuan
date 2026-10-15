@@ -74,7 +74,11 @@ class GyApplication :
     internal val scopeRequestActive: Boolean
         get() = pendingScope.value != null
 
-    private var hotReloadPending: HotReloadPending? = null
+    private val pendingReload = MutableStateFlow<HotReloadPending?>(null)
+    internal val hotReloadInFlight: Flow<Boolean> =
+        pendingReload.map { it != null }.distinctUntilChanged()
+    internal val hotReloadActive: Boolean
+        get() = pendingReload.value != null
     private val _xposedStatus =
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
     internal val xposedStatus: StateFlow<XposedStatus> =
@@ -168,7 +172,7 @@ class GyApplication :
         xposedService = null
         lastMirror = null
         pendingScope.value = null
-        hotReloadPending = null
+        pendingReload.value = null
         super.onTerminate()
     }
 
@@ -189,7 +193,7 @@ class GyApplication :
 
     // Check both pending framework operations before taking ownership of a Root restart.
     internal fun canRestartScopes(): Boolean =
-        pendingScope.value == null && hotReloadPending == null && !ScopeRestart.isRunning
+        pendingScope.value == null && pendingReload.value == null && !ScopeRestart.isRunning
 
     internal fun restartScopes(targets: Set<RestartTarget>): Boolean {
         if (!canRestartScopes()) return false
@@ -204,7 +208,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope.value != null || hotReloadPending != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || pendingScope.value != null || pendingReload.value != null || ScopeRestart.isRunning) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -255,9 +259,9 @@ class GyApplication :
         request.onComplete(granted)
     }
 
-    fun hotReloadSysUi(onComplete: () -> Unit = {}): Boolean {
+    fun hotReloadSysUi(): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || hotReloadPending != null || pendingScope.value != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || pendingReload.value != null || pendingScope.value != null || ScopeRestart.isRunning) return false
 
         val target =
             runCatching {
@@ -267,8 +271,8 @@ class GyApplication :
                 return false
             } ?: return false
 
-        val pending = HotReloadPending(service, onComplete)
-        hotReloadPending = pending
+        val pending = HotReloadPending(service)
+        pendingReload.value = pending
         return runCatching {
             service.hotReloadModule(target, null) { process, result ->
                 Log.i(
@@ -276,7 +280,7 @@ class GyApplication :
                     "Hot reload completed process=" + process.processName + " result=" + result,
                 )
                 mainExecutor.execute {
-                    if (xposedService === pending.service && hotReloadPending === pending) {
+                    if (xposedService === pending.service && pendingReload.value === pending) {
                         refreshXposedStatus(pending.service)
                         finishHotReload()
                     }
@@ -284,16 +288,14 @@ class GyApplication :
             }
             true
         }.getOrElse { throwable ->
-            if (hotReloadPending === pending) hotReloadPending = null
+            if (pendingReload.value === pending) pendingReload.value = null
             Log.w(TAG, "Unable to request hot reload: " + throwable.message)
             false
         }
     }
 
     private fun finishHotReload() {
-        val pending = hotReloadPending ?: return
-        hotReloadPending = null
-        pending.onComplete()
+        pendingReload.value = null
     }
 
     private fun refreshXposedStatus(service: XposedService) {
@@ -365,10 +367,7 @@ class GyApplication :
         val onComplete: (Boolean) -> Unit,
     )
 
-    private class HotReloadPending(
-        val service: XposedService,
-        val onComplete: () -> Unit,
-    )
+    private class HotReloadPending(val service: XposedService)
 
     private data class RuntimeSnapshot(
         val settingsEntry: Int,

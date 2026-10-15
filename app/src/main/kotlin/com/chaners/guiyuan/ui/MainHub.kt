@@ -123,7 +123,7 @@ internal fun MainHub(
     dark: Boolean,
     lang: AppLang,
     iconHidden: Boolean,
-    onHotReload: (() -> Unit) -> Boolean,
+    onHotReload: () -> Boolean,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -133,7 +133,6 @@ internal fun MainHub(
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var hotReloadInProgress by remember { mutableStateOf(false) }
     var restartPickerOpen by remember { mutableStateOf(false) }
     val restartState by ScopeRestart.state.collectAsState()
     val restartInProgress = restartState is ScopeRestart.State.Running
@@ -145,6 +144,7 @@ internal fun MainHub(
     val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets.orEmpty()
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
+    val hotReloadInProgress by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
     val onRestart = {
         if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
             !scopeBusy && app.canRestartScopes()
@@ -348,13 +348,7 @@ internal fun MainHub(
                     if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
                         !scopeBusy
                     ) {
-                        hotReloadInProgress = true
-                        val accepted = onHotReload {
-                            hotReloadInProgress = false
-                        }
-                        if (!accepted) {
-                            hotReloadInProgress = false
-                        }
+                        onHotReload()
                     }
                 },
                 onLangChange = onLangChange,

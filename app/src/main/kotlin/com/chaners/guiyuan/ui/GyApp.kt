@@ -48,7 +48,7 @@ internal fun GyApp(
     onPreviewThemeChange: (Boolean?) -> Unit,
     lang: AppLang,
     iconHidden: Boolean,
-    onHotReload: (() -> Unit) -> Boolean,
+    onHotReload: () -> Boolean,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
