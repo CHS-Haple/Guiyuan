@@ -26,12 +26,12 @@ This file records accepted runtime behavior and near-term guardrails, not a Buil
 
 ## Open compatibility questions
 
-- [#519](https://github.com/CHS-Haple/Guiyuan/issues/519): abnormal Hot Reload takeover/host-detach/partial-failure disposal still depends on Modern Xposed/framework contracts not fully proven. Do not blindly clean up old-generation owners on an unknown thread or create a second native writer.
+- [#519](https://github.com/CHS-Haple/Guiyuan/issues/519): the V9 Hot Reload payload directly carries an old-generation cleanup `Runnable`. API 102 requires classloader-neutral saved state and old-generation external-callback retirement; the inspected Vector implementation rejects such a direct array element. This is a source-grounded compatibility gap, **not** a reproduced B1024 regression or evidence of a leak on the installed framework. Preserve single-writer, main-thread and fail-native contracts; do not remove the deferred cleanup without a safe handoff design.
 - [#521](https://github.com/CHS-Haple/Guiyuan/issues/521): mobile child replacement that bypasses verified native binder/presentation events may leave a cached CC target until another authoritative update. The accepted event-driven cache repair does not prove universal third-party coverage.
 
 These are explicit compatibility limitations, not observed B1023 regressions. Investigate only with reproducible evidence or an authoritative upstream contract; preserve Fail native.
 
 ## Next
 
-0.7.0-IT integration, main validation and signed Internal distribution are complete. Keep `dev` aligned with the promoted baseline, and pursue [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) or [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) only with reproducible evidence or an upstream contract. Do not reopen superseded experiments; preserve the current target's native ownership and fail-native behavior. 1.0.0 remains a separate decision.
+0.7.0-IT integration, main validation and signed Internal distribution are complete. Keep `dev` aligned with the promoted baseline. For [#519](https://github.com/CHS-Haple/Guiyuan/issues/519), resolve the proven API 102 transfer-contract gap against the actual installed framework and design a safe generation handoff before changing runtime. Pursue [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) only with reproducible native membership/event evidence. Do not reopen superseded experiments; preserve the current target's native ownership and fail-native behavior. 1.0.0 remains a separate decision.
 
