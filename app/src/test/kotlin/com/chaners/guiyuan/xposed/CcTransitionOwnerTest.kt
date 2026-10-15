@@ -197,6 +197,50 @@ class CcTransitionOwnerTest {
         assertEquals(false, matches(4, null, target))
         assertEquals(false, matches(4, 4, target.copy(label = "4G")))
         assertEquals(false, matches(4, 4, null))
+        // Native aggregate SIM1 root is visible while SIM2 owns the data type.
+        assertEquals(true, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            4, 1, source, target, aggregateRootSubId = 1, activeSubIds = setOf(1, 4),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            4, 1, source, target.copy(label = "4G"),
+            aggregateRootSubId = 1, activeSubIds = setOf(1, 4),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            4, 1, source, target, aggregateRootSubId = 1, activeSubIds = setOf(1, 7),
+        ))
+        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+            4, 7, source, target, aggregateRootSubId = 1, activeSubIds = setOf(1, 4),
+        ))
+    }
+
+    @Test
+    fun aggregatedCompositeRowsBecomeTwoExactNativeMorphEndpoints() {
+        fun rect(left: Float, top: Float, right: Float, bottom: Float) =
+            ParticipantVisualSnapshot.NormalizedRect(left, top, right, bottom)
+        val top = (0..3).map { i ->
+            rect(0.10f + i * 0.20f, 0.30f - i * 0.05f, 0.18f + i * 0.20f, 0.55f)
+        }
+        val bottom = (0..3).map { i ->
+            rect(0.10f + i * 0.20f, 0.75f, 0.18f + i * 0.20f, 0.83f)
+        }
+        val rows = ParticipantVisualSnapshot.Snapshot(
+            envelope = rect(0f, 0f, 1f, 1f),
+            components = top + bottom,
+            topology = ParticipantVisualSnapshot.Topology.COMPOSITE,
+        ).dualMobileRowsWithinEnvelope()
+        val group = transitionGeometry(100f, 200f, 80f, 100f)
+        val actual = CcTransitionPolicy.aggregatedMobileRows(group, requireNotNull(rows))
+        assertEquals(2, actual?.size)
+        assertEquals(4, actual?.get(0)?.bars?.size)
+        assertEquals(4, actual?.get(1)?.bars?.size)
+        assertTrue(requireNotNull(actual)[0].geometry[1] < actual[1].geometry[1])
+        assertEquals(95.2f, actual[0].geometry[0], 0.001f)
+        assertEquals(95.2f, actual[1].geometry[0], 0.001f)
+        assertTrue(actual[0].bars.all { it.left in 0f..1f && it.bottom in 0f..1f })
+        assertTrue(actual[1].bars.all { it.top in 0f..1f && it.right in 0f..1f })
+        assertEquals(null, CcTransitionPolicy.aggregatedMobileRows(
+            group, rows.copy(bottom = emptyList()),
+        ))
     }
 
     @Test

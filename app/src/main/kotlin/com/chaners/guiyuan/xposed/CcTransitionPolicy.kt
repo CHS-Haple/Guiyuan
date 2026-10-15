@@ -129,10 +129,65 @@ internal object CcTransitionPolicy {
         targetSubId: Int?,
         source: CenterIndicator.MobileType,
         target: NativePresentationResolver.NetworkType?,
-    ): Boolean =
-        dataSubId >= 0 &&
-            targetSubId == dataSubId &&
+        aggregateRootSubId: Int? = null,
+        activeSubIds: Set<Int> = emptySet(),
+    ): Boolean {
+        val aggregate = activeSubIds.size == 2 &&
+            dataSubId in activeSubIds &&
+            targetSubId != null &&
+            targetSubId == aggregateRootSubId &&
+            targetSubId in activeSubIds
+        return dataSubId >= 0 &&
+            (targetSubId == dataSubId || aggregate) &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
+    }
+
+    internal data class NativeMobileRow(
+        val geometry: FloatArray,
+        val bars: List<StatusPainter.TransitionNormalizedBounds>,
+    )
+
+    // One verified native aggregate envelope contains two independently painted rows.
+    // Keep each row's real bounds and exact four shapes, including dot rows.
+    fun aggregatedMobileRows(
+        group: FloatArray,
+        rows: ParticipantVisualSnapshot.DualMobileRows,
+    ): List<NativeMobileRow>? {
+        if (group.size != 6 || group.any { !it.isFinite() }) return null
+        return listOf(rows.top, rows.bottom).map { cells ->
+            if (cells.size != 4 || cells.any { cell ->
+                    !cell.left.isFinite() || !cell.top.isFinite() ||
+                        !cell.right.isFinite() || !cell.bottom.isFinite() ||
+                        cell.width <= 0f || cell.height <= 0f ||
+                        cell.left < 0f || cell.top < 0f ||
+                        cell.right > 1f || cell.bottom > 1f
+                }
+            ) return null
+            val bounds = StatusPainter.TransitionBounds(
+                left = cells.minOf { it.left },
+                top = cells.minOf { it.top },
+                right = cells.maxOf { it.right },
+                bottom = cells.maxOf { it.bottom },
+            )
+            val geometry = componentGeometry(
+                parentGeometry = group,
+                parentWidth = 1,
+                parentHeight = 1,
+                bounds = bounds,
+            ) ?: return null
+            NativeMobileRow(
+                geometry = geometry,
+                bars = cells.map { cell ->
+                    StatusPainter.TransitionNormalizedBounds(
+                        left = (cell.left - bounds.left) / bounds.width,
+                        top = (cell.top - bounds.top) / bounds.height,
+                        right = (cell.right - bounds.left) / bounds.width,
+                        bottom = (cell.bottom - bounds.top) / bounds.height,
+                    )
+                },
+            )
+        }
+    }
 
     // Order optical roots by the platform's physical SIM slots, never by View order.
     fun dualRootRowIndices(
