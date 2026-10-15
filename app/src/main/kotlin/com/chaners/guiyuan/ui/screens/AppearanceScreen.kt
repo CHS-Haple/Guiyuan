@@ -205,7 +205,8 @@ internal fun AppearanceScreen(
                         hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     )
                 },
-            )            SwitchPreference(
+            )
+            SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
                 startAction = {
