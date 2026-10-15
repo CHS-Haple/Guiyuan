@@ -116,6 +116,9 @@ class GyModule : XposedModule() {
             "build" to BuildConfig.BUILD_ID,
             "channel" to BuildConfig.BUILD_CHANNEL,
             "api" to apiVersion,
+            "framework" to runCatching { frameworkName }.getOrNull(),
+            "frameworkVersion" to runCatching { frameworkVersion }.getOrNull(),
+            "frameworkVersionCode" to runCatching { frameworkVersionCode }.getOrNull(),
         )
         logCurrentDiagnosticsHealth()
     }
@@ -387,6 +390,9 @@ class GyModule : XposedModule() {
                 state = "ready",
                 "build" to BuildConfig.BUILD_ID,
                 "channel" to BuildConfig.BUILD_CHANNEL,
+                "framework" to runCatching { frameworkName }.getOrNull(),
+                "frameworkVersion" to runCatching { frameworkVersion }.getOrNull(),
+                "frameworkVersionCode" to runCatching { frameworkVersionCode }.getOrNull(),
             )
             logDiagnostic(
                 level = Log.INFO,
