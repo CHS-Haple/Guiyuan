@@ -195,7 +195,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.control_center_tint_transition),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast_w500, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
                 summary = stringResource(R.string.control_center_tint_transition_summary),
                 checked = visual.ccTintTransition,
                 enabled = featureCfg.enabled,
@@ -471,7 +471,7 @@ internal fun FeaturesScreen(
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar_w500, featureCfg.enabled) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled) },
                 summary = stringResource(R.string.battery_top_readout_summary),
                 checked = visual.showTopReadout,
                 enabled = featureCfg.enabled,
