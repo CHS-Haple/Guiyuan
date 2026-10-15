@@ -4,6 +4,8 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.topOffsetYRaw
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.InternetState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -201,6 +203,40 @@ class CenterGeometryTest {
                 canvasScale = 0.6f,
                 combinedScale = 0.6f,
                 scaleWithCanvas = true,
+            ),
+            0f,
+        )
+    }
+
+    @Test
+    fun batteryCenteredWifiAndMobileTypeHaveIndependentTopOffsets() {
+        val raw = topOffsetYRaw(5f)
+        val wifi = CenterIndicator.Wifi(segments = 3, internet = InternetState.UNKNOWN)
+        val mobile = CenterIndicator.MobileType(
+            label = "5G",
+            enhanced = false,
+            internet = InternetState.UNKNOWN,
+        )
+        fun shift(indicator: CenterIndicator?) =
+            TopInfoOffsetPolicy.networkTranslationDelta(
+                layout = ContentLayout.BATTERY_CENTER,
+                rawOffset = raw,
+                indicator = indicator,
+                wifiOffset = -2f,
+                mobileTypeOffset = 4f,
+            )
+
+        assertEquals(-2f, shift(wifi), 0f)
+        assertEquals(4f, shift(mobile), 0f)
+        assertEquals(-5f, shift(CenterIndicator.Airplane), 0f)
+        assertEquals(-5f, shift(null), 0f)
+        assertEquals(
+            0f,
+            TopInfoOffsetPolicy.networkTranslationDelta(
+                layout = ContentLayout.NETWORK_CENTER,
+                rawOffset = raw,
+                indicator = wifi,
+                wifiOffset = -2f,
             ),
             0f,
         )
