@@ -211,7 +211,6 @@ internal object CcTransitionOwner {
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
                 CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
-            genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -255,14 +254,21 @@ internal object CcTransitionOwner {
         private var started = false
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
+        private var reservationLayout: ChargeLayout? = null
+        private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
-        private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
+        private val chargeRootLocation = IntArray(2)
+        private val chargePeerLocation = IntArray(2)
+        private val chargeBatteryLocation = IntArray(2)
+        private var lastChargeLayout: ChargeLayout? = null
+        private var chargeRetarget: ChargeRetarget? = null
+        private var fakeCarrierRootOffsetX: Float? = null
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
@@ -480,7 +486,6 @@ internal object CcTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
             val appearanceChanged =
@@ -491,7 +496,6 @@ internal object CcTransitionOwner {
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
-            this.genericIslandShowing = genericIslandShowing
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
             if (appearanceChanged) {
@@ -525,6 +529,8 @@ internal object CcTransitionOwner {
                         previous.centerIndicator != model.centerIndicator))
             ) {
                 frozenReservationSpans = null
+                reservationLayout = null
+                reservationRetarget = null
                 frozenAdditionalMobileTargets = null
             }
             currentSnapshot = next
@@ -534,7 +540,6 @@ internal object CcTransitionOwner {
             SysUiPresentationOwner.clearCcTransitionReservation(
                 "transition-" + source,
             )
-            genericIslandShowing = null
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
@@ -602,12 +607,25 @@ internal object CcTransitionOwner {
                                     fakeStatusIcons.layoutDirection ==
                                         View.LAYOUT_DIRECTION_RTL,
                             )
-                        if (currentCarrier == null) {
+                        val fakeFrame = sample(view = fake, root = rootView)
+                        if (currentCarrier == null || fakeFrame == null) {
                             null
                         } else {
+                            // Battery remeasurement moves the fake icon row's edge,
+                            // even while its root and represented Wi-Fi stay in place.
+                            val rootOffset =
+                                fakeCarrierRootOffsetX
+                                    ?: (currentCarrier[0] - fakeFrame[0]).also {
+                                        fakeCarrierRootOffsetX = it
+                                    }
                             CarrierFrames(
                                 source = frozen.motionCarrierGeometry,
-                                current = currentCarrier,
+                                current =
+                                    CcTransitionPolicy.rootAnchoredCarrier(
+                                        carrier = currentCarrier,
+                                        root = fakeFrame,
+                                        rootRelativeX = rootOffset,
+                                    ),
                             )
                         }
                     }
@@ -672,6 +690,7 @@ internal object CcTransitionOwner {
                     finalAppearanceAlpha = finalOpacity,
                     finalAppearanceActive = nativeAppearance,
                 )
+            syncChargeLayout(motionProgress)
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
             val dualRowTravel =
@@ -835,9 +854,18 @@ internal object CcTransitionOwner {
                         }
                     val numberCurrent =
                         if (numberTarget != null) {
+                            val offset =
+                                chargeTargetOffset(
+                                    component = StatusPainter.TransitionComponent.BATTERY_NUMBER,
+                                    witness = numberWitness,
+                                    progress = motionProgress,
+                                )
+                            val adjustedTarget =
+                                if (offset == 0f) numberTarget
+                                else numberTarget.copyOf().apply { this[0] += offset }
                             projectedExactGeometry(
                                 source = numberSource,
-                                target = numberTarget,
+                                target = adjustedTarget,
                                 progress = motionProgress,
                                 carrierFrames = carrierFrames,
                             )
@@ -907,6 +935,16 @@ internal object CcTransitionOwner {
                 // Different text cannot share the native endpoint's scale or position.
                 val matchedTargetGeometry =
                     targetGeometry.takeUnless { nativeTypeMatch == false }
+                        ?.let { target ->
+                            val shift =
+                                chargeTargetOffset(
+                                    component = spec.component,
+                                    witness = witness,
+                                    progress = motionProgress,
+                                )
+                            if (shift == 0f) target
+                            else target.copyOf().apply { this[0] += shift }
+                        }
                 val matchedTextWeight =
                     if (nativeTypeMatch == true) witness?.textWeight else null
                 val matchedTextStyle =
@@ -975,7 +1013,13 @@ internal object CcTransitionOwner {
                             CcTransitionPolicy.dualMobileRowMotionGeometry(
                                 source = carriedSourceGeometry(sourceGeometry, carrierFrames),
                                 target = matchedTargetGeometry,
-                                groupTravelX = dualRowTravel[0],
+                                groupTravelX =
+                                    dualRowTravel[0] +
+                                        chargeTargetOffset(
+                                            component = spec.component,
+                                            witness = witness,
+                                            progress = motionProgress,
+                                        ),
                                 groupTravelY = dualRowTravel[1],
                                 progress = motionProgress,
                                 scalePolicy = spec.scalePolicy,
@@ -1577,6 +1621,88 @@ internal object CcTransitionOwner {
             canvas.restoreToCount(save)
         }
 
+        // Continuous native target position belongs to the input of each
+        // component's existing morph, not a screen-space shift after drawing.
+        private fun chargeTargetOffset(
+            component: StatusPainter.TransitionComponent,
+            witness: TargetWitness?,
+            progress: Float,
+        ): Float {
+            val retarget = chargeRetarget ?: return 0f
+            val delta =
+                when {
+                    component == StatusPainter.TransitionComponent.MOBILE ||
+                        witness?.slotView?.parent === finalStatusIcons ->
+                        retarget.peerShift
+                    component == StatusPainter.TransitionComponent.BATTERY_NUMBER ||
+                        component == StatusPainter.TransitionComponent.CHARGING_ICON ->
+                        retarget.batteryShift
+                    else -> 0f
+                }
+            return delta * CcTransitionPolicy.retargetWeight(progress, retarget.progress)
+        }
+
+        // FINAL is independent of the native FAKE icon-padding writer.
+        private fun readFinalLayout(): ChargeLayout? {
+            val root = finalRootRef.get() ?: return null
+            if (!root.isAttachedToWindow || !finalStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow || finalBattery.width <= 0 ||
+                finalStatusIcons.width <= 0
+            ) return null
+            root.getLocationInWindow(chargeRootLocation)
+            finalStatusIcons.getLocationInWindow(chargePeerLocation)
+            finalBattery.getLocationInWindow(chargeBatteryLocation)
+            return ChargeLayout(
+                batteryWidth = finalBattery.width,
+                peerWidth = finalStatusIcons.width,
+                peerX = chargePeerLocation[0] - chargeRootLocation[0],
+                batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
+            )
+        }
+
+        private fun syncChargeLayout(progress: Float) {
+            // Home's global charging island is not the Control Center's island layout.
+            if (nativeBatteryIslandActive) {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            val next = readFinalLayout() ?: run {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            val previous = lastChargeLayout
+            lastChargeLayout = next
+            if (progress <= 0f || progress >= 1f) {
+                chargeRetarget = null
+                return
+            }
+            if (
+                previous == null ||
+                (
+                    previous.peerX == next.peerX &&
+                        previous.batteryX == next.batteryX
+                )
+            ) return
+
+            // The native row can finish moving after battery measurement.
+            val old = chargeRetarget
+            val peerShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.peerShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.peerX - previous.peerX).toFloat(),
+            )
+            val batteryShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.batteryShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.batteryX - previous.batteryX).toFloat(),
+            )
+            chargeRetarget = ChargeRetarget(progress, peerShift, batteryShift)
+        }
+
         private fun projectedExactGeometry(
             source: FloatArray,
             target: FloatArray,
@@ -1780,24 +1906,59 @@ internal object CcTransitionOwner {
             }
             val source = sourceViewRef.get() ?: return
             if (source.width <= 0) return
-            val spans =
-                frozenReservationSpans
-                    ?: resolveReservationSpans()
-                        ?.also { resolved ->
-                            frozenReservationSpans = resolved
-                        }
-                    ?: return
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
                     userScale = currentSnapshot.visual.combinedScale,
                 )
-            val requestedWidth =
-                CcTransitionPolicy.resolveTransitionReservationWidth(
-                    compactWidthPx = compactWidth,
-                    spans = spans,
-                    progress = progress,
-                )
+            val layout = readFinalLayout()
+            var spans = frozenReservationSpans
+            if (spans == null) {
+                spans = resolveReservationSpans() ?: return
+                frozenReservationSpans = spans
+                reservationLayout = layout
+                reservationRetarget = null
+            } else if (layout != null && reservationLayout != layout) {
+                // Reflow changes FINAL targets even when this CC session survives.
+                // Freeze source semantics, not FINAL geometry across charge modes.
+                val refreshed = resolveReservationSpans()
+                if (refreshed != null) {
+                    val oldWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = spans,
+                        progress = progress,
+                    )
+                    val newWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = refreshed,
+                        progress = progress,
+                    )
+                    val previous = reservationRetarget
+                    reservationRetarget = ReservationRetarget(
+                        progress = progress,
+                        shift = CcTransitionPolicy.retargetShift(
+                            priorShift = previous?.shift ?: 0f,
+                            priorAnchor = previous?.progress,
+                            progress = progress,
+                            nativeDelta = (newWidth - oldWidth).toFloat(),
+                        ),
+                    )
+                    frozenReservationSpans = refreshed
+                    reservationLayout = layout
+                    spans = refreshed
+                }
+            }
+            val baseWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                compactWidthPx = compactWidth,
+                spans = spans,
+                progress = progress,
+            )
+            val correction = reservationRetarget?.let {
+                it.shift * CcTransitionPolicy.retargetWeight(progress, it.progress)
+            } ?: 0f
+            val requestedWidth = (baseWidth + correction).roundToInt()
+                .coerceAtLeast(compactWidth)
+            if (progress <= 0f || progress >= 1f) reservationRetarget = null
 
             // The logical transition width is Guiyuan-owned. Native status-icon
             // capacity and island collision remain HyperOS-owned.
@@ -3408,6 +3569,24 @@ internal object CcTransitionOwner {
         private data class TargetCacheKey(
             val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
+        )
+
+        private data class ChargeLayout(
+            val batteryWidth: Int,
+            val peerWidth: Int,
+            val peerX: Int,
+            val batteryX: Int,
+        )
+
+        private data class ChargeRetarget(
+            val progress: Float,
+            val peerShift: Float,
+            val batteryShift: Float,
+        )
+
+        private data class ReservationRetarget(
+            val progress: Float,
+            val shift: Float,
         )
 
         private data class CarrierFrames(

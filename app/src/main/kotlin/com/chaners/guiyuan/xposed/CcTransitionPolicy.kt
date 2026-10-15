@@ -11,6 +11,38 @@ internal object CcTransitionPolicy {
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 
+    // Keep a retargeted projected participant still at the held native fraction.
+    // Continued panel motion, not a new timer, brings it to the live endpoint.
+    fun rootAnchoredCarrier(
+        carrier: FloatArray,
+        root: FloatArray,
+        rootRelativeX: Float,
+    ): FloatArray {
+        require(carrier.size == 6 && root.size == 6)
+        return carrier.copyOf().also {
+            it[0] = root[0] + rootRelativeX
+        }
+    }
+
+    fun retargetWeight(progress: Float, anchor: Float): Float {
+        val p = geometryProgress(progress)
+        val at = geometryProgress(anchor)
+        if (at <= 0f || at >= 1f) return 0f
+        return if (p <= at) p / at else (1f - p) / (1f - at)
+    }
+
+    fun retargetShift(
+        priorShift: Float,
+        priorAnchor: Float?,
+        progress: Float,
+        nativeDelta: Float,
+    ): Float {
+        val retained = priorAnchor?.let {
+            priorShift * retargetWeight(progress, it)
+        } ?: 0f
+        return retained - nativeDelta
+    }
+
     fun handoffMotionProgress(
         expansionProgress: Float,
         finalAppearanceAlpha: Float,
