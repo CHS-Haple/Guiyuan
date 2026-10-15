@@ -177,7 +177,7 @@ For Material Symbols:
 - use Filled only when state semantics or legibility justify it;
 - normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
 - use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
-- first choose official outlined detail glyph weights for similar perceived stroke; then compare painted area at that weight to target roughly a quarter of the main glyph's ink, with a bounded badge size so narrow shapes do not obscure the main icon; keep the contour cutout and gap unchanged;
+- normalize subordinate glyphs to official outlined W500 as the detail weight, without modifying unrelated primary icons; then size the badge to roughly a quarter of the main glyph's visible bounding area (optical footprint, not alpha ink count), within a shared safe size range; keep the contour cutout and gap unchanged;
 - review neighboring glyphs in light and dark themes.
 
 ### Version and build identity
