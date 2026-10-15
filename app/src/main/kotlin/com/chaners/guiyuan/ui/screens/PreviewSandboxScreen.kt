@@ -290,7 +290,7 @@ internal fun PreviewSandboxScreen(
                             checked = state.dualMobile,
                             onCheckedChange = onDualMobileChange,
                             startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card_w500s)
                             },
                             insideMargin = SandboxPreferenceInsideMargin,
                         )
@@ -316,7 +316,7 @@ internal fun PreviewSandboxScreen(
                                 startAction = {
                                     SemanticLeadingIcon(
                                         R.drawable.ic_material_symbol_sim_card,
-                                        detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                        detailRes = R.drawable.ic_material_symbol_swap_horiz_w500,
                                     )
                                 },
                                 items = dataSimOptions,
@@ -369,7 +369,7 @@ internal fun PreviewSandboxScreen(
                                         startAction = {
                                             SemanticLeadingIcon(
                                                 iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category,
+                                                detailRes = R.drawable.ic_material_symbol_category_w500,
                                             )
                                         },
                                         items = mobileNetworkChoices.map { it.second },
@@ -413,7 +413,7 @@ internal fun PreviewSandboxScreen(
                                         startAction = {
                                             SemanticLeadingIcon(
                                                 iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category,
+                                                detailRes = R.drawable.ic_material_symbol_category_w500,
                                             )
                                         },
                                         items = mobileNetworkChoices.map { it.second },
@@ -463,7 +463,7 @@ internal fun PreviewSandboxScreen(
                             checked = state.airplaneMode,
                             onCheckedChange = onAirplaneModeChange,
                             title = stringResource(R.string.home_preview_airplane_title),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active_w500) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
                             insideMargin = SandboxPreferenceInsideMargin,
                         )
