@@ -226,8 +226,8 @@ class CenterGeometryTest {
                 mobileTypeOffset = 4f,
             )
 
-        assertEquals(-2f, shift(wifi), 0f)
-        assertEquals(4f, shift(mobile), 0f)
+        assertEquals(2f, shift(wifi), 0f)
+        assertEquals(-4f, shift(mobile), 0f)
         assertEquals(-5f, shift(CenterIndicator.Airplane), 0f)
         assertEquals(-5f, shift(null), 0f)
         assertEquals(
