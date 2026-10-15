@@ -431,7 +431,7 @@ internal fun SharedPreferences.readVisualCfg(
     val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT)
     // Preserve existing battery-centered network position when split keys are first read.
     val oldNetworkOffset =
-        if (layout == ContentLayout.BATTERY_CENTER) -topOffsetYUi(topOffset) else 0f
+        if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
     return VisualCfg(
         layout = layout,
