@@ -723,32 +723,45 @@ internal object CcTransitionOwner {
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
-            val liveCenterExitDirection =
-                specs.firstOrNull {
-                    it.component == StatusPainter.TransitionComponent.CENTER
-                }?.let { centerSpec ->
-                    val source =
-                        CcTransitionPolicy.componentGeometry(
-                            parentGeometry = sourceParentGeometry,
-                            parentWidth = sourceWidth,
-                            parentHeight = sourceHeight,
-                            bounds = centerSpec.sourceBounds,
-                        ) ?: return@let null
-                    val witness =
+            val centerSpec = specs.firstOrNull {
+                it.component == StatusPainter.TransitionComponent.CENTER
+            }
+            val centerSource = centerSpec?.let { spec ->
+                CcTransitionPolicy.componentGeometry(
+                    parentGeometry = sourceParentGeometry,
+                    parentWidth = sourceWidth,
+                    parentHeight = sourceHeight,
+                    bounds = spec.sourceBounds,
+                )
+            }
+            val centerWitness =
+                if (centerSource != null) {
+                    centerSpec?.let { spec ->
                         resolveSpecTarget(
-                            spec = centerSpec,
+                            spec = spec,
                             model = model,
                             preferredMobileSubId = preferredMobileSubId,
-                        ) ?: return@let null
-                    val target =
+                        )
+                    }
+                } else null
+            val centerTargetGeometry =
+                if (centerSource != null) {
+                    centerWitness?.let { witness ->
                         resolveTargetGeometry(
                             witness = witness,
                             root = rootView,
-                            sourceGeometry = source,
-                            targetOpticalBounds = centerSpec.targetOpticalBounds,
-                        ) ?: return@let null
-                    CcTransitionPolicy.horizontalExitDirection(source, target)
-                } ?: BatteryRingTransitionPolicy.ExitDirection.NONE
+                            sourceGeometry = centerSource,
+                            targetOpticalBounds = centerSpec?.targetOpticalBounds,
+                        )
+                    }
+                } else null
+            val liveCenterExitDirection =
+                if (centerSource != null && centerTargetGeometry != null) {
+                    CcTransitionPolicy.horizontalExitDirection(
+                        centerSource,
+                        centerTargetGeometry,
+                    )
+                } else BatteryRingTransitionPolicy.ExitDirection.NONE
             val batteryRingExitDirection =
                 CcTransitionPolicy.batteryRingExitDirection(
                     liveCenterDirection = liveCenterExitDirection,
@@ -887,7 +900,9 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    if (spec.mobileRow != null) {
+                    if (spec === centerSpec) {
+                        centerWitness
+                    } else if (spec.mobileRow != null) {
                         dualRowTargets?.getOrNull(spec.mobileRow)?.first
                     } else {
                         resolveSpecTarget(
@@ -897,7 +912,9 @@ internal object CcTransitionOwner {
                         )
                     }
                 val targetGeometry =
-                    if (spec.mobileRow != null) {
+                    if (spec === centerSpec) {
+                        centerTargetGeometry
+                    } else if (spec.mobileRow != null) {
                         dualRowTargets?.getOrNull(spec.mobileRow)?.second
                     } else if (model.dualMobileLevels != null &&
                         spec.component == StatusPainter.TransitionComponent.MOBILE

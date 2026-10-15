@@ -155,6 +155,7 @@ internal object HotReloadTransfer {
         val generationHandoff =
             if (version == VERSION) {
                 payload.getOrNull(INDEX_GENERATION_HANDOFF) as? Runnable
+                    ?: return null
             } else {
                 null
             }
