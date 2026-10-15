@@ -7,6 +7,38 @@ import org.junit.Test
 
 class CcTransitionReservationTest {
     @Test
+    fun nativeChargeRetargetPinsVisualsAndConvergesAtBothNativeEndpoints() {
+        val p = 0.6f
+        val peerShift = CcTransitionPolicy.retargetShift(
+            priorShift = 0f, priorAnchor = null, progress = p,
+            nativeDelta = -30f,
+        )
+        val batteryShift = CcTransitionPolicy.retargetShift(
+            priorShift = 0f, priorAnchor = null, progress = p,
+            nativeDelta = -15f,
+        )
+        assertEquals(18f, peerShift, 0.0001f)
+        assertEquals(9f, batteryShift, 0.0001f)
+        assertEquals(0f, CcTransitionPolicy.retargetWeight(0f, p), 0.0001f)
+        assertEquals(1f, CcTransitionPolicy.retargetWeight(p, p), 0.0001f)
+        assertEquals(0.5f, CcTransitionPolicy.retargetWeight(0.8f, p), 0.0001f)
+        assertEquals(0f, CcTransitionPolicy.retargetWeight(1f, p), 0.0001f)
+    }
+
+    @Test
+    fun rapidChargeReversalsAtHeldFractionDoNotAccumulateDisplacement() {
+        val plugged = CcTransitionPolicy.retargetShift(
+            priorShift = 0f, priorAnchor = null, progress = 0.6f,
+            nativeDelta = -30f,
+        )
+        val unplugged = CcTransitionPolicy.retargetShift(
+            priorShift = plugged, priorAnchor = 0.6f, progress = 0.6f,
+            nativeDelta = 30f,
+        )
+        assertEquals(0f, unplugged, 0.0001f)
+    }
+
+    @Test
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(

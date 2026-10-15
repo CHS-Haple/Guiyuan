@@ -263,6 +263,11 @@ internal object CcTransitionOwner {
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
+        private val chargeRootLocation = IntArray(2)
+        private val chargePeerLocation = IntArray(2)
+        private val chargeBatteryLocation = IntArray(2)
+        private var lastChargeLayout: ChargeLayout? = null
+        private var chargeRetarget: ChargeRetarget? = null
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
@@ -672,6 +677,7 @@ internal object CcTransitionOwner {
                     finalAppearanceAlpha = finalOpacity,
                     finalAppearanceActive = nativeAppearance,
                 )
+            syncChargeLayout(motionProgress)
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
             val dualRowTravel =
@@ -1006,6 +1012,30 @@ internal object CcTransitionOwner {
                                 carrierFrames = carrierFrames,
                             )
                     }
+                if (matchedTargetGeometry != null) {
+                    val shift = when {
+                        spec.component == StatusPainter.TransitionComponent.MOBILE ||
+                            witness?.slotView?.parent === finalStatusIcons ->
+                            chargeRetarget?.let { retarget ->
+                                retarget.peerShift *
+                                    CcTransitionPolicy.retargetWeight(
+                                        motionProgress, retarget.progress,
+                                    )
+                            } ?: 0f
+
+                        spec.component == StatusPainter.TransitionComponent.BATTERY_NUMBER ||
+                            spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ->
+                            chargeRetarget?.let { retarget ->
+                                retarget.batteryShift *
+                                    CcTransitionPolicy.retargetWeight(
+                                        motionProgress, retarget.progress,
+                                    )
+                            } ?: 0f
+
+                        else -> 0f
+                    }
+                    geometry[0] += shift
+                }
                 val componentVisibleFraction =
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
@@ -1575,6 +1605,58 @@ internal object CcTransitionOwner {
                 visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
+        }
+
+        private fun syncChargeLayout(progress: Float) {
+            if (nativeBatteryIslandActive || genericIslandShowing == true) {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            val root = finalRootRef.get() ?: return
+            if (
+                !root.isAttachedToWindow ||
+                !finalStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow ||
+                finalBattery.width <= 0 ||
+                finalStatusIcons.width <= 0
+            ) {
+                lastChargeLayout = null
+                chargeRetarget = null
+                return
+            }
+            root.getLocationInWindow(chargeRootLocation)
+            finalStatusIcons.getLocationInWindow(chargePeerLocation)
+            finalBattery.getLocationInWindow(chargeBatteryLocation)
+
+            // Compare native layout inside FINAL, not its animated screen position.
+            val next = ChargeLayout(
+                batteryWidth = finalBattery.width,
+                peerX = chargePeerLocation[0] - chargeRootLocation[0],
+                batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
+            )
+            val previous = lastChargeLayout
+            lastChargeLayout = next
+            if (
+                previous == null ||
+                previous.batteryWidth == next.batteryWidth ||
+                progress <= 0f || progress >= 1f
+            ) return
+
+            val old = chargeRetarget
+            val peerShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.peerShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.peerX - previous.peerX).toFloat(),
+            )
+            val batteryShift = CcTransitionPolicy.retargetShift(
+                priorShift = old?.batteryShift ?: 0f,
+                priorAnchor = old?.progress,
+                progress = progress,
+                nativeDelta = (next.batteryX - previous.batteryX).toFloat(),
+            )
+            chargeRetarget = ChargeRetarget(progress, peerShift, batteryShift)
         }
 
         private fun projectedExactGeometry(
@@ -3408,6 +3490,18 @@ internal object CcTransitionOwner {
         private data class TargetCacheKey(
             val target: StatusPainter.TransitionTarget,
             val mobileSubId: Int?,
+        )
+
+        private data class ChargeLayout(
+            val batteryWidth: Int,
+            val peerX: Int,
+            val batteryX: Int,
+        )
+
+        private data class ChargeRetarget(
+            val progress: Float,
+            val peerShift: Float,
+            val batteryShift: Float,
         )
 
         private data class CarrierFrames(
