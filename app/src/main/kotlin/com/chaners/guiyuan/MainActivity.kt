@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +17,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
@@ -78,47 +81,59 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            GyApp(
-                appearance = appearance,
-                dark = dark,
-                onPreviewThemeChange = { previewBarDark = it },
-                lang = lang,
-                iconHidden = iconHidden,
-                onHotReload = {
-                    (application as GyApplication).hotReloadSysUi()
-                },
-                onThemeChange = { mode ->
-                    scope.launch { repo.setTheme(mode) }
-                },
-                onDynamicChange = { enabled ->
-                    scope.launch { repo.setDynamicColor(enabled) }
-                },
-                onNavEnabledChange = { enabled ->
-                    scope.launch { repo.setNavEnabled(enabled) }
-                },
-                onNavStyleChange = { style: NavStyle ->
-                    scope.launch { repo.setNavStyle(style) }
-                },
-                onNavContentChange = { content: NavContent ->
-                    scope.launch { repo.setNavContent(content) }
-                },
-                onLiquidModeChange = { mode: LiquidMode ->
-                    scope.launch { repo.setLiquidMode(mode) }
-                },
-                onSwipeBackChange = { enabled ->
-                    scope.launch { repo.setSwipeBack(enabled) }
-                },
-                onLangChange = { language ->
-                    if (language != lang) {
-                        lang = language
-                        AppPlatform.setLanguage(this, language)
-                    }
-                },
-                onIconHiddenChange = { hidden ->
-                    AppPlatform.setIconHidden(this, hidden)
-                    iconHidden = hidden
-                },
-            )
+            val systemDensity = LocalDensity.current
+            val uiDensity = remember(systemDensity, appearance.uiScalePercent) {
+                Density(
+                    systemDensity.density * appearance.uiScalePercent / 100f,
+                    systemDensity.fontScale,
+                )
+            }
+            CompositionLocalProvider(LocalDensity provides uiDensity) {
+                GyApp(
+                    appearance = appearance,
+                    dark = dark,
+                    onPreviewThemeChange = { previewBarDark = it },
+                    lang = lang,
+                    iconHidden = iconHidden,
+                    onHotReload = {
+                        (application as GyApplication).hotReloadSysUi()
+                    },
+                    onThemeChange = { mode ->
+                        scope.launch { repo.setTheme(mode) }
+                    },
+                    onDynamicChange = { enabled ->
+                        scope.launch { repo.setDynamicColor(enabled) }
+                    },
+                    onNavEnabledChange = { enabled ->
+                        scope.launch { repo.setNavEnabled(enabled) }
+                    },
+                    onNavStyleChange = { style: NavStyle ->
+                        scope.launch { repo.setNavStyle(style) }
+                    },
+                    onNavContentChange = { content: NavContent ->
+                        scope.launch { repo.setNavContent(content) }
+                    },
+                    onLiquidModeChange = { mode: LiquidMode ->
+                        scope.launch { repo.setLiquidMode(mode) }
+                    },
+                    onSwipeBackChange = { enabled ->
+                        scope.launch { repo.setSwipeBack(enabled) }
+                    },
+                    onUiScaleChange = { percent ->
+                        scope.launch { repo.setUiScalePercent(percent) }
+                    },
+                    onLangChange = { language ->
+                        if (language != lang) {
+                            lang = language
+                            AppPlatform.setLanguage(this, language)
+                        }
+                    },
+                    onIconHiddenChange = { hidden ->
+                        AppPlatform.setIconHidden(this, hidden)
+                        iconHidden = hidden
+                    },
+                )
+            }
         }
     }
 
