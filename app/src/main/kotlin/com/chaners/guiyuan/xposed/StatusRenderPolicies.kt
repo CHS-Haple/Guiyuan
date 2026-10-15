@@ -35,9 +35,16 @@ internal object TopInfoOffsetPolicy {
     fun networkTranslationDelta(
         layout: ContentLayout,
         rawOffset: Float,
+        indicator: CenterIndicator? = null,
+        wifiOffset: Float = 0f,
+        mobileTypeOffset: Float = 0f,
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
-            -topOffsetYUi(rawOffset)
+            when (indicator) {
+                is CenterIndicator.Wifi -> wifiOffset
+                is CenterIndicator.MobileType -> mobileTypeOffset
+                else -> -topOffsetYUi(rawOffset)
+            }
         } else {
             0f
         }
