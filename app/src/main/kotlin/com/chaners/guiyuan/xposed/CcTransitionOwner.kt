@@ -266,6 +266,7 @@ internal object CcTransitionOwner {
         private val chargeBatteryLocation = IntArray(2)
         private var lastChargeLayout: ChargeLayout? = null
         private var chargeRetarget: ChargeRetarget? = null
+        private var fakeCarrierRootOffsetX: Float? = null
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
@@ -607,12 +608,25 @@ internal object CcTransitionOwner {
                                     fakeStatusIcons.layoutDirection ==
                                         View.LAYOUT_DIRECTION_RTL,
                             )
-                        if (currentCarrier == null) {
+                        val fakeFrame = sample(view = fake, root = rootView)
+                        if (currentCarrier == null || fakeFrame == null) {
                             null
                         } else {
+                            // Battery remeasurement moves the fake icon row's edge,
+                            // even while its root and represented Wi-Fi stay in place.
+                            val rootOffset =
+                                fakeCarrierRootOffsetX
+                                    ?: (currentCarrier[0] - fakeFrame[0]).also {
+                                        fakeCarrierRootOffsetX = it
+                                    }
                             CarrierFrames(
                                 source = frozen.motionCarrierGeometry,
-                                current = currentCarrier,
+                                current =
+                                    CcTransitionPolicy.rootAnchoredCarrier(
+                                        carrier = currentCarrier,
+                                        root = fakeFrame,
+                                        rootRelativeX = rootOffset,
+                                    ),
                             )
                         }
                     }
@@ -1638,12 +1652,19 @@ internal object CcTransitionOwner {
             )
             val previous = lastChargeLayout
             lastChargeLayout = next
+            if (progress <= 0f || progress >= 1f) {
+                chargeRetarget = null
+                return
+            }
             if (
                 previous == null ||
-                previous.batteryWidth == next.batteryWidth ||
-                progress <= 0f || progress >= 1f
+                (
+                    previous.peerX == next.peerX &&
+                        previous.batteryX == next.batteryX
+                )
             ) return
 
+            // The native row can finish moving after battery measurement.
             val old = chargeRetarget
             val peerShift = CcTransitionPolicy.retargetShift(
                 priorShift = old?.peerShift ?: 0f,

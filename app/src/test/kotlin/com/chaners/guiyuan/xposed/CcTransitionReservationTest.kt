@@ -39,6 +39,42 @@ class CcTransitionReservationTest {
     }
 
     @Test
+    fun nativeFakeRowChargeResizeDoesNotFabricateSourceMotion() {
+        val root = floatArrayOf(912f, 0f, 1f, 0f, 0f, 1f)
+        val chargingRow = floatArrayOf(1522f, 0f, 1f, 0f, 0f, 1f)
+        val unpluggedRow = floatArrayOf(1567f, 0f, 1f, 0f, 0f, 1f)
+        val offset = chargingRow[0] - root[0]
+        val before = CcTransitionPolicy.rootAnchoredCarrier(chargingRow, root, offset)
+        val after = CcTransitionPolicy.rootAnchoredCarrier(unpluggedRow, root, offset)
+        assertEquals(before[0], after[0], 0.0001f)
+
+        val held = 0.6f
+        val correction = CcTransitionPolicy.retargetShift(
+            priorShift = 0f, priorAnchor = null,
+            progress = held, nativeDelta = 30f,
+        )
+        assertEquals(0f, 30f * held + correction, 0.0001f)
+        assertEquals(0f, correction *
+            CcTransitionPolicy.retargetWeight(0f, held), 0.0001f)
+        assertEquals(0f, correction *
+            CcTransitionPolicy.retargetWeight(1f, held), 0.0001f)
+    }
+
+    @Test
+    fun finalRowLayoutMayMoveInTwoPassesAfterBatteryMeasurement() {
+        val p = 0.6f
+        val first = CcTransitionPolicy.retargetShift(
+            priorShift = 0f, priorAnchor = null, progress = p,
+            nativeDelta = 15f,
+        )
+        val second = CcTransitionPolicy.retargetShift(
+            priorShift = first, priorAnchor = p, progress = p,
+            nativeDelta = 15f,
+        )
+        assertEquals(-18f, second, 0.0001f)
+    }
+
+    @Test
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(

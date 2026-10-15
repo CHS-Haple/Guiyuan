@@ -13,6 +13,17 @@ internal object CcTransitionPolicy {
 
     // Keep a retargeted projected participant still at the held native fraction.
     // Continued panel motion, not a new timer, brings it to the live endpoint.
+    fun rootAnchoredCarrier(
+        carrier: FloatArray,
+        root: FloatArray,
+        rootRelativeX: Float,
+    ): FloatArray {
+        require(carrier.size == 6 && root.size == 6)
+        return carrier.copyOf().also {
+            it[0] = root[0] + rootRelativeX
+        }
+    }
+
     fun retargetWeight(progress: Float, anchor: Float): Float {
         val p = geometryProgress(progress)
         val at = geometryProgress(anchor)
