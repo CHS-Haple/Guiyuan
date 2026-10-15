@@ -4,9 +4,10 @@ This file records accepted runtime behavior and near-term guardrails, not a Buil
 
 ## Current 0.7 line
 
-- **Source checkpoint:** Guiyuan **0.7.0 / Build 20261015-1024** (Android versionCode `261015024`) promotes the accepted 0.6.1 B1023 runtime. Version identity is defined only in `gradle.properties`. The stable `main` boundary requires independent Full CI and a signed artifact; this description does not substitute for live branch/CI checks.
+- **Source checkpoint:** Guiyuan **0.7.0 / Build 20261015-1024** (Android versionCode `261015024`) promotes the accepted B1023 runtime to `main` through [#533](https://github.com/CHS-Haple/Guiyuan/pull/533). `gradle.properties` remains the version/build authority.
+- **Release evidence:** `main` Full CI [#38729068886](https://github.com/CHS-Haple/Guiyuan/actions/runs/38729068886) and Release workflow [#38729068985](https://github.com/CHS-Haple/Guiyuan/actions/runs/38729068985) succeeded. The 0.7.0-internal / B1024 signed distribution APK passed [#38727695573](https://github.com/CHS-Haple/Guiyuan/actions/runs/38727695573). No formal GitHub Release or 1.0.0 version was published.
 - **Device evidence:** the maintainer reported 0.6.1 B1023 **normal** on Xiaomi 15 Pro / Android 17 / SystemUI `17.03.260226.r`. The final B1023 branch `4bb6a666` completed Runtime CI [#38726385425](https://github.com/CHS-Haple/Guiyuan/actions/runs/38726385425); its post-acceptance edit only reuses a native mobile witness list inside one CC drawing frame. The previously signed B1023 Canary [#38722771150](https://github.com/CHS-Haple/Guiyuan/actions/runs/38722771150) covers the original accepted runtime. Neither proves unrelated SystemUI targets or hypothetical failure paths.
-- **Integration:** [#531](https://github.com/CHS-Haple/Guiyuan/pull/531) squash-merged as `b8a0f33`, combining accepted B1016, B1017 configuration cache invalidation, B1018 native mobile bind invalidation, B1019 failed Hot Reload transfer handling and the original B1001 one-root aggregate morph. Abandoned B1021/B1022 experiments were not imported. Historical B1002 peer-spacing work was superseded by already merged B1007/B1011 native geometry repairs.
+- **Integration:** [#531](https://github.com/CHS-Haple/Guiyuan/pull/531) integrated accepted B1023 runtime, including the verified composite signal morph, cache invalidation and Hot Reload handoff guards; [#532](https://github.com/CHS-Haple/Guiyuan/pull/532) changed release identity/docs without further runtime changes. Abandoned standalone experiments were not shipped.
 
 ## Accepted behavior
 
@@ -32,5 +33,5 @@ These are explicit compatibility limitations, not observed B1023 regressions. In
 
 ## Next
 
-Finish the separate 0.7.0 integration/stable validation and signed-APK evidence, then continue issue-driven compatibility work. After version promotion, keep `dev` and `main` branch roles intact; do not retain redundant active PRs or obsolete description claiming B1023 is unmerged. Update CHANGELOG only for durable release changes.
+0.7.0-IT integration, main validation and signed Internal distribution are complete. Keep `dev` aligned with the promoted baseline, and pursue [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) or [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) only with reproducible evidence or an upstream contract. Do not reopen superseded experiments; preserve the current target's native ownership and fail-native behavior. 1.0.0 remains a separate decision.
 
