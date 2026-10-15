@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,13 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,8 +71,8 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -128,26 +127,37 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_theme) {
-            SliderPreference(
+            ArrowPreference(
                 title = stringResource(R.string.ui_scale_title),
                 summary = stringResource(R.string.ui_scale_summary),
                 startAction = {
                     SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
                 },
-                value = sliderPercent,
-                onValueChange = { sliderPercent = it.roundToInt().toFloat() },
-                onValueChangeFinished = {
-                    val percent = sliderPercent.roundToInt().coerceIn(80, 110)
-                    if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                endActions = {
+                    Text(
+                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
                 },
-                valueText = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
-                valueRange = 80f..110f,
-                steps = 29,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(100f),
-                magnetThreshold = 0.02f,
+                holdDownState = inputOpen,
                 onClick = { inputOpen = true },
+                bottomAction = {
+                    Slider(
+                        value = sliderPercent,
+                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
+                        onValueChangeFinished = {
+                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
+                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        valueRange = 80f..110f,
+                        steps = 29,
+                        showKeyPoints = true,
+                        keyPoints = listOf(80f, 90f, 100f, 110f),
+                        magnetThreshold = 0.01f,
+                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    )
+                },
             )
             OverlayDropdownPreference(
                 items = themeOptions,
@@ -289,13 +299,20 @@ private fun UiScaleDialog(
                     if (text.length <= 3 && text.all(Char::isDigit)) input = text
                 },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(bottom = 16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    Text(
+                        text = "%",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 TextButton(
