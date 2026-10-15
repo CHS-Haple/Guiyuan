@@ -174,7 +174,38 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_visual_effects) {
-            SwitchPreference(
+            ArrowPreference(
+                title = stringResource(R.string.ui_scale_title),
+                summary = stringResource(R.string.ui_scale_summary),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
+                },
+                endActions = {
+                    Text(
+                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                holdDownState = inputOpen,
+                onClick = { inputOpen = true },
+                bottomAction = {
+                    Slider(
+                        value = sliderPercent,
+                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
+                        onValueChangeFinished = {
+                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
+                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        valueRange = 80f..110f,
+                        steps = 29,
+                        showKeyPoints = true,
+                        keyPoints = listOf(80f, 90f, 100f, 110f),
+                        magnetThreshold = 0.01f,
+                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    )
+                },
+            )            SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
                 startAction = {
@@ -246,38 +277,7 @@ internal fun AppearanceScreen(
                     },
                 )
             }
-            ArrowPreference(
-                title = stringResource(R.string.ui_scale_title),
-                summary = stringResource(R.string.ui_scale_summary),
-                startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
-                },
-                endActions = {
-                    Text(
-                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
-                holdDownState = inputOpen,
-                onClick = { inputOpen = true },
-                bottomAction = {
-                    Slider(
-                        value = sliderPercent,
-                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
-                        onValueChangeFinished = {
-                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
-                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        valueRange = 80f..110f,
-                        steps = 29,
-                        showKeyPoints = true,
-                        keyPoints = listOf(80f, 90f, 100f, 110f),
-                        magnetThreshold = 0.01f,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    )
-                },
-            )
+
         }
     }
 }
