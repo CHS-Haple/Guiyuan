@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -66,6 +67,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -195,6 +197,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     effectModifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
+    val waveScope = rememberCoroutineScope()
     var boosted by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
     val speed by animateFloatAsState(
@@ -209,13 +212,15 @@ internal fun GuiyuanAnimatedIdentityMark(
     )
     var orbitRotation by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(boosted, active) {
-        wave.snapTo(0f)
         if (boosted && active) {
-            // One release at peak speed, with a delayed echo; never loop while held.
+            // Wait for peak speed only while held; the triggered wave owns its playback.
             snapshotFlow { speed }.first { it >= 19f }
             onWaveRelease(orbitRotation * (PI / 180).toFloat())
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            wave.animateTo(1f, tween(durationMillis = 1150, easing = FastOutSlowInEasing))
+            waveScope.launch {
+                wave.snapTo(0f)
+                wave.animateTo(1f, tween(durationMillis = 1150, easing = FastOutSlowInEasing))
+            }
         }
     }
     val currentSpeed by rememberUpdatedState(speed)

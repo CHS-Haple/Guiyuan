@@ -58,7 +58,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
@@ -237,14 +236,11 @@ internal fun SettingsPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(
-                                if (springScroll) Modifier.scrollEndHaptic().overScrollVertical()
-                                else Modifier,
-                            )
+                            .then(if (springScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
-                    // Pull-to-refresh remains the gesture owner on Diagnostics.
-                    overscrollEffect = if (springScroll) null else rememberOverscrollEffect(),
+                    // Keep the native list rebound alongside the MIUIX folding top bar.
+                    overscrollEffect = rememberOverscrollEffect(),
                     content = content,
                 )
             }

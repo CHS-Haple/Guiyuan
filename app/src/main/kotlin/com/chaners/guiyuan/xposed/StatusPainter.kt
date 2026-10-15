@@ -2431,7 +2431,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val referenceEntry =
-                        WifiOpticalReference.connectedReferenceEntry(entryName)
+                        WifiOpticalReference.fitReferenceEntry(entryName)
                             ?: return@runCatching 0
                     drawableContext.resources.getIdentifier(
                         referenceEntry,

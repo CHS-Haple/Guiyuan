@@ -67,6 +67,25 @@ class WifiOpticalReferenceTest {
     }
 
     @Test
+    fun nativeHotspotFitsItsOwnOpticalBounds() {
+        assertNull(WifiOpticalReference.fitReferenceEntry("stat_sys_hotspot_signal_2"))
+        assertNull(
+            WifiOpticalReference.fitReferenceEntry(
+                "com.android.systemui:drawable/stat_sys_hotspot_signal_3_tint",
+            ),
+        )
+        assertEquals(
+            "stat_sys_wifi_signal_2",
+            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_2"),
+        )
+        assertEquals(
+            "stat_sys_wifi_signal_2",
+            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_unavailable_2"),
+        )
+        assertNull(WifiOpticalReference.fitReferenceEntry(null))
+    }
+
+    @Test
     fun referenceViewportMustMatchExactly() {
         assertTrue(
             WifiOpticalReference.canShareReferenceViewport(
