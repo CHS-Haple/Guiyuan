@@ -13,6 +13,8 @@ class VisualPersistenceTest {
         val single = VisualCfg(
             combinedScale = 0.9f,
             outerWeightScale = 1.1f,
+            wifiOffsetY = -3f,
+            mobileTypeOffsetY = 6f,
             batteryColorPreset = BatteryColorPreset.RECOMMENDED,
             batteryColorModes = BatteryColorModes(charging = BatteryColorMode.CUSTOM),
             batteryColorOverrides = BatteryColorOverrides(charging = 0xFF123456.toInt()),
@@ -22,6 +24,8 @@ class VisualPersistenceTest {
             dualSignal = true,
             combinedScale = 1.2f,
             outerWeightScale = 0.8f,
+            wifiOffsetY = 4f,
+            mobileTypeOffsetY = -2f,
             batteryColorPreset = BatteryColorPreset.IOS_STYLE,
             batteryColorModes = BatteryColorModes(powerSave = BatteryColorMode.FOLLOW_SYSTEM),
         )
@@ -78,16 +82,56 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         prefs.edit()
             .putFloat(COMBINED_SCALE_KEY, 0.75f)
+            .putFloat(WIFI_VERTICAL_OFFSET_KEY, -3f)
             .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
         assertEquals(COMBINED_SCALE_DEFAULT, prefs.readVisualCfg().combinedScale, 0.0001f)
+        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(-3f, prefs.readVisualCfg(dual = false).wifiOffsetY, 0f)
         assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(0.75f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = false).batteryColorPreset)
         assertTrue(prefs.dualSignalEnabled())
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         assertFalse(prefs.dualSignalEnabled())
+    }
+
+    @Test
+    fun oldBatteryCenteredOffsetIsInheritedUntilEachNewSliderIsSaved() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putString(visualModeKey(false, CONTENT_LAYOUT_KEY), layout.persistedValue)
+            .putFloat(visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY), topOffsetYRaw(5f))
+            .apply()
+
+        val initial = prefs.readVisualCfg()
+        assertEquals(-5f, initial.wifiOffsetY, 0f)
+        assertEquals(-5f, initial.mobileTypeOffsetY, 0f)
+        assertEquals(topOffsetYRaw(5f), initial.topOffsetY, 0f)
+
+        prefs.edit()
+            .putFloat(visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY), -1f)
+            .apply()
+        assertEquals(-1f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(-5f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+
+        val result = prefs.readVisualCfg().copy(mobileTypeOffsetY = 3f)
+        prefs.edit().putVisualCfg(result).apply()
+        assertEquals(-1f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(3f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+    }
+
+    @Test
+    fun legacyNetworkCenteredReadoutDoesNotAffectNewNetworkOffsets() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, BATTERY_TOP_VERTICAL_OFFSET_KEY), topOffsetYRaw(6f))
+            .apply()
+        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+        assertEquals(topOffsetYRaw(6f), prefs.readVisualCfg().topOffsetY, 0f)
     }
 
     private class MemoryPreferences : SharedPreferences {
