@@ -40,7 +40,7 @@ internal object CcTransitionPolicy {
         val retained = priorAnchor?.let {
             priorShift * retargetWeight(progress, it)
         } ?: 0f
-        return retained - nativeDelta * geometryProgress(progress)
+        return retained - nativeDelta
     }
 
     fun handoffMotionProgress(

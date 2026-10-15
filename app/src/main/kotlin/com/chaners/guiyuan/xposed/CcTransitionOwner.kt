@@ -857,9 +857,18 @@ internal object CcTransitionOwner {
                         }
                     val numberCurrent =
                         if (numberTarget != null) {
+                            val offset =
+                                chargeTargetOffset(
+                                    component = StatusPainter.TransitionComponent.BATTERY_NUMBER,
+                                    witness = numberWitness,
+                                    progress = motionProgress,
+                                )
+                            val adjustedTarget =
+                                if (offset == 0f) numberTarget
+                                else numberTarget.copyOf().apply { this[0] += offset }
                             projectedExactGeometry(
                                 source = numberSource,
-                                target = numberTarget,
+                                target = adjustedTarget,
                                 progress = motionProgress,
                                 carrierFrames = carrierFrames,
                             )
@@ -929,6 +938,16 @@ internal object CcTransitionOwner {
                 // Different text cannot share the native endpoint's scale or position.
                 val matchedTargetGeometry =
                     targetGeometry.takeUnless { nativeTypeMatch == false }
+                        ?.let { target ->
+                            val shift =
+                                chargeTargetOffset(
+                                    component = spec.component,
+                                    witness = witness,
+                                    progress = motionProgress,
+                                )
+                            if (shift == 0f) target
+                            else target.copyOf().apply { this[0] += shift }
+                        }
                 val matchedTextWeight =
                     if (nativeTypeMatch == true) witness?.textWeight else null
                 val matchedTextStyle =
@@ -997,7 +1016,13 @@ internal object CcTransitionOwner {
                             CcTransitionPolicy.dualMobileRowMotionGeometry(
                                 source = carriedSourceGeometry(sourceGeometry, carrierFrames),
                                 target = matchedTargetGeometry,
-                                groupTravelX = dualRowTravel[0],
+                                groupTravelX =
+                                    dualRowTravel[0] +
+                                        chargeTargetOffset(
+                                            component = spec.component,
+                                            witness = witness,
+                                            progress = motionProgress,
+                                        ),
                                 groupTravelY = dualRowTravel[1],
                                 progress = motionProgress,
                                 scalePolicy = spec.scalePolicy,
@@ -1028,30 +1053,6 @@ internal object CcTransitionOwner {
                                 carrierFrames = carrierFrames,
                             )
                     }
-                if (matchedTargetGeometry != null) {
-                    val shift = when {
-                        spec.component == StatusPainter.TransitionComponent.MOBILE ||
-                            witness?.slotView?.parent === finalStatusIcons ->
-                            chargeRetarget?.let { retarget ->
-                                retarget.peerShift *
-                                    CcTransitionPolicy.retargetWeight(
-                                        motionProgress, retarget.progress,
-                                    )
-                            } ?: 0f
-
-                        spec.component == StatusPainter.TransitionComponent.BATTERY_NUMBER ||
-                            spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ->
-                            chargeRetarget?.let { retarget ->
-                                retarget.batteryShift *
-                                    CcTransitionPolicy.retargetWeight(
-                                        motionProgress, retarget.progress,
-                                    )
-                            } ?: 0f
-
-                        else -> 0f
-                    }
-                    geometry[0] += shift
-                }
                 val componentVisibleFraction =
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
@@ -1621,6 +1622,27 @@ internal object CcTransitionOwner {
                 visual = currentSnapshot.visual,
             )
             canvas.restoreToCount(save)
+        }
+
+        // Continuous native target position belongs to the input of each
+        // component's existing morph, not a screen-space shift after drawing.
+        private fun chargeTargetOffset(
+            component: StatusPainter.TransitionComponent,
+            witness: TargetWitness?,
+            progress: Float,
+        ): Float {
+            val retarget = chargeRetarget ?: return 0f
+            val delta =
+                when {
+                    component == StatusPainter.TransitionComponent.MOBILE ||
+                        witness?.slotView?.parent === finalStatusIcons ->
+                        retarget.peerShift
+                    component == StatusPainter.TransitionComponent.BATTERY_NUMBER ||
+                        component == StatusPainter.TransitionComponent.CHARGING_ICON ->
+                        retarget.batteryShift
+                    else -> 0f
+                }
+            return delta * CcTransitionPolicy.retargetWeight(progress, retarget.progress)
         }
 
         private fun syncChargeLayout(progress: Float) {
