@@ -2331,10 +2331,14 @@ internal object CcTransitionOwner {
                 witnesses.any { it.opticalView?.let(::isReliableSemanticTarget) != true }
             ) return null
 
-            val aggregateVisual = witnesses.singleOrNull()?.opticalView?.let { optical ->
-                ParticipantVisualSnapshot.resolveView(optical)
-                    ?.dualMobileRowsWithinEnvelope() != null
-            } == true
+            // The native presentation already proves aggregation; the row
+            // extraction happens once when setting up its per-row morph targets.
+            val aggregateVisual =
+                presentation.mode != NativePresentationResolver.Mode.DUAL_AGGREGATED &&
+                    witnesses.singleOrNull()?.opticalView?.let { optical ->
+                        ParticipantVisualSnapshot.resolveView(optical)
+                            ?.dualMobileRowsWithinEnvelope() != null
+                    } == true
             val mode = CcTransitionPolicy.dualMobileTarget(
                 activeSubIds = platformIds,
                 targetSubIds = witnesses.map { it.subscriptionId },
