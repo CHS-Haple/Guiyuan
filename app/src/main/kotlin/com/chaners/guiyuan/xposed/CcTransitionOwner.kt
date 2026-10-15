@@ -211,7 +211,6 @@ internal object CcTransitionOwner {
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
                 CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
-            genericIslandShowing = SysUiIslandSource.currentShowing(),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -259,7 +258,6 @@ internal object CcTransitionOwner {
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
         private var transitionReservationEnabled = false
-        private var genericIslandShowing: Boolean? = null
         private var nativeBatteryIslandActive = false
         private val batteryIslandFakeLocationScratch = IntArray(2)
         private val batteryIslandTargetLocationScratch = IntArray(2)
@@ -450,6 +448,11 @@ internal object CcTransitionOwner {
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
                 " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
                 " endOffset=$lastNativePeerTargetEndOffsetPx" +
+                " ccIsland=$nativeBatteryIslandActive" +
+                " chargeRetarget=" +
+                (chargeRetarget?.let {
+                    "${it.progress}:${it.peerShift}:${it.batteryShift}"
+                } ?: "none") +
                 " fakeRoot=${viewPos(fakeRootRef.get())}" +
                 " finalRoot=${viewPos(finalRootRef.get())}" +
                 " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
@@ -485,7 +488,6 @@ internal object CcTransitionOwner {
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
             transitionReservationEnabled: Boolean,
-            genericIslandShowing: Boolean?,
             nativeBatteryIslandActive: Boolean?,
         ) {
             val appearanceChanged =
@@ -496,7 +498,6 @@ internal object CcTransitionOwner {
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
             this.transitionReservationEnabled = transitionReservationEnabled
-            this.genericIslandShowing = genericIslandShowing
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
             if (appearanceChanged) {
@@ -539,7 +540,6 @@ internal object CcTransitionOwner {
             SysUiPresentationOwner.clearCcTransitionReservation(
                 "transition-" + source,
             )
-            genericIslandShowing = null
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
@@ -1608,7 +1608,8 @@ internal object CcTransitionOwner {
         }
 
         private fun syncChargeLayout(progress: Float) {
-            if (nativeBatteryIslandActive || genericIslandShowing == true) {
+            // Home's global charging island is not the Control Center's island layout.
+            if (nativeBatteryIslandActive) {
                 lastChargeLayout = null
                 chargeRetarget = null
                 return
