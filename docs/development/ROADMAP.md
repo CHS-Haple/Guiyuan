@@ -29,7 +29,7 @@ Likely areas:
 
 Do not add controls merely because a renderer parameter exists.
 
-## Optional dual-SIM signal presentation (integrated, compatibility ongoing)
+## Optional dual-row signal presentation (integrated, compatibility ongoing)
 
 The default is still the accepted single four-dot presentation. [#502](https://github.com/CHS-Haple/Guiyuan/pull/502) integrated an opt-in eight-dot live mode (Build 993): physical SIM1 upper/SIM2 lower, provided **two authoritative active subscriptions** and complete slot mapping are available. The center network-type label follows the verified data SIM; native Control Center remains SystemUI-owned. Missing/ambiguous identity or unavailable signal data uses existing single/native-safe behavior without silently changing the user's opt-in preference. Single/dual visual configurations use separate saved profiles; Preview Sandbox data never becomes SystemUI input.
 
