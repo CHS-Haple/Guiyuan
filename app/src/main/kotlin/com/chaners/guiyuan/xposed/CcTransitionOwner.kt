@@ -1661,6 +1661,7 @@ internal object CcTransitionOwner {
             finalBattery.getLocationInWindow(chargeBatteryLocation)
             return ChargeLayout(
                 batteryWidth = finalBattery.width,
+                peerWidth = finalStatusIcons.width,
                 peerX = chargePeerLocation[0] - chargeRootLocation[0],
                 batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
             )
@@ -3579,6 +3580,7 @@ internal object CcTransitionOwner {
 
         private data class ChargeLayout(
             val batteryWidth: Int,
+            val peerWidth: Int,
             val peerX: Int,
             val batteryX: Int,
         )
