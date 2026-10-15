@@ -1912,24 +1912,59 @@ internal object CcTransitionOwner {
             }
             val source = sourceViewRef.get() ?: return
             if (source.width <= 0) return
-            val spans =
-                frozenReservationSpans
-                    ?: resolveReservationSpans()
-                        ?.also { resolved ->
-                            frozenReservationSpans = resolved
-                        }
-                    ?: return
             val compactWidth =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = frozenSource?.width ?: source.width,
                     userScale = currentSnapshot.visual.combinedScale,
                 )
-            val requestedWidth =
-                CcTransitionPolicy.resolveTransitionReservationWidth(
-                    compactWidthPx = compactWidth,
-                    spans = spans,
-                    progress = progress,
-                )
+            val layout = readFinalLayout()
+            var spans = frozenReservationSpans
+            if (spans == null) {
+                spans = resolveReservationSpans() ?: return
+                frozenReservationSpans = spans
+                reservationLayout = layout
+                reservationRetarget = null
+            } else if (layout != null && reservationLayout != layout) {
+                // Reflow changes FINAL targets even when this CC session survives.
+                // Freeze source semantics, not FINAL geometry across charge modes.
+                val refreshed = resolveReservationSpans()
+                if (refreshed != null) {
+                    val oldWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = spans,
+                        progress = progress,
+                    )
+                    val newWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                        compactWidthPx = compactWidth,
+                        spans = refreshed,
+                        progress = progress,
+                    )
+                    val previous = reservationRetarget
+                    reservationRetarget = ReservationRetarget(
+                        progress = progress,
+                        shift = CcTransitionPolicy.retargetShift(
+                            priorShift = previous?.shift ?: 0f,
+                            priorAnchor = previous?.progress,
+                            progress = progress,
+                            nativeDelta = (newWidth - oldWidth).toFloat(),
+                        ),
+                    )
+                    frozenReservationSpans = refreshed
+                    reservationLayout = layout
+                    spans = refreshed
+                }
+            }
+            val baseWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                compactWidthPx = compactWidth,
+                spans = spans,
+                progress = progress,
+            )
+            val correction = reservationRetarget?.let {
+                it.shift * CcTransitionPolicy.retargetWeight(progress, it.progress)
+            } ?: 0f
+            val requestedWidth = (baseWidth + correction).roundToInt()
+                .coerceAtLeast(compactWidth)
+            if (progress <= 0f || progress >= 1f) reservationRetarget = null
 
             // The logical transition width is Guiyuan-owned. Native status-icon
             // capacity and island collision remain HyperOS-owned.
