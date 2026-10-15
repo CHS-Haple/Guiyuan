@@ -118,7 +118,21 @@ internal fun AppearanceScreen(
     }
     var inputOpen by remember { mutableStateOf(false) }
 
-    SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
+    SettingsPage(
+        title = stringResource(R.string.appearance_title),
+        onBack = onBack,
+        overlay = {
+        UiScaleDialog(
+            show = inputOpen,
+            value = appearance.uiScalePercent,
+            onDismiss = { inputOpen = false },
+            onConfirm = { percent ->
+                inputOpen = false
+                if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+            },
+        )
+        },
+    ) {
         item {
             AppearanceThemePreview(
                 appearance = appearance,
@@ -127,38 +141,6 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_theme) {
-            ArrowPreference(
-                title = stringResource(R.string.ui_scale_title),
-                summary = stringResource(R.string.ui_scale_summary),
-                startAction = {
-                    SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
-                },
-                endActions = {
-                    Text(
-                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
-                holdDownState = inputOpen,
-                onClick = { inputOpen = true },
-                bottomAction = {
-                    Slider(
-                        value = sliderPercent,
-                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
-                        onValueChangeFinished = {
-                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
-                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        valueRange = 80f..110f,
-                        steps = 29,
-                        showKeyPoints = true,
-                        keyPoints = listOf(80f, 90f, 100f, 110f),
-                        magnetThreshold = 0.01f,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    )
-                },
-            )
             OverlayDropdownPreference(
                 items = themeOptions,
                 selectedIndex = appearance.theme.ordinal,
@@ -264,18 +246,40 @@ internal fun AppearanceScreen(
                     },
                 )
             }
+            ArrowPreference(
+                title = stringResource(R.string.ui_scale_title),
+                summary = stringResource(R.string.ui_scale_summary),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
+                },
+                endActions = {
+                    Text(
+                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                holdDownState = inputOpen,
+                onClick = { inputOpen = true },
+                bottomAction = {
+                    Slider(
+                        value = sliderPercent,
+                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
+                        onValueChangeFinished = {
+                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
+                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        valueRange = 80f..110f,
+                        steps = 29,
+                        showKeyPoints = true,
+                        keyPoints = listOf(80f, 90f, 100f, 110f),
+                        magnetThreshold = 0.01f,
+                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    )
+                },
+            )
         }
     }
-
-    UiScaleDialog(
-        show = inputOpen,
-        value = appearance.uiScalePercent,
-        onDismiss = { inputOpen = false },
-        onConfirm = { percent ->
-            inputOpen = false
-            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
-        },
-    )
 }
 
 @Composable

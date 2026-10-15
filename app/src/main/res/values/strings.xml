@@ -62,7 +62,7 @@
     <string name="center_follow_battery_color_summary">Wi-Fi, hotspot, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
     <string name="appearance_title">Appearance</string>
     <string name="ui_scale_title">Page Scale</string>
-    <string name="ui_scale_summary">Adjust the global display scale.</string>
+    <string name="ui_scale_summary">Adjust the Guiyuan interface scale.</string>
     <string name="appearance_summary">Theme and interface effects</string>
     <string name="about_title">About</string>
     <string name="about_summary">Version, project, and runtime environment</string>
