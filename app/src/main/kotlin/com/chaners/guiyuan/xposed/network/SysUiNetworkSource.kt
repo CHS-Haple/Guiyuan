@@ -1035,8 +1035,11 @@ internal object SysUiNetworkSource {
         }
 
         val result = chain.proceed()
-        if (bindingChanged) {
-            bindingLog?.let { onEvent?.invoke(it) }
+        if (bindingChanged) bindingLog?.let { onEvent?.invoke(it) }
+        // A binder can replace a native child without changing its subscription ID.
+        if (root != null &&
+            locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
+        ) {
             onPresentationChanged?.invoke()
         }
         result

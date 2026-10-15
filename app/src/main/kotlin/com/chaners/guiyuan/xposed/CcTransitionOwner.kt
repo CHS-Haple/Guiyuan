@@ -91,6 +91,11 @@ internal object CcTransitionOwner {
     }
 
     @Synchronized
+    fun onNativeMobileRefresh() {
+        current?.markMobileTargetsDirty()
+    }
+
+    @Synchronized
     fun onProjectionReadinessChanged(ready: Boolean) {
         projectionReady = ready
         sync("projection-readiness")
@@ -242,6 +247,7 @@ internal object CcTransitionOwner {
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
+        @Volatile private var mobileTargetsDirty = false
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -298,6 +304,17 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                if (mobileTargetsDirty) {
+                    mobileTargetsDirty = false
+                    targetCache.keys.removeAll { key ->
+                        (key.target as? StatusPainter.TransitionTarget.Slots)
+                            ?.preferredSlots
+                            ?.any { it == MOBILE_SLOT || it == STACKED_MOBILE_SLOT } == true
+                    }
+                    frozenAdditionalMobileTargets = null
+                    // Reuse the existing width-retarget path if native membership changed.
+                    reservationLayout = null
+                }
                 val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
@@ -321,6 +338,10 @@ internal object CcTransitionOwner {
                 }
                 true
             }
+
+        fun markMobileTargetsDirty() {
+            mobileTargetsDirty = true
+        }
 
         fun matches(
             root: ViewGroup,
