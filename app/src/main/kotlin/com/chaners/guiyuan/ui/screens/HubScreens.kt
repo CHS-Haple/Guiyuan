@@ -45,6 +45,8 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MIN
+import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
+import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
@@ -265,30 +267,73 @@ internal fun FeaturesScreen(
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
-            val topInfoVerticalOffsetUi =
-                topOffsetYUi(
-                    visual.topOffsetY,
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                SliderPreference(
+                    value = visual.wifiOffsetY,
+                    onValueChange = visualRepo::setWifiOffsetY,
+                    title = stringResource(R.string.wifi_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_wifi,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height,
+                        )
+                    },
+                    valueText = stringResource(R.string.battery_top_offset_value, visual.wifiOffsetY.roundToInt()),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
                 )
-            SliderPreference(
-                value = topInfoVerticalOffsetUi,
-                onValueChange = visualRepo::setTopOffsetY,
-                title = stringResource(R.string.top_info_vertical_offset),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
-                valueText =
-                    stringResource(
-                        R.string.battery_top_offset_value,
-                        topInfoVerticalOffsetUi.roundToInt(),
-                    ),
-                valueRange =
-                    BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
-                        BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
-                enabled = featureCfg.enabled,
-            )
+                SliderPreference(
+                    value = visual.mobileTypeOffsetY,
+                    onValueChange = visualRepo::setMobileTypeOffsetY,
+                    title = stringResource(R.string.mobile_type_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_5g,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height,
+                        )
+                    },
+                    valueText = stringResource(R.string.battery_top_offset_value, visual.mobileTypeOffsetY.roundToInt()),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            } else {
+                val topInfoVerticalOffsetUi =
+                    topOffsetYUi(
+                        visual.topOffsetY,
+                    )
+                SliderPreference(
+                    value = topInfoVerticalOffsetUi,
+                    onValueChange = visualRepo::setTopOffsetY,
+                    title = stringResource(R.string.top_info_vertical_offset),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
+                    valueText =
+                        stringResource(
+                            R.string.battery_top_offset_value,
+                            topInfoVerticalOffsetUi.roundToInt(),
+                        ),
+                    valueRange =
+                        BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
+                            BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            }
         }
         Section(R.string.section_network) {
             SliderPreference(
