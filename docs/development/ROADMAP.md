@@ -33,13 +33,16 @@ Do not add controls merely because a renderer parameter exists.
 
 The default is still the accepted single four-dot presentation. [#502](https://github.com/CHS-Haple/Guiyuan/pull/502) integrated an opt-in eight-dot live mode (Build 993): physical SIM1 upper/SIM2 lower, provided **two authoritative active subscriptions** and complete slot mapping are available. The center network-type label follows the verified data SIM; native Control Center remains SystemUI-owned. Missing/ambiguous identity or unavailable signal data uses existing single/native-safe behavior without silently changing the user's opt-in preference. Single/dual visual configurations use separate saved profiles; Preview Sandbox data never becomes SystemUI input.
 
-Remaining work is evidence-led, not speculative. Historic aggregate [#510](https://github.com/CHS-Haple/Guiyuan/pull/510) / [#511](https://github.com/CHS-Haple/Guiyuan/pull/511) and known-dot [#508](https://github.com/CHS-Haple/Guiyuan/pull/508) proposals were closed without merge; [#501](https://github.com/CHS-Haple/Guiyuan/issues/501) was closed as not planned. Retain them as source evidence, not an active implementation or accepted compatibility claim:
-1. Investigate third-party composite dual-row CC targets separately. B996 already supports two individually identified native `subId` roots with the single-SIM staged morph. A composite View's top/bottom row order, including data-SIM-first layouts, does not prove fixed SIM1/SIM2 ownership; preserve verified whole-group handoff/fade until an authoritative row map is available.
-2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown/unavailable strength, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC transitions. Keep the current device acceptance distinct from these untested cases.
-3. Add optional alternative eight-dot styles only after concrete designs, capability checks and a maintainable single-choice selector exist. Do not add speculative flags/hooks or parallel observers.
-4. Revisit the separate single/dual **settings-bank** selection only if real device behavior demonstrates an unwanted visual shift during transient single-SIM fallback. The chosen dual preference must persist through temporary SIM loss.
+The one-root aggregate shape morph from historic [#511](https://github.com/CHS-Haple/Guiyuan/pull/511) was selectively reintroduced and device-accepted through [#531](https://github.com/CHS-Haple/Guiyuan/pull/531). Two distinct native subscriber roots still support separately verified row morphing. A single composite root can supply two exact optical row shapes and grouped motion, **not** independent per-SIM identity; its top/bottom positions must never be treated as an authoritative SIM mapping. Native Control Center remains SystemUI-owned.
 
-Native CC per-row identity is established **only** for two separate, individually bound roots; not for one aggregated third-party root. Optional dual mode never authorizes mutation of the native final Control Center.
+Remaining work is evidence-led:
+1. Validate new third-party native child/rebind paths only when authoritative callbacks or reproducible device evidence establish a real membership change; [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) tracks that boundary.
+2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown signal, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC reversals on new topologies; keep this separate from B1023 focused acceptance.
+3. Add optional alternative eight-dot styles only with a concrete UX design, a single-choice selector and demonstrated compatibility value.
+4. Reconsider single/dual **settings-bank** selection only if a transient SIM fallback produces an observed unwanted visual shift. The chosen dual preference must survive SIM loss.
+5. Track abnormal Hot Reload framework generation cleanup under [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) without guessed cleanup, polling or a second writer.
+
+
 
 ## Compatibility work
 

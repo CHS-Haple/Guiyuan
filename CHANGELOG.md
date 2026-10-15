@@ -8,6 +8,26 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-15
+
+### Added
+- Added optional two-row mobile signal dots for two authoritative active SIMs, while keeping the original single-row default and safely falling back when a second SIM is unavailable.
+- Added separately remembered single-row and dual-row visual profiles and richer dual-SIM and data-SIM controls in Preview Sandbox; simulation remains app-local.
+- Added a bounded native-geometry morph for verified dual-root and one-root composite signal targets during Control Center expansion, without assigning unsupported per-SIM identity to composite rows.
+
+### Changed
+- Changed the four-dot Control Center transition to collapse, anchor travel, progressive reveal and native bar growth, using the existing native progress and reversible motion ownership.
+- Improved native 5G/5GA glyph matching across data-SIM and aggregate-root differences only when live subscription and rendered-text evidence match.
+- Improved native fake/final peer spacing and charging-time geometry retargeting without taking over native final Control Center motion.
+- Refined network/battery preview summaries, bilingual captions and composite leading-icon proportions.
+
+### Fixed
+- Invalidated native drawable/configuration and mobile-target witness caches when their verified native source changed, including supported same-subscription mobile binder rebinds.
+- Kept Hot Reload UI progress application-scoped across navigation and hardened transfer validation before framework Hook takeover, avoiding unowned preference bindings on failed takeover.
+- Removed repeated native dual-target resolution within a Control Center draw, retaining the existing single-writer, session and fail-native rules.
+
+Native child changes that bypass verified binder events and abnormal SystemUI generation-disposal edges remain scoped compatibility observations in #521 and #519; they are not claimed universally fixed.
+
 ## [0.6.1] - 2026-10-12
 
 ### Added
