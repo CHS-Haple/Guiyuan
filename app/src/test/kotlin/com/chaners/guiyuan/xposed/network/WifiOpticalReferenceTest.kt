@@ -67,6 +67,20 @@ class WifiOpticalReferenceTest {
     }
 
     @Test
+    fun hotspotOnlyGetsModestOpticalLift() {
+        assertEquals(1.06f, WifiOpticalReference.opticalScale("stat_sys_hotspot_signal_3"), 0f)
+        assertEquals(
+            1.06f,
+            WifiOpticalReference.opticalScale("com.android.systemui:drawable/stat_sys_hotspot_signal_1_tint"),
+            0f,
+        )
+        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_wifi_signal_3"), 0f)
+        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_wifi_signal_unavailable_3"), 0f)
+        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_signal_4"), 0f)
+        assertEquals(1f, WifiOpticalReference.opticalScale(null), 0f)
+    }
+
+    @Test
     fun referenceViewportMustMatchExactly() {
         assertTrue(
             WifiOpticalReference.canShareReferenceViewport(
