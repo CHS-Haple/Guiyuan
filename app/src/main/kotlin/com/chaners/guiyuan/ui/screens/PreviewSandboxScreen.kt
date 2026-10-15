@@ -290,7 +290,7 @@ internal fun PreviewSandboxScreen(
                             checked = state.dualMobile,
                             onCheckedChange = onDualMobileChange,
                             startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card_w500s)
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
                             },
                             insideMargin = SandboxPreferenceInsideMargin,
                         )
@@ -463,7 +463,7 @@ internal fun PreviewSandboxScreen(
                             checked = state.airplaneMode,
                             onCheckedChange = onAirplaneModeChange,
                             title = stringResource(R.string.home_preview_airplane_title),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active_w500) },
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
                             insideMargin = SandboxPreferenceInsideMargin,
                         )
