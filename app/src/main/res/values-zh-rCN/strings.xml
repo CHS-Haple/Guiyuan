@@ -11,8 +11,8 @@
     <string name="section_display_transition">显示与过渡</string>
     <string name="section_layout_size">布局与尺寸</string>
     <string name="section_network">网络图标</string>
-    <string name="dual_signal_title">双卡信号</string>
-    <string name="dual_signal_summary">两张 SIM 均识别到时显示双排，否则使用单排；两种模式分别记忆设置</string>
+    <string name="dual_signal_title">双排信号</string>
+    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n单排与双排分别记忆配置</string>
     <string name="section_battery">电量与充电</string>
     <string name="section_management">管理</string>
     <string name="content_layout_title">内容布局</string>
