@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas as BitmapCanvas
 import android.graphics.Paint
-import android.graphics.Rect
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
@@ -95,12 +94,11 @@ internal fun SemanticLeadingIcon(
                 materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
             }
             val badgeSize = remember(main, detail) {
-                val mainBounds = visibleIconBounds(main)
-                val detailBounds = visibleIconBounds(detail)
-                if (mainBounds != null && detailBounds != null) {
-                    val mainArea = mainBounds.width() * mainBounds.height()
-                    val detailArea = detailBounds.width() * detailBounds.height()
-                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 18f).dp
+                val mainArea = paintedIconArea(main)
+                val detailArea = paintedIconArea(detail)
+                if (mainArea > 0 && detailArea > 0) {
+                    // Detail weights are selected at source; limit overlap after matching ink mass.
+                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 16f).dp
                 } else {
                     13.dp
                 }
@@ -154,24 +152,15 @@ private fun materialIcon(
     return bitmap.asImageBitmap()
 }
 
-// Use the visible contour, not ink coverage: an outlined icon's weight is not its size.
-private fun visibleIconBounds(icon: ImageBitmap): Rect? {
+private fun paintedIconArea(icon: ImageBitmap): Int {
     val bitmap = icon.asAndroidBitmap()
-    var left = bitmap.width
-    var top = bitmap.height
-    var right = -1
-    var bottom = -1
+    var area = 0
     for (y in 0 until bitmap.height) {
         for (x in 0 until bitmap.width) {
-            if (bitmap.getPixel(x, y) ushr 24 > 16) {
-                left = minOf(left, x)
-                top = minOf(top, y)
-                right = maxOf(right, x)
-                bottom = maxOf(bottom, y)
-            }
+            area += bitmap.getPixel(x, y) ushr 24
         }
     }
-    return if (right < left) null else Rect(left, top, right + 1, bottom + 1)
+    return area
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
