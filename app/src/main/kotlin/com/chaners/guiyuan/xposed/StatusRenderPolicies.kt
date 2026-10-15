@@ -12,6 +12,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
