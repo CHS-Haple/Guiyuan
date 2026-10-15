@@ -667,23 +667,24 @@ internal object CcTransitionOwner {
                 }
             val rowSpecs =
                 dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual) }
+            val nativeDualTargets =
+                dualSpec?.let { resolveDualMobileTargets(it, model) }
             val dualRowTargets =
-                if (rowSpecs?.size != 2 || dualSpec == null) {
+                if (rowSpecs?.size != 2 || nativeDualTargets == null) {
                     null
                 } else {
                     val presentation = PresentationStore.snapshot().mobilePresentation
-                    val native = resolveDualMobileTargets(dualSpec, model)
                     val order = presentation?.let {
                         CcTransitionPolicy.dualRootRowIndices(
                             mode = it.mode,
                             slots = it.slotSubscriptionIds,
-                            rootSubIds = native?.map { target -> target.subscriptionId }.orEmpty(),
+                            rootSubIds = nativeDualTargets.map { target -> target.subscriptionId },
                         )
                     }
-                    if (order == null || native == null) {
+                    if (order == null) {
                         null
                     } else {
-                        rowSpecs.zip(order.map { native[it] }).mapNotNull { (spec, witness) ->
+                        rowSpecs.zip(order.map { nativeDualTargets[it] }).mapNotNull { (spec, witness) ->
                             if (mobileTargetBars(witness)?.size != 4) {
                                 null
                             } else {
@@ -709,7 +710,7 @@ internal object CcTransitionOwner {
                 if (dualSpec == null || dualRowTargets != null ||
                     model.mobileUnavailableMark
                 ) null
-                else resolveDualMobileTargets(dualSpec, model)
+                else nativeDualTargets
                     ?.singleOrNull()
                     ?.opticalView
                     ?.let { optical ->
