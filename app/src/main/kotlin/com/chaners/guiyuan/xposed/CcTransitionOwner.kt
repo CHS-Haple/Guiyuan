@@ -254,6 +254,8 @@ internal object CcTransitionOwner {
         private var started = false
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
+        private var reservationLayout: ChargeLayout? = null
+        private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
         private var lastNativeReservationWidthPx: Int? = null
         private var lastNativePeerTargetEndOffsetPx: Float? = null
@@ -534,6 +536,8 @@ internal object CcTransitionOwner {
                         previous.centerIndicator != model.centerIndicator))
             ) {
                 frozenReservationSpans = null
+                reservationLayout = null
+                reservationRetarget = null
                 frozenAdditionalMobileTargets = null
             }
             currentSnapshot = next
@@ -1645,6 +1649,23 @@ internal object CcTransitionOwner {
             return delta * CcTransitionPolicy.retargetWeight(progress, retarget.progress)
         }
 
+        // FINAL is independent of the native FAKE icon-padding writer.
+        private fun readFinalLayout(): ChargeLayout? {
+            val root = finalRootRef.get() ?: return null
+            if (!root.isAttachedToWindow || !finalStatusIcons.isAttachedToWindow ||
+                !finalBattery.isAttachedToWindow || finalBattery.width <= 0 ||
+                finalStatusIcons.width <= 0
+            ) return null
+            root.getLocationInWindow(chargeRootLocation)
+            finalStatusIcons.getLocationInWindow(chargePeerLocation)
+            finalBattery.getLocationInWindow(chargeBatteryLocation)
+            return ChargeLayout(
+                batteryWidth = finalBattery.width,
+                peerX = chargePeerLocation[0] - chargeRootLocation[0],
+                batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
+            )
+        }
+
         private fun syncChargeLayout(progress: Float) {
             // Home's global charging island is not the Control Center's island layout.
             if (nativeBatteryIslandActive) {
@@ -1652,28 +1673,11 @@ internal object CcTransitionOwner {
                 chargeRetarget = null
                 return
             }
-            val root = finalRootRef.get() ?: return
-            if (
-                !root.isAttachedToWindow ||
-                !finalStatusIcons.isAttachedToWindow ||
-                !finalBattery.isAttachedToWindow ||
-                finalBattery.width <= 0 ||
-                finalStatusIcons.width <= 0
-            ) {
+            val next = readFinalLayout() ?: run {
                 lastChargeLayout = null
                 chargeRetarget = null
                 return
             }
-            root.getLocationInWindow(chargeRootLocation)
-            finalStatusIcons.getLocationInWindow(chargePeerLocation)
-            finalBattery.getLocationInWindow(chargeBatteryLocation)
-
-            // Compare native layout inside FINAL, not its animated screen position.
-            val next = ChargeLayout(
-                batteryWidth = finalBattery.width,
-                peerX = chargePeerLocation[0] - chargeRootLocation[0],
-                batteryX = chargeBatteryLocation[0] - chargeRootLocation[0],
-            )
             val previous = lastChargeLayout
             lastChargeLayout = next
             if (progress <= 0f || progress >= 1f) {
@@ -3548,6 +3552,11 @@ internal object CcTransitionOwner {
             val progress: Float,
             val peerShift: Float,
             val batteryShift: Float,
+        )
+
+        private data class ReservationRetarget(
+            val progress: Float,
+            val shift: Float,
         )
 
         private data class CarrierFrames(
