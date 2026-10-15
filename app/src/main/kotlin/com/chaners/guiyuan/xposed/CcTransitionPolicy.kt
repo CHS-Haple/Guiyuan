@@ -124,15 +124,75 @@ internal object CcTransitionPolicy {
         )
     }
 
+    // One aggregate endpoint has no SIM identity. Its paired anchors share X;
+    // native ink determines each Y, so bar growth starts at the bar's bottom.
+    fun aggregateAnchors(
+        bounds: StatusPainter.TransitionBounds,
+        top: ParticipantVisualSnapshot.NormalizedRect,
+        bottom: ParticipantVisualSnapshot.NormalizedRect,
+        topShape: ParticipantVisualSnapshot.RowShape,
+        bottomShape: ParticipantVisualSnapshot.RowShape,
+        widthCompensation: Float,
+        heightCompensation: Float,
+        dotDiameter: Float,
+    ): FloatArray {
+        fun y(
+            rect: ParticipantVisualSnapshot.NormalizedRect,
+            shape: ParticipantVisualSnapshot.RowShape,
+        ): Float {
+            val normalized = if (shape == ParticipantVisualSnapshot.RowShape.DOTS) {
+                rect.centerY
+            } else {
+                rect.bottom
+            }
+            val position = bounds.centerY +
+                (normalized - 0.5f) * bounds.height * heightCompensation
+            return if (shape == ParticipantVisualSnapshot.RowShape.BARS) {
+                position - dotDiameter / 2f
+            } else position
+        }
+        return floatArrayOf(
+            bounds.centerX +
+                ((top.centerX + bottom.centerX) / 2f - 0.5f) *
+                    bounds.width * widthCompensation,
+            y(top, topShape),
+            y(bottom, bottomShape),
+        )
+    }
+
     fun matchesDualMobileTypeTarget(
         dataSubId: Int,
         targetSubId: Int?,
         source: CenterIndicator.MobileType,
         target: NativePresentationResolver.NetworkType?,
+        verifiedAggregateRoot: Boolean = false,
     ): Boolean =
         dataSubId >= 0 &&
-            targetSubId == dataSubId &&
+            (targetSubId == dataSubId || verifiedAggregateRoot) &&
             mobileTypeMatches(source.label, source.enhanced, target) == true
+
+    // The visible aggregate root has presentation ownership, not data-SIM ownership.
+    fun verifiedAggregateTypeRoot(
+        presentation: NativePresentationResolver.Snapshot?,
+        dataSubId: Int,
+        targetSubId: Int?,
+        soleNativeRoot: Boolean,
+    ): Boolean {
+        val state = presentation ?: return false
+        if (state.mode != NativePresentationResolver.Mode.DUAL_AGGREGATED ||
+            !state.activeSubsAuthoritative || state.visibleRoots != 1 ||
+            !soleNativeRoot
+        ) return false
+
+        val active = state.activeSubscriptionIds.toSet()
+        return active.size == 2 &&
+            active == state.platformActiveSubscriptionIds &&
+            dataSubId in active &&
+            targetSubId != null && targetSubId in active &&
+            state.effectiveDataSubscriptionId == dataSubId &&
+            state.networkTypeSubscriptionId == dataSubId &&
+            state.presentationRootSubscriptionId == targetSubId
+    }
 
     // Order optical roots by the platform's physical SIM slots, never by View order.
     fun dualRootRowIndices(

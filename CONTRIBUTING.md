@@ -177,6 +177,7 @@ For Material Symbols:
 - use Filled only when state semantics or legibility justify it;
 - normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
 - use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
+- size right-bottom subordinate detail badges to about half the main glyph's painted height (roughly a quarter optical footprint); keep the existing contour cutout and gap unchanged;
 - review neighboring glyphs in light and dark themes.
 
 ### Version and build identity

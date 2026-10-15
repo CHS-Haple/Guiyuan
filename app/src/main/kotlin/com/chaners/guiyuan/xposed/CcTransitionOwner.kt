@@ -21,6 +21,7 @@ import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -88,6 +89,11 @@ internal object CcTransitionOwner {
     fun setSceneEligible(eligible: Boolean) {
         sceneEligible = eligible
         sync("scene")
+    }
+
+    @Synchronized
+    fun onNativeMobileRefresh() {
+        current?.markMobileTargetsDirty()
     }
 
     @Synchronized
@@ -242,6 +248,7 @@ internal object CcTransitionOwner {
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
+        private val mobileTargetsDirty = AtomicBoolean(false)
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -298,6 +305,16 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
+                if (mobileTargetsDirty.getAndSet(false)) {
+                    targetCache.keys.removeAll { key ->
+                        (key.target as? StatusPainter.TransitionTarget.Slots)
+                            ?.preferredSlots
+                            ?.any { it == MOBILE_SLOT || it == STACKED_MOBILE_SLOT } == true
+                    }
+                    frozenAdditionalMobileTargets = null
+                    // Reuse the existing width-retarget path if native membership changed.
+                    reservationLayout = null
+                }
                 val previousSnapshot = currentSnapshot
                 val latest =
                     CcRenderSession.transitionSourceSnapshot()
@@ -321,6 +338,10 @@ internal object CcTransitionOwner {
                 }
                 true
             }
+
+        fun markMobileTargetsDirty() {
+            mobileTargetsDirty.set(true)
+        }
 
         fun matches(
             root: ViewGroup,
@@ -646,23 +667,24 @@ internal object CcTransitionOwner {
                 }
             val rowSpecs =
                 dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual) }
+            val nativeDualTargets =
+                dualSpec?.let { resolveDualMobileTargets(it, model) }
             val dualRowTargets =
-                if (rowSpecs?.size != 2 || dualSpec == null) {
+                if (rowSpecs?.size != 2 || nativeDualTargets == null) {
                     null
                 } else {
                     val presentation = PresentationStore.snapshot().mobilePresentation
-                    val native = resolveDualMobileTargets(dualSpec, model)
                     val order = presentation?.let {
                         CcTransitionPolicy.dualRootRowIndices(
                             mode = it.mode,
                             slots = it.slotSubscriptionIds,
-                            rootSubIds = native?.map { target -> target.subscriptionId }.orEmpty(),
+                            rootSubIds = nativeDualTargets.map { target -> target.subscriptionId },
                         )
                     }
-                    if (order == null || native == null) {
+                    if (order == null) {
                         null
                     } else {
-                        rowSpecs.zip(order.map { native[it] }).mapNotNull { (spec, witness) ->
+                        rowSpecs.zip(order.map { nativeDualTargets[it] }).mapNotNull { (spec, witness) ->
                             if (mobileTargetBars(witness)?.size != 4) {
                                 null
                             } else {
@@ -683,6 +705,34 @@ internal object CcTransitionOwner {
                         }.takeIf { it.size == 2 }
                     }
                 }
+            // The aggregate has one optical endpoint; its rows have no verified SIM IDs.
+            val aggregateTarget =
+                if (dualSpec == null || dualRowTargets != null ||
+                    model.mobileUnavailableMark
+                ) null
+                else nativeDualTargets
+                    ?.singleOrNull()
+                    ?.opticalView
+                    ?.let { optical ->
+                        val snapshot = ParticipantVisualSnapshot.resolveView(optical)
+                            ?: return@let null
+                        val rows = snapshot.dualMobileRowsWithinEnvelope()
+                            ?: return@let null
+                        val sample = sample(optical, rootView) ?: return@let null
+                        val bounds = snapshot.envelope
+                        val target = CcTransitionPolicy.componentGeometry(
+                            parentGeometry = sample,
+                            parentWidth = optical.width,
+                            parentHeight = optical.height,
+                            bounds = StatusPainter.TransitionBounds(
+                                bounds.left * optical.width,
+                                bounds.top * optical.height,
+                                bounds.right * optical.width,
+                                bounds.bottom * optical.height,
+                            ),
+                        )?.takeIf { geometry -> geometry.all(Float::isFinite) }
+                        target?.let { it to rows }
+                    }
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
                 CcTransitionPolicy.handoffMotionProgress(
@@ -711,11 +761,20 @@ internal object CcTransitionOwner {
                 }
 
             val specs =
-                if (dualRowTargets == null || dualRowTravel == null) baseSpecs
-                else baseSpecs.flatMap { spec ->
-                    if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
-                        rowSpecs.orEmpty()
-                    } else listOf(spec)
+                when {
+                    dualRowTargets != null && dualRowTravel != null ->
+                        baseSpecs.flatMap { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                rowSpecs.orEmpty()
+                            } else listOf(spec)
+                        }
+                    aggregateTarget != null ->
+                        baseSpecs.map { spec ->
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                                spec.copy(shapePolicy = StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL)
+                            } else spec
+                        }
+                    else -> baseSpecs
                 }
 
             val preferredMobileSubId =
@@ -723,32 +782,45 @@ internal object CcTransitionOwner {
                     .snapshot()
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
-            val liveCenterExitDirection =
-                specs.firstOrNull {
-                    it.component == StatusPainter.TransitionComponent.CENTER
-                }?.let { centerSpec ->
-                    val source =
-                        CcTransitionPolicy.componentGeometry(
-                            parentGeometry = sourceParentGeometry,
-                            parentWidth = sourceWidth,
-                            parentHeight = sourceHeight,
-                            bounds = centerSpec.sourceBounds,
-                        ) ?: return@let null
-                    val witness =
+            val centerSpec = specs.firstOrNull {
+                it.component == StatusPainter.TransitionComponent.CENTER
+            }
+            val centerSource = centerSpec?.let { spec ->
+                CcTransitionPolicy.componentGeometry(
+                    parentGeometry = sourceParentGeometry,
+                    parentWidth = sourceWidth,
+                    parentHeight = sourceHeight,
+                    bounds = spec.sourceBounds,
+                )
+            }
+            val centerWitness =
+                if (centerSource != null) {
+                    centerSpec?.let { spec ->
                         resolveSpecTarget(
-                            spec = centerSpec,
+                            spec = spec,
                             model = model,
                             preferredMobileSubId = preferredMobileSubId,
-                        ) ?: return@let null
-                    val target =
+                        )
+                    }
+                } else null
+            val centerTargetGeometry =
+                if (centerSource != null) {
+                    centerWitness?.let { witness ->
                         resolveTargetGeometry(
                             witness = witness,
                             root = rootView,
-                            sourceGeometry = source,
-                            targetOpticalBounds = centerSpec.targetOpticalBounds,
-                        ) ?: return@let null
-                    CcTransitionPolicy.horizontalExitDirection(source, target)
-                } ?: BatteryRingTransitionPolicy.ExitDirection.NONE
+                            sourceGeometry = centerSource,
+                            targetOpticalBounds = centerSpec?.targetOpticalBounds,
+                        )
+                    }
+                } else null
+            val liveCenterExitDirection =
+                if (centerSource != null && centerTargetGeometry != null) {
+                    CcTransitionPolicy.horizontalExitDirection(
+                        centerSource,
+                        centerTargetGeometry,
+                    )
+                } else BatteryRingTransitionPolicy.ExitDirection.NONE
             val batteryRingExitDirection =
                 CcTransitionPolicy.batteryRingExitDirection(
                     liveCenterDirection = liveCenterExitDirection,
@@ -887,7 +959,9 @@ internal object CcTransitionOwner {
                         bounds = spec.sourceBounds,
                     ) ?: return@forEach
                 val witness =
-                    if (spec.mobileRow != null) {
+                    if (spec === centerSpec) {
+                        centerWitness
+                    } else if (spec.mobileRow != null) {
                         dualRowTargets?.getOrNull(spec.mobileRow)?.first
                     } else {
                         resolveSpecTarget(
@@ -897,17 +971,22 @@ internal object CcTransitionOwner {
                         )
                     }
                 val targetGeometry =
-                    if (spec.mobileRow != null) {
+                    if (spec === centerSpec) {
+                        centerTargetGeometry
+                    } else if (spec.mobileRow != null) {
                         dualRowTargets?.getOrNull(spec.mobileRow)?.second
                     } else if (model.dualMobileLevels != null &&
                         spec.component == StatusPainter.TransitionComponent.MOBILE
                     ) {
-                        resolveDualMobileTargetGeometry(
-                            spec = spec,
-                            model = model,
-                            root = rootView,
-                            sourceGeometry = sourceGeometry,
-                        )
+                        aggregateTarget?.first
+                            ?: nativeDualTargets?.let { witnesses ->
+                                resolveDualMobileTargetGeometry(
+                                    spec = spec,
+                                    witnesses = witnesses,
+                                    root = rootView,
+                                    sourceGeometry = sourceGeometry,
+                                )
+                            }
                     } else {
                         witness?.let { target ->
                             resolveTargetGeometry(
@@ -1194,6 +1273,10 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
+                    mobileAggregateRows =
+                        if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                            aggregateTarget?.second
+                        } else null,
                     mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
@@ -2285,11 +2368,10 @@ internal object CcTransitionOwner {
 
         private fun resolveDualMobileTargetGeometry(
             spec: StatusPainter.TransitionComponentSpec,
-            model: RenderModel,
+            witnesses: List<TargetWitness>,
             root: View,
             sourceGeometry: FloatArray,
         ): FloatArray? {
-            val witnesses = resolveDualMobileTargets(spec, model) ?: return null
             val targets = witnesses.map { witness ->
                 resolveTargetGeometry(
                     witness = witness,
@@ -2324,12 +2406,29 @@ internal object CcTransitionOwner {
                         else preferredMobileSubId,
                 ) ?: return null
 
+            // An aggregate root need not belong to the data SIM.
+            val aggregateRootVerified =
+                dualCenter &&
+                    CcTransitionPolicy.verifiedAggregateTypeRoot(
+                        presentation = PresentationStore.snapshot().mobilePresentation,
+                        dataSubId = model.effectiveDataSubscriptionId,
+                        targetSubId = witness.subscriptionId,
+                        soleNativeRoot =
+                            listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
+                                .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                                .filter { root ->
+                                    root.visibility == View.VISIBLE && isUsableSlotView(root)
+                                }
+                                .distinct()
+                                .singleOrNull() === witness.slotView,
+                    )
             if (dualCenter &&
                 !CcTransitionPolicy.matchesDualMobileTypeTarget(
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
                     source = centerType ?: return null,
                     target = NativePresentationResolver.nativeTargetType(witness.opticalView),
+                    verifiedAggregateRoot = aggregateRootVerified,
                 )
             ) return null
 

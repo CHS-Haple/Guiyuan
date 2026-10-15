@@ -46,6 +46,7 @@ internal class StatusPainter(
         )
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
+    private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
@@ -85,11 +86,18 @@ internal class StatusPainter(
         }
 
     fun clearNativeResources() {
+        nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+    }
+
+    private fun checkNativeResources() {
+        if (nativeConfigHash != context.resources.configuration.hashCode()) {
+            clearNativeResources()
+        }
     }
 
     fun draw(
@@ -248,6 +256,7 @@ internal class StatusPainter(
         mobileTargetWidthRatio: Float? = null,
         mobileTargetHeightRatio: Float? = null,
         mobileTargetBars: List<TransitionNormalizedBounds>? = null,
+        mobileAggregateRows: ParticipantVisualSnapshot.DualMobileRows? = null,
         mobileRow: Int? = null,
         batteryNumberTargetWeight: Int? = null,
         batteryNumberTargetStyle: TransitionTextStyle? = null,
@@ -380,6 +389,7 @@ internal class StatusPainter(
                         targetWidthRatio = mobileTargetWidthRatio,
                         targetHeightRatio = mobileTargetHeightRatio,
                         targetBars = mobileTargetBars,
+                        aggregateRows = mobileAggregateRows,
                         row = mobileRow,
                     )
                 } else {
@@ -2399,6 +2409,7 @@ internal class StatusPainter(
     private fun wifiOpticalReferenceResource(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2432,6 +2443,7 @@ internal class StatusPainter(
     private fun resolveNativeTintVariant(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2460,6 +2472,7 @@ internal class StatusPainter(
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
+        checkNativeResources()
         nativeCenterAssets[resource]?.let { return it }
 
         val asset =
@@ -2748,6 +2761,7 @@ internal class StatusPainter(
     }
 
     private fun airplaneResourceId(): Int? {
+        checkNativeResources()
         if (airplaneDrawableResolved) {
             return cachedAirplaneResourceId.takeIf { it != 0 }
         }
@@ -3148,6 +3162,7 @@ internal class StatusPainter(
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>?,
+        aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
         row: Int?,
     ) {
         val layout =
@@ -3166,6 +3181,65 @@ internal class StatusPainter(
         val spread = MobileSignalMorphPolicy.rowProgress(phase)
         val barProgress = MobileSignalMorphPolicy.barProgress(phase)
         val diameter = radius * 2f
+        if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
+            val bounds = dualMobileTransitionBounds(geometry)
+            val top = aggregateRows.top
+            val bottom = aggregateRows.bottom
+            val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
+                targetWidthRatio = targetWidthRatio,
+                targetHeightRatio = targetHeightRatio,
+            )
+            val widthCompensation = MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                targetAxisRatio = targetWidthRatio,
+                outerScale = outerScale,
+            )
+            val anchors = CcTransitionPolicy.aggregateAnchors(
+                bounds = bounds,
+                top = top.first(),
+                bottom = bottom.first(),
+                topShape = aggregateRows.topShape,
+                bottomShape = aggregateRows.bottomShape,
+                widthCompensation = widthCompensation,
+                heightCompensation =
+                    MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                        targetAxisRatio = targetHeightRatio,
+                        outerScale = outerScale,
+                    ),
+                dotDiameter = geometry.dualMobileDotRadius * 2f,
+            )
+            for ((index, targets) in listOf(top, bottom).withIndex()) {
+                val shapes = targets.map { rect ->
+                    TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
+                }
+                val rowLayout =
+                    resolveDualMobileSignalTransitionLayout(geometry, index)
+                        .copy(bounds = bounds)
+                drawMobileSignalTransitionToExactBars(
+                    canvas = canvas,
+                    level = if (index == 0) model.dualMobileLevels.sim1
+                        else model.dualMobileLevels.sim2,
+                    tint = tint,
+                    opacity = opacity,
+                    radius = geometry.dualMobileDotRadius,
+                    layout = rowLayout,
+                    trim = trim,
+                    move = move,
+                    spread = spread,
+                    barProgress = barProgress,
+                    targetWidthRatio = targetWidthRatio,
+                    targetHeightRatio = targetHeightRatio,
+                    targetBars = shapes,
+                    pairedAnchorX = anchors[0],
+                    pairedAnchorY = anchors[index + 1],
+                    targetDots = if (index == 0) {
+                        aggregateRows.topShape == ParticipantVisualSnapshot.RowShape.DOTS
+                    } else {
+                        aggregateRows.bottomShape == ParticipantVisualSnapshot.RowShape.DOTS
+                    },
+                )
+            }
+            return
+        }
         val exactBars =
             targetBars
                 ?.takeIf { bars -> bars.size == MOBILE_DOT_COUNT }
@@ -3257,6 +3331,9 @@ internal class StatusPainter(
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
         targetBars: List<TransitionNormalizedBounds>,
+        pairedAnchorX: Float? = null,
+        pairedAnchorY: Float? = null,
+        targetDots: Boolean = false,
     ) {
         val diameter = radius * 2f
         val outerScale =
@@ -3279,14 +3356,23 @@ internal class StatusPainter(
         val anchor = layout.sourceCenters[0]
         val firstBar = targetBars.first()
         val firstX =
-            targetCenterX +
-                ((firstBar.left + firstBar.right) / 2f - 0.5f) *
-                    layout.bounds.width * widthCompensation
-        val firstY =
+            pairedAnchorX ?: (
+                targetCenterX +
+                    ((firstBar.left + firstBar.right) / 2f - 0.5f) *
+                        layout.bounds.width * widthCompensation
+                )
+        val firstBottomY =
             targetCenterY +
                 (firstBar.bottom - 0.5f) *
-                    layout.bounds.height * heightCompensation -
-                diameter / 2f
+                    layout.bounds.height * heightCompensation
+        val firstY =
+            pairedAnchorY ?: if (targetDots) {
+                targetCenterY +
+                    ((firstBar.top + firstBar.bottom) / 2f - 0.5f) *
+                        layout.bounds.height * heightCompensation
+            } else {
+                firstBottomY - diameter / 2f
+            }
         targetBars.forEachIndexed { index, normalized ->
             val dotTrim = MobileSignalMorphPolicy.dotTrim(index, trim)
             val dotRadius =
@@ -3318,7 +3404,9 @@ internal class StatusPainter(
             val targetHeight =
                 (targetBottom - targetTop).coerceAtLeast(0.001f)
             val targetBarCenterX = (targetLeft + targetRight) / 2f
-            val targetBottomCenterY = targetBottom - diameter / 2f
+            val targetBottomCenterY =
+                if (targetDots) (targetTop + targetBottom) / 2f
+                else targetBottom - diameter / 2f
 
             val rowCenterX =
                 MobileSignalMorphPolicy.dotCoordinate(

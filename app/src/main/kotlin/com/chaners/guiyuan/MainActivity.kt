@@ -84,8 +84,8 @@ class MainActivity : ComponentActivity() {
                 onPreviewThemeChange = { previewBarDark = it },
                 lang = lang,
                 iconHidden = iconHidden,
-                onHotReload = { onComplete ->
-                    (application as GyApplication).hotReloadSysUi(onComplete)
+                onHotReload = {
+                    (application as GyApplication).hotReloadSysUi()
                 },
                 onThemeChange = { mode ->
                     scope.launch { repo.setTheme(mode) }
