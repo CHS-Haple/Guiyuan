@@ -123,7 +123,7 @@ internal fun MainHub(
     dark: Boolean,
     lang: AppLang,
     iconHidden: Boolean,
-    onHotReload: () -> Boolean,
+    onHotReload: () -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
