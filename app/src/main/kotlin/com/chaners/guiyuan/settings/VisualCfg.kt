@@ -184,6 +184,8 @@ internal data class VisualCfg(
     val topTextScale: Float = topTextScaleDefault(layout),
     val topTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
     val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+    val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -218,6 +220,10 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
             ),
+        wifiOffsetY =
+            wifiOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+        mobileTypeOffsetY =
+            mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         topChargingIconScale =
             topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,

@@ -89,18 +89,8 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
         } else {
-            val detail = remember(context, density.density, detailRes) {
-                materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
-            }
-            val badgeSize = remember(main, detail) {
-                val mainHeight = visibleIconHeight(main)
-                val detailHeight = visibleIconHeight(detail)
-                if (mainHeight > 0 && detailHeight > 0) {
-                    (11f * mainHeight / detailHeight).coerceIn(12f, 14f).dp
-                } else {
-                    12.dp
-                }
-            }
+            // 12×12 occupies one quarter of the shared 24×24 optical box.
+            val badgeSize = 12.dp
             val badge = remember(context, density.density, detailRes, badgeSize) {
                 materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() })
             }
@@ -148,22 +138,6 @@ private fun materialIcon(
     drawable.setBounds(0, 0, side, side)
     drawable.draw(BitmapCanvas(bitmap))
     return bitmap.asImageBitmap()
-}
-
-// Compare painted height, not the transparent margins in the Material viewport.
-private fun visibleIconHeight(icon: ImageBitmap): Int {
-    val bitmap = icon.asAndroidBitmap()
-    var first = bitmap.height
-    var last = -1
-    for (y in 0 until bitmap.height) {
-        for (x in 0 until bitmap.width) {
-            if (bitmap.getPixel(x, y) ushr 24 > 16) {
-                first = minOf(first, y)
-                last = maxOf(last, y)
-            }
-        }
-    }
-    return if (last < first) 0 else last - first + 1
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.

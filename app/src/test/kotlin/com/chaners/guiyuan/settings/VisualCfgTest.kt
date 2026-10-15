@@ -10,6 +10,8 @@ class VisualCfgTest {
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiScale, 0.0001f)
+        assertEquals(0f, settings.wifiOffsetY, 0f)
+        assertEquals(0f, settings.mobileTypeOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -23,6 +25,8 @@ class VisualCfgTest {
                 combinedScale = 9f,
                 outerWeightScale = 9f,
                 wifiScale = 9f,
+                wifiOffsetY = -99f,
+                mobileTypeOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -37,6 +41,8 @@ class VisualCfgTest {
         )
         assertEquals(OUTER_WEIGHT_SCALE_MAX, normalized.outerWeightScale, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
@@ -225,6 +231,8 @@ class VisualCfgTest {
                 BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
                 CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+                WIFI_VERTICAL_OFFSET_KEY,
+                MOBILE_TYPE_VERTICAL_OFFSET_KEY,
             )
 
         keys.forEach { key ->

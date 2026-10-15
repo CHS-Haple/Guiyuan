@@ -12,6 +12,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
@@ -35,9 +36,16 @@ internal object TopInfoOffsetPolicy {
     fun networkTranslationDelta(
         layout: ContentLayout,
         rawOffset: Float,
+        indicator: CenterIndicator? = null,
+        wifiOffset: Float = 0f,
+        mobileTypeOffset: Float = 0f,
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
-            -topOffsetYUi(rawOffset)
+            when (indicator) {
+                is CenterIndicator.Wifi -> -wifiOffset
+                is CenterIndicator.MobileType -> -mobileTypeOffset
+                else -> -topOffsetYUi(rawOffset)
+            }
         } else {
             0f
         }

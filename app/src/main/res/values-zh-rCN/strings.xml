@@ -26,6 +26,8 @@
     <string name="charging_icon_follow_battery_color">充电图标跟随电量环颜色</string>
     <string name="charging_icon_follow_battery_color_summary">关闭时使用系统状态栏原生前景色</string>
     <string name="top_info_vertical_offset">顶部信息上下偏移</string>
+    <string name="wifi_vertical_offset">Wi-Fi 上下偏移</string>
+    <string name="mobile_type_vertical_offset">移动制式上下偏移</string>
     <string name="settings_title">设置</string>
     <string name="section_appearance_interaction">外观与交互</string>
     <string name="section_app">应用</string>

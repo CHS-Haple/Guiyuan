@@ -166,10 +166,6 @@ internal class StatusPainter(
                 )
             }
         }
-        val centerSave = canvas.save()
-        if (visual.layout == ContentLayout.BATTERY_CENTER) {
-            canvas.translate(0f, networkTopTranslationY(visual))
-        }
         drawCenterTransition(
             canvas = canvas,
             current = model.centerIndicator,
@@ -182,8 +178,8 @@ internal class StatusPainter(
             geometry = centerGeometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
-        canvas.restoreToCount(centerSave)
         drawMobile(
             canvas = canvas,
             model = model,
@@ -339,9 +335,6 @@ internal class StatusPainter(
                 )
 
             TransitionComponent.CENTER -> {
-                if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                    canvas.translate(0f, networkTopTranslationY(visual))
-                }
                 val baseGeometry =
                     resolveCenterGeometry(visual)
                 val transitionGeometry =
@@ -367,6 +360,7 @@ internal class StatusPainter(
                     geometry = transitionGeometry,
                     nativeTransform = nativeTransform,
                     scaleMobileTypeWithCanvas = false,
+                    visual = visual,
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
@@ -698,7 +692,7 @@ internal class StatusPainter(
                         sourceBounds =
                             shiftBoundsY(
                                 spec.sourceBounds,
-                                networkTopTranslationY(visual) * scale,
+                                networkTopTranslationY(visual, model.centerIndicator) * scale,
                             ),
                     )
                 } else {
@@ -1075,12 +1069,16 @@ internal class StatusPainter(
 
     private fun networkTopTranslationY(
         visual: VisualCfg,
+        indicator: CenterIndicator? = null,
     ): Float =
         TOP_SLOT_CENTER_Y -
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = visual.layout,
                 rawOffset = visual.topOffsetY,
+                indicator = indicator,
+                wifiOffset = visual.wifiOffsetY,
+                mobileTypeOffset = visual.mobileTypeOffsetY,
             )
 
     private fun shiftBoundsY(
@@ -1102,7 +1100,6 @@ internal class StatusPainter(
         exitAmount: Float,
         enterAmount: Float,
     ): TopSlotAvoidance? {
-        val translationY = networkTopTranslationY(visual)
         if (previous == null || previous == current) {
             return resolveCenterIndicatorAvoidance(
                 indicator = current,
@@ -1110,7 +1107,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             )?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
             }
         }
 
@@ -1128,7 +1125,7 @@ internal class StatusPainter(
                     amount = exitAmount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, previous))
             }
         val currentAvoidance =
             resolveCenterIndicatorAvoidance(
@@ -1144,7 +1141,7 @@ internal class StatusPainter(
                     amount = enterAmount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
             }
         return unionAvoidance(previousAvoidance, currentAvoidance)
     }
@@ -1954,7 +1951,7 @@ internal class StatusPainter(
             ).bounds
         val local =
             if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
+                shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
             } else {
                 baseLocal
             }
@@ -2230,6 +2227,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
+        visual: VisualCfg,
     ) {
         if (previous == null || previous == current) {
             drawCenterIndicator(
@@ -2242,6 +2240,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 nativeTransform = nativeTransform,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                visual = visual,
             )
             return
         }
@@ -2256,6 +2255,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
         drawCenterIndicator(
             canvas = canvas,
@@ -2267,6 +2267,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
     }
 
@@ -2280,6 +2281,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
+        visual: VisualCfg,
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
@@ -2289,6 +2291,9 @@ internal class StatusPainter(
         }
 
         val save = canvas.save()
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
+            canvas.translate(0f, networkTopTranslationY(visual, indicator))
+        }
         canvas.scale(
             appearAmount,
             appearAmount,
