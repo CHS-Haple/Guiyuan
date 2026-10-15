@@ -981,6 +981,7 @@ internal object CcTransitionOwner {
                         aggregateTarget?.first
                             ?: nativeDualTargets?.let { witnesses ->
                                 resolveDualMobileTargetGeometry(
+                                    spec = spec,
                                     witnesses = witnesses,
                                     root = rootView,
                                     sourceGeometry = sourceGeometry,
@@ -2366,6 +2367,7 @@ internal object CcTransitionOwner {
         }
 
         private fun resolveDualMobileTargetGeometry(
+            spec: StatusPainter.TransitionComponentSpec,
             witnesses: List<TargetWitness>,
             root: View,
             sourceGeometry: FloatArray,
