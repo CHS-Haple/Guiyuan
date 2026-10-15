@@ -310,6 +310,24 @@ class GyModule : XposedModule() {
         }
         if (inSettings) return
         rotateDiagnosticSession()
+        val restored =
+            runCatching { SysUiHotReload.restoreTransfer(param) }
+                .onFailure { error ->
+                    Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
+                }.getOrNull()
+        if (restored == null) {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "hotReload.complete",
+                component = "hotReload",
+                state = "unavailable",
+                "reason" to "saved-state-missing-or-unsupported-generation",
+                "statusHostHook" to "untouched",
+                "restartScope" to true,
+            )
+            return
+        }
+
         val takeoverResult =
             runCatching {
                 SysUiHotReload.takeOverHooks(
@@ -418,30 +436,6 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-
-            val restored = SysUiHotReload.restoreTransfer(param)
-            if (restored == null) {
-                StatusStateStore.restoreHotReloadState(null)
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "hotReload.restore",
-                    component = "hotReload",
-                    state = "unavailable",
-                    "reason" to "saved-state-missing-or-unsupported-generation",
-                    "restartScope" to true,
-                )
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "hotReload.complete",
-                    component = "hotReload",
-                    state = "partial",
-                    "build" to BuildConfig.BUILD_ID,
-                    "statusHostHook" to "replaced",
-                    "staleHooks" to removed,
-                    "restartScope" to true,
-                )
-                return@runCatching
-            }
 
             val capture = SysUiHostRegistry.restore(restored.host)
             if (capture == null) {
