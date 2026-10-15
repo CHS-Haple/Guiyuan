@@ -45,7 +45,6 @@ import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import kotlin.math.sqrt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -90,19 +89,8 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
         } else {
-            val detail = remember(context, density.density, detailRes) {
-                materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
-            }
-            val badgeSize = remember(main, detail) {
-                val mainArea = visibleIconArea(main)
-                val detailArea = visibleIconArea(detail)
-                if (mainArea > 0 && detailArea > 0) {
-                    // Compare optical footprints after selecting the detail glyph's official weight.
-                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 18f).dp
-                } else {
-                    13.dp
-                }
-            }
+            // 12×12 occupies one quarter of the shared 24×24 optical box.
+            val badgeSize = 12.dp
             val badge = remember(context, density.density, detailRes, badgeSize) {
                 materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() })
             }
@@ -150,25 +138,6 @@ private fun materialIcon(
     drawable.setBounds(0, 0, side, side)
     drawable.draw(BitmapCanvas(bitmap))
     return bitmap.asImageBitmap()
-}
-
-private fun visibleIconArea(icon: ImageBitmap): Int {
-    val bitmap = icon.asAndroidBitmap()
-    var left = bitmap.width
-    var top = bitmap.height
-    var right = -1
-    var bottom = -1
-    for (y in 0 until bitmap.height) {
-        for (x in 0 until bitmap.width) {
-            if (bitmap.getPixel(x, y) ushr 24 > 16) {
-                left = minOf(left, x)
-                top = minOf(top, y)
-                right = maxOf(right, x)
-                bottom = maxOf(bottom, y)
-            }
-        }
-    }
-    return if (right >= left) (right - left + 1) * (bottom - top + 1) else 0
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
