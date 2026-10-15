@@ -56,6 +56,7 @@ internal fun GyApp(
     onNavContentChange: (NavContent) -> Unit,
     onLiquidModeChange: (LiquidMode) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
+    onUiScaleChange: (Int) -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
 ) {
@@ -216,6 +217,7 @@ internal fun GyApp(
                         onNavContentChange,
                     onLiquidModeChange =
                         onLiquidModeChange,
+                    onUiScaleChange = onUiScaleChange,
                     onBack = ::navigateBack,
                 )
             }
