@@ -2464,7 +2464,9 @@ internal object CcTransitionOwner {
                 ?.takeIf { witness ->
                     val slotStillSemantic =
                         target !is StatusPainter.TransitionTarget.Slots ||
-                            witness.slotView.visibility == View.VISIBLE
+                            (witness.slotView.visibility == View.VISIBLE &&
+                                witness.slotView.parent === finalStatusIcons &&
+                                NativeParticipantAccess.slotOf(witness.slotView) == witness.slot)
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
@@ -2481,6 +2483,7 @@ internal object CcTransitionOwner {
                             !opticalRequired ||
                                 witness.opticalView?.let { optical ->
                                     isReliableSemanticTarget(optical) &&
+                                        belongsToSlot(optical, witness.slotView) &&
                                         (
                                             !mobileTypeTarget ||
                                                 hasVisibleMobileType(optical, witness.slotView)
@@ -2622,6 +2625,12 @@ internal object CcTransitionOwner {
                 if (targets.all { target ->
                         target.slotView.visibility == View.VISIBLE &&
                             isUsableSlotView(target.slotView) &&
+                            target.slotView.parent === finalStatusIcons &&
+                            NativeParticipantAccess.slotOf(target.slotView) == target.slot &&
+                            (target.opticalView?.let { optical ->
+                                isReliableSemanticTarget(optical) &&
+                                    belongsToSlot(optical, target.slotView)
+                            } ?: true) &&
                             target.slotView !== primary?.slotView &&
                             target.subscriptionId != primary?.subscriptionId &&
                             target.subscriptionId == readMobileSubId(target.slotView)
@@ -3575,6 +3584,15 @@ internal object CcTransitionOwner {
                 view.isAttachedToWindow &&
                 view.width > 0 &&
                 view.height > 0
+
+        private fun belongsToSlot(view: View, slot: View): Boolean {
+            var current: View? = view
+            while (current != null) {
+                if (current === slot) return true
+                current = current.parent as? View
+            }
+            return false
+        }
 
         private fun hasVisibleMobileType(view: View, slot: View): Boolean {
             if (view.alpha <= 0f || NativePresentationResolver.nativeTargetType(view) == null) {
