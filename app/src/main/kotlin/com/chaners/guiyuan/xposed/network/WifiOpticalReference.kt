@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.xposed.network
 
 internal object WifiOpticalReference {
+    // Keep the native hotspot glyph, but give its smaller optical footprint a modest lift.
+    fun opticalScale(resourceName: String?): Float =
+        if (SysUiSignalParser.isHotspotWifiResource(resourceName)) 1.06f else 1f
+
     fun connectedReferenceEntry(resourceName: String?): String? {
         if (!SysUiSignalParser.isWifiFamilyResource(resourceName)) {
             return null
