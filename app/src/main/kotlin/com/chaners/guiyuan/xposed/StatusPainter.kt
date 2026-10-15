@@ -46,6 +46,7 @@ internal class StatusPainter(
         )
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
+    private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
     private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
@@ -85,11 +86,18 @@ internal class StatusPainter(
         }
 
     fun clearNativeResources() {
+        nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+    }
+
+    private fun checkNativeResources() {
+        if (nativeConfigHash != context.resources.configuration.hashCode()) {
+            clearNativeResources()
+        }
     }
 
     fun draw(
@@ -2399,6 +2407,7 @@ internal class StatusPainter(
     private fun wifiOpticalReferenceResource(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2432,6 +2441,7 @@ internal class StatusPainter(
     private fun resolveNativeTintVariant(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
+        checkNativeResources()
         if (resource.packageName != SYSTEM_UI_PACKAGE) {
             return null
         }
@@ -2460,6 +2470,7 @@ internal class StatusPainter(
     private fun nativeCenterAsset(
         resource: PresentationStore.NativeIconResource,
     ): NativeCenterAsset? {
+        checkNativeResources()
         nativeCenterAssets[resource]?.let { return it }
 
         val asset =
@@ -2748,6 +2759,7 @@ internal class StatusPainter(
     }
 
     private fun airplaneResourceId(): Int? {
+        checkNativeResources()
         if (airplaneDrawableResolved) {
             return cachedAirplaneResourceId.takeIf { it != 0 }
         }
