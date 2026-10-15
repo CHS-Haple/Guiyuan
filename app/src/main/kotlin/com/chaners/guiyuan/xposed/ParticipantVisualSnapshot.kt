@@ -143,6 +143,9 @@ internal object ParticipantVisualSnapshot {
         val level: Int,
         val stateHash: Int,
         val layoutDirection: Int,
+        val resourceConfigHash: Int,
+        val intrinsicWidth: Int,
+        val intrinsicHeight: Int,
     )
 
     private val drawableCache =
@@ -162,6 +165,9 @@ internal object ParticipantVisualSnapshot {
                 level = drawable.level,
                 stateHash = drawable.state.contentHashCode(),
                 layoutDirection = drawable.layoutDirection,
+                resourceConfigHash = resources.configuration.hashCode(),
+                intrinsicWidth = drawable.intrinsicWidth,
+                intrinsicHeight = drawable.intrinsicHeight,
             )
         drawableCache[state]
             ?.takeIf { perVariant -> perVariant.containsKey(variant) }
