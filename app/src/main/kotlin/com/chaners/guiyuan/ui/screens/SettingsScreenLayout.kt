@@ -45,7 +45,6 @@ import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import kotlin.math.sqrt
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -94,11 +93,10 @@ internal fun SemanticLeadingIcon(
                 materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
             }
             val badgeSize = remember(main, detail) {
-                val mainArea = paintedIconArea(main)
-                val detailArea = paintedIconArea(detail)
-                if (mainArea > 0 && detailArea > 0) {
-                    // Match a quarter of the main glyph's painted area, not its height alone.
-                    (11f * sqrt(mainArea.toFloat() / detailArea.toFloat())).coerceIn(12f, 17f).dp
+                val mainHeight = visibleIconHeight(main)
+                val detailHeight = visibleIconHeight(detail)
+                if (mainHeight > 0 && detailHeight > 0) {
+                    (11f * mainHeight / detailHeight).coerceIn(12f, 14f).dp
                 } else {
                     12.dp
                 }
@@ -152,16 +150,20 @@ private fun materialIcon(
     return bitmap.asImageBitmap()
 }
 
-// Count painted alpha so narrow detail glyphs are not treated like full-width ones.
-private fun paintedIconArea(icon: ImageBitmap): Int {
+// Compare painted height, not the transparent margins in the Material viewport.
+private fun visibleIconHeight(icon: ImageBitmap): Int {
     val bitmap = icon.asAndroidBitmap()
-    var area = 0
+    var first = bitmap.height
+    var last = -1
     for (y in 0 until bitmap.height) {
         for (x in 0 until bitmap.width) {
-            area += bitmap.getPixel(x, y) ushr 24
+            if (bitmap.getPixel(x, y) ushr 24 > 16) {
+                first = minOf(first, y)
+                last = maxOf(last, y)
+            }
         }
     }
-    return area
+    return if (last < first) 0 else last - first + 1
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
