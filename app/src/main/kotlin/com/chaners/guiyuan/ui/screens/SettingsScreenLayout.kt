@@ -94,11 +94,11 @@ internal fun SemanticLeadingIcon(
                 materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
             }
             val badgeSize = remember(main, detail) {
-                val mainArea = paintedIconArea(main)
-                val detailArea = paintedIconArea(detail)
+                val mainArea = visibleIconArea(main)
+                val detailArea = visibleIconArea(detail)
                 if (mainArea > 0 && detailArea > 0) {
-                    // Detail weights are selected at source; limit overlap after matching ink mass.
-                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 16f).dp
+                    // Compare optical footprints after selecting the detail glyph's official weight.
+                    (11f * sqrt(mainArea.toFloat() / detailArea)).coerceIn(13f, 18f).dp
                 } else {
                     13.dp
                 }
@@ -152,15 +152,23 @@ private fun materialIcon(
     return bitmap.asImageBitmap()
 }
 
-private fun paintedIconArea(icon: ImageBitmap): Int {
+private fun visibleIconArea(icon: ImageBitmap): Int {
     val bitmap = icon.asAndroidBitmap()
-    var area = 0
+    var left = bitmap.width
+    var top = bitmap.height
+    var right = -1
+    var bottom = -1
     for (y in 0 until bitmap.height) {
         for (x in 0 until bitmap.width) {
-            area += bitmap.getPixel(x, y) ushr 24
+            if (bitmap.getPixel(x, y) ushr 24 > 16) {
+                left = minOf(left, x)
+                top = minOf(top, y)
+                right = maxOf(right, x)
+                bottom = maxOf(bottom, y)
+            }
         }
     }
-    return area
+    return if (right >= left) (right - left + 1) * (bottom - top + 1) else 0
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
