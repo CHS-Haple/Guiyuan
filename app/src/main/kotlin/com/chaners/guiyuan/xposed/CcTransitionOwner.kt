@@ -21,6 +21,7 @@ import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -247,7 +248,7 @@ internal object CcTransitionOwner {
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
-        @Volatile private var mobileTargetsDirty = false
+        private val mobileTargetsDirty = AtomicBoolean(false)
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -304,8 +305,7 @@ internal object CcTransitionOwner {
                     return@OnPreDrawListener true
                 }
 
-                if (mobileTargetsDirty) {
-                    mobileTargetsDirty = false
+                if (mobileTargetsDirty.getAndSet(false)) {
                     targetCache.keys.removeAll { key ->
                         (key.target as? StatusPainter.TransitionTarget.Slots)
                             ?.preferredSlots
@@ -340,7 +340,7 @@ internal object CcTransitionOwner {
             }
 
         fun markMobileTargetsDirty() {
-            mobileTargetsDirty = true
+            mobileTargetsDirty.set(true)
         }
 
         fun matches(
