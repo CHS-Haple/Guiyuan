@@ -7,6 +7,15 @@ import org.junit.Test
 
 class AppearanceTest {
     @Test
+    fun appScaleDefaultsTo100PercentAndClampsStoredValues() {
+        assertEquals(100, Appearance().uiScalePercent)
+        assertEquals(100, uiScalePercent(null))
+        assertEquals(80, uiScalePercent(60))
+        assertEquals(110, uiScalePercent(125))
+        assertEquals(97, uiScalePercent(97))
+    }
+
+    @Test
     fun defaultsPreserveExistingNavStyle() {
         val settings = Appearance()
 
