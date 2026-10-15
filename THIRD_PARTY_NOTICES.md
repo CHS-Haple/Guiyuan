@@ -40,8 +40,8 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 
 ## Upstream projects
 
-- libxposed API: https://github.com/libxposed/api
-- libxposed service: https://github.com/libxposed/service
+- libxposed API (browsable source): https://github.com/JingMatrix/libxposed-api
+- libxposed service (browsable source): https://github.com/JingMatrix/libxposed-service
 - AndroidX: https://github.com/androidx/androidx
 - MIUIX: https://github.com/compose-miuix-ui/miuix
 - Backdrop: https://github.com/Kyant0/AndroidLiquidGlass
