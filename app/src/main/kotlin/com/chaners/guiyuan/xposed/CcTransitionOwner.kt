@@ -979,12 +979,13 @@ internal object CcTransitionOwner {
                         spec.component == StatusPainter.TransitionComponent.MOBILE
                     ) {
                         aggregateTarget?.first
-                            ?: resolveDualMobileTargetGeometry(
-                                spec = spec,
-                                model = model,
-                                root = rootView,
-                                sourceGeometry = sourceGeometry,
-                            )
+                            ?: nativeDualTargets?.let { witnesses ->
+                                resolveDualMobileTargetGeometry(
+                                    witnesses = witnesses,
+                                    root = rootView,
+                                    sourceGeometry = sourceGeometry,
+                                )
+                            }
                     } else {
                         witness?.let { target ->
                             resolveTargetGeometry(
@@ -2365,12 +2366,10 @@ internal object CcTransitionOwner {
         }
 
         private fun resolveDualMobileTargetGeometry(
-            spec: StatusPainter.TransitionComponentSpec,
-            model: RenderModel,
+            witnesses: List<TargetWitness>,
             root: View,
             sourceGeometry: FloatArray,
         ): FloatArray? {
-            val witnesses = resolveDualMobileTargets(spec, model) ?: return null
             val targets = witnesses.map { witness ->
                 resolveTargetGeometry(
                     witness = witness,
