@@ -67,17 +67,22 @@ class WifiOpticalReferenceTest {
     }
 
     @Test
-    fun hotspotOnlyGetsModestOpticalLift() {
-        assertEquals(1.06f, WifiOpticalReference.opticalScale("stat_sys_hotspot_signal_3"), 0f)
-        assertEquals(
-            1.06f,
-            WifiOpticalReference.opticalScale("com.android.systemui:drawable/stat_sys_hotspot_signal_1_tint"),
-            0f,
+    fun nativeHotspotFitsItsOwnOpticalBounds() {
+        assertNull(WifiOpticalReference.fitReferenceEntry("stat_sys_hotspot_signal_2"))
+        assertNull(
+            WifiOpticalReference.fitReferenceEntry(
+                "com.android.systemui:drawable/stat_sys_hotspot_signal_3_tint",
+            ),
         )
-        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_wifi_signal_3"), 0f)
-        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_wifi_signal_unavailable_3"), 0f)
-        assertEquals(1f, WifiOpticalReference.opticalScale("stat_sys_signal_4"), 0f)
-        assertEquals(1f, WifiOpticalReference.opticalScale(null), 0f)
+        assertEquals(
+            "stat_sys_wifi_signal_2",
+            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_2"),
+        )
+        assertEquals(
+            "stat_sys_wifi_signal_2",
+            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_unavailable_2"),
+        )
+        assertNull(WifiOpticalReference.fitReferenceEntry(null))
     }
 
     @Test
