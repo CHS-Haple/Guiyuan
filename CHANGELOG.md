@@ -11,20 +11,29 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [0.7.0] - 2026-10-15
 
 ### Added
-- Added optional two-row mobile signal dots for two authoritative active SIMs, while keeping the original single-row default and safely falling back when a second SIM is unavailable.
-- Added separately remembered single-row and dual-row visual profiles and richer dual-SIM and data-SIM controls in Preview Sandbox; simulation remains app-local.
-- Added a bounded native-geometry morph for verified dual-root and one-root composite signal targets during Control Center expansion, without assigning unsupported per-SIM identity to composite rows.
+- Added optional dual-row four-dot signals for two verified SIMs, retaining the original single-row default and safe fallback when the second SIM or its identity is unavailable.
+- Added independently saved single-row and dual-row layouts, sizing and color preferences; the dual profile initially inherits existing settings.
+- Extended Preview Sandbox with four SIM-presence states, per-SIM signal/type controls, data-SIM selection, and independent cellular strength across None, Mobile and Wi-Fi modes.
+- Added a live-preview continuous battery-color picker with common colors, HSV adjustment and HEX/RGB entry.
+- Added an About scope detail page for host purpose, installed version and authorization state.
+- Added bounded Control Center handoff for verified dual-root and composite dual-signal targets, without guessing which physical SIM an unverified native row represents.
 
 ### Changed
-- Changed the four-dot Control Center transition to collapse, anchor travel, progressive reveal and native bar growth, using the existing native progress and reversible motion ownership.
-- Improved native 5G/5GA glyph matching across data-SIM and aggregate-root differences only when live subscription and rendered-text evidence match.
-- Improved native fake/final peer spacing and charging-time geometry retargeting without taking over native final Control Center motion.
-- Refined network/battery preview summaries, bilingual captions and composite leading-icon proportions.
+- Redesigned the four-dot Control Center transition to retract to the leading dot, move to the native anchor, unfold, and grow into the verified native signal shapes, with reversible motion.
+- Reworked the Home runtime status indicator with a MIUIX rotating/progress ring and reversible state transitions.
+- Matched the About title/version glint to the expanding logo ripple.
+- Reorganized Preview Sandbox network controls and refined the Home/Preview signal and battery summaries, bilingual text and dual-SIM icon.
+- Matched native 5G/5GA labels by verified glyph and data-SIM source; improved the native FAKE/FINAL spacing and charging-time geometry handoff.
 
 ### Fixed
-- Invalidated native drawable/configuration and mobile-target witness caches when their verified native source changed, including supported same-subscription mobile binder rebinds.
-- Kept Hot Reload UI progress application-scoped across navigation and hardened transfer validation before framework Hook takeover, avoiding unowned preference bindings on failed takeover.
-- Removed repeated native dual-target resolution within a Control Center draw, retaining the existing single-writer, session and fail-native rules.
+- Corrected scope authorization reporting when the Settings process is not running; authorization remains distinct from current process connection.
+- Refreshed 4G/5G network text when mobile data is switched off without a default-network change, while retaining the SIM signal display.
+- Guarded SIM-slot, default-data-SIM and native mobile binding differences; uncertain dual-SIM input preserves the appropriate native/single-row fallback.
+- Corrected native peer-icon spacing during Wi-Fi + separate dual-SIM Control Center transitions and charging changes during the gesture.
+- Preserved battery-ring retraction and prevented incorrect number morphing when no matching native battery digit target exists.
+- Invalidated cached native icon geometry/drawables on configuration changes and native mobile-target cache entries after verified rebinding.
+- Preserved Hot Reload progress across app navigation and validated old/new generation handoff before installing replacement hooks; unsafe takeover requires SystemUI restart.
+- Removed redundant native dual-target resolution from an individual Control Center draw.
 
 Native child changes that bypass verified binder events and abnormal SystemUI generation-disposal edges remain scoped compatibility observations in #521 and #519; they are not claimed universally fixed.
 
