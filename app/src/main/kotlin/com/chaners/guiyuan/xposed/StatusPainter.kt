@@ -166,7 +166,6 @@ internal class StatusPainter(
                 )
             }
         }
-        val centerSave = canvas.save()
         drawCenterTransition(
             canvas = canvas,
             current = model.centerIndicator,
@@ -181,7 +180,6 @@ internal class StatusPainter(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
         )
-        canvas.restoreToCount(centerSave)
         drawMobile(
             canvas = canvas,
             model = model,
@@ -688,10 +686,15 @@ internal class StatusPainter(
                 CenterIndicator.Empty -> null
             }
         centerSpec?.let { spec ->
-            val shiftY = networkTopTranslationY(visual, model.centerIndicator)
             specs +=
                 if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                    spec.copy(sourceBounds = shiftBoundsY(spec.sourceBounds, shiftY * scale))
+                    spec.copy(
+                        sourceBounds =
+                            shiftBoundsY(
+                                spec.sourceBounds,
+                                networkTopTranslationY(visual, model.centerIndicator) * scale,
+                            ),
+                    )
                 } else {
                     spec
                 }
