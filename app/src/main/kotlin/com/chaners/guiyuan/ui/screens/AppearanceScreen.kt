@@ -122,15 +122,15 @@ internal fun AppearanceScreen(
         title = stringResource(R.string.appearance_title),
         onBack = onBack,
         overlay = {
-        UiScaleDialog(
-            show = inputOpen,
-            value = appearance.uiScalePercent,
-            onDismiss = { inputOpen = false },
-            onConfirm = { percent ->
-                inputOpen = false
-                if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
-            },
-        )
+            UiScaleDialog(
+                show = inputOpen,
+                value = appearance.uiScalePercent,
+                onDismiss = { inputOpen = false },
+                onConfirm = { percent ->
+                    inputOpen = false
+                    if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                },
+            )
         },
     ) {
         item {
