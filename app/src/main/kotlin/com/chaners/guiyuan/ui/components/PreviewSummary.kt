@@ -57,10 +57,20 @@ internal fun PreviewSummary(
                     PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
                 }
         }
+    val mobileSignal =
+        if (state.dualLevels != null) {
+            stringResource(
+                R.string.home_preview_signal_dual,
+                state.mobileSignalLevel,
+                state.sim2SignalLevel,
+            )
+        } else {
+            signalValueText(state.displayedSignalLevel)
+        }
     val networkSignal =
         when (center) {
             PreviewCenterSource.WIFI -> signalValueText(state.wifiSignalLevel)
-            PreviewCenterSource.MOBILE -> signalValueText(state.displayedSignalLevel)
+            PreviewCenterSource.MOBILE -> mobileSignal
             else -> null
         }
     val networkIcon =
@@ -76,8 +86,8 @@ internal fun PreviewSummary(
             if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
                 SummaryDetail(
                     icon = R.drawable.ic_material_symbol_signal_cellular_alt,
-                    value = stringResource(R.string.home_preview_mobile_signal_title),
-                    alongside = signalValueText(state.displayedSignalLevel),
+                    value = stringResource(R.string.home_preview_summary_mobile_title),
+                    alongside = mobileSignal,
                 )
             } else {
                 null
@@ -102,15 +112,15 @@ internal fun PreviewSummary(
     val batteryMode =
         when (state.batteryMode) {
             PreviewBatteryMode.BALANCED -> R.string.home_preview_battery_mode_balanced
-            PreviewBatteryMode.POWER_SAVE -> R.string.home_preview_battery_mode_power_save
-            PreviewBatteryMode.PERFORMANCE -> R.string.home_preview_battery_mode_performance
-            PreviewBatteryMode.SUPER_POWER_SAVE -> R.string.home_preview_battery_mode_super_power_save
+            PreviewBatteryMode.POWER_SAVE -> R.string.home_preview_battery_mode_power_save_compact
+            PreviewBatteryMode.PERFORMANCE -> R.string.home_preview_battery_mode_performance_compact
+            PreviewBatteryMode.SUPER_POWER_SAVE -> R.string.home_preview_battery_mode_super_power_save_compact
         }
     val charging =
         when (state.chargingState) {
             PreviewChargingState.NOT_CHARGING -> R.string.home_preview_charging_none
             PreviewChargingState.CHARGING -> R.string.home_preview_charging_normal
-            PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast
+            PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
         }
 
     Row(
@@ -135,7 +145,7 @@ internal fun PreviewSummary(
                         value = stringResource(charging),
                     ),
                 ),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier,
         )
     }
 }
