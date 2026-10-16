@@ -46,9 +46,9 @@ internal class StatusPainter(
             0.75f,
             true,
         )
-    private val wifiStrokeAssets =
-        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, StyledWifi>(24, 0.75f, true)
-    private val wifiBitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val strokeAssets =
+        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, StyledStroke>(24, 0.75f, true)
+    private val strokeBitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
@@ -93,7 +93,7 @@ internal class StatusPainter(
     fun clearNativeResources() {
         nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
-        wifiStrokeAssets.clear()
+        strokeAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
@@ -370,7 +370,7 @@ internal class StatusPainter(
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
-                    wifiTransitionProgress = motion,
+                    strokeTransitionProgress = motion,
                 )
             }
 
@@ -625,18 +625,7 @@ internal class StatusPainter(
 
                 CenterIndicator.Airplane -> {
                     val metrics =
-                        airplaneResourceId()
-                            ?.let { resourceId ->
-                                transitionNativeCenterMetrics(
-                                    resource =
-                                        PresentationStore.NativeIconResource(
-                                            packageName = SYSTEM_UI_PACKAGE,
-                                            resourceId = resourceId,
-                                        ),
-                                    maxWidth = centerGeometry.airplaneMaxSize,
-                                    maxHeight = centerGeometry.airplaneMaxSize,
-                                )
-                            }
+                        transitionAirplaneMetrics(centerGeometry, visual.airplaneWeight)
                     TransitionComponentSpec(
                         component = TransitionComponent.CENTER,
                         sourceBounds =
@@ -780,18 +769,7 @@ internal class StatusPainter(
         val geometry =
             resolveCenterGeometry(visual)
         val metrics =
-            airplaneResourceId()
-                ?.let { resourceId ->
-                    transitionNativeCenterMetrics(
-                        resource =
-                            PresentationStore.NativeIconResource(
-                                packageName = SYSTEM_UI_PACKAGE,
-                                resourceId = resourceId,
-                            ),
-                        maxWidth = geometry.airplaneMaxSize,
-                        maxHeight = geometry.airplaneMaxSize,
-                    )
-                }
+            transitionAirplaneMetrics(geometry, visual.airplaneWeight)
         val baseLocal =
             centeredBounds(
                 centerX = AIRPLANE_CENTER_X,
@@ -846,6 +824,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             pixelAligned = false,
+            weight = visual.airplaneWeight,
         )
         canvas.restoreToCount(save)
     }
@@ -937,6 +916,29 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
+    private fun transitionAirplaneMetrics(
+        geometry: CenterGeometry.Resolved,
+        weight: Int,
+    ): TransitionWifiMetrics? {
+        val resourceId = airplaneResourceId() ?: return null
+        val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
+        val metrics = transitionNativeCenterMetrics(
+            resource = resource,
+            maxWidth = geometry.airplaneMaxSize,
+            maxHeight = geometry.airplaneMaxSize,
+        ) ?: return null
+        val drawable = resolveNativeCenterDrawGeometry(
+            resource = resource,
+            centerX = AIRPLANE_CENTER_X,
+            centerY = AIRPLANE_CENTER_Y,
+            maxWidth = geometry.airplaneMaxSize,
+            maxHeight = geometry.airplaneMaxSize,
+        ) ?: return metrics
+        val ink = nativeStrokeBitmap(resource, drawable.asset, weight) ?: return metrics
+        val bounds = styledBounds(drawable, ink)
+        return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
+    }
+
     private fun transitionWifiMetrics(
         indicator: CenterIndicator.Wifi,
         geometry: CenterGeometry.Resolved,
@@ -963,8 +965,8 @@ internal class StatusPainter(
             maxWidth = geometry.wifiMaxWidth,
             maxHeight = geometry.wifiMaxHeight,
         ) ?: return metrics
-        val ink = wifiStrokeBitmap(resource, draw.asset, weight) ?: return metrics
-        val bounds = wifiStyledBounds(draw, ink)
+        val ink = nativeStrokeBitmap(resource, draw.asset, weight) ?: return metrics
+        val bounds = styledBounds(draw, ink)
         return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
     }
 
@@ -1128,6 +1130,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
                 wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
                 shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
             }
@@ -1140,6 +1143,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
                 wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
                 scaleAvoidanceAroundPivot(
                     avoidance = avoidance,
@@ -1157,6 +1161,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
                 wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
                 scaleAvoidanceAroundPivot(
                     avoidance = avoidance,
@@ -1262,6 +1267,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         scaleMobileTypeWithCanvas: Boolean,
         wifiWeight: Int,
+        airplaneWeight: Int,
     ): TopSlotAvoidance? =
         when (indicator) {
             is CenterIndicator.Wifi -> {
@@ -1286,14 +1292,14 @@ internal class StatusPainter(
                     }
                 drawGeometry?.let { resolved ->
                     val styled = resourceId?.let { id ->
-                        wifiStrokeBitmap(
+                        nativeStrokeBitmap(
                             PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, id),
                             resolved.asset,
                             wifiWeight,
                         )
                     }
                     if (styled != null) {
-                        singleTopSlotAvoidance(wifiStyledBounds(resolved, styled))
+                        singleTopSlotAvoidance(styledBounds(resolved, styled))
                     } else {
                         TopSlotAvoidance(
                             bounds = resolved.opticalBounds,
@@ -1318,17 +1324,18 @@ internal class StatusPainter(
             CenterIndicator.Airplane ->
                 airplaneResourceId()
                     ?.let { resourceId ->
+                        val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
                         resolveNativeCenterDrawGeometry(
-                            resource =
-                                PresentationStore.NativeIconResource(
-                                    packageName = SYSTEM_UI_PACKAGE,
-                                    resourceId = resourceId,
-                                ),
+                            resource = resource,
                             centerX = AIRPLANE_CENTER_X,
                             centerY = AIRPLANE_CENTER_Y,
                             maxWidth = geometry.airplaneMaxSize,
                             maxHeight = geometry.airplaneMaxSize,
-                        )?.opticalBounds
+                        )?.let { draw ->
+                            nativeStrokeBitmap(resource, draw.asset, airplaneWeight)
+                                ?.let { styledBounds(draw, it) }
+                                ?: draw.opticalBounds
+                        }
                     }?.let(::singleTopSlotAvoidance)
 
             is CenterIndicator.NoSim ->
@@ -2321,7 +2328,7 @@ internal class StatusPainter(
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
-        wifiTransitionProgress: Float = 0f,
+        strokeTransitionProgress: Float = 0f,
     ) {
         if (appearAmount <= 0f) {
             return
@@ -2351,7 +2358,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
-                    weight = WifiStrokeMask.duringTransition(visual.wifiWeight, wifiTransitionProgress),
+                    weight = NativeStrokeMask.duringTransition(visual.wifiWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.MobileType ->
@@ -2376,6 +2383,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    weight = NativeStrokeMask.duringTransition(visual.airplaneWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.NoSim ->
@@ -2428,7 +2436,7 @@ internal class StatusPainter(
                     maxHeight = geometry.wifiMaxHeight,
                     nativeTransform = nativeTransform,
                     pixelAligned = pixelAligned,
-                    wifiWeight = weight,
+                    strokeWeight = weight,
                 )
             ) {
                 return
@@ -2708,7 +2716,7 @@ internal class StatusPainter(
         maxHeight: Float,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
-        wifiWeight: Int = 100,
+        strokeWeight: Int = 100,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2728,7 +2736,7 @@ internal class StatusPainter(
         val drawHeight = geometry.drawHeight
 
         val drawable = asset.drawable
-        val styledWifi = if (wifiWeight != 100) wifiStrokeBitmap(resource, asset, wifiWeight) else null
+        val styledStroke = if (strokeWeight != 100) nativeStrokeBitmap(resource, asset, strokeWeight) else null
         drawable.setTint(tint)
         drawable.alpha =
             VisualIntensity.resolveDrawableAlpha(opacity)
@@ -2760,7 +2768,7 @@ internal class StatusPainter(
                 height = (bounds.bottom - bounds.top).toFloat(),
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
-                styledWifi = styledWifi,
+                styledStroke = styledStroke,
                 tint = tint,
                 opacity = opacity,
             )
@@ -2775,7 +2783,7 @@ internal class StatusPainter(
                 height = drawHeight,
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
-                styledWifi = styledWifi,
+                styledStroke = styledStroke,
                 tint = tint,
                 opacity = opacity,
             )
@@ -2792,7 +2800,7 @@ internal class StatusPainter(
         height: Float,
         intrinsicWidth: Int,
         intrinsicHeight: Int,
-        styledWifi: StyledWifi? = null,
+        styledStroke: StyledStroke? = null,
         tint: Int = Color.WHITE,
         opacity: Float = 1f,
     ) {
@@ -2811,15 +2819,15 @@ internal class StatusPainter(
             width / intrinsicWidth.toFloat(),
             height / intrinsicHeight.toFloat(),
         )
-        if (styledWifi != null) {
-            wifiBitmapPaint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
-            wifiBitmapPaint.alpha = VisualIntensity.resolveDrawableAlpha(opacity)
+        if (styledStroke != null) {
+            strokeBitmapPaint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
+            strokeBitmapPaint.alpha = VisualIntensity.resolveDrawableAlpha(opacity)
             // The two high-resolution padding pixels permit real stroke expansion without cropping.
             canvas.drawBitmap(
-                styledWifi.bitmap,
+                styledStroke.bitmap,
                 null,
                 RectF(-1f, -1f, intrinsicWidth + 1f, intrinsicHeight + 1f),
-                wifiBitmapPaint,
+                strokeBitmapPaint,
             )
         } else {
             drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
@@ -2828,16 +2836,16 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
-    private fun wifiStrokeBitmap(
+    private fun nativeStrokeBitmap(
         resource: PresentationStore.NativeIconResource,
         asset: NativeCenterAsset,
         weight: Int,
-    ): StyledWifi? {
+    ): StyledStroke? {
         val normalized = weight.coerceIn(60, 130)
         if (normalized == 100) return null
         val drawableResource = resolveNativeTintVariant(resource) ?: resource
         val key = drawableResource to normalized
-        wifiStrokeAssets[key]?.let { return it }
+        strokeAssets[key]?.let { return it }
         val w = asset.intrinsicWidth
         val h = asset.intrinsicHeight
         // Unsupported/oversized native drawables keep their original appearance.
@@ -2856,7 +2864,7 @@ internal class StatusPainter(
             val pixels = IntArray(bw * bh)
             source.getPixels(pixels, 0, bw, 0, 0, bw, bh)
             val result = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
-            val adjusted = WifiStrokeMask.adjust(pixels, bw, bh, normalized)
+            val adjusted = NativeStrokeMask.adjust(pixels, bw, bh, normalized)
             result.setPixels(adjusted, 0, bw, 0, 0, bw, bh)
             source.recycle()
             var left = bw
@@ -2873,7 +2881,7 @@ internal class StatusPainter(
                 bottom = max(bottom, y + 1)
             }
             if (left >= right || top >= bottom) return@runCatching null
-            StyledWifi(
+            StyledStroke(
                 bitmap = result,
                 opticalBounds = OpticalBounds(
                     left = (left - 2f) / (w * 2f),
@@ -2883,16 +2891,16 @@ internal class StatusPainter(
                 ),
             )
         }.getOrNull() ?: return null
-        wifiStrokeAssets[key] = bitmap
-        if (wifiStrokeAssets.size > 32) {
-            wifiStrokeAssets.remove(wifiStrokeAssets.keys.first())
+        strokeAssets[key] = bitmap
+        if (strokeAssets.size > 32) {
+            strokeAssets.remove(strokeAssets.keys.first())
         }
         return bitmap
     }
 
-    private fun wifiStyledBounds(
+    private fun styledBounds(
         geometry: NativeCenterDrawGeometry,
-        asset: StyledWifi,
+        asset: StyledStroke,
     ): TransitionBounds {
         val original = geometry.asset.opticalBounds
         val ink = asset.opticalBounds
@@ -2935,6 +2943,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        weight: Int,
     ) {
         val resourceId = airplaneResourceId() ?: return
         drawNativeCenterResource(
@@ -2952,6 +2961,7 @@ internal class StatusPainter(
             maxHeight = geometry.airplaneMaxSize,
             nativeTransform = nativeTransform,
             pixelAligned = pixelAligned,
+            strokeWeight = weight,
         )
     }
 
@@ -3890,7 +3900,7 @@ internal class StatusPainter(
         val inkCenterOffsetY: Float,
     )
 
-    private data class StyledWifi(
+    private data class StyledStroke(
         val bitmap: Bitmap,
         val opticalBounds: OpticalBounds,
     )

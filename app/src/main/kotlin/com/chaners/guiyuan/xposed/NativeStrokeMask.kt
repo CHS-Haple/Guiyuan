@@ -4,7 +4,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 // Operates on the native icon's alpha only; keep its geometry and state markers intact.
-internal object WifiStrokeMask {
+internal object NativeStrokeMask {
     fun duringTransition(weight: Int, progress: Float): Int =
         (weight + (100 - weight) * progress.coerceIn(0f, 1f)).roundToInt()
 
