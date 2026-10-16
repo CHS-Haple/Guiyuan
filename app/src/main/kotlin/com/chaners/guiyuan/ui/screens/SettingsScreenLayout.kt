@@ -73,16 +73,14 @@ internal fun SemanticLeadingIcon(
             alpha = if (enabled) 1f else 0.38f,
         ),
     )
-    val main = remember(context, density.density, iconRes) {
-        materialIcon(context, iconRes, with(density) { 22.dp.roundToPx() })
-    }
+    val main = painterResource(iconRes)
     Box(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center,
     ) {
         if (detailRes == null) {
             Image(
-                bitmap = main,
+                painter = main,
                 contentDescription = null,
                 modifier = Modifier.size(22.dp),
                 colorFilter = tint,
@@ -90,13 +88,16 @@ internal fun SemanticLeadingIcon(
         } else {
             // 12×12 occupies one quarter of the shared 24×24 optical box.
             val badgeSize = 12.dp
-            val badge = remember(context, density.density, detailRes, badgeSize) {
-                materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() })
-            }
+            val badge = painterResource(detailRes)
             val gap = with(density) { 1.dp.roundToPx() }
-            val cutout = remember(badge, gap) { badgeCutout(badge, gap) }
+            val cutout = remember(context, density.density, detailRes) {
+                badgeCutout(
+                    materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() }),
+                    gap,
+                )
+            }
             Image(
-                bitmap = main,
+                painter = main,
                 contentDescription = null,
                 modifier =
                     Modifier
@@ -117,7 +118,7 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
             Image(
-                bitmap = badge,
+                painter = badge,
                 contentDescription = null,
                 modifier = Modifier.align(Alignment.BottomEnd).size(badgeSize),
                 colorFilter = tint,
@@ -126,7 +127,7 @@ internal fun SemanticLeadingIcon(
     }
 }
 
-// Material paths already include their optical spacing in the 24dp viewport.
+// Only the composite cutout needs pixels; the displayed glyphs stay vector.
 private fun materialIcon(
     context: Context,
     @DrawableRes res: Int,

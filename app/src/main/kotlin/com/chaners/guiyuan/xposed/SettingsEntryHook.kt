@@ -165,19 +165,16 @@ internal object SettingsEntryHook {
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
         val app = context.createPackageContext(MODULE_PKG, 0)
+        if (style == SettingsEntryIcon.Rounded) {
+            // Let Settings render the installed adaptive icon at the target ImageView size.
+            return app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
+        }
+
         val dimen = context.resources.getIdentifier(
             "header_icon_size", "dimen", "com.android.settings",
         )
         val size = (if (dimen != 0) context.resources.getDimensionPixelSize(dimen)
             else (28 * context.resources.displayMetrics.density).toInt()).coerceAtLeast(1)
-        if (style == SettingsEntryIcon.Rounded) {
-            val icon = app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
-            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-            icon.setBounds(0, 0, size, size)
-            icon.draw(Canvas(bitmap))
-            return BitmapDrawable(context.resources, bitmap)
-        }
-
         val foreground = app.getDrawable(R.drawable.ic_launcher_foreground)?.mutate()
             ?: return null
         val attrs = context.obtainStyledAttributes(intArrayOf(android.R.attr.textColorPrimary))
