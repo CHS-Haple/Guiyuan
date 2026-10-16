@@ -6,12 +6,16 @@ import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
 
 internal object DiagPrefsOwner {
-    private var prefs: SharedPreferences? = null
+    private data class Binding(
+        val prefs: SharedPreferences,
+        val token: Any,
+    )
+
+    @Volatile private var binding: Binding? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var bindToken: Any? = null
 
     val isBound: Boolean
-        @Synchronized get() = prefs != null
+        get() = binding != null
 
     internal data class BindResult(
         val detailed: Boolean,
@@ -50,9 +54,8 @@ internal object DiagPrefsOwner {
             }
 
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        this.prefs = prefs
+        binding = Binding(prefs, token)
         this.listener = listener
-        bindToken = token
 
         runCatching {
             onChanged(detailed)
@@ -72,24 +75,21 @@ internal object DiagPrefsOwner {
     }
 
     private fun unbindLocked() {
-        val oldPrefs = prefs
+        val old = binding
         val oldListener = listener
-        prefs = null
+        binding = null
         listener = null
-        bindToken = null
-        // Drop ownership first so late callbacks fail the token check.
-        if (oldPrefs != null && oldListener != null) {
-            oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
+        // Retire the generation before entering the framework's listener monitor.
+        if (old != null && oldListener != null) {
+            old.prefs.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
 
-    @Synchronized
     private fun isCurrent(
         prefs: SharedPreferences,
         token: Any,
     ): Boolean =
-        this.prefs === prefs &&
-            bindToken === token
+        binding?.let { it.prefs === prefs && it.token === token } ?: false
 
     private fun isDetailed(
         prefs: SharedPreferences,

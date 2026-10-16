@@ -1,19 +1,22 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
+import java.util.concurrent.atomic.AtomicReference
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.readVisualCfg
 
 internal object VisualPrefsOwner {
-    @Volatile
-    private var cfg = VisualCfg()
+    private data class State(
+        val source: SharedPreferences?,
+        val token: Any?,
+        val cfg: VisualCfg,
+    )
 
-    private var prefs: SharedPreferences? = null
+    private val state = AtomicReference(State(null, null, VisualCfg()))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var bindToken: Any? = null
 
-    fun current(): VisualCfg = cfg
+    fun current(): VisualCfg = state.get().cfg
 
     @Synchronized
     fun bind(
@@ -24,26 +27,28 @@ internal object VisualPrefsOwner {
 
         val token = Any()
         val initial = resolve(source)
-        cfg = initial
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (
-                    isVisualPreferenceKey(key) &&
-                    isCurrent(changed, token)
-                ) {
-                    val next = resolve(changed)
-                    if (next != cfg) {
-                        cfg = next
+                if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
+                val before = state.get()
+                if (before.source !== changed || before.token !== token) {
+                    return@OnSharedPreferenceChangeListener
+                }
+                val next = resolve(changed)
+                var latest = state.get()
+                while (latest.source === changed && latest.token === token && latest.cfg != next) {
+                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
                         onChanged(next)
+                        break
                     }
+                    latest = state.get()
                 }
             }
 
         source.registerOnSharedPreferenceChangeListener(listener)
-        prefs = source
+        state.set(State(source, token, initial))
         this.listener = listener
-        bindToken = token
         onChanged(initial)
         return initial
     }
@@ -51,28 +56,18 @@ internal object VisualPrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        cfg = VisualCfg()
+        state.set(State(null, null, VisualCfg()))
     }
 
     private fun unbindLocked() {
-        val oldPrefs = prefs
+        val old = state.getAndUpdate { it.copy(source = null, token = null) }
         val oldListener = listener
-        prefs = null
         listener = null
-        bindToken = null
-        // Drop ownership first so callbacks from the previous binding fail the token check.
-        if (oldPrefs != null && oldListener != null) {
-            oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
+        // Retire the generation before entering the framework's listener monitor.
+        if (old.source != null && oldListener != null) {
+            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
-
-    @Synchronized
-    private fun isCurrent(
-        source: SharedPreferences,
-        token: Any,
-    ): Boolean =
-        prefs === source &&
-            bindToken === token
 
     private fun resolve(source: SharedPreferences): VisualCfg =
         source.readVisualCfg()
