@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import java.util.concurrent.atomic.AtomicReference
 import android.os.SystemClock
 import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
@@ -11,6 +10,7 @@ import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
+import java.util.concurrent.atomic.AtomicReference
 
 internal object FeaturePrefsOwner {
     private val disabled = FeatureCfg(enabled = false, keyguard = false, aod = false)
