@@ -85,6 +85,7 @@
     <string name="wifi_size">Wi-Fi size</string>
     <string name="wifi_weight">Wi-Fi stroke weight</string>
     <string name="airplane_size">Airplane mode size</string>
+    <string name="airplane_weight">Airplane mode weight</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
     <string name="mobile_type_weight">Mobile type weight</string>

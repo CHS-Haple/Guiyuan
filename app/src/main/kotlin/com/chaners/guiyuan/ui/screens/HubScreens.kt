@@ -55,6 +55,9 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MAX
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MIN
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MAX
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
@@ -471,6 +474,20 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            SliderPreference(
+                value = visual.airplaneWeight.toFloat(),
+                onValueChange = { visualRepo.setAirplaneWeight(it.roundToInt()) },
+                title = stringResource(R.string.airplane_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                valueText = stringResource(R.string.percent_value, visual.airplaneWeight),
+                valueRange = AIRPLANE_WEIGHT_MIN.toFloat()..AIRPLANE_WEIGHT_MAX.toFloat(),
+                steps = 13,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(AIRPLANE_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )

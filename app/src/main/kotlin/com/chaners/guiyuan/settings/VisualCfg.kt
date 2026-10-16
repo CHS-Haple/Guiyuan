@@ -201,6 +201,7 @@ internal data class VisualCfg(
     val wifiScale: Float = WIFI_SIZE_SCALE_DEFAULT,
     val wifiWeight: Int = WIFI_WEIGHT_DEFAULT,
     val airplaneScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
+    val airplaneWeight: Int = AIRPLANE_WEIGHT_DEFAULT,
     val noSimScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
     val mobileTypeScale: Float = mobileTypeScaleDefault(layout),
     val mobileTypeWeight: Int = MOBILE_TYPE_WEIGHT_DEFAULT,
@@ -245,6 +246,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
         wifiWeight = wifiWeight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX),
         airplaneScale =
             airplaneScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+        airplaneWeight = airplaneWeight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX),
         noSimScale =
             noSimScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
         mobileTypeScale =

@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Added
-- Added bounded Wi-Fi stroke-weight adjustment for native regular, hotspot and no-internet variants with Control Center transition matching and profile-aware backup.
+- Added bounded Wi-Fi and airplane-mode stroke-weight adjustment (60–130%) on native icons, with Control Center transition matching, independent profiles and backup support.
 - Added JSON backup and restore for feature settings, separate single/dual profiles and custom battery schemes, with versioned format and strict validation.
 - Added independent Wi-Fi and mobile-type vertical offsets for battery-centered layouts, preserving users' existing offset values.
 - Added companion-app interface scaling from 80% to 110% without changing system display scaling or the SystemUI renderer.

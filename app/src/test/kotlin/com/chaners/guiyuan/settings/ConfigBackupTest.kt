@@ -51,6 +51,39 @@ class ConfigBackupTest {
         assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
     }
 
+    @Test fun airplaneWeightRoundTripsInIndependentProfiles() {
+        val source = sample()
+        val archive = source.copy(
+            visual = source.visual.copy(
+                profiles = source.visual.profiles.mapIndexed { index, cfg ->
+                    cfg.copy(airplaneWeight = if (index % 2 == 0) AIRPLANE_WEIGHT_MIN else AIRPLANE_WEIGHT_MAX)
+                },
+            ),
+        )
+        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
+    }
+
+    @Test fun legacySchemaOneWithoutAirplaneWeightDefaultsToNative() {
+        val json = ConfigBackupFormat.encode(sample())
+        val previous = json.replace("\"airplaneWeight\":100,", "")
+        assertTrue(ConfigBackupFormat.decode(previous).visual.profiles.all {
+            it.airplaneWeight == AIRPLANE_WEIGHT_DEFAULT
+        })
+    }
+
+    @Test fun outOfRangeAirplaneWeightIsRejected() {
+        val source = sample()
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(source.copy(
+                visual = source.visual.copy(
+                    profiles = source.visual.profiles.mapIndexed { i, cfg ->
+                        if (i == 0) cfg.copy(airplaneWeight = 500) else cfg
+                    },
+                ),
+            ))
+        }
+    }
+
     @Test fun tamperedWifiWeightIsRejected() {
         val value = sample()
         assertThrows(IllegalArgumentException::class.java) {
