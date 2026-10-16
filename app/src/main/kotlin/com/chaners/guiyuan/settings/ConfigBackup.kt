@@ -3,6 +3,8 @@ package com.chaners.guiyuan.settings
 import android.content.Context
 import android.net.Uri
 import com.chaners.guiyuan.BuildConfig
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +39,13 @@ internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
     const val MAX_BYTES = 256 * 1024
-    private val json = Json { encodeDefaults = true }
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = false
+        isLenient = false
+        coerceInputValues = false
+        allowSpecialFloatingPointValues = false
+    }
 
     fun create(feature: FeatureCfg, visual: VisualBackup, schemes: BatteryColorSchemeLibrary): ConfigBackup =
         ConfigBackup(
@@ -57,6 +65,7 @@ internal object ConfigBackupFormat {
 
     fun decode(contents: String): ConfigBackup {
         require(contents.toByteArray(Charsets.UTF_8).size <= MAX_BYTES) { "File exceeds 256 KiB" }
+        checkJsonStructure(contents)
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
@@ -67,7 +76,9 @@ internal object ConfigBackupFormat {
     fun validate(backup: ConfigBackup) {
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
-        require(backup.appVersion.length in 1..80) { "Invalid appVersion" }
+        require(backup.appVersion.length in 1..80 && safeText(backup.appVersion)) {
+            "Invalid appVersion"
+        }
         require(
             backup.createdAt.length <= 64 &&
                 runCatching { OffsetDateTime.parse(backup.createdAt) }.isSuccess
@@ -103,9 +114,14 @@ internal object ConfigBackupFormat {
                 schemes.customSchemes.map { it.id }.distinct().size == schemes.customSchemes.size &&
                 schemes.customSchemes.all { it.id in 1..BATTERY_COLOR_SCHEME_CUSTOM_MAX }
         ) { "Invalid custom color scheme IDs" }
-        require(schemes.containsKey(schemes.activeSchemeKey)) { "Unknown active color scheme" }
+        val validSchemeKeys =
+            BatteryBuiltInColorScheme.entries.map { it.key }.toSet() +
+                schemes.customSchemes.map { it.key }
+        require(schemes.activeSchemeKey in validSchemeKeys) {
+            "Unknown or noncanonical active color scheme"
+        }
         schemes.customSchemes.forEach { scheme ->
-            require(scheme.name == normalizeCustomSchemeName(scheme.name)) {
+            require(scheme.name == normalizeCustomSchemeName(scheme.name) && safeText(scheme.name)) {
                 "Invalid custom scheme name: " + scheme.id
             }
             require(BatteryColorSlot.entries.all { slot ->
@@ -113,6 +129,77 @@ internal object ConfigBackupFormat {
                 color == null || color ushr 24 == 0xFF
             }) { "Custom scheme colors must be opaque" }
         }
+    }
+
+    private fun safeText(value: String): Boolean {
+        var index = 0
+        while (index < value.length) {
+            val char = value[index]
+            if (Character.isISOControl(char) ||
+                char in '\u202A'..'\u202E' || char in '\u2066'..'\u2069'
+            ) return false
+            if (Character.isHighSurrogate(char)) {
+                if (index + 1 >= value.length ||
+                    !Character.isLowSurrogate(value[index + 1])
+                ) return false
+                index++
+            } else if (Character.isLowSurrogate(char)) {
+                return false
+            }
+            index++
+        }
+        return true
+    }
+
+    // Reject ambiguity and pathological depth before handing untrusted text to the JSON parser.
+    // The typed deserializer still owns all syntax and field validation.
+    private fun checkJsonStructure(contents: String) {
+        val parents = mutableListOf<MutableSet<String>?>()
+        var quoted = false
+        var escape = false
+        var start = 0
+        for (index in contents.indices) {
+            val char = contents[index]
+            if (quoted) {
+                if (index - start > 2048) error("JSON string too long")
+                when {
+                    escape -> escape = false
+                    char == '\\' -> escape = true
+                    char == '"' -> {
+                        quoted = false
+                        var next = index + 1
+                        while (next < contents.length && contents[next].isWhitespace()) next++
+                        if (next < contents.length && contents[next] == ':' && parents.lastOrNull() != null) {
+                            val key = json.decodeFromString<String>(contents.substring(start, index + 1))
+                            require(key.length <= 128 && parents.last()!!.add(key)) {
+                                "Duplicate or invalid JSON key"
+                            }
+                        }
+                    }
+                }
+            } else {
+                when (char) {
+                    '"' -> {
+                        quoted = true
+                        start = index
+                    }
+                    '{' -> parents.add(mutableSetOf())
+                    '[' -> parents.add(null)
+                    '}' -> {
+                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
+                            "Invalid JSON object nesting"
+                        }
+                    }
+                    ']' -> {
+                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
+                            "Invalid JSON array nesting"
+                        }
+                    }
+                }
+                require(parents.size <= 16) { "JSON nesting limit exceeded" }
+            }
+        }
+        require(!quoted && parents.isEmpty()) { "Incomplete JSON" }
     }
 }
 
@@ -143,7 +230,12 @@ internal class ConfigBackupFiles(private val context: Context) {
             stream.readNBytes(ConfigBackupFormat.MAX_BYTES + 1)
         } ?: error("Cannot read configuration file")
         require(bytes.size <= ConfigBackupFormat.MAX_BYTES) { "File exceeds 256 KiB" }
-        ConfigBackupFormat.decode(bytes.toString(Charsets.UTF_8))
+        val text = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .decode(ByteBuffer.wrap(bytes))
+            .toString()
+        ConfigBackupFormat.decode(text)
     }
 
     suspend fun restore(backup: ConfigBackup): Boolean = withContext(Dispatchers.IO) {
