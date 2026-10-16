@@ -213,7 +213,7 @@ internal fun AppearanceScreen(
                     },
                 )
                 AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
-                    OverlayDropdownPreference(
+                    if (paletteStyles.isNotEmpty()) OverlayDropdownPreference(
                         items = paletteStyles.map { paletteNames.getValue(it) },
                         selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
                         title = stringResource(R.string.theme_palette_style),
