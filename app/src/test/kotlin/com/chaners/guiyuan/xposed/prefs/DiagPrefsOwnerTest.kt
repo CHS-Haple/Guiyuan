@@ -77,6 +77,49 @@ class DiagPrefsOwnerTest {
     }
 
     @Test
+    fun rebindingDropsOldListenerAndReadsNewPreferences() {
+        val old = FakePreferences()
+        val next = FakePreferences()
+        val observed = mutableListOf<Boolean>()
+
+        DiagPrefsOwner.bind(old, forceDetailed = false, onChanged = observed::add)
+        val stale = old.lastListener
+        next.setRaw(DiagLevel.Detailed.name)
+        DiagPrefsOwner.bind(next, forceDetailed = false, onChanged = observed::add)
+
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+
+        old.setRaw(DiagLevel.Detailed.name)
+        stale?.onSharedPreferenceChanged(old, DIAG_LEVEL_KEY)
+        assertEquals(listOf(false, true), observed)
+
+        next.setLevel(DiagLevel.General.name)
+        assertEquals(listOf(false, true, false), observed)
+    }
+
+    @Test
+    fun failedInitialCallbackReleasesPreferenceListener() {
+        val prefs = FakePreferences()
+        val failure = IllegalStateException("initial callback failed")
+        val thrown = runCatching {
+            DiagPrefsOwner.bind(
+                prefs = prefs,
+                forceDetailed = false,
+                onChanged = { throw failure },
+            )
+        }.exceptionOrNull()
+
+        assertEquals(failure, thrown)
+        assertFalse(DiagPrefsOwner.isBound)
+        assertEquals(0, prefs.listenerCount)
+
+        prefs.setRaw(DiagLevel.Detailed.name)
+        prefs.lastListener?.onSharedPreferenceChanged(prefs, DIAG_LEVEL_KEY)
+        assertFalse(DiagPrefsOwner.isBound)
+    }
+
+    @Test
     fun devProbeForcesDetail() {
         val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
