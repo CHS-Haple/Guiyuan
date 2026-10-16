@@ -198,7 +198,7 @@ class ConfigBackupTest {
     @Test fun unsafeSchemeNamesAndMetadataAreRejected() {
         val custom = BatteryCustomColorScheme(
             id = 1,
-            name = "Name\\nInjected",
+            name = "Name\nInjected",
             baseTemplate = BatteryBuiltInColorScheme.HYPEROS,
             entries = BatteryColorSchemeEntries(),
         )
@@ -208,7 +208,7 @@ class ConfigBackupTest {
             ))
         }
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(sample().copy(appVersion = "0.7\\u202Eexe"))
+            ConfigBackupFormat.validate(sample().copy(appVersion = "0.7\u202Eexe"))
         }
     }
 
