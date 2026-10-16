@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -61,6 +62,16 @@ internal object ConfigBackupFormat {
     fun encode(backup: ConfigBackup): String {
         validate(backup)
         return json.encodeToString(ConfigBackup.serializer(), backup)
+    }
+
+    fun decode(bytes: ByteArray): ConfigBackup {
+        require(bytes.size <= MAX_BYTES) { "File exceeds 256 KiB" }
+        val text = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .decode(ByteBuffer.wrap(bytes))
+            .toString()
+        return decode(text)
     }
 
     fun decode(contents: String): ConfigBackup {
@@ -230,12 +241,7 @@ internal class ConfigBackupFiles(private val context: Context) {
             stream.readNBytes(ConfigBackupFormat.MAX_BYTES + 1)
         } ?: error("Cannot read configuration file")
         require(bytes.size <= ConfigBackupFormat.MAX_BYTES) { "File exceeds 256 KiB" }
-        val text = Charsets.UTF_8.newDecoder()
-            .onMalformedInput(CodingErrorAction.REPORT)
-            .onUnmappableCharacter(CodingErrorAction.REPORT)
-            .decode(ByteBuffer.wrap(bytes))
-            .toString()
-        ConfigBackupFormat.decode(text)
+        ConfigBackupFormat.decode(bytes)
     }
 
     suspend fun restore(backup: ConfigBackup): Boolean = withContext(Dispatchers.IO) {
