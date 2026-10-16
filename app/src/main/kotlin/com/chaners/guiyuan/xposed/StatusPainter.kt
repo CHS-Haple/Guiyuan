@@ -1,13 +1,10 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
@@ -46,9 +43,11 @@ internal class StatusPainter(
             0.75f,
             true,
         )
+    private val nativeStrokeSources =
+        LinkedHashMap<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8, 0.75f, true)
     private val strokeAssets =
-        LinkedHashMap<StrokeKey, StyledStroke>(24, 0.75f, true)
-    private val strokeBitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(24, 0.75f, true)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
@@ -93,6 +92,7 @@ internal class StatusPainter(
     fun clearNativeResources() {
         nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
+        nativeStrokeSources.clear()
         strokeAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
@@ -934,7 +934,7 @@ internal class StatusPainter(
             maxWidth = geometry.airplaneMaxSize,
             maxHeight = geometry.airplaneMaxSize,
         ) ?: return metrics
-        val ink = nativeStrokeBitmap(resource, drawable.asset, weight, drawable) ?: return metrics
+        val ink = nativeStrokePath(resource, weight) ?: return metrics
         val bounds = styledBounds(drawable, ink)
         return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
     }
@@ -965,7 +965,7 @@ internal class StatusPainter(
             maxWidth = geometry.wifiMaxWidth,
             maxHeight = geometry.wifiMaxHeight,
         ) ?: return metrics
-        val ink = nativeStrokeBitmap(resource, draw.asset, weight) ?: return metrics
+        val ink = nativeStrokePath(resource, weight) ?: return metrics
         val bounds = styledBounds(draw, ink)
         return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
     }
@@ -1292,9 +1292,8 @@ internal class StatusPainter(
                     }
                 drawGeometry?.let { resolved ->
                     val styled = resourceId?.let { id ->
-                        nativeStrokeBitmap(
+                        nativeStrokePath(
                             PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, id),
-                            resolved.asset,
                             wifiWeight,
                         )
                     }
@@ -1332,7 +1331,7 @@ internal class StatusPainter(
                             maxWidth = geometry.airplaneMaxSize,
                             maxHeight = geometry.airplaneMaxSize,
                         )?.let { draw ->
-                            nativeStrokeBitmap(resource, draw.asset, airplaneWeight, draw)
+                            nativeStrokePath(resource, airplaneWeight)
                                 ?.let { styledBounds(draw, it) }
                                 ?: draw.opticalBounds
                         }
@@ -2358,7 +2357,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
-                    weight = NativeStrokeMask.duringTransition(visual.wifiWeight, strokeTransitionProgress),
+                    weight = NativeVectorStroke.duringTransition(visual.wifiWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.MobileType ->
@@ -2383,7 +2382,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
-                    weight = NativeStrokeMask.duringTransition(visual.airplaneWeight, strokeTransitionProgress),
+                    weight = NativeVectorStroke.duringTransition(visual.airplaneWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.NoSim ->
@@ -2717,7 +2716,6 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
         strokeWeight: Int = 100,
-        strokeAtDrawSize: Boolean = false,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2737,14 +2735,7 @@ internal class StatusPainter(
         val drawHeight = geometry.drawHeight
 
         val drawable = asset.drawable
-        val styledStroke =
-            if (strokeWeight == 100) {
-                null
-            } else if (strokeAtDrawSize) {
-                nativeStrokeBitmap(resource, asset, strokeWeight, geometry)
-            } else {
-                nativeStrokeBitmap(resource, asset, strokeWeight)
-            }
+        val styledStroke = nativeStrokePath(resource, strokeWeight)
         drawable.setTint(tint)
         drawable.alpha =
             VisualIntensity.resolveDrawableAlpha(opacity)
@@ -2808,7 +2799,7 @@ internal class StatusPainter(
         height: Float,
         intrinsicWidth: Int,
         intrinsicHeight: Int,
-        styledStroke: StyledStroke? = null,
+        styledStroke: NativeVectorStroke.Styled? = null,
         tint: Int = Color.WHITE,
         opacity: Float = 1f,
     ) {
@@ -2828,17 +2819,17 @@ internal class StatusPainter(
             height / intrinsicHeight.toFloat(),
         )
         if (styledStroke != null) {
-            strokeBitmapPaint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
-            strokeBitmapPaint.alpha = VisualIntensity.resolveDrawableAlpha(opacity)
-            // The two high-resolution padding pixels permit real stroke expansion without cropping.
-            val padX = intrinsicWidth / styledStroke.sampleWidth.toFloat()
-            val padY = intrinsicHeight / styledStroke.sampleHeight.toFloat()
-            canvas.drawBitmap(
-                styledStroke.bitmap,
-                null,
-                RectF(-padX, -padY, intrinsicWidth + padX, intrinsicHeight + padY),
-                strokeBitmapPaint,
+            canvas.scale(
+                intrinsicWidth / styledStroke.viewportWidth,
+                intrinsicHeight / styledStroke.viewportHeight,
             )
+            styledStroke.layers.forEach { layer ->
+                strokePaint.style = Paint.Style.FILL
+                strokePaint.color = tint
+                strokePaint.alpha =
+                    VisualIntensity.resolveCanvasAlpha(tint, layer.alpha, opacity)
+                canvas.drawPath(layer.path, strokePaint)
+            }
         } else {
             drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
             drawable.draw(canvas)
@@ -2846,89 +2837,44 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
-    private fun nativeStrokeBitmap(
+    private fun nativeStrokePath(
         resource: PresentationStore.NativeIconResource,
-        asset: NativeCenterAsset,
         weight: Int,
-        drawGeometry: NativeCenterDrawGeometry? = null,
-    ): StyledStroke? {
-        val normalized = weight.coerceIn(60, 130)
-        if (normalized == 100) return null
-        val w = asset.intrinsicWidth
-        val h = asset.intrinsicHeight
-        val sampleScale =
-            if (drawGeometry == null) {
-                1f
-            } else {
-                val largest = max(drawGeometry.drawWidth, drawGeometry.drawHeight)
-                if (!largest.isFinite() || largest <= 0f) return null
-                min(1f, NATIVE_STROKE_SAMPLE_MAX.toFloat() / largest)
-            }
-        val sampleWidth =
-            if (drawGeometry == null) w else (drawGeometry.drawWidth * sampleScale).roundToInt()
-        val sampleHeight =
-            if (drawGeometry == null) h else (drawGeometry.drawHeight * sampleScale).roundToInt()
-        // Use drawn pixels for oversized native vectors; preserve intrinsic sampling for Wi-Fi.
-        if (w <= 0 || h <= 0 ||
-            sampleWidth !in 1..NATIVE_STROKE_SAMPLE_MAX ||
-            sampleHeight !in 1..NATIVE_STROKE_SAMPLE_MAX
-        ) return null
-        val drawableResource = resolveNativeTintVariant(resource) ?: resource
-        val key = StrokeKey(drawableResource, normalized, sampleWidth, sampleHeight)
+    ): NativeVectorStroke.Styled? {
+        if (weight == 100) return null
+        checkNativeResources()
+        val actual = resolveNativeTintVariant(resource) ?: resource
+        val key = actual to weight
         strokeAssets[key]?.let { return it }
-        val bitmap = runCatching {
-            val bw = sampleWidth * 2 + 4
-            val bh = sampleHeight * 2 + 4
-            val source = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
-            val offscreen = Canvas(source)
-            offscreen.translate(2f, 2f)
-            offscreen.scale(sampleWidth * 2f / w, sampleHeight * 2f / h)
-            asset.drawable.setTint(Color.WHITE)
-            asset.drawable.alpha = 255
-            asset.drawable.setBounds(0, 0, w, h)
-            asset.drawable.draw(offscreen)
-            val pixels = IntArray(bw * bh)
-            source.getPixels(pixels, 0, bw, 0, 0, bw, bh)
-            val result = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
-            val adjusted = NativeStrokeMask.adjust(pixels, bw, bh, normalized)
-            result.setPixels(adjusted, 0, bw, 0, 0, bw, bh)
-            source.recycle()
-            var left = bw
-            var top = bh
-            var right = 0
-            var bottom = 0
-            for (index in adjusted.indices) {
-                if (adjusted[index] ushr 24 <= 8) continue
-                val x = index % bw
-                val y = index / bw
-                left = min(left, x)
-                top = min(top, y)
-                right = max(right, x + 1)
-                bottom = max(bottom, y + 1)
-            }
-            if (left >= right || top >= bottom) return@runCatching null
-            StyledStroke(
-                bitmap = result,
-                sampleWidth = sampleWidth,
-                sampleHeight = sampleHeight,
-                opticalBounds = OpticalBounds(
-                    left = (left - 2f) / (sampleWidth * 2f),
-                    top = (top - 2f) / (sampleHeight * 2f),
-                    right = (right - 2f) / (sampleWidth * 2f),
-                    bottom = (bottom - 2f) / (sampleHeight * 2f),
-                ),
-            )
-        }.getOrNull() ?: return null
-        strokeAssets[key] = bitmap
+
+        val source =
+            if (nativeStrokeSources.containsKey(actual)) {
+                nativeStrokeSources[actual]
+            } else {
+                val resources =
+                    runCatching {
+                        if (actual.packageName == context.packageName) context.resources
+                        else context.createPackageContext(actual.packageName, 0).resources
+                    }.getOrNull()
+                val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
+                nativeStrokeSources[actual] = loaded
+                if (nativeStrokeSources.size > 8) {
+                    nativeStrokeSources.remove(nativeStrokeSources.keys.first())
+                }
+                loaded
+            } ?: return null
+
+        val styled = NativeVectorStroke.style(source, weight) ?: return null
+        strokeAssets[key] = styled
         if (strokeAssets.size > 32) {
             strokeAssets.remove(strokeAssets.keys.first())
         }
-        return bitmap
+        return styled
     }
 
     private fun styledBounds(
         geometry: NativeCenterDrawGeometry,
-        asset: StyledStroke,
+        asset: NativeVectorStroke.Styled,
     ): TransitionBounds {
         val original = geometry.asset.opticalBounds
         val ink = asset.opticalBounds
@@ -2990,7 +2936,6 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             pixelAligned = pixelAligned,
             strokeWeight = weight,
-            strokeAtDrawSize = true,
         )
     }
 
@@ -3829,7 +3774,6 @@ internal class StatusPainter(
         const val MOBILE_TYPE_CENTER_Y = 60f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
         const val NATIVE_CENTER_CACHE_SIZE = 8
-        const val NATIVE_STROKE_SAMPLE_MAX = 96
         const val MIN_OPTICAL_RATIO = 0.08f
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
@@ -3928,20 +3872,6 @@ internal class StatusPainter(
         val centerOffsetX: Float,
         val centerOffsetY: Float,
         val inkCenterOffsetY: Float,
-    )
-
-    private data class StrokeKey(
-        val resource: PresentationStore.NativeIconResource,
-        val weight: Int,
-        val width: Int,
-        val height: Int,
-    )
-
-    private data class StyledStroke(
-        val bitmap: Bitmap,
-        val sampleWidth: Int,
-        val sampleHeight: Int,
-        val opticalBounds: OpticalBounds,
     )
 
     private data class NativeCenterAsset(

@@ -147,6 +147,7 @@ dependencies {
 
     testImplementation("junit:junit:$junitVersion")
 
+    implementation("androidx.core:core:1.17.0")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")
