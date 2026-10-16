@@ -2871,7 +2871,8 @@ internal class StatusPainter(
 
         val styled = NativeVectorStroke.style(source, weight) ?: return null
         strokeAssets[key] = styled
-        if (strokeAssets.size > 32) {
+        // 60..100 alone spans 41 animated integer weights; cache a full gesture.
+        if (strokeAssets.size > 64) {
             strokeAssets.remove(strokeAssets.keys.first())
         }
         return styled
