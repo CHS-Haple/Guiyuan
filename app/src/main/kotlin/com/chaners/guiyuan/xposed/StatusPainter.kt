@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
@@ -44,6 +46,9 @@ internal class StatusPainter(
             0.75f,
             true,
         )
+    private val wifiStrokeAssets =
+        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, Bitmap>(24, 0.75f, true)
+    private val wifiBitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
@@ -88,6 +93,7 @@ internal class StatusPainter(
     fun clearNativeResources() {
         nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
+        wifiStrokeAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
@@ -364,6 +370,7 @@ internal class StatusPainter(
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
+                    wifiTransitionProgress = motion,
                 )
             }
 
@@ -2285,6 +2292,7 @@ internal class StatusPainter(
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
+        wifiTransitionProgress: Float = 0f,
     ) {
         if (appearAmount <= 0f) {
             return
@@ -2314,6 +2322,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    weight = WifiStrokeMask.duringTransition(visual.wifiWeight, wifiTransitionProgress),
                 )
 
             is CenterIndicator.MobileType ->
@@ -2367,6 +2376,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        weight: Int,
     ) {
         val nativeResourceId = indicator.nativeResourceId
         if (nativeResourceId != null) {
@@ -2389,6 +2399,7 @@ internal class StatusPainter(
                     maxHeight = geometry.wifiMaxHeight,
                     nativeTransform = nativeTransform,
                     pixelAligned = pixelAligned,
+                    wifiWeight = weight,
                 )
             ) {
                 return
@@ -2668,6 +2679,7 @@ internal class StatusPainter(
         maxHeight: Float,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        wifiWeight: Int = 100,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2687,6 +2699,7 @@ internal class StatusPainter(
         val drawHeight = geometry.drawHeight
 
         val drawable = asset.drawable
+        val styledWifi = if (wifiWeight != 100) wifiStrokeBitmap(resource, asset, wifiWeight) else null
         drawable.setTint(tint)
         drawable.alpha =
             VisualIntensity.resolveDrawableAlpha(opacity)
@@ -2718,6 +2731,9 @@ internal class StatusPainter(
                 height = (bounds.bottom - bounds.top).toFloat(),
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
+                styledWifi = styledWifi,
+                tint = tint,
+                opacity = opacity,
             )
             canvas.restoreToCount(save)
         } else {
@@ -2730,6 +2746,9 @@ internal class StatusPainter(
                 height = drawHeight,
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
+                styledWifi = styledWifi,
+                tint = tint,
+                opacity = opacity,
             )
         }
         return true
@@ -2744,6 +2763,9 @@ internal class StatusPainter(
         height: Float,
         intrinsicWidth: Int,
         intrinsicHeight: Int,
+        styledWifi: Bitmap? = null,
+        tint: Int = Color.WHITE,
+        opacity: Float = 1f,
     ) {
         if (
             width <= 0f ||
@@ -2760,9 +2782,60 @@ internal class StatusPainter(
             width / intrinsicWidth.toFloat(),
             height / intrinsicHeight.toFloat(),
         )
-        drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-        drawable.draw(canvas)
+        if (styledWifi != null) {
+            wifiBitmapPaint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
+            wifiBitmapPaint.alpha = VisualIntensity.resolveDrawableAlpha(opacity)
+            // The two high-resolution padding pixels permit real stroke expansion without cropping.
+            canvas.drawBitmap(
+                styledWifi,
+                null,
+                RectF(-1f, -1f, intrinsicWidth + 1f, intrinsicHeight + 1f),
+                wifiBitmapPaint,
+            )
+        } else {
+            drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
+            drawable.draw(canvas)
+        }
         canvas.restoreToCount(save)
+    }
+
+    private fun wifiStrokeBitmap(
+        resource: PresentationStore.NativeIconResource,
+        asset: NativeCenterAsset,
+        weight: Int,
+    ): Bitmap? {
+        val normalized = weight.coerceIn(80, 120)
+        if (normalized == 100) return null
+        val drawableResource = resolveNativeTintVariant(resource) ?: resource
+        val key = drawableResource to normalized
+        wifiStrokeAssets[key]?.let { return it }
+        val w = asset.intrinsicWidth
+        val h = asset.intrinsicHeight
+        // Unsupported/oversized native drawables keep their original appearance.
+        if (w !in 1..96 || h !in 1..96) return null
+        val bitmap = runCatching {
+            val bw = w * 2 + 4
+            val bh = h * 2 + 4
+            val source = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+            val offscreen = Canvas(source)
+            offscreen.translate(2f, 2f)
+            offscreen.scale(2f, 2f)
+            asset.drawable.setTint(Color.WHITE)
+            asset.drawable.alpha = 255
+            asset.drawable.setBounds(0, 0, w, h)
+            asset.drawable.draw(offscreen)
+            val pixels = IntArray(bw * bh)
+            source.getPixels(pixels, 0, bw, 0, 0, bw, bh)
+            val result = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+            result.setPixels(WifiStrokeMask.adjust(pixels, bw, bh, normalized), 0, bw, 0, 0, bw, bh)
+            source.recycle()
+            result
+        }.getOrNull() ?: return null
+        wifiStrokeAssets[key] = bitmap
+        if (wifiStrokeAssets.size > 32) {
+            wifiStrokeAssets.remove(wifiStrokeAssets.keys.first())
+        }
+        return bitmap
     }
 
     private fun airplaneResourceId(): Int? {
