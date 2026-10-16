@@ -21,6 +21,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
 
 ### Fixed
+- Hardened untrusted configuration imports with strict JSON and UTF-8 validation, canonical scheme keys, scoped preference updates and exact rollback of affected values.
 - Clarified Static Scope authorization wording; connection state is not displayed.
 - Suppressed scroll-end haptics on short secondary Settings pages without scrollable content.
 - Unregistered Control Center layout/pre-draw listeners from their registration observer during session cleanup, including when the View tree observer changes.
