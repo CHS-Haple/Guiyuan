@@ -13,12 +13,42 @@ import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 internal enum class ThemeMode {
     System,
     Light,
     Dark,
 }
+
+private val modernPalettes = listOf(
+    ThemePaletteStyle.TonalSpot,
+    ThemePaletteStyle.Neutral,
+    ThemePaletteStyle.Vibrant,
+    ThemePaletteStyle.Expressive,
+)
+
+internal fun palettesFor(spec: ThemeColorSpec): List<ThemePaletteStyle> = when (spec) {
+    ThemeColorSpec.Spec2021 -> modernPalettes + listOf(
+        ThemePaletteStyle.Rainbow,
+        ThemePaletteStyle.FruitSalad,
+        ThemePaletteStyle.Monochrome,
+        ThemePaletteStyle.Fidelity,
+        ThemePaletteStyle.Content,
+    )
+    ThemeColorSpec.Spec2025 -> modernPalettes
+    ThemeColorSpec.Spec2026 -> modernPalettes + ThemePaletteStyle.Cmf
+}
+
+internal fun decodeColorSpec(value: String?): ThemeColorSpec? =
+    ThemeColorSpec.entries.firstOrNull { it.name == value }
+
+internal fun decodePalette(value: String?): ThemePaletteStyle =
+    ThemePaletteStyle.entries.firstOrNull { it.name == value } ?: ThemePaletteStyle.TonalSpot
+
+internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle): ThemePaletteStyle =
+    if (spec != null && palette !in palettesFor(spec)) ThemePaletteStyle.TonalSpot else palette
 
 internal enum class NavStyle {
     Standard,
@@ -40,6 +70,8 @@ internal enum class LiquidMode {
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = false,
+    val colorSpec: ThemeColorSpec? = null,
+    val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
@@ -138,9 +170,12 @@ internal class AppearanceRepo(context: Context) {
                     legacyBlurEnabled = prefs[legacyBlurKey],
                     legacyGlassEnabled = prefs[legacyGlassKey],
                 )
+            val colorSpec = decodeColorSpec(prefs[colorSpecKey])
             Appearance(
                 theme = theme.mode,
                 dynamicColor = theme.dynamicColor,
+                colorSpec = colorSpec,
+                paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
                 navEnabled = prefs[navEnabledKey] ?: true,
                 navStyle = style,
                 navContent = decodeNavContent(prefs[navContentKey]),
@@ -168,6 +203,23 @@ internal class AppearanceRepo(context: Context) {
                 prefs[themeKey] = ThemeMode.System.name
             }
             prefs[dynamicKey] = enabled
+        }
+    }
+
+    suspend fun setColorSpec(spec: ThemeColorSpec?) {
+        store.edit { prefs ->
+            if (spec == null) prefs.remove(colorSpecKey) else prefs[colorSpecKey] = spec.name
+            val palette = decodePalette(prefs[paletteStyleKey])
+            if (spec != null && palette !in palettesFor(spec)) {
+                prefs[paletteStyleKey] = ThemePaletteStyle.TonalSpot.name
+            }
+        }
+    }
+
+    suspend fun setPaletteStyle(style: ThemePaletteStyle) {
+        store.edit { prefs ->
+            val spec = decodeColorSpec(prefs[colorSpecKey]) ?: return@edit
+            if (style in palettesFor(spec)) prefs[paletteStyleKey] = style.name
         }
     }
 
@@ -225,6 +277,8 @@ internal class AppearanceRepo(context: Context) {
     private companion object {
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
+        val colorSpecKey = stringPreferencesKey("theme_color_spec")
+        val paletteStyleKey = stringPreferencesKey("theme_palette_style")
         val legacyBlurKey = booleanPreferencesKey("blur_enabled")
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
