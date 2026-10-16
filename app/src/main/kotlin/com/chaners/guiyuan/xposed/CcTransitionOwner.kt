@@ -271,6 +271,7 @@ internal object CcTransitionOwner {
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
         private var started = false
+        private var registeredObserver: ViewTreeObserver? = null
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
@@ -532,12 +533,14 @@ internal object CcTransitionOwner {
             val source = sourceViewRef.get() ?: return
             started = true
             captureNativeChildren()
-            rootView.viewTreeObserver.addOnGlobalLayoutListener(nativeMembershipListener)
+            val observer = rootView.viewTreeObserver
+            registeredObserver = observer
+            observer.addOnGlobalLayoutListener(nativeMembershipListener)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
             rootView.overlay.add(drawable)
-            rootView.viewTreeObserver.addOnPreDrawListener(preDrawListener)
+            observer.addOnPreDrawListener(preDrawListener)
             drawable.setBounds(0, 0, rootView.width, rootView.height)
             drawable.invalidateSelf()
         }
@@ -607,9 +610,17 @@ internal object CcTransitionOwner {
             started = false
             nativeChildren.clear()
             val rootView = rootRef.get()
-            if (rootView?.viewTreeObserver?.isAlive == true) {
-                rootView.viewTreeObserver.removeOnGlobalLayoutListener(nativeMembershipListener)
-                rootView.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
+            val registered = registeredObserver
+            registeredObserver = null
+            if (registered?.isAlive == true) {
+                registered.removeOnGlobalLayoutListener(nativeMembershipListener)
+                registered.removeOnPreDrawListener(preDrawListener)
+            }
+            // A detached View may expose a different observer; a floating one may also merge.
+            val live = rootView?.viewTreeObserver
+            if (live != null && live !== registered && live.isAlive) {
+                live.removeOnGlobalLayoutListener(nativeMembershipListener)
+                live.removeOnPreDrawListener(preDrawListener)
             }
             rootView?.overlay?.remove(drawable)
             sourceViewRef.get()?.let { sourceView ->
