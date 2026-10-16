@@ -9,12 +9,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
 @Serializable
 internal data class VisualBackup(
     val singleLayout: ContentLayout,
     val dualLayout: ContentLayout,
     val dualEnabled: Boolean,
+    val dualInitialized: Boolean,
     val profiles: List<VisualCfg>,
 )
 
@@ -53,7 +57,11 @@ internal object ConfigBackupFormat {
 
     fun decode(contents: String): ConfigBackup {
         require(contents.toByteArray(Charsets.UTF_8).size <= MAX_BYTES) { "File exceeds 256 KiB" }
-        return json.decodeFromString(ConfigBackup.serializer(), contents).also(::validate)
+        val root = json.parseToJsonElement(contents).jsonObject
+        val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
+        require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
+        // Future versions must migrate through explicit validated schema steps.
+        return json.decodeFromJsonElement(ConfigBackup.serializer(), root).also(::validate)
     }
 
     fun validate(backup: ConfigBackup) {
@@ -68,6 +76,7 @@ internal object ConfigBackupFormat {
         val expected = listOf(false, true).flatMap { dual ->
             ContentLayout.entries.map { layout -> dual to layout }
         }.toSet()
+        require(backup.visual.dualInitialized || !backup.visual.dualEnabled) { "Uninitialized dual profile cannot be active" }
         val profiles = backup.visual.profiles
         require(
             profiles.size == expected.size &&
