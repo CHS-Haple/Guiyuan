@@ -376,8 +376,10 @@ internal object CcTransitionOwner {
                 }
         }
 
-        private fun isMobileSlot(view: View): Boolean =
-            NativeParticipantAccess.slotOf(view) in setOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
+        private fun isMobileSlot(view: View): Boolean {
+            val slot = NativeParticipantAccess.slotOf(view)
+            return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
+        }
 
         fun matches(
             root: ViewGroup,
