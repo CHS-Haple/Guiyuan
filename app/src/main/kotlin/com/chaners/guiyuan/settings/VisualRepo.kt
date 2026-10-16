@@ -25,6 +25,39 @@ private val visualPreferenceKeys = buildSet {
 internal fun isVisualPreferenceKey(key: String?): Boolean =
     key == null || key in visualPreferenceKeys
 
+// A backup owns feature visuals and scheme entries, not the whole preference file.
+internal fun isBackupVisualKey(key: String): Boolean =
+    key in visualPreferenceKeys ||
+        key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
+        isBatterySchemeStorageKey(key)
+
+internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
+    edit().also { editor ->
+        all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
+    }
+
+internal fun SharedPreferences.backupVisualSnapshot(): Map<String, Any?> =
+    all.filterKeys(::isBackupVisualKey)
+        .mapValues { (_, value) ->
+            if (value is Set<*>) value.filterIsInstance<String>().toSet() else value
+        }
+
+internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>): Boolean {
+    val editor = editBackupVisuals()
+    snapshot.forEach { (key, value) ->
+        when (value) {
+            is Boolean -> editor.putBoolean(key, value)
+            is Int -> editor.putInt(key, value)
+            is Long -> editor.putLong(key, value)
+            is Float -> editor.putFloat(key, value)
+            is String -> editor.putString(key, value)
+            is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
+            else -> error("Unexpected visual preference value")
+        }
+    }
+    return editor.commit()
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -237,12 +270,24 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setWifiWeight(weight: Int) {
+        preferences.edit()
+            .putInt(activeProfileKey(WIFI_WEIGHT_KEY), weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
+            .apply()
+    }
+
     fun setWifiScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
                 scale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
             )
+            .apply()
+    }
+
+    fun setAirplaneWeight(weight: Int) {
+        preferences.edit()
+            .putInt(activeProfileKey(AIRPLANE_WEIGHT_KEY), weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
             .apply()
     }
 
@@ -340,8 +385,13 @@ internal class VisualRepo(context: Context) {
             },
         )
 
+    fun backupSnapshot(): Map<String, Any?> = preferences.backupVisualSnapshot()
+
+    fun rollbackBackup(snapshot: Map<String, Any?>): Boolean =
+        preferences.rollbackBackupVisuals(snapshot)
+
     fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
-        val editor = preferences.edit().clear()
+        val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
         BatterySchemeRepo(context).putBackup(editor, library)
@@ -482,7 +532,9 @@ internal fun SharedPreferences.readVisualCfg(
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
         wifiScale = size(WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
+        wifiWeight = weight(WIFI_WEIGHT_KEY, WIFI_WEIGHT_DEFAULT),
         airplaneScale = size(AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
+        airplaneWeight = weight(AIRPLANE_WEIGHT_KEY, AIRPLANE_WEIGHT_DEFAULT),
         noSimScale = size(NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
         mobileTypeScale = size(MOBILE_TYPE_SIZE_SCALE_KEY, mobileTypeScaleDefault(layout)),
         mobileTypeWeight = weight(MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
@@ -600,9 +652,15 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, WIFI_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.wifiScale,
+    ).putInt(
+        visualProfileKey(layout, WIFI_WEIGHT_KEY, normalized.dualSignal),
+        normalized.wifiWeight,
     ).putFloat(
         visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.airplaneScale,
+    ).putInt(
+        visualProfileKey(layout, AIRPLANE_WEIGHT_KEY, normalized.dualSignal),
+        normalized.airplaneWeight,
     ).putFloat(
         visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.noSimScale,

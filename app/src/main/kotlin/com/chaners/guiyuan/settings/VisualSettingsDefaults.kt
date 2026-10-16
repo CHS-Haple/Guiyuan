@@ -28,7 +28,9 @@ internal const val BATTERY_TOP_CHARGING_ICON_SCALE_KEY = "battery_top_charging_i
 internal const val COMBINED_SCALE_KEY = "combined_scale"
 internal const val OUTER_WEIGHT_SCALE_KEY = "outer_weight_scale"
 internal const val WIFI_SIZE_SCALE_KEY = "wifi_size_scale"
+internal const val WIFI_WEIGHT_KEY = "wifi_weight"
 internal const val AIRPLANE_SIZE_SCALE_KEY = "airplane_size_scale"
+internal const val AIRPLANE_WEIGHT_KEY = "airplane_weight"
 internal const val NO_SIM_SIZE_SCALE_KEY = "no_sim_size_scale"
 internal const val MOBILE_TYPE_SIZE_SCALE_KEY = "mobile_type_size_scale"
 internal const val MOBILE_TYPE_WEIGHT_KEY = "mobile_type_weight"
@@ -64,7 +66,9 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
         WIFI_SIZE_SCALE_KEY,
+        WIFI_WEIGHT_KEY,
         AIRPLANE_SIZE_SCALE_KEY,
+        AIRPLANE_WEIGHT_KEY,
         NO_SIM_SIZE_SCALE_KEY,
         MOBILE_TYPE_SIZE_SCALE_KEY,
         MOBILE_TYPE_WEIGHT_KEY,
@@ -282,9 +286,15 @@ internal const val COMBINED_SCALE_MAX = 1.00f
 internal const val OUTER_WEIGHT_SCALE_DEFAULT = 1f
 internal const val OUTER_WEIGHT_SCALE_MIN = 0.70f
 internal const val OUTER_WEIGHT_SCALE_MAX = 1.30f
+internal const val WIFI_WEIGHT_DEFAULT = 100
+internal const val WIFI_WEIGHT_MIN = 60
+internal const val WIFI_WEIGHT_MAX = 130
 internal const val WIFI_SIZE_SCALE_DEFAULT = 1f
 internal const val WIFI_SIZE_SCALE_MIN = 0.40f
 internal const val WIFI_SIZE_SCALE_MAX = 1.25f
+internal const val AIRPLANE_WEIGHT_DEFAULT = 100
+internal const val AIRPLANE_WEIGHT_MIN = 60
+internal const val AIRPLANE_WEIGHT_MAX = 130
 internal const val AIRPLANE_SIZE_SCALE_DEFAULT = 1f
 internal const val AIRPLANE_SIZE_SCALE_MIN = WIFI_SIZE_SCALE_MIN
 internal const val AIRPLANE_SIZE_SCALE_MAX = WIFI_SIZE_SCALE_MAX

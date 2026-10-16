@@ -83,7 +83,9 @@
     <string name="control_center_tint_transition">Control Center color transition</string>
     <string name="control_center_tint_transition_summary">When opening Control Center, smoothly transition battery-colored elements to the native icon tint</string>
     <string name="wifi_size">Wi-Fi size</string>
+    <string name="wifi_weight">Wi-Fi stroke weight</string>
     <string name="airplane_size">Airplane mode size</string>
+    <string name="airplane_weight">Airplane mode weight</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
     <string name="mobile_type_weight">Mobile type weight</string>
@@ -181,7 +183,7 @@
     <string name="static_scope_sysui_advice">Authorize this scope to use these core features.</string>
     <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
     <string name="static_scope_settings_advice">Authorize this scope only if you use that entry. Core features work without it.</string>
-    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization and connection status follow the current framework state.</string>
+    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by Xposed.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
     <string name="static_scope_version_unavailable">Version unavailable</string>
