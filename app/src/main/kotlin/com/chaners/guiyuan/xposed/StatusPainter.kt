@@ -2824,7 +2824,12 @@ internal class StatusPainter(
                 intrinsicHeight / styledStroke.viewportHeight,
             )
             styledStroke.layers.forEach { layer ->
-                strokePaint.style = Paint.Style.FILL
+                strokePaint.style =
+                    if (styledStroke.outwardStroke > 0f) Paint.Style.FILL_AND_STROKE
+                    else Paint.Style.FILL
+                strokePaint.strokeWidth = styledStroke.outwardStroke
+                strokePaint.strokeJoin = Paint.Join.ROUND
+                strokePaint.strokeCap = Paint.Cap.ROUND
                 strokePaint.color = tint
                 strokePaint.alpha =
                     VisualIntensity.resolveCanvasAlpha(tint, layer.alpha, opacity)

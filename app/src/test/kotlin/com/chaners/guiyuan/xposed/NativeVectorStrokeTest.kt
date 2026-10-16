@@ -19,9 +19,19 @@ class NativeVectorStrokeTest {
         }
         assertEquals(0f, offsets[2], 0f)
         assertTrue(offsets.zipWithNext().all { (a, b) -> a < b })
-        assertEquals(-0.4f, offsets[0], 0.0001f)
+        // The original 20-unit Wi-Fi vector has rounded end curves smaller
+        // than the unrestricted 0.4-unit inward offset at 60%.
+        assertEquals(-0.24f, offsets[0], 0.0001f)
+        assertEquals(-0.2f, offsets[1], 0.0001f)
         assertEquals(0.3f, offsets[4], 0.0001f)
         assertEquals(0.81f, NativeVectorStroke.edgeOffset(130, 54f, 56f), 0.0001f)
+    }
+
+    @Test fun inwardOffsetNeverConsumesTheSmallSourceEnds() {
+        // Cap depends on vector viewport, not physical device pixels.
+        assertEquals(-0.672f, NativeVectorStroke.edgeOffset(60, 56f, 56f), 0.0001f)
+        assertEquals(-0.24f, NativeVectorStroke.edgeOffset(60, 20f, 20f), 0.0001f)
+        assertEquals(0f, NativeVectorStroke.edgeOffset(100, 20f, 20f), 0f)
     }
 
     @Test fun outOfRangeWeightsAreBounded() {

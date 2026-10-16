@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.res.Resources
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
@@ -29,14 +28,19 @@ internal object NativeVectorStroke {
         val viewportHeight: Float,
         val layers: List<Layer>,
         val opticalBounds: RectF,
+        val outwardStroke: Float,
     )
 
     fun duringTransition(weight: Int, progress: Float): Int =
         (weight + (100 - weight) * progress.coerceIn(0f, 1f)).roundToInt()
 
     // Edge displacement is in vector viewport units, independent of display density or zoom.
-    fun edgeOffset(weight: Int, width: Float, height: Float): Float =
-        (weight.coerceIn(60, 130) - 100) * min(width, height) / 2000f
+    fun edgeOffset(weight: Int, width: Float, height: Float): Float {
+        val unit = min(width, height)
+        val requested = (weight.coerceIn(60, 130) - 100) * unit / 2000f
+        // Deep erosion destroys the tiny native rounded Wi-Fi ends and airplane corners.
+        return if (requested < 0f) requested.coerceAtLeast(-unit * 0.012f) else requested
+    }
 
     fun load(resources: Resources, resourceId: Int): Source? =
         runCatching {
@@ -106,16 +110,28 @@ internal object NativeVectorStroke {
                 strokeCap = Paint.Cap.ROUND
             }
             val bounds = RectF()
+            val rimBounds = RectF()
             val combined = RectF()
             val styled = ArrayList<Layer>(source.layers.size)
             source.layers.forEachIndexed { index, layer ->
                 val rim = Path()
                 if (!rimPaint.getFillPath(layer.path, rim)) return@runCatching null
-                val changed = Path(layer.path)
-                val op = if (offset > 0f) Path.Op.UNION else Path.Op.DIFFERENCE
-                if (!changed.op(rim, op) || changed.isEmpty) return@runCatching null
-                changed.computeBounds(bounds, true)
-                if (!bounds.left.isFinite() || !bounds.top.isFinite() ||
+                val changed =
+                    if (offset > 0f) {
+                        // Keep the native Bezier paths in the final draw: filling and
+                        // stroking directly avoids merged-outline corner artifacts.
+                        Path(layer.path).also {
+                            it.computeBounds(bounds, true)
+                            rim.computeBounds(rimBounds, true)
+                            bounds.union(rimBounds)
+                        }
+                    } else {
+                        Path(layer.path).apply {
+                            if (!op(rim, Path.Op.DIFFERENCE)) return@runCatching null
+                            computeBounds(bounds, true)
+                        }
+                    }
+                if (changed.isEmpty || !bounds.left.isFinite() || !bounds.top.isFinite() ||
                     !bounds.right.isFinite() || !bounds.bottom.isFinite() || bounds.isEmpty
                 ) return@runCatching null
                 if (index == 0) combined.set(bounds) else combined.union(bounds)
@@ -129,6 +145,7 @@ internal object NativeVectorStroke {
                     combined.right / source.viewportWidth,
                     combined.bottom / source.viewportHeight,
                 ),
+                offset.coerceAtLeast(0f) * 2f,
             )
         }.getOrNull()
 
