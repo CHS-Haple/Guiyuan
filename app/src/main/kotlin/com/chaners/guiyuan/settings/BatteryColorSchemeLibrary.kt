@@ -15,6 +15,9 @@ internal const val BATTERY_COLOR_SCHEME_IOS_KEY = "builtin:ios"
 internal const val BATTERY_COLOR_SCHEME_LOW_SATURATION_KEY = "builtin:low_saturation"
 
 private const val BATTERY_COLOR_SCHEME_PREFIX = "battery_color_scheme_library."
+
+internal fun isBatterySchemeStorageKey(key: String): Boolean =
+    key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)
 private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
 private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
 private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
