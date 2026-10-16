@@ -213,21 +213,23 @@ internal fun AppearanceScreen(
                     },
                 )
                 AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
-                    if (paletteStyles.isNotEmpty()) OverlayDropdownPreference(
-                        items = paletteStyles.map { paletteNames.getValue(it) },
-                        selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
-                        title = stringResource(R.string.theme_palette_style),
-                        summary = stringResource(R.string.theme_palette_style_summary),
-                        startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
-                        },
-                        showValue = true,
-                        onSelectedIndexChange = { index ->
-                            paletteStyles.getOrNull(index)?.let { style ->
-                                if (style != appearance.paletteStyle) onPaletteStyleChange(style)
-                            }
-                        },
-                    )
+                    if (paletteStyles.isNotEmpty()) {
+                        OverlayDropdownPreference(
+                            items = paletteStyles.map { paletteNames.getValue(it) },
+                            selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
+                            title = stringResource(R.string.theme_palette_style),
+                            summary = stringResource(R.string.theme_palette_style_summary),
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
+                            },
+                            showValue = true,
+                            onSelectedIndexChange = { index ->
+                                paletteStyles.getOrNull(index)?.let { style ->
+                                    if (style != appearance.paletteStyle) onPaletteStyleChange(style)
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
