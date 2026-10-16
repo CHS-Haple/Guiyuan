@@ -3,6 +3,7 @@ package com.chaners.guiyuan.settings
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 internal const val FEATURE_KEYGUARD_DEFAULT = true
 internal const val FEATURE_AOD_DEFAULT = true
 
+@Serializable
 internal data class FeatureCfg(
     val enabled: Boolean = true,
     val keyguard: Boolean = FEATURE_KEYGUARD_DEFAULT,
@@ -62,6 +64,14 @@ internal class FeatureRepo(context: Context) {
     fun setAod(enabled: Boolean) {
         writeBool(FEATURE_AOD_KEY, enabled)
     }
+
+    fun restore(cfg: FeatureCfg): Boolean =
+        prefs.edit()
+            .putBoolean(FEATURE_ENABLED_KEY, cfg.enabled)
+            .putBoolean(FEATURE_KEYGUARD_KEY, cfg.keyguard)
+            .putBoolean(FEATURE_AOD_KEY, cfg.aod)
+            .putLong(FEATURE_CHANGED_AT_NS_KEY, SystemClock.elapsedRealtimeNanos())
+            .commit()
 
     fun reset() {
         val changedAtNs = SystemClock.elapsedRealtimeNanos()
