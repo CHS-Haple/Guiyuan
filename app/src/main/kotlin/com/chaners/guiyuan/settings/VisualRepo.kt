@@ -26,7 +26,7 @@ internal fun isVisualPreferenceKey(key: String?): Boolean =
     key == null || key in visualPreferenceKeys
 
 // A backup owns feature visuals and scheme entries, not the whole preference file.
-private fun isBackupVisualKey(key: String): Boolean =
+internal fun isBackupVisualKey(key: String): Boolean =
     key in visualPreferenceKeys ||
         key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
         isBatterySchemeStorageKey(key)
