@@ -18,6 +18,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
 
 ### Fixed
+- Invalidated Control Center single-display mobile target caches when native FINAL mobile-root membership changes during a global layout event, including changes that bypass the normal binder notification.
 - Prevented remote preference listener lock inversion during rebind and kept in-flight old-generation feature/visual callbacks from overwriting current configuration.
 - Revalidated cached Control Center native icon targets against their current native FINAL slot and optical-child ancestry before reuse.
 - Matched hotspot Wi-Fi drawing to its own verified native optical bounds instead of borrowing ordinary Wi-Fi fitting.
