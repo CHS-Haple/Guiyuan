@@ -252,7 +252,11 @@ internal object CcTransitionOwner {
         private val nativeChildren = ArrayList<View>()
         private val nativeMembershipListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                if (started && captureNativeChildren() && currentSnapshot.model.dualMobileLevels == null) {
+                if (
+                    started &&
+                    captureNativeChildren() &&
+                    currentSnapshot.model.dualMobileLevels == null
+                ) {
                     markMobileTargetsDirty()
                 }
             }
@@ -351,21 +355,29 @@ internal object CcTransitionOwner {
         }
 
         private fun captureNativeChildren(): Boolean {
-            val size = finalStatusIcons.childCount
+            val count = finalStatusIcons.childCount
             if (
-                nativeChildren.size == size &&
-                (0 until size).all { index ->
+                nativeChildren.size == count &&
+                (0 until count).all { index ->
                     nativeChildren[index] === finalStatusIcons.getChildAt(index)
                 }
             ) {
                 return false
             }
+            val previousMobile = nativeChildren.filter(::isMobileSlot)
             nativeChildren.clear()
-            for (index in 0 until size) {
+            for (index in 0 until count) {
                 nativeChildren.add(finalStatusIcons.getChildAt(index))
             }
-            return true
+            val currentMobile = nativeChildren.filter(::isMobileSlot)
+            return previousMobile.size != currentMobile.size ||
+                previousMobile.indices.any { index ->
+                    previousMobile[index] !== currentMobile[index]
+                }
         }
+
+        private fun isMobileSlot(view: View): Boolean =
+            NativeParticipantAccess.slotOf(view) in setOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
 
         fun matches(
             root: ViewGroup,
