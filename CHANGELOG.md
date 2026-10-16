@@ -14,6 +14,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Recorded the actual Modern Xposed framework name and version in runtime diagnostics when exposed by API 102.
 
 ### Changed
+- Updated MIUIX UI, Preference, Icons, Nav and Blur modules to the published `0.9.4-54c6587e-SNAPSHOT`, including its updated Pager gesture handling.
 - Aligned secondary settings-page scrolling and rebound with the MIUIX top bar.
 - Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
 
