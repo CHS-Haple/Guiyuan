@@ -39,6 +39,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.palettesFor
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -75,6 +76,8 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 internal fun AppearanceScreen(
@@ -82,6 +85,8 @@ internal fun AppearanceScreen(
     dark: Boolean,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
+    onColorSpecChange: (ThemeColorSpec?) -> Unit,
+    onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
@@ -95,6 +100,25 @@ internal fun AppearanceScreen(
             stringResource(R.string.theme_light),
             stringResource(R.string.theme_dark),
         )
+    val colorSpecOptions = listOf(
+        stringResource(R.string.theme_color_spec_system),
+        "Spec2021",
+        "Spec2025",
+        "Spec2026",
+    )
+    val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
+    val paletteNames = mapOf(
+        ThemePaletteStyle.TonalSpot to stringResource(R.string.theme_palette_tonal_spot),
+        ThemePaletteStyle.Neutral to stringResource(R.string.theme_palette_neutral),
+        ThemePaletteStyle.Vibrant to stringResource(R.string.theme_palette_vibrant),
+        ThemePaletteStyle.Expressive to stringResource(R.string.theme_palette_expressive),
+        ThemePaletteStyle.Rainbow to stringResource(R.string.theme_palette_rainbow),
+        ThemePaletteStyle.FruitSalad to stringResource(R.string.theme_palette_fruit_salad),
+        ThemePaletteStyle.Monochrome to stringResource(R.string.theme_palette_monochrome),
+        ThemePaletteStyle.Fidelity to stringResource(R.string.theme_palette_fidelity),
+        ThemePaletteStyle.Content to stringResource(R.string.theme_palette_content),
+        ThemePaletteStyle.Cmf to stringResource(R.string.theme_palette_cmf),
+    )
     val floatingStyleOptions =
         listOf(
             stringResource(R.string.floating_navigation_style_standard),
@@ -171,6 +195,41 @@ internal fun AppearanceScreen(
                 checked = appearance.dynamicColor,
                 onCheckedChange = onDynamicChange,
             )
+            AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
+                OverlayDropdownPreference(
+                    items = colorSpecOptions,
+                    selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
+                    title = stringResource(R.string.theme_color_spec),
+                    summary = stringResource(R.string.theme_color_spec_summary),
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_tune)
+                    },
+                    showValue = true,
+                    onSelectedIndexChange = { index ->
+                        if (index in colorSpecOptions.indices) {
+                            val spec = if (index == 0) null else ThemeColorSpec.entries[index - 1]
+                            if (spec != appearance.colorSpec) onColorSpecChange(spec)
+                        }
+                    },
+                )
+                AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
+                    OverlayDropdownPreference(
+                        items = paletteStyles.map { paletteNames.getValue(it) },
+                        selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
+                        title = stringResource(R.string.theme_palette_style),
+                        summary = stringResource(R.string.theme_palette_style_summary),
+                        startAction = {
+                            SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
+                        },
+                        showValue = true,
+                        onSelectedIndexChange = { index ->
+                            paletteStyles.getOrNull(index)?.let { style ->
+                                if (style != appearance.paletteStyle) onPaletteStyleChange(style)
+                            }
+                        },
+                    )
+                }
+            }
         }
 
         Section(R.string.section_visual_effects) {
