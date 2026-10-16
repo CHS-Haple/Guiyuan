@@ -676,14 +676,14 @@ internal fun FeaturesScreen(
         Section(R.string.section_management) {
             BasicComponent(
                 title = stringResource(R.string.config_backup_title),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_download) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_save) },
                 summary = stringResource(R.string.config_backup_summary),
                 enabled = !ioBusy,
                 onClick = { createDocument.launch(backupFiles.fileName()) },
             )
             BasicComponent(
                 title = stringResource(R.string.config_restore_title),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_upload) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_open) },
                 summary = stringResource(R.string.config_restore_summary),
                 enabled = !ioBusy,
                 onClick = { openDocument.launch(arrayOf("application/json", "text/plain")) },
