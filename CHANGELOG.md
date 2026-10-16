@@ -8,6 +8,14 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Added
+- Added companion-app interface scaling from 80% to 110% without changing system display scaling or the SystemUI renderer.
+
+### Changed
+- Aligned secondary settings-page scrolling and rebound with the MIUIX top bar.
+- Let the triggered About logo wave finish after finger release and matched hotspot Wi-Fi drawing to its own verified native optical bounds.
+- Renamed the Home preview section to Status simulation and clarified the Home and Preview Sandbox descriptions in Chinese and English.
+
 ## [0.7.0] - 2026-10-15
 
 ### Added
