@@ -205,7 +205,7 @@ Normal runtime path:
 feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
-Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response.
+Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response. The trusted work-branch APK workflow accepts only same-repository `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` sources; use an eligible prefix for dependency proposals requiring a signed Canary, not `build/*`.
 
 A PR may remain Draft while implementation is moving. Mark it ready at the final automated-review checkpoint. Merge to `dev` only when deterministic blockers are resolved, required CI is green and required focused device evidence has passed.
 
