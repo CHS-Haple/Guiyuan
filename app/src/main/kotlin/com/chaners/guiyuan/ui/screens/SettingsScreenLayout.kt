@@ -231,12 +231,13 @@ internal fun SettingsPage(
 
             @Composable
             fun SettingsList() {
+                val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
                 LazyColumn(
                     state = resolvedListState,
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(if (springScroll) Modifier.scrollEndHaptic() else Modifier)
+                            .then(if (springScroll && canScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
                     // Keep the native list rebound alongside the MIUIX folding top bar.
