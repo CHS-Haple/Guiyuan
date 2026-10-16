@@ -2,6 +2,7 @@ package com.chaners.guiyuan.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -19,6 +20,7 @@ private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
 private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
+@Serializable
 internal enum class BatteryBuiltInColorScheme(
     val key: String,
     val preset: BatteryColorPreset,
@@ -49,6 +51,7 @@ internal enum class BatteryBuiltInColorScheme(
     }
 }
 
+@Serializable
 internal enum class BatteryColorSchemeSource(
     val persistedValue: String,
 ) {
@@ -71,6 +74,7 @@ internal enum class BatteryColorSchemeSource(
     }
 }
 
+@Serializable
 internal data class BatteryColorSchemeEntry(
     val source: BatteryColorSchemeSource = BatteryColorSchemeSource.HYPEROS,
     val customColor: Int? = null,
@@ -79,6 +83,7 @@ internal data class BatteryColorSchemeEntry(
         copy(customColor = customColor?.or(0xFF000000.toInt()))
 }
 
+@Serializable
 internal data class BatteryColorSchemeEntries(
     val normal: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
     val powerSave: BatteryColorSchemeEntry = BatteryColorSchemeEntry(),
@@ -112,6 +117,7 @@ internal data class BatteryColorSchemeEntries(
         }
 }
 
+@Serializable
 internal data class BatteryCustomColorScheme(
     val id: Int,
     val name: String,
@@ -122,6 +128,7 @@ internal data class BatteryCustomColorScheme(
         get() = customSchemeKey(id)
 }
 
+@Serializable
 internal data class BatteryColorSchemeLibrary(
     val activeSchemeKey: String = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
     val customSchemes: List<BatteryCustomColorScheme> = emptyList(),
@@ -458,6 +465,11 @@ internal class BatterySchemeRepo(context: Context) {
             baseTemplate = base,
             entries = entries,
         )
+    }
+
+    // Share the existing scheme writer with the one-shot visual restore transaction.
+    fun putBackup(editor: SharedPreferences.Editor, library: BatteryColorSchemeLibrary) {
+        writeLibrary(editor, library)
     }
 
     private fun writeLibrary(

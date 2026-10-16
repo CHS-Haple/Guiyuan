@@ -16,7 +16,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-54c6587e-SNAPSHOT (`54c6587e278292b0ead88d0b4623369acf31c485`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
 | Kyant Shapes | 1.2.1 | Capsule geometry used by the Liquid Glass navigation bar | Apache-2.0 |
-| kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache-2.0 |
+| kotlinx.serialization core / JSON | 1.11.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Embedded icon assets
 

@@ -89,8 +89,8 @@
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">恢复默认设置</string>
-    <string name="restore_feature_defaults_summary">恢复功能页全部设置</string>
-    <string name="restore_feature_defaults_dialog_summary">将功能页全部设置恢复为默认值？</string>
+    <string name="restore_feature_defaults_summary">重置功能配置</string>
+    <string name="restore_feature_defaults_dialog_summary">将功能配置恢复为默认值？</string>
 
     <string name="section_theme">主题</string>
     <string name="theme_mode">主题模式</string>
@@ -415,4 +415,14 @@
     <string name="restart_scope_select_all">全选</string>
     <string name="restart_scope_clear_all">取消全选</string>
 
+    <string name="config_backup_title">备份配置</string>
+    <string name="config_backup_summary">将功能配置保存为文件</string>
+    <string name="config_restore_title">恢复配置</string>
+    <string name="config_restore_summary">从备份文件恢复功能配置</string>
+    <string name="config_backup_success">备份已保存</string>
+    <string name="config_restore_success">配置已恢复</string>
+    <string name="config_backup_failed">备份失败，请重试</string>
+    <string name="config_restore_failed">恢复失败，请重试</string>
+    <string name="config_restore_invalid">备份文件无效或不兼容</string>
+    <string name="config_restore_confirm">将使用备份覆盖当前功能配置，是否继续？</string>
 </resources>

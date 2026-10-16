@@ -1,7 +1,10 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.Serializable
 
 
+
+@Serializable
 internal enum class ContentLayout(
     val persistedValue: String,
 ) {
@@ -14,6 +17,7 @@ internal enum class ContentLayout(
     }
 }
 
+@Serializable
 internal enum class BatteryColorPreset(
     val persistedValue: String,
 ) {
@@ -27,6 +31,7 @@ internal enum class BatteryColorPreset(
     }
 }
 
+@Serializable
 internal enum class BatteryColorMode(
     val persistedValue: String,
 ) {
@@ -49,6 +54,7 @@ internal enum class BatteryColorSlot {
     LOW,
 }
 
+@Serializable
 internal data class BatteryColorModes(
     val normal: BatteryColorMode = BatteryColorMode.PRESET,
     val powerSave: BatteryColorMode = BatteryColorMode.PRESET,
@@ -81,6 +87,7 @@ internal data class BatteryColorModes(
         }
 }
 
+@Serializable
 internal data class BatteryColorOverrides(
     val normal: Int? = null,
     val powerSave: Int? = null,
@@ -170,6 +177,7 @@ internal object IosStyleBatteryPalette {
         }
 }
 
+@Serializable
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
