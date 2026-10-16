@@ -250,8 +250,9 @@ internal object CcTransitionOwner {
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
         private val nativeChildren = ArrayList<View>()
+        // Native children can change while the icon container keeps the same bounds.
         private val nativeMembershipListener =
-            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            ViewTreeObserver.OnGlobalLayoutListener {
                 if (
                     started &&
                     captureNativeChildren() &&
@@ -531,7 +532,7 @@ internal object CcTransitionOwner {
             val source = sourceViewRef.get() ?: return
             started = true
             captureNativeChildren()
-            finalStatusIcons.addOnLayoutChangeListener(nativeMembershipListener)
+            rootView.viewTreeObserver.addOnGlobalLayoutListener(nativeMembershipListener)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
@@ -604,10 +605,10 @@ internal object CcTransitionOwner {
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
-            finalStatusIcons.removeOnLayoutChangeListener(nativeMembershipListener)
             nativeChildren.clear()
             val rootView = rootRef.get()
             if (rootView?.viewTreeObserver?.isAlive == true) {
+                rootView.viewTreeObserver.removeOnGlobalLayoutListener(nativeMembershipListener)
                 rootView.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
             }
             rootView?.overlay?.remove(drawable)
