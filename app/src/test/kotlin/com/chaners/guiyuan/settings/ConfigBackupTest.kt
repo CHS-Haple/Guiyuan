@@ -30,6 +30,28 @@ class ConfigBackupTest {
         assertEquals(4, source.visual.profiles.size)
     }
 
+    @Test fun legacySchemaOneWithoutWifiWeightRetainsNativeDefault() {
+        val source = ConfigBackupFormat.encode(sample())
+        val withoutWeight = source.replace(Regex("\\"wifiWeight\\":100,"), "")
+        assertEquals(4, ConfigBackupFormat.decode(withoutWeight).visual.profiles.size)
+        assertTrue(ConfigBackupFormat.decode(withoutWeight).visual.profiles.all {
+            it.wifiWeight == WIFI_WEIGHT_DEFAULT
+        })
+    }
+
+    @Test fun tamperedWifiWeightIsRejected() {
+        val value = sample()
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(value.copy(
+                visual = value.visual.copy(
+                    profiles = value.visual.profiles.mapIndexed { i, cfg ->
+                        if (i == 0) cfg.copy(wifiWeight = 999) else cfg
+                    },
+                ),
+            ))
+        }
+    }
+
     @Test fun alteredScaleIsRejectedWithoutClamping() {
         val source = sample()
         val invalid = source.copy(

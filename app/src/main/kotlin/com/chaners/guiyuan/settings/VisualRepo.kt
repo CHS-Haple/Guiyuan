@@ -237,6 +237,12 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setWifiWeight(weight: Int) {
+        preferences.edit()
+            .putInt(activeProfileKey(WIFI_WEIGHT_KEY), weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
+            .apply()
+    }
+
     fun setWifiScale(scale: Float) {
         preferences.edit()
             .putFloat(
@@ -482,6 +488,7 @@ internal fun SharedPreferences.readVisualCfg(
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
         wifiScale = size(WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
+        wifiWeight = weight(WIFI_WEIGHT_KEY, WIFI_WEIGHT_DEFAULT),
         airplaneScale = size(AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
         noSimScale = size(NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
         mobileTypeScale = size(MOBILE_TYPE_SIZE_SCALE_KEY, mobileTypeScaleDefault(layout)),
@@ -600,6 +607,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, WIFI_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.wifiScale,
+    ).putInt(
+        visualProfileKey(layout, WIFI_WEIGHT_KEY, normalized.dualSignal),
+        normalized.wifiWeight,
     ).putFloat(
         visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.airplaneScale,

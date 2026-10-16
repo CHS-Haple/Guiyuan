@@ -70,6 +70,9 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.ConfigBackup
@@ -436,6 +439,21 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            SliderPreference(
+                value = visual.wifiWeight.toFloat(),
+                onValueChange = { visualRepo.setWifiWeight(it.roundToInt()) },
+                title = stringResource(R.string.wifi_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                summary = stringResource(R.string.wifi_weight_summary),
+                valueText = stringResource(R.string.percent_value, visual.wifiWeight),
+                valueRange = WIFI_WEIGHT_MIN.toFloat()..WIFI_WEIGHT_MAX.toFloat(),
+                steps = 7,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(WIFI_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )

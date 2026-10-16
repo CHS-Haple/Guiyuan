@@ -199,6 +199,7 @@ internal data class VisualCfg(
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
     val wifiScale: Float = WIFI_SIZE_SCALE_DEFAULT,
+    val wifiWeight: Int = WIFI_WEIGHT_DEFAULT,
     val airplaneScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
     val noSimScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
     val mobileTypeScale: Float = mobileTypeScaleDefault(layout),
@@ -241,6 +242,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
         outerWeightScale =
             outerWeightScale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
         wifiScale = wifiScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+        wifiWeight = wifiWeight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX),
         airplaneScale =
             airplaneScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
         noSimScale =

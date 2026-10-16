@@ -83,6 +83,8 @@
     <string name="control_center_tint_transition">Control Center color transition</string>
     <string name="control_center_tint_transition_summary">When opening Control Center, smoothly transition battery-colored elements to the native icon tint</string>
     <string name="wifi_size">Wi-Fi size</string>
+    <string name="wifi_weight">Wi-Fi stroke weight</string>
+    <string name="wifi_weight_summary">Standard Wi-Fi only; special icons remain native</string>
     <string name="airplane_size">Airplane mode size</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
