@@ -249,6 +249,18 @@ internal object CcTransitionOwner {
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
+        private val nativeChildren = ArrayList<View>()
+        // Native children can change while the icon container keeps the same bounds.
+        private val nativeMembershipListener =
+            ViewTreeObserver.OnGlobalLayoutListener {
+                if (
+                    started &&
+                    captureNativeChildren() &&
+                    currentSnapshot.model.dualMobileLevels == null
+                ) {
+                    markMobileTargetsDirty()
+                }
+            }
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -341,6 +353,33 @@ internal object CcTransitionOwner {
 
         fun markMobileTargetsDirty() {
             mobileTargetsDirty.set(true)
+        }
+
+        private fun captureNativeChildren(): Boolean {
+            val count = finalStatusIcons.childCount
+            if (
+                nativeChildren.size == count &&
+                (0 until count).all { index ->
+                    nativeChildren[index] === finalStatusIcons.getChildAt(index)
+                }
+            ) {
+                return false
+            }
+            val previousMobile = nativeChildren.filter(::isMobileSlot)
+            nativeChildren.clear()
+            for (index in 0 until count) {
+                nativeChildren.add(finalStatusIcons.getChildAt(index))
+            }
+            val currentMobile = nativeChildren.filter(::isMobileSlot)
+            return previousMobile.size != currentMobile.size ||
+                previousMobile.indices.any { index ->
+                    previousMobile[index] !== currentMobile[index]
+                }
+        }
+
+        private fun isMobileSlot(view: View): Boolean {
+            val slot = NativeParticipantAccess.slotOf(view)
+            return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
         }
 
         fun matches(
@@ -492,6 +531,8 @@ internal object CcTransitionOwner {
             val rootView = rootRef.get() ?: return
             val source = sourceViewRef.get() ?: return
             started = true
+            captureNativeChildren()
+            rootView.viewTreeObserver.addOnGlobalLayoutListener(nativeMembershipListener)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
@@ -564,8 +605,10 @@ internal object CcTransitionOwner {
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
+            nativeChildren.clear()
             val rootView = rootRef.get()
             if (rootView?.viewTreeObserver?.isAlive == true) {
+                rootView.viewTreeObserver.removeOnGlobalLayoutListener(nativeMembershipListener)
                 rootView.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
             }
             rootView?.overlay?.remove(drawable)
