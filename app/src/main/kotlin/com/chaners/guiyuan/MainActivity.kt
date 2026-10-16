@@ -27,6 +27,8 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.GyApp
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -103,6 +105,12 @@ class MainActivity : ComponentActivity() {
                     },
                     onDynamicChange = { enabled ->
                         scope.launch { repo.setDynamicColor(enabled) }
+                    },
+                    onColorSpecChange = { spec: ThemeColorSpec? ->
+                        scope.launch { repo.setColorSpec(spec) }
+                    },
+                    onPaletteStyleChange = { style: ThemePaletteStyle ->
+                        scope.launch { repo.setPaletteStyle(style) }
                     },
                     onNavEnabledChange = { enabled ->
                         scope.launch { repo.setNavEnabled(enabled) }
