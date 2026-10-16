@@ -32,7 +32,7 @@ class ConfigBackupTest {
 
     @Test fun legacySchemaOneWithoutWifiWeightRetainsNativeDefault() {
         val source = ConfigBackupFormat.encode(sample())
-        val withoutWeight = source.replace(Regex("\\"wifiWeight\\":100,"), "")
+        val withoutWeight = source.replace("\"wifiWeight\":100,", "")
         assertEquals(4, ConfigBackupFormat.decode(withoutWeight).visual.profiles.size)
         assertTrue(ConfigBackupFormat.decode(withoutWeight).visual.profiles.all {
             it.wifiWeight == WIFI_WEIGHT_DEFAULT
