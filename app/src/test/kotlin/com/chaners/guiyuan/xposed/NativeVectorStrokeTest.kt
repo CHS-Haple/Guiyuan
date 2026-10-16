@@ -22,7 +22,7 @@ class NativeVectorStrokeTest {
         // The original 20-unit Wi-Fi vector has rounded end curves smaller
         // than the unrestricted 0.4-unit inward offset at 60%.
         assertEquals(-0.24f, offsets[0], 0.0001f)
-        assertEquals(-0.2f, offsets[1], 0.0001f)
+        assertEquals(-0.12f, offsets[1], 0.0001f)
         assertEquals(0.3f, offsets[4], 0.0001f)
         assertEquals(0.81f, NativeVectorStroke.edgeOffset(130, 54f, 56f), 0.0001f)
     }
@@ -32,6 +32,8 @@ class NativeVectorStrokeTest {
         assertEquals(-0.672f, NativeVectorStroke.edgeOffset(60, 56f, 56f), 0.0001f)
         assertEquals(-0.24f, NativeVectorStroke.edgeOffset(60, 20f, 20f), 0.0001f)
         assertEquals(0f, NativeVectorStroke.edgeOffset(100, 20f, 20f), 0f)
+        val steps = (60..100 step 5).map { NativeVectorStroke.edgeOffset(it, 20f, 20f) }
+        assertTrue(steps.zipWithNext().all { (a, b) -> a < b })
     }
 
     @Test fun outOfRangeWeightsAreBounded() {

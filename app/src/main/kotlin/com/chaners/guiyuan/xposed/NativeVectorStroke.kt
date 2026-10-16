@@ -38,8 +38,9 @@ internal object NativeVectorStroke {
     fun edgeOffset(weight: Int, width: Float, height: Float): Float {
         val unit = min(width, height)
         val requested = (weight.coerceIn(60, 130) - 100) * unit / 2000f
-        // Deep erosion destroys the tiny native rounded Wi-Fi ends and airplane corners.
-        return if (requested < 0f) requested.coerceAtLeast(-unit * 0.012f) else requested
+        // The native Wi-Fi end curves are tiny; 60% must not erode their rounding.
+        // A proportional inset keeps every slider step distinct without a hard plateau.
+        return if (requested < 0f) requested * 0.6f else requested
     }
 
     fun load(resources: Resources, resourceId: Int): Source? =
