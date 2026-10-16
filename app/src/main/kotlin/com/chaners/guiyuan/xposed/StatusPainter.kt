@@ -934,11 +934,7 @@ internal class StatusPainter(
             maxWidth = geometry.airplaneMaxSize,
             maxHeight = geometry.airplaneMaxSize,
         ) ?: return metrics
-        val ink =
-            nativeStrokeBitmap(
-                resource, drawable.asset, weight,
-                drawable.drawWidth.roundToInt(), drawable.drawHeight.roundToInt(),
-            ) ?: return metrics
+        val ink = nativeStrokeBitmap(resource, drawable.asset, weight, drawable) ?: return metrics
         val bounds = styledBounds(drawable, ink)
         return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
     }
@@ -1336,10 +1332,7 @@ internal class StatusPainter(
                             maxWidth = geometry.airplaneMaxSize,
                             maxHeight = geometry.airplaneMaxSize,
                         )?.let { draw ->
-                            nativeStrokeBitmap(
-                                resource, draw.asset, airplaneWeight,
-                                draw.drawWidth.roundToInt(), draw.drawHeight.roundToInt(),
-                            )
+                            nativeStrokeBitmap(resource, draw.asset, airplaneWeight, draw)
                                 ?.let { styledBounds(draw, it) }
                                 ?: draw.opticalBounds
                         }
@@ -2748,10 +2741,7 @@ internal class StatusPainter(
             if (strokeWeight == 100) {
                 null
             } else if (strokeAtDrawSize) {
-                nativeStrokeBitmap(
-                    resource, asset, strokeWeight,
-                    drawWidth.roundToInt(), drawHeight.roundToInt(),
-                )
+                nativeStrokeBitmap(resource, asset, strokeWeight, geometry)
             } else {
                 nativeStrokeBitmap(resource, asset, strokeWeight)
             }
@@ -2860,18 +2850,32 @@ internal class StatusPainter(
         resource: PresentationStore.NativeIconResource,
         asset: NativeCenterAsset,
         weight: Int,
-        sampleWidth: Int = asset.intrinsicWidth,
-        sampleHeight: Int = asset.intrinsicHeight,
+        drawGeometry: NativeCenterDrawGeometry? = null,
     ): StyledStroke? {
         val normalized = weight.coerceIn(60, 130)
         if (normalized == 100) return null
+        val w = asset.intrinsicWidth
+        val h = asset.intrinsicHeight
+        val sampleScale =
+            if (drawGeometry == null) {
+                1f
+            } else {
+                val largest = max(drawGeometry.drawWidth, drawGeometry.drawHeight)
+                if (!largest.isFinite() || largest <= 0f) return null
+                min(1f, NATIVE_STROKE_SAMPLE_MAX.toFloat() / largest)
+            }
+        val sampleWidth =
+            if (drawGeometry == null) w else (drawGeometry.drawWidth * sampleScale).roundToInt()
+        val sampleHeight =
+            if (drawGeometry == null) h else (drawGeometry.drawHeight * sampleScale).roundToInt()
+        // Use drawn pixels for oversized native vectors; preserve intrinsic sampling for Wi-Fi.
+        if (w <= 0 || h <= 0 ||
+            sampleWidth !in 1..NATIVE_STROKE_SAMPLE_MAX ||
+            sampleHeight !in 1..NATIVE_STROKE_SAMPLE_MAX
+        ) return null
         val drawableResource = resolveNativeTintVariant(resource) ?: resource
         val key = StrokeKey(drawableResource, normalized, sampleWidth, sampleHeight)
         strokeAssets[key]?.let { return it }
-        val w = asset.intrinsicWidth
-        val h = asset.intrinsicHeight
-        // Native vector intrinsic pixels are density-scaled; bound the resulting bitmap instead.
-        if (w <= 0 || h <= 0 || sampleWidth !in 1..96 || sampleHeight !in 1..96) return null
         val bitmap = runCatching {
             val bw = sampleWidth * 2 + 4
             val bh = sampleHeight * 2 + 4
@@ -3825,6 +3829,7 @@ internal class StatusPainter(
         const val MOBILE_TYPE_CENTER_Y = 60f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
         const val NATIVE_CENTER_CACHE_SIZE = 8
+        const val NATIVE_STROKE_SAMPLE_MAX = 96
         const val MIN_OPTICAL_RATIO = 0.08f
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
