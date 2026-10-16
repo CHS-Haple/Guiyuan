@@ -415,4 +415,13 @@
     <string name="restart_scope_select_all">全选</string>
     <string name="restart_scope_clear_all">取消全选</string>
 
+    <string name="config_backup_title">备份配置</string>
+    <string name="config_backup_summary">将功能配置保存到本地文件</string>
+    <string name="config_restore_title">恢复配置</string>
+    <string name="config_restore_summary">从 JSON 文件导入功能配置</string>
+    <string name="config_backup_success">配置已保存</string>
+    <string name="config_restore_success">配置已恢复</string>
+    <string name="config_backup_failed">无法保存配置</string>
+    <string name="config_restore_failed">配置无效或恢复失败</string>
+    <string name="config_restore_confirm">恢复来自版本 %1$s（%2$s）的功能配置？这将覆盖现有功能参数、单排与双排配置及电池配色方案，不影响应用设置和模拟沙盒。</string>
 </resources>
