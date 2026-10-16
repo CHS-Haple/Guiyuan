@@ -26,6 +26,7 @@ internal fun isVisualPreferenceKey(key: String?): Boolean =
     key == null || key in visualPreferenceKeys
 
 internal class VisualRepo(context: Context) {
+    private val context = context.applicationContext
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
@@ -324,6 +325,30 @@ internal class VisualRepo(context: Context) {
             editor.remove(activeGlobalKey(batteryColorOverrideKey(slot)))
         }
         editor.apply()
+    }
+
+    fun backup(): VisualBackup =
+        VisualBackup(
+            singleLayout = preferences.readLayout(dual = false),
+            dualLayout = preferences.readLayout(dual = true),
+            dualEnabled = preferences.dualSignalEnabled(),
+            profiles = listOf(false, true).flatMap { dual ->
+                ContentLayout.entries.map { layout ->
+                    preferences.readVisualCfg(dual = dual, layoutOverride = layout)
+                }
+            },
+        )
+
+    fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
+        val editor = preferences.edit().clear()
+        backup.profiles.forEach(editor::putVisualCfg)
+        BatterySchemeRepo(context).putBackup(editor, library)
+        editor.putString(CONTENT_LAYOUT_KEY, backup.singleLayout.persistedValue)
+        editor.putString(visualModeKey(true, CONTENT_LAYOUT_KEY), backup.dualLayout.persistedValue)
+        editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
+        // Restored physical charging scales use the current reference.
+        editor.putInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 2)
+        return editor.commit()
     }
 
     fun resetToDefaults() {
