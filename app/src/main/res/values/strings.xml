@@ -416,4 +416,13 @@
     <string name="restart_scope_select_all">Select all</string>
     <string name="restart_scope_clear_all">Clear all</string>
 
+    <string name="config_backup_title">Back up configuration</string>
+    <string name="config_backup_summary">Save feature settings to a file</string>
+    <string name="config_restore_title">Restore configuration</string>
+    <string name="config_restore_summary">Import feature settings from a JSON file</string>
+    <string name="config_backup_success">Configuration saved</string>
+    <string name="config_restore_success">Configuration restored</string>
+    <string name="config_backup_failed">Could not save configuration</string>
+    <string name="config_restore_failed">Invalid configuration or restore failed</string>
+    <string name="config_restore_confirm">Restore feature settings from version %1$s (%2$s)? This will replace current function settings, single/dual profiles and battery color schemes. App settings and sandbox are unaffected.</string>
 </resources>
