@@ -8,6 +8,19 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Added
+- Added independent Wi-Fi and mobile-type vertical offsets for battery-centered layouts, preserving users' existing offset values.
+- Added companion-app interface scaling from 80% to 110% without changing system display scaling or the SystemUI renderer.
+- Recorded the actual Modern Xposed framework name and version in runtime diagnostics when exposed by API 102.
+
+### Changed
+- Aligned secondary settings-page scrolling and rebound with the MIUIX top bar.
+- Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
+
+### Fixed
+- Revalidated cached Control Center native icon targets against their current native FINAL slot and optical-child ancestry before reuse.
+- Matched hotspot Wi-Fi drawing to its own verified native optical bounds instead of borrowing ordinary Wi-Fi fitting.
+
 ## [0.7.0] - 2026-10-15
 
 ### Added
