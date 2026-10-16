@@ -449,7 +449,7 @@ internal fun FeaturesScreen(
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                 valueText = stringResource(R.string.percent_value, visual.wifiWeight),
                 valueRange = WIFI_WEIGHT_MIN.toFloat()..WIFI_WEIGHT_MAX.toFloat(),
-                steps = 7,
+                steps = 13,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(WIFI_WEIGHT_DEFAULT.toFloat()),

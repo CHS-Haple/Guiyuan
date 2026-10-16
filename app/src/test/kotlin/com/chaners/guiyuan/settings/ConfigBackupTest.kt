@@ -39,6 +39,18 @@ class ConfigBackupTest {
         })
     }
 
+    @Test fun extendedWifiWeightsSurviveArchiveRoundTrip() {
+        val source = sample()
+        val archive = source.copy(
+            visual = source.visual.copy(
+                profiles = source.visual.profiles.mapIndexed { i, cfg ->
+                    cfg.copy(wifiWeight = if (i % 2 == 0) WIFI_WEIGHT_MIN else WIFI_WEIGHT_MAX)
+                },
+            ),
+        )
+        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
+    }
+
     @Test fun tamperedWifiWeightIsRejected() {
         val value = sample()
         assertThrows(IllegalArgumentException::class.java) {

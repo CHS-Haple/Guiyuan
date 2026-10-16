@@ -2833,7 +2833,7 @@ internal class StatusPainter(
         asset: NativeCenterAsset,
         weight: Int,
     ): StyledWifi? {
-        val normalized = weight.coerceIn(80, 120)
+        val normalized = weight.coerceIn(60, 130)
         if (normalized == 100) return null
         val drawableResource = resolveNativeTintVariant(resource) ?: resource
         val key = drawableResource to normalized
