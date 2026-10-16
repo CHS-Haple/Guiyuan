@@ -16,6 +16,7 @@ class ConfigBackupTest {
             singleLayout = ContentLayout.NETWORK_CENTER,
             dualLayout = ContentLayout.BATTERY_CENTER,
             dualEnabled = true,
+            dualInitialized = true,
             profiles = listOf(false, true).flatMap { dual ->
                 ContentLayout.entries.map { layout -> VisualCfg(layout = layout, dualSignal = dual) }
             },
