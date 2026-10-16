@@ -31,6 +31,33 @@ internal fun isBackupVisualKey(key: String): Boolean =
         key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
         isBatterySchemeStorageKey(key)
 
+internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
+    edit().also { editor ->
+        all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
+    }
+
+internal fun SharedPreferences.backupVisualSnapshot(): Map<String, Any?> =
+    all.filterKeys(::isBackupVisualKey)
+        .mapValues { (_, value) ->
+            if (value is Set<*>) value.filterIsInstance<String>().toSet() else value
+        }
+
+internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>): Boolean {
+    val editor = editBackupVisuals()
+    snapshot.forEach { (key, value) ->
+        when (value) {
+            is Boolean -> editor.putBoolean(key, value)
+            is Int -> editor.putInt(key, value)
+            is Long -> editor.putLong(key, value)
+            is Float -> editor.putFloat(key, value)
+            is String -> editor.putString(key, value)
+            is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
+            else -> error("Unexpected visual preference value")
+        }
+    }
+    return editor.commit()
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -358,36 +385,13 @@ internal class VisualRepo(context: Context) {
             },
         )
 
-    private fun backupEditor(): SharedPreferences.Editor =
-        preferences.edit().also { editor ->
-            preferences.all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
-        }
+    fun backupSnapshot(): Map<String, Any?> = preferences.backupVisualSnapshot()
 
-    fun backupSnapshot(): Map<String, Any?> =
-        preferences.all
-            .filterKeys(::isBackupVisualKey)
-            .mapValues { (_, value) ->
-                if (value is Set<*>) value.filterIsInstance<String>().toSet() else value
-            }
-
-    fun rollbackBackup(snapshot: Map<String, Any?>): Boolean {
-        val editor = backupEditor()
-        snapshot.forEach { (key, value) ->
-            when (value) {
-                is Boolean -> editor.putBoolean(key, value)
-                is Int -> editor.putInt(key, value)
-                is Long -> editor.putLong(key, value)
-                is Float -> editor.putFloat(key, value)
-                is String -> editor.putString(key, value)
-                is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
-                else -> error("Unexpected visual preference value")
-            }
-        }
-        return editor.commit()
-    }
+    fun rollbackBackup(snapshot: Map<String, Any?>): Boolean =
+        preferences.rollbackBackupVisuals(snapshot)
 
     fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
-        val editor = backupEditor()
+        val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
         BatterySchemeRepo(context).putBackup(editor, library)
