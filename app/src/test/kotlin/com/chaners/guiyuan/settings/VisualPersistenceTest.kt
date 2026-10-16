@@ -138,6 +138,35 @@ class VisualPersistenceTest {
         assertEquals(topOffsetYRaw(6f), prefs.readVisualCfg().topOffsetY, 0f)
     }
 
+    @Test
+    fun importedVisualKeysPreserveUnrelatedPrefsAndRollbackLosslessly() {
+        val prefs = MemoryPreferences()
+        val schemeKey = "battery_color_scheme_library.custom.1.name"
+        prefs.edit()
+            .putString("application_ui_scale", "90")
+            .putString("preview_mode", "normal")
+            .putString("root_permission", "granted")
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY), 0.85f)
+            .putString(schemeKey, "Previous scheme")
+            .apply()
+        val before = prefs.all.toMap()
+        val snapshot = prefs.backupVisualSnapshot()
+
+        val editor = prefs.editBackupVisuals()
+        editor.putVisualCfg(VisualCfg(combinedScale = 1.15f))
+        editor.putString(schemeKey, "Imported scheme")
+        assertTrue(editor.commit())
+
+        assertEquals("90", prefs.getString("application_ui_scale", null))
+        assertEquals("normal", prefs.getString("preview_mode", null))
+        assertEquals("granted", prefs.getString("root_permission", null))
+        assertEquals("Imported scheme", prefs.getString(schemeKey, null))
+        assertEquals(1.15f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
+
+        assertTrue(prefs.rollbackBackupVisuals(snapshot))
+        assertEquals(before, prefs.all)
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
 
