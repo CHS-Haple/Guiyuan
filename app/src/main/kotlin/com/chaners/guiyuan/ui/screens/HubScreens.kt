@@ -150,6 +150,7 @@ internal fun FeaturesScreen(
     val restoredMsg = stringResource(R.string.config_restore_success)
     val saveError = stringResource(R.string.config_backup_failed)
     val restoreError = stringResource(R.string.config_restore_failed)
+    val invalidBackup = stringResource(R.string.config_restore_invalid)
     val createDocument = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
@@ -158,7 +159,7 @@ internal fun FeaturesScreen(
             scope.launch {
                 val result = runCatching { backupFiles.export(uri) }
                 ioBusy = false
-                messageHost.showSnackbar(if (result.isSuccess) savedMsg else saveError + ": " + result.exceptionOrNull()?.message.orEmpty())
+                messageHost.showSnackbar(if (result.isSuccess) savedMsg else saveError)
             }
         }
     }
@@ -173,7 +174,7 @@ internal fun FeaturesScreen(
                 if (result.isSuccess) {
                     pendingImport = result.getOrThrow()
                 } else {
-                    messageHost.showSnackbar(restoreError + ": " + result.exceptionOrNull()?.message.orEmpty())
+                    messageHost.showSnackbar(invalidBackup)
                 }
             }
         }
@@ -189,7 +190,7 @@ internal fun FeaturesScreen(
             pendingImport?.let { selected ->
                 OverlayDialog(
                     title = stringResource(R.string.config_restore_title),
-                    summary = stringResource(R.string.config_restore_confirm, selected.appVersion, selected.createdAt),
+                    summary = stringResource(R.string.config_restore_confirm),
                     show = true,
                     onDismissRequest = { if (!ioBusy) pendingImport = null },
                 ) {
@@ -214,7 +215,7 @@ internal fun FeaturesScreen(
                                     ioBusy = false
                                     messageHost.showSnackbar(
                                         if (result.getOrNull() == true) restoredMsg
-                                        else restoreError + ": " + result.exceptionOrNull()?.message.orEmpty(),
+                                        else restoreError,
                                     )
                                 }
                             },

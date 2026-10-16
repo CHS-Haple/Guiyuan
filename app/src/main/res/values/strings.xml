@@ -90,8 +90,8 @@
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">Restore defaults</string>
-    <string name="restore_feature_defaults_summary">Reset all settings on the Features page</string>
-    <string name="restore_feature_defaults_dialog_summary">Restore all feature settings to their defaults?</string>
+    <string name="restore_feature_defaults_summary">Reset feature settings</string>
+    <string name="restore_feature_defaults_dialog_summary">Reset feature settings to their defaults?</string>
 
     <string name="section_theme">Theme</string>
     <string name="theme_mode">Theme mode</string>
@@ -419,10 +419,11 @@
     <string name="config_backup_title">Back up configuration</string>
     <string name="config_backup_summary">Save feature settings to a file</string>
     <string name="config_restore_title">Restore configuration</string>
-    <string name="config_restore_summary">Import feature settings from a JSON file</string>
-    <string name="config_backup_success">Configuration saved</string>
+    <string name="config_restore_summary">Restore feature settings from a backup file</string>
+    <string name="config_backup_success">Backup saved</string>
     <string name="config_restore_success">Configuration restored</string>
-    <string name="config_backup_failed">Could not save configuration</string>
-    <string name="config_restore_failed">Invalid configuration or restore failed</string>
-    <string name="config_restore_confirm">Restore feature settings from version %1$s (%2$s)? This will replace current function settings, single/dual profiles and battery color schemes. App settings and sandbox are unaffected.</string>
+    <string name="config_backup_failed">Backup failed. Try again.</string>
+    <string name="config_restore_failed">Restore failed. Try again.</string>
+    <string name="config_restore_invalid">Invalid or incompatible backup file</string>
+    <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
 </resources>
