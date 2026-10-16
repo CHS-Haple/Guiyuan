@@ -78,8 +78,8 @@ internal fun PreviewSummary(
     val networkIcon =
         when (center) {
             PreviewCenterSource.WIFI -> R.drawable.ic_material_symbol_wifi
-            PreviewCenterSource.MOBILE,
-            PreviewCenterSource.EMPTY -> R.drawable.ic_material_symbol_signal_cellular_alt
+            PreviewCenterSource.MOBILE -> R.drawable.ic_material_symbol_signal_cellular_alt
+            PreviewCenterSource.EMPTY -> R.drawable.ic_material_symbol_public_off
             PreviewCenterSource.AIRPLANE -> R.drawable.ic_material_symbol_airplanemode_active
             PreviewCenterSource.NO_SIM -> R.drawable.ic_material_symbol_sim_card
         }
