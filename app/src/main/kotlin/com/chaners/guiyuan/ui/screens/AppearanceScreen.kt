@@ -220,7 +220,7 @@ internal fun AppearanceScreen(
                             title = stringResource(R.string.theme_palette_style),
                             summary = stringResource(R.string.theme_palette_style_summary),
                             startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard)
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
                             },
                             showValue = true,
                             onSelectedIndexChange = { index ->
