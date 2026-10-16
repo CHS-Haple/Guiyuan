@@ -249,6 +249,13 @@ internal object CcTransitionOwner {
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
+        private val nativeChildren = ArrayList<View>()
+        private val nativeMembershipListener =
+            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                if (started && captureNativeChildren() && currentSnapshot.model.dualMobileLevels == null) {
+                    markMobileTargetsDirty()
+                }
+            }
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -341,6 +348,23 @@ internal object CcTransitionOwner {
 
         fun markMobileTargetsDirty() {
             mobileTargetsDirty.set(true)
+        }
+
+        private fun captureNativeChildren(): Boolean {
+            val size = finalStatusIcons.childCount
+            if (
+                nativeChildren.size == size &&
+                (0 until size).all { index ->
+                    nativeChildren[index] === finalStatusIcons.getChildAt(index)
+                }
+            ) {
+                return false
+            }
+            nativeChildren.clear()
+            for (index in 0 until size) {
+                nativeChildren.add(finalStatusIcons.getChildAt(index))
+            }
+            return true
         }
 
         fun matches(
@@ -492,6 +516,8 @@ internal object CcTransitionOwner {
             val rootView = rootRef.get() ?: return
             val source = sourceViewRef.get() ?: return
             started = true
+            captureNativeChildren()
+            finalStatusIcons.addOnLayoutChangeListener(nativeMembershipListener)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
@@ -564,6 +590,8 @@ internal object CcTransitionOwner {
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
+            finalStatusIcons.removeOnLayoutChangeListener(nativeMembershipListener)
+            nativeChildren.clear()
             val rootView = rootRef.get()
             if (rootView?.viewTreeObserver?.isAlive == true) {
                 rootView.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
