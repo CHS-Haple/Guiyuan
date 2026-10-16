@@ -447,7 +447,6 @@ internal fun FeaturesScreen(
                 onValueChange = { visualRepo.setWifiWeight(it.roundToInt()) },
                 title = stringResource(R.string.wifi_weight),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                summary = stringResource(R.string.wifi_weight_summary),
                 valueText = stringResource(R.string.percent_value, visual.wifiWeight),
                 valueRange = WIFI_WEIGHT_MIN.toFloat()..WIFI_WEIGHT_MAX.toFloat(),
                 steps = 7,

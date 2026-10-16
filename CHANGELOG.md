@@ -9,6 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Added
+- Added bounded Wi-Fi stroke-weight adjustment for native regular, hotspot and no-internet variants with Control Center transition matching and profile-aware backup.
 - Added JSON backup and restore for feature settings, separate single/dual profiles and custom battery schemes, with versioned format and strict validation.
 - Added independent Wi-Fi and mobile-type vertical offsets for battery-centered layouts, preserving users' existing offset values.
 - Added companion-app interface scaling from 80% to 110% without changing system display scaling or the SystemUI renderer.
@@ -20,6 +21,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
 
 ### Fixed
+- Clarified Static Scope authorization wording; connection state is not displayed.
 - Suppressed scroll-end haptics on short secondary Settings pages without scrollable content.
 - Unregistered Control Center layout/pre-draw listeners from their registration observer during session cleanup, including when the View tree observer changes.
 - Invalidated cached Control Center mobile targets when an active single-display session observes changed direct native mobile roots after a global layout event.

@@ -83,7 +83,6 @@
     <string name="control_center_tint_transition_summary">展开控制中心时，将使用电量颜色的元素平滑过渡到系统原生图标颜色</string>
     <string name="wifi_size">Wi-Fi 大小</string>
     <string name="wifi_weight">Wi-Fi 粗细</string>
-    <string name="wifi_weight_summary">常规 Wi-Fi 生效，特殊图标保持原生</string>
     <string name="airplane_size">飞行模式大小</string>
     <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
