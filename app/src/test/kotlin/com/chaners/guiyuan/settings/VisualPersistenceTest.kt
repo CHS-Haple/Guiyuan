@@ -153,7 +153,7 @@ class VisualPersistenceTest {
         val snapshot = prefs.backupVisualSnapshot()
 
         val editor = prefs.editBackupVisuals()
-        editor.putVisualCfg(VisualCfg(combinedScale = 1.15f))
+        editor.putVisualCfg(VisualCfg(combinedScale = 0.95f))
         editor.putString(schemeKey, "Imported scheme")
         assertTrue(editor.commit())
 
@@ -161,7 +161,7 @@ class VisualPersistenceTest {
         assertEquals("normal", prefs.getString("preview_mode", null))
         assertEquals("granted", prefs.getString("root_permission", null))
         assertEquals("Imported scheme", prefs.getString(schemeKey, null))
-        assertEquals(1.15f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
+        assertEquals(0.95f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
 
         assertTrue(prefs.rollbackBackupVisuals(snapshot))
         assertEquals(before, prefs.all)
