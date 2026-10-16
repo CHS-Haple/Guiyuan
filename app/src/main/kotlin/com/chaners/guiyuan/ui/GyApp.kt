@@ -40,6 +40,8 @@ import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 internal fun GyApp(
@@ -51,6 +53,8 @@ internal fun GyApp(
     onHotReload: () -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
+    onColorSpecChange: (ThemeColorSpec?) -> Unit,
+    onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
@@ -63,6 +67,8 @@ internal fun GyApp(
     GyTheme(
         themeMode = appearance.theme,
         dynamicColorEnabled = appearance.dynamicColor,
+        colorSpec = appearance.colorSpec,
+        paletteStyle = appearance.paletteStyle,
     ) {
         var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
@@ -209,6 +215,8 @@ internal fun GyApp(
                     dark = dark,
                     onThemeChange = onThemeChange,
                     onDynamicChange = onDynamicChange,
+                    onColorSpecChange = onColorSpecChange,
+                    onPaletteStyleChange = onPaletteStyleChange,
                     onNavEnabledChange =
                         onNavEnabledChange,
                     onNavStyleChange =
@@ -231,6 +239,8 @@ internal fun GyApp(
                 GyTheme(
                     themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
                     dynamicColorEnabled = appearance.dynamicColor,
+                    colorSpec = appearance.colorSpec,
+                    paletteStyle = appearance.paletteStyle,
                 ) {
                     PreviewSandboxScreen(
                         state = previewState,
