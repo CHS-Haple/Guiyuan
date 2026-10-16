@@ -73,7 +73,7 @@
     <string name="home_preview_wifi_state_title">Wi‑Fi state</string>
     <string name="home_preview_wifi_connected">Connected</string>
     <string name="home_preview_wifi_no_internet">No internet</string>
-    <string name="home_preview_wifi_hotspot">Hotspot</string>
+    <string name="home_preview_wifi_hotspot">Hotspot Wi-Fi</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi signal</string>
 
     <string name="home_preview_signal_none">None</string>

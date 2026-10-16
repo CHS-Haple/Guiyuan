@@ -58,7 +58,7 @@
     <string name="mobile_follow_battery_color">移动信号跟随电量环颜色</string>
     <string name="mobile_follow_battery_color_summary">四点与叉号跟随电量环颜色</string>
     <string name="center_follow_battery_color">网络状态跟随电量环颜色</string>
-    <string name="center_follow_battery_color_summary">Wi-Fi、热点、移动制式、飞行模式和无 SIM 等跟随电量环颜色</string>
+    <string name="center_follow_battery_color_summary">Wi-Fi、移动制式、飞行模式和无 SIM 等跟随电量环颜色</string>
     <string name="appearance_title">外观</string>
     <string name="ui_scale_title">界面缩放</string>
     <string name="ui_scale_summary">调整归元界面的显示比例</string>

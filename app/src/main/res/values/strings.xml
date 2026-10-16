@@ -59,7 +59,7 @@
     <string name="mobile_follow_battery_color">Match mobile signal color to battery ring</string>
     <string name="mobile_follow_battery_color_summary">Signal dots and the unavailable mark follow the battery ring color</string>
     <string name="center_follow_battery_color">Match network status color to battery ring</string>
-    <string name="center_follow_battery_color_summary">Wi-Fi, hotspot, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
+    <string name="center_follow_battery_color_summary">Wi-Fi, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
     <string name="appearance_title">Appearance</string>
     <string name="ui_scale_title">Page Scale</string>
     <string name="ui_scale_summary">Adjust the Guiyuan interface scale.</string>
