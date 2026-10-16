@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -21,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -69,6 +72,8 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.ConfigBackup
+import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.topChargingIconUiScale
@@ -85,6 +90,8 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
@@ -95,6 +102,7 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun FeaturesScreen(
@@ -131,13 +139,89 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
+    val backupFiles = remember(context.applicationContext) {
+        ConfigBackupFiles(context.applicationContext)
+    }
+    val scope = rememberCoroutineScope()
+    val messageHost = remember { SnackbarHostState() }
+    var pendingImport by remember { mutableStateOf<ConfigBackup?>(null) }
+    var ioBusy by remember { mutableStateOf(false) }
+    val savedMsg = stringResource(R.string.config_backup_success)
+    val restoredMsg = stringResource(R.string.config_restore_success)
+    val saveError = stringResource(R.string.config_backup_failed)
+    val restoreError = stringResource(R.string.config_restore_failed)
+    val createDocument = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null && !ioBusy) {
+            ioBusy = true
+            scope.launch {
+                val result = runCatching { backupFiles.export(uri) }
+                ioBusy = false
+                messageHost.showSnackbar(if (result.isSuccess) savedMsg else saveError + ": " + result.exceptionOrNull()?.message.orEmpty())
+            }
+        }
+    }
+    val openDocument = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null && !ioBusy) {
+            ioBusy = true
+            scope.launch {
+                val result = runCatching { backupFiles.read(uri) }
+                ioBusy = false
+                if (result.isSuccess) {
+                    pendingImport = result.getOrThrow()
+                } else {
+                    messageHost.showSnackbar(restoreError + ": " + result.exceptionOrNull()?.message.orEmpty())
+                }
+            }
+        }
+    }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
     HubPage(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
+        snackbarHost = { SnackbarHost(state = messageHost) },
         overlay = {
+            pendingImport?.let { selected ->
+                OverlayDialog(
+                    title = stringResource(R.string.config_restore_title),
+                    summary = stringResource(R.string.config_restore_confirm, selected.appVersion, selected.createdAt),
+                    show = true,
+                    onDismissRequest = { if (!ioBusy) pendingImport = null },
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        TextButton(
+                            text = stringResource(R.string.cancel),
+                            modifier = Modifier.weight(1f),
+                            enabled = !ioBusy,
+                            onClick = { pendingImport = null },
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        TextButton(
+                            text = stringResource(R.string.restore),
+                            modifier = Modifier.weight(1f),
+                            enabled = !ioBusy,
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            onClick = {
+                                ioBusy = true
+                                scope.launch {
+                                    val result = runCatching { backupFiles.restore(selected) }
+                                    pendingImport = null
+                                    ioBusy = false
+                                    messageHost.showSnackbar(
+                                        if (result.getOrNull() == true) restoredMsg
+                                        else restoreError + ": " + result.exceptionOrNull()?.message.orEmpty(),
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
                 library = schemeLibrary,
@@ -590,12 +674,25 @@ internal fun FeaturesScreen(
         }
         Section(R.string.section_management) {
             BasicComponent(
+                title = stringResource(R.string.config_backup_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_download) },
+                summary = stringResource(R.string.config_backup_summary),
+                enabled = !ioBusy,
+                onClick = { createDocument.launch(backupFiles.fileName()) },
+            )
+            BasicComponent(
+                title = stringResource(R.string.config_restore_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_upload) },
+                summary = stringResource(R.string.config_restore_summary),
+                enabled = !ioBusy,
+                onClick = { openDocument.launch(arrayOf("application/json", "text/plain")) },
+            )
+            BasicComponent(
                 title = stringResource(R.string.restore_feature_defaults),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
                 summary = stringResource(R.string.restore_feature_defaults_summary),
                 onClick = { showResetDialog = true },
             )
-
         }
     }
 }
@@ -868,6 +965,7 @@ internal fun AnimatedPreferenceGroup(
 private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
+    snackbarHost: @Composable () -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -875,6 +973,7 @@ private fun HubPage(
     val topBarBackdrop = rememberTopBarBackdrop()
 
     Scaffold(
+        snackbarHost = snackbarHost,
         topBar = {
             MiuixBlurredTopBar(
                 backdrop = topBarBackdrop,
