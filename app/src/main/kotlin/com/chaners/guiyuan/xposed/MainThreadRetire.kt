@@ -25,8 +25,8 @@ internal class MainThreadRetire(
                     done.countDown()
                 }
             }
-        if (!post(task)) {
-            phase.compareAndSet(0, 2)
+        val posted = runCatching { post(task) }.getOrDefault(false)
+        if (!posted && phase.compareAndSet(0, 2)) {
             cancel(task)
             return false
         }
@@ -35,7 +35,7 @@ internal class MainThreadRetire(
         try {
             val completed =
                 try {
-                    done.await(waitMs, TimeUnit.MILLISECONDS)
+                    posted && done.await(waitMs, TimeUnit.MILLISECONDS)
                 } catch (_: InterruptedException) {
                     interrupted = true
                     false
