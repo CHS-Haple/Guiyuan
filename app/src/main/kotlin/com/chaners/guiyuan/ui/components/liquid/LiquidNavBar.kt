@@ -259,7 +259,7 @@ internal fun LiquidNavBar(
                             if (mode == LiquidMode.Clear) {
                                 colorControls(
                                     brightness = if (dark) -0.04f else 0.04f,
-                                    contrast = 0.92f,
+                                    saturation = 1.5f,
                                 )
                             } else {
                                 vibrancy()
@@ -315,7 +315,7 @@ internal fun LiquidNavBar(
                                 if (mode == LiquidMode.Clear) {
                                     colorControls(
                                         brightness = if (dark) -0.04f else 0.04f,
-                                        contrast = 0.92f,
+                                        saturation = 1.5f,
                                     )
                                 } else {
                                     vibrancy()
