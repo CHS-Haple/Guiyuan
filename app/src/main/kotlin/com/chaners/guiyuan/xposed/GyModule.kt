@@ -319,13 +319,15 @@ class GyModule : XposedModule() {
                     Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
                 }.getOrNull()
         if (restored == null) {
+            val unhookFailed = SysUiHotReload.releaseOldHooks(param)
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.complete",
                 component = "hotReload",
                 state = "unavailable",
                 "reason" to "saved-state-missing-or-unsupported-generation",
-                "statusHostHook" to "untouched",
+                "statusHostHook" to "released",
+                "staleUnhookFailed" to unhookFailed,
                 "restartScope" to true,
             )
             return
@@ -341,6 +343,7 @@ class GyModule : XposedModule() {
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
+            val unhookFailed = SysUiHotReload.releaseOldHooks(param)
             Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
@@ -348,6 +351,7 @@ class GyModule : XposedModule() {
                 component = "hotReload",
                 state = "error",
                 "reason" to (takeoverResult.exceptionOrNull()?.message ?: "status-host-hook-missing"),
+                "staleUnhookFailed" to unhookFailed,
                 "restartScope" to true,
             )
             return
