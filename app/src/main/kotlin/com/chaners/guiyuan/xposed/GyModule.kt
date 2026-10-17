@@ -312,6 +312,7 @@ class GyModule : XposedModule() {
             return
         }
         if (inSettings) return
+        val reloadEnteredAtMs = SystemClock.elapsedRealtime()
         rotateDiagnosticSession()
         val restored =
             runCatching { SysUiHotReload.restoreTransfer(param) }
@@ -332,6 +333,17 @@ class GyModule : XposedModule() {
             )
             return
         }
+
+        val preparedAtMs =
+            restored.state.getLong(SysUiHotReload.PREPARED_AT_MS, 0L)
+                .takeIf { it > 0L && it <= reloadEnteredAtMs }
+        logDiagnostic(
+            level = Log.INFO,
+            event = "hotReload.phase",
+            component = "hotReload",
+            state = "entered",
+            "fromOldPrepareMs" to preparedAtMs?.let { reloadEnteredAtMs - it },
+        )
 
         val takeoverResult =
             runCatching {
@@ -482,6 +494,8 @@ class GyModule : XposedModule() {
                             capture = capture,
                             restored = restored,
                             removedHooks = removed,
+                            reloadEnteredAtMs = reloadEnteredAtMs,
+                            preparedAtMs = preparedAtMs,
                         )
                     } else {
                         logDiagnostic(
@@ -532,8 +546,19 @@ class GyModule : XposedModule() {
         capture: SysUiHostRegistry.Capture,
         restored: HotReloadTransfer.Restored,
         removedHooks: Int,
+        reloadEnteredAtMs: Long,
+        preparedAtMs: Long?,
     ) {
         runCatching {
+            val mainEntryMs = SystemClock.elapsedRealtime()
+            logDiagnostic(
+                level = Log.INFO,
+                event = "hotReload.phase",
+                component = "hotReload",
+                state = "main-entry",
+                "fromNewEntryMs" to mainEntryMs - reloadEnteredAtMs,
+                "fromOldPrepareMs" to preparedAtMs?.let { mainEntryMs - it },
+            )
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
             val bindings =
@@ -623,6 +648,8 @@ class GyModule : XposedModule() {
                 source = "hotReloadRestore",
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
+                reloadEnteredAtMs = reloadEnteredAtMs,
+                preparedAtMs = preparedAtMs,
             )
 
             logDiagnostic(
@@ -3692,7 +3719,22 @@ class GyModule : XposedModule() {
         source: String,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
+        reloadEnteredAtMs: Long? = null,
+        preparedAtMs: Long? = null,
     ) {
+        fun traceReloadPhase(stage: String) {
+            val entered = reloadEnteredAtMs ?: return
+            val now = SystemClock.elapsedRealtime()
+            logDiagnostic(
+                level = Log.INFO,
+                event = "hotReload.phase",
+                component = "hotReload",
+                state = stage,
+                "fromNewEntryMs" to now - entered,
+                "fromOldPrepareMs" to preparedAtMs?.let { now - it },
+            )
+        }
+        var homeCutoverReported = false
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
             hostContext?.let { context ->
@@ -3868,12 +3910,23 @@ class GyModule : XposedModule() {
                 host = host,
                 onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
+                onFirstDraw = if (reloadEnteredAtMs != null) {
+                    { traceReloadPhase("home-drawn") }
+                } else {
+                    null
+                },
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
                 initialTintState = rendererInitialTintState,
                 allowLiveTintSeed = allowLiveTintSeed,
                 onPresentationReadinessChanged = { ready ->
                     onHomeReadyChanged(host, ready, source)
+                    if (reloadEnteredAtMs != null && ready && !homeCutoverReported &&
+                        HomeRenderSession.isOverlayShown()
+                    ) {
+                        homeCutoverReported = true
+                        traceReloadPhase("home-cutover")
+                    }
                 },
             )
         if (renderFailure == null) {

@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -9,6 +10,7 @@ import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
 
 internal object SysUiHotReload {
+    internal const val PREPARED_AT_MS = "guiyuan.hotReload.preparedElapsedMs"
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,
@@ -45,6 +47,9 @@ internal object SysUiHotReload {
             return PrepareResult.Unavailable("status-host-detached")
         }
         val snapshot = StatusStateStore.snapshot()
+        val savedState = StatusStateStore.exportHotReloadState().apply {
+            putLong(PREPARED_AT_MS, SystemClock.elapsedRealtime())
+        }
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
         val bindingStateReady =
@@ -64,7 +69,7 @@ internal object SysUiHotReload {
         val transfer =
             HotReloadTransfer.capture(
                 host = host,
-                state = StatusStateStore.exportHotReloadState(),
+                state = savedState,
                 bindings = SysUiNetworkSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.

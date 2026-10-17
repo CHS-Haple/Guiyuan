@@ -27,6 +27,7 @@ internal object HomeRenderSession {
         host: Any,
         onEvent: (String) -> Unit,
         onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
+        onFirstDraw: (() -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
@@ -68,6 +69,7 @@ internal object HomeRenderSession {
             batteryCarrier = batteryCarrier,
             onEvent = onEvent,
             onLatencySample = onLatencySample,
+            onFirstDraw = onFirstDraw,
             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             initialNativeHandoffActive = initialNativeHandoffActive,
             initialTintState = initialTintState,
@@ -216,6 +218,7 @@ internal object HomeRenderSession {
         batteryCarrier: View,
         private val onEvent: (String) -> Unit,
         private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
+        private val onFirstDraw: (() -> Unit)?,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         initialNativeHandoffActive: Boolean,
         private val initialTintState: TintState?,
@@ -228,8 +231,19 @@ internal object HomeRenderSession {
         private val statusIcons = WeakReference(statusIcons)
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
+        private var firstDrawReported = false
         private val probeView =
-            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
+            RenderView(
+                context = host.context,
+                onDrawn = onFirstDraw?.let { report ->
+                    { view: View ->
+                        if (!firstDrawReported && view.isShown) {
+                            firstDrawReported = true
+                            report()
+                        }
+                    }
+                },
+                onStateRendered = { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {
                     onLatencySample.invoke(sample)
                 } else {
@@ -239,7 +253,8 @@ internal object HomeRenderSession {
                             " scheduling=sameFramePreferred"
                     }
                 }
-            }
+                },
+            )
         private val renderController = RenderController(probeView)
         private var readyLogged = false
         private var layoutLogged = false
