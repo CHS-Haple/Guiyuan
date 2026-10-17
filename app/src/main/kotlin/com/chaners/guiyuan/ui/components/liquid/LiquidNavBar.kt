@@ -314,11 +314,16 @@ internal fun LiquidNavBar(
                             highlight = {
                                 Highlight.Default.copy(alpha = motion.pressProgress)
                             },
+                            // Avoid tinting the page along with the selected ink at rest.
                             onDrawBackdrop = { draw ->
-                                if (dark || mode != LiquidMode.Clear || motion.pressProgress > 0f) draw()
+                                if (dark || mode != LiquidMode.Clear || motion.pressProgress > 0f) {
+                                    draw()
+                                }
                             },
                             onDrawSurface = {
-                                if (dark || mode != LiquidMode.Clear || motion.pressProgress > 0f) drawRect(containerColor)
+                                if (dark || mode != LiquidMode.Clear || motion.pressProgress > 0f) {
+                                    drawRect(containerColor)
+                                }
                             },
                         )
                         .then(highlight.modifier)
