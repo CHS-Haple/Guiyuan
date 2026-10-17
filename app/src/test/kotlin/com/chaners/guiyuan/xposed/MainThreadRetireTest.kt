@@ -40,6 +40,32 @@ class MainThreadRetireTest {
     }
 
     @Test
+    fun alreadyCompletedTaskWinsOverFalsePostResult() {
+        var cleaned = false
+        val accepted =
+            MainThreadRetire(
+                post = { it.run(); false },
+                cancel = {},
+            ).run { cleaned = true }
+
+        assertTrue(accepted)
+        assertTrue(cleaned)
+    }
+
+    @Test
+    fun alreadyCompletedTaskWinsOverPostException() {
+        var cleaned = false
+        val accepted =
+            MainThreadRetire(
+                post = { it.run(); error("post reported failure") },
+                cancel = {},
+            ).run { cleaned = true }
+
+        assertTrue(accepted)
+        assertTrue(cleaned)
+    }
+
+    @Test
     fun cancelledQueueDoesNotRunAfterRefusal() {
         var queued: Runnable? = null
         val changed = AtomicInteger()
