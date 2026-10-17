@@ -3658,6 +3658,7 @@ class GyModule : XposedModule() {
         }
         release { NativeNetworkSuppressor.deactivate("hotReload-oldGeneration") }
         release { StatusBarStableSession.detach() }
+        release { NativeStatusInventory.detach() }
         release { SysUiCoreRuntime.detach() }
         release { SysUiPresentationRuntime.resetRuntimeState() }
         release { SysUiKeyguardHostResolver.resetRuntimeState() }
