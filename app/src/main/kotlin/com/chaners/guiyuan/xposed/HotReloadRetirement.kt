@@ -36,7 +36,13 @@ internal object HotReloadRetirement {
             }
         }
 
-        if (!post(task)) {
+        val posted =
+            try {
+                post(task)
+            } catch (_: RuntimeException) {
+                false
+            }
+        if (!posted) {
             phase.compareAndSet(Phase.QUEUED, Phase.CANCELLED)
             return Result.Unavailable
         }
