@@ -3640,7 +3640,7 @@ class GyModule : XposedModule() {
         // One failed participant must not leave the other old callbacks registered.
         val errors = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
-            runCatching(action).onFailure(errors::add)
+            runCatching(action).onFailure { errors.add(it) }
         }
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
