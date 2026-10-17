@@ -34,8 +34,8 @@ internal object SysUiAirplaneSource {
                 try {
                     resolver?.unregisterContentObserver(old)
                 } catch (error: Throwable) {
-                    onAirplaneMode = null
-                    onEvent = null
+                    this.onAirplaneMode = null
+                    this.onEvent = null
                     throw error
                 }
             }
