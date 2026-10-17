@@ -780,6 +780,7 @@ private fun MiniNavigationPreview(
                                 icon = icons[index],
                                 label = labels[index],
                                 dark = dark,
+                                mode = liquidMode,
                                 interactive = false,
                             )
                         }
