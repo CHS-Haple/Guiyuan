@@ -43,7 +43,20 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: work-apk-${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.event.issue.number }}
+  # A skipped comment must not cancel a real signed build before jobs.build.if runs.
+  group: >-
+    work-apk-${{ github.event_name == 'workflow_dispatch'
+        && format('branch-{0}', inputs.source_branch)
+        || (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request != null
+          && github.actor == github.repository_owner
+          && (github.event.comment.body == '/canary'
+            || github.event.comment.body == '/internal'
+            || (startsWith(github.event.comment.body, 'B')
+              && (endsWith(github.event.comment.body, ' Canary')
+                || endsWith(github.event.comment.body, ' Internal'))))
+          && format('pr-{0}', github.event.issue.number))
+        || format('skipped-{0}', github.run_id) }}
   cancel-in-progress: true
 
 jobs:
