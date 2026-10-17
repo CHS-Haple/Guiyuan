@@ -126,7 +126,10 @@ internal object SysUiConnectivitySource {
         if (subId != dataSubscriptionId || dataCallback == null) {
             dataTelephony?.let { telephony ->
                 dataCallback?.let { old ->
-                    runCatching { telephony.unregisterTelephonyCallback(old) }
+                    // Do not register another callback if the previous owner cannot leave.
+                    if (runCatching { telephony.unregisterTelephonyCallback(old) }.isFailure) {
+                        return
+                    }
                 }
             }
             dataCallback = null
@@ -160,9 +163,11 @@ internal object SysUiConnectivitySource {
 
     @Synchronized
     fun detach() {
+        val failures = ArrayList<Throwable>(2)
         dataTelephony?.let { telephony ->
             dataCallback?.let { old ->
                 runCatching { telephony.unregisterTelephonyCallback(old) }
+                    .onFailure(failures::add)
             }
         }
         dataTelephony = null
@@ -170,13 +175,23 @@ internal object SysUiConnectivitySource {
         dataContext = null
         onDataChanged = null
         dataSubscriptionId = -1
+
         val currentManager = manager
         val currentCallback = callback
         if (currentManager != null && currentCallback != null) {
             runCatching { currentManager.unregisterNetworkCallback(currentCallback) }
+                .onFailure { error ->
+                    // Android rejects a callback that was never registered.
+                    if (error !is IllegalArgumentException) failures += error
+                }
         }
         manager = null
         callback = null
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("connectivity-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 
     private fun mobileDataEnabled(context: Context): Boolean? {

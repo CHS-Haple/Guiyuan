@@ -28,13 +28,16 @@ internal object SysUiAirplaneSource {
         onAirplaneMode: (Boolean) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Boolean {
-        this.onAirplaneMode = onAirplaneMode
-        this.onEvent = onEvent
-
         val nextResolver = context.contentResolver
         if (resolver !== nextResolver || observer == null) {
             observer?.let { old ->
-                runCatching { resolver?.unregisterContentObserver(old) }
+                try {
+                    resolver?.unregisterContentObserver(old)
+                } catch (error: Throwable) {
+                    this.onAirplaneMode = null
+                    this.onEvent = null
+                    throw error
+                }
             }
             resolver = null
             observer = null
@@ -64,20 +67,25 @@ internal object SysUiAirplaneSource {
             observer = nextObserver
         }
 
+        this.onAirplaneMode = onAirplaneMode
+        this.onEvent = onEvent
         publish("seed")
         return observer != null
     }
 
     @Synchronized
     fun detach() {
-        observer?.let { currentObserver ->
-            runCatching { resolver?.unregisterContentObserver(currentObserver) }
+        try {
+            observer?.let { currentObserver ->
+                resolver?.unregisterContentObserver(currentObserver)
+            }
+            observer = null
+            resolver = null
+        } finally {
+            onAirplaneMode = null
+            onEvent = null
+            lastState = null
         }
-        observer = null
-        resolver = null
-        onAirplaneMode = null
-        onEvent = null
-        lastState = null
     }
 
     @Synchronized
