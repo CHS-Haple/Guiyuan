@@ -108,13 +108,13 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** keep the last completed snapshot in `GyApp`'s remembered state. On the first capture, display a MIUIX progress indicator and loading label until a snapshot exists. The summary and visible log rows then enter with the same Folme spring, a 28 dp upward reveal and progressive alpha, staggered by row without a separate delay. Existing entries remain visible during manual refresh, and the pull-to-refresh control supplies refresh feedback.
 
-## Hot Reload is a generation handoff
+## Hot Reload retires the old generation first
 
-**Decision:** Hot Reload replaces one bounded runtime generation with another rather than stacking hooks/owners or intentionally returning through an intermediate native cycle.
+**Decision:** Follow Modern Xposed API 102: cross-generation state contains no objects from the retiring ClassLoader, and old View/listener owners are released on the main thread before the old callback accepts reload.
 
-**Why:** duplicate generations and unnecessary restore/reacquire intervals create flashes, stale references and competing writers.
+**Why:** a deferred old-module callback can outlive the API handoff or be skipped on failure, leaving leaked callbacks and a competing presentation writer. The existing continuous handoff cannot override the framework contract.
 
-**Consequence:** old-generation state is released at the handoff boundary, new state re-resolves live hosts/resources, and normal detach/failure still restores only module-owned state.
+**Consequence:** restore only after old cleanup completes; native presentation may appear briefly between generations. A queued cleanup must be cancellable before refusal, while cleanup already running must finish before the callback returns. When the host or API contract is unavailable, decline reload without scheduling delayed teardown.
 
 ## Maintainability favors useful boundaries over uniform structure
 

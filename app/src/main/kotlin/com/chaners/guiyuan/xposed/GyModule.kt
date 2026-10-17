@@ -232,16 +232,7 @@ class GyModule : XposedModule() {
                 false
             }
         }
-        val prepared =
-            SysUiHotReload.prepare(
-                param = param,
-                generationHandoff =
-                    Runnable {
-                        teardownOldGeneration(
-                            continuousHandoff = true,
-                        )
-                    },
-            )
+        val prepared = SysUiHotReload.prepare(param)
         if (prepared is SysUiHotReload.PrepareResult.Unavailable) {
             logDiagnostic(
                 level = Log.WARN,
@@ -288,15 +279,24 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
-        logDiagnostic(
-            level = Log.INFO,
-            event = "hotReload.cleanup",
-            component = "hotReload",
-            state = "deferred-to-new-generation",
-            "homePresentation" to "retained-until-generation-handoff",
-            "controlCenterCompactReady" to prepared.controlCenterCompactReady,
-        )
-        return true
+        // The old module cannot outlive this API 102 callback with View listeners.
+        val retired =
+            runCatching {
+                SysUiHotReload.retireOnMain(::teardownOldGeneration)
+            }.onFailure { error ->
+                log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
+            }.getOrDefault(false)
+        if (!retired) {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "hotReload.cleanup",
+                component = "hotReload",
+                state = "unavailable",
+                "reason" to "main-thread-retirement-unavailable",
+                "restartScope" to true,
+            )
+        }
+        return retired
     }
 
     override fun onHotReloaded(param: HotReloadedParam) {
@@ -312,6 +312,7 @@ class GyModule : XposedModule() {
             return
         }
         if (inSettings) return
+        val reloadEnteredAtMs = SystemClock.elapsedRealtime()
         rotateDiagnosticSession()
         val restored =
             runCatching { SysUiHotReload.restoreTransfer(param) }
@@ -319,17 +320,30 @@ class GyModule : XposedModule() {
                     Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
                 }.getOrNull()
         if (restored == null) {
+            val unhookFailed = SysUiHotReload.releaseOldHooks(param)
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.complete",
                 component = "hotReload",
                 state = "unavailable",
                 "reason" to "saved-state-missing-or-unsupported-generation",
-                "statusHostHook" to "untouched",
+                "statusHostHook" to "released",
+                "staleUnhookFailed" to unhookFailed,
                 "restartScope" to true,
             )
             return
         }
+
+        val preparedAtMs =
+            restored.state.getLong(SysUiHotReload.PREPARED_AT_MS, 0L)
+                .takeIf { it > 0L && it <= reloadEnteredAtMs }
+        logDiagnostic(
+            level = Log.INFO,
+            event = "hotReload.phase",
+            component = "hotReload",
+            state = "entered",
+            "fromOldPrepareMs" to preparedAtMs?.let { reloadEnteredAtMs - it },
+        )
 
         val takeoverResult =
             runCatching {
@@ -341,6 +355,7 @@ class GyModule : XposedModule() {
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
+            val unhookFailed = SysUiHotReload.releaseOldHooks(param)
             Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
@@ -348,6 +363,7 @@ class GyModule : XposedModule() {
                 component = "hotReload",
                 state = "error",
                 "reason" to (takeoverResult.exceptionOrNull()?.message ?: "status-host-hook-missing"),
+                "staleUnhookFailed" to unhookFailed,
                 "restartScope" to true,
             )
             return
@@ -478,6 +494,8 @@ class GyModule : XposedModule() {
                             capture = capture,
                             restored = restored,
                             removedHooks = removed,
+                            reloadEnteredAtMs = reloadEnteredAtMs,
+                            preparedAtMs = preparedAtMs,
                         )
                     } else {
                         logDiagnostic(
@@ -528,8 +546,19 @@ class GyModule : XposedModule() {
         capture: SysUiHostRegistry.Capture,
         restored: HotReloadTransfer.Restored,
         removedHooks: Int,
+        reloadEnteredAtMs: Long,
+        preparedAtMs: Long?,
     ) {
         runCatching {
+            val mainEntryMs = SystemClock.elapsedRealtime()
+            logDiagnostic(
+                level = Log.INFO,
+                event = "hotReload.phase",
+                component = "hotReload",
+                state = "main-entry",
+                "fromNewEntryMs" to mainEntryMs - reloadEnteredAtMs,
+                "fromOldPrepareMs" to preparedAtMs?.let { mainEntryMs - it },
+            )
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
             val bindings =
@@ -587,7 +616,7 @@ class GyModule : XposedModule() {
                             error,
                         )
                     }
-                } ?: "legacy-pre-cleaned"
+                } ?: "retired-before-reload"
 
             logDiagnostic(
                 level = Log.INFO,
@@ -619,6 +648,8 @@ class GyModule : XposedModule() {
                 source = "hotReloadRestore",
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
+                reloadEnteredAtMs = reloadEnteredAtMs,
+                preparedAtMs = preparedAtMs,
             )
 
             logDiagnostic(
@@ -3621,9 +3652,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration(
-        continuousHandoff: Boolean = false,
-    ) {
+    private fun teardownOldGeneration() {
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -3638,42 +3667,51 @@ class GyModule : XposedModule() {
         aodRendererAttached = false
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
-        CcTransitionOwner.detach("hotReload-oldGeneration")
-        CcRenderSession.detach(
-            source = "hotReload-oldGeneration",
-            releaseNativePresentation = !continuousHandoff,
-        )
-        HomeRenderSession.detach()
-        KeyguardRenderSession.detach()
-        KeyguardRenderSession.detachAod()
-        val restoredPresentationViews =
-            SysUiPresentationOwner.releaseGenerationForHotReload(
-                requestLayout =
-                    !continuousHandoff,
-            )
-        NativeNetworkSuppressor.deactivate("hotReload-oldGeneration")
-        StatusBarStableSession.detach()
-        SysUiCoreRuntime.detach()
-        SysUiPresentationRuntime.resetRuntimeState()
-        SysUiKeyguardHostResolver.resetRuntimeState()
-        PresentationStore.reset()
-        SysUiIslandSource.resetRuntimeState()
-        SysUiCcSource.resetRuntimeState()
 
-        logDiagnostic(
-            level = Log.INFO,
-            event = "runtime.teardown",
-            component = "runtimeSession",
-            state = "released",
-            "source" to "hotReload.oldGeneration",
-            "homePresentationRestoredViews" to restoredPresentationViews,
-            "continuousHandoff" to continuousHandoff,
-            "intermediateRequestLayout" to
-                !continuousHandoff,
-        )
-        unbindRuntimeDiagnostics()
-        FeaturePrefsOwner.unbind()
-        VisualPrefsOwner.unbind()
+        // One failed participant must not leave the other old callbacks registered.
+        val errors = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            runCatching(action).onFailure { errors.add(it) }
+        }
+
+        release { CcTransitionOwner.detach("hotReload-oldGeneration") }
+        release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
+        release { HomeRenderSession.detach() }
+        release { KeyguardRenderSession.detach() }
+        release { KeyguardRenderSession.detachAod() }
+        var restoredViews: Int? = null
+        release {
+            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
+        }
+        release { NativeNetworkSuppressor.deactivate("hotReload-oldGeneration") }
+        release { StatusBarStableSession.detach() }
+        release { NativeStatusInventory.detach() }
+        release { SysUiCoreRuntime.detach() }
+        release { SysUiPresentationRuntime.resetRuntimeState() }
+        release { SysUiKeyguardHostResolver.resetRuntimeState() }
+        release { PresentationStore.reset() }
+        release { SysUiIslandSource.resetRuntimeState() }
+        release { SysUiCcSource.resetRuntimeState() }
+        release {
+            logDiagnostic(
+                level = if (errors.isEmpty()) Log.INFO else Log.ERROR,
+                event = "runtime.teardown",
+                component = "runtimeSession",
+                state = if (errors.isEmpty()) "released" else "error",
+                "source" to "hotReload.oldGeneration",
+                "homePresentationRestoredViews" to restoredViews,
+            )
+        }
+        release { unbindRuntimeDiagnostics() }
+        release { FeaturePrefsOwner.unbind() }
+        release { VisualPrefsOwner.unbind() }
+
+        if (errors.isNotEmpty()) {
+            val failure =
+                IllegalStateException("old-generation-cleanup-incomplete", errors.first())
+            errors.drop(1).forEach(failure::addSuppressed)
+            throw failure
+        }
     }
 
     private fun attachHostRuntime(
@@ -3681,7 +3719,22 @@ class GyModule : XposedModule() {
         source: String,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
+        reloadEnteredAtMs: Long? = null,
+        preparedAtMs: Long? = null,
     ) {
+        fun traceReloadPhase(stage: String) {
+            val entered = reloadEnteredAtMs ?: return
+            val now = SystemClock.elapsedRealtime()
+            logDiagnostic(
+                level = Log.INFO,
+                event = "hotReload.phase",
+                component = "hotReload",
+                state = stage,
+                "fromNewEntryMs" to now - entered,
+                "fromOldPrepareMs" to preparedAtMs?.let { now - it },
+            )
+        }
+        var homeCutoverReported = false
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
             hostContext?.let { context ->
@@ -3857,12 +3910,23 @@ class GyModule : XposedModule() {
                 host = host,
                 onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
+                onFirstDraw = if (reloadEnteredAtMs != null) {
+                    { traceReloadPhase("home-drawn") }
+                } else {
+                    null
+                },
                 isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
                 initialTintState = rendererInitialTintState,
                 allowLiveTintSeed = allowLiveTintSeed,
                 onPresentationReadinessChanged = { ready ->
                     onHomeReadyChanged(host, ready, source)
+                    if (reloadEnteredAtMs != null && ready && !homeCutoverReported &&
+                        HomeRenderSession.isOverlayShown()
+                    ) {
+                        homeCutoverReported = true
+                        traceReloadPhase("home-cutover")
+                    }
                 },
             )
         if (renderFailure == null) {
