@@ -314,8 +314,11 @@ internal fun LiquidNavBar(
                             highlight = {
                                 Highlight.Default.copy(alpha = motion.pressProgress)
                             },
+                            onDrawBackdrop = { draw ->
+                                if (motion.pressProgress > 0f) draw()
+                            },
                             onDrawSurface = {
-                                drawRect(containerColor)
+                                if (motion.pressProgress > 0f) drawRect(containerColor)
                             },
                         )
                         .then(highlight.modifier)
