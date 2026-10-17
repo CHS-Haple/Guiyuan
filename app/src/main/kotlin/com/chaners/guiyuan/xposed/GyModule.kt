@@ -334,13 +334,17 @@ class GyModule : XposedModule() {
                     Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
                 }.getOrNull()
         if (restored == null) {
+            param.oldHookHandles.forEach { handle ->
+                runCatching { handle.unhook() }
+                    .onFailure { log(Log.WARN, TAG, "Failed to release stale hook", it) }
+            }
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.complete",
                 component = "hotReload",
                 state = "unavailable",
                 "reason" to "saved-state-missing-or-unsupported-generation",
-                "statusHostHook" to "untouched",
+                "statusHostHook" to "released",
                 "restartScope" to true,
             )
             return
@@ -356,6 +360,10 @@ class GyModule : XposedModule() {
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
+            param.oldHookHandles.forEach { handle ->
+                runCatching { handle.unhook() }
+                    .onFailure { log(Log.WARN, TAG, "Failed to release stale hook", it) }
+            }
             Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
