@@ -154,6 +154,8 @@ internal fun BatteryColorBottomSheet(
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
+        // The overview has no text inputs. Upstream imePadding sits outside the sheet surface.
+        defaultWindowInsetsPadding = false,
         startAction = {
             Spacer(
                 modifier =
