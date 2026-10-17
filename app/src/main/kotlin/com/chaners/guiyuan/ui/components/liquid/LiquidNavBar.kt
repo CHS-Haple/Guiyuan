@@ -274,7 +274,13 @@ internal fun LiquidNavBar(
                             scaleY = scale
                         },
                         onDrawSurface = {
-                            drawRect(containerColor)
+                            drawRect(
+                                if (!dark && mode == LiquidMode.Clear) {
+                                    containerColor.copy(alpha = 0.28f)
+                                } else {
+                                    containerColor
+                                },
+                            )
                         },
                     )
                     .then(highlight.modifier)
