@@ -31,9 +31,6 @@ internal object SysUiDefaultDataSubSource {
         onChanged: (Int) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Boolean {
-        this.onChanged = onChanged
-        this.onEvent = onEvent
-
         val appContext = context.applicationContext
         if (registeredContext !== appContext || receiver == null) {
             unregisterReceiver()
@@ -74,6 +71,9 @@ internal object SysUiDefaultDataSubSource {
             }
         }
 
+        this.onChanged = onChanged
+        this.onEvent = onEvent
+
         // Keep the seed even when registration fails, without retaining its callbacks.
         try {
             publish(
@@ -91,11 +91,14 @@ internal object SysUiDefaultDataSubSource {
 
     @Synchronized
     fun detach() {
-        unregisterReceiver()
-        onChanged = null
-        onEvent = null
-        currentSubscriptionId =
-            SubscriptionManager.INVALID_SUBSCRIPTION_ID
+        try {
+            unregisterReceiver()
+        } finally {
+            onChanged = null
+            onEvent = null
+            currentSubscriptionId =
+                SubscriptionManager.INVALID_SUBSCRIPTION_ID
+        }
     }
 
     @Synchronized
@@ -124,9 +127,7 @@ internal object SysUiDefaultDataSubSource {
         val context = registeredContext
         val currentReceiver = receiver
         if (context != null && currentReceiver != null) {
-            runCatching {
-                context.unregisterReceiver(currentReceiver)
-            }
+            context.unregisterReceiver(currentReceiver)
         }
         receiver = null
         registeredContext = null

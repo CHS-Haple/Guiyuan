@@ -47,8 +47,15 @@ internal object SysUiCoreRuntime {
 
     @Synchronized
     fun detach() {
-        SysUiConnectivitySource.detach()
-        SysUiDefaultDataSubSource.detach()
-        SysUiAirplaneSource.detach()
+        // Each system callback must be released even if a sibling release fails.
+        val failures = ArrayList<Throwable>(1)
+        runCatching { SysUiConnectivitySource.detach() }.onFailure(failures::add)
+        runCatching { SysUiDefaultDataSubSource.detach() }.onFailure(failures::add)
+        runCatching { SysUiAirplaneSource.detach() }.onFailure(failures::add)
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("core-source-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 }
