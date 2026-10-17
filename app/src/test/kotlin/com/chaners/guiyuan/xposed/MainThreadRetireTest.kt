@@ -23,6 +23,23 @@ class MainThreadRetireTest {
     }
 
     @Test
+    fun dispatchReportsFailureAfterQueueingCannotRetireLater() {
+        var queued: Runnable? = null
+        var cleaned = false
+        var canceled = false
+        val retired =
+            MainThreadRetire(
+                post = { queued = it; false },
+                cancel = { canceled = true },
+            ).run { cleaned = true }
+
+        assertFalse(retired)
+        assertTrue(canceled)
+        queued!!.run()
+        assertFalse(cleaned)
+    }
+
+    @Test
     fun cancelledQueueDoesNotRunAfterRefusal() {
         var queued: Runnable? = null
         val changed = AtomicInteger()
