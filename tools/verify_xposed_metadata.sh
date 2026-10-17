@@ -35,22 +35,20 @@ for apk in "$@"; do
   fi
 
   module_prop="$(unzip -p "$apk" META-INF/xposed/module.prop)"
-  for entry in "targetApiVersion=102" "autoHotReload=true"; do
+  for entry in "minApiVersion=102" "targetApiVersion=102" "staticScope=true" "exceptionMode=protective" "autoHotReload=true"; do
     if ! grep -Fxq "$entry" <<< "$module_prop"; then
       echo "Missing Xposed module property in $apk: $entry" >&2
       exit 1
     fi
   done
 
-  java_entry_count="$(
+  java_entry="$(
     unzip -p "$apk" META-INF/xposed/java_init.list |
       tr -d '\r' |
-      sed '/^[[:space:]]*$/d' |
-      wc -l |
-      tr -d ' '
+      sed '/^[[:space:]]*$/d'
   )"
-  if [[ "$java_entry_count" != "1" ]]; then
-    echo "Hot reload requires exactly one Java entry class in $apk." >&2
+  if [[ "$java_entry" != "com.chaners.guiyuan.xposed.GyModule" ]]; then
+    echo "Hot reload requires only the GyModule Java entry class in $apk." >&2
     exit 1
   fi
 done
