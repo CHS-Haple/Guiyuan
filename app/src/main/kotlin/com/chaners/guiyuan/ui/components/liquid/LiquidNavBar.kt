@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import top.yukonga.miuix.kmp.theme.LocalTextStyles
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
@@ -74,6 +73,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalTextStyles
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.sign
@@ -458,16 +458,17 @@ internal fun RowScope.LiquidNavEntry(
     interactive: Boolean = true,
 ) {
     val contentColor = if (dark) Color.White else Color.Black
+    val textStyle = LocalTextStyles.current.main
     val labelStyle =
-        LocalTextStyles.current.main.let { style ->
-            if (mode == LiquidMode.Clear) {
-                style.copy(
-                    shadow = Shadow(
-                        color = if (dark) Color.Black else Color.White,
-                        blurRadius = 3f,
-                    ),
-                )
-            } else style
+        if (mode == LiquidMode.Clear) {
+            textStyle.copy(
+                shadow = Shadow(
+                    color = if (dark) Color.Black else Color.White,
+                    blurRadius = 3f,
+                ),
+            )
+        } else {
+            textStyle
         }
     LiquidNavItem(onClick = onClick, interactive = interactive) {
         Icon(
