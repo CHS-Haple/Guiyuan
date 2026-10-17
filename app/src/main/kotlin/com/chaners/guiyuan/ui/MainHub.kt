@@ -268,6 +268,7 @@ internal fun MainHub(
                                     icon = item.icon,
                                     label = item.label,
                                     dark = dark,
+                                    mode = appearance.liquidMode,
                                 )
                             }
                         }
