@@ -104,7 +104,6 @@ internal fun AppearanceScreen(
         stringResource(R.string.theme_color_spec_system),
         "Spec2021",
         "Spec2025",
-        "Spec2026",
     )
     val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
     val paletteNames = mapOf(
