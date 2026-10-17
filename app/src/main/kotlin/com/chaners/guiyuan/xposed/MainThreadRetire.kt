@@ -2,7 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 // Only a queued cleanup may be cancelled; one already mutating Views must finish.
 internal class MainThreadRetire(
@@ -10,13 +10,15 @@ internal class MainThreadRetire(
     private val cancel: (Runnable) -> Unit,
     private val waitMs: Long = 5_000L,
 ) {
+    private enum class Phase { Queued, Running, Cancelled }
+
     fun run(cleanup: () -> Unit): Boolean {
-        val phase = AtomicInteger(0) // queued / running / cancelled
+        val phase = AtomicReference(Phase.Queued)
         val done = CountDownLatch(1)
         var failure: Throwable? = null
         val task =
             Runnable {
-                if (!phase.compareAndSet(0, 1)) return@Runnable
+                if (!phase.compareAndSet(Phase.Queued, Phase.Running)) return@Runnable
                 try {
                     cleanup()
                 } catch (error: Throwable) {
@@ -26,7 +28,7 @@ internal class MainThreadRetire(
                 }
             }
         val posted = runCatching { post(task) }.getOrDefault(false)
-        if (!posted && phase.compareAndSet(0, 2)) {
+        if (!posted && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
             cancel(task)
             return false
         }
@@ -40,7 +42,7 @@ internal class MainThreadRetire(
                     interrupted = true
                     false
                 }
-            if (!completed && phase.compareAndSet(0, 2)) {
+            if (!completed && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
                 cancel(task)
                 return false
             }
