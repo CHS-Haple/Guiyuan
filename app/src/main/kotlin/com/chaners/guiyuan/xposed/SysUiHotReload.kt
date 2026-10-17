@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -30,7 +32,6 @@ internal object SysUiHotReload {
 
     fun prepare(
         param: HotReloadingParam,
-        generationHandoff: Runnable,
     ): PrepareResult {
         if (!SysUiHostHook.isReady) {
             return PrepareResult.Unavailable("status-host-hook-not-ready")
@@ -76,7 +77,6 @@ internal object SysUiHotReload {
                 controlCenterFakeHost =
                     CcRenderSession.hotReloadHost(),
                 controlCenterCompactReady = controlCenterCompactReady,
-                generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
                 wifiRoots = bindingCounts.first,
@@ -100,6 +100,16 @@ internal object SysUiHotReload {
             tintTransferred = stableTint != null,
             controlCenterCompactReady = controlCenterCompactReady,
         )
+    }
+
+    fun retireOnMain(cleanup: () -> Unit): Boolean {
+        val main = Looper.getMainLooper()
+        if (Looper.myLooper() === main) {
+            cleanup()
+            return true
+        }
+        val handler = Handler(main)
+        return MainThreadRetire(handler::post, handler::removeCallbacks).run(cleanup)
     }
 
     fun takeOverHooks(
