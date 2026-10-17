@@ -37,6 +37,24 @@ class HotReloadRetirementTest {
     }
 
     @Test
+    fun postingExceptionCannotLeaveLateCleanup() {
+        var queued: Runnable? = null
+        var cleaned = false
+        val result =
+            HotReloadRetirement.run(
+                post = { task ->
+                    queued = task
+                    throw IllegalStateException("unavailable dispatcher")
+                },
+                retire = { cleaned = true },
+                queueWaitMs = 1L,
+            )
+        assertEquals(HotReloadRetirement.Result.Unavailable, result)
+        queued!!.run()
+        assertFalse(cleaned)
+    }
+
+    @Test
     fun completedRetirementIsAcknowledged() {
         var cleaned = false
         val result =
@@ -74,7 +92,7 @@ class HotReloadRetirementTest {
                         workerStarted.countDown()
                         releaseCleanup.await()
                     },
-                    queueWaitMs = 10L,
+                    queueWaitMs = 2_000L,
                 ),
             )
         }
