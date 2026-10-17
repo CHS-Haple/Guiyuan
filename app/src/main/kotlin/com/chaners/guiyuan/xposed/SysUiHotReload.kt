@@ -112,6 +112,11 @@ internal object SysUiHotReload {
         return MainThreadRetire(handler::post, handler::removeCallbacks).run(cleanup)
     }
 
+    fun releaseOldHooks(param: HotReloadedParam): Int =
+        param.oldHookHandles.count { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+
     fun takeOverHooks(
         param: HotReloadedParam,
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
@@ -119,9 +124,7 @@ internal object SysUiHotReload {
         val oldHandles = param.oldHookHandles
         val hostHandle = SysUiHostHook.findOwnedHandle(oldHandles)
             ?: run {
-                val failed = oldHandles.count { handle ->
-                    runCatching { handle.unhook() }.isFailure
-                }
+                val failed = releaseOldHooks(param)
                 if (failed > 0) {
                     error("status-host-hook-missing-cleanup-failed:$failed")
                 }
