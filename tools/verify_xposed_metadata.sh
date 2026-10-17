@@ -42,13 +42,15 @@ for apk in "$@"; do
     fi
   done
 
-  java_entry="$(
+  java_entry_count="$(
     unzip -p "$apk" META-INF/xposed/java_init.list |
       tr -d '\r' |
-      sed '/^[[:space:]]*$/d'
+      sed '/^[[:space:]]*$/d' |
+      wc -l |
+      tr -d ' '
   )"
-  if [[ "$java_entry" != "com.chaners.guiyuan.xposed.GyModule" ]]; then
-    echo "Hot reload requires only the GyModule Java entry class in $apk." >&2
+  if [[ "$java_entry_count" != "1" ]]; then
+    echo "Hot reload requires exactly one Java entry class in $apk." >&2
     exit 1
   fi
 done
