@@ -30,7 +30,6 @@ internal object SysUiHotReload {
 
     fun prepare(
         param: HotReloadingParam,
-        generationHandoff: Runnable,
     ): PrepareResult {
         if (!SysUiHostHook.isReady) {
             return PrepareResult.Unavailable("status-host-hook-not-ready")
@@ -76,7 +75,6 @@ internal object SysUiHotReload {
                 controlCenterFakeHost =
                     CcRenderSession.hotReloadHost(),
                 controlCenterCompactReady = controlCenterCompactReady,
-                generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
                 wifiRoots = bindingCounts.first,
