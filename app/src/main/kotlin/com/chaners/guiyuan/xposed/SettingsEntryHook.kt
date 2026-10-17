@@ -7,8 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.LayerDrawable
-import android.view.Gravity
 import android.widget.ImageView
 import com.chaners.guiyuan.R
 import android.content.Context
@@ -173,12 +171,11 @@ internal object SettingsEntryHook {
         val size = (if (dimen != 0) context.resources.getDimensionPixelSize(dimen)
             else (28 * context.resources.displayMetrics.density).toInt()).coerceAtLeast(1)
         if (style == SettingsEntryIcon.Rounded) {
-            // Settings uses the drawable's intrinsic size for this header row.
             val icon = app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
-            return LayerDrawable(arrayOf(icon)).apply {
-                setLayerSize(0, size, size)
-                setLayerGravity(0, Gravity.CENTER)
-            }
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            icon.setBounds(0, 0, size, size)
+            icon.draw(Canvas(bitmap))
+            return BitmapDrawable(context.resources, bitmap)
         }
 
         val foreground = app.getDrawable(R.drawable.ic_launcher_foreground)?.mutate()
