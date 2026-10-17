@@ -20,9 +20,9 @@ class AppearanceTest {
     }
 
     @Test
-    fun specPaletteCompatibilityContainsExactlyEighteenOptions() {
+    fun paletteChoicesMatchNewMiuixSpecs() {
         assertEquals(
-            listOf(9, 4, 5),
+            listOf(9, 5),
             ThemeColorSpec.entries.map { palettesFor(it).size },
         )
         assertEquals(
@@ -31,18 +31,25 @@ class AppearanceTest {
                 ThemePaletteStyle.Neutral,
                 ThemePaletteStyle.Vibrant,
                 ThemePaletteStyle.Expressive,
+                ThemePaletteStyle.Cmf,
             ),
             palettesFor(ThemeColorSpec.Spec2025),
         )
-        assertTrue(ThemePaletteStyle.Cmf in palettesFor(ThemeColorSpec.Spec2026))
         assertFalse(ThemePaletteStyle.Cmf in palettesFor(ThemeColorSpec.Spec2021))
-        assertFalse(ThemePaletteStyle.Rainbow in palettesFor(ThemeColorSpec.Spec2026))
+        assertFalse(ThemePaletteStyle.Rainbow in palettesFor(ThemeColorSpec.Spec2025))
+    }
+
+    @Test
+    fun legacySpec2026KeepsTheCmfPalette() {
+        val spec = decodeColorSpec("Spec2026")
+        assertEquals(ThemeColorSpec.Spec2025, spec)
+        assertEquals(ThemePaletteStyle.Cmf, compatiblePalette(spec, ThemePaletteStyle.Cmf))
     }
 
     @Test
     fun incompatiblePalettesNormalizeWithoutChangingTheSystemSetting() {
         assertEquals(
-            ThemePaletteStyle.TonalSpot,
+            ThemePaletteStyle.Cmf,
             compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Cmf),
         )
         assertEquals(
@@ -50,8 +57,8 @@ class AppearanceTest {
             compatiblePalette(ThemeColorSpec.Spec2021, ThemePaletteStyle.Cmf),
         )
         assertEquals(
-            ThemePaletteStyle.Cmf,
-            compatiblePalette(ThemeColorSpec.Spec2026, ThemePaletteStyle.Cmf),
+            ThemePaletteStyle.TonalSpot,
+            compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Rainbow),
         )
         assertEquals(
             ThemePaletteStyle.Cmf,

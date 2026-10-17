@@ -37,12 +37,13 @@ internal fun palettesFor(spec: ThemeColorSpec): List<ThemePaletteStyle> = when (
         ThemePaletteStyle.Fidelity,
         ThemePaletteStyle.Content,
     )
-    ThemeColorSpec.Spec2025 -> modernPalettes
-    ThemeColorSpec.Spec2026 -> modernPalettes + ThemePaletteStyle.Cmf
+    // CMF always uses its own 2026 scheme in newer MIUIX.
+    ThemeColorSpec.Spec2025 -> modernPalettes + ThemePaletteStyle.Cmf
 }
 
 internal fun decodeColorSpec(value: String?): ThemeColorSpec? =
-    ThemeColorSpec.entries.firstOrNull { it.name == value }
+    if (value == "Spec2026") ThemeColorSpec.Spec2025
+    else ThemeColorSpec.entries.firstOrNull { it.name == value }
 
 internal fun decodePalette(value: String?): ThemePaletteStyle =
     ThemePaletteStyle.entries.firstOrNull { it.name == value } ?: ThemePaletteStyle.TonalSpot
