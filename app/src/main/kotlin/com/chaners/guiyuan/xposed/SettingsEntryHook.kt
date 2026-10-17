@@ -7,6 +7,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
+import android.view.Gravity
 import android.widget.ImageView
 import com.chaners.guiyuan.R
 import android.content.Context
@@ -165,16 +167,20 @@ internal object SettingsEntryHook {
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
         val app = context.createPackageContext(MODULE_PKG, 0)
-        if (style == SettingsEntryIcon.Rounded) {
-            // Let Settings render the installed adaptive icon at the target ImageView size.
-            return app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
-        }
-
         val dimen = context.resources.getIdentifier(
             "header_icon_size", "dimen", "com.android.settings",
         )
         val size = (if (dimen != 0) context.resources.getDimensionPixelSize(dimen)
             else (28 * context.resources.displayMetrics.density).toInt()).coerceAtLeast(1)
+        if (style == SettingsEntryIcon.Rounded) {
+            // Settings uses the drawable's intrinsic size for this header row.
+            val icon = app.packageManager.getApplicationIcon(MODULE_PKG).mutate()
+            return LayerDrawable(arrayOf(icon)).apply {
+                setLayerSize(0, size, size)
+                setLayerGravity(0, Gravity.CENTER)
+            }
+        }
+
         val foreground = app.getDrawable(R.drawable.ic_launcher_foreground)?.mutate()
             ?: return null
         val attrs = context.obtainStyledAttributes(intArrayOf(android.R.attr.textColorPrimary))
