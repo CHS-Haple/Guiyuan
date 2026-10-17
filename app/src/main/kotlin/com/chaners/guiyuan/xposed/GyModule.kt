@@ -232,16 +232,7 @@ class GyModule : XposedModule() {
                 false
             }
         }
-        val prepared =
-            SysUiHotReload.prepare(
-                param = param,
-                generationHandoff =
-                    Runnable {
-                        teardownOldGeneration(
-                            continuousHandoff = true,
-                        )
-                    },
-            )
+        val prepared = SysUiHotReload.prepare(param)
         if (prepared is SysUiHotReload.PrepareResult.Unavailable) {
             logDiagnostic(
                 level = Log.WARN,
@@ -288,12 +279,36 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
+        val cleanup =
+            if (Looper.myLooper() === Looper.getMainLooper()) {
+                runCatching { teardownOldGeneration() }
+                    .fold(
+                        onSuccess = { HotReloadRetirement.Result.Complete },
+                        onFailure = { HotReloadRetirement.Result.Failed(it) },
+                    )
+            } else {
+                HotReloadRetirement.run(
+                    post = { task -> Handler(Looper.getMainLooper()).post(task) },
+                    retire = { teardownOldGeneration() },
+                )
+            }
+        if (cleanup != HotReloadRetirement.Result.Complete) {
+            logDiagnostic(
+                level = Log.ERROR,
+                event = "hotReload.cleanup",
+                component = "hotReload",
+                state = "unavailable",
+                "reason" to cleanup.toString(),
+                "restartScope" to true,
+            )
+            return false
+        }
         logDiagnostic(
             level = Log.INFO,
             event = "hotReload.cleanup",
             component = "hotReload",
-            state = "deferred-to-new-generation",
-            "homePresentation" to "retained-until-generation-handoff",
+            state = "released-before-accept",
+            "homePresentation" to "native-until-new-generation",
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
         return true
