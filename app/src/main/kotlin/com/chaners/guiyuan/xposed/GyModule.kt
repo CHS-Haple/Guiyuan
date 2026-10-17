@@ -232,16 +232,7 @@ class GyModule : XposedModule() {
                 false
             }
         }
-        val prepared =
-            SysUiHotReload.prepare(
-                param = param,
-                generationHandoff =
-                    Runnable {
-                        teardownOldGeneration(
-                            continuousHandoff = true,
-                        )
-                    },
-            )
+        val prepared = SysUiHotReload.prepare(param)
         if (prepared is SysUiHotReload.PrepareResult.Unavailable) {
             logDiagnostic(
                 level = Log.WARN,
@@ -288,15 +279,24 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
-        logDiagnostic(
-            level = Log.INFO,
-            event = "hotReload.cleanup",
-            component = "hotReload",
-            state = "deferred-to-new-generation",
-            "homePresentation" to "retained-until-generation-handoff",
-            "controlCenterCompactReady" to prepared.controlCenterCompactReady,
-        )
-        return true
+        // The old module cannot outlive this API 102 callback with View listeners.
+        val retired =
+            runCatching {
+                SysUiHotReload.retireOnMain(::teardownOldGeneration)
+            }.onFailure { error ->
+                log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
+            }.getOrDefault(false)
+        if (!retired) {
+            logDiagnostic(
+                level = Log.WARN,
+                event = "hotReload.cleanup",
+                component = "hotReload",
+                state = "unavailable",
+                "reason" to "main-thread-retirement-unavailable",
+                "restartScope" to true,
+            )
+        }
+        return retired
     }
 
     override fun onHotReloaded(param: HotReloadedParam) {
@@ -587,7 +587,7 @@ class GyModule : XposedModule() {
                             error,
                         )
                     }
-                } ?: "legacy-pre-cleaned"
+                } ?: "retired-before-reload"
 
             logDiagnostic(
                 level = Log.INFO,
@@ -3621,9 +3621,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration(
-        continuousHandoff: Boolean = false,
-    ) {
+    private fun teardownOldGeneration() {
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -3639,18 +3637,12 @@ class GyModule : XposedModule() {
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
         CcTransitionOwner.detach("hotReload-oldGeneration")
-        CcRenderSession.detach(
-            source = "hotReload-oldGeneration",
-            releaseNativePresentation = !continuousHandoff,
-        )
+        CcRenderSession.detach(source = "hotReload-oldGeneration")
         HomeRenderSession.detach()
         KeyguardRenderSession.detach()
         KeyguardRenderSession.detachAod()
         val restoredPresentationViews =
-            SysUiPresentationOwner.releaseGenerationForHotReload(
-                requestLayout =
-                    !continuousHandoff,
-            )
+            SysUiPresentationOwner.releaseGenerationForHotReload()
         NativeNetworkSuppressor.deactivate("hotReload-oldGeneration")
         StatusBarStableSession.detach()
         SysUiCoreRuntime.detach()
@@ -3667,9 +3659,6 @@ class GyModule : XposedModule() {
             state = "released",
             "source" to "hotReload.oldGeneration",
             "homePresentationRestoredViews" to restoredPresentationViews,
-            "continuousHandoff" to continuousHandoff,
-            "intermediateRequestLayout" to
-                !continuousHandoff,
         )
         unbindRuntimeDiagnostics()
         FeaturePrefsOwner.unbind()
