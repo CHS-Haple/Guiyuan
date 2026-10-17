@@ -239,20 +239,20 @@ internal object HomeRenderSession {
                     { view: View ->
                         if (!firstDrawReported && view.isShown) {
                             firstDrawReported = true
-                            report()
+                            runCatching(report)
                         }
                     }
                 },
                 onStateRendered = { latencyMs, committedOnMainThread, sample ->
-                if (sample != null && onLatencySample != null) {
-                    onLatencySample.invoke(sample)
-                } else {
-                    emitEvent {
-                        "homeRenderLatency stateToDrawMs=" + latencyMs +
-                            " commitMainThread=" + committedOnMainThread +
-                            " scheduling=sameFramePreferred"
+                    if (sample != null && onLatencySample != null) {
+                        onLatencySample.invoke(sample)
+                    } else {
+                        emitEvent {
+                            "homeRenderLatency stateToDrawMs=" + latencyMs +
+                                " commitMainThread=" + committedOnMainThread +
+                                " scheduling=sameFramePreferred"
+                        }
                     }
-                }
                 },
             )
         private val renderController = RenderController(probeView)
