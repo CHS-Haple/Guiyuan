@@ -141,6 +141,7 @@ internal fun LiquidNavBar(
             Color(0xFFFAFAFA).copy(alpha = params.surfaceAlpha)
         }
     val tabsBackdrop = rememberLayerBackdrop()
+    val clearGlass = if (mode == LiquidMode.Clear) rememberLayerBackdrop() else null
 
     BoxWithConstraints(
         modifier = modifier,
@@ -254,6 +255,7 @@ internal fun LiquidNavBar(
                     .drawBackdrop(
                         backdrop = backdrop,
                         shape = { Capsule() },
+                        exportedBackdrop = clearGlass,
                         effects = {
                             vibrancy()
                             blur(params.blur.toPx())
@@ -299,23 +301,29 @@ internal fun LiquidNavBar(
                         .graphicsLayer {
                             translationX = panelOffset
                         }
-                        .drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { Capsule() },
-                            effects = {
-                                val progress = motion.pressProgress
-                                vibrancy()
-                                blur(params.blur.toPx())
-                                lens(
-                                    params.refractionHeight.toPx() * progress,
-                                    params.refractionAmount.toPx() * progress,
+                        .then(
+                            if (mode == LiquidMode.Clear) {
+                                Modifier
+                            } else {
+                                Modifier.drawBackdrop(
+                                    backdrop = backdrop,
+                                    shape = { Capsule() },
+                                    effects = {
+                                        val progress = motion.pressProgress
+                                        vibrancy()
+                                        blur(params.blur.toPx())
+                                        lens(
+                                            params.refractionHeight.toPx() * progress,
+                                            params.refractionAmount.toPx() * progress,
+                                        )
+                                    },
+                                    highlight = {
+                                        Highlight.Default.copy(alpha = motion.pressProgress)
+                                    },
+                                    onDrawSurface = {
+                                        drawRect(containerColor)
+                                    },
                                 )
-                            },
-                            highlight = {
-                                Highlight.Default.copy(alpha = motion.pressProgress)
-                            },
-                            onDrawSurface = {
-                                drawRect(containerColor)
                             },
                         )
                         .then(highlight.modifier)
@@ -347,7 +355,7 @@ internal fun LiquidNavBar(
                     .then(if (interactive) highlight.gestureModifier else Modifier)
                     .then(if (interactive) motion.modifier else Modifier)
                     .drawBackdrop(
-                        backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
+                        backdrop = rememberCombinedBackdrop(clearGlass ?: backdrop, tabsBackdrop),
                         shape = { Capsule() },
                         effects = {
                             val progress = motion.pressProgress
