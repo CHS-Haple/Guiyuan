@@ -25,7 +25,11 @@ internal class MainThreadRetire(
                     done.countDown()
                 }
             }
-        if (!post(task)) return false
+        if (!post(task)) {
+            phase.compareAndSet(0, 2)
+            cancel(task)
+            return false
+        }
 
         var interrupted = false
         try {
