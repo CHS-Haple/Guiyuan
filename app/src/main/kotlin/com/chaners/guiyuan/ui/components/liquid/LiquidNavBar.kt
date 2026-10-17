@@ -40,10 +40,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import top.yukonga.miuix.kmp.theme.LocalTextStyles
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
@@ -101,10 +103,10 @@ private fun LiquidMode.params(): LiquidParams =
             )
         LiquidMode.Clear ->
             LiquidParams(
-                blur = 6.dp,
-                refractionHeight = 12.dp,
+                blur = 1.dp,
+                refractionHeight = 18.dp,
                 refractionAmount = 24.dp,
-                surfaceAlpha = 0.32f,
+                surfaceAlpha = 0.12f,
             )
     }
 
@@ -134,6 +136,14 @@ internal fun LiquidNavBar(
 
     val selectedColor = MiuixTheme.colorScheme.primary
     val params = mode.params()
+    val selectedSurface =
+        when {
+            mode == LiquidMode.Clear ->
+                if (dark) Color(0xFF121212).copy(alpha = 0.48f)
+                else Color(0xFFFAFAFA).copy(alpha = 0.52f)
+            dark -> Color.White.copy(alpha = 0.10f)
+            else -> Color.Black.copy(alpha = 0.10f)
+        }
     val containerColor =
         if (dark) {
             Color(0xFF121212).copy(alpha = params.surfaceAlpha)
@@ -255,7 +265,7 @@ internal fun LiquidNavBar(
                         backdrop = backdrop,
                         shape = { Capsule() },
                         effects = {
-                            vibrancy()
+                            if (mode == LiquidMode.Blur) vibrancy()
                             blur(params.blur.toPx())
                             lens(
                                 params.refractionHeight.toPx(),
@@ -304,7 +314,7 @@ internal fun LiquidNavBar(
                             shape = { Capsule() },
                             effects = {
                                 val progress = motion.pressProgress
-                                vibrancy()
+                                if (mode == LiquidMode.Blur) vibrancy()
                                 blur(params.blur.toPx())
                                 lens(
                                     params.refractionHeight.toPx() * progress,
@@ -385,14 +395,7 @@ internal fun LiquidNavBar(
                         },
                         onDrawSurface = {
                             val progress = motion.pressProgress
-                            drawRect(
-                                if (dark) {
-                                    Color.White.copy(alpha = 0.10f)
-                                } else {
-                                    Color.Black.copy(alpha = 0.10f)
-                                },
-                                alpha = 1f - progress,
-                            )
+                            drawRect(selectedSurface, alpha = 1f - progress)
                             drawRect(
                                 Color.Black.copy(alpha = 0.03f * progress),
                             )
@@ -451,9 +454,21 @@ internal fun RowScope.LiquidNavEntry(
     icon: ImageVector,
     label: String,
     dark: Boolean,
+    mode: LiquidMode = LiquidMode.Clear,
     interactive: Boolean = true,
 ) {
     val contentColor = if (dark) Color.White else Color.Black
+    val labelStyle =
+        LocalTextStyles.current.main.let { style ->
+            if (mode == LiquidMode.Clear) {
+                style.copy(
+                    shadow = Shadow(
+                        color = if (dark) Color.Black else Color.White,
+                        blurRadius = 3f,
+                    ),
+                )
+            } else style
+        }
     LiquidNavItem(onClick = onClick, interactive = interactive) {
         Icon(
             imageVector = icon,
@@ -467,6 +482,7 @@ internal fun RowScope.LiquidNavEntry(
                 text = label,
                 color = contentColor,
                 fontSize = 12.sp,
+                style = labelStyle,
             )
         }
     }
