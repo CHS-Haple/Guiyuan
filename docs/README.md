@@ -13,6 +13,7 @@ Load the rest only when the task needs it:
 - [development/DECISIONS.md](development/DECISIONS.md) — durable engineering decisions and the reasons behind them.
 - [architecture/README.md](architecture/README.md) — current runtime ownership and scene/layout policy.
 - [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target SystemUI evidence and integration constraints.
+- [reference/lsposed-7927-hot-reload.md](reference/lsposed-7927-hot-reload.md) — binary-verified LSPosed generation handoff and lifecycle limits.
 - [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
 
 ## Authority
