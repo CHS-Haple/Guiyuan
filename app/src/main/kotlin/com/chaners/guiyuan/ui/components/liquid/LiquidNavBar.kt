@@ -40,7 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Shadow as TextShadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -73,7 +73,6 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.LocalTextStyles
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.sign
@@ -458,11 +457,11 @@ internal fun RowScope.LiquidNavEntry(
     interactive: Boolean = true,
 ) {
     val contentColor = if (dark) Color.White else Color.Black
-    val textStyle = LocalTextStyles.current.main
+    val textStyle = MiuixTheme.textStyles.main
     val labelStyle =
         if (mode == LiquidMode.Clear) {
             textStyle.copy(
-                shadow = Shadow(
+                shadow = TextShadow(
                     color = if (dark) Color.Black else Color.White,
                     blurRadius = 3f,
                 ),
