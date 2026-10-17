@@ -3644,9 +3644,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration(
-        continuousHandoff: Boolean = false,
-    ) {
+    private fun teardownOldGeneration() {
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -3662,18 +3660,12 @@ class GyModule : XposedModule() {
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
         CcTransitionOwner.detach("hotReload-oldGeneration")
-        CcRenderSession.detach(
-            source = "hotReload-oldGeneration",
-            releaseNativePresentation = !continuousHandoff,
-        )
+        CcRenderSession.detach(source = "hotReload-oldGeneration")
         HomeRenderSession.detach()
         KeyguardRenderSession.detach()
         KeyguardRenderSession.detachAod()
         val restoredPresentationViews =
-            SysUiPresentationOwner.releaseGenerationForHotReload(
-                requestLayout =
-                    !continuousHandoff,
-            )
+            SysUiPresentationOwner.releaseGenerationForHotReload()
         NativeNetworkSuppressor.deactivate("hotReload-oldGeneration")
         StatusBarStableSession.detach()
         SysUiCoreRuntime.detach()
@@ -3690,9 +3682,6 @@ class GyModule : XposedModule() {
             state = "released",
             "source" to "hotReload.oldGeneration",
             "homePresentationRestoredViews" to restoredPresentationViews,
-            "continuousHandoff" to continuousHandoff,
-            "intermediateRequestLayout" to
-                !continuousHandoff,
         )
         unbindRuntimeDiagnostics()
         FeaturePrefsOwner.unbind()
