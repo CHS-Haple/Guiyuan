@@ -42,12 +42,12 @@ permissions:
   packages: read
   pull-requests: read
 
-concurrency:
-  group: work-apk-${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.event.issue.number }}
-  cancel-in-progress: true
-
 jobs:
   build:
+    # Only eligible build jobs enter the cancellation group.
+    concurrency:
+      group: work-apk-${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.event.issue.number }}
+      cancel-in-progress: true
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        github.actor == github.repository_owner) ||
