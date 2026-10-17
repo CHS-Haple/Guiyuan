@@ -61,6 +61,7 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
@@ -255,7 +256,14 @@ internal fun LiquidNavBar(
                         backdrop = backdrop,
                         shape = { Capsule() },
                         effects = {
-                            vibrancy()
+                            if (mode == LiquidMode.Clear) {
+                                colorControls(
+                                    brightness = if (dark) -0.04f else 0.04f,
+                                    contrast = 0.92f,
+                                )
+                            } else {
+                                vibrancy()
+                            }
                             blur(params.blur.toPx())
                             lens(
                                 params.refractionHeight.toPx(),
@@ -304,7 +312,14 @@ internal fun LiquidNavBar(
                             shape = { Capsule() },
                             effects = {
                                 val progress = motion.pressProgress
-                                vibrancy()
+                                if (mode == LiquidMode.Clear) {
+                                    colorControls(
+                                        brightness = if (dark) -0.04f else 0.04f,
+                                        contrast = 0.92f,
+                                    )
+                                } else {
+                                    vibrancy()
+                                }
                                 blur(params.blur.toPx())
                                 lens(
                                     params.refractionHeight.toPx() * progress,
