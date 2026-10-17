@@ -604,13 +604,17 @@ class GyModule : XposedModule() {
             SysUiCcSource.restoreHomeEligibility(
                 restored.controlCenterHomeEligible,
             )
-            val controlCenterFakeRestore =
+            val restoreCc = {
                 restored.controlCenterFakeHost?.let { fakeHost ->
                     restoreCcFakeAfterReload(
                         host = fakeHost,
                         transferredCompactReady = restored.controlCenterCompactReady,
                     )
                 } ?: "late-fallback"
+            }
+            // Give Home priority when the native panel says Home is eligible.
+            val ccFirst = restored.controlCenterHomeEligible != true
+            val earlyCcRestore = if (ccFirst) restoreCc() else null
             val transferredTint =
                 restored.appliedTint?.let { appliedTint ->
                     TintState(
@@ -624,6 +628,7 @@ class GyModule : XposedModule() {
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
             )
+            val controlCenterFakeRestore = earlyCcRestore ?: restoreCc()
 
             logDiagnostic(
                 level = Log.INFO,
