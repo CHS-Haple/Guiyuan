@@ -3810,46 +3810,23 @@ class GyModule : XposedModule() {
         )
         refreshMobilePresentation()
 
-        val stableFailure =
-            StatusBarStableSession.attach(
-                host = host,
-                onEvent = ::logRuntimeEvent,
-            )
-        if (stableFailure == null) {
+        // Hot Reload may not be followed by another battery callback.
+        if (StatusStateStore.snapshot().battery?.charging == true) {
+            val iconId = SysUiBatterySource.readHostChargingIconId(host)
+            if (iconId != null) {
+                StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
+                    onCombinedStateChanged(snapshot)
+                }
+            }
             logDiagnostic(
                 level = Log.INFO,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "ready",
+                event = "glyph.seed",
+                component = "batteryState",
+                state = if (iconId != null) "ready" else "unavailable",
                 "source" to source,
-            )
-            // Hot Reload may not be followed by another battery callback.
-            if (StatusStateStore.snapshot().battery?.charging == true) {
-                val iconId = SysUiBatterySource.readHostChargingIconId(host)
-                if (iconId != null) {
-                    StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
-                        onCombinedStateChanged(snapshot)
-                    }
-                }
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "glyph.seed",
-                    component = "batteryState",
-                    state = if (iconId != null) "ready" else "unavailable",
-                    "source" to source,
-                    "chargingIconId" to (iconId ?: "unavailable"),
-                    "storedIconId" to
-                        (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
-                )
-            }
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "unavailable",
-                "reason" to stableFailure,
-                "source" to source,
+                "chargingIconId" to (iconId ?: "unavailable"),
+                "storedIconId" to
+                    (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
             )
         }
 
@@ -3947,6 +3924,21 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }
+
+        // Stable anchor sampling is observational, not a Home readiness input.
+        val stableFailure =
+            StatusBarStableSession.attach(
+                host = host,
+                onEvent = ::logRuntimeEvent,
+            )
+        logDiagnostic(
+            level = if (stableFailure == null) Log.INFO else Log.WARN,
+            event = "session.attach",
+            component = "stableStatus",
+            state = if (stableFailure == null) "ready" else "unavailable",
+            "reason" to stableFailure,
+            "source" to source,
+        )
 
         scheduleNativeSlotProbe(host = host, source = source)
 
