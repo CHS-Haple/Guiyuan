@@ -3736,8 +3736,8 @@ class GyModule : XposedModule() {
         }
         var homeCutoverReported = false
         val hostContext = (host as? android.view.View)?.context
-        // Synchronous source seeds share one presentation resolve after attach.
-        var seedingCore = true
+        // Only hot reload coalesces synchronous seeds; cold attach keeps its path.
+        var seedingCore = reloadEnteredAtMs != null
         val coreRuntime =
             try {
                 hostContext?.let { context ->
