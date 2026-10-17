@@ -33,7 +33,13 @@ internal object SysUiDefaultDataSubSource {
     ): Boolean {
         val appContext = context.applicationContext
         if (registeredContext !== appContext || receiver == null) {
-            unregisterReceiver()
+            try {
+                unregisterReceiver()
+            } catch (error: Throwable) {
+                this.onChanged = null
+                this.onEvent = null
+                throw error
+            }
 
             val nextReceiver =
                 object : BroadcastReceiver() {

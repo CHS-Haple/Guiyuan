@@ -20,24 +20,38 @@ internal object SysUiCoreRuntime {
         onConnectivityState: (SysUiConnectivitySource.State) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): AttachResult {
+        fun attachSource(name: String, block: () -> Boolean): Boolean =
+            runCatching(block).getOrElse { error ->
+                runCatching {
+                    onEvent?.invoke("core source=$name attach failed type=${error.javaClass.simpleName}")
+                }
+                false
+            }
+
         val airplaneReady =
-            SysUiAirplaneSource.attach(
-                context = context,
-                onAirplaneMode = onAirplaneMode,
-                onEvent = onEvent,
-            )
+            attachSource("airplane") {
+                SysUiAirplaneSource.attach(
+                    context = context,
+                    onAirplaneMode = onAirplaneMode,
+                    onEvent = onEvent,
+                )
+            }
         val defaultDataSubscriptionReady =
-            SysUiDefaultDataSubSource.attach(
-                context = context,
-                onChanged = onDefaultDataSubscriptionChanged,
-                onEvent = onEvent,
-            )
+            attachSource("defaultDataSubscription") {
+                SysUiDefaultDataSubSource.attach(
+                    context = context,
+                    onChanged = onDefaultDataSubscriptionChanged,
+                    onEvent = onEvent,
+                )
+            }
         val connectivityReady =
-            SysUiConnectivitySource.attach(
-                context = context,
-                onState = onConnectivityState,
-                onEvent = onEvent,
-            )
+            attachSource("connectivity") {
+                SysUiConnectivitySource.attach(
+                    context = context,
+                    onState = onConnectivityState,
+                    onEvent = onEvent,
+                )
+            }
         return AttachResult(
             airplaneReady = airplaneReady,
             defaultDataSubscriptionReady = defaultDataSubscriptionReady,

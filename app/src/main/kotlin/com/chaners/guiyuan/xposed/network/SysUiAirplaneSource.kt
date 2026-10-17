@@ -31,7 +31,13 @@ internal object SysUiAirplaneSource {
         val nextResolver = context.contentResolver
         if (resolver !== nextResolver || observer == null) {
             observer?.let { old ->
-                resolver?.unregisterContentObserver(old)
+                try {
+                    resolver?.unregisterContentObserver(old)
+                } catch (error: Throwable) {
+                    onAirplaneMode = null
+                    onEvent = null
+                    throw error
+                }
             }
             resolver = null
             observer = null
