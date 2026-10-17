@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color as AndroidColor
 import android.provider.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -12,6 +13,7 @@ import com.chaners.guiyuan.settings.ThemeMode
 import org.json.JSONObject
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.LocalDisplayCutoutFixEnabled
 import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -52,7 +54,10 @@ internal fun GyTheme(
             paletteStyle = if (colorSpec == null) ThemePaletteStyle.TonalSpot else paletteStyle,
         )
     }
-    MiuixTheme(controller = controller, content = content)
+    // The upstream auto-fix replaces the host insets listener; this Activity uses native edge-to-edge.
+    CompositionLocalProvider(LocalDisplayCutoutFixEnabled provides false) {
+        MiuixTheme(controller = controller, content = content)
+    }
 }
 
 // MIUIX reads this same system palette setting internally, but doesn't expose the seed.
