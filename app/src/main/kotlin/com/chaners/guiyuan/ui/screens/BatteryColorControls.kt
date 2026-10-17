@@ -10,18 +10,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.findRootCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -65,28 +57,6 @@ internal val BATTERY_COLOR_PREVIEW_SLOTS = BatteryColorSlot.entries
 
 private const val BATTERY_COLOR_SHEET_HEIGHT_FRACTION = 0.84f
 internal val BATTERY_SCHEME_VERTICAL_GAP = 12.dp
-
-@Composable
-private fun Modifier.sheetDragFill(color: Color): Modifier {
-    var exposedBottom by remember { mutableFloatStateOf(0f) }
-    return this
-        .onGloballyPositioned { coordinates ->
-            // MIUIX moves the whole sheet upwards on overdrag, but its built-in
-            // overscroll background stays inside that moving layer.
-            val rootBottom = coordinates.findRootCoordinates().boundsInWindow().bottom
-            val bottom = coordinates.boundsInWindow().bottom
-            exposedBottom = (rootBottom - bottom).coerceAtLeast(0f)
-        }
-        .drawBehind {
-            if (exposedBottom > 0f) {
-                drawRect(
-                    color = color,
-                    topLeft = Offset(0f, size.height - 1f),
-                    size = Size(size.width, exposedBottom + 1f),
-                )
-            }
-        }
-}
 
 internal sealed interface BatterySchemePage {
     val key: String
@@ -180,9 +150,7 @@ internal fun BatteryColorBottomSheet(
 
     OverlayBottomSheet(
         show = show,
-        modifier = Modifier
-            .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
-            .sheetDragFill(MiuixTheme.colorScheme.background),
+        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -242,9 +210,7 @@ internal fun BatteryColorBottomSheet(
 
     OverlayBottomSheet(
         show = detailVisible,
-        modifier = Modifier
-            .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
-            .sheetDragFill(MiuixTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
         title =
             detailSlot?.let { slot ->
                 stringResource(
