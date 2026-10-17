@@ -3636,33 +3636,50 @@ class GyModule : XposedModule() {
         aodRendererAttached = false
         keyguardReadyObserved = false
         keyguardCcLeaseActive = false
-        CcTransitionOwner.detach("hotReload-oldGeneration")
-        CcRenderSession.detach(source = "hotReload-oldGeneration")
-        HomeRenderSession.detach()
-        KeyguardRenderSession.detach()
-        KeyguardRenderSession.detachAod()
-        val restoredPresentationViews =
-            SysUiPresentationOwner.releaseGenerationForHotReload()
-        NativeNetworkSuppressor.deactivate("hotReload-oldGeneration")
-        StatusBarStableSession.detach()
-        SysUiCoreRuntime.detach()
-        SysUiPresentationRuntime.resetRuntimeState()
-        SysUiKeyguardHostResolver.resetRuntimeState()
-        PresentationStore.reset()
-        SysUiIslandSource.resetRuntimeState()
-        SysUiCcSource.resetRuntimeState()
 
-        logDiagnostic(
-            level = Log.INFO,
-            event = "runtime.teardown",
-            component = "runtimeSession",
-            state = "released",
-            "source" to "hotReload.oldGeneration",
-            "homePresentationRestoredViews" to restoredPresentationViews,
-        )
-        unbindRuntimeDiagnostics()
-        FeaturePrefsOwner.unbind()
-        VisualPrefsOwner.unbind()
+        // One failed participant must not leave the other old callbacks registered.
+        val errors = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            runCatching(action).onFailure(errors::add)
+        }
+
+        release { CcTransitionOwner.detach("hotReload-oldGeneration") }
+        release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
+        release { HomeRenderSession.detach() }
+        release { KeyguardRenderSession.detach() }
+        release { KeyguardRenderSession.detachAod() }
+        var restoredViews: Int? = null
+        release {
+            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
+        }
+        release { NativeNetworkSuppressor.deactivate("hotReload-oldGeneration") }
+        release { StatusBarStableSession.detach() }
+        release { SysUiCoreRuntime.detach() }
+        release { SysUiPresentationRuntime.resetRuntimeState() }
+        release { SysUiKeyguardHostResolver.resetRuntimeState() }
+        release { PresentationStore.reset() }
+        release { SysUiIslandSource.resetRuntimeState() }
+        release { SysUiCcSource.resetRuntimeState() }
+        release {
+            logDiagnostic(
+                level = if (errors.isEmpty()) Log.INFO else Log.ERROR,
+                event = "runtime.teardown",
+                component = "runtimeSession",
+                state = if (errors.isEmpty()) "released" else "error",
+                "source" to "hotReload.oldGeneration",
+                "homePresentationRestoredViews" to restoredViews,
+            )
+        }
+        release { unbindRuntimeDiagnostics() }
+        release { FeaturePrefsOwner.unbind() }
+        release { VisualPrefsOwner.unbind() }
+
+        if (errors.isNotEmpty()) {
+            val failure =
+                IllegalStateException("old-generation-cleanup-incomplete", errors.first())
+            errors.drop(1).forEach(failure::addSuppressed)
+            throw failure
+        }
     }
 
     private fun attachHostRuntime(
