@@ -22,10 +22,20 @@ internal object NativeStatusInventory {
     private const val STATUS_ICON_SUBTREE_MAX_DEPTH = 3
     private const val STATUS_ICON_SUBTREE_MAX_NODES = 64
 
+    private var pending: Pair<View, View.OnLayoutChangeListener>? = null
+
+    fun detach() {
+        pending?.let { (view, listener) ->
+            view.removeOnLayoutChangeListener(listener)
+        }
+        pending = null
+    }
+
     fun schedule(
         host: Any,
         onSnapshot: (Snapshot) -> Unit,
     ) {
+        detach()
         val hostView = host as? View ?: return
 
         if (hostView.isLaidOut) {
@@ -33,7 +43,7 @@ internal object NativeStatusInventory {
             return
         }
 
-        hostView.addOnLayoutChangeListener(
+        val listener =
             object : View.OnLayoutChangeListener {
                 override fun onLayoutChange(
                     view: View,
@@ -46,11 +56,14 @@ internal object NativeStatusInventory {
                     oldRight: Int,
                     oldBottom: Int,
                 ) {
+                    if (pending?.second !== this) return
+                    pending = null
                     view.removeOnLayoutChangeListener(this)
                     onSnapshot(inspect(hostView))
                 }
-            },
-        )
+            }
+        pending = hostView to listener
+        hostView.addOnLayoutChangeListener(listener)
     }
 
     private fun inspect(host: View): Snapshot {
