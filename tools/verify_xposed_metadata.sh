@@ -35,7 +35,7 @@ for apk in "$@"; do
   fi
 
   module_prop="$(unzip -p "$apk" META-INF/xposed/module.prop)"
-  for entry in "targetApiVersion=102" "autoHotReload=true"; do
+  for entry in "minApiVersion=102" "targetApiVersion=102" "staticScope=true" "exceptionMode=protective" "autoHotReload=true"; do
     if ! grep -Fxq "$entry" <<< "$module_prop"; then
       echo "Missing Xposed module property in $apk: $entry" >&2
       exit 1
