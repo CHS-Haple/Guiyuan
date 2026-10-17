@@ -18,7 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
@@ -90,7 +94,25 @@ class MainActivity : ComponentActivity() {
                     systemDensity.fontScale,
                 )
             }
-            CompositionLocalProvider(LocalDensity provides uiDensity) {
+            // Match window DP dimensions to the same density used by the UI.
+            // MIUIX sheets cap their height against WindowInfo.containerDpSize.
+            val nativeWindow = LocalWindowInfo.current
+            val uiWindow = remember(nativeWindow, uiDensity) {
+                object : WindowInfo by nativeWindow {
+                    override val containerDpSize: DpSize
+                        get() {
+                            val size = nativeWindow.containerSize
+                            return DpSize(
+                                (size.width / uiDensity.density).dp,
+                                (size.height / uiDensity.density).dp,
+                            )
+                        }
+                }
+            }
+            CompositionLocalProvider(
+                LocalDensity provides uiDensity,
+                LocalWindowInfo provides uiWindow,
+            ) {
                 GyApp(
                     appearance = appearance,
                     dark = dark,
