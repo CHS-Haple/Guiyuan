@@ -1,5 +1,8 @@
 package com.chaners.guiyuan.xposed
 
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -7,6 +10,7 @@ import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
 
 internal object SysUiHotReload {
+    internal const val PREPARED_AT_MS = "guiyuan.hotReload.preparedElapsedMs"
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,
@@ -30,7 +34,6 @@ internal object SysUiHotReload {
 
     fun prepare(
         param: HotReloadingParam,
-        generationHandoff: Runnable,
     ): PrepareResult {
         if (!SysUiHostHook.isReady) {
             return PrepareResult.Unavailable("status-host-hook-not-ready")
@@ -44,6 +47,9 @@ internal object SysUiHotReload {
             return PrepareResult.Unavailable("status-host-detached")
         }
         val snapshot = StatusStateStore.snapshot()
+        val savedState = StatusStateStore.exportHotReloadState().apply {
+            putLong(PREPARED_AT_MS, SystemClock.elapsedRealtime())
+        }
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
         val bindingStateReady =
@@ -57,14 +63,13 @@ internal object SysUiHotReload {
             )
         }
 
-        val controlCenterCompactReady =
-            CcRenderSession
-                .nativeReadyForHotReload()
+        // V10 retires native CC layout before the new module can adopt it.
+        val controlCenterCompactReady = false
 
         val transfer =
             HotReloadTransfer.capture(
                 host = host,
-                state = StatusStateStore.exportHotReloadState(),
+                state = savedState,
                 bindings = SysUiNetworkSource.exportHotReloadBindings(),
                 // Legacy transfer slot remains null for compatibility. Notification
                 // Shade now follows the native system_icons carrier lifecycle.
@@ -76,7 +81,6 @@ internal object SysUiHotReload {
                 controlCenterFakeHost =
                     CcRenderSession.hotReloadHost(),
                 controlCenterCompactReady = controlCenterCompactReady,
-                generationHandoff = generationHandoff,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
                 wifiRoots = bindingCounts.first,
@@ -102,6 +106,21 @@ internal object SysUiHotReload {
         )
     }
 
+    fun retireOnMain(cleanup: () -> Unit): Boolean {
+        val main = Looper.getMainLooper()
+        if (Looper.myLooper() === main) {
+            cleanup()
+            return true
+        }
+        val handler = Handler(main)
+        return MainThreadRetire(handler::post, handler::removeCallbacks).run(cleanup)
+    }
+
+    fun releaseOldHooks(param: HotReloadedParam): Int =
+        param.oldHookHandles.count { handle ->
+            runCatching { handle.unhook() }.isFailure
+        }
+
     fun takeOverHooks(
         param: HotReloadedParam,
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
@@ -109,9 +128,7 @@ internal object SysUiHotReload {
         val oldHandles = param.oldHookHandles
         val hostHandle = SysUiHostHook.findOwnedHandle(oldHandles)
             ?: run {
-                val failed = oldHandles.count { handle ->
-                    runCatching { handle.unhook() }.isFailure
-                }
+                val failed = releaseOldHooks(param)
                 if (failed > 0) {
                     error("status-host-hook-missing-cleanup-failed:$failed")
                 }
