@@ -56,9 +56,8 @@ internal object SysUiHotReload {
             )
         }
 
-        val controlCenterCompactReady =
-            CcRenderSession
-                .nativeReadyForHotReload()
+        // V10 releases the old compact layout before the next generation starts.
+        val controlCenterCompactReady = false
 
         val transfer =
             HotReloadTransfer.capture(
