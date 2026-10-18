@@ -12,12 +12,22 @@ internal object MobileTypeTransitionPolicy {
         targetWeight: Int?,
         progress: Float,
     ): Int {
-        val source = sourceWeight.coerceIn(1, 1000)
-        val target = targetWeight?.coerceIn(1, 1000) ?: return source
+        val source =
+            sourceWeight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+        val target =
+            targetWeight?.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+                ?: return source
         val normalized = progress.coerceIn(0f, 1f)
         return (source + (target - source) * normalized)
             .roundToInt()
-            .coerceIn(1, 1000)
+            .coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+    }
+
+    // Above the native anchor, thicken visible ink without asking Typeface for >1000.
+    fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
+        val upper = CenterGeometry.MAX_MOBILE_TYPE_WEIGHT
+        val range = (upper - nativeWeight).coerceAtLeast(1)
+        return (weight - nativeWeight).coerceIn(0, range).toFloat() / range * 0.07f
     }
 }
 
