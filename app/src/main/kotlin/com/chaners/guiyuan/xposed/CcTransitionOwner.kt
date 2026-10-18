@@ -2660,6 +2660,7 @@ internal object CcTransitionOwner {
             if (opticalRequired && optical == null && fallbackBounds == null) {
                 return null
             }
+            val textStyle = resolveNativeTextStyle(optical)
             return TargetWitness(
                 slot = slot,
                 slotView = slotRoot,
@@ -2667,8 +2668,8 @@ internal object CcTransitionOwner {
                 subscriptionId = readMobileSubId(slotRoot),
                 requiresOpticalGeometry = opticalRequired,
                 fallbackBounds = fallbackBounds,
-                textWeight = resolveNativeTextWeight(optical),
-                textStyle = resolveNativeTextStyle(optical),
+                textWeight = textStyle?.weight ?: resolveNativeTextWeight(optical),
+                textStyle = textStyle,
             )
         }
 
@@ -3275,6 +3276,8 @@ internal object CcTransitionOwner {
             if (view is TextView) {
                 return captureTextStyle(view.paint)
             }
+            NativePresentationResolver.nativeMobileTextPaint(view)
+                ?.let { return captureTextStyle(it) }
             val descendant =
                 if (view is ViewGroup) {
                     sequence {
