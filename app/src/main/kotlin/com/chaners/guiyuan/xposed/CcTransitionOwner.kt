@@ -1061,6 +1061,10 @@ internal object CcTransitionOwner {
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
+                        ) && (
+                            model.centerIndicator.typeface == null ||
+                                witness?.textStyle?.typeface == null ||
+                                model.centerIndicator.typeface == witness.textStyle.typeface
                         )
                     } else {
                         null
@@ -1079,7 +1083,9 @@ internal object CcTransitionOwner {
                             else target.copyOf().apply { this[0] += shift }
                         }
                 val matchedTextWeight =
-                    if (nativeTypeMatch == true) witness?.textWeight else null
+                    if (nativeTypeMatch == true) {
+                        witness?.textWeight ?: (model.centerIndicator as? CenterIndicator.MobileType)?.typeface?.weight
+                    } else null
                 val matchedTextStyle =
                     if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
