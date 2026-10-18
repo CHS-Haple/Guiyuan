@@ -108,13 +108,13 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** keep the last completed snapshot in `GyApp`'s remembered state. On the first capture, display a MIUIX progress indicator and loading label until a snapshot exists. The summary and visible log rows then enter with the same Folme spring, a 28 dp upward reveal and progressive alpha, staggered by row without a separate delay. Existing entries remain visible during manual refresh, and the pull-to-refresh control supplies refresh feedback.
 
-## Hot Reload is a generation handoff
+## Hot Reload retires the old generation first
 
-**Decision:** Hot Reload replaces one bounded runtime generation with another rather than stacking hooks/owners or intentionally returning through an intermediate native cycle.
+**Decision:** Follow Modern Xposed API 102: save neutral V10 state and release old View, callback and native presentation owners on the SystemUI main thread before accepting generation retirement. Reuse the verified host Hook only after the old owner has left; never transfer an old module callback to fake continuous rendering.
 
-**Why:** duplicate generations and unnecessary restore/reacquire intervals create flashes, stale references and competing writers.
+**Why:** LSPosed 7927 loads the replacement ClassLoader *after* old `onHotReloading`, and provides no frame-atomic UI transaction. Keeping old listeners inside a V9 Array breaks lifetime ownership even if the UI appears seamless.
 
-**Consequence:** old-generation state is released at the handoff boundary, new state re-resolves live hosts/resources, and normal detach/failure still restores only module-owned state.
+**Consequence:** new owners revalidate live host identity before acquiring runtime resources; native battery/network may briefly display between generations. A refused/failed transfer must report restart rather than claim rollback of partial native teardown. Queued cleanup may be canceled; cleanup already running must finish. Legacy V9 reader compatibility does not make the old producer safe; restart SystemUI when upgrading into V10.
 
 ## Maintainability favors useful boundaries over uniform structure
 
