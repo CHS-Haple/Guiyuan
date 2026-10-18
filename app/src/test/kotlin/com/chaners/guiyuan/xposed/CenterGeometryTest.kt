@@ -108,7 +108,7 @@ class CenterGeometryTest {
         assertEquals(1400, policy.resolveWeight(1400, 660, 0f))
         assertEquals(1030, policy.resolveWeight(1400, 660, 0.5f))
         assertEquals(660, policy.resolveWeight(1400, 660, 1f))
-        assertEquals(1030, policy.resolveWeight(1400, 660, 0.5f))
+        assertEquals(1030, policy.resolveWeight(660, 1400, 0.5f))
 
         assertEquals(0f, policy.extraStrokeRatio(400, 660), 0.00001f)
         assertEquals(0f, policy.extraStrokeRatio(660, 660), 0.00001f)
