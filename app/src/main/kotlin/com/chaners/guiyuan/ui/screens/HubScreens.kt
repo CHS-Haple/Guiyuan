@@ -96,7 +96,6 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -113,6 +112,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
+    snackbarState: SnackbarHostState,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
@@ -149,7 +149,6 @@ internal fun FeaturesScreen(
         ConfigBackupFiles(context.applicationContext)
     }
     val scope = rememberCoroutineScope()
-    val messageHost = remember { SnackbarHostState() }
     var pendingImport by remember { mutableStateOf<ConfigBackup?>(null) }
     var ioBusy by remember { mutableStateOf(false) }
     val savedMsg = stringResource(R.string.config_backup_success)
@@ -165,7 +164,7 @@ internal fun FeaturesScreen(
             scope.launch {
                 val result = runCatching { backupFiles.export(uri) }
                 ioBusy = false
-                messageHost.showSnackbar(if (result.isSuccess) savedMsg else saveError)
+                snackbarState.showSnackbar(if (result.isSuccess) savedMsg else saveError)
             }
         }
     }
@@ -180,7 +179,7 @@ internal fun FeaturesScreen(
                 if (result.isSuccess) {
                     pendingImport = result.getOrThrow()
                 } else {
-                    messageHost.showSnackbar(invalidBackup)
+                    snackbarState.showSnackbar(invalidBackup)
                 }
             }
         }
@@ -191,7 +190,6 @@ internal fun FeaturesScreen(
     HubPage(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
-        snackbarHost = { SnackbarHost(state = messageHost) },
         overlay = {
             pendingImport?.let { selected ->
                 OverlayDialog(
@@ -219,7 +217,7 @@ internal fun FeaturesScreen(
                                     val result = runCatching { backupFiles.restore(selected) }
                                     pendingImport = null
                                     ioBusy = false
-                                    messageHost.showSnackbar(
+                                    snackbarState.showSnackbar(
                                         if (result.getOrNull() == true) restoredMsg
                                         else restoreError,
                                     )
@@ -1000,7 +998,6 @@ internal fun AnimatedPreferenceGroup(
 private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
-    snackbarHost: @Composable () -> Unit = {},
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -1008,7 +1005,6 @@ private fun HubPage(
     val topBarBackdrop = rememberTopBarBackdrop()
 
     Scaffold(
-        snackbarHost = snackbarHost,
         topBar = {
             MiuixBlurredTopBar(
                 backdrop = topBarBackdrop,
