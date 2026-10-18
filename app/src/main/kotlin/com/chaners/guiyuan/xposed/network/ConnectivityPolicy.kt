@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed.network
 
+import android.graphics.Typeface
 import com.chaners.guiyuan.xposed.NativePresentationResolver
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.StatusStateStore
@@ -49,6 +50,7 @@ internal object ConnectivityPolicy {
                 CenterIndicator.MobileType(
                     label = it.label,
                     enhanced = it.enhanced,
+                    typeface = it.typeface,
                     internet = InternetState.UNKNOWN,
                 )
             }
@@ -70,6 +72,7 @@ internal object ConnectivityPolicy {
                         CenterIndicator.MobileType(
                             label = it.label,
                             enhanced = it.enhanced,
+                            typeface = it.typeface,
                             internet = connectivity.internetState(),
                         )
                     } ?: CenterIndicator.Empty
@@ -84,6 +87,7 @@ internal object ConnectivityPolicy {
                             CenterIndicator.MobileType(
                                 label = it.label,
                                 enhanced = it.enhanced,
+                                typeface = it.typeface,
                                 internet = connectivity.internetState(),
                             )
                         } ?: CenterIndicator.Empty
@@ -94,6 +98,7 @@ internal object ConnectivityPolicy {
                     CenterIndicator.MobileType(
                         label = mobileType.label,
                         enhanced = mobileType.enhanced,
+                        typeface = mobileType.typeface,
                         internet = connectivity.internetState(),
                     )
                 } else {
@@ -173,6 +178,7 @@ internal sealed interface CenterIndicator {
         val label: String,
         val enhanced: Boolean,
         val internet: InternetState,
+        val typeface: Typeface? = null,
     ) : CenterIndicator
 
     data object Airplane : CenterIndicator
