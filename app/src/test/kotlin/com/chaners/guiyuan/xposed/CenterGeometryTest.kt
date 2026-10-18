@@ -148,6 +148,9 @@ class CenterGeometryTest {
 
     @Test
     fun rendererRangeClampsMatchPersistedVisualRanges() {
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN, CenterGeometry.MIN_MOBILE_TYPE_WEIGHT)
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
         assertEquals(0.40f, CenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
         assertEquals(0.40f, CenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
         assertEquals(1.25f, CenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
