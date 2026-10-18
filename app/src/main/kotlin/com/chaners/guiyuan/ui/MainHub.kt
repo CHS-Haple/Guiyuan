@@ -69,6 +69,8 @@ import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -131,6 +133,7 @@ internal fun MainHub(
     onNavigate: (AppRoute) -> Unit,
 ) {
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
+    val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var restartPickerOpen by remember { mutableStateOf(false) }
@@ -229,6 +232,8 @@ internal fun MainHub(
     val liquidBottomPadding = liquidNavBottomPadding()
 
     Scaffold(
+        // This Scaffold owns the bottom bar, so it must also position the snackbar.
+        snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
                 !appearance.navEnabled -> {
@@ -321,6 +326,7 @@ internal fun MainHub(
             TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
+                featureSnackbarState = featureSnackbarState,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
@@ -535,6 +541,7 @@ private fun TopLevelBackHandler(
 private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
+    featureSnackbarState: SnackbarHostState,
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
@@ -584,6 +591,7 @@ private fun TopLevelPager(
             )
             1 -> FeaturesScreen(
                 bottomContentPadding = bottom,
+                snackbarState = featureSnackbarState,
                 onNavigate = onNavigate,
             )
             2 -> SettingsHubScreen(
