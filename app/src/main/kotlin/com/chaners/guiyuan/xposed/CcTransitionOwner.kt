@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
@@ -475,6 +476,7 @@ internal object CcTransitionOwner {
                             CenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
                             CenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
                         )
+                    val sourceFace = Typeface.create(Typeface.DEFAULT, effectiveWeight, false)
                     val font =
                         if (fontPaint == null) {
                             "unavailable"
@@ -491,7 +493,8 @@ internal object CcTransitionOwner {
                         "size=${root.width}x${root.height}:signal=[$children]:" +
                         "type=${type?.label ?: "missing"}:" +
                         "typeView=${typeView?.javaClass?.simpleName ?: "missing"}:" +
-                        "sourceWeight=$sourceWeight/$effectiveWeight:font=[$font]"
+                        "sourceWeight=$sourceWeight/$effectiveWeight:" +
+                        "sourceFaceId=${System.identityHashCode(sourceFace)}:font=[$font]"
                 }
         }
 
