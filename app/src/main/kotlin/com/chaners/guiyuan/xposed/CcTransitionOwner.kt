@@ -453,8 +453,36 @@ internal object CcTransitionOwner {
                                     "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
                             }
                         }
+                    val typeView =
+                        NativeParticipantAccess.findResourceView(root, "mobile_type") as? ImageView
+                    val type = NativePresentationResolver.nativeTargetType(typeView)
+                    val ink =
+                        if (type?.label?.trim()?.uppercase() == "5G") {
+                            val nativePaint =
+                                NativePresentationResolver.nativeMobileTypePaint(typeView?.drawable)
+                            val configured = currentSnapshot.visual.mobileTypeWeight
+                            val rendered =
+                                configured.coerceIn(
+                                    CenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
+                                    CenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
+                                )
+                            val comparison =
+                                nativePaint?.let { paint ->
+                                    runCatching { NativeFontInkProbe.compare(paint) }
+                                        .getOrElse { error ->
+                                            if (error is VirtualMachineError || error is ThreadDeath) {
+                                                throw error
+                                            }
+                                            null
+                                        }
+                                } ?: "unavailable"
+                            "cfg=$configured:render=$rendered:$comparison"
+                        } else {
+                            "not-5G"
+                        }
                     "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
-                        "size=${root.width}x${root.height}:signal=[$children]"
+                        "size=${root.width}x${root.height}:signal=[$children]:" +
+                        "target=${type?.label ?: "none"}:ink=[$ink]"
                 }
         }
 
