@@ -7,15 +7,16 @@ import android.graphics.PathMeasure
 import android.graphics.RectF
 import android.graphics.Typeface
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 // Experimental single-outline morph. No bitmap, alpha crossfade or API 37 font axis.
 internal class TextOutlineMorph {
+    private companion object {
+        const val OUTLINE_SIZE = 64f
+    }
+
     private data class Key(
         val text: String,
-        val size: Float,
         val source: Typeface,
         val target: StatusPainter.TransitionTextStyle,
     )
@@ -57,7 +58,7 @@ internal class TextOutlineMorph {
             !target.letterSpacing.isFinite()
         ) return false
 
-        val request = Key(text, size, source, target)
+        val request = Key(text, source, target)
         if (key == request) return pairs != null
         key = request
         pairs = null
@@ -65,7 +66,7 @@ internal class TextOutlineMorph {
         sourcePaint.reset()
         sourcePaint.isAntiAlias = true
         sourcePaint.typeface = source
-        sourcePaint.textSize = size
+        sourcePaint.textSize = OUTLINE_SIZE
         sourcePaint.textAlign = Paint.Align.LEFT
         sourcePaint.style = Paint.Style.FILL
         sourcePaint.textScaleX = 1f
@@ -110,8 +111,8 @@ internal class TextOutlineMorph {
             }
             // Do not morph unrelated contours simply because their counts match.
             if (
-                abs(ax / n - bx / n) > size * 0.45f ||
-                abs(ay / n - by / n) > size * 0.45f
+                abs(ax / n - bx / n) > OUTLINE_SIZE * 0.45f ||
+                abs(ay / n - by / n) > OUTLINE_SIZE * 0.45f
             ) return false
 
             var best = Float.POSITIVE_INFINITY
@@ -134,7 +135,7 @@ internal class TextOutlineMorph {
                     }
                 }
             }
-            if (!best.isFinite() || best / 16f > size * size * 0.20f) return false
+            if (!best.isFinite() || best / 16f > OUTLINE_SIZE * OUTLINE_SIZE * 0.20f) return false
             val shifted = FloatArray(bp.size)
             for (j in 0 until n) {
                 val k = (bestShift + bestDirection * j + n) % n
@@ -171,11 +172,15 @@ internal class TextOutlineMorph {
         canvas: Canvas,
         centerX: Float,
         centerY: Float,
+        size: Float,
         fraction: Float,
         paint: Paint,
     ): Boolean {
         val shapes = pairs ?: return false
-        if (!fraction.isFinite() || fraction <= 0f || fraction >= 1f) return false
+        if (
+            !fraction.isFinite() || fraction <= 0f || fraction >= 1f ||
+            !size.isFinite() || size <= 0f
+        ) return false
         framePath.reset()
         framePath.fillType = Path.FillType.EVEN_ODD
         for ((source, target) in shapes) {
@@ -190,7 +195,9 @@ internal class TextOutlineMorph {
         framePath.computeBounds(frameBounds, true)
         if (frameBounds.isEmpty) return false
         val saved = canvas.save()
-        canvas.translate(centerX - frameBounds.centerX(), centerY - frameBounds.centerY())
+        canvas.translate(centerX, centerY)
+        canvas.scale(size / OUTLINE_SIZE, size / OUTLINE_SIZE)
+        canvas.translate(-frameBounds.centerX(), -frameBounds.centerY())
         val previousStyle = paint.style
         val previousStroke = paint.strokeWidth
         paint.style = Paint.Style.FILL

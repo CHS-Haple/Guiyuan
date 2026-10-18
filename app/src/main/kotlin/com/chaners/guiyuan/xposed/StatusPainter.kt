@@ -2167,6 +2167,7 @@ internal class StatusPainter(
                 canvas,
                 layout.textOpticalBounds.centerX,
                 layout.textOpticalBounds.centerY,
+                layout.textSize,
                 transitionProgress,
                 paint,
             )
@@ -3030,7 +3031,7 @@ internal class StatusPainter(
             layout.mainBaselineY + (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
         if (
             !pathReady ||
-            !mainOutline.draw(canvas, mainCenterX, mainCenterY, transitionProgress, paint)
+            !mainOutline.draw(canvas, mainCenterX, mainCenterY, layout.mainTextSize, transitionProgress, paint)
         ) {
             canvas.drawText(layout.main, layout.mainX, layout.mainBaselineY, paint)
         }
@@ -3048,6 +3049,7 @@ internal class StatusPainter(
                     canvas,
                     suffixCenterX,
                     suffixCenterY,
+                    layout.suffixTextSize,
                     transitionProgress,
                     paint,
                 )
