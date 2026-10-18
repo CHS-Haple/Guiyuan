@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.settings
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import com.chaners.guiyuan.BuildConfig
@@ -225,6 +226,10 @@ internal class ConfigBackupFiles(private val context: Context) {
             now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")) + ".json"
 
     suspend fun export(uri: Uri) = withContext(Dispatchers.IO) {
+        // ACTION_CREATE_DOCUMENT must not become an arbitrary local-file write.
+        require(uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            "Configuration export requires a document content URI"
+        }
         val payload = ConfigBackupFormat.encode(
             ConfigBackupFormat.create(feature.current(), visual.backup(), schemes.current()),
         )
