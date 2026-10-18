@@ -52,7 +52,7 @@ internal object NativeFontInkProbe {
                     // Actual raster alpha difference relative to native ink;
                     // smaller is closer, but not a visual acceptance score.
                     val difference = alphaDelta * 100L / nativeInk
-                    "$weight:$difference:${bounds.width()}x${bounds.height()}"
+                    "$weight:$difference:$ink:${bounds.width()}x${bounds.height()}"
                 }
             val sourceResults = candidates(Typeface.DEFAULT, source)
             val nativeResults = candidates(nativeFace, Paint(nativeStyle))
