@@ -1061,7 +1061,7 @@ internal object CcTransitionOwner {
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
-                        ) && (
+                        ) == true && (
                             model.centerIndicator.typeface == null ||
                                 witness?.textStyle?.typeface == null ||
                                 model.centerIndicator.typeface == witness?.textStyle?.typeface
