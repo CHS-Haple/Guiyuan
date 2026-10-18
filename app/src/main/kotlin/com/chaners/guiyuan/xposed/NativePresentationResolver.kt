@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
@@ -10,10 +12,11 @@ import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
+import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
-    private data class DrawableFields(val type: Field?, val enhanced: Field?)
+    private data class DrawableFields(val type: Field?, val enhanced: Field?, val textPaint: Field?)
 
     private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
 
@@ -183,7 +186,18 @@ internal object NativePresentationResolver {
                 val networkType =
                     drawable?.let { nativeDrawableType(it, it === pendingMobileTypeDrawable) }
                 if (networkType != null) {
-                    return networkType
+                    // Native source and font must come from the same verified Drawable.
+                    // Keep only immutable Typeface; never retain a SystemUI Paint/View.
+                    val face =
+                        drawable
+                            ?.takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
+                            ?.let { native ->
+                                runCatching {
+                                    (drawableFields[native.javaClass]?.textPaint?.get(native) as? Paint)
+                                        ?.typeface
+                                }.getOrNull()
+                            }
+                    return networkType.copy(typeface = face)
                 }
             }
 
@@ -222,6 +236,7 @@ internal object NativePresentationResolver {
                 DrawableFields(
                     type = field(MOBILE_TYPE_FIELD),
                     enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
+                    textPaint = field("mMobileTypeTextPaint"),
                 )
             }
         // Drawables can change text without replacing their ImageView.
@@ -285,6 +300,7 @@ internal object NativePresentationResolver {
         val label: String,
         val enhanced: Boolean,
         val source: NetworkTypeSource,
+        val typeface: Typeface? = null,
     )
 
 
