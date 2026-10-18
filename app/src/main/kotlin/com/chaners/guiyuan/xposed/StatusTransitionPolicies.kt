@@ -7,6 +7,16 @@ import kotlin.math.roundToInt
 // Transition math stays stateless; StatusPainter owns drawing only.
 
 internal object MobileTypeTransitionPolicy {
+    // Use the font's actual variable weight axis, not alpha-mixed contours.
+    fun variationWeight(sourceWeight: Int, targetWeight: Int?, progress: Float): Int? {
+        val target = targetWeight?.takeIf { it in 1..1000 } ?: return null
+        if (sourceWeight !in 1..1000) return null
+        val fraction = TransitionTypographyPolicy.styleProgress(progress)
+        return (sourceWeight + (target - sourceWeight) * fraction)
+            .roundToInt()
+            .coerceIn(1, 1000)
+    }
+
     fun resolveWeight(
         sourceWeight: Int,
         targetWeight: Int?,
@@ -22,16 +32,9 @@ internal object MobileTypeTransitionPolicy {
 }
 
 internal object TransitionTypographyPolicy {
-    private const val TARGET_STYLE_START = 0.42f
-    private const val TARGET_STYLE_COMPLETE = 0.88f
-
     fun styleProgress(progress: Float): Float {
-        val normalized =
-            (
-                (progress.coerceIn(0f, 1f) - TARGET_STYLE_START) /
-                    (TARGET_STYLE_COMPLETE - TARGET_STYLE_START)
-            ).coerceIn(0f, 1f)
-        return normalized * normalized * (3f - 2f * normalized)
+        val fraction = progress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
+        return fraction * fraction * (3f - 2f * fraction)
     }
 }
 

@@ -345,25 +345,37 @@ class CcTransitionOwnerTest {
     }
 
     @Test
-    fun targetTypographyStyleConvergesBeforeNativeHandoff() {
-        assertEquals(
-            0f,
-            TransitionTypographyPolicy.styleProgress(0.42f),
-            0.0001f,
-        )
-        assertTrue(
-            TransitionTypographyPolicy.styleProgress(0.70f) in 0f..1f,
-        )
-        assertEquals(
-            1f,
-            TransitionTypographyPolicy.styleProgress(0.88f),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            TransitionTypographyPolicy.styleProgress(1f),
-            0.0001f,
-        )
+    fun nativeVariableWeightTracksBothDirectionsWithoutSyntheticStroke() {
+        assertEquals(900, MobileTypeTransitionPolicy.variationWeight(900, 660, 0f))
+        assertEquals(780, MobileTypeTransitionPolicy.variationWeight(900, 660, 0.5f))
+        assertEquals(660, MobileTypeTransitionPolicy.variationWeight(900, 660, 1f))
+        assertEquals(660, MobileTypeTransitionPolicy.variationWeight(660, 900, 0f))
+        assertEquals(780, MobileTypeTransitionPolicy.variationWeight(660, 900, 0.5f))
+        assertEquals(900, MobileTypeTransitionPolicy.variationWeight(660, 900, 1f))
+        assertEquals(900, MobileTypeTransitionPolicy.variationWeight(900, 660, Float.NaN))
+        assertEquals(null, MobileTypeTransitionPolicy.variationWeight(900, null, 0.5f))
+        assertEquals(null, MobileTypeTransitionPolicy.variationWeight(0, 660, 0.5f))
+        assertEquals(null, MobileTypeTransitionPolicy.variationWeight(900, 1001, 0.5f))
+    }
+
+    @Test
+    fun targetTypographyStyleChangesThroughTheWholeGesture() {
+        assertEquals(0f, TransitionTypographyPolicy.styleProgress(0f), 0f)
+        assertTrue(TransitionTypographyPolicy.styleProgress(0.42f) > 0f)
+        assertEquals(0.5f, TransitionTypographyPolicy.styleProgress(0.5f), 0.0001f)
+        assertTrue(TransitionTypographyPolicy.styleProgress(0.88f) < 1f)
+        assertEquals(1f, TransitionTypographyPolicy.styleProgress(1f), 0f)
+    }
+
+    @Test
+    fun targetStyleBlendHasBoundedContinuousProgress() {
+        val samples = (0..100).map { TransitionTypographyPolicy.styleProgress(it / 100f) }
+        assertEquals(0f, samples.first(), 0f)
+        assertEquals(1f, samples.last(), 0f)
+        assertTrue(samples.zipWithNext().all { (a, b) -> a <= b })
+        assertTrue(samples.zipWithNext().all { (a, b) -> b - a < 0.04f })
+        assertEquals(0f, TransitionTypographyPolicy.styleProgress(Float.NaN), 0f)
+        assertEquals(0f, TransitionTypographyPolicy.styleProgress(Float.NEGATIVE_INFINITY), 0f)
     }
 
     @Test
