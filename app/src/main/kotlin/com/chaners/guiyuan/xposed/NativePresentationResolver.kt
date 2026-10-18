@@ -216,6 +216,16 @@ internal object NativePresentationResolver {
         return null
     }
 
+    // Snapshot the verified native Paint; never retain its mutable SystemUI owner.
+    internal fun nativeMobileTextPaint(view: View?): Paint? {
+        val drawable = (view as? ImageView)?.drawable ?: return null
+        if (drawable.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
+        val fields = drawableFields[drawable.javaClass] ?: return null
+        return runCatching {
+            (fields.textPaint?.get(drawable) as? Paint)?.let { Paint(it) }
+        }.getOrNull()
+    }
+
     // The visual CC target need not belong to the active data subscription.
     internal fun nativeTargetType(view: View?): NetworkType? =
         when (view) {
