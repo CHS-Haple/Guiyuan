@@ -2219,7 +2219,8 @@ internal class StatusPainter(
         variationWeight: Int? = null,
     ) {
         if (variationWeight != null && targetStyle != null) {
-            configureTextEndpoint(sourceTypeface, targetStyle, textSize, target = true)
+            // Preserve the source face at gesture entry; weights differ across font families.
+            configureTextEndpoint(sourceTypeface, targetStyle, textSize, target = false)
             val previousOverride = paint.fontVariationOverride
             try {
                 paint.setFontVariationOverride(mobileVariation(variationWeight))
@@ -2262,7 +2263,7 @@ internal class StatusPainter(
         variationWeight: Int? = null,
     ) {
         if (variationWeight != null && targetStyle != null) {
-            configureTextEndpoint(sourceTypeface, targetStyle, textSize, target = true)
+            configureTextEndpoint(sourceTypeface, targetStyle, textSize, target = false)
             val previousOverride = paint.fontVariationOverride
             try {
                 paint.setFontVariationOverride(mobileVariation(variationWeight))
