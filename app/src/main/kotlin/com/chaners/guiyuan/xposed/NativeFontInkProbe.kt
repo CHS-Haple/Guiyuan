@@ -26,6 +26,7 @@ internal object NativeFontInkProbe {
                 color = Color.WHITE
                 alpha = 255
                 isAntiAlias = true
+                textAlign = Paint.Align.LEFT
                 clearShadowLayer()
             }
             val nativeBounds = Rect()
