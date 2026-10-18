@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.RectF
-import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
@@ -454,47 +453,8 @@ internal object CcTransitionOwner {
                                     "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
                             }
                         }
-                    val typeView =
-                        sequenceOf("mobile_type", "mobile_type_single")
-                            .mapNotNull { entry ->
-                                NativeParticipantAccess.findResourceView(root, entry)
-                            }
-                            .firstOrNull { NativePresentationResolver.nativeTargetType(it) != null }
-                    val type = NativePresentationResolver.nativeTargetType(typeView)
-                    val fontPaint =
-                        when (typeView) {
-                            is TextView -> typeView.paint
-                            is ImageView ->
-                                NativePresentationResolver.nativeMobileTypeTextPaint(
-                                    typeView.drawable,
-                                )
-                            else -> null
-                        }
-                    val sourceWeight = currentSnapshot.visual.mobileTypeWeight
-                    val effectiveWeight =
-                        sourceWeight.coerceIn(
-                            CenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
-                            CenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
-                        )
-                    val sourceFace = Typeface.create(Typeface.DEFAULT, effectiveWeight, false)
-                    val font =
-                        if (fontPaint == null) {
-                            "unavailable"
-                        } else {
-                            val face = fontPaint.typeface
-                            "weight=${face?.weight ?: "default"}:" +
-                                "italic=${face?.isItalic ?: false}:" +
-                                "fakeBold=${fontPaint.isFakeBoldText}:" +
-                                "variation=${fontPaint.fontVariationSettings ?: "none"}:" +
-                                "size=${fontPaint.textSize}:" +
-                                "faceId=${face?.let(System::identityHashCode) ?: "default"}"
-                        }
                     "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
-                        "size=${root.width}x${root.height}:signal=[$children]:" +
-                        "type=${type?.label ?: "missing"}:" +
-                        "typeView=${typeView?.javaClass?.simpleName ?: "missing"}:" +
-                        "sourceWeight=$sourceWeight/$effectiveWeight:" +
-                        "sourceFaceId=${System.identityHashCode(sourceFace)}:font=[$font]"
+                        "size=${root.width}x${root.height}:signal=[$children]"
                 }
         }
 
@@ -3331,6 +3291,12 @@ internal object CcTransitionOwner {
 
         private fun resolveNativeTextWeight(view: View?): Int? {
             if (view == null) return null
+            if (view is ImageView) {
+                // MobileTypeDrawable paints text itself; its ImageView is not a TextView.
+                // Keep the Guiyuan font family and borrow only the matched target weight.
+                return NativePresentationResolver.nativeMobileTypeTextPaint(view.drawable)
+                    ?.typeface?.weight?.takeIf { it in 1..1000 }
+            }
             if (view is TextView) {
                 return runCatching { view.paint.typeface?.weight ?: view.typeface?.weight }
                     .getOrNull()

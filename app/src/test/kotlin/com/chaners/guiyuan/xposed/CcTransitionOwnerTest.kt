@@ -8,6 +8,18 @@ import org.junit.Test
 
 class CcTransitionOwnerTest {
     @Test
+    fun matchedNativeMobileWeightInterpolatesInBothDirections() {
+        for ((source, midpoint) in listOf(500 to 580, 950 to 805)) {
+            assertEquals(source, MobileTypeTransitionPolicy.resolveWeight(source, 660, 0f))
+            assertEquals(midpoint, MobileTypeTransitionPolicy.resolveWeight(source, 660, 0.5f))
+            assertEquals(660, MobileTypeTransitionPolicy.resolveWeight(source, 660, 1f))
+            assertEquals(source, MobileTypeTransitionPolicy.resolveWeight(source, null, 0.5f))
+        }
+        assertEquals(660, MobileTypeTransitionPolicy.resolveWeight(500, 660, 1.5f))
+        assertEquals(500, MobileTypeTransitionPolicy.resolveWeight(500, 660, -0.5f))
+    }
+
+    @Test
     fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
         val policy = CcTransitionPolicy
         val active = setOf(1, 4)

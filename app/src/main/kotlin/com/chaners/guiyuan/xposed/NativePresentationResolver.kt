@@ -219,7 +219,7 @@ internal object NativePresentationResolver {
             else -> null
         }
 
-    // Read the verified target Drawable's Paint only for evidence; never mutate it.
+    // Read the verified native Drawable's Paint without changing its font or state.
     internal fun nativeMobileTypeTextPaint(drawable: Drawable?): Paint? {
         val native = drawable ?: return null
         if (native.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
