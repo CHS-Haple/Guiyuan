@@ -3193,9 +3193,11 @@ internal class StatusPainter(
         val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
         val styleProgress = targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         paint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
-        paint.textScaleX = 1f + ((targetStyle?.textScaleX ?: 1f) - 1f) * styleProgress
-        paint.textSkewX = (targetStyle?.textSkewX ?: 0f) * styleProgress
-        paint.letterSpacing = (targetStyle?.letterSpacing ?: 0f) * styleProgress
+        val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
+        paint.textScaleX = 1f + (targetScale - 1f) * styleProgress
+        paint.textSkewX = (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
+        paint.letterSpacing =
+            (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
         paint.style = if (stroke > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
         paint.strokeWidth = stroke
         paint.strokeJoin = Paint.Join.ROUND
