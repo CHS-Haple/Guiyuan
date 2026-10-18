@@ -1012,7 +1012,7 @@ class GyModule : XposedModule() {
         }
         if (
             detailedDiagnosticsEnabled &&
-            update.fraction != null &&
+            update.fraction?.let { it >= 0.98f } == true &&
             lastMobileTargetProbeSummary == null
         ) {
             CcTransitionOwner.latestMobileTargetProbeDiagnostic()?.let { summary ->
