@@ -85,9 +85,16 @@ internal class TextOutlineMorph {
         targetPaint.getTextPath(text, 0, text.length, 0f, 0f, targetPath)
         if (sourcePath.isEmpty || targetPath.isEmpty) return false
 
-        val from = contours(sourcePath) ?: return false
-        val to = contours(targetPath) ?: return false
-        if (from.size != to.size || from.isEmpty()) return false
+        val fromLengths = contourLengths(sourcePath) ?: return false
+        val toLengths = contourLengths(targetPath) ?: return false
+        if (fromLengths.size != toLengths.size || fromLengths.isEmpty()) return false
+        val counts = IntArray(fromLengths.size) { index ->
+            (kotlin.math.max(fromLengths[index], toLengths[index]) / 0.4f)
+                .roundToInt()
+                .coerceIn(96, 384)
+        }
+        val from = contours(sourcePath, counts) ?: return false
+        val to = contours(targetPath, counts) ?: return false
 
         val aligned = ArrayList<Pairing>(from.size)
         for (i in from.indices) {
@@ -148,14 +155,25 @@ internal class TextOutlineMorph {
         return true
     }
 
-    private fun contours(path: Path): List<Contour>? {
+    private fun contourLengths(path: Path): FloatArray? {
         val measure = PathMeasure(path, true)
-        val contours = ArrayList<Contour>()
-        val point = FloatArray(2)
+        val lengths = ArrayList<Float>()
         do {
             val length = measure.length
             if (!length.isFinite() || length <= 0.5f) return null
-            val count = (length / 0.4f).roundToInt().coerceIn(96, 384)
+            lengths += length
+            if (lengths.size > 24) return null
+        } while (measure.nextContour())
+        return lengths.toFloatArray()
+    }
+
+    private fun contours(path: Path, counts: IntArray): List<Contour>? {
+        val measure = PathMeasure(path, true)
+        val contours = ArrayList<Contour>(counts.size)
+        val point = FloatArray(2)
+        for (count in counts) {
+            val length = measure.length
+            if (!length.isFinite() || length <= 0.5f) return null
             val points = FloatArray(count * 2)
             for (j in 0 until count) {
                 if (!measure.getPosTan(length * j / count, point, null)) return null
@@ -163,8 +181,9 @@ internal class TextOutlineMorph {
                 points[2 * j + 1] = point[1]
             }
             contours += Contour(points, length)
-            if (contours.size > 24) return null
-        } while (measure.nextContour())
+            if (contours.size < counts.size && !measure.nextContour()) return null
+        }
+        if (measure.nextContour()) return null
         return contours
     }
 
