@@ -2977,6 +2977,7 @@ internal class StatusPainter(
                 opacity = opacity,
             )
         paint.textSize = layout.mainTextSize
+        val mainStroke = paint.strokeWidth
         canvas.drawText(
             layout.main,
             layout.mainX,
@@ -2985,6 +2986,9 @@ internal class StatusPainter(
         )
         if (layout.suffix.isNotEmpty()) {
             paint.textSize = layout.suffixTextSize
+            if (paint.style == Paint.Style.FILL_AND_STROKE && layout.mainTextSize > 0f) {
+                paint.strokeWidth = mainStroke * layout.suffixTextSize / layout.mainTextSize
+            }
             canvas.drawText(
                 layout.suffix,
                 layout.suffixX,
@@ -3047,13 +3051,14 @@ internal class StatusPainter(
             )
         val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
-        configureTransitionTextStyle(
-            sourceTypeface = mobileTypeTypeface(geometry.mobileTypeWeight),
-            currentWeight = geometry.mobileTypeWeight,
+        configureMobileTypeTextStyle(
+            nativeFace = indicator.typeface,
+            weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
             progress = transitionProgress,
             textSize = mainTextSize,
         )
+        val inkPad = if (paint.style == Paint.Style.FILL) 0f else paint.strokeWidth / 2f
         paint.textAlign = Paint.Align.LEFT
         paint.getTextBounds(
             split.first,
@@ -3080,10 +3085,10 @@ internal class StatusPainter(
                 suffixBaselineY = mainBaselineY,
                 bounds =
                     TransitionBounds(
-                        left = mainX + mobileTypeMainBounds.left,
-                        top = mainBaselineY + mobileTypeMainBounds.top,
-                        right = mainX + mobileTypeMainBounds.right,
-                        bottom = mainBaselineY + mobileTypeMainBounds.bottom,
+                        left = mainX + mobileTypeMainBounds.left - inkPad,
+                        top = mainBaselineY + mobileTypeMainBounds.top - inkPad,
+                        right = mainX + mobileTypeMainBounds.right + inkPad,
+                        bottom = mainBaselineY + mobileTypeMainBounds.bottom + inkPad,
                     ),
             )
         }
@@ -3138,33 +3143,77 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left,
-                            suffixX + mobileTypeSuffixBounds.left,
+                            mainX + mobileTypeMainBounds.left - inkPad,
+                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
                         ),
                     top =
                         min(
-                            mainBaselineY + mobileTypeMainBounds.top,
-                            suffixBaselineY + mobileTypeSuffixBounds.top,
+                            mainBaselineY + mobileTypeMainBounds.top - inkPad,
+                            suffixBaselineY + mobileTypeSuffixBounds.top - inkPad * suffixTextSize / mainTextSize,
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right,
-                            suffixX + mobileTypeSuffixBounds.right,
+                            mainX + mobileTypeMainBounds.right + inkPad,
+                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
                         ),
                     bottom =
                         max(
-                            mainBaselineY + mobileTypeMainBounds.bottom,
-                            suffixBaselineY + mobileTypeSuffixBounds.bottom,
+                            mainBaselineY + mobileTypeMainBounds.bottom + inkPad,
+                            suffixBaselineY + mobileTypeSuffixBounds.bottom + inkPad * suffixTextSize / mainTextSize,
                         ),
                 ),
         )
     }
 
+    private fun configureMobileTypeTextStyle(
+        nativeFace: Typeface?,
+        weight: Int,
+        targetStyle: TransitionTextStyle?,
+        progress: Float,
+        textSize: Float,
+    ) {
+        val anchor = nativeFace?.weight?.takeIf { it in 400..1000 }
+        if (nativeFace == null || anchor == null) {
+            val legacyWeight = weight.coerceIn(500, 950)
+            configureTransitionTextStyle(
+                sourceTypeface = mobileTypeTypeface(legacyWeight),
+                currentWeight = legacyWeight,
+                targetStyle = targetStyle,
+                progress = progress,
+                textSize = textSize,
+            )
+            return
+        }
+
+        paint.typeface = nativeFace
+        if (weight < anchor) {
+            // Only vary the copied Paint; never alter the original SystemUI face.
+            runCatching { paint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}") }
+        }
+        val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
+        val styleProgress = targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        paint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
+        paint.textScaleX = 1f + ((targetStyle?.textScaleX ?: 1f) - 1f) * styleProgress
+        paint.textSkewX = (targetStyle?.textSkewX ?: 0f) * styleProgress
+        paint.letterSpacing = (targetStyle?.letterSpacing ?: 0f) * styleProgress
+        paint.style = if (stroke > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
+        paint.strokeWidth = stroke
+        paint.strokeJoin = Paint.Join.ROUND
+        if (progress >= 1f && targetStyle != null && targetStyle.typeface == nativeFace) {
+            // At the endpoint, the verified native style owns the exact ink.
+            paint.typeface = nativeFace
+            paint.style = targetStyle.paintStyle
+            paint.strokeWidth = targetStyle.strokeWidth
+        }
+        paint.textSize = textSize
+    }
+
     private fun mobileTypeTypeface(weight: Int): Typeface {
-        if (cachedMobileTypeWeight != weight) {
-            cachedMobileTypeWeight = weight
+        val nativeWeight = weight.coerceIn(1, 1000)
+        if (cachedMobileTypeWeight != nativeWeight) {
+            cachedMobileTypeWeight = nativeWeight
             cachedMobileTypeTypeface =
-                Typeface.create(Typeface.DEFAULT, weight, false)
+                Typeface.create(Typeface.DEFAULT, nativeWeight, false)
         }
         return cachedMobileTypeTypeface
     }
