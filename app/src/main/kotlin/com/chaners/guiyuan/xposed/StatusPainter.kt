@@ -59,6 +59,9 @@ internal class StatusPainter(
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
+    private val mainOutline = TextOutlineMorph()
+    private val suffixOutline = TextOutlineMorph()
+    private val batteryOutline = TextOutlineMorph()
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null
@@ -98,6 +101,9 @@ internal class StatusPainter(
         nativeWifiReferenceIds.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+        mainOutline.clear()
+        suffixOutline.clear()
+        batteryOutline.clear()
     }
 
     private fun checkNativeResources() {
@@ -347,11 +353,15 @@ internal class StatusPainter(
                     if (model.centerIndicator is CenterIndicator.MobileType) {
                         baseGeometry.copy(
                             mobileTypeWeight =
-                                MobileTypeTransitionPolicy.resolveWeight(
-                                    sourceWeight = baseGeometry.mobileTypeWeight,
-                                    targetWeight = centerTargetTextWeight,
-                                    progress = motion,
-                                ),
+                                if (centerTargetTextStyle != null) {
+                                    baseGeometry.mobileTypeWeight
+                                } else {
+                                    MobileTypeTransitionPolicy.resolveWeight(
+                                        sourceWeight = baseGeometry.mobileTypeWeight,
+                                        targetWeight = centerTargetTextWeight,
+                                        progress = motion,
+                                    )
+                                },
                         )
                     } else {
                         baseGeometry
@@ -1908,7 +1918,8 @@ internal class StatusPainter(
                 ?: sourceWeight
         val progress = motionProgress.coerceIn(0f, 1f)
         val weight =
-            (sourceWeight + (resolvedTargetWeight - sourceWeight) * progress)
+            if (targetStyle != null) sourceWeight
+            else (sourceWeight + (resolvedTargetWeight - sourceWeight) * progress)
                 .roundToInt()
         drawBatteryTopText(
             canvas = canvas,
@@ -1975,11 +1986,15 @@ internal class StatusPainter(
         val base =
             resolveCenterGeometry(visual)
         val weight =
-            MobileTypeTransitionPolicy.resolveWeight(
-                sourceWeight = base.mobileTypeWeight,
-                targetWeight = targetWeight,
-                progress = progress,
-            )
+            if (targetStyle != null) {
+                base.mobileTypeWeight
+            } else {
+                MobileTypeTransitionPolicy.resolveWeight(
+                    sourceWeight = base.mobileTypeWeight,
+                    targetWeight = targetWeight,
+                    progress = progress,
+                )
+            }
         val current = base.copy(mobileTypeWeight = weight)
         val baseLocal =
             resolveMobileTypeLayout(
@@ -2037,7 +2052,8 @@ internal class StatusPainter(
                 )
                 ?: sourceWeight
         val currentWeight =
-            (
+            if (targetStyle != null) sourceWeight
+            else (
                 sourceWeight +
                     (resolvedTargetWeight - sourceWeight) *
                         progress.coerceIn(0f, 1f)
@@ -2137,6 +2153,24 @@ internal class StatusPainter(
         val textBaselineY =
             layout.textOpticalBounds.centerY -
                 (batteryTopTextBounds.top + batteryTopTextBounds.bottom) / 2f
+
+        if (
+            targetStyle != null &&
+            extraStroke == 0f &&
+            batteryOutline.prepare(
+                layout.text,
+                layout.textSize,
+                batteryTopTextTypeface(weight),
+                targetStyle,
+            ) &&
+            batteryOutline.draw(
+                canvas,
+                layout.textOpticalBounds.centerX,
+                layout.textOpticalBounds.centerY,
+                transitionProgress,
+                paint,
+            )
+        ) return
 
         if (extraStroke > 0f) {
             paint.style = Paint.Style.STROKE
@@ -2976,21 +3010,50 @@ internal class StatusPainter(
                 semanticAlpha = 255,
                 opacity = opacity,
             )
+        val source = mobileTypeTypeface(geometry.mobileTypeWeight)
+        val pathReady =
+            targetStyle != null &&
+                mainOutline.prepare(layout.main, layout.mainTextSize, source, targetStyle) &&
+                (
+                    layout.suffix.isEmpty() ||
+                        suffixOutline.prepare(
+                            layout.suffix,
+                            layout.suffixTextSize,
+                            source,
+                            targetStyle,
+                        )
+                )
         paint.textSize = layout.mainTextSize
-        canvas.drawText(
-            layout.main,
-            layout.mainX,
-            layout.mainBaselineY,
-            paint,
-        )
+        val mainCenterX =
+            layout.mainX + (mobileTypeMainBounds.left + mobileTypeMainBounds.right) / 2f
+        val mainCenterY =
+            layout.mainBaselineY + (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
+        if (
+            !pathReady ||
+            !mainOutline.draw(canvas, mainCenterX, mainCenterY, transitionProgress, paint)
+        ) {
+            canvas.drawText(layout.main, layout.mainX, layout.mainBaselineY, paint)
+        }
         if (layout.suffix.isNotEmpty()) {
             paint.textSize = layout.suffixTextSize
-            canvas.drawText(
-                layout.suffix,
-                layout.suffixX,
-                layout.suffixBaselineY,
-                paint,
-            )
+            val suffixCenterX =
+                layout.suffixX +
+                    (mobileTypeSuffixBounds.left + mobileTypeSuffixBounds.right) / 2f
+            val suffixCenterY =
+                layout.suffixBaselineY +
+                    (mobileTypeSuffixBounds.top + mobileTypeSuffixBounds.bottom) / 2f
+            if (
+                !pathReady ||
+                !suffixOutline.draw(
+                    canvas,
+                    suffixCenterX,
+                    suffixCenterY,
+                    transitionProgress,
+                    paint,
+                )
+            ) {
+                canvas.drawText(layout.suffix, layout.suffixX, layout.suffixBaselineY, paint)
+            }
         }
     }
 

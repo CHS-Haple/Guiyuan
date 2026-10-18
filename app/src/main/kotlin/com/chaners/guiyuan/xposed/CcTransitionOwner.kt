@@ -2524,6 +2524,25 @@ internal object CcTransitionOwner {
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
+                            (witness.opticalView as? ImageView)?.drawable ===
+                                witness.opticalDrawable ||
+                                witness.opticalView !is ImageView
+                        ) &&
+                        (
+                            witness.textPaint?.let { font ->
+                                witness.textStyle?.let { captured ->
+                                    font.typeface === captured.typeface &&
+                                        font.textSize == witness.textSize &&
+                                        font.isFakeBoldText == captured.fakeBoldText &&
+                                        font.textScaleX == captured.textScaleX &&
+                                        font.textSkewX == captured.textSkewX &&
+                                        font.letterSpacing == captured.letterSpacing &&
+                                        font.strokeWidth == captured.strokeWidth &&
+                                        font.style == captured.paintStyle
+                                }
+                            } ?: true
+                        ) &&
+                        (
                             target != StatusPainter.TransitionTarget.BatteryNumber ||
                                 (witness.slotView.isShown &&
                                     witness.slotView.width > 0 &&
@@ -2660,6 +2679,7 @@ internal object CcTransitionOwner {
             if (opticalRequired && optical == null && fallbackBounds == null) {
                 return null
             }
+            val textPaint = resolveNativeTextPaint(optical)
             return TargetWitness(
                 slot = slot,
                 slotView = slotRoot,
@@ -2667,8 +2687,11 @@ internal object CcTransitionOwner {
                 subscriptionId = readMobileSubId(slotRoot),
                 requiresOpticalGeometry = opticalRequired,
                 fallbackBounds = fallbackBounds,
-                textWeight = resolveNativeTextWeight(optical),
-                textStyle = resolveNativeTextStyle(optical),
+                textWeight = textPaint?.typeface?.weight ?: resolveNativeTextWeight(optical),
+                textStyle = textPaint?.let(::captureTextStyle),
+                textPaint = textPaint,
+                textSize = textPaint?.textSize,
+                opticalDrawable = (optical as? ImageView)?.drawable,
             )
         }
 
@@ -3268,25 +3291,18 @@ internal object CcTransitionOwner {
                 paintStyle = paint.style,
             )
 
-        private fun resolveNativeTextStyle(
-            view: View?,
-        ): StatusPainter.TransitionTextStyle? {
-            if (view == null) return null
-            if (view is TextView) {
-                return captureTextStyle(view.paint)
+        private fun resolveNativeTextPaint(view: View?): Paint? {
+            if (view is TextView) return view.paint
+            if (view is ImageView) {
+                return NativePresentationResolver.nativeMobileTypeTextPaint(view.drawable)
             }
-            val descendant =
-                if (view is ViewGroup) {
-                    sequence {
-                        for (index in 0 until view.childCount) {
-                            val child = view.getChildAt(index)
-                            if (child is TextView) yield(child)
-                        }
-                    }.firstOrNull()
-                } else {
-                    null
+            if (view is ViewGroup) {
+                for (index in 0 until view.childCount) {
+                    val child = view.getChildAt(index)
+                    if (child is TextView) return child.paint
                 }
-            return descendant?.let { captureTextStyle(it.paint) }
+            }
+            return null
         }
 
         private fun resolveNativeTextWeight(view: View?): Int? {
@@ -3783,6 +3799,9 @@ internal object CcTransitionOwner {
             val fallbackBounds: StatusPainter.TransitionNormalizedBounds?,
             val textWeight: Int? = null,
             val textStyle: StatusPainter.TransitionTextStyle? = null,
+            val textPaint: Paint? = null,
+            val textSize: Float? = null,
+            val opticalDrawable: Drawable? = null,
             val preferFallbackGeometry: Boolean = false,
         )
 

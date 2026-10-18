@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
+import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
@@ -9,13 +10,36 @@ import android.widget.TextView
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
+import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
-    private data class DrawableFields(val type: Field?, val enhanced: Field?)
+    private data class DrawableFields(val type: Field?, val enhanced: Field?, val textPaint: Field?)
 
     private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
+
+    // Verify the exact SystemUI drawable before reading its font Paint.
+    internal fun nativeMobileTypeTextPaint(drawable: Drawable?): Paint? {
+        val native = drawable ?: return null
+        if (native.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
+        val field = drawableFieldsFor(native).textPaint ?: return null
+        return runCatching { field.get(native) as? Paint }
+            .getOrNull()
+            ?.takeIf { it.textSize.isFinite() && it.textSize > 0f }
+    }
+
+    private fun drawableFieldsFor(drawable: Drawable): DrawableFields =
+        drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
+            fun field(name: String): Field? =
+                runCatching { clazz.getDeclaredField(name).apply { isAccessible = true } }
+                    .getOrNull()
+            DrawableFields(
+                type = field(MOBILE_TYPE_FIELD),
+                enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
+                textPaint = field("mMobileTypeTextPaint"),
+            )
+        }
 
     fun resolve(
         state: StatusStateStore.Snapshot,
@@ -214,16 +238,7 @@ internal object NativePresentationResolver {
         }
 
     private fun nativeDrawableType(drawable: Drawable, beforeMeasure: Boolean): NetworkType? {
-        val fields =
-            drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
-                fun field(name: String): Field? =
-                    runCatching { clazz.getDeclaredField(name).apply { isAccessible = true } }
-                        .getOrNull()
-                DrawableFields(
-                    type = field(MOBILE_TYPE_FIELD),
-                    enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
-                )
-            }
+        val fields = drawableFieldsFor(drawable)
         // Drawables can change text without replacing their ImageView.
         val label = runCatching { fields.type?.get(drawable) as? String }.getOrNull()
         val enhanced =
