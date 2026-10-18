@@ -27,7 +27,8 @@ internal object MobileTypeTransitionPolicy {
     fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
         val upper = CenterGeometry.MAX_MOBILE_TYPE_WEIGHT
         val range = (upper - nativeWeight).coerceAtLeast(1)
-        return (weight - nativeWeight).coerceIn(0, range).toFloat() / range * 0.07f
+        val display = weight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, upper)
+        return (display - nativeWeight).coerceIn(0, range).toFloat() / range * 0.07f
     }
 }
 
