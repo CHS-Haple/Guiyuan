@@ -453,8 +453,45 @@ internal object CcTransitionOwner {
                                     "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
                             }
                         }
+                    val typeView =
+                        sequenceOf("mobile_type", "mobile_type_single")
+                            .mapNotNull { entry ->
+                                NativeParticipantAccess.findResourceView(root, entry)
+                            }
+                            .firstOrNull { NativePresentationResolver.nativeTargetType(it) != null }
+                    val type = NativePresentationResolver.nativeTargetType(typeView)
+                    val fontPaint =
+                        when (typeView) {
+                            is TextView -> typeView.paint
+                            is ImageView ->
+                                NativePresentationResolver.nativeMobileTypeTextPaint(
+                                    typeView.drawable,
+                                )
+                            else -> null
+                        }
+                    val sourceWeight = currentSnapshot.visual.mobileTypeWeight
+                    val effectiveWeight =
+                        sourceWeight.coerceIn(
+                            CenterGeometry.MIN_MOBILE_TYPE_WEIGHT,
+                            CenterGeometry.MAX_MOBILE_TYPE_WEIGHT,
+                        )
+                    val font =
+                        if (fontPaint == null) {
+                            "unavailable"
+                        } else {
+                            val face = fontPaint.typeface
+                            "weight=${face?.weight ?: "default"}:" +
+                                "italic=${face?.isItalic ?: false}:" +
+                                "fakeBold=${fontPaint.isFakeBoldText}:" +
+                                "variation=${fontPaint.fontVariationSettings ?: "none"}:" +
+                                "size=${fontPaint.textSize}:" +
+                                "faceId=${face?.let(System::identityHashCode) ?: "default"}"
+                        }
                     "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
-                        "size=${root.width}x${root.height}:signal=[$children]"
+                        "size=${root.width}x${root.height}:signal=[$children]:" +
+                        "type=${type?.label ?: "missing"}:" +
+                        "typeView=${typeView?.javaClass?.simpleName ?: "missing"}:" +
+                        "sourceWeight=$sourceWeight/$effectiveWeight:font=[$font]"
                 }
         }
 
