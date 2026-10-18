@@ -353,7 +353,15 @@ internal class StatusPainter(
                     if (model.centerIndicator is CenterIndicator.MobileType) {
                         baseGeometry.copy(
                             mobileTypeWeight =
-                                if (centerTargetTextStyle != null) {
+                                if (
+                                    model.centerIndicator is CenterIndicator.MobileType &&
+                                    canMorphMobile(
+                                        model.centerIndicator,
+                                        baseGeometry,
+                                        scale,
+                                        centerTargetTextStyle,
+                                    )
+                                ) {
                                     baseGeometry.mobileTypeWeight
                                 } else {
                                     MobileTypeTransitionPolicy.resolveWeight(
@@ -1918,9 +1926,12 @@ internal class StatusPainter(
                 ?: sourceWeight
         val progress = motionProgress.coerceIn(0f, 1f)
         val weight =
-            if (targetStyle != null) sourceWeight
-            else (sourceWeight + (resolvedTargetWeight - sourceWeight) * progress)
-                .roundToInt()
+            if (canMorphBattery(layout.text, layout.textSize, sourceWeight, targetStyle)) {
+                sourceWeight
+            } else {
+                (sourceWeight + (resolvedTargetWeight - sourceWeight) * progress)
+                    .roundToInt()
+            }
         drawBatteryTopText(
             canvas = canvas,
             layout = layout,
@@ -1986,7 +1997,7 @@ internal class StatusPainter(
         val base =
             resolveCenterGeometry(visual)
         val weight =
-            if (targetStyle != null) {
+            if (canMorphMobile(indicator, base, scale, targetStyle)) {
                 base.mobileTypeWeight
             } else {
                 MobileTypeTransitionPolicy.resolveWeight(
@@ -2052,12 +2063,15 @@ internal class StatusPainter(
                 )
                 ?: sourceWeight
         val currentWeight =
-            if (targetStyle != null) sourceWeight
-            else (
-                sourceWeight +
-                    (resolvedTargetWeight - sourceWeight) *
-                        progress.coerceIn(0f, 1f)
-            ).roundToInt()
+            if (canMorphBattery(layout.text, layout.textSize, sourceWeight, targetStyle)) {
+                sourceWeight
+            } else {
+                (
+                    sourceWeight +
+                        (resolvedTargetWeight - sourceWeight) *
+                            progress.coerceIn(0f, 1f)
+                ).roundToInt()
+            }
         val local =
             if (layout.textVisible) {
                 batteryTopTextOpticalBounds(
@@ -2979,6 +2993,45 @@ internal class StatusPainter(
             strokeWeight = weight,
         )
     }
+
+    // Probe the same cached outlines before deciding whether to hold the source face.
+    // Unsupported fonts must retain B1086's weight interpolation, not freeze at source.
+    private fun canMorphMobile(
+        indicator: CenterIndicator.MobileType,
+        geometry: CenterGeometry.Resolved,
+        scale: Float,
+        style: TransitionTextStyle?,
+    ): Boolean {
+        val target = style ?: return false
+        val layout =
+            resolveMobileTypeLayout(
+                indicator = indicator,
+                scale = scale,
+                geometry = geometry,
+                scaleWithCanvas = false,
+            )
+        val source = mobileTypeTypeface(geometry.mobileTypeWeight)
+        return mainOutline.prepare(layout.main, layout.mainTextSize, source, target) &&
+            (
+                layout.suffix.isEmpty() ||
+                    suffixOutline.prepare(
+                        layout.suffix,
+                        layout.suffixTextSize,
+                        source,
+                        target,
+                    )
+            )
+    }
+
+    private fun canMorphBattery(
+        text: String,
+        size: Float,
+        weight: Int,
+        style: TransitionTextStyle?,
+    ): Boolean =
+        style != null &&
+            batteryTopTextExtraStroke(weight, size) == 0f &&
+            batteryOutline.prepare(text, size, batteryTopTextTypeface(weight), style)
 
     private fun drawMobileType(
         canvas: Canvas,
