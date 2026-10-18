@@ -3058,7 +3058,8 @@ internal class StatusPainter(
             progress = transitionProgress,
             textSize = mainTextSize,
         )
-        val inkPad = if (paint.style == Paint.Style.FILL) 0f else paint.strokeWidth / 2f
+        val inkPad =
+            if (paint.style == Paint.Style.FILL) 0f else paint.strokeWidth / 2f
         paint.textAlign = Paint.Align.LEFT
         paint.getTextBounds(
             split.first,
@@ -3187,11 +3188,14 @@ internal class StatusPainter(
 
         paint.typeface = nativeFace
         if (weight < anchor) {
-            // Only vary the copied Paint; never alter the original SystemUI face.
-            runCatching { paint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}") }
+            // Only vary the renderer Paint, never SystemUI's Paint.
+            runCatching {
+                paint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}")
+            }
         }
         val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
-        val styleProgress = targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        val styleProgress =
+            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         paint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
         paint.textScaleX = 1f + (targetScale - 1f) * styleProgress
@@ -3202,7 +3206,7 @@ internal class StatusPainter(
         paint.strokeWidth = stroke
         paint.strokeJoin = Paint.Join.ROUND
         if (progress >= 1f && targetStyle != null && targetStyle.typeface == nativeFace) {
-            // At the endpoint, the verified native style owns the exact ink.
+            // Restore the captured target style without synthetic stroke.
             paint.typeface = nativeFace
             paint.style = targetStyle.paintStyle
             paint.strokeWidth = targetStyle.strokeWidth
