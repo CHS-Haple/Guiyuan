@@ -11,11 +11,11 @@
     <string name="features_title">Features</string>
     <string name="section_display_transition">Display &amp; transitions</string>
     <string name="section_layout_size">Layout &amp; size</string>
-    <string name="section_network">Network icons</string>
+    <string name="section_network">Network &amp; signal</string>
     <string name="dual_signal_title">Dual-row signal</string>
     <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nRemember settings separately for each layout</string>
     <string name="section_battery">Battery &amp; charging</string>
-    <string name="section_management">Management</string>
+    <string name="section_management">Configuration management</string>
     <string name="content_layout_title">Content layout</string>
     <string name="content_layout_summary">Each layout remembers its own settings</string>
     <string name="content_layout_network_center">Network centered</string>
