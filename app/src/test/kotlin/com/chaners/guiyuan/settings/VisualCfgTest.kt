@@ -67,7 +67,7 @@ class VisualCfgTest {
         val previous = VisualCfg(
             mobileTypeWeight = 1400,
             wifiWeight = WIFI_WEIGHT_MAX,
-            topTextWeight = BATTERY_TOP_TEXT_WEIGHT_MAX,
+            topTextWeight = 1400,
         )
         val updated = previous.normalized()
         assertEquals(1000, updated.mobileTypeWeight)
