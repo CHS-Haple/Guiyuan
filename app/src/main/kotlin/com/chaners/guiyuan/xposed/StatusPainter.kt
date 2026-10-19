@@ -35,8 +35,10 @@ internal class StatusPainter(
     private val context: Context,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    // Native 5G font axes must not survive into battery or other Canvas drawing.
+    // 5G uses its own Paint; thin native font variants are reused across frames.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var mobileThinSource: Typeface? = null
+    private val mobileThinFaces = HashMap<Int, Typeface>(32)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -3176,9 +3178,6 @@ internal class StatusPainter(
         progress: Float,
         textSize: Float,
     ) {
-        // Paint retains font variations independently of Typeface on newer Android.
-        // A previous thin frame must not leak into native/extra-stroke frames.
-        mobileTypePaint.setFontVariationSettings(null)
         val anchor = nativeFace?.weight?.takeIf { it in 400..1000 }
         if (nativeFace == null || anchor == null) {
             val legacyWeight = weight.coerceIn(500, 950)
@@ -3193,13 +3192,21 @@ internal class StatusPainter(
             return
         }
 
-        mobileTypePaint.typeface = nativeFace
-        if (weight < anchor) {
-            // Only vary the renderer Paint, never SystemUI's Paint.
-            runCatching {
-                mobileTypePaint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}")
+        mobileTypePaint.typeface =
+            if (weight < anchor) {
+                // Creating a variable font from Paint each frame stalls the CC draw path.
+                // Reuse system-family instances in 10-point steps; never alter nativeFace.
+                if (mobileThinSource != nativeFace) {
+                    mobileThinSource = nativeFace
+                    mobileThinFaces.clear()
+                }
+                val thin = MobileTypeTransitionPolicy.thinWeight(weight, anchor)
+                mobileThinFaces.getOrPut(thin) {
+                    Typeface.create(nativeFace, thin, nativeFace.isItalic)
+                }
+            } else {
+                nativeFace
             }
-        }
         val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
