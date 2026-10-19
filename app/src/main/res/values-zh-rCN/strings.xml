@@ -87,7 +87,7 @@
     <string name="airplane_weight">飞行模式粗细</string>
     <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
-    <string name="mobile_type_weight">移动制式字重</string>
+    <string name="mobile_type_weight">移动制式粗细</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">恢复默认设置</string>
