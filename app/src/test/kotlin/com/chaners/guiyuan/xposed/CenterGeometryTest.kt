@@ -120,6 +120,18 @@ class CenterGeometryTest {
     }
 
     @Test
+    fun previewFontAnchorKeepsBothThinAndStrokeRanges() {
+        val policy = MobileTypeTransitionPolicy
+        val previewAnchor = 700 // Android's default bold Typeface weight.
+        assertEquals(400, policy.thinWeight(400, previewAnchor))
+        assertEquals(600, policy.thinWeight(600, previewAnchor))
+        assertEquals(700, policy.thinWeight(700, previewAnchor))
+        assertEquals(0f, policy.extraStrokeRatio(700, previewAnchor), 0.00001f)
+        assertTrue(policy.extraStrokeRatio(900, previewAnchor) > 0f)
+        assertTrue(policy.extraStrokeRatio(1000, previewAnchor) > policy.extraStrokeRatio(900, previewAnchor))
+    }
+
+    @Test
     fun mobileThinWeightSnapsToCacheGridWithinNativeAnchor() {
         val policy = MobileTypeTransitionPolicy
         assertEquals(400, policy.thinWeight(400, 660))
