@@ -3258,14 +3258,21 @@ internal class StatusPainter(
             mobileBasePaint.typeface = nativeFace
             mobileThinPaints.clear()
         }
+        // A preview starts from the same default font as the battery number.
+        // Its anchor must also be built with the wght axis, not a separate bold face.
+        val axisWeight =
+            if (weight < anchor || nativeWeight != null) {
+                MobileTypeTransitionPolicy.thinWeight(weight, anchor)
+            } else {
+                null
+            }
         val sourcePaint =
-            if (weight < anchor) {
-                val thin = MobileTypeTransitionPolicy.thinWeight(weight, anchor)
-                mobileThinPaints.getOrPut(thin) {
+            if (axisWeight != null) {
+                mobileThinPaints.getOrPut(axisWeight) {
                     Paint(Paint.ANTI_ALIAS_FLAG).apply {
                         typeface = nativeFace
                         // Typeface.create(family, weight) cannot reliably select this font's wght axis.
-                        runCatching { setFontVariationSettings("'wght' $thin") }
+                        runCatching { setFontVariationSettings("'wght' $axisWeight") }
                     }
                 }
             } else {
