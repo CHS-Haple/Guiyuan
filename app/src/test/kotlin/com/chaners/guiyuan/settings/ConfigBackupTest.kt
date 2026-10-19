@@ -31,6 +31,35 @@ class ConfigBackupTest {
         assertEquals(4, source.visual.profiles.size)
     }
 
+    @Test fun legacyMobileThicknessRestoresIntoNewRangeWithoutChangingOtherProfiles() {
+        val json = ConfigBackupFormat.encode(sample())
+        val archived = json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1400")
+        val decoded = ConfigBackupFormat.decode(archived)
+        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
+        assertTrue(decoded.visual.profiles.drop(1).all { it.mobileTypeWeight == 600 })
+        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
+    }
+
+    @Test fun mobileThicknessImportRejectsValuesOutsideOldSchemaRange() {
+        val json = ConfigBackupFormat.encode(sample())
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":399"))
+        }
+        val invalid = sample()
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(invalid.copy(
+                visual = invalid.visual.copy(
+                    profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
+                        if (index == 0) cfg.copy(mobileTypeWeight = 1400) else cfg
+                    },
+                ),
+            ))
+        }
+    }
+
     @Test fun legacySchemaOneWithoutWifiWeightRetainsNativeDefault() {
         val source = ConfigBackupFormat.encode(sample())
         val withoutWeight = source.replace("\"wifiWeight\":100,", "")
