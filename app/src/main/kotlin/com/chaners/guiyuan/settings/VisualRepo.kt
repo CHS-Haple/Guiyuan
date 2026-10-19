@@ -31,6 +31,26 @@ internal fun isBackupVisualKey(key: String): Boolean =
         key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
         isBatterySchemeStorageKey(key)
 
+// Rewrite only the known legacy visual keys; remote readers already clamp on read.
+internal fun migrateMobileTypeWeightRange(preferences: SharedPreferences) {
+    val keys = buildSet {
+        add(MOBILE_TYPE_WEIGHT_KEY)
+        ContentLayout.entries.forEach { layout ->
+            add(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY))
+            add(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true))
+        }
+    }
+    val changes = keys.mapNotNull { key ->
+        val previous = preferences.all[key] as? Int ?: return@mapNotNull null
+        val current = previous.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX)
+        if (previous != current) key to current else null
+    }
+    if (changes.isEmpty()) return
+    preferences.edit().apply {
+        changes.forEach { (key, weight) -> putInt(key, weight) }
+    }.apply()
+}
+
 internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
     edit().also { editor ->
         all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
@@ -69,6 +89,7 @@ internal class VisualRepo(context: Context) {
     init {
         migrateBatteryColorPresetDefaultIfNeeded(preferences)
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
+        migrateMobileTypeWeightRange(preferences)
     }
 
     val settings: Flow<VisualCfg> =
