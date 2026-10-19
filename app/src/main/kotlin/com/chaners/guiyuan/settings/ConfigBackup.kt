@@ -41,6 +41,7 @@ internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
     private const val LEGACY_MOBILE_TYPE_WEIGHT_MAX = 1400
+    private const val LEGACY_BATTERY_TOP_TEXT_WEIGHT_MAX = 1400
     const val MAX_BYTES = 256 * 1024
     private val json = Json {
         encodeDefaults = true
@@ -82,15 +83,18 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        // The original V1 archives allowed mobile thickness up to 1400.
-        // Accept only that known legacy range; all other values stay strictly validated.
+        // Original V1 archives permitted both text weights up to 1400.
+        // Only convert those known legacy values before strict validation.
         val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
         val profiles = decoded.visual.profiles.map { cfg ->
-            if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..LEGACY_MOBILE_TYPE_WEIGHT_MAX) {
-                cfg.copy(mobileTypeWeight = MOBILE_TYPE_WEIGHT_MAX)
-            } else {
-                cfg
-            }
+            cfg.copy(
+                mobileTypeWeight =
+                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..LEGACY_MOBILE_TYPE_WEIGHT_MAX)
+                        MOBILE_TYPE_WEIGHT_MAX else cfg.mobileTypeWeight,
+                topTextWeight =
+                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..LEGACY_BATTERY_TOP_TEXT_WEIGHT_MAX)
+                        BATTERY_TOP_TEXT_WEIGHT_MAX else cfg.topTextWeight,
+            )
         }
         return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
     }
