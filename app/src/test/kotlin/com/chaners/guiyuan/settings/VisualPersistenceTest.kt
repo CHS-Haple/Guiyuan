@@ -56,7 +56,7 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun savedTextThicknessMigratesEveryBankWithoutTouchingOtherKeys() {
+    fun savedNativeWeightsRetainAllValidProfiles() {
         val prefs = MemoryPreferences()
         val network = ContentLayout.NETWORK_CENTER
         val battery = ContentLayout.BATTERY_CENTER
@@ -77,18 +77,18 @@ class VisualPersistenceTest {
 
         migrateTextWeightRanges(prefs)
 
-        assertEquals(1000, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
+        assertEquals(1400, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
+        assertEquals(1200, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
         assertEquals(700, prefs.readVisualCfg(dual = false, layoutOverride = battery).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
-        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).topTextWeight)
+        assertEquals(1001, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
+        assertEquals(1400, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1400, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(1100, prefs.readVisualCfg(dual = false, layoutOverride = network).topTextWeight)
         assertEquals(500, prefs.readVisualCfg(dual = false, layoutOverride = battery).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).topTextWeight)
+        assertEquals(1001, prefs.readVisualCfg(dual = true, layoutOverride = network).topTextWeight)
+        assertEquals(1400, prefs.readVisualCfg(dual = true, layoutOverride = battery).topTextWeight)
         migrateTextWeightRanges(prefs)
-        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(1400, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
         assertEquals(80, prefs.getInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 0))
         assertEquals("90", prefs.getString("application_ui_scale", null))
     }
@@ -105,14 +105,14 @@ class VisualPersistenceTest {
             .apply()
 
         assertEquals(400, prefs.readVisualCfg(dual = false, layoutOverride = layout).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
+        assertEquals(1400, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
+        assertEquals(1400, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
         assertEquals(400, prefs.readVisualCfg(dual = true, layoutOverride = layout).mobileTypeWeight)
 
         migrateTextWeightRanges(prefs)
         assertEquals(400, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1))
-        assertEquals(1000, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
-        assertEquals(1000, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
+        assertEquals(1400, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
+        assertEquals(1400, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
         assertEquals(400, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1))
     }
 

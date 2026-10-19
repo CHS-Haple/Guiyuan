@@ -85,7 +85,6 @@ import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
-import com.chaners.guiyuan.settings.textThicknessPercent
 import com.chaners.guiyuan.settings.topTextUiScale
 import com.chaners.guiyuan.settings.topTextUiScaleDefault
 import com.chaners.guiyuan.settings.topOffsetYUi
@@ -541,13 +540,13 @@ internal fun FeaturesScreen(
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                 valueText =
                     stringResource(
-                        R.string.percent_value,
-                        textThicknessPercent(visual.mobileTypeWeight),
+                        R.string.integer_value,
+                        visual.mobileTypeWeight,
                     ),
                 valueRange =
                     MOBILE_TYPE_WEIGHT_MIN.toFloat()..
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 11,
+                steps = 19,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
@@ -635,13 +634,13 @@ internal fun FeaturesScreen(
                     startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                     valueText =
                         stringResource(
-                            R.string.percent_value,
-                            textThicknessPercent(visual.topTextWeight),
+                            R.string.integer_value,
+                            visual.topTextWeight,
                         ),
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
-                    steps = 11,
+                    steps = 19,
                     showKeyPoints = true,
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints = listOf(BATTERY_TOP_TEXT_WEIGHT_DEFAULT.toFloat()),

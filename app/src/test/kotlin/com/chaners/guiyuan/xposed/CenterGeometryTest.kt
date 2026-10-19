@@ -102,49 +102,15 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileTypeWeightLimitsSelectionWithoutRescalingAcceptedInk() {
+    fun mobileTypeWeightInterpolatesWithinRequestedAndNativeBounds() {
         val policy = MobileTypeTransitionPolicy
         assertEquals(400, policy.resolveWeight(400, 660, 0f))
-        assertEquals(1000, policy.resolveWeight(1400, 660, 0f))
-        assertEquals(830, policy.resolveWeight(1400, 660, 0.5f))
+        assertEquals(1400, policy.resolveWeight(1400, 660, 0f))
+        assertEquals(1030, policy.resolveWeight(1400, 660, 0.5f))
         assertEquals(660, policy.resolveWeight(1400, 660, 1f))
-        assertEquals(830, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(1030, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(1400, policy.resolveWeight(660, 1400, 1f))
         assertEquals(600, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
-
-        assertEquals(0f, policy.extraStrokeRatio(400, 660), 0.00001f)
-        assertEquals(0f, policy.extraStrokeRatio(660, 660), 0.00001f)
-        // The 1400 endpoint remains a mathematical reference, not a new visual maximum.
-        val oldRatioAt1000 = 340f / 740f * 0.07f
-        assertEquals(oldRatioAt1000, policy.extraStrokeRatio(1000, 660), 0.00001f)
-        assertEquals(oldRatioAt1000, policy.extraStrokeRatio(1400, 660), 0.00001f)
-    }
-
-    @Test
-    fun previewFontAnchorKeepsBothThinAndStrokeRanges() {
-        val policy = MobileTypeTransitionPolicy
-        val previewAnchor = 700 // Android's default bold Typeface weight.
-        assertEquals(400, policy.thinWeight(400, previewAnchor))
-        assertEquals(600, policy.thinWeight(600, previewAnchor))
-        assertEquals(700, policy.thinWeight(700, previewAnchor))
-        // The preview keeps the same font-axis anchor while adding the upper stroke.
-        assertEquals(700, policy.thinWeight(900, previewAnchor))
-        assertEquals(700, policy.thinWeight(1000, previewAnchor))
-        assertEquals(0f, policy.extraStrokeRatio(700, previewAnchor), 0.00001f)
-        assertTrue(policy.extraStrokeRatio(900, previewAnchor) > 0f)
-        assertTrue(policy.extraStrokeRatio(1000, previewAnchor) > policy.extraStrokeRatio(900, previewAnchor))
-    }
-
-    @Test
-    fun mobileThinWeightSnapsToCacheGridWithinNativeAnchor() {
-        val policy = MobileTypeTransitionPolicy
-        assertEquals(400, policy.thinWeight(400, 660))
-        assertEquals(400, policy.thinWeight(404, 660))
-        assertEquals(410, policy.thinWeight(405, 660))
-        assertEquals(600, policy.thinWeight(600, 660))
-        assertEquals(660, policy.thinWeight(659, 660))
-        assertEquals(660, policy.thinWeight(1400, 660))
-        assertEquals(635, policy.thinWeight(635, 635))
-        assertEquals(630, policy.thinWeight(631, 635))
     }
 
     @Test

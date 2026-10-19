@@ -38,9 +38,8 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val mobileBasePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var mobileThinSource: Typeface? = null
-    private val mobileThinPaints = HashMap<Int, Paint>(32)
+    private var mobileTextSource: Typeface? = null
+    private val mobileTextSamples = HashMap<Int, Paint>(128)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -58,12 +57,9 @@ internal class StatusPainter(
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
-    private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
-    private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val batteryTextSamples = HashMap<Int, Paint>(64)
     private var batteryTextSource: Typeface = Typeface.DEFAULT
-    private val batteryFontAnchor = Typeface.DEFAULT_BOLD.weight.coerceIn(400, 1000)
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
@@ -105,6 +101,7 @@ internal class StatusPainter(
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
         batteryTextSamples.clear()
+        mobileTextSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
@@ -1647,15 +1644,6 @@ internal class StatusPainter(
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
         val textSize = BATTERY_TOP_TEXT_SIZE * visual.topTextScale
-        val textExtraStroke =
-            if (textVisible) {
-                batteryTopTextExtraStroke(
-                    weight = visual.topTextWeight,
-                    textSize = textSize,
-                )
-            } else {
-                0f
-            }
         if (textVisible) {
             configureBatteryTextStyle(
                 weight = visual.topTextWeight,
@@ -1675,8 +1663,8 @@ internal class StatusPainter(
         val textHeight =
             if (textVisible) batteryTopTextBounds.height().toFloat().coerceAtLeast(0f)
             else 0f
-        val textOpticalWidth = textWidth + textExtraStroke
-        val textOpticalHeight = textHeight + textExtraStroke
+        val textOpticalWidth = textWidth
+        val textOpticalHeight = textHeight
         val chargingIconResourceId =
             model.chargingIconResId
                 ?.takeIf { chargingSlotVisible && it != 0 }
@@ -1828,11 +1816,8 @@ internal class StatusPainter(
             text = text,
             textSize = textSize,
             textWeight = visual.topTextWeight,
-            textExtraStroke = textExtraStroke,
             textX =
-                textInkLeft +
-                    textExtraStroke / 2f -
-                    batteryTopTextBounds.left,
+                textInkLeft - batteryTopTextBounds.left,
             textBaselineY = textBaselineY,
             textOpticalBounds = textOpticalBounds,
             groupOpticalBounds = groupOpticalBounds,
@@ -2080,24 +2065,9 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
     ): TransitionBounds {
-        val extraStroke =
-            batteryTopTextExtraStroke(
-                weight = weight,
-                textSize = layout.textSize,
-            )
-        configureBatteryTextStyle(
-            weight = weight,
-            targetStyle = targetStyle,
-            progress = transitionProgress,
-            textSize = layout.textSize,
-        )
-        batteryTextPaint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
-        val width =
-            batteryTopTextBounds.width().toFloat().coerceAtLeast(0f) +
-                extraStroke
-        val height =
-            batteryTopTextBounds.height().toFloat().coerceAtLeast(0f) +
-                extraStroke
+        configureBatteryTextStyle(        batteryTextPaint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
+        val width = batteryTopTextBounds.width().toFloat().coerceAtLeast(0f)
+        val height = batteryTopTextBounds.height().toFloat().coerceAtLeast(0f)
         return centeredBounds(
             centerX = layout.textOpticalBounds.centerX,
             centerY = layout.textOpticalBounds.centerY,
@@ -2115,21 +2085,12 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
     ) {
-        val extraStroke =
-            batteryTopTextExtraStroke(
-                weight = weight,
-                textSize = layout.textSize,
-            )
-        // Weight interpolation can change glyph ink width. Re-anchor every
-        // frame to the source optical center so typography changes cannot
-        // introduce a sideways drift on top of the geometry morph.
-        val currentBounds =
-            batteryTopTextOpticalBounds(
-                layout = layout,
-                weight = weight,
-                targetStyle = targetStyle,
-                transitionProgress = transitionProgress,
-            )
+        val bounds = batteryTopTextOpticalBounds(
+            layout = layout,
+            weight = weight,
+            targetStyle = targetStyle,
+            transitionProgress = transitionProgress,
+        )
         batteryTextPaint.textAlign = Paint.Align.LEFT
         batteryTextPaint.color = textTint
         batteryTextPaint.alpha =
@@ -2138,112 +2099,33 @@ internal class StatusPainter(
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        val currentOpticalWidth = currentBounds.width
-        val currentCenterX = layout.textOpticalBounds.centerX
+        // Use the same resolved weight for drawing and optical centering.
         val textX =
-            currentCenterX -
-                currentOpticalWidth / 2f +
-                extraStroke / 2f -
-                batteryTopTextBounds.left
-        val textBaselineY =
+            layout.textOpticalBounds.centerX - bounds.width / 2f - batteryTopTextBounds.left
+        val baselineY =
             layout.textOpticalBounds.centerY -
                 (batteryTopTextBounds.top + batteryTopTextBounds.bottom) / 2f
-
-        if (extraStroke > 0f) {
-            batteryTextPaint.style = Paint.Style.STROKE
-            batteryTextPaint.strokeWidth = extraStroke
-            batteryTextPaint.strokeJoin = Paint.Join.ROUND
-            canvas.drawText(
-                layout.text,
-                textX,
-                textBaselineY,
-                batteryTextPaint,
-            )
-        }
-        batteryTextPaint.style = Paint.Style.FILL
-        batteryTextPaint.strokeWidth = 0f
-        canvas.drawText(
-            layout.text,
-            textX,
-            textBaselineY,
-            batteryTextPaint,
-        )
+        canvas.drawText(layout.text, textX, baselineY, batteryTextPaint)
     }
 
-    private fun configureTransitionTextStyle(
-        sourceTypeface: Typeface,
-        currentWeight: Int,
-        targetStyle: TransitionTextStyle?,
-        progress: Float,
-        textSize: Float,
-        outPaint: Paint = paint,
-    ) {
-        val styleProgress =
-            targetStyle
-                ?.let { TransitionTypographyPolicy.styleProgress(progress) }
-                ?: 0f
-        val targetWeight = targetStyle?.weight ?: currentWeight
-        val resolvedWeight =
-            (
-                currentWeight +
-                    (targetWeight - currentWeight) * styleProgress
-            ).roundToInt().coerceIn(1, 1000)
-        val targetTypeface = targetStyle?.typeface
-        outPaint.typeface =
-            when {
-                targetTypeface == null || styleProgress <= 0f ->
-                    sourceTypeface
-                styleProgress >= 0.999f ->
-                    targetTypeface
-                else ->
-                    Typeface.create(
-                        targetTypeface,
-                        resolvedWeight,
-                        targetTypeface.isItalic,
-                    )
+    private fun weightedPaint(
+        source: Typeface,
+        weight: Int,
+        samples: MutableMap<Int, Paint>,
+    ): Paint {
+        val sample = ((weight.coerceIn(1, 1400) + 5) / 10 * 10).coerceAtMost(1400)
+        return samples.getOrPut(sample) {
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = source
+                val supported = runCatching {
+                    setFontVariationSettings("'wght' $sample")
+                }.getOrDefault(false)
+                if (!supported) {
+                    // Android's static font-weight fallback is limited to 1..1000.
+                    typeface = Typeface.create(source, sample.coerceAtMost(1000), source.isItalic)
+                }
             }
-        outPaint.isFakeBoldText =
-            targetStyle?.fakeBoldText == true &&
-                styleProgress >= 0.72f
-        outPaint.textScaleX =
-            lerp(
-                1f,
-                targetStyle?.textScaleX
-                    ?.takeIf { it.isFinite() && it > 0f }
-                    ?: 1f,
-                styleProgress,
-            )
-        outPaint.textSkewX =
-            lerp(
-                0f,
-                targetStyle?.textSkewX
-                    ?.takeIf(Float::isFinite)
-                    ?: 0f,
-                styleProgress,
-            )
-        outPaint.letterSpacing =
-            lerp(
-                0f,
-                targetStyle?.letterSpacing
-                    ?.takeIf(Float::isFinite)
-                    ?: 0f,
-                styleProgress,
-            )
-        outPaint.strokeWidth =
-            lerp(
-                0f,
-                targetStyle?.strokeWidth
-                    ?.takeIf { it.isFinite() && it >= 0f }
-                    ?: 0f,
-                styleProgress,
-            )
-        outPaint.style =
-            if (targetStyle != null && styleProgress >= 0.999f) {
-                targetStyle.paintStyle
-            } else {
-                Paint.Style.FILL
-            }
-        outPaint.textSize = textSize
+        }
     }
 
     private fun configureBatteryTextStyle(
@@ -2257,69 +2139,28 @@ internal class StatusPainter(
             batteryTextSource = source
             batteryTextSamples.clear()
         }
+        // Transition callers resolve the weight once; this function only draws that sample.
+        batteryTextPaint.set(weightedPaint(source, weight, batteryTextSamples))
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
-        val targetWeight = targetStyle?.weight ?: weight
-        val requested =
-            (weight + (targetWeight - weight) * styleProgress)
-                .roundToInt()
-                .coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_WEIGHT_TRANSITION_MAX)
-        val sample =
-            ((requested.coerceAtMost(batteryFontAnchor) + 5) / 10 * 10)
-                .coerceAtMost(batteryFontAnchor)
-        val prepared =
-            batteryTextSamples.getOrPut(sample) {
-                Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    typeface = source
-                    // The system font's wght axis must be set on Paint, not Typeface.create().
-                    val supported =
-                        runCatching { setFontVariationSettings("'wght' $sample") }
-                            .getOrDefault(false)
-                    if (!supported) typeface = Typeface.create(source, sample, false)
-                }
-            }
-        batteryTextPaint.set(prepared)
         batteryTextPaint.isFakeBoldText =
             targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         batteryTextPaint.textScaleX =
-            lerp(
-                1f,
-                targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f,
-                styleProgress,
-            )
+            lerp(1f, targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f, styleProgress)
         batteryTextPaint.textSkewX =
-            lerp(
-                0f,
-                targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f,
-                styleProgress,
-            )
+            lerp(0f, targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f, styleProgress)
         batteryTextPaint.letterSpacing =
-            lerp(
-                0f,
-                targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f,
-                styleProgress,
-            )
+            lerp(0f, targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f, styleProgress)
         batteryTextPaint.textSize = textSize
-        if (progress >= 1f && targetStyle?.typeface != null) {
-            // The final presentation belongs to the native CC renderer.
-            batteryTextPaint.typeface = targetStyle.typeface
+        val native = progress >= 1f && targetStyle?.typeface != null
+        batteryTextPaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
+        batteryTextPaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        if (native) {
+            batteryTextPaint.typeface = targetStyle!!.typeface
             batteryTextPaint.setFontVariationSettings(null)
         }
     }
 
-    private fun batteryTopTextExtraStroke(
-        weight: Int,
-        textSize: Float,
-    ): Float {
-        val extraWeight =
-            (weight - batteryFontAnchor)
-                .coerceIn(0, BATTERY_TOP_WEIGHT_TRANSITION_MAX - batteryFontAnchor)
-        if (extraWeight == 0 || textSize <= 0f) return 0f
-        return textSize *
-            BATTERY_TOP_SYNTHETIC_STROKE_RATIO *
-            extraWeight.toFloat() /
-            (BATTERY_TOP_WEIGHT_TRANSITION_MAX - batteryFontAnchor).toFloat()
-    }
     private fun drawCenterTransition(
         canvas: Canvas,
         current: CenterIndicator,
@@ -3119,7 +2960,6 @@ internal class StatusPainter(
         val previewFace = Typeface.DEFAULT.takeIf { preview && indicator.typeface == null }
         configureMobileTypeTextStyle(
             nativeFace = indicator.typeface ?: previewFace,
-            nativeWeight = previewFace?.let { Typeface.DEFAULT_BOLD.weight },
             weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
             progress = transitionProgress,
@@ -3235,83 +3075,35 @@ internal class StatusPainter(
 
     private fun configureMobileTypeTextStyle(
         nativeFace: Typeface?,
-        nativeWeight: Int? = null,
         weight: Int,
         targetStyle: TransitionTextStyle?,
         progress: Float,
         textSize: Float,
     ) {
-        val anchor = (nativeWeight ?: nativeFace?.weight)?.takeIf { it in 400..1000 }
-        if (nativeFace == null || anchor == null) {
-            mobileTypePaint.set(mobileBasePaint)
-            val legacyWeight = weight.coerceIn(500, 950)
-            configureTransitionTextStyle(
-                sourceTypeface = mobileTypeTypeface(legacyWeight),
-                currentWeight = legacyWeight,
-                targetStyle = targetStyle,
-                progress = progress,
-                textSize = textSize,
-                outPaint = mobileTypePaint,
-            )
-            return
+        val source = nativeFace ?: Typeface.DEFAULT
+        if (mobileTextSource != source) {
+            mobileTextSource = source
+            mobileTextSamples.clear()
         }
-
-        if (mobileThinSource != nativeFace) {
-            mobileThinSource = nativeFace
-            mobileBasePaint.typeface = nativeFace
-            mobileThinPaints.clear()
-        }
-        // A preview starts from the same default font as the battery number.
-        // Its anchor must also be built with the wght axis, not a separate bold face.
-        val axisWeight =
-            if (weight < anchor || nativeWeight != null) {
-                MobileTypeTransitionPolicy.thinWeight(weight, anchor)
-            } else {
-                null
-            }
-        val sourcePaint =
-            if (axisWeight != null) {
-                mobileThinPaints.getOrPut(axisWeight) {
-                    Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        typeface = nativeFace
-                        // Typeface.create(family, weight) cannot reliably select this font's wght axis.
-                        runCatching { setFontVariationSettings("'wght' $axisWeight") }
-                    }
-                }
-            } else {
-                mobileBasePaint
-            }
-        // Copy a prepared Paint rather than reconstructing its variable-font axis each frame.
-        mobileTypePaint.set(sourcePaint)
-        val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
+        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples))
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
-        mobileTypePaint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
+        mobileTypePaint.isFakeBoldText =
+            targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
         mobileTypePaint.textScaleX = 1f + (targetScale - 1f) * styleProgress
-        mobileTypePaint.textSkewX = (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
+        mobileTypePaint.textSkewX =
+            (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
         mobileTypePaint.letterSpacing =
             (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
-        mobileTypePaint.style = if (stroke > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
-        mobileTypePaint.strokeWidth = stroke
-        mobileTypePaint.strokeJoin = Paint.Join.ROUND
-        if (progress >= 1f && targetStyle != null && targetStyle.typeface == nativeFace) {
-            // Restore the captured target style without synthetic stroke.
-            mobileTypePaint.typeface = nativeFace
-            mobileTypePaint.style = targetStyle.paintStyle
-            mobileTypePaint.strokeWidth = targetStyle.strokeWidth
+        val native = progress >= 1f && targetStyle?.typeface != null
+        mobileTypePaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
+        mobileTypePaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        if (native) {
+            mobileTypePaint.typeface = targetStyle!!.typeface
+            mobileTypePaint.setFontVariationSettings(null)
         }
         mobileTypePaint.textSize = textSize
-    }
-
-    private fun mobileTypeTypeface(weight: Int): Typeface {
-        val nativeWeight = weight.coerceIn(1, 1000)
-        if (cachedMobileTypeWeight != nativeWeight) {
-            cachedMobileTypeWeight = nativeWeight
-            cachedMobileTypeTypeface =
-                Typeface.create(Typeface.DEFAULT, nativeWeight, false)
-        }
-        return cachedMobileTypeTypeface
     }
 
     private fun dualMobileRowBounds(
@@ -3939,7 +3731,6 @@ internal class StatusPainter(
             BATTERY_TOP_CONTENT_CENTER_Y -
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
-        const val BATTERY_TOP_SYNTHETIC_STROKE_RATIO = 0.07f
         const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
         const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400
 
@@ -3955,7 +3746,6 @@ internal class StatusPainter(
         val text: String,
         val textSize: Float,
         val textWeight: Int,
-        val textExtraStroke: Float,
         val textX: Float,
         val textBaselineY: Float,
         val textOpticalBounds: TransitionBounds,

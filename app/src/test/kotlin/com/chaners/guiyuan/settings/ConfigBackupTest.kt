@@ -31,16 +31,16 @@ class ConfigBackupTest {
         assertEquals(4, source.visual.profiles.size)
     }
 
-    @Test fun legacyMobileThicknessRestoresIntoNewRangeWithoutChangingOtherProfiles() {
+    @Test fun nativeMobileWeightRestoresWithoutChangingOtherProfiles() {
         val json = ConfigBackupFormat.encode(sample())
         val archived = json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1400")
         val decoded = ConfigBackupFormat.decode(archived)
-        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
+        assertEquals(1400, decoded.visual.profiles.first().mobileTypeWeight)
         assertTrue(decoded.visual.profiles.drop(1).all { it.mobileTypeWeight == 600 })
-        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
+        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1400"))
     }
 
-    @Test fun mobileThicknessImportRejectsValuesOutsideOldSchemaRange() {
+    @Test fun mobileWeightImportRejectsValuesOutsideValidRange() {
         val json = ConfigBackupFormat.encode(sample())
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
@@ -56,26 +56,26 @@ class ConfigBackupTest {
             ConfigBackupFormat.validate(invalid.copy(
                 visual = invalid.visual.copy(
                     profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
-                        if (index == 0) cfg.copy(mobileTypeWeight = 1400) else cfg
+                        if (index == 0) cfg.copy(mobileTypeWeight = 1401) else cfg
                     },
                 ),
             ))
         }
     }
 
-    @Test fun legacyBatteryThicknessRestoresOnlyHistoricalRange() {
+    @Test fun nativeBatteryWeightRestoresOriginalValue() {
         val json = ConfigBackupFormat.encode(sample())
         val previous = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1400")
         val decoded = ConfigBackupFormat.decode(previous)
-        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
+        assertEquals(1400, decoded.visual.profiles.first().topTextWeight)
         assertTrue(decoded.visual.profiles.drop(1).all { it.topTextWeight == 600 })
         assertTrue(decoded.visual.profiles.all { it.mobileTypeWeight == 600 })
-        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"topTextWeight\":1000"))
+        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"topTextWeight\":1400"))
 
         val boundary = ConfigBackupFormat.decode(
             json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1001"),
         )
-        assertEquals(1000, boundary.visual.profiles.first().topTextWeight)
+        assertEquals(1001, boundary.visual.profiles.first().topTextWeight)
     }
 
     @Test fun batteryThicknessImportRejectsMalformedAndOutOfRangeValues() {
@@ -86,7 +86,7 @@ class ConfigBackupTest {
             }
         }
         val invalid = sample()
-        for (weight in listOf(399, 1001, 1400, 1401)) {
+        for (weight in listOf(399, 1401, 5000)) {
             assertThrows(IllegalArgumentException::class.java) {
                 ConfigBackupFormat.validate(invalid.copy(
                     visual = invalid.visual.copy(
@@ -99,13 +99,13 @@ class ConfigBackupTest {
         }
     }
 
-    @Test fun legacyBatteryAndMobileWeightsConvertWithoutChangingOtherProfiles() {
+    @Test fun batteryAndMobileWeightsRetainIndependentValues() {
         val json = ConfigBackupFormat.encode(sample())
         val old = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1200")
             .replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1300")
         val decoded = ConfigBackupFormat.decode(old)
-        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
-        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
+        assertEquals(1200, decoded.visual.profiles.first().topTextWeight)
+        assertEquals(1300, decoded.visual.profiles.first().mobileTypeWeight)
         assertEquals(sample().visual.profiles.drop(1), decoded.visual.profiles.drop(1))
     }
 

@@ -45,7 +45,7 @@
     <string name="battery_top_readout">显示电量数字</string>
     <string name="battery_top_readout_summary">显示当前电量数字，电量环自动避让</string>
     <string name="battery_top_text_size">数字大小</string>
-    <string name="battery_top_text_weight">数字粗细</string>
+    <string name="battery_top_text_weight">数字字重</string>
     <string name="battery_top_vertical_offset">上下偏移（正上负下）</string>
     <string name="battery_top_charging_icon_size">充电闪电大小</string>
     <string name="battery_top_scale_value">%1$d%%</string>
@@ -86,7 +86,7 @@
     <string name="airplane_weight">飞行模式粗细</string>
     <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
-    <string name="mobile_type_weight">移动制式粗细</string>
+    <string name="mobile_type_weight">移动制式字重</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">恢复默认设置</string>

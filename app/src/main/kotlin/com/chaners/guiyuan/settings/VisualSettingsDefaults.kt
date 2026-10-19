@@ -105,7 +105,7 @@ internal const val BATTERY_TOP_TEXT_SCALE_MAX =
     BATTERY_TOP_TEXT_UI_SCALE_REFERENCE * BATTERY_TOP_TEXT_UI_SCALE_MAX
 internal const val BATTERY_TOP_TEXT_WEIGHT_DEFAULT = 600
 internal const val BATTERY_TOP_TEXT_WEIGHT_MIN = 400
-internal const val BATTERY_TOP_TEXT_WEIGHT_MAX = 1000
+internal const val BATTERY_TOP_TEXT_WEIGHT_MAX = 1400
 // Persisted offset stays physical; UI zero maps to the +3 reference.
 internal const val BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE = 3f
 internal const val BATTERY_TOP_VERTICAL_OFFSET_UI_MIN = -10f
@@ -306,11 +306,7 @@ internal const val MOBILE_TYPE_SIZE_SCALE_MIN = 0.40f
 internal const val MOBILE_TYPE_SIZE_SCALE_MAX = 1.25f
 internal const val MOBILE_TYPE_WEIGHT_DEFAULT = 600
 internal const val MOBILE_TYPE_WEIGHT_MIN = 400
-internal const val MOBILE_TYPE_WEIGHT_MAX = 1000
-
-// UI thickness is relative to the existing 600 default; saved values stay 400..1000.
-internal fun textThicknessPercent(weight: Int): Int =
-    100 + (weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX) - MOBILE_TYPE_WEIGHT_DEFAULT) / 5
+internal const val MOBILE_TYPE_WEIGHT_MAX = 1400
 
 internal fun batteryColorModeKey(slot: BatteryColorSlot): String =
     when (slot) {
