@@ -23,14 +23,12 @@ internal object MobileTypeTransitionPolicy {
             .coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
     }
 
-}
-
-internal object TextInkWeightPolicy {
-    // The numbers are visual strength above a font anchor, not font-axis weights.
-    fun extraStrokeRatio(weight: Int, anchor: Int, upper: Int): Float {
-        val range = (upper - anchor).coerceAtLeast(1)
-        val display = weight.coerceIn(400, upper)
-        return (display - anchor).coerceIn(0, range).toFloat() / range * 0.07f
+    // Above the native anchor, thicken visible ink without asking Typeface for >1000.
+    fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
+        val upper = CenterGeometry.MAX_MOBILE_TYPE_WEIGHT
+        val range = (upper - nativeWeight).coerceAtLeast(1)
+        val display = weight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, upper)
+        return (display - nativeWeight).coerceIn(0, range).toFloat() / range * 0.07f
     }
 }
 
