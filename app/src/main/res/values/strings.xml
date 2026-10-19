@@ -88,7 +88,7 @@
     <string name="airplane_weight">Airplane mode weight</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
-    <string name="mobile_type_weight">Mobile type weight</string>
+    <string name="mobile_type_thickness">Mobile type weight</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">Restore defaults</string>
