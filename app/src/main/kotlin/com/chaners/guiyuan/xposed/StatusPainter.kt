@@ -63,6 +63,7 @@ internal class StatusPainter(
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val batteryTextSamples = HashMap<Int, Paint>(64)
     private var batteryTextSource: Typeface = Typeface.DEFAULT
+    private val batteryFontAnchor = Typeface.DEFAULT_BOLD.weight.coerceIn(400, 1000)
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
@@ -2262,8 +2263,10 @@ internal class StatusPainter(
         val requested =
             (weight + (targetWeight - weight) * styleProgress)
                 .roundToInt()
-                .coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_NATIVE_WEIGHT_MAX)
-        val sample = ((requested + 5) / 10 * 10).coerceAtMost(BATTERY_TOP_NATIVE_WEIGHT_MAX)
+                .coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_WEIGHT_TRANSITION_MAX)
+        val sample =
+            ((requested.coerceAtMost(batteryFontAnchor) + 5) / 10 * 10)
+                .coerceAtMost(batteryFontAnchor)
         val prepared =
             batteryTextSamples.getOrPut(sample) {
                 Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -2309,13 +2312,13 @@ internal class StatusPainter(
         textSize: Float,
     ): Float {
         val extraWeight =
-            (weight - BATTERY_TOP_NATIVE_WEIGHT_MAX)
-                .coerceIn(0, BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE)
+            (weight - batteryFontAnchor)
+                .coerceIn(0, BATTERY_TOP_WEIGHT_TRANSITION_MAX - batteryFontAnchor)
         if (extraWeight == 0 || textSize <= 0f) return 0f
         return textSize *
             BATTERY_TOP_SYNTHETIC_STROKE_RATIO *
             extraWeight.toFloat() /
-            BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE.toFloat()
+            (BATTERY_TOP_WEIGHT_TRANSITION_MAX - batteryFontAnchor).toFloat()
     }
     private fun drawCenterTransition(
         canvas: Canvas,
@@ -3936,8 +3939,6 @@ internal class StatusPainter(
             BATTERY_TOP_CONTENT_CENTER_Y -
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
-        const val BATTERY_TOP_NATIVE_WEIGHT_MAX = 1000
-        const val BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE = 400
         const val BATTERY_TOP_SYNTHETIC_STROKE_RATIO = 0.07f
         const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
         const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400

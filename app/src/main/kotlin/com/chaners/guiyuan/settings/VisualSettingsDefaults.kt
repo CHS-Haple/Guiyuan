@@ -308,6 +308,10 @@ internal const val MOBILE_TYPE_WEIGHT_DEFAULT = 600
 internal const val MOBILE_TYPE_WEIGHT_MIN = 400
 internal const val MOBILE_TYPE_WEIGHT_MAX = 1000
 
+// UI thickness is relative to the existing 600 default; saved values stay 400..1000.
+internal fun textThicknessPercent(weight: Int): Int =
+    100 + (weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX) - MOBILE_TYPE_WEIGHT_DEFAULT) / 5
+
 internal fun batteryColorModeKey(slot: BatteryColorSlot): String =
     when (slot) {
         BatteryColorSlot.NORMAL -> BATTERY_COLOR_MODE_NORMAL_KEY

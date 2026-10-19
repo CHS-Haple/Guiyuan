@@ -63,6 +63,19 @@ class VisualCfgTest {
     }
 
     @Test
+    fun displayThicknessUsesLegacyProfilesWithoutRewritingSavedValues() {
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MAX, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(60, textThicknessPercent(400))
+        assertEquals(100, textThicknessPercent(600))
+        assertEquals(120, textThicknessPercent(700))
+        assertEquals(180, textThicknessPercent(1000))
+        assertEquals(60, textThicknessPercent(Int.MIN_VALUE))
+        assertEquals(180, textThicknessPercent(Int.MAX_VALUE))
+    }
+
+    @Test
     fun oldMobileThicknessValuesClampWithoutResettingOtherVisualSettings() {
         val previous = VisualCfg(
             mobileTypeWeight = 1400,
