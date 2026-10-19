@@ -3184,7 +3184,7 @@ internal class StatusPainter(
                 mobileTypePaint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}")
             }
         }
-        val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
+        val stroke = textSize * TextInkWeightPolicy.extraStrokeRatio(weight, anchor, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         mobileTypePaint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
