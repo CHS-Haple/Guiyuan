@@ -1808,7 +1808,6 @@ internal class StatusPainter(
             text = text,
             textSize = textSize,
             textWeight = visual.topTextWeight,
-            textExtraStroke = textExtraStroke,
             textX =
                 textInkLeft +
                     textExtraStroke / 2f -
@@ -2198,8 +2197,8 @@ internal class StatusPainter(
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         // As in the accepted transition, take the native target's family when
         // the target style begins. Never wait until the last frame to swap it.
-        batteryTextPaint.typeface =
-            targetStyle?.typeface?.takeIf { styleProgress > 0f } ?: batteryTextFace
+        val sourceFace = targetStyle?.typeface?.takeIf { styleProgress > 0f } ?: batteryTextFace
+        batteryTextPaint.typeface = sourceFace
         if (weight < BATTERY_TOP_INK_ANCHOR) {
             val nativeAxis = runCatching {
                 batteryTextPaint.setFontVariationSettings(
@@ -2209,9 +2208,9 @@ internal class StatusPainter(
             if (!nativeAxis) {
                 // Fonts without a wght axis retain a normal system Typeface fallback.
                 batteryTextPaint.typeface = Typeface.create(
-                    Typeface.DEFAULT,
+                    sourceFace,
                     weight.coerceIn(400, BATTERY_TOP_INK_ANCHOR),
-                    false,
+                    sourceFace.isItalic,
                 )
             }
         }
@@ -3860,7 +3859,6 @@ internal class StatusPainter(
         val text: String,
         val textSize: Float,
         val textWeight: Int,
-        val textExtraStroke: Float,
         val textX: Float,
         val textBaselineY: Float,
         val textOpticalBounds: TransitionBounds,
