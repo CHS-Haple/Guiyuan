@@ -15,7 +15,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
-        assertEquals(900, settings.mobileTypeWeight)
+        assertEquals(600, settings.mobileTypeWeight)
         assertEquals(true, settings.ccTintTransition)
         assertEquals(true, settings.fillFollowsRetract)
         assertEquals(false, settings.showTopReadout)
@@ -48,8 +48,8 @@ class VisualCfgTest {
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
         assertEquals(400, MOBILE_TYPE_WEIGHT_MIN)
-        assertEquals(900, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(1400, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(600, MOBILE_TYPE_WEIGHT_DEFAULT)
+        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
         assertEquals(0.40f, WIFI_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MIN, 0.0001f)
@@ -57,6 +57,21 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_MAX, 0.0001f)
         assertEquals(0.40f, MOBILE_TYPE_SIZE_SCALE_MIN, 0.0001f)
+    }
+
+    @Test
+    fun oldMobileThicknessValuesClampWithoutResettingOtherVisualSettings() {
+        val previous = VisualCfg(
+            mobileTypeWeight = 1400,
+            wifiWeight = WIFI_WEIGHT_MAX,
+            topTextWeight = BATTERY_TOP_TEXT_WEIGHT_MAX,
+        )
+        val updated = previous.normalized()
+        assertEquals(1000, updated.mobileTypeWeight)
+        assertEquals(WIFI_WEIGHT_MAX, updated.wifiWeight)
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MAX, updated.topTextWeight)
+        assertEquals(400, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
+        assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
     }
 
     @Test
