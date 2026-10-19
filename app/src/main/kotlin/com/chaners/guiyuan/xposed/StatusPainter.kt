@@ -2065,7 +2065,13 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
     ): TransitionBounds {
-        configureBatteryTextStyle(        batteryTextPaint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
+        configureBatteryTextStyle(
+            weight = weight,
+            targetStyle = targetStyle,
+            progress = transitionProgress,
+            textSize = layout.textSize,
+        )
+        batteryTextPaint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
         val width = batteryTopTextBounds.width().toFloat().coerceAtLeast(0f)
         val height = batteryTopTextBounds.height().toFloat().coerceAtLeast(0f)
         return centeredBounds(
