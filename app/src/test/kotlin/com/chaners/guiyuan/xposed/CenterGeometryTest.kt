@@ -110,11 +110,27 @@ class CenterGeometryTest {
         assertEquals(660, policy.resolveWeight(1400, 660, 1f))
         assertEquals(1030, policy.resolveWeight(660, 1400, 0.5f))
 
-        assertEquals(0f, policy.extraStrokeRatio(400, 660), 0.00001f)
-        assertEquals(0f, policy.extraStrokeRatio(660, 660), 0.00001f)
-        val mid = policy.extraStrokeRatio(1000, 660)
+        val ink = TextInkWeightPolicy
+        assertEquals(0f, ink.extraStrokeRatio(400, 660, 1400), 0.00001f)
+        assertEquals(0f, ink.extraStrokeRatio(660, 660, 1400), 0.00001f)
+        val mid = ink.extraStrokeRatio(1000, 660, 1400)
         assertTrue(mid > 0f && mid < 0.07f)
-        assertEquals(0.07f, policy.extraStrokeRatio(1400, 660), 0.00001f)
+        assertEquals(0.07f, ink.extraStrokeRatio(1400, 660, 1400), 0.00001f)
+    }
+
+    @Test
+    fun batteryUsesOneVisualInkAnchorAcrossItsFullSettingRange() {
+        val ink = TextInkWeightPolicy
+        val anchor = 620
+        assertEquals(0f, ink.extraStrokeRatio(400, anchor, 1400), 0f)
+        assertEquals(0f, ink.extraStrokeRatio(anchor, anchor, 1400), 0f)
+        val light = ink.extraStrokeRatio(700, anchor, 1400)
+        val default = ink.extraStrokeRatio(900, anchor, 1400)
+        val heavy = ink.extraStrokeRatio(1200, anchor, 1400)
+        assertTrue(light > 0f && light < default)
+        assertTrue(default < heavy)
+        assertEquals(0.07f, ink.extraStrokeRatio(1400, anchor, 1400), 0.00001f)
+        assertEquals(0.07f, ink.extraStrokeRatio(2000, anchor, 1400), 0.00001f)
     }
 
     @Test
