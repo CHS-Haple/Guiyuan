@@ -35,6 +35,8 @@ internal class StatusPainter(
     private val context: Context,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    // Native 5G font axes must not survive into battery or other Canvas drawing.
+    private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -2165,6 +2167,7 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle?,
         progress: Float,
         textSize: Float,
+        outPaint: Paint = paint,
     ) {
         val styleProgress =
             targetStyle
@@ -2177,7 +2180,7 @@ internal class StatusPainter(
                     (targetWeight - currentWeight) * styleProgress
             ).roundToInt().coerceIn(1, 1000)
         val targetTypeface = targetStyle?.typeface
-        paint.typeface =
+        outPaint.typeface =
             when {
                 targetTypeface == null || styleProgress <= 0f ->
                     sourceTypeface
@@ -2190,10 +2193,10 @@ internal class StatusPainter(
                         targetTypeface.isItalic,
                     )
             }
-        paint.isFakeBoldText =
+        outPaint.isFakeBoldText =
             targetStyle?.fakeBoldText == true &&
                 styleProgress >= 0.72f
-        paint.textScaleX =
+        outPaint.textScaleX =
             lerp(
                 1f,
                 targetStyle?.textScaleX
@@ -2201,7 +2204,7 @@ internal class StatusPainter(
                     ?: 1f,
                 styleProgress,
             )
-        paint.textSkewX =
+        outPaint.textSkewX =
             lerp(
                 0f,
                 targetStyle?.textSkewX
@@ -2209,7 +2212,7 @@ internal class StatusPainter(
                     ?: 0f,
                 styleProgress,
             )
-        paint.letterSpacing =
+        outPaint.letterSpacing =
             lerp(
                 0f,
                 targetStyle?.letterSpacing
@@ -2217,7 +2220,7 @@ internal class StatusPainter(
                     ?: 0f,
                 styleProgress,
             )
-        paint.strokeWidth =
+        outPaint.strokeWidth =
             lerp(
                 0f,
                 targetStyle?.strokeWidth
@@ -2225,13 +2228,13 @@ internal class StatusPainter(
                     ?: 0f,
                 styleProgress,
             )
-        paint.style =
+        outPaint.style =
             if (targetStyle != null && styleProgress >= 0.999f) {
                 targetStyle.paintStyle
             } else {
                 Paint.Style.FILL
             }
-        paint.textSize = textSize
+        outPaint.textSize = textSize
     }
 
     private fun batteryTopTextTypeface(weight: Int): Typeface {
@@ -2969,15 +2972,15 @@ internal class StatusPainter(
             )
 
         // Draw with the text style already used to measure this layout.
-        paint.color = tint
-        paint.alpha =
+        mobileTypePaint.color = tint
+        mobileTypePaint.alpha =
             VisualIntensity.resolveCanvasAlpha(
                 color = tint,
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        paint.textSize = layout.mainTextSize
-        val mainStroke = paint.strokeWidth
+        mobileTypePaint.textSize = layout.mainTextSize
+        val mainStroke = mobileTypePaint.strokeWidth
         canvas.drawText(
             layout.main,
             layout.mainX,
@@ -2985,9 +2988,9 @@ internal class StatusPainter(
             paint,
         )
         if (layout.suffix.isNotEmpty()) {
-            paint.textSize = layout.suffixTextSize
-            if (paint.style == Paint.Style.FILL_AND_STROKE && layout.mainTextSize > 0f) {
-                paint.strokeWidth = mainStroke * layout.suffixTextSize / layout.mainTextSize
+            mobileTypePaint.textSize = layout.suffixTextSize
+            if (mobileTypePaint.style == Paint.Style.FILL_AND_STROKE && layout.mainTextSize > 0f) {
+                mobileTypePaint.strokeWidth = mainStroke * layout.suffixTextSize / layout.mainTextSize
             }
             canvas.drawText(
                 layout.suffix,
@@ -3059,9 +3062,9 @@ internal class StatusPainter(
             textSize = mainTextSize,
         )
         val inkPad =
-            if (paint.style == Paint.Style.FILL) 0f else paint.strokeWidth / 2f
-        paint.textAlign = Paint.Align.LEFT
-        paint.getTextBounds(
+            if (mobileTypePaint.style == Paint.Style.FILL) 0f else mobileTypePaint.strokeWidth / 2f
+        mobileTypePaint.textAlign = Paint.Align.LEFT
+        mobileTypePaint.getTextBounds(
             split.first,
             0,
             split.first.length,
@@ -3094,8 +3097,8 @@ internal class StatusPainter(
             )
         }
 
-        paint.textSize = suffixTextSize
-        paint.getTextBounds(
+        mobileTypePaint.textSize = suffixTextSize
+        mobileTypePaint.getTextBounds(
             split.second,
             0,
             split.second.length,
@@ -3173,6 +3176,9 @@ internal class StatusPainter(
         progress: Float,
         textSize: Float,
     ) {
+        // Paint retains font variations independently of Typeface on newer Android.
+        // A previous thin frame must not leak into native/extra-stroke frames.
+        mobileTypePaint.setFontVariationSettings(null)
         val anchor = nativeFace?.weight?.takeIf { it in 400..1000 }
         if (nativeFace == null || anchor == null) {
             val legacyWeight = weight.coerceIn(500, 950)
@@ -3182,36 +3188,37 @@ internal class StatusPainter(
                 targetStyle = targetStyle,
                 progress = progress,
                 textSize = textSize,
+                outPaint = mobileTypePaint,
             )
             return
         }
 
-        paint.typeface = nativeFace
+        mobileTypePaint.typeface = nativeFace
         if (weight < anchor) {
             // Only vary the renderer Paint, never SystemUI's Paint.
             runCatching {
-                paint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}")
+                mobileTypePaint.setFontVariationSettings("'wght' ${weight.coerceIn(400, anchor)}")
             }
         }
         val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
-        paint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
+        mobileTypePaint.isFakeBoldText = targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
-        paint.textScaleX = 1f + (targetScale - 1f) * styleProgress
-        paint.textSkewX = (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
-        paint.letterSpacing =
+        mobileTypePaint.textScaleX = 1f + (targetScale - 1f) * styleProgress
+        mobileTypePaint.textSkewX = (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
+        mobileTypePaint.letterSpacing =
             (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
-        paint.style = if (stroke > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
-        paint.strokeWidth = stroke
-        paint.strokeJoin = Paint.Join.ROUND
+        mobileTypePaint.style = if (stroke > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
+        mobileTypePaint.strokeWidth = stroke
+        mobileTypePaint.strokeJoin = Paint.Join.ROUND
         if (progress >= 1f && targetStyle != null && targetStyle.typeface == nativeFace) {
             // Restore the captured target style without synthetic stroke.
-            paint.typeface = nativeFace
-            paint.style = targetStyle.paintStyle
-            paint.strokeWidth = targetStyle.strokeWidth
+            mobileTypePaint.typeface = nativeFace
+            mobileTypePaint.style = targetStyle.paintStyle
+            mobileTypePaint.strokeWidth = targetStyle.strokeWidth
         }
-        paint.textSize = textSize
+        mobileTypePaint.textSize = textSize
     }
 
     private fun mobileTypeTypeface(weight: Int): Typeface {
