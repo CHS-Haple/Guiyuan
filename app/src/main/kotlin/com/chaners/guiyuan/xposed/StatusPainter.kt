@@ -38,7 +38,6 @@ internal class StatusPainter(
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val mobileBasePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val mobileNativePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mobileThinSource: Typeface? = null
     private val mobileThinPaints = HashMap<Int, Paint>(32)
     private var airplaneDrawableResolved = false
@@ -3197,7 +3196,7 @@ internal class StatusPainter(
 
         if (mobileThinSource != nativeFace) {
             mobileThinSource = nativeFace
-            mobileNativePaint.typeface = nativeFace
+            mobileBasePaint.typeface = nativeFace
             mobileThinPaints.clear()
         }
         val sourcePaint =
@@ -3211,7 +3210,7 @@ internal class StatusPainter(
                     }
                 }
             } else {
-                mobileNativePaint
+                mobileBasePaint
             }
         // Copy a prepared Paint rather than reconstructing its variable-font axis each frame.
         mobileTypePaint.set(sourcePaint)
