@@ -3111,9 +3111,12 @@ internal class StatusPainter(
             )
         val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
+        // Preview shares the battery number's system font family. Live 5G still
+        // uses the Typeface captured from its verified SystemUI drawable.
+        val previewFace = Typeface.DEFAULT.takeIf { preview && indicator.typeface == null }
         configureMobileTypeTextStyle(
-            // The companion preview cannot inspect a live SystemUI TextPaint.
-            nativeFace = indicator.typeface ?: Typeface.DEFAULT_BOLD.takeIf { preview },
+            nativeFace = indicator.typeface ?: previewFace,
+            nativeWeight = previewFace?.let { Typeface.DEFAULT_BOLD.weight },
             weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
             progress = transitionProgress,
@@ -3229,12 +3232,13 @@ internal class StatusPainter(
 
     private fun configureMobileTypeTextStyle(
         nativeFace: Typeface?,
+        nativeWeight: Int? = null,
         weight: Int,
         targetStyle: TransitionTextStyle?,
         progress: Float,
         textSize: Float,
     ) {
-        val anchor = nativeFace?.weight?.takeIf { it in 400..1000 }
+        val anchor = (nativeWeight ?: nativeFace?.weight)?.takeIf { it in 400..1000 }
         if (nativeFace == null || anchor == null) {
             mobileTypePaint.set(mobileBasePaint)
             val legacyWeight = weight.coerceIn(500, 950)
