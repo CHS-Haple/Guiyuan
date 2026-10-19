@@ -13,6 +13,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -81,8 +83,35 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        // Future versions must migrate through explicit validated schema steps.
-        return json.decodeFromJsonElement(ConfigBackup.serializer(), root).also(::validate)
+        // Typed decode may accept noncanonical numeric literals. Do not migrate them.
+        root["visual"]?.jsonObject?.get("profiles")?.jsonArray?.forEach { entry ->
+            val profile = entry.jsonObject
+            for (key in listOf("mobileTypeWeight", "topTextWeight")) {
+                val value = profile[key] ?: continue
+                require(value is JsonPrimitive && !value.isString && value.intOrNull != null) {
+                    "Invalid $key"
+                }
+            }
+        }
+        // V1 allowed 1001..1400. Only those legacy values may be converted before validation.
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
+        val profiles = decoded.visual.profiles.map { cfg ->
+            cfg.copy(
+                mobileTypeWeight =
+                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..1400) {
+                        MOBILE_TYPE_WEIGHT_MAX
+                    } else {
+                        cfg.mobileTypeWeight
+                    },
+                topTextWeight =
+                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..1400) {
+                        BATTERY_TOP_TEXT_WEIGHT_MAX
+                    } else {
+                        cfg.topTextWeight
+                    },
+            )
+        }
+        return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
     }
 
     fun validate(backup: ConfigBackup) {

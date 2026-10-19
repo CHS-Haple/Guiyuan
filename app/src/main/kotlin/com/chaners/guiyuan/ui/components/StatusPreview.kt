@@ -20,7 +20,7 @@ internal fun StatusPreview(
 
     AndroidView(
         factory = { context ->
-            RenderView(context).apply {
+            RenderView(context, preview = true).apply {
                 addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                     syncPreviewViewport()
                 }

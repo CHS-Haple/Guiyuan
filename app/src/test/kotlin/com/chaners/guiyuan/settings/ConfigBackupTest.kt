@@ -31,6 +31,101 @@ class ConfigBackupTest {
         assertEquals(4, source.visual.profiles.size)
     }
 
+    @Test fun legacyMobileWeightsClampWithoutChangingOtherProfiles() {
+        val json = ConfigBackupFormat.encode(sample())
+        val archived = json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1400")
+        val decoded = ConfigBackupFormat.decode(archived)
+        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
+        assertTrue(decoded.visual.profiles.drop(1).all { it.mobileTypeWeight == 600 })
+        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
+    }
+
+    @Test fun mobileWeight200RoundTripsInEveryProfile() {
+        val archive = sample().let { source ->
+            source.copy(visual = source.visual.copy(
+                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 200) },
+            ))
+        }
+        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
+    }
+
+    @Test fun mobileWeightImportRejectsValuesOutsideValidRange() {
+        val json = ConfigBackupFormat.encode(sample())
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":199"))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":\"1400\""))
+        }
+        val invalid = sample()
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(invalid.copy(
+                visual = invalid.visual.copy(
+                    profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
+                        if (index == 0) cfg.copy(mobileTypeWeight = 1001) else cfg
+                    },
+                ),
+            ))
+        }
+    }
+
+    @Test fun legacyBatteryWeightsClampWithoutChangingOtherProfiles() {
+        val json = ConfigBackupFormat.encode(sample())
+        val previous = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1400")
+        val decoded = ConfigBackupFormat.decode(previous)
+        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
+        assertTrue(decoded.visual.profiles.drop(1).all { it.topTextWeight == 600 })
+        assertTrue(decoded.visual.profiles.all { it.mobileTypeWeight == 600 })
+        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"topTextWeight\":1000"))
+        val boundary = ConfigBackupFormat.decode(
+            json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1001"),
+        )
+        assertEquals(1000, boundary.visual.profiles.first().topTextWeight)
+    }
+
+    @Test fun batteryWeight200RoundTripsInEveryProfile() {
+        val archive = sample().let { source ->
+            source.copy(visual = source.visual.copy(
+                profiles = source.visual.profiles.map { it.copy(topTextWeight = 200) },
+            ))
+        }
+        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
+    }
+
+    @Test fun batteryThicknessImportRejectsMalformedAndOutOfRangeValues() {
+        val json = ConfigBackupFormat.encode(sample())
+        for (value in listOf("199", "1401", "-1", "2147483647", "600.5", "\"1400\"", "null")) {
+            assertThrows(Exception::class.java) {
+                ConfigBackupFormat.decode(json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":$value"))
+            }
+        }
+        val invalid = sample()
+        for (weight in listOf(199, 1001, 1401, 5000)) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.validate(invalid.copy(
+                    visual = invalid.visual.copy(
+                        profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
+                            if (index == 0) cfg.copy(topTextWeight = weight) else cfg
+                        },
+                    ),
+                ))
+            }
+        }
+    }
+
+    @Test fun batteryAndMobileWeightsRetainIndependentValues() {
+        val json = ConfigBackupFormat.encode(sample())
+        val old = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1200")
+            .replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1300")
+        val decoded = ConfigBackupFormat.decode(old)
+        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
+        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
+        assertEquals(sample().visual.profiles.drop(1), decoded.visual.profiles.drop(1))
+    }
+
     @Test fun legacySchemaOneWithoutWifiWeightRetainsNativeDefault() {
         val source = ConfigBackupFormat.encode(sample())
         val withoutWeight = source.replace("\"wifiWeight\":100,", "")

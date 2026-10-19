@@ -49,7 +49,6 @@
     <string name="battery_top_vertical_offset">上下偏移（正上负下）</string>
     <string name="battery_top_charging_icon_size">充电闪电大小</string>
     <string name="battery_top_scale_value">%1$d%%</string>
-    <string name="battery_top_weight_value">%1$d</string>
     <string name="battery_top_offset_value">%1$d</string>
     <string name="keyguard_combined_status_title">锁屏显示</string>
     <string name="keyguard_combined_status_summary">在锁屏状态栏显示</string>

@@ -12,12 +12,11 @@ internal object MobileTypeTransitionPolicy {
         targetWeight: Int?,
         progress: Float,
     ): Int {
-        val source = sourceWeight.coerceIn(1, 1000)
+        val source =
+            sourceWeight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+        // A native CC target does not have to fall within the settings range.
         val target = targetWeight?.coerceIn(1, 1000) ?: return source
-        val normalized = progress.coerceIn(0f, 1f)
-        return (source + (target - source) * normalized)
-            .roundToInt()
-            .coerceIn(1, 1000)
+        return (source + (target - source) * progress.coerceIn(0f, 1f)).roundToInt()
     }
 }
 

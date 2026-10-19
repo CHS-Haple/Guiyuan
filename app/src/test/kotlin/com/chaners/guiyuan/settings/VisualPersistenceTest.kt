@@ -56,6 +56,67 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun savedNativeWeightsMigrateAllBanksWithoutTouchingOtherKeys() {
+        val prefs = MemoryPreferences()
+        val network = ContentLayout.NETWORK_CENTER
+        val battery = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putInt(MOBILE_TYPE_WEIGHT_KEY, 1400)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY), 1200)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY), 200)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1001)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1000)
+            .putInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 1400)
+            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY), 1100)
+            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY), 200)
+            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1001)
+            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1000)
+            .putInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 80)
+            .putString("application_ui_scale", "90")
+            .apply()
+
+        migrateTextWeightRanges(prefs)
+
+        assertEquals(1000, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).topTextWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).topTextWeight)
+        migrateTextWeightRanges(prefs)
+        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(80, prefs.getInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 0))
+        assertEquals("90", prefs.getString("application_ui_scale", null))
+    }
+
+    @Test
+    fun corruptedSavedThicknessIsBoundedBeforeItReachesTheRenderer() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit()
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), 1401)
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1401)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1)
+            .apply()
+
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = layout).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = true, layoutOverride = layout).mobileTypeWeight)
+
+        migrateTextWeightRanges(prefs)
+        assertEquals(200, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
+        assertEquals(200, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1))
+    }
+
+    @Test
     fun remoteMirrorPreservesBothBanksWhenSwitchingModes() {
         val local = MemoryPreferences()
         val remote = MemoryPreferences()

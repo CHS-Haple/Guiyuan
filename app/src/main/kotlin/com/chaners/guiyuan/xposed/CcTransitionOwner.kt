@@ -1061,6 +1061,10 @@ internal object CcTransitionOwner {
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
+                        ) == true && (
+                            model.centerIndicator.typeface == null ||
+                                witness?.textStyle?.typeface == null ||
+                                model.centerIndicator.typeface == witness?.textStyle?.typeface
                         )
                     } else {
                         null
@@ -1079,7 +1083,9 @@ internal object CcTransitionOwner {
                             else target.copyOf().apply { this[0] += shift }
                         }
                 val matchedTextWeight =
-                    if (nativeTypeMatch == true) witness?.textWeight else null
+                    if (nativeTypeMatch == true) {
+                        witness?.textWeight ?: (model.centerIndicator as? CenterIndicator.MobileType)?.typeface?.weight
+                    } else null
                 val matchedTextStyle =
                     if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
@@ -2660,6 +2666,7 @@ internal object CcTransitionOwner {
             if (opticalRequired && optical == null && fallbackBounds == null) {
                 return null
             }
+            val textStyle = resolveNativeTextStyle(optical)
             return TargetWitness(
                 slot = slot,
                 slotView = slotRoot,
@@ -2667,8 +2674,8 @@ internal object CcTransitionOwner {
                 subscriptionId = readMobileSubId(slotRoot),
                 requiresOpticalGeometry = opticalRequired,
                 fallbackBounds = fallbackBounds,
-                textWeight = resolveNativeTextWeight(optical),
-                textStyle = resolveNativeTextStyle(optical),
+                textWeight = textStyle?.weight ?: resolveNativeTextWeight(optical),
+                textStyle = textStyle,
             )
         }
 
@@ -3275,6 +3282,8 @@ internal object CcTransitionOwner {
             if (view is TextView) {
                 return captureTextStyle(view.paint)
             }
+            NativePresentationResolver.nativeMobileTextPaint(view)
+                ?.let { return captureTextStyle(it) }
             val descendant =
                 if (view is ViewGroup) {
                     sequence {

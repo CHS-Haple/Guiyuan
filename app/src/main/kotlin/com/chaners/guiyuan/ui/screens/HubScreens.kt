@@ -44,6 +44,7 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MIN
+import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_DEFAULT
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
@@ -545,7 +546,7 @@ internal fun FeaturesScreen(
                 valueRange =
                     MOBILE_TYPE_WEIGHT_MIN.toFloat()..
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 19,
+                steps = 15,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
@@ -633,16 +634,16 @@ internal fun FeaturesScreen(
                     startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                     valueText =
                         stringResource(
-                            R.string.battery_top_weight_value,
+                            R.string.integer_value,
                             visual.topTextWeight,
                         ),
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
-                    steps = 19,
+                    steps = 15,
                     showKeyPoints = true,
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(900f),
+                    keyPoints = listOf(BATTERY_TOP_TEXT_WEIGHT_DEFAULT.toFloat()),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
                 )
