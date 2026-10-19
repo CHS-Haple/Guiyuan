@@ -3112,6 +3112,7 @@ internal class StatusPainter(
         val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
         configureMobileTypeTextStyle(
+            // The companion preview cannot inspect a live SystemUI TextPaint.
             nativeFace = indicator.typeface ?: Typeface.DEFAULT_BOLD.takeIf { preview },
             weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
