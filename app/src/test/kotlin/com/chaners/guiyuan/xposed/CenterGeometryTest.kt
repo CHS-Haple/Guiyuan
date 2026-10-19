@@ -120,7 +120,7 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileThinTypefaceStepsAreBoundedAndReusable() {
+    fun mobileThinWeightSnapsToCacheGridWithinNativeAnchor() {
         val policy = MobileTypeTransitionPolicy
         assertEquals(400, policy.thinWeight(400, 660))
         assertEquals(400, policy.thinWeight(404, 660))
