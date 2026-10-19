@@ -10,6 +10,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | --- | ---: | --- | --- |
 | libxposed API | 102.0.0 | Modern Xposed API surface | Apache-2.0 |
 | libxposed service | 102.0.0 | Modern Xposed service integration | Apache-2.0 |
+| AndroidX Core | 1.17.0 | Android compatibility and core APIs | Apache-2.0 |
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
