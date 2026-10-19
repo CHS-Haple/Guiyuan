@@ -10,11 +10,11 @@
     <string name="features_title">功能</string>
     <string name="section_display_transition">显示与过渡</string>
     <string name="section_layout_size">布局与尺寸</string>
-    <string name="section_network">网络图标</string>
+    <string name="section_network">网络与信号</string>
     <string name="dual_signal_title">双排信号</string>
     <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n单排与双排分别记忆配置</string>
     <string name="section_battery">电量与充电</string>
-    <string name="section_management">管理</string>
+    <string name="section_management">配置管理</string>
     <string name="content_layout_title">内容布局</string>
     <string name="content_layout_summary">两种布局分别记忆设置</string>
     <string name="content_layout_network_center">网络居中</string>
