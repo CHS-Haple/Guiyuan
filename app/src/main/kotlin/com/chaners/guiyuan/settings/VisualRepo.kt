@@ -40,8 +40,9 @@ internal fun migrateMobileTypeWeightRange(preferences: SharedPreferences) {
             add(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true))
         }
     }
+    val stored = preferences.all
     val changes = keys.mapNotNull { key ->
-        val previous = preferences.all[key] as? Int ?: return@mapNotNull null
+        val previous = stored[key] as? Int ?: return@mapNotNull null
         val current = previous.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX)
         if (previous != current) key to current else null
     }
