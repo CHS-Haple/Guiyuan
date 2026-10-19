@@ -1654,14 +1654,14 @@ internal class StatusPainter(
             } else {
                 0f
             }
-        configureBatteryTextStyle(
-            weight = visual.topTextWeight,
-            targetStyle = null,
-            progress = 0f,
-            textSize = textSize,
-        )
-        batteryTextPaint.textAlign = Paint.Align.LEFT
         if (textVisible) {
+            configureBatteryTextStyle(
+                weight = visual.topTextWeight,
+                targetStyle = null,
+                progress = 0f,
+                textSize = textSize,
+            )
+            batteryTextPaint.textAlign = Paint.Align.LEFT
             batteryTextPaint.getTextBounds(text, 0, text.length, batteryTopTextBounds)
         } else {
             batteryTopTextBounds.setEmpty()
@@ -2255,7 +2255,13 @@ internal class StatusPainter(
             batteryTextSource = source
             batteryTextSamples.clear()
         }
-        val requested = weight.coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_NATIVE_WEIGHT_MAX)
+        val styleProgress =
+            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        val targetWeight = targetStyle?.weight ?: weight
+        val requested =
+            (weight + (targetWeight - weight) * styleProgress)
+                .roundToInt()
+                .coerceIn(BATTERY_TOP_WEIGHT_TRANSITION_MIN, BATTERY_TOP_NATIVE_WEIGHT_MAX)
         val sample = ((requested + 5) / 10 * 10).coerceAtMost(BATTERY_TOP_NATIVE_WEIGHT_MAX)
         val prepared =
             batteryTextSamples.getOrPut(sample) {
@@ -2269,8 +2275,6 @@ internal class StatusPainter(
                 }
             }
         batteryTextPaint.set(prepared)
-        val styleProgress =
-            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         batteryTextPaint.isFakeBoldText =
             targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         batteryTextPaint.textScaleX =
