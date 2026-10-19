@@ -48,6 +48,9 @@ class ConfigBackupTest {
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":399"))
         }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":\"1400\""))
+        }
         val invalid = sample()
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.validate(invalid.copy(
