@@ -93,8 +93,25 @@ internal object ConfigBackupFormat {
                 }
             }
         }
-        // V1 already permitted 400..1400; preserve these values without coercion.
-        return json.decodeFromJsonElement(ConfigBackup.serializer(), root).also(::validate)
+        // V1 allowed 1001..1400. Only those legacy values may be converted before validation.
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
+        val profiles = decoded.visual.profiles.map { cfg ->
+            cfg.copy(
+                mobileTypeWeight =
+                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..1400) {
+                        MOBILE_TYPE_WEIGHT_MAX
+                    } else {
+                        cfg.mobileTypeWeight
+                    },
+                topTextWeight =
+                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..1400) {
+                        BATTERY_TOP_TEXT_WEIGHT_MAX
+                    } else {
+                        cfg.topTextWeight
+                    },
+            )
+        }
+        return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
     }
 
     fun validate(backup: ConfigBackup) {

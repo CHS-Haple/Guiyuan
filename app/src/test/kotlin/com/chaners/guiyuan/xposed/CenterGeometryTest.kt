@@ -104,12 +104,15 @@ class CenterGeometryTest {
     @Test
     fun mobileTypeWeightInterpolatesWithinRequestedAndNativeBounds() {
         val policy = MobileTypeTransitionPolicy
-        assertEquals(400, policy.resolveWeight(400, 660, 0f))
-        assertEquals(1400, policy.resolveWeight(1400, 660, 0f))
-        assertEquals(1030, policy.resolveWeight(1400, 660, 0.5f))
+        assertEquals(200, policy.resolveWeight(200, 660, 0f))
+        assertEquals(1000, policy.resolveWeight(1400, 660, 0f))
+        assertEquals(830, policy.resolveWeight(1400, 660, 0.5f))
         assertEquals(660, policy.resolveWeight(1400, 660, 1f))
-        assertEquals(1030, policy.resolveWeight(660, 1400, 0.5f))
-        assertEquals(1400, policy.resolveWeight(660, 1400, 1f))
+        assertEquals(830, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(1000, policy.resolveWeight(660, 1400, 1f))
+        // The native CC target may be lighter than the minimum user setting.
+        assertEquals(375, policy.resolveWeight(600, 150, 0.5f))
+        assertEquals(150, policy.resolveWeight(600, 150, 1f))
         assertEquals(600, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
     }
 

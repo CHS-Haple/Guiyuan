@@ -2119,7 +2119,7 @@ internal class StatusPainter(
         weight: Int,
         samples: MutableMap<Int, Paint>,
     ): Paint {
-        val sample = ((weight.coerceIn(1, 1400) + 5) / 10 * 10).coerceAtMost(1400)
+        val sample = ((weight.coerceIn(1, 1000) + 5) / 10 * 10).coerceIn(1, 1000)
         return samples.getOrPut(sample) {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
@@ -3738,7 +3738,7 @@ internal class StatusPainter(
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
         const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
-        const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400
+        const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1000
 
     }
 

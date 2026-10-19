@@ -17,8 +17,8 @@ class VisualCfgTest {
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
         assertEquals(600, settings.mobileTypeWeight)
         assertEquals(600, settings.topTextWeight)
-        assertEquals(400, BATTERY_TOP_TEXT_WEIGHT_MIN)
-        assertEquals(1400, BATTERY_TOP_TEXT_WEIGHT_MAX)
+        assertEquals(200, BATTERY_TOP_TEXT_WEIGHT_MIN)
+        assertEquals(1000, BATTERY_TOP_TEXT_WEIGHT_MAX)
         assertEquals(true, settings.ccTintTransition)
         assertEquals(true, settings.fillFollowsRetract)
         assertEquals(false, settings.showTopReadout)
@@ -50,9 +50,9 @@ class VisualCfgTest {
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
-        assertEquals(400, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(200, MOBILE_TYPE_WEIGHT_MIN)
         assertEquals(600, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(1400, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
         assertEquals(0.40f, WIFI_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MIN, 0.0001f)
@@ -70,21 +70,23 @@ class VisualCfgTest {
     }
 
     @Test
-    fun nativeWeightBoundsPreserveExistingProfiles() {
+    fun nativeWeightBoundsPreserveValidProfiles() {
         val previous = VisualCfg(
             mobileTypeWeight = 1400,
             wifiWeight = WIFI_WEIGHT_MAX,
             topTextWeight = 1400,
         )
         val updated = previous.normalized()
-        assertEquals(1400, updated.mobileTypeWeight)
+        assertEquals(1000, updated.mobileTypeWeight)
         assertEquals(WIFI_WEIGHT_MAX, updated.wifiWeight)
-        assertEquals(1400, updated.topTextWeight)
-        assertEquals(400, previous.copy(topTextWeight = -1).normalized().topTextWeight)
-        assertEquals(1001, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
+        assertEquals(1000, updated.topTextWeight)
+        assertEquals(200, previous.copy(topTextWeight = -1).normalized().topTextWeight)
+        assertEquals(1000, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
         assertEquals(900, previous.copy(topTextWeight = 900).normalized().topTextWeight)
-        assertEquals(400, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
-        assertEquals(1001, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
+        assertEquals(200, previous.copy(topTextWeight = 200).normalized().topTextWeight)
+        assertEquals(200, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
+        assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
+        assertEquals(200, previous.copy(mobileTypeWeight = 200).normalized().mobileTypeWeight)
     }
 
     @Test
