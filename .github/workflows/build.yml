@@ -180,14 +180,16 @@ jobs:
               detect_surfaces "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA"
             fi
           elif [[ "$EVENT_NAME" == "pull_request" ]]; then
-            detect_surfaces "$PR_BASE_SHA" "$PR_HEAD_SHA"
+            # Only the PR's changes count; the base branch may have advanced independently.
+            PR_DIFF_BASE="$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+            detect_surfaces "$PR_DIFF_BASE" "$PR_HEAD_SHA"
             if [[ "$PR_DRAFT" == "true" ]]; then
               SCOPE=light
               REASON="draft pull request"
             elif [[ "$PR_BASE_REF" == "main" ]]; then
-              classify_paths "$PR_BASE_SHA" "$PR_HEAD_SHA" full
+              classify_paths "$PR_DIFF_BASE" "$PR_HEAD_SHA" full
             else
-              classify_paths "$PR_BASE_SHA" "$PR_HEAD_SHA" runtime
+              classify_paths "$PR_DIFF_BASE" "$PR_HEAD_SHA" runtime
             fi
           fi
 
@@ -232,6 +234,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           if [[ -n "$BASE_SHA" && "$BASE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              BASE_SHA="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            fi
             git diff --check "$BASE_SHA" "$HEAD_SHA"
           fi
 
