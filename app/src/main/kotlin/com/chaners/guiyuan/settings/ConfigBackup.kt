@@ -40,8 +40,7 @@ internal data class ConfigBackup(
 internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
-    private const val LEGACY_MOBILE_TYPE_WEIGHT_MAX = 1400
-    private const val LEGACY_BATTERY_TOP_TEXT_WEIGHT_MAX = 1400
+    private const val LEGACY_TEXT_WEIGHT_MAX = 1400
     const val MAX_BYTES = 256 * 1024
     private val json = Json {
         encodeDefaults = true
@@ -89,11 +88,17 @@ internal object ConfigBackupFormat {
         val profiles = decoded.visual.profiles.map { cfg ->
             cfg.copy(
                 mobileTypeWeight =
-                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..LEGACY_MOBILE_TYPE_WEIGHT_MAX)
-                        MOBILE_TYPE_WEIGHT_MAX else cfg.mobileTypeWeight,
+                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..LEGACY_TEXT_WEIGHT_MAX) {
+                        MOBILE_TYPE_WEIGHT_MAX
+                    } else {
+                        cfg.mobileTypeWeight
+                    },
                 topTextWeight =
-                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..LEGACY_BATTERY_TOP_TEXT_WEIGHT_MAX)
-                        BATTERY_TOP_TEXT_WEIGHT_MAX else cfg.topTextWeight,
+                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..LEGACY_TEXT_WEIGHT_MAX) {
+                        BATTERY_TOP_TEXT_WEIGHT_MAX
+                    } else {
+                        cfg.topTextWeight
+                    },
             )
         }
         return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
