@@ -102,19 +102,21 @@ class CenterGeometryTest {
     }
 
     @Test
-    fun mobileTypeWeightKeepsFullRangeAndNativeAnchor() {
+    fun mobileTypeWeightLimitsSelectionWithoutRescalingAcceptedInk() {
         val policy = MobileTypeTransitionPolicy
         assertEquals(400, policy.resolveWeight(400, 660, 0f))
-        assertEquals(1400, policy.resolveWeight(1400, 660, 0f))
-        assertEquals(1030, policy.resolveWeight(1400, 660, 0.5f))
+        assertEquals(1000, policy.resolveWeight(1400, 660, 0f))
+        assertEquals(830, policy.resolveWeight(1400, 660, 0.5f))
         assertEquals(660, policy.resolveWeight(1400, 660, 1f))
-        assertEquals(1030, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(830, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(600, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
 
         assertEquals(0f, policy.extraStrokeRatio(400, 660), 0.00001f)
         assertEquals(0f, policy.extraStrokeRatio(660, 660), 0.00001f)
-        val mid = policy.extraStrokeRatio(1000, 660)
-        assertTrue(mid > 0f && mid < 0.07f)
-        assertEquals(0.07f, policy.extraStrokeRatio(1400, 660), 0.00001f)
+        // The 1400 endpoint remains a mathematical reference, not a new visual maximum.
+        val oldRatioAt1000 = 340f / 740f * 0.07f
+        assertEquals(oldRatioAt1000, policy.extraStrokeRatio(1000, 660), 0.00001f)
+        assertEquals(oldRatioAt1000, policy.extraStrokeRatio(1400, 660), 0.00001f)
     }
 
     @Test
