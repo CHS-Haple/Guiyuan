@@ -3194,7 +3194,7 @@ internal class StatusPainter(
 
         mobileTypePaint.typeface =
             if (weight < anchor) {
-                // Creating a variable font from Paint each frame stalls the CC draw path.
+                // Avoid repeated font-axis writes during control-center drawing.
                 // Reuse system-family instances in 10-point steps; never alter nativeFace.
                 if (mobileThinSource != nativeFace) {
                     mobileThinSource = nativeFace
