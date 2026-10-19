@@ -126,6 +126,9 @@ class CenterGeometryTest {
         assertEquals(400, policy.thinWeight(400, previewAnchor))
         assertEquals(600, policy.thinWeight(600, previewAnchor))
         assertEquals(700, policy.thinWeight(700, previewAnchor))
+        // The preview keeps the same font-axis anchor while adding the upper stroke.
+        assertEquals(700, policy.thinWeight(900, previewAnchor))
+        assertEquals(700, policy.thinWeight(1000, previewAnchor))
         assertEquals(0f, policy.extraStrokeRatio(700, previewAnchor), 0.00001f)
         assertTrue(policy.extraStrokeRatio(900, previewAnchor) > 0f)
         assertTrue(policy.extraStrokeRatio(1000, previewAnchor) > policy.extraStrokeRatio(900, previewAnchor))
