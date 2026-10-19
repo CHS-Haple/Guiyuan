@@ -9,7 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Changed
-- Updated AndroidX Core to 1.19.1 (compatibility candidate, B1112 on dev; not yet promoted to main).
+- Updated AndroidX Core from 1.17.0 to 1.19.1.
 - Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management (B1111 on dev; not yet promoted to main).
 
 ## [0.8.0] - 2026-10-19
