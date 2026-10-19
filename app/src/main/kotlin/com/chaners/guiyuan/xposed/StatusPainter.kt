@@ -2194,7 +2194,12 @@ internal class StatusPainter(
     ) {
         // Like mobile type, the battery's font axis and synthetic ink are frame-local.
         batteryTextPaint.setFontVariationSettings(null)
-        batteryTextPaint.typeface = batteryTextFace
+        val styleProgress =
+            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        // As in the accepted transition, take the native target's family when
+        // the target style begins. Never wait until the last frame to swap it.
+        batteryTextPaint.typeface =
+            targetStyle?.typeface?.takeIf { styleProgress > 0f } ?: batteryTextFace
         if (weight < BATTERY_TOP_INK_ANCHOR) {
             val nativeAxis = runCatching {
                 batteryTextPaint.setFontVariationSettings(
@@ -2216,8 +2221,6 @@ internal class StatusPainter(
                 anchor = BATTERY_TOP_INK_ANCHOR,
                 upper = BATTERY_TOP_WEIGHT_TRANSITION_MAX,
             )
-        val styleProgress =
-            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         batteryTextPaint.isFakeBoldText =
             targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
