@@ -19,13 +19,14 @@ internal class RenderView(
     context: Context,
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
+    preview: Boolean = false,
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
         sample: RuntimeRenderLatencySample?,
     ) -> Unit = { _, _, _ -> },
 ) : View(context) {
-    private val painter = StatusPainter(context)
+    private val painter = StatusPainter(context, preview = preview)
     private val centerEnterInterpolator: Interpolator =
         AnimationUtils.loadInterpolator(
             context,

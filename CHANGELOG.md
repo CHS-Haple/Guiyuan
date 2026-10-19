@@ -8,6 +8,34 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+No changes since the 0.8.0 development checkpoint.
+
+## [0.8.0] - 2026-10-19
+
+### Added
+- Added bounded Wi-Fi and airplane-mode stroke-weight adjustment (60–130%) on native icons, with Control Center transition matching, independent profiles and backup support.
+- Added JSON backup and restore for feature settings, separate single/dual profiles and custom battery schemes, with versioned format and strict validation.
+- Added independent Wi-Fi and mobile-type vertical offsets for battery-centered layouts, preserving users' existing offset values.
+- Added companion-app interface scaling from 80% to 110% without changing system display scaling or the SystemUI renderer.
+- Recorded the actual Modern Xposed framework name and version in runtime diagnostics when exposed by API 102.
+
+### Changed
+- Updated MIUIX UI, Preference, Icons, Nav and Blur modules to published `0.9.4-8972f941-SNAPSHOT`, including Pager gesture handling and the upstream Spec2026 palette change; saved Spec2026 selections fall back to Spec2025.
+- Aligned battery number and mobile type to native font-weight requests (200–1000, 50-point steps, default 600), displayed as weight values instead of percentages, without synthetic upper-range strokes; retained native Control Center endpoints.
+- Converted historical 1001–1400 battery and mobile thickness values in saved profiles and validated V1 backup imports without accepting previously invalid archives.
+- Aligned secondary settings-page scrolling and rebound with the MIUIX top bar.
+- Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
+
+### Fixed
+- Hardened untrusted configuration imports with strict JSON and UTF-8 validation, canonical scheme keys, scoped preference updates and exact rollback of affected values.
+- Clarified Static Scope authorization wording; connection state is not displayed.
+- Suppressed scroll-end haptics on short secondary Settings pages without scrollable content.
+- Unregistered Control Center layout/pre-draw listeners from their registration observer during session cleanup, including when the View tree observer changes.
+- Invalidated cached Control Center mobile targets when an active single-display session observes changed direct native mobile roots after a global layout event.
+- Prevented remote preference listener lock inversion during rebind and kept in-flight old-generation feature/visual callbacks from overwriting current configuration.
+- Revalidated cached Control Center native icon targets against their current native FINAL slot and optical-child ancestry before reuse.
+- Matched hotspot Wi-Fi drawing to its own verified native optical bounds instead of borrowing ordinary Wi-Fi fitting.
+
 ## [0.7.0] - 2026-10-15
 
 ### Added

@@ -10,13 +10,14 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | --- | ---: | --- | --- |
 | libxposed API | 102.0.0 | Modern Xposed API surface | Apache-2.0 |
 | libxposed service | 102.0.0 | Modern Xposed service integration | Apache-2.0 |
+| AndroidX Core | 1.17.0 | Android compatibility and core APIs | Apache-2.0 |
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-8b85f965-SNAPSHOT (`8b85f96598cfc64002b10ae1cfc118616351f501`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-8972f941-SNAPSHOT (`8972f941c194bd3c4e14c34543d5ebc7b39e40da`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
 | Kyant Shapes | 1.2.1 | Capsule geometry used by the Liquid Glass navigation bar | Apache-2.0 |
-| kotlinx.serialization core | 1.11.0 | Kotlin serialization support | Apache-2.0 |
+| kotlinx.serialization core / JSON | 1.11.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Embedded icon assets
 

@@ -58,7 +58,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
@@ -74,40 +73,31 @@ internal fun SemanticLeadingIcon(
             alpha = if (enabled) 1f else 0.38f,
         ),
     )
-    val main = remember(context, density.density, iconRes) {
-        materialIcon(context, iconRes, with(density) { 22.dp.roundToPx() })
-    }
+    val main = painterResource(iconRes)
     Box(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center,
     ) {
         if (detailRes == null) {
             Image(
-                bitmap = main,
+                painter = main,
                 contentDescription = null,
                 modifier = Modifier.size(22.dp),
                 colorFilter = tint,
             )
         } else {
-            val detail = remember(context, density.density, detailRes) {
-                materialIcon(context, detailRes, with(density) { 22.dp.roundToPx() })
-            }
-            val badgeSize = remember(main, detail) {
-                val mainHeight = visibleIconHeight(main)
-                val detailHeight = visibleIconHeight(detail)
-                if (mainHeight > 0 && detailHeight > 0) {
-                    (11f * mainHeight / detailHeight).coerceIn(12f, 14f).dp
-                } else {
-                    12.dp
-                }
-            }
-            val badge = remember(context, density.density, detailRes, badgeSize) {
-                materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() })
-            }
+            // 12×12 occupies one quarter of the shared 24×24 optical box.
+            val badgeSize = 12.dp
+            val badge = painterResource(detailRes)
             val gap = with(density) { 1.dp.roundToPx() }
-            val cutout = remember(badge, gap) { badgeCutout(badge, gap) }
+            val cutout = remember(context, density.density, detailRes) {
+                badgeCutout(
+                    materialIcon(context, detailRes, with(density) { badgeSize.roundToPx() }),
+                    gap,
+                )
+            }
             Image(
-                bitmap = main,
+                painter = main,
                 contentDescription = null,
                 modifier =
                     Modifier
@@ -128,7 +118,7 @@ internal fun SemanticLeadingIcon(
                 colorFilter = tint,
             )
             Image(
-                bitmap = badge,
+                painter = badge,
                 contentDescription = null,
                 modifier = Modifier.align(Alignment.BottomEnd).size(badgeSize),
                 colorFilter = tint,
@@ -137,7 +127,7 @@ internal fun SemanticLeadingIcon(
     }
 }
 
-// Material paths already include their optical spacing in the 24dp viewport.
+// Only the composite cutout needs pixels; the displayed glyphs stay vector.
 private fun materialIcon(
     context: Context,
     @DrawableRes res: Int,
@@ -148,22 +138,6 @@ private fun materialIcon(
     drawable.setBounds(0, 0, side, side)
     drawable.draw(BitmapCanvas(bitmap))
     return bitmap.asImageBitmap()
-}
-
-// Compare painted height, not the transparent margins in the Material viewport.
-private fun visibleIconHeight(icon: ImageBitmap): Int {
-    val bitmap = icon.asAndroidBitmap()
-    var first = bitmap.height
-    var last = -1
-    for (y in 0 until bitmap.height) {
-        for (x in 0 until bitmap.width) {
-            if (bitmap.getPixel(x, y) ushr 24 > 16) {
-                first = minOf(first, y)
-                last = maxOf(last, y)
-            }
-        }
-    }
-    return if (last < first) 0 else last - first + 1
 }
 
 // A round alpha dilation leaves a small, contour-shaped gap around the badge.
@@ -258,19 +232,17 @@ internal fun SettingsPage(
 
             @Composable
             fun SettingsList() {
+                val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
                 LazyColumn(
                     state = resolvedListState,
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(
-                                if (springScroll) Modifier.scrollEndHaptic().overScrollVertical()
-                                else Modifier,
-                            )
+                            .then(if (springScroll && canScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
-                    // Pull-to-refresh remains the gesture owner on Diagnostics.
-                    overscrollEffect = if (springScroll) null else rememberOverscrollEffect(),
+                    // Keep the native list rebound alongside the MIUIX folding top bar.
+                    overscrollEffect = rememberOverscrollEffect(),
                     content = content,
                 )
             }

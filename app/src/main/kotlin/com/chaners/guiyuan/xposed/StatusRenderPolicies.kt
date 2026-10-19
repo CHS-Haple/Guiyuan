@@ -8,10 +8,14 @@ import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MAX as SETTINGS_AIRPLANE
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN as SETTINGS_AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX as SETTINGS_MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN as SETTINGS_MOBILE_TYPE_SIZE_SCALE_MIN
+import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT as SETTINGS_MOBILE_TYPE_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX as SETTINGS_MOBILE_TYPE_WEIGHT_MAX
+import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN as SETTINGS_MOBILE_TYPE_WEIGHT_MIN
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX as SETTINGS_NO_SIM_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
+import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
@@ -35,9 +39,16 @@ internal object TopInfoOffsetPolicy {
     fun networkTranslationDelta(
         layout: ContentLayout,
         rawOffset: Float,
+        indicator: CenterIndicator? = null,
+        wifiOffset: Float = 0f,
+        mobileTypeOffset: Float = 0f,
     ): Float =
         if (layout == ContentLayout.BATTERY_CENTER) {
-            -topOffsetYUi(rawOffset)
+            when (indicator) {
+                is CenterIndicator.Wifi -> -wifiOffset
+                is CenterIndicator.MobileType -> -mobileTypeOffset
+                else -> -topOffsetYUi(rawOffset)
+            }
         } else {
             0f
         }
@@ -230,9 +241,9 @@ internal object CenterGeometry {
     const val MAX_NO_SIM_SIZE_SCALE = SETTINGS_NO_SIM_SIZE_SCALE_MAX
     const val MIN_MOBILE_TYPE_SIZE_SCALE = SETTINGS_MOBILE_TYPE_SIZE_SCALE_MIN
     const val MAX_MOBILE_TYPE_SIZE_SCALE = SETTINGS_MOBILE_TYPE_SIZE_SCALE_MAX
-    const val DEFAULT_MOBILE_TYPE_WEIGHT = 800
-    const val MIN_MOBILE_TYPE_WEIGHT = 500
-    const val MAX_MOBILE_TYPE_WEIGHT = 950
+    const val DEFAULT_MOBILE_TYPE_WEIGHT = SETTINGS_MOBILE_TYPE_WEIGHT_DEFAULT
+    const val MIN_MOBILE_TYPE_WEIGHT = SETTINGS_MOBILE_TYPE_WEIGHT_MIN
+    const val MAX_MOBILE_TYPE_WEIGHT = SETTINGS_MOBILE_TYPE_WEIGHT_MAX
 
     private const val BASE_WIFI_MAX_WIDTH = 58f
     private const val BASE_WIFI_MAX_HEIGHT = 45f

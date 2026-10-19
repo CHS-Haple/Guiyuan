@@ -4,6 +4,8 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.topOffsetYRaw
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.InternetState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -100,6 +102,21 @@ class CenterGeometryTest {
     }
 
     @Test
+    fun mobileTypeWeightInterpolatesWithinRequestedAndNativeBounds() {
+        val policy = MobileTypeTransitionPolicy
+        assertEquals(200, policy.resolveWeight(200, 660, 0f))
+        assertEquals(1000, policy.resolveWeight(1400, 660, 0f))
+        assertEquals(830, policy.resolveWeight(1400, 660, 0.5f))
+        assertEquals(660, policy.resolveWeight(1400, 660, 1f))
+        assertEquals(830, policy.resolveWeight(660, 1400, 0.5f))
+        assertEquals(1000, policy.resolveWeight(660, 1400, 1f))
+        // The native CC target may be lighter than the minimum user setting.
+        assertEquals(375, policy.resolveWeight(600, 150, 0.5f))
+        assertEquals(150, policy.resolveWeight(600, 150, 1f))
+        assertEquals(600, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
+    }
+
+    @Test
     fun invalidAndOutOfRangeValuesAreClampedSafely() {
         val fallback =
             CenterGeometry.resolve(
@@ -146,6 +163,9 @@ class CenterGeometryTest {
 
     @Test
     fun rendererRangeClampsMatchPersistedVisualRanges() {
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN, CenterGeometry.MIN_MOBILE_TYPE_WEIGHT)
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
+        assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT, CenterGeometry.DEFAULT_MOBILE_TYPE_WEIGHT)
         assertEquals(0.40f, CenterGeometry.MIN_WIFI_SIZE_SCALE, 0f)
         assertEquals(0.40f, CenterGeometry.MIN_AIRPLANE_SIZE_SCALE, 0f)
         assertEquals(1.25f, CenterGeometry.MAX_AIRPLANE_SIZE_SCALE, 0f)
@@ -201,6 +221,40 @@ class CenterGeometryTest {
                 canvasScale = 0.6f,
                 combinedScale = 0.6f,
                 scaleWithCanvas = true,
+            ),
+            0f,
+        )
+    }
+
+    @Test
+    fun batteryCenteredWifiAndMobileTypeHaveIndependentTopOffsets() {
+        val raw = topOffsetYRaw(5f)
+        val wifi = CenterIndicator.Wifi(segments = 3, internet = InternetState.UNKNOWN)
+        val mobile = CenterIndicator.MobileType(
+            label = "5G",
+            enhanced = false,
+            internet = InternetState.UNKNOWN,
+        )
+        fun shift(indicator: CenterIndicator?) =
+            TopInfoOffsetPolicy.networkTranslationDelta(
+                layout = ContentLayout.BATTERY_CENTER,
+                rawOffset = raw,
+                indicator = indicator,
+                wifiOffset = -2f,
+                mobileTypeOffset = 4f,
+            )
+
+        assertEquals(2f, shift(wifi), 0f)
+        assertEquals(-4f, shift(mobile), 0f)
+        assertEquals(-5f, shift(CenterIndicator.Airplane), 0f)
+        assertEquals(-5f, shift(null), 0f)
+        assertEquals(
+            0f,
+            TopInfoOffsetPolicy.networkTranslationDelta(
+                layout = ContentLayout.NETWORK_CENTER,
+                rawOffset = raw,
+                indicator = wifi,
+                wifiOffset = -2f,
             ),
             0f,
         )

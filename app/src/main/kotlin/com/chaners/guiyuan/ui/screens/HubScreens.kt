@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -21,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -41,15 +44,21 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MIN
+import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_DEFAULT
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MIN
+import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
+import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MAX
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MIN
+import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MAX
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
@@ -65,8 +74,13 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
+import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.ConfigBackup
+import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.topChargingIconUiScale
@@ -83,6 +97,7 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
@@ -93,10 +108,12 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
+    snackbarState: SnackbarHostState,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
@@ -129,6 +146,45 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
+    val backupFiles = remember(context.applicationContext) {
+        ConfigBackupFiles(context.applicationContext)
+    }
+    val scope = rememberCoroutineScope()
+    var pendingImport by remember { mutableStateOf<ConfigBackup?>(null) }
+    var ioBusy by remember { mutableStateOf(false) }
+    val savedMsg = stringResource(R.string.config_backup_success)
+    val restoredMsg = stringResource(R.string.config_restore_success)
+    val saveError = stringResource(R.string.config_backup_failed)
+    val restoreError = stringResource(R.string.config_restore_failed)
+    val invalidBackup = stringResource(R.string.config_restore_invalid)
+    val createDocument = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null && !ioBusy) {
+            ioBusy = true
+            scope.launch {
+                val result = runCatching { backupFiles.export(uri) }
+                ioBusy = false
+                snackbarState.showSnackbar(if (result.isSuccess) savedMsg else saveError)
+            }
+        }
+    }
+    val openDocument = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null && !ioBusy) {
+            ioBusy = true
+            scope.launch {
+                val result = runCatching { backupFiles.read(uri) }
+                ioBusy = false
+                if (result.isSuccess) {
+                    pendingImport = result.getOrThrow()
+                } else {
+                    snackbarState.showSnackbar(invalidBackup)
+                }
+            }
+        }
+    }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -136,6 +192,42 @@ internal fun FeaturesScreen(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
         overlay = {
+            pendingImport?.let { selected ->
+                OverlayDialog(
+                    title = stringResource(R.string.config_restore_title),
+                    summary = stringResource(R.string.config_restore_confirm),
+                    show = true,
+                    onDismissRequest = { if (!ioBusy) pendingImport = null },
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        TextButton(
+                            text = stringResource(R.string.cancel),
+                            modifier = Modifier.weight(1f),
+                            enabled = !ioBusy,
+                            onClick = { pendingImport = null },
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        TextButton(
+                            text = stringResource(R.string.restore),
+                            modifier = Modifier.weight(1f),
+                            enabled = !ioBusy,
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            onClick = {
+                                ioBusy = true
+                                scope.launch {
+                                    val result = runCatching { backupFiles.restore(selected) }
+                                    pendingImport = null
+                                    ioBusy = false
+                                    snackbarState.showSnackbar(
+                                        if (result.getOrNull() == true) restoredMsg
+                                        else restoreError,
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
                 library = schemeLibrary,
@@ -265,30 +357,73 @@ internal fun FeaturesScreen(
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
-            val topInfoVerticalOffsetUi =
-                topOffsetYUi(
-                    visual.topOffsetY,
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                SliderPreference(
+                    value = visual.wifiOffsetY,
+                    onValueChange = visualRepo::setWifiOffsetY,
+                    title = stringResource(R.string.wifi_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_wifi,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height_w500,
+                        )
+                    },
+                    valueText = stringResource(R.string.battery_top_offset_value, visual.wifiOffsetY.roundToInt()),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
                 )
-            SliderPreference(
-                value = topInfoVerticalOffsetUi,
-                onValueChange = visualRepo::setTopOffsetY,
-                title = stringResource(R.string.top_info_vertical_offset),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
-                valueText =
-                    stringResource(
-                        R.string.battery_top_offset_value,
-                        topInfoVerticalOffsetUi.roundToInt(),
-                    ),
-                valueRange =
-                    BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
-                        BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
-                enabled = featureCfg.enabled,
-            )
+                SliderPreference(
+                    value = visual.mobileTypeOffsetY,
+                    onValueChange = visualRepo::setMobileTypeOffsetY,
+                    title = stringResource(R.string.mobile_type_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_5g,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height_w500,
+                        )
+                    },
+                    valueText = stringResource(R.string.battery_top_offset_value, visual.mobileTypeOffsetY.roundToInt()),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            } else {
+                val topInfoVerticalOffsetUi =
+                    topOffsetYUi(
+                        visual.topOffsetY,
+                    )
+                SliderPreference(
+                    value = topInfoVerticalOffsetUi,
+                    onValueChange = visualRepo::setTopOffsetY,
+                    title = stringResource(R.string.top_info_vertical_offset),
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
+                    valueText =
+                        stringResource(
+                            R.string.battery_top_offset_value,
+                            topInfoVerticalOffsetUi.roundToInt(),
+                        ),
+                    valueRange =
+                        BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
+                            BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            }
         }
         Section(R.string.section_network) {
             SliderPreference(
@@ -310,6 +445,20 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
+                value = visual.wifiWeight.toFloat(),
+                onValueChange = { visualRepo.setWifiWeight(it.roundToInt()) },
+                title = stringResource(R.string.wifi_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                valueText = stringResource(R.string.percent_value, visual.wifiWeight),
+                valueRange = WIFI_WEIGHT_MIN.toFloat()..WIFI_WEIGHT_MAX.toFloat(),
+                steps = 13,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(WIFI_WEIGHT_DEFAULT.toFloat()),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            SliderPreference(
                 value = visual.airplaneScale,
                 onValueChange = visualRepo::setAirplaneScale,
                 title = stringResource(R.string.airplane_size),
@@ -324,6 +473,20 @@ internal fun FeaturesScreen(
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
+                magnetThreshold = 0.035f,
+                enabled = featureCfg.enabled,
+            )
+            SliderPreference(
+                value = visual.airplaneWeight.toFloat(),
+                onValueChange = { visualRepo.setAirplaneWeight(it.roundToInt()) },
+                title = stringResource(R.string.airplane_weight),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                valueText = stringResource(R.string.percent_value, visual.airplaneWeight),
+                valueRange = AIRPLANE_WEIGHT_MIN.toFloat()..AIRPLANE_WEIGHT_MAX.toFloat(),
+                steps = 13,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(AIRPLANE_WEIGHT_DEFAULT.toFloat()),
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
@@ -383,7 +546,7 @@ internal fun FeaturesScreen(
                 valueRange =
                     MOBILE_TYPE_WEIGHT_MIN.toFloat()..
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 19,
+                steps = 15,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
@@ -471,16 +634,16 @@ internal fun FeaturesScreen(
                     startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                     valueText =
                         stringResource(
-                            R.string.battery_top_weight_value,
+                            R.string.integer_value,
                             visual.topTextWeight,
                         ),
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
-                    steps = 19,
+                    steps = 15,
                     showKeyPoints = true,
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(900f),
+                    keyPoints = listOf(BATTERY_TOP_TEXT_WEIGHT_DEFAULT.toFloat()),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
                 )
@@ -545,12 +708,25 @@ internal fun FeaturesScreen(
         }
         Section(R.string.section_management) {
             BasicComponent(
+                title = stringResource(R.string.config_backup_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_save) },
+                summary = stringResource(R.string.config_backup_summary),
+                enabled = !ioBusy,
+                onClick = { createDocument.launch(backupFiles.fileName()) },
+            )
+            BasicComponent(
+                title = stringResource(R.string.config_restore_title),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_open) },
+                summary = stringResource(R.string.config_restore_summary),
+                enabled = !ioBusy,
+                onClick = { openDocument.launch(arrayOf("application/json", "text/plain")) },
+            )
+            BasicComponent(
                 title = stringResource(R.string.restore_feature_defaults),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
                 summary = stringResource(R.string.restore_feature_defaults_summary),
                 onClick = { showResetDialog = true },
             )
-
         }
     }
 }

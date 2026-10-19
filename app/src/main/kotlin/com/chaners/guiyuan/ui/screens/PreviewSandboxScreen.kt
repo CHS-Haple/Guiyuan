@@ -316,7 +316,7 @@ internal fun PreviewSandboxScreen(
                                 startAction = {
                                     SemanticLeadingIcon(
                                         R.drawable.ic_material_symbol_sim_card,
-                                        detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                        detailRes = R.drawable.ic_material_symbol_swap_horiz_w500,
                                     )
                                 },
                                 items = dataSimOptions,
@@ -369,7 +369,7 @@ internal fun PreviewSandboxScreen(
                                         startAction = {
                                             SemanticLeadingIcon(
                                                 iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category,
+                                                detailRes = R.drawable.ic_material_symbol_category_w500,
                                             )
                                         },
                                         items = mobileNetworkChoices.map { it.second },
@@ -413,7 +413,7 @@ internal fun PreviewSandboxScreen(
                                         startAction = {
                                             SemanticLeadingIcon(
                                                 iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category,
+                                                detailRes = R.drawable.ic_material_symbol_category_w500,
                                             )
                                         },
                                         items = mobileNetworkChoices.map { it.second },

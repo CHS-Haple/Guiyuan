@@ -10,10 +10,15 @@ class VisualCfgTest {
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiScale, 0.0001f)
+        assertEquals(0f, settings.wifiOffsetY, 0f)
+        assertEquals(0f, settings.mobileTypeOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
-        assertEquals(900, settings.mobileTypeWeight)
+        assertEquals(600, settings.mobileTypeWeight)
+        assertEquals(600, settings.topTextWeight)
+        assertEquals(200, BATTERY_TOP_TEXT_WEIGHT_MIN)
+        assertEquals(1000, BATTERY_TOP_TEXT_WEIGHT_MAX)
         assertEquals(true, settings.ccTintTransition)
         assertEquals(true, settings.fillFollowsRetract)
         assertEquals(false, settings.showTopReadout)
@@ -23,6 +28,8 @@ class VisualCfgTest {
                 combinedScale = 9f,
                 outerWeightScale = 9f,
                 wifiScale = 9f,
+                wifiOffsetY = -99f,
+                mobileTypeOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -37,13 +44,15 @@ class VisualCfgTest {
         )
         assertEquals(OUTER_WEIGHT_SCALE_MAX, normalized.outerWeightScale, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
-        assertEquals(400, MOBILE_TYPE_WEIGHT_MIN)
-        assertEquals(900, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(1400, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(200, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(600, MOBILE_TYPE_WEIGHT_DEFAULT)
+        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
         assertEquals(0.40f, WIFI_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MIN, 0.0001f)
@@ -51,6 +60,33 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_MAX, 0.0001f)
         assertEquals(0.40f, MOBILE_TYPE_SIZE_SCALE_MIN, 0.0001f)
+    }
+
+    @Test
+    fun nativeWeightRangesStayAligned() {
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MAX, MOBILE_TYPE_WEIGHT_MAX)
+    }
+
+    @Test
+    fun nativeWeightBoundsPreserveValidProfiles() {
+        val previous = VisualCfg(
+            mobileTypeWeight = 1400,
+            wifiWeight = WIFI_WEIGHT_MAX,
+            topTextWeight = 1400,
+        )
+        val updated = previous.normalized()
+        assertEquals(1000, updated.mobileTypeWeight)
+        assertEquals(WIFI_WEIGHT_MAX, updated.wifiWeight)
+        assertEquals(1000, updated.topTextWeight)
+        assertEquals(200, previous.copy(topTextWeight = -1).normalized().topTextWeight)
+        assertEquals(1000, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
+        assertEquals(900, previous.copy(topTextWeight = 900).normalized().topTextWeight)
+        assertEquals(200, previous.copy(topTextWeight = 200).normalized().topTextWeight)
+        assertEquals(200, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
+        assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
+        assertEquals(200, previous.copy(mobileTypeWeight = 200).normalized().mobileTypeWeight)
     }
 
     @Test
@@ -225,6 +261,8 @@ class VisualCfgTest {
                 BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
                 BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
                 CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+                WIFI_VERTICAL_OFFSET_KEY,
+                MOBILE_TYPE_VERTICAL_OFFSET_KEY,
             )
 
         keys.forEach { key ->

@@ -25,7 +25,68 @@ private val visualPreferenceKeys = buildSet {
 internal fun isVisualPreferenceKey(key: String?): Boolean =
     key == null || key in visualPreferenceKeys
 
+// A backup owns feature visuals and scheme entries, not the whole preference file.
+internal fun isBackupVisualKey(key: String): Boolean =
+    key in visualPreferenceKeys ||
+        key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
+        isBatterySchemeStorageKey(key)
+
+// Rewrite only known old visual keys; remote readers also clamp on read.
+internal fun migrateTextWeightRanges(preferences: SharedPreferences) {
+    val ranges = mapOf(
+        MOBILE_TYPE_WEIGHT_KEY to (MOBILE_TYPE_WEIGHT_MIN..MOBILE_TYPE_WEIGHT_MAX),
+        BATTERY_TOP_TEXT_WEIGHT_KEY to (BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX),
+    )
+    val stored = preferences.all
+    val changes = ranges.flatMap { (baseKey, range) ->
+        val keys = buildList {
+            add(baseKey)
+            ContentLayout.entries.forEach { layout ->
+                add(visualProfileKey(layout, baseKey))
+                add(visualProfileKey(layout, baseKey, dual = true))
+            }
+        }
+        keys.mapNotNull { key ->
+            val previous = stored[key] as? Int ?: return@mapNotNull null
+            val current = previous.coerceIn(range.first, range.last)
+            if (previous != current) key to current else null
+        }
+    }
+    if (changes.isEmpty()) return
+    preferences.edit().apply {
+        changes.forEach { (key, weight) -> putInt(key, weight) }
+    }.apply()
+}
+
+internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
+    edit().also { editor ->
+        all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
+    }
+
+internal fun SharedPreferences.backupVisualSnapshot(): Map<String, Any?> =
+    all.filterKeys(::isBackupVisualKey)
+        .mapValues { (_, value) ->
+            if (value is Set<*>) value.filterIsInstance<String>().toSet() else value
+        }
+
+internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>): Boolean {
+    val editor = editBackupVisuals()
+    snapshot.forEach { (key, value) ->
+        when (value) {
+            is Boolean -> editor.putBoolean(key, value)
+            is Int -> editor.putInt(key, value)
+            is Long -> editor.putLong(key, value)
+            is Float -> editor.putFloat(key, value)
+            is String -> editor.putString(key, value)
+            is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
+            else -> error("Unexpected visual preference value")
+        }
+    }
+    return editor.commit()
+}
+
 internal class VisualRepo(context: Context) {
+    private val context = context.applicationContext
     private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
@@ -35,6 +96,7 @@ internal class VisualRepo(context: Context) {
     init {
         migrateBatteryColorPresetDefaultIfNeeded(preferences)
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
+        migrateTextWeightRanges(preferences)
     }
 
     val settings: Flow<VisualCfg> =
@@ -202,6 +264,22 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setWifiOffsetY(offset: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
+                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
+    fun setMobileTypeOffsetY(offset: Float) {
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
+                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
     fun setCombinedScale(scale: Float) {
         preferences.edit()
             .putFloat(
@@ -220,12 +298,24 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setWifiWeight(weight: Int) {
+        preferences.edit()
+            .putInt(activeProfileKey(WIFI_WEIGHT_KEY), weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
+            .apply()
+    }
+
     fun setWifiScale(scale: Float) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
                 scale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
             )
+            .apply()
+    }
+
+    fun setAirplaneWeight(weight: Int) {
+        preferences.edit()
+            .putInt(activeProfileKey(AIRPLANE_WEIGHT_KEY), weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
             .apply()
     }
 
@@ -308,6 +398,39 @@ internal class VisualRepo(context: Context) {
             editor.remove(activeGlobalKey(batteryColorOverrideKey(slot)))
         }
         editor.apply()
+    }
+
+    fun backup(): VisualBackup =
+        VisualBackup(
+            singleLayout = preferences.readLayout(dual = false),
+            dualLayout = preferences.readLayout(dual = true),
+            dualEnabled = preferences.dualSignalEnabled(),
+            dualInitialized = preferences.contains(visualModeKey(true, CONTENT_LAYOUT_KEY)),
+            profiles = listOf(false, true).flatMap { dual ->
+                ContentLayout.entries.map { layout ->
+                    preferences.readVisualCfg(dual = dual, layoutOverride = layout)
+                }
+            },
+        )
+
+    fun backupSnapshot(): Map<String, Any?> = preferences.backupVisualSnapshot()
+
+    fun rollbackBackup(snapshot: Map<String, Any?>): Boolean =
+        preferences.rollbackBackupVisuals(snapshot)
+
+    fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
+        val editor = preferences.editBackupVisuals()
+        backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
+            .forEach { editor.putVisualCfg(it) }
+        BatterySchemeRepo(context).putBackup(editor, library)
+        editor.putString(CONTENT_LAYOUT_KEY, backup.singleLayout.persistedValue)
+        if (backup.dualInitialized) {
+            editor.putString(visualModeKey(true, CONTENT_LAYOUT_KEY), backup.dualLayout.persistedValue)
+        }
+        editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
+        // Restored physical charging scales use the current reference.
+        editor.putInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 2)
+        return editor.commit()
     }
 
     fun resetToDefaults() {
@@ -412,6 +535,10 @@ internal fun SharedPreferences.readVisualCfg(
     fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default, dual)
     fun size(key: String, default: Float) = profileFloat(layout, key, default, dual)
     fun weight(key: String, default: Int) = profileInt(layout, key, default, dual)
+    val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT)
+    // Preserve existing battery-centered network position when split keys are first read.
+    val oldNetworkOffset =
+        if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
     return VisualCfg(
         layout = layout,
@@ -426,12 +553,16 @@ internal fun SharedPreferences.readVisualCfg(
         ccTintTransition = getBoolean(visualModeKey(dual, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true),
         topTextScale = size(BATTERY_TOP_TEXT_SCALE_KEY, topTextScaleDefault(layout)),
         topTextWeight = weight(BATTERY_TOP_TEXT_WEIGHT_KEY, BATTERY_TOP_TEXT_WEIGHT_DEFAULT),
-        topOffsetY = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT),
+        topOffsetY = topOffset,
+        wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
+        mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
         wifiScale = size(WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
+        wifiWeight = weight(WIFI_WEIGHT_KEY, WIFI_WEIGHT_DEFAULT),
         airplaneScale = size(AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
+        airplaneWeight = weight(AIRPLANE_WEIGHT_KEY, AIRPLANE_WEIGHT_DEFAULT),
         noSimScale = size(NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
         mobileTypeScale = size(MOBILE_TYPE_SIZE_SCALE_KEY, mobileTypeScaleDefault(layout)),
         mobileTypeWeight = weight(MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
@@ -532,6 +663,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.topOffsetY,
     ).putFloat(
+        visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        normalized.wifiOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        normalized.mobileTypeOffsetY,
+    ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,
     ).putFloat(
@@ -543,9 +680,15 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, WIFI_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.wifiScale,
+    ).putInt(
+        visualProfileKey(layout, WIFI_WEIGHT_KEY, normalized.dualSignal),
+        normalized.wifiWeight,
     ).putFloat(
         visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.airplaneScale,
+    ).putInt(
+        visualProfileKey(layout, AIRPLANE_WEIGHT_KEY, normalized.dualSignal),
+        normalized.airplaneWeight,
     ).putFloat(
         visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY, normalized.dualSignal),
         normalized.noSimScale,

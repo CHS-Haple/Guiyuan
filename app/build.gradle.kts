@@ -147,6 +147,7 @@ dependencies {
 
     testImplementation("junit:junit:$junitVersion")
 
+    implementation("androidx.core:core:1.17.0")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")
@@ -158,4 +159,5 @@ dependencies {
     implementation("io.github.kyant0:backdrop:$backdropVersion")
     implementation("io.github.kyant0:shapes:$shapesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationCoreVersion")
 }

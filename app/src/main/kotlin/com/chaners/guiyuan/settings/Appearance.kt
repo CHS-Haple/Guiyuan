@@ -6,18 +6,50 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 internal enum class ThemeMode {
     System,
     Light,
     Dark,
 }
+
+private val modernPalettes = listOf(
+    ThemePaletteStyle.TonalSpot,
+    ThemePaletteStyle.Neutral,
+    ThemePaletteStyle.Vibrant,
+    ThemePaletteStyle.Expressive,
+)
+
+internal fun palettesFor(spec: ThemeColorSpec): List<ThemePaletteStyle> = when (spec) {
+    ThemeColorSpec.Spec2021 -> modernPalettes + listOf(
+        ThemePaletteStyle.Rainbow,
+        ThemePaletteStyle.FruitSalad,
+        ThemePaletteStyle.Monochrome,
+        ThemePaletteStyle.Fidelity,
+        ThemePaletteStyle.Content,
+    )
+    // CMF always uses its own 2026 scheme in newer MIUIX.
+    ThemeColorSpec.Spec2025 -> modernPalettes + ThemePaletteStyle.Cmf
+}
+
+internal fun decodeColorSpec(value: String?): ThemeColorSpec? =
+    if (value == "Spec2026") ThemeColorSpec.Spec2025
+    else ThemeColorSpec.entries.firstOrNull { it.name == value }
+
+internal fun decodePalette(value: String?): ThemePaletteStyle =
+    ThemePaletteStyle.entries.firstOrNull { it.name == value } ?: ThemePaletteStyle.TonalSpot
+
+internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle): ThemePaletteStyle =
+    if (spec != null && palette !in palettesFor(spec)) ThemePaletteStyle.TonalSpot else palette
 
 internal enum class NavStyle {
     Standard,
@@ -39,12 +71,15 @@ internal enum class LiquidMode {
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = false,
+    val colorSpec: ThemeColorSpec? = null,
+    val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
     val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Clear,
     val swipeBack: Boolean = true,
+    val uiScalePercent: Int = 100,
 ) {
     val activeNavContent: NavContent
         get() = if (navStyle == NavStyle.Liquid) liquidContent else navContent
@@ -92,6 +127,8 @@ internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
         .firstOrNull { it.name == storedMode }
         ?: LiquidMode.Clear
 
+internal fun uiScalePercent(value: Int?): Int = (value ?: 100).coerceIn(80, 110)
+
 internal fun decodeTheme(
     storedMode: String?,
     storedDynamicColorEnabled: Boolean?,
@@ -134,9 +171,12 @@ internal class AppearanceRepo(context: Context) {
                     legacyBlurEnabled = prefs[legacyBlurKey],
                     legacyGlassEnabled = prefs[legacyGlassKey],
                 )
+            val colorSpec = decodeColorSpec(prefs[colorSpecKey])
             Appearance(
                 theme = theme.mode,
                 dynamicColor = theme.dynamicColor,
+                colorSpec = colorSpec,
+                paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
                 navEnabled = prefs[navEnabledKey] ?: true,
                 navStyle = style,
                 navContent = decodeNavContent(prefs[navContentKey]),
@@ -148,6 +188,7 @@ internal class AppearanceRepo(context: Context) {
                     ),
                 liquidMode = decodeLiquidMode(prefs[liquidModeKey]),
                 swipeBack = prefs[swipeBackKey] ?: true,
+                uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
             )
         }
 
@@ -163,6 +204,23 @@ internal class AppearanceRepo(context: Context) {
                 prefs[themeKey] = ThemeMode.System.name
             }
             prefs[dynamicKey] = enabled
+        }
+    }
+
+    suspend fun setColorSpec(spec: ThemeColorSpec?) {
+        store.edit { prefs ->
+            if (spec == null) prefs.remove(colorSpecKey) else prefs[colorSpecKey] = spec.name
+            val palette = decodePalette(prefs[paletteStyleKey])
+            if (spec != null && palette !in palettesFor(spec)) {
+                prefs[paletteStyleKey] = ThemePaletteStyle.TonalSpot.name
+            }
+        }
+    }
+
+    suspend fun setPaletteStyle(style: ThemePaletteStyle) {
+        store.edit { prefs ->
+            val spec = decodeColorSpec(prefs[colorSpecKey]) ?: return@edit
+            if (style in palettesFor(spec)) prefs[paletteStyleKey] = style.name
         }
     }
 
@@ -211,9 +269,17 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
+    suspend fun setUiScalePercent(value: Int) {
+        store.edit { prefs ->
+            prefs[uiScaleKey] = uiScalePercent(value)
+        }
+    }
+
     private companion object {
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
+        val colorSpecKey = stringPreferencesKey("theme_color_spec")
+        val paletteStyleKey = stringPreferencesKey("theme_palette_style")
         val legacyBlurKey = booleanPreferencesKey("blur_enabled")
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
@@ -223,6 +289,7 @@ internal class AppearanceRepo(context: Context) {
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
         val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")
+        val uiScaleKey = intPreferencesKey("ui_scale_percent")
     }
 }
 

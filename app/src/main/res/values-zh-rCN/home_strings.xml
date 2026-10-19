@@ -27,13 +27,13 @@
     <string name="home_scope_request_failed">无法申请作用域</string>
     <string name="home_scope_request_failed_summary">请在模块管理器中手动启用 SystemUI 作用域。</string>
 
-    <string name="section_home_preview_sandbox">预览沙盒</string>
+    <string name="section_home_preview_sandbox">状态模拟</string>
     <string name="home_preview_sandbox_title">预览沙盒</string>
     <string name="home_preview_switch_light">切换到浅色模式</string>
     <string name="home_preview_switch_dark">切换到深色模式</string>
-    <string name="home_preview_sandbox_summary">所有调整仅用于预览，不会改变实际系统状态。</string>
+    <string name="home_preview_sandbox_summary">所有调整仅用于预览，不影响系统实际状态。</string>
     <string name="home_preview_open_title">预览沙盒</string>
-    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不会改变实际系统状态。</string>
+    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态。</string>
     <string name="home_preview_live_title">实时预览</string>
     <string name="home_preview_section_preview">预览</string>
     <string name="home_preview_section_network">网络</string>
@@ -51,7 +51,7 @@
     <string name="home_preview_airplane_title">飞行模式</string>
     <string name="home_preview_airplane_summary">开启后暂停移动网络模拟\nWi‑Fi 仍可独立模拟</string>
     <string name="home_preview_mobile_network_title">移动网络</string>
-    <string name="home_preview_data_sim_title">流量卡</string>
+    <string name="home_preview_data_sim_title">上网卡</string>
     <string name="home_preview_data_sim1">SIM 1</string>
     <string name="home_preview_data_sim2">SIM 2</string>
     <string name="home_preview_sim1_network_title">SIM 1 网络制式</string>
@@ -73,7 +73,7 @@
     <string name="home_preview_wifi_state_title">Wi‑Fi 状态</string>
     <string name="home_preview_wifi_connected">已连接</string>
     <string name="home_preview_wifi_no_internet">无网络</string>
-    <string name="home_preview_wifi_hotspot">热点</string>
+    <string name="home_preview_wifi_hotspot">热点 Wi-Fi</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi 信号</string>
 
     <string name="home_preview_signal_none">无</string>

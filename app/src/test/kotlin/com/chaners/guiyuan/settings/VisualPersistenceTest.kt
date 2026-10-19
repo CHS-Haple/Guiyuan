@@ -13,6 +13,10 @@ class VisualPersistenceTest {
         val single = VisualCfg(
             combinedScale = 0.9f,
             outerWeightScale = 1.1f,
+            wifiOffsetY = -3f,
+            wifiWeight = 60,
+            airplaneWeight = 60,
+            mobileTypeOffsetY = 6f,
             batteryColorPreset = BatteryColorPreset.RECOMMENDED,
             batteryColorModes = BatteryColorModes(charging = BatteryColorMode.CUSTOM),
             batteryColorOverrides = BatteryColorOverrides(charging = 0xFF123456.toInt()),
@@ -22,6 +26,10 @@ class VisualPersistenceTest {
             dualSignal = true,
             combinedScale = 1.2f,
             outerWeightScale = 0.8f,
+            wifiOffsetY = 4f,
+            wifiWeight = 130,
+            airplaneWeight = 130,
+            mobileTypeOffsetY = -2f,
             batteryColorPreset = BatteryColorPreset.IOS_STYLE,
             batteryColorModes = BatteryColorModes(powerSave = BatteryColorMode.FOLLOW_SYSTEM),
         )
@@ -45,6 +53,67 @@ class VisualPersistenceTest {
         assertEquals(single.normalized(), prefs.readVisualCfg())
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
         assertEquals(dual.normalized(), prefs.readVisualCfg())
+    }
+
+    @Test
+    fun savedNativeWeightsMigrateAllBanksWithoutTouchingOtherKeys() {
+        val prefs = MemoryPreferences()
+        val network = ContentLayout.NETWORK_CENTER
+        val battery = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putInt(MOBILE_TYPE_WEIGHT_KEY, 1400)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY), 1200)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY), 200)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1001)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1000)
+            .putInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 1400)
+            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY), 1100)
+            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY), 200)
+            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1001)
+            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1000)
+            .putInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 80)
+            .putString("application_ui_scale", "90")
+            .apply()
+
+        migrateTextWeightRanges(prefs)
+
+        assertEquals(1000, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).topTextWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).topTextWeight)
+        migrateTextWeightRanges(prefs)
+        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
+        assertEquals(80, prefs.getInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 0))
+        assertEquals("90", prefs.getString("application_ui_scale", null))
+    }
+
+    @Test
+    fun corruptedSavedThicknessIsBoundedBeforeItReachesTheRenderer() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit()
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), 1401)
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1401)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1)
+            .apply()
+
+        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = layout).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
+        assertEquals(200, prefs.readVisualCfg(dual = true, layoutOverride = layout).mobileTypeWeight)
+
+        migrateTextWeightRanges(prefs)
+        assertEquals(200, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
+        assertEquals(200, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1))
     }
 
     @Test
@@ -78,16 +147,85 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         prefs.edit()
             .putFloat(COMBINED_SCALE_KEY, 0.75f)
+            .putFloat(WIFI_VERTICAL_OFFSET_KEY, -3f)
             .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
         assertEquals(COMBINED_SCALE_DEFAULT, prefs.readVisualCfg().combinedScale, 0.0001f)
+        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(-3f, prefs.readVisualCfg(dual = false).wifiOffsetY, 0f)
         assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(0.75f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = false).batteryColorPreset)
         assertTrue(prefs.dualSignalEnabled())
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         assertFalse(prefs.dualSignalEnabled())
+    }
+
+    @Test
+    fun oldBatteryCenteredOffsetIsInheritedUntilEachNewSliderIsSaved() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putString(visualModeKey(false, CONTENT_LAYOUT_KEY), layout.persistedValue)
+            .putFloat(visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY), topOffsetYRaw(5f))
+            .apply()
+
+        val initial = prefs.readVisualCfg()
+        assertEquals(5f, initial.wifiOffsetY, 0f)
+        assertEquals(5f, initial.mobileTypeOffsetY, 0f)
+        assertEquals(topOffsetYRaw(5f), initial.topOffsetY, 0f)
+
+        prefs.edit()
+            .putFloat(visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY), -1f)
+            .apply()
+        assertEquals(-1f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(5f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+
+        val result = prefs.readVisualCfg().copy(mobileTypeOffsetY = 3f)
+        prefs.edit().putVisualCfg(result).apply()
+        assertEquals(-1f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(3f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+    }
+
+    @Test
+    fun legacyNetworkCenteredReadoutDoesNotAffectNewNetworkOffsets() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, BATTERY_TOP_VERTICAL_OFFSET_KEY), topOffsetYRaw(6f))
+            .apply()
+        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg().mobileTypeOffsetY, 0f)
+        assertEquals(topOffsetYRaw(6f), prefs.readVisualCfg().topOffsetY, 0f)
+    }
+
+    @Test
+    fun importedVisualKeysPreserveUnrelatedPrefsAndRollbackLosslessly() {
+        val prefs = MemoryPreferences()
+        val schemeKey = "battery_color_scheme_library.custom.1.name"
+        prefs.edit()
+            .putString("application_ui_scale", "90")
+            .putString("preview_mode", "normal")
+            .putString("root_permission", "granted")
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY), 0.85f)
+            .putString(schemeKey, "Previous scheme")
+            .apply()
+        val before = prefs.all.toMap()
+        val snapshot = prefs.backupVisualSnapshot()
+
+        val editor = prefs.editBackupVisuals()
+        editor.putVisualCfg(VisualCfg(combinedScale = 0.95f))
+        editor.putString(schemeKey, "Imported scheme")
+        assertTrue(editor.commit())
+
+        assertEquals("90", prefs.getString("application_ui_scale", null))
+        assertEquals("normal", prefs.getString("preview_mode", null))
+        assertEquals("granted", prefs.getString("root_permission", null))
+        assertEquals("Imported scheme", prefs.getString(schemeKey, null))
+        assertEquals(0.95f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
+
+        assertTrue(prefs.rollbackBackupVisuals(snapshot))
+        assertEquals(before, prefs.all)
     }
 
     private class MemoryPreferences : SharedPreferences {

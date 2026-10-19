@@ -249,6 +249,18 @@ internal object CcTransitionOwner {
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
+        private val nativeChildren = ArrayList<View>()
+        // Native children can change while the icon container keeps the same bounds.
+        private val nativeMembershipListener =
+            ViewTreeObserver.OnGlobalLayoutListener {
+                if (
+                    started &&
+                    captureNativeChildren() &&
+                    currentSnapshot.model.dualMobileLevels == null
+                ) {
+                    markMobileTargetsDirty()
+                }
+            }
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -259,6 +271,7 @@ internal object CcTransitionOwner {
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
         private var started = false
+        private var registeredObserver: ViewTreeObserver? = null
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
@@ -341,6 +354,33 @@ internal object CcTransitionOwner {
 
         fun markMobileTargetsDirty() {
             mobileTargetsDirty.set(true)
+        }
+
+        private fun captureNativeChildren(): Boolean {
+            val count = finalStatusIcons.childCount
+            if (
+                nativeChildren.size == count &&
+                (0 until count).all { index ->
+                    nativeChildren[index] === finalStatusIcons.getChildAt(index)
+                }
+            ) {
+                return false
+            }
+            val previousMobile = nativeChildren.filter(::isMobileSlot)
+            nativeChildren.clear()
+            for (index in 0 until count) {
+                nativeChildren.add(finalStatusIcons.getChildAt(index))
+            }
+            val currentMobile = nativeChildren.filter(::isMobileSlot)
+            return previousMobile.size != currentMobile.size ||
+                previousMobile.indices.any { index ->
+                    previousMobile[index] !== currentMobile[index]
+                }
+        }
+
+        private fun isMobileSlot(view: View): Boolean {
+            val slot = NativeParticipantAccess.slotOf(view)
+            return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
         }
 
         fun matches(
@@ -492,11 +532,15 @@ internal object CcTransitionOwner {
             val rootView = rootRef.get() ?: return
             val source = sourceViewRef.get() ?: return
             started = true
+            captureNativeChildren()
+            val observer = rootView.viewTreeObserver
+            registeredObserver = observer
+            observer.addOnGlobalLayoutListener(nativeMembershipListener)
             source.clipBounds = sourceMask.appliedClip
             refreshNativePeerTint()
             syncTransitionReservation()
             rootView.overlay.add(drawable)
-            rootView.viewTreeObserver.addOnPreDrawListener(preDrawListener)
+            observer.addOnPreDrawListener(preDrawListener)
             drawable.setBounds(0, 0, rootView.width, rootView.height)
             drawable.invalidateSelf()
         }
@@ -564,9 +608,19 @@ internal object CcTransitionOwner {
             nativeBatteryIslandActive = false
             if (!started) return
             started = false
+            nativeChildren.clear()
             val rootView = rootRef.get()
-            if (rootView?.viewTreeObserver?.isAlive == true) {
-                rootView.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
+            val registered = registeredObserver
+            registeredObserver = null
+            if (registered?.isAlive == true) {
+                registered.removeOnGlobalLayoutListener(nativeMembershipListener)
+                registered.removeOnPreDrawListener(preDrawListener)
+            }
+            // A detached View may expose a different observer; a floating one may also merge.
+            val live = rootView?.viewTreeObserver
+            if (live != null && live !== registered && live.isAlive) {
+                live.removeOnGlobalLayoutListener(nativeMembershipListener)
+                live.removeOnPreDrawListener(preDrawListener)
             }
             rootView?.overlay?.remove(drawable)
             sourceViewRef.get()?.let { sourceView ->
@@ -1007,6 +1061,10 @@ internal object CcTransitionOwner {
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
+                        ) == true && (
+                            model.centerIndicator.typeface == null ||
+                                witness?.textStyle?.typeface == null ||
+                                model.centerIndicator.typeface == witness?.textStyle?.typeface
                         )
                     } else {
                         null
@@ -1025,7 +1083,9 @@ internal object CcTransitionOwner {
                             else target.copyOf().apply { this[0] += shift }
                         }
                 val matchedTextWeight =
-                    if (nativeTypeMatch == true) witness?.textWeight else null
+                    if (nativeTypeMatch == true) {
+                        witness?.textWeight ?: (model.centerIndicator as? CenterIndicator.MobileType)?.typeface?.weight
+                    } else null
                 val matchedTextStyle =
                     if (nativeTypeMatch == true) witness?.textStyle else null
                 val resolvedMobileTargetBars =
@@ -2464,7 +2524,9 @@ internal object CcTransitionOwner {
                 ?.takeIf { witness ->
                     val slotStillSemantic =
                         target !is StatusPainter.TransitionTarget.Slots ||
-                            witness.slotView.visibility == View.VISIBLE
+                            (witness.slotView.visibility == View.VISIBLE &&
+                                witness.slotView.parent === finalStatusIcons &&
+                                NativeParticipantAccess.slotOf(witness.slotView) == witness.slot)
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
@@ -2481,6 +2543,7 @@ internal object CcTransitionOwner {
                             !opticalRequired ||
                                 witness.opticalView?.let { optical ->
                                     isReliableSemanticTarget(optical) &&
+                                        belongsToSlot(optical, witness.slotView) &&
                                         (
                                             !mobileTypeTarget ||
                                                 hasVisibleMobileType(optical, witness.slotView)
@@ -2603,6 +2666,7 @@ internal object CcTransitionOwner {
             if (opticalRequired && optical == null && fallbackBounds == null) {
                 return null
             }
+            val textStyle = resolveNativeTextStyle(optical)
             return TargetWitness(
                 slot = slot,
                 slotView = slotRoot,
@@ -2610,8 +2674,8 @@ internal object CcTransitionOwner {
                 subscriptionId = readMobileSubId(slotRoot),
                 requiresOpticalGeometry = opticalRequired,
                 fallbackBounds = fallbackBounds,
-                textWeight = resolveNativeTextWeight(optical),
-                textStyle = resolveNativeTextStyle(optical),
+                textWeight = textStyle?.weight ?: resolveNativeTextWeight(optical),
+                textStyle = textStyle,
             )
         }
 
@@ -2622,6 +2686,12 @@ internal object CcTransitionOwner {
                 if (targets.all { target ->
                         target.slotView.visibility == View.VISIBLE &&
                             isUsableSlotView(target.slotView) &&
+                            target.slotView.parent === finalStatusIcons &&
+                            NativeParticipantAccess.slotOf(target.slotView) == target.slot &&
+                            (target.opticalView?.let { optical ->
+                                isReliableSemanticTarget(optical) &&
+                                    belongsToSlot(optical, target.slotView)
+                            } ?: true) &&
                             target.slotView !== primary?.slotView &&
                             target.subscriptionId != primary?.subscriptionId &&
                             target.subscriptionId == readMobileSubId(target.slotView)
@@ -3212,6 +3282,8 @@ internal object CcTransitionOwner {
             if (view is TextView) {
                 return captureTextStyle(view.paint)
             }
+            NativePresentationResolver.nativeMobileTextPaint(view)
+                ?.let { return captureTextStyle(it) }
             val descendant =
                 if (view is ViewGroup) {
                     sequence {
@@ -3575,6 +3647,15 @@ internal object CcTransitionOwner {
                 view.isAttachedToWindow &&
                 view.width > 0 &&
                 view.height > 0
+
+        private fun belongsToSlot(view: View, slot: View): Boolean {
+            var current: View? = view
+            while (current != null) {
+                if (current === slot) return true
+                current = current.parent as? View
+            }
+            return false
+        }
 
         private fun hasVisibleMobileType(view: View, slot: View): Boolean {
             if (view.alpha <= 0f || NativePresentationResolver.nativeTargetType(view) == null) {

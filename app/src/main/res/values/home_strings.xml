@@ -27,13 +27,13 @@
     <string name="home_scope_request_failed">Scope request unavailable</string>
     <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your module manager.</string>
 
-    <string name="section_home_preview_sandbox">Preview sandbox</string>
+    <string name="section_home_preview_sandbox">Status simulation</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>
     <string name="home_preview_switch_light">Switch to light mode</string>
     <string name="home_preview_switch_dark">Switch to dark mode</string>
-    <string name="home_preview_sandbox_summary">All adjustments are preview-only and do not change actual system state.</string>
+    <string name="home_preview_sandbox_summary">Changes are for preview only and do not affect the system.</string>
     <string name="home_preview_open_title">Preview sandbox</string>
-    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without changing actual system state.</string>
+    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system.</string>
     <string name="home_preview_live_title">Live preview</string>
     <string name="home_preview_section_preview">Preview</string>
     <string name="home_preview_section_network">Network</string>
@@ -73,7 +73,7 @@
     <string name="home_preview_wifi_state_title">Wi‑Fi state</string>
     <string name="home_preview_wifi_connected">Connected</string>
     <string name="home_preview_wifi_no_internet">No internet</string>
-    <string name="home_preview_wifi_hotspot">Hotspot</string>
+    <string name="home_preview_wifi_hotspot">Hotspot Wi-Fi</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi signal</string>
 
     <string name="home_preview_signal_none">None</string>

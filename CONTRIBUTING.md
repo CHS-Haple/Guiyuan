@@ -177,7 +177,7 @@ For Material Symbols:
 - use Filled only when state semantics or legibility justify it;
 - normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
 - use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
-- size right-bottom subordinate detail badges to about half the main glyph's painted height (roughly a quarter optical footprint); keep the existing contour cutout and gap unchanged;
+- first normalize subordinate glyphs using official outlined W500 variants while preserving primary glyph weights; then use the shared 12 dp badge inside the 24 dp optical box (one quarter of its area), independent of the main glyph's shape; keep the existing contour cutout and 1 dp gap unchanged;
 - review neighboring glyphs in light and dark themes.
 
 ### Version and build identity
@@ -205,7 +205,7 @@ Normal runtime path:
 feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
-Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response.
+Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response. The trusted work-branch APK workflow accepts only same-repository `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` sources; use an eligible prefix for dependency proposals requiring a signed Canary, not `build/*`.
 
 A PR may remain Draft while implementation is moving. Mark it ready at the final automated-review checkpoint. Merge to `dev` only when deterministic blockers are resolved, required CI is green and required focused device evidence has passed.
 

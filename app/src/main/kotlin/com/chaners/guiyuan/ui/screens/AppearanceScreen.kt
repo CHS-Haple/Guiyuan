@@ -16,7 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +39,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.palettesFor
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -43,6 +51,7 @@ import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
@@ -53,6 +62,8 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -60,9 +71,13 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 internal fun AppearanceScreen(
@@ -70,10 +85,13 @@ internal fun AppearanceScreen(
     dark: Boolean,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
+    onColorSpecChange: (ThemeColorSpec?) -> Unit,
+    onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
     onLiquidModeChange: (LiquidMode) -> Unit,
+    onUiScaleChange: (Int) -> Unit,
     onBack: () -> Unit,
 ) {
     val themeOptions =
@@ -82,6 +100,24 @@ internal fun AppearanceScreen(
             stringResource(R.string.theme_light),
             stringResource(R.string.theme_dark),
         )
+    val colorSpecOptions = listOf(
+        stringResource(R.string.theme_color_spec_system),
+        "Spec2021",
+        "Spec2025",
+    )
+    val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
+    val paletteNames = mapOf(
+        ThemePaletteStyle.TonalSpot to stringResource(R.string.theme_palette_tonal_spot),
+        ThemePaletteStyle.Neutral to stringResource(R.string.theme_palette_neutral),
+        ThemePaletteStyle.Vibrant to stringResource(R.string.theme_palette_vibrant),
+        ThemePaletteStyle.Expressive to stringResource(R.string.theme_palette_expressive),
+        ThemePaletteStyle.Rainbow to stringResource(R.string.theme_palette_rainbow),
+        ThemePaletteStyle.FruitSalad to stringResource(R.string.theme_palette_fruit_salad),
+        ThemePaletteStyle.Monochrome to stringResource(R.string.theme_palette_monochrome),
+        ThemePaletteStyle.Fidelity to stringResource(R.string.theme_palette_fidelity),
+        ThemePaletteStyle.Content to stringResource(R.string.theme_palette_content),
+        ThemePaletteStyle.Cmf to stringResource(R.string.theme_palette_cmf),
+    )
     val floatingStyleOptions =
         listOf(
             stringResource(R.string.floating_navigation_style_standard),
@@ -100,7 +136,26 @@ internal fun AppearanceScreen(
             stringResource(R.string.floating_navigation_liquid_mode_clear),
         )
 
-    SettingsPage(title = stringResource(R.string.appearance_title), onBack = onBack) {
+    var sliderPercent by remember(appearance.uiScalePercent) {
+        mutableFloatStateOf(appearance.uiScalePercent.toFloat())
+    }
+    var inputOpen by remember { mutableStateOf(false) }
+
+    SettingsPage(
+        title = stringResource(R.string.appearance_title),
+        onBack = onBack,
+        overlay = {
+            UiScaleDialog(
+                show = inputOpen,
+                value = appearance.uiScalePercent,
+                onDismiss = { inputOpen = false },
+                onConfirm = { percent ->
+                    inputOpen = false
+                    if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                },
+            )
+        },
+    ) {
         item {
             AppearanceThemePreview(
                 appearance = appearance,
@@ -139,9 +194,78 @@ internal fun AppearanceScreen(
                 checked = appearance.dynamicColor,
                 onCheckedChange = onDynamicChange,
             )
+            AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
+                OverlayDropdownPreference(
+                    items = colorSpecOptions,
+                    selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
+                    title = stringResource(R.string.theme_color_spec),
+                    summary = stringResource(R.string.theme_color_spec_summary),
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_category)
+                    },
+                    showValue = true,
+                    onSelectedIndexChange = { index ->
+                        if (index in colorSpecOptions.indices) {
+                            val spec = if (index == 0) null else ThemeColorSpec.entries[index - 1]
+                            if (spec != appearance.colorSpec) onColorSpecChange(spec)
+                        }
+                    },
+                )
+                AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
+                    if (paletteStyles.isNotEmpty()) {
+                        OverlayDropdownPreference(
+                            items = paletteStyles.map { paletteNames.getValue(it) },
+                            selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
+                            title = stringResource(R.string.theme_palette_style),
+                            summary = stringResource(R.string.theme_palette_style_summary),
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
+                            },
+                            showValue = true,
+                            onSelectedIndexChange = { index ->
+                                paletteStyles.getOrNull(index)?.let { style ->
+                                    if (style != appearance.paletteStyle) onPaletteStyleChange(style)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
         }
 
         Section(R.string.section_visual_effects) {
+            ArrowPreference(
+                title = stringResource(R.string.ui_scale_title),
+                summary = stringResource(R.string.ui_scale_summary),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
+                },
+                endActions = {
+                    Text(
+                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                holdDownState = inputOpen,
+                onClick = { inputOpen = true },
+                bottomAction = {
+                    Slider(
+                        value = sliderPercent,
+                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
+                        onValueChangeFinished = {
+                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
+                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        valueRange = 80f..110f,
+                        steps = 29,
+                        showKeyPoints = true,
+                        keyPoints = listOf(80f, 90f, 100f, 110f),
+                        magnetThreshold = 0.01f,
+                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    )
+                },
+            )
             SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
@@ -211,6 +335,62 @@ internal fun AppearanceScreen(
                                 onNavContentChange(content)
                             }
                         }
+                    },
+                )
+            }
+
+        }
+    }
+}
+
+@Composable
+private fun UiScaleDialog(
+    show: Boolean,
+    value: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    var input by remember(show) { mutableStateOf(value.toString()) }
+    OverlayDialog(
+        title = stringResource(R.string.ui_scale_title),
+        summary = "80% - 110%",
+        show = show,
+        onDismissRequest = onDismiss,
+    ) {
+        Column {
+            TextField(
+                value = input,
+                onValueChange = { text ->
+                    if (text.length <= 3 && text.all(Char::isDigit)) input = text
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    Text(
+                        text = "%",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.weight(1f),
+                    onClick = onDismiss,
+                )
+                TextButton(
+                    text = stringResource(R.string.confirm),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = {
+                        onConfirm((input.toIntOrNull() ?: value).coerceIn(80, 110))
                     },
                 )
             }

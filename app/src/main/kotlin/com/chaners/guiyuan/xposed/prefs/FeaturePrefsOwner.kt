@@ -10,21 +10,20 @@ import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
+import java.util.concurrent.atomic.AtomicReference
 
 internal object FeaturePrefsOwner {
-    @Volatile
-    private var cfg =
-        FeatureCfg(
-            enabled = false,
-            keyguard = false,
-            aod = false,
-        )
+    private val disabled = FeatureCfg(enabled = false, keyguard = false, aod = false)
+    private data class State(
+        val source: SharedPreferences?,
+        val token: Any?,
+        val cfg: FeatureCfg,
+    )
 
-    private var prefs: SharedPreferences? = null
+    private val state = AtomicReference(State(null, null, disabled))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var bindToken: Any? = null
 
-    fun current(): FeatureCfg = cfg
+    fun current(): FeatureCfg = state.get().cfg
 
     @Synchronized
     fun bind(
@@ -35,25 +34,30 @@ internal object FeaturePrefsOwner {
 
         val token = Any()
         val initial = resolve(source)
-        cfg = initial
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (isFeatureKey(key) && isCurrent(changed, token)) {
-                    val next = resolve(changed)
-                    if (next != cfg) {
+                if (!isFeatureKey(key)) return@OnSharedPreferenceChangeListener
+                val before = state.get()
+                if (before.source !== changed || before.token !== token) {
+                    return@OnSharedPreferenceChangeListener
+                }
+                val next = resolve(changed)
+                var latest = state.get()
+                while (latest.source === changed && latest.token === token && latest.cfg != next) {
+                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
                         val receivedAtNs = SystemClock.elapsedRealtimeNanos()
                         val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
-                        cfg = next
                         onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+                        break
                     }
+                    latest = state.get()
                 }
             }
 
         source.registerOnSharedPreferenceChangeListener(listener)
-        prefs = source
+        state.set(State(source, token, initial))
         this.listener = listener
-        bindToken = token
         onChanged(initial, null)
         return initial
     }
@@ -61,33 +65,18 @@ internal object FeaturePrefsOwner {
     @Synchronized
     fun unbind() {
         unbindLocked()
-        cfg =
-            FeatureCfg(
-                enabled = false,
-                keyguard = false,
-                aod = false,
-            )
+        state.set(State(null, null, disabled))
     }
 
     private fun unbindLocked() {
-        val oldPrefs = prefs
+        val old = state.getAndUpdate { it.copy(source = null, token = null) }
         val oldListener = listener
-        prefs = null
         listener = null
-        bindToken = null
-        // Drop ownership first so callbacks from the previous binding fail the token check.
-        if (oldPrefs != null && oldListener != null) {
-            oldPrefs.unregisterOnSharedPreferenceChangeListener(oldListener)
+        // Retire the generation before entering the framework's listener monitor.
+        if (old.source != null && oldListener != null) {
+            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
         }
     }
-
-    @Synchronized
-    private fun isCurrent(
-        source: SharedPreferences,
-        token: Any,
-    ): Boolean =
-        prefs === source &&
-            bindToken === token
 
     internal fun transportLatencyNs(
         changedAtNs: Long,

@@ -1,7 +1,10 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.Serializable
 
 
+
+@Serializable
 internal enum class ContentLayout(
     val persistedValue: String,
 ) {
@@ -14,6 +17,7 @@ internal enum class ContentLayout(
     }
 }
 
+@Serializable
 internal enum class BatteryColorPreset(
     val persistedValue: String,
 ) {
@@ -27,6 +31,7 @@ internal enum class BatteryColorPreset(
     }
 }
 
+@Serializable
 internal enum class BatteryColorMode(
     val persistedValue: String,
 ) {
@@ -49,6 +54,7 @@ internal enum class BatteryColorSlot {
     LOW,
 }
 
+@Serializable
 internal data class BatteryColorModes(
     val normal: BatteryColorMode = BatteryColorMode.PRESET,
     val powerSave: BatteryColorMode = BatteryColorMode.PRESET,
@@ -81,6 +87,7 @@ internal data class BatteryColorModes(
         }
 }
 
+@Serializable
 internal data class BatteryColorOverrides(
     val normal: Int? = null,
     val powerSave: Int? = null,
@@ -170,6 +177,7 @@ internal object IosStyleBatteryPalette {
         }
 }
 
+@Serializable
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
@@ -184,12 +192,16 @@ internal data class VisualCfg(
     val topTextScale: Float = topTextScaleDefault(layout),
     val topTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
     val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+    val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
     val outerWeightScale: Float = OUTER_WEIGHT_SCALE_DEFAULT,
     val wifiScale: Float = WIFI_SIZE_SCALE_DEFAULT,
+    val wifiWeight: Int = WIFI_WEIGHT_DEFAULT,
     val airplaneScale: Float = AIRPLANE_SIZE_SCALE_DEFAULT,
+    val airplaneWeight: Int = AIRPLANE_WEIGHT_DEFAULT,
     val noSimScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
     val mobileTypeScale: Float = mobileTypeScaleDefault(layout),
     val mobileTypeWeight: Int = MOBILE_TYPE_WEIGHT_DEFAULT,
@@ -218,6 +230,10 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
             ),
+        wifiOffsetY =
+            wifiOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+        mobileTypeOffsetY =
+            mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         topChargingIconScale =
             topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
@@ -227,8 +243,10 @@ internal fun VisualCfg.normalized(): VisualCfg =
         outerWeightScale =
             outerWeightScale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
         wifiScale = wifiScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+        wifiWeight = wifiWeight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX),
         airplaneScale =
             airplaneScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+        airplaneWeight = airplaneWeight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX),
         noSimScale =
             noSimScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
         mobileTypeScale =

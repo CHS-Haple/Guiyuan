@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -34,8 +33,13 @@ import kotlin.math.sqrt
 
 internal class StatusPainter(
     private val context: Context,
+    private val preview: Boolean = false,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    // Keep 5G font axes separate from other Canvas text.
+    private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var mobileTextSource: Typeface? = null
+    private val mobileTextSamples = HashMap<Int, Paint>(128)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -44,14 +48,18 @@ internal class StatusPainter(
             0.75f,
             true,
         )
+    private val nativeStrokeSources =
+        LinkedHashMap<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8, 0.75f, true)
+    private val strokeAssets =
+        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(24, 0.75f, true)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
-    private var cachedMobileTypeWeight: Int = Int.MIN_VALUE
-    private var cachedMobileTypeTypeface: Typeface = Typeface.DEFAULT
-    private var cachedBatteryTopTextWeight: Int = Int.MIN_VALUE
-    private var cachedBatteryTopTextTypeface: Typeface = Typeface.DEFAULT
+    private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val batteryTextSamples = HashMap<Int, Paint>(64)
+    private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
@@ -88,8 +96,12 @@ internal class StatusPainter(
     fun clearNativeResources() {
         nativeConfigHash = context.resources.configuration.hashCode()
         nativeCenterAssets.clear()
+        nativeStrokeSources.clear()
+        strokeAssets.clear()
         nativeTintVariantIds.clear()
         nativeWifiReferenceIds.clear()
+        batteryTextSamples.clear()
+        mobileTextSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
@@ -166,10 +178,6 @@ internal class StatusPainter(
                 )
             }
         }
-        val centerSave = canvas.save()
-        if (visual.layout == ContentLayout.BATTERY_CENTER) {
-            canvas.translate(0f, networkTopTranslationY(visual))
-        }
         drawCenterTransition(
             canvas = canvas,
             current = model.centerIndicator,
@@ -182,8 +190,8 @@ internal class StatusPainter(
             geometry = centerGeometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
-        canvas.restoreToCount(centerSave)
         drawMobile(
             canvas = canvas,
             model = model,
@@ -339,9 +347,6 @@ internal class StatusPainter(
                 )
 
             TransitionComponent.CENTER -> {
-                if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                    canvas.translate(0f, networkTopTranslationY(visual))
-                }
                 val baseGeometry =
                     resolveCenterGeometry(visual)
                 val transitionGeometry =
@@ -367,9 +372,11 @@ internal class StatusPainter(
                     geometry = transitionGeometry,
                     nativeTransform = nativeTransform,
                     scaleMobileTypeWithCanvas = false,
+                    visual = visual,
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
+                    strokeTransitionProgress = motion,
                 )
             }
 
@@ -572,6 +579,7 @@ internal class StatusPainter(
                         transitionWifiMetrics(
                             indicator = model.centerIndicator,
                             geometry = centerGeometry,
+                            weight = visual.wifiWeight,
                         )
                     TransitionComponentSpec(
                         component = TransitionComponent.CENTER,
@@ -623,18 +631,7 @@ internal class StatusPainter(
 
                 CenterIndicator.Airplane -> {
                     val metrics =
-                        airplaneResourceId()
-                            ?.let { resourceId ->
-                                transitionNativeCenterMetrics(
-                                    resource =
-                                        PresentationStore.NativeIconResource(
-                                            packageName = SYSTEM_UI_PACKAGE,
-                                            resourceId = resourceId,
-                                        ),
-                                    maxWidth = centerGeometry.airplaneMaxSize,
-                                    maxHeight = centerGeometry.airplaneMaxSize,
-                                )
-                            }
+                        transitionAirplaneMetrics(centerGeometry, visual.airplaneWeight)
                     TransitionComponentSpec(
                         component = TransitionComponent.CENTER,
                         sourceBounds =
@@ -698,7 +695,7 @@ internal class StatusPainter(
                         sourceBounds =
                             shiftBoundsY(
                                 spec.sourceBounds,
-                                networkTopTranslationY(visual) * scale,
+                                networkTopTranslationY(visual, model.centerIndicator) * scale,
                             ),
                     )
                 } else {
@@ -778,18 +775,7 @@ internal class StatusPainter(
         val geometry =
             resolveCenterGeometry(visual)
         val metrics =
-            airplaneResourceId()
-                ?.let { resourceId ->
-                    transitionNativeCenterMetrics(
-                        resource =
-                            PresentationStore.NativeIconResource(
-                                packageName = SYSTEM_UI_PACKAGE,
-                                resourceId = resourceId,
-                            ),
-                        maxWidth = geometry.airplaneMaxSize,
-                        maxHeight = geometry.airplaneMaxSize,
-                    )
-                }
+            transitionAirplaneMetrics(geometry, visual.airplaneWeight)
         val baseLocal =
             centeredBounds(
                 centerX = AIRPLANE_CENTER_X,
@@ -844,6 +830,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             pixelAligned = false,
+            weight = visual.airplaneWeight,
         )
         canvas.restoreToCount(save)
     }
@@ -935,9 +922,33 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
+    private fun transitionAirplaneMetrics(
+        geometry: CenterGeometry.Resolved,
+        weight: Int,
+    ): TransitionWifiMetrics? {
+        val resourceId = airplaneResourceId() ?: return null
+        val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
+        val metrics = transitionNativeCenterMetrics(
+            resource = resource,
+            maxWidth = geometry.airplaneMaxSize,
+            maxHeight = geometry.airplaneMaxSize,
+        ) ?: return null
+        val drawable = resolveNativeCenterDrawGeometry(
+            resource = resource,
+            centerX = AIRPLANE_CENTER_X,
+            centerY = AIRPLANE_CENTER_Y,
+            maxWidth = geometry.airplaneMaxSize,
+            maxHeight = geometry.airplaneMaxSize,
+        ) ?: return metrics
+        val ink = nativeStrokePath(resource, weight) ?: return metrics
+        val bounds = styledBounds(drawable, ink)
+        return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
+    }
+
     private fun transitionWifiMetrics(
         indicator: CenterIndicator.Wifi,
         geometry: CenterGeometry.Resolved,
+        weight: Int,
     ): TransitionWifiMetrics? {
         val resourceId = indicator.nativeResourceId ?: return null
         val resource =
@@ -945,12 +956,24 @@ internal class StatusPainter(
                 packageName = SYSTEM_UI_PACKAGE,
                 resourceId = resourceId,
             )
-        return transitionNativeCenterMetrics(
+        val reference = wifiOpticalReferenceResource(resource)
+        val metrics = transitionNativeCenterMetrics(
             resource = resource,
-            opticalReferenceResource = wifiOpticalReferenceResource(resource),
+            opticalReferenceResource = reference,
             maxWidth = geometry.wifiMaxWidth,
             maxHeight = geometry.wifiMaxHeight,
-        )
+        ) ?: return null
+        val draw = resolveNativeCenterDrawGeometry(
+            resource = resource,
+            opticalReferenceResource = reference,
+            centerX = WIFI_CENTER_X,
+            centerY = WIFI_CENTER_Y,
+            maxWidth = geometry.wifiMaxWidth,
+            maxHeight = geometry.wifiMaxHeight,
+        ) ?: return metrics
+        val ink = nativeStrokePath(resource, weight) ?: return metrics
+        val bounds = styledBounds(draw, ink)
+        return metrics.copy(sourceOpticalWidth = bounds.width, sourceOpticalHeight = bounds.height)
     }
 
     private fun transitionNativeCenterMetrics(
@@ -1075,12 +1098,16 @@ internal class StatusPainter(
 
     private fun networkTopTranslationY(
         visual: VisualCfg,
+        indicator: CenterIndicator? = null,
     ): Float =
         TOP_SLOT_CENTER_Y -
             CENTER_TRANSITION_PIVOT_Y +
             TopInfoOffsetPolicy.networkTranslationDelta(
                 layout = visual.layout,
                 rawOffset = visual.topOffsetY,
+                indicator = indicator,
+                wifiOffset = visual.wifiOffsetY,
+                mobileTypeOffset = visual.mobileTypeOffsetY,
             )
 
     private fun shiftBoundsY(
@@ -1102,15 +1129,16 @@ internal class StatusPainter(
         exitAmount: Float,
         enterAmount: Float,
     ): TopSlotAvoidance? {
-        val translationY = networkTopTranslationY(visual)
         if (previous == null || previous == current) {
             return resolveCenterIndicatorAvoidance(
                 indicator = current,
                 scale = scale,
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
             }
         }
 
@@ -1120,6 +1148,8 @@ internal class StatusPainter(
                 scale = scale,
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
                 scaleAvoidanceAroundPivot(
                     avoidance = avoidance,
@@ -1128,7 +1158,7 @@ internal class StatusPainter(
                     amount = exitAmount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, previous))
             }
         val currentAvoidance =
             resolveCenterIndicatorAvoidance(
@@ -1136,6 +1166,8 @@ internal class StatusPainter(
                 scale = scale,
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                wifiWeight = visual.wifiWeight,
+                airplaneWeight = visual.airplaneWeight,
             )?.let { avoidance ->
                 scaleAvoidanceAroundPivot(
                     avoidance = avoidance,
@@ -1144,7 +1176,7 @@ internal class StatusPainter(
                     amount = enterAmount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, translationY)
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
             }
         return unionAvoidance(previousAvoidance, currentAvoidance)
     }
@@ -1240,6 +1272,8 @@ internal class StatusPainter(
         scale: Float,
         geometry: CenterGeometry.Resolved,
         scaleMobileTypeWithCanvas: Boolean,
+        wifiWeight: Int,
+        airplaneWeight: Int,
     ): TopSlotAvoidance? =
         when (indicator) {
             is CenterIndicator.Wifi -> {
@@ -1263,12 +1297,22 @@ internal class StatusPainter(
                         null
                     }
                 drawGeometry?.let { resolved ->
-                    TopSlotAvoidance(
-                        bounds = resolved.opticalBounds,
-                        components =
-                            resolved.opticalComponents()
-                                .ifEmpty { listOf(resolved.opticalBounds) },
-                    )
+                    val styled = resourceId?.let { id ->
+                        nativeStrokePath(
+                            PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, id),
+                            wifiWeight,
+                        )
+                    }
+                    if (styled != null) {
+                        singleTopSlotAvoidance(styledBounds(resolved, styled))
+                    } else {
+                        TopSlotAvoidance(
+                            bounds = resolved.opticalBounds,
+                            components =
+                                resolved.opticalComponents()
+                                    .ifEmpty { listOf(resolved.opticalBounds) },
+                        )
+                    }
                 } ?: resolveWifiFallbackAvoidance(geometry)
             }
 
@@ -1285,17 +1329,18 @@ internal class StatusPainter(
             CenterIndicator.Airplane ->
                 airplaneResourceId()
                     ?.let { resourceId ->
+                        val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
                         resolveNativeCenterDrawGeometry(
-                            resource =
-                                PresentationStore.NativeIconResource(
-                                    packageName = SYSTEM_UI_PACKAGE,
-                                    resourceId = resourceId,
-                                ),
+                            resource = resource,
                             centerX = AIRPLANE_CENTER_X,
                             centerY = AIRPLANE_CENTER_Y,
                             maxWidth = geometry.airplaneMaxSize,
                             maxHeight = geometry.airplaneMaxSize,
-                        )?.opticalBounds
+                        )?.let { draw ->
+                            nativeStrokePath(resource, airplaneWeight)
+                                ?.let { styledBounds(draw, it) }
+                                ?: draw.opticalBounds
+                        }
                     }?.let(::singleTopSlotAvoidance)
 
             is CenterIndicator.NoSim ->
@@ -1599,20 +1644,15 @@ internal class StatusPainter(
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
         val textSize = BATTERY_TOP_TEXT_SIZE * visual.topTextScale
-        val textExtraStroke =
-            if (textVisible) {
-                batteryTopTextExtraStroke(
-                    weight = visual.topTextWeight,
-                    textSize = textSize,
-                )
-            } else {
-                0f
-            }
-        paint.typeface = batteryTopTextTypeface(visual.topTextWeight)
-        paint.textSize = textSize
-        paint.textAlign = Paint.Align.LEFT
         if (textVisible) {
-            paint.getTextBounds(text, 0, text.length, batteryTopTextBounds)
+            configureBatteryTextStyle(
+                weight = visual.topTextWeight,
+                targetStyle = null,
+                progress = 0f,
+                textSize = textSize,
+            )
+            batteryTextPaint.textAlign = Paint.Align.LEFT
+            batteryTextPaint.getTextBounds(text, 0, text.length, batteryTopTextBounds)
         } else {
             batteryTopTextBounds.setEmpty()
         }
@@ -1623,8 +1663,8 @@ internal class StatusPainter(
         val textHeight =
             if (textVisible) batteryTopTextBounds.height().toFloat().coerceAtLeast(0f)
             else 0f
-        val textOpticalWidth = textWidth + textExtraStroke
-        val textOpticalHeight = textHeight + textExtraStroke
+        val textOpticalWidth = textWidth
+        val textOpticalHeight = textHeight
         val chargingIconResourceId =
             model.chargingIconResId
                 ?.takeIf { chargingSlotVisible && it != 0 }
@@ -1776,11 +1816,8 @@ internal class StatusPainter(
             text = text,
             textSize = textSize,
             textWeight = visual.topTextWeight,
-            textExtraStroke = textExtraStroke,
             textX =
-                textInkLeft +
-                    textExtraStroke / 2f -
-                    batteryTopTextBounds.left,
+                textInkLeft - batteryTopTextBounds.left,
             textBaselineY = textBaselineY,
             textOpticalBounds = textOpticalBounds,
             groupOpticalBounds = groupOpticalBounds,
@@ -1954,7 +1991,7 @@ internal class StatusPainter(
             ).bounds
         val local =
             if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
+                shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
             } else {
                 baseLocal
             }
@@ -2028,25 +2065,15 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
     ): TransitionBounds {
-        val extraStroke =
-            batteryTopTextExtraStroke(
-                weight = weight,
-                textSize = layout.textSize,
-            )
-        configureTransitionTextStyle(
-            sourceTypeface = batteryTopTextTypeface(weight),
-            currentWeight = weight,
+        configureBatteryTextStyle(
+            weight = weight,
             targetStyle = targetStyle,
             progress = transitionProgress,
             textSize = layout.textSize,
         )
-        paint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
-        val width =
-            batteryTopTextBounds.width().toFloat().coerceAtLeast(0f) +
-                extraStroke
-        val height =
-            batteryTopTextBounds.height().toFloat().coerceAtLeast(0f) +
-                extraStroke
+        batteryTextPaint.getTextBounds(layout.text, 0, layout.text.length, batteryTopTextBounds)
+        val width = batteryTopTextBounds.width().toFloat().coerceAtLeast(0f)
+        val height = batteryTopTextBounds.height().toFloat().coerceAtLeast(0f)
         return centeredBounds(
             centerX = layout.textOpticalBounds.centerX,
             centerY = layout.textOpticalBounds.centerY,
@@ -2064,160 +2091,82 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
     ) {
-        val extraStroke =
-            batteryTopTextExtraStroke(
-                weight = weight,
-                textSize = layout.textSize,
-            )
-        paint.style = Paint.Style.FILL
-        paint.color = textTint
-        paint.alpha =
+        val bounds = batteryTopTextOpticalBounds(
+            layout = layout,
+            weight = weight,
+            targetStyle = targetStyle,
+            transitionProgress = transitionProgress,
+        )
+        batteryTextPaint.textAlign = Paint.Align.LEFT
+        batteryTextPaint.color = textTint
+        batteryTextPaint.alpha =
             VisualIntensity.resolveCanvasAlpha(
                 color = textTint,
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        // Weight interpolation can change glyph ink width. Re-anchor every
-        // frame to the source optical center so typography changes cannot
-        // introduce a sideways drift on top of the geometry morph.
-        val currentBounds =
-            batteryTopTextOpticalBounds(
-                layout = layout,
-                weight = weight,
-                targetStyle = targetStyle,
-                transitionProgress = transitionProgress,
-            )
-        paint.textAlign = Paint.Align.LEFT
-        val currentOpticalWidth = currentBounds.width
-        val currentCenterX = layout.textOpticalBounds.centerX
+        // Use the same resolved weight for drawing and optical centering.
         val textX =
-            currentCenterX -
-                currentOpticalWidth / 2f +
-                extraStroke / 2f -
-                batteryTopTextBounds.left
-        val textBaselineY =
+            layout.textOpticalBounds.centerX - bounds.width / 2f - batteryTopTextBounds.left
+        val baselineY =
             layout.textOpticalBounds.centerY -
                 (batteryTopTextBounds.top + batteryTopTextBounds.bottom) / 2f
-
-        if (extraStroke > 0f) {
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = extraStroke
-            paint.strokeJoin = Paint.Join.ROUND
-            canvas.drawText(
-                layout.text,
-                textX,
-                textBaselineY,
-                paint,
-            )
-        }
-        paint.style = Paint.Style.FILL
-        paint.strokeWidth = 0f
-        canvas.drawText(
-            layout.text,
-            textX,
-            textBaselineY,
-            paint,
-        )
+        canvas.drawText(layout.text, textX, baselineY, batteryTextPaint)
     }
 
-    private fun configureTransitionTextStyle(
-        sourceTypeface: Typeface,
-        currentWeight: Int,
+    private fun weightedPaint(
+        source: Typeface,
+        weight: Int,
+        samples: MutableMap<Int, Paint>,
+    ): Paint {
+        val sample = ((weight.coerceIn(1, 1000) + 5) / 10 * 10).coerceIn(1, 1000)
+        return samples.getOrPut(sample) {
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = source
+                val supported = runCatching {
+                    setFontVariationSettings("'wght' $sample")
+                }.getOrDefault(false)
+                if (!supported) {
+                    // Android's static font-weight fallback is limited to 1..1000.
+                    typeface = Typeface.create(source, sample.coerceAtMost(1000), source.isItalic)
+                }
+            }
+        }
+    }
+
+    private fun configureBatteryTextStyle(
+        weight: Int,
         targetStyle: TransitionTextStyle?,
         progress: Float,
         textSize: Float,
     ) {
-        val styleProgress =
-            targetStyle
-                ?.let { TransitionTypographyPolicy.styleProgress(progress) }
-                ?: 0f
-        val targetWeight = targetStyle?.weight ?: currentWeight
-        val resolvedWeight =
-            (
-                currentWeight +
-                    (targetWeight - currentWeight) * styleProgress
-            ).roundToInt().coerceIn(1, 1000)
-        val targetTypeface = targetStyle?.typeface
-        paint.typeface =
-            when {
-                targetTypeface == null || styleProgress <= 0f ->
-                    sourceTypeface
-                styleProgress >= 0.999f ->
-                    targetTypeface
-                else ->
-                    Typeface.create(
-                        targetTypeface,
-                        resolvedWeight,
-                        targetTypeface.isItalic,
-                    )
-            }
-        paint.isFakeBoldText =
-            targetStyle?.fakeBoldText == true &&
-                styleProgress >= 0.72f
-        paint.textScaleX =
-            lerp(
-                1f,
-                targetStyle?.textScaleX
-                    ?.takeIf { it.isFinite() && it > 0f }
-                    ?: 1f,
-                styleProgress,
-            )
-        paint.textSkewX =
-            lerp(
-                0f,
-                targetStyle?.textSkewX
-                    ?.takeIf(Float::isFinite)
-                    ?: 0f,
-                styleProgress,
-            )
-        paint.letterSpacing =
-            lerp(
-                0f,
-                targetStyle?.letterSpacing
-                    ?.takeIf(Float::isFinite)
-                    ?: 0f,
-                styleProgress,
-            )
-        paint.strokeWidth =
-            lerp(
-                0f,
-                targetStyle?.strokeWidth
-                    ?.takeIf { it.isFinite() && it >= 0f }
-                    ?: 0f,
-                styleProgress,
-            )
-        paint.style =
-            if (targetStyle != null && styleProgress >= 0.999f) {
-                targetStyle.paintStyle
-            } else {
-                Paint.Style.FILL
-            }
-        paint.textSize = textSize
-    }
-
-    private fun batteryTopTextTypeface(weight: Int): Typeface {
-        val nativeWeight = weight.coerceIn(1, BATTERY_TOP_NATIVE_WEIGHT_MAX)
-        if (cachedBatteryTopTextWeight != nativeWeight) {
-            cachedBatteryTopTextWeight = nativeWeight
-            cachedBatteryTopTextTypeface =
-                Typeface.create(Typeface.DEFAULT, nativeWeight, false)
+        val source = Typeface.DEFAULT
+        if (batteryTextSource != source) {
+            batteryTextSource = source
+            batteryTextSamples.clear()
         }
-        return cachedBatteryTopTextTypeface
+        // Transition callers resolve the weight once; this function only draws that sample.
+        batteryTextPaint.set(weightedPaint(source, weight, batteryTextSamples))
+        val styleProgress =
+            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        batteryTextPaint.isFakeBoldText =
+            targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
+        batteryTextPaint.textScaleX =
+            lerp(1f, targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f, styleProgress)
+        batteryTextPaint.textSkewX =
+            lerp(0f, targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f, styleProgress)
+        batteryTextPaint.letterSpacing =
+            lerp(0f, targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f, styleProgress)
+        batteryTextPaint.textSize = textSize
+        val native = progress >= 1f && targetStyle?.typeface != null
+        batteryTextPaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
+        batteryTextPaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        if (native) {
+            batteryTextPaint.typeface = targetStyle!!.typeface
+            batteryTextPaint.setFontVariationSettings(null)
+        }
     }
 
-    private fun batteryTopTextExtraStroke(
-        weight: Int,
-        textSize: Float,
-    ): Float {
-        val extraWeight =
-            (weight - BATTERY_TOP_NATIVE_WEIGHT_MAX)
-                .coerceIn(0, BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE)
-        if (extraWeight == 0 || textSize <= 0f) return 0f
-        return textSize *
-            BATTERY_TOP_SYNTHETIC_STROKE_RATIO *
-            extraWeight.toFloat() /
-            BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE.toFloat()
-    }
     private fun drawCenterTransition(
         canvas: Canvas,
         current: CenterIndicator,
@@ -2230,6 +2179,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
+        visual: VisualCfg,
     ) {
         if (previous == null || previous == current) {
             drawCenterIndicator(
@@ -2242,6 +2192,7 @@ internal class StatusPainter(
                 geometry = geometry,
                 nativeTransform = nativeTransform,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                visual = visual,
             )
             return
         }
@@ -2256,6 +2207,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
         drawCenterIndicator(
             canvas = canvas,
@@ -2267,6 +2219,7 @@ internal class StatusPainter(
             geometry = geometry,
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            visual = visual,
         )
     }
 
@@ -2280,15 +2233,20 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
+        visual: VisualCfg,
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
+        strokeTransitionProgress: Float = 0f,
     ) {
         if (appearAmount <= 0f) {
             return
         }
 
         val save = canvas.save()
+        if (visual.layout == ContentLayout.BATTERY_CENTER) {
+            canvas.translate(0f, networkTopTranslationY(visual, indicator))
+        }
         canvas.scale(
             appearAmount,
             appearAmount,
@@ -2309,6 +2267,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    weight = NativeVectorStroke.duringTransition(visual.wifiWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.MobileType ->
@@ -2333,6 +2292,7 @@ internal class StatusPainter(
                     geometry = geometry,
                     nativeTransform = nativeTransform,
                     pixelAligned = appearAmount >= NATIVE_STEADY_APPEAR_THRESHOLD,
+                    weight = NativeVectorStroke.duringTransition(visual.airplaneWeight, strokeTransitionProgress),
                 )
 
             is CenterIndicator.NoSim ->
@@ -2362,6 +2322,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        weight: Int,
     ) {
         val nativeResourceId = indicator.nativeResourceId
         if (nativeResourceId != null) {
@@ -2384,6 +2345,7 @@ internal class StatusPainter(
                     maxHeight = geometry.wifiMaxHeight,
                     nativeTransform = nativeTransform,
                     pixelAligned = pixelAligned,
+                    strokeWeight = weight,
                 )
             ) {
                 return
@@ -2426,7 +2388,7 @@ internal class StatusPainter(
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val referenceEntry =
-                        WifiOpticalReference.connectedReferenceEntry(entryName)
+                        WifiOpticalReference.fitReferenceEntry(entryName)
                             ?: return@runCatching 0
                     drawableContext.resources.getIdentifier(
                         referenceEntry,
@@ -2663,6 +2625,7 @@ internal class StatusPainter(
         maxHeight: Float,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        strokeWeight: Int = 100,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2682,6 +2645,7 @@ internal class StatusPainter(
         val drawHeight = geometry.drawHeight
 
         val drawable = asset.drawable
+        val styledStroke = nativeStrokePath(resource, strokeWeight)
         drawable.setTint(tint)
         drawable.alpha =
             VisualIntensity.resolveDrawableAlpha(opacity)
@@ -2713,6 +2677,9 @@ internal class StatusPainter(
                 height = (bounds.bottom - bounds.top).toFloat(),
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
+                styledStroke = styledStroke,
+                tint = tint,
+                opacity = opacity,
             )
             canvas.restoreToCount(save)
         } else {
@@ -2725,6 +2692,9 @@ internal class StatusPainter(
                 height = drawHeight,
                 intrinsicWidth = intrinsicWidth,
                 intrinsicHeight = intrinsicHeight,
+                styledStroke = styledStroke,
+                tint = tint,
+                opacity = opacity,
             )
         }
         return true
@@ -2739,6 +2709,9 @@ internal class StatusPainter(
         height: Float,
         intrinsicWidth: Int,
         intrinsicHeight: Int,
+        styledStroke: NativeVectorStroke.Styled? = null,
+        tint: Int = Color.WHITE,
+        opacity: Float = 1f,
     ) {
         if (
             width <= 0f ||
@@ -2755,9 +2728,78 @@ internal class StatusPainter(
             width / intrinsicWidth.toFloat(),
             height / intrinsicHeight.toFloat(),
         )
-        drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-        drawable.draw(canvas)
+        if (styledStroke != null) {
+            canvas.scale(
+                intrinsicWidth / styledStroke.viewportWidth,
+                intrinsicHeight / styledStroke.viewportHeight,
+            )
+            styledStroke.layers.forEach { layer ->
+                strokePaint.style =
+                    if (styledStroke.outwardStroke > 0f) Paint.Style.FILL_AND_STROKE
+                    else Paint.Style.FILL
+                strokePaint.strokeWidth = styledStroke.outwardStroke
+                strokePaint.strokeJoin = Paint.Join.ROUND
+                strokePaint.strokeCap = Paint.Cap.ROUND
+                strokePaint.color = tint
+                strokePaint.alpha =
+                    VisualIntensity.resolveCanvasAlpha(tint, layer.alpha, opacity)
+                canvas.drawPath(layer.path, strokePaint)
+            }
+        } else {
+            drawable.setBounds(0, 0, intrinsicWidth, intrinsicHeight)
+            drawable.draw(canvas)
+        }
         canvas.restoreToCount(save)
+    }
+
+    private fun nativeStrokePath(
+        resource: PresentationStore.NativeIconResource,
+        weight: Int,
+    ): NativeVectorStroke.Styled? {
+        if (weight == 100) return null
+        checkNativeResources()
+        val actual = resolveNativeTintVariant(resource) ?: resource
+        val key = actual to weight
+        strokeAssets[key]?.let { return it }
+
+        val source =
+            if (nativeStrokeSources.containsKey(actual)) {
+                nativeStrokeSources[actual]
+            } else {
+                val resources =
+                    runCatching {
+                        if (actual.packageName == context.packageName) context.resources
+                        else context.createPackageContext(actual.packageName, 0).resources
+                    }.getOrNull()
+                val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
+                nativeStrokeSources[actual] = loaded
+                if (nativeStrokeSources.size > 8) {
+                    nativeStrokeSources.remove(nativeStrokeSources.keys.first())
+                }
+                loaded
+            } ?: return null
+
+        val styled = NativeVectorStroke.style(source, weight) ?: return null
+        strokeAssets[key] = styled
+        // 60..100 alone spans 41 animated integer weights; cache a full gesture.
+        if (strokeAssets.size > 64) {
+            strokeAssets.remove(strokeAssets.keys.first())
+        }
+        return styled
+    }
+
+    private fun styledBounds(
+        geometry: NativeCenterDrawGeometry,
+        asset: NativeVectorStroke.Styled,
+    ): TransitionBounds {
+        val original = geometry.asset.opticalBounds
+        val ink = asset.opticalBounds
+        return TransitionBounds(
+            left = geometry.opticalBounds.left + (ink.left - original.left) * geometry.drawWidth,
+            top = geometry.opticalBounds.top + (ink.top - original.top) * geometry.drawHeight,
+            right = geometry.opticalBounds.right + (ink.right - original.right) * geometry.drawWidth,
+            bottom = geometry.opticalBounds.bottom + (ink.bottom - original.bottom) * geometry.drawHeight,
+        )
     }
 
     private fun airplaneResourceId(): Int? {
@@ -2791,6 +2833,7 @@ internal class StatusPainter(
         geometry: CenterGeometry.Resolved,
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
+        weight: Int,
     ) {
         val resourceId = airplaneResourceId() ?: return
         drawNativeCenterResource(
@@ -2808,6 +2851,7 @@ internal class StatusPainter(
             maxHeight = geometry.airplaneMaxSize,
             nativeTransform = nativeTransform,
             pixelAligned = pixelAligned,
+            strokeWeight = weight,
         )
     }
 
@@ -2835,27 +2879,31 @@ internal class StatusPainter(
             )
 
         // Draw with the text style already used to measure this layout.
-        paint.color = tint
-        paint.alpha =
+        mobileTypePaint.color = tint
+        mobileTypePaint.alpha =
             VisualIntensity.resolveCanvasAlpha(
                 color = tint,
                 semanticAlpha = 255,
                 opacity = opacity,
             )
-        paint.textSize = layout.mainTextSize
+        mobileTypePaint.textSize = layout.mainTextSize
+        val mainStroke = mobileTypePaint.strokeWidth
         canvas.drawText(
             layout.main,
             layout.mainX,
             layout.mainBaselineY,
-            paint,
+            mobileTypePaint,
         )
         if (layout.suffix.isNotEmpty()) {
-            paint.textSize = layout.suffixTextSize
+            mobileTypePaint.textSize = layout.suffixTextSize
+            if (mobileTypePaint.style == Paint.Style.FILL_AND_STROKE && layout.mainTextSize > 0f) {
+                mobileTypePaint.strokeWidth = mainStroke * layout.suffixTextSize / layout.mainTextSize
+            }
             canvas.drawText(
                 layout.suffix,
                 layout.suffixX,
                 layout.suffixBaselineY,
-                paint,
+                mobileTypePaint,
             )
         }
     }
@@ -2913,15 +2961,20 @@ internal class StatusPainter(
             )
         val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
-        configureTransitionTextStyle(
-            sourceTypeface = mobileTypeTypeface(geometry.mobileTypeWeight),
-            currentWeight = geometry.mobileTypeWeight,
+        // Preview shares the battery number's system font family. Live 5G still
+        // uses the Typeface captured from its verified SystemUI drawable.
+        val previewFace = Typeface.DEFAULT.takeIf { preview && indicator.typeface == null }
+        configureMobileTypeTextStyle(
+            nativeFace = indicator.typeface ?: previewFace,
+            weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
             progress = transitionProgress,
             textSize = mainTextSize,
         )
-        paint.textAlign = Paint.Align.LEFT
-        paint.getTextBounds(
+        val inkPad =
+            if (mobileTypePaint.style == Paint.Style.FILL) 0f else mobileTypePaint.strokeWidth / 2f
+        mobileTypePaint.textAlign = Paint.Align.LEFT
+        mobileTypePaint.getTextBounds(
             split.first,
             0,
             split.first.length,
@@ -2946,16 +2999,16 @@ internal class StatusPainter(
                 suffixBaselineY = mainBaselineY,
                 bounds =
                     TransitionBounds(
-                        left = mainX + mobileTypeMainBounds.left,
-                        top = mainBaselineY + mobileTypeMainBounds.top,
-                        right = mainX + mobileTypeMainBounds.right,
-                        bottom = mainBaselineY + mobileTypeMainBounds.bottom,
+                        left = mainX + mobileTypeMainBounds.left - inkPad,
+                        top = mainBaselineY + mobileTypeMainBounds.top - inkPad,
+                        right = mainX + mobileTypeMainBounds.right + inkPad,
+                        bottom = mainBaselineY + mobileTypeMainBounds.bottom + inkPad,
                     ),
             )
         }
 
-        paint.textSize = suffixTextSize
-        paint.getTextBounds(
+        mobileTypePaint.textSize = suffixTextSize
+        mobileTypePaint.getTextBounds(
             split.second,
             0,
             split.second.length,
@@ -3004,35 +3057,59 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left,
-                            suffixX + mobileTypeSuffixBounds.left,
+                            mainX + mobileTypeMainBounds.left - inkPad,
+                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
                         ),
                     top =
                         min(
-                            mainBaselineY + mobileTypeMainBounds.top,
-                            suffixBaselineY + mobileTypeSuffixBounds.top,
+                            mainBaselineY + mobileTypeMainBounds.top - inkPad,
+                            suffixBaselineY + mobileTypeSuffixBounds.top - inkPad * suffixTextSize / mainTextSize,
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right,
-                            suffixX + mobileTypeSuffixBounds.right,
+                            mainX + mobileTypeMainBounds.right + inkPad,
+                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
                         ),
                     bottom =
                         max(
-                            mainBaselineY + mobileTypeMainBounds.bottom,
-                            suffixBaselineY + mobileTypeSuffixBounds.bottom,
+                            mainBaselineY + mobileTypeMainBounds.bottom + inkPad,
+                            suffixBaselineY + mobileTypeSuffixBounds.bottom + inkPad * suffixTextSize / mainTextSize,
                         ),
                 ),
         )
     }
 
-    private fun mobileTypeTypeface(weight: Int): Typeface {
-        if (cachedMobileTypeWeight != weight) {
-            cachedMobileTypeWeight = weight
-            cachedMobileTypeTypeface =
-                Typeface.create(Typeface.DEFAULT, weight, false)
+    private fun configureMobileTypeTextStyle(
+        nativeFace: Typeface?,
+        weight: Int,
+        targetStyle: TransitionTextStyle?,
+        progress: Float,
+        textSize: Float,
+    ) {
+        val source = nativeFace ?: Typeface.DEFAULT
+        if (mobileTextSource != source) {
+            mobileTextSource = source
+            mobileTextSamples.clear()
         }
-        return cachedMobileTypeTypeface
+        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples))
+        val styleProgress =
+            targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
+        mobileTypePaint.isFakeBoldText =
+            targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
+        val targetScale = targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f
+        mobileTypePaint.textScaleX = 1f + (targetScale - 1f) * styleProgress
+        mobileTypePaint.textSkewX =
+            (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
+        mobileTypePaint.letterSpacing =
+            (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
+        val native = progress >= 1f && targetStyle?.typeface != null
+        mobileTypePaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
+        mobileTypePaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        if (native) {
+            mobileTypePaint.typeface = targetStyle!!.typeface
+            mobileTypePaint.setFontVariationSettings(null)
+        }
+        mobileTypePaint.textSize = textSize
     }
 
     private fun dualMobileRowBounds(
@@ -3660,11 +3737,8 @@ internal class StatusPainter(
             BATTERY_TOP_CONTENT_CENTER_Y -
                 BATTERY_TOP_DEFAULT_OPTICAL_RISE -
                 BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
-        const val BATTERY_TOP_NATIVE_WEIGHT_MAX = 1000
-        const val BATTERY_TOP_SYNTHETIC_WEIGHT_RANGE = 400
-        const val BATTERY_TOP_SYNTHETIC_STROKE_RATIO = 0.07f
         const val BATTERY_TOP_WEIGHT_TRANSITION_MIN = 100
-        const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1400
+        const val BATTERY_TOP_WEIGHT_TRANSITION_MAX = 1000
 
     }
 
@@ -3678,7 +3752,6 @@ internal class StatusPainter(
         val text: String,
         val textSize: Float,
         val textWeight: Int,
-        val textExtraStroke: Float,
         val textX: Float,
         val textBaselineY: Float,
         val textOpticalBounds: TransitionBounds,

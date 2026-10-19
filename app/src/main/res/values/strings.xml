@@ -27,6 +27,8 @@
     <string name="charging_icon_follow_battery_color">Match charging icon color to ring</string>
     <string name="charging_icon_follow_battery_color_summary">When off, use the native status-bar foreground tint</string>
     <string name="top_info_vertical_offset">Top information vertical offset</string>
+    <string name="wifi_vertical_offset">Wi-Fi vertical offset</string>
+    <string name="mobile_type_vertical_offset">Mobile type vertical offset</string>
     <string name="settings_title">Settings</string>
     <string name="section_appearance_interaction">Appearance &amp; interaction</string>
     <string name="section_app">App</string>
@@ -44,11 +46,10 @@
     <string name="battery_top_readout">Show battery level</string>
     <string name="battery_top_readout_summary">Show the current battery level as a number; the ring makes room automatically</string>
     <string name="battery_top_text_size">Number size</string>
-    <string name="battery_top_text_weight">Number weight</string>
+    <string name="battery_top_text_weight">Number font weight</string>
     <string name="battery_top_vertical_offset">Vertical offset (+ up / − down)</string>
     <string name="battery_top_charging_icon_size">Charging bolt size</string>
     <string name="battery_top_scale_value">%1$d%%</string>
-    <string name="battery_top_weight_value">%1$d</string>
     <string name="battery_top_offset_value">%1$d</string>
     <string name="keyguard_combined_status_title">Show on lock screen</string>
     <string name="keyguard_combined_status_summary">Show in the lock-screen status bar</string>
@@ -57,8 +58,10 @@
     <string name="mobile_follow_battery_color">Match mobile signal color to battery ring</string>
     <string name="mobile_follow_battery_color_summary">Signal dots and the unavailable mark follow the battery ring color</string>
     <string name="center_follow_battery_color">Match network status color to battery ring</string>
-    <string name="center_follow_battery_color_summary">Wi-Fi, hotspot, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
+    <string name="center_follow_battery_color_summary">Wi-Fi, mobile type, airplane, no-SIM, and other network states follow the battery ring color</string>
     <string name="appearance_title">Appearance</string>
+    <string name="ui_scale_title">Page Scale</string>
+    <string name="ui_scale_summary">Adjust the Guiyuan interface scale.</string>
     <string name="appearance_summary">Theme and interface effects</string>
     <string name="about_title">About</string>
     <string name="about_summary">Version, project, and runtime environment</string>
@@ -79,15 +82,17 @@
     <string name="control_center_tint_transition">Control Center color transition</string>
     <string name="control_center_tint_transition_summary">When opening Control Center, smoothly transition battery-colored elements to the native icon tint</string>
     <string name="wifi_size">Wi-Fi size</string>
+    <string name="wifi_weight">Wi-Fi stroke weight</string>
     <string name="airplane_size">Airplane mode size</string>
+    <string name="airplane_weight">Airplane mode weight</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
-    <string name="mobile_type_weight">Mobile type weight</string>
+    <string name="mobile_type_weight">Mobile type font weight</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">Restore defaults</string>
-    <string name="restore_feature_defaults_summary">Reset all settings on the Features page</string>
-    <string name="restore_feature_defaults_dialog_summary">Restore all feature settings to their defaults?</string>
+    <string name="restore_feature_defaults_summary">Reset feature settings</string>
+    <string name="restore_feature_defaults_dialog_summary">Reset feature settings to their defaults?</string>
 
     <string name="section_theme">Theme</string>
     <string name="theme_mode">Theme mode</string>
@@ -99,6 +104,21 @@
     <string name="dynamic_color_summary">Use colors generated from the system wallpaper</string>
     <string name="dynamic_color_on">Dynamic colors</string>
     <string name="dynamic_color_off">Default colors</string>
+    <string name="theme_color_spec">Color specification</string>
+    <string name="theme_color_spec_summary">Follow the system palette or choose a color generation specification</string>
+    <string name="theme_color_spec_system">System palette</string>
+    <string name="theme_palette_style">Palette style</string>
+    <string name="theme_palette_style_summary">Choose a style supported by the selected specification</string>
+    <string name="theme_palette_tonal_spot">Tonal Spot</string>
+    <string name="theme_palette_neutral">Neutral</string>
+    <string name="theme_palette_vibrant">Vibrant</string>
+    <string name="theme_palette_expressive">Expressive</string>
+    <string name="theme_palette_rainbow">Rainbow</string>
+    <string name="theme_palette_fruit_salad">Fruit Salad</string>
+    <string name="theme_palette_monochrome">Monochrome</string>
+    <string name="theme_palette_fidelity">Fidelity</string>
+    <string name="theme_palette_content">Content</string>
+    <string name="theme_palette_cmf">CMF</string>
     <string name="theme_preview">Style preview</string>
     <string name="theme_preview_summary">Updates with the current theme and navigation settings</string>
     <string name="section_visual_effects">Interface effects</string>
@@ -162,7 +182,7 @@
     <string name="static_scope_sysui_advice">Authorize this scope to use these core features.</string>
     <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
     <string name="static_scope_settings_advice">Authorize this scope only if you use that entry. Core features work without it.</string>
-    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization and connection status follow the current framework state.</string>
+    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by Xposed.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
     <string name="static_scope_version_unavailable">Version unavailable</string>
@@ -412,4 +432,14 @@
     <string name="restart_scope_select_all">Select all</string>
     <string name="restart_scope_clear_all">Clear all</string>
 
+    <string name="config_backup_title">Back up configuration</string>
+    <string name="config_backup_summary">Save feature settings to a file</string>
+    <string name="config_restore_title">Restore configuration</string>
+    <string name="config_restore_summary">Restore feature settings from a backup file</string>
+    <string name="config_backup_success">Backup saved</string>
+    <string name="config_restore_success">Configuration restored</string>
+    <string name="config_backup_failed">Backup failed. Try again.</string>
+    <string name="config_restore_failed">Restore failed. Try again.</string>
+    <string name="config_restore_invalid">Invalid or incompatible backup file</string>
+    <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
 </resources>
