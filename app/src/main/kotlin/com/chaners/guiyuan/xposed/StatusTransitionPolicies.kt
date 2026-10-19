@@ -23,6 +23,10 @@ internal object MobileTypeTransitionPolicy {
             .coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
     }
 
+    // Keep reusable native thin fonts on a small, stable grid.
+    fun thinWeight(weight: Int, nativeWeight: Int): Int =
+        ((weight.coerceIn(400, nativeWeight) + 5) / 10 * 10).coerceAtMost(nativeWeight)
+
     // Preserve the original ink curve: 1400 is its reference endpoint,
     // not a selectable thickness after narrowing the range.
     fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
