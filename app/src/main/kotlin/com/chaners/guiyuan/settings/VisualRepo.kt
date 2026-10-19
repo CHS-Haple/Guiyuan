@@ -31,20 +31,26 @@ internal fun isBackupVisualKey(key: String): Boolean =
         key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
         isBatterySchemeStorageKey(key)
 
-// Rewrite only the known legacy visual keys; remote readers already clamp on read.
-internal fun migrateMobileTypeWeightRange(preferences: SharedPreferences) {
-    val keys = buildSet {
-        add(MOBILE_TYPE_WEIGHT_KEY)
-        ContentLayout.entries.forEach { layout ->
-            add(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY))
-            add(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true))
-        }
-    }
+// Rewrite only known old visual keys; remote readers also clamp on read.
+internal fun migrateTextWeightRanges(preferences: SharedPreferences) {
+    val ranges = mapOf(
+        MOBILE_TYPE_WEIGHT_KEY to (MOBILE_TYPE_WEIGHT_MIN..MOBILE_TYPE_WEIGHT_MAX),
+        BATTERY_TOP_TEXT_WEIGHT_KEY to (BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX),
+    )
     val stored = preferences.all
-    val changes = keys.mapNotNull { key ->
-        val previous = stored[key] as? Int ?: return@mapNotNull null
-        val current = previous.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX)
-        if (previous != current) key to current else null
+    val changes = ranges.flatMap { (baseKey, range) ->
+        val keys = buildList {
+            add(baseKey)
+            ContentLayout.entries.forEach { layout ->
+                add(visualProfileKey(layout, baseKey))
+                add(visualProfileKey(layout, baseKey, dual = true))
+            }
+        }
+        keys.mapNotNull { key ->
+            val previous = stored[key] as? Int ?: return@mapNotNull null
+            val current = previous.coerceIn(range.first, range.last)
+            if (previous != current) key to current else null
+        }
     }
     if (changes.isEmpty()) return
     preferences.edit().apply {
@@ -90,7 +96,7 @@ internal class VisualRepo(context: Context) {
     init {
         migrateBatteryColorPresetDefaultIfNeeded(preferences)
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
-        migrateMobileTypeWeightRange(preferences)
+        migrateTextWeightRanges(preferences)
     }
 
     val settings: Flow<VisualCfg> =
