@@ -35,10 +35,12 @@ internal class StatusPainter(
     private val context: Context,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    // 5G uses its own Paint; thin native font variants are reused across frames.
+    // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val mobileBasePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val mobileNativePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mobileThinSource: Typeface? = null
-    private val mobileThinFaces = HashMap<Int, Typeface>(32)
+    private val mobileThinPaints = HashMap<Int, Paint>(32)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -3180,6 +3182,7 @@ internal class StatusPainter(
     ) {
         val anchor = nativeFace?.weight?.takeIf { it in 400..1000 }
         if (nativeFace == null || anchor == null) {
+            mobileTypePaint.set(mobileBasePaint)
             val legacyWeight = weight.coerceIn(500, 950)
             configureTransitionTextStyle(
                 sourceTypeface = mobileTypeTypeface(legacyWeight),
@@ -3192,21 +3195,26 @@ internal class StatusPainter(
             return
         }
 
-        mobileTypePaint.typeface =
+        if (mobileThinSource != nativeFace) {
+            mobileThinSource = nativeFace
+            mobileNativePaint.typeface = nativeFace
+            mobileThinPaints.clear()
+        }
+        val sourcePaint =
             if (weight < anchor) {
-                // Avoid repeated font-axis writes during control-center drawing.
-                // Reuse system-family instances in 10-point steps; never alter nativeFace.
-                if (mobileThinSource != nativeFace) {
-                    mobileThinSource = nativeFace
-                    mobileThinFaces.clear()
-                }
                 val thin = MobileTypeTransitionPolicy.thinWeight(weight, anchor)
-                mobileThinFaces.getOrPut(thin) {
-                    Typeface.create(nativeFace, thin, nativeFace.isItalic)
+                mobileThinPaints.getOrPut(thin) {
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        typeface = nativeFace
+                        // Typeface.create(family, weight) cannot reliably select this font's wght axis.
+                        runCatching { setFontVariationSettings("'wght' $thin") }
+                    }
                 }
             } else {
-                nativeFace
+                mobileNativePaint
             }
+        // Copy a prepared Paint rather than reconstructing its variable-font axis each frame.
+        mobileTypePaint.set(sourcePaint)
         val stroke = textSize * MobileTypeTransitionPolicy.extraStrokeRatio(weight, anchor)
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
