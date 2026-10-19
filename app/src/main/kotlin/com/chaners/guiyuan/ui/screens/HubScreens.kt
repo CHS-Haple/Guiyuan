@@ -545,7 +545,7 @@ internal fun FeaturesScreen(
                 valueRange =
                     MOBILE_TYPE_WEIGHT_MIN.toFloat()..
                         MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 19,
+                steps = 11,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
