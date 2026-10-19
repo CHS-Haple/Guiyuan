@@ -56,6 +56,32 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun savedMobileThicknessMigratesAllBanksWithoutTouchingOtherKeys() {
+        val prefs = MemoryPreferences()
+        val network = ContentLayout.NETWORK_CENTER
+        val battery = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putInt(MOBILE_TYPE_WEIGHT_KEY, 1400)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY), 1200)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY), 700)
+            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1001)
+            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1400)
+            .putInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 80)
+            .putString("application_ui_scale", "90")
+            .apply()
+
+        migrateMobileTypeWeightRange(prefs)
+
+        assertEquals(1000, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
+        assertEquals(700, prefs.readVisualCfg(dual = false, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
+        assertEquals(80, prefs.getInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 0))
+        assertEquals("90", prefs.getString("application_ui_scale", null))
+    }
+
+    @Test
     fun remoteMirrorPreservesBothBanksWhenSwitchingModes() {
         val local = MemoryPreferences()
         val remote = MemoryPreferences()
