@@ -2278,11 +2278,23 @@ internal class StatusPainter(
         batteryTextPaint.isFakeBoldText =
             targetStyle?.fakeBoldText == true && styleProgress >= 0.72f
         batteryTextPaint.textScaleX =
-            lerp(1f, targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f, styleProgress)
+            lerp(
+                1f,
+                targetStyle?.textScaleX?.takeIf { it.isFinite() && it > 0f } ?: 1f,
+                styleProgress,
+            )
         batteryTextPaint.textSkewX =
-            lerp(0f, targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f, styleProgress)
+            lerp(
+                0f,
+                targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f,
+                styleProgress,
+            )
         batteryTextPaint.letterSpacing =
-            lerp(0f, targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f, styleProgress)
+            lerp(
+                0f,
+                targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f,
+                styleProgress,
+            )
         batteryTextPaint.textSize = textSize
         if (progress >= 1f && targetStyle?.typeface != null) {
             // The final presentation belongs to the native CC renderer.
