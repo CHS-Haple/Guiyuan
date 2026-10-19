@@ -29,7 +29,7 @@ This file records **accepted behavior, current constraints and next work**, not 
 ## Next
 
 - Resolve Dependabot [#622](https://github.com/CHS-Haple/Guiyuan/pull/622)'s five MIUIX GitHub Packages HTTP 401 errors before interpreting its AndroidX Core compatibility. Dependabot uses a separate secrets context; do **not** expose trusted signing/package credentials to untrusted PRs, switch the build to `pull_request_target`, or use a cache hit as cold-build proof.
-- Review [#623](https://github.com/CHS-Haple/Guiyuan/pull/623) as a separate pinned `actions/setup-java` CI update, keeping its Full validation requirement. Reconcile dependency notices when a runtime dependency actually changes.
+- [#623](https://github.com/CHS-Haple/Guiyuan/pull/623) integrated pinned `actions/setup-java` 6.1.0 after Full PR CI; later CI changes still require Full validation. Reconcile dependency notices only when a runtime dependency actually changes.
 - B1111 is unpromoted visible UI copy. Only bump version/build for another materially changed APK; the last 0.8.0 main distribution remains B1110 until an explicit promotion decision.
 - Preserve legacy diagnostic evidence in GitHub, not in this living document. Gradually reduce large `GyModule` / `CcTransitionOwner` / `StatusPainter` responsibility spans only when a demonstrated maintenance boundary warrants it. No speculative refactoring solely to lower line counts.
 - Treat 1.0.0 as a separate version and acceptance decision.
