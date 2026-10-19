@@ -44,6 +44,7 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MIN
+import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_DEFAULT
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
@@ -639,10 +640,10 @@ internal fun FeaturesScreen(
                     valueRange =
                         BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
                             BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
-                    steps = 19,
+                    steps = 11,
                     showKeyPoints = true,
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(900f),
+                    keyPoints = listOf(BATTERY_TOP_TEXT_WEIGHT_DEFAULT.toFloat()),
                     magnetThreshold = 0.035f,
                     enabled = featureCfg.enabled,
                 )
