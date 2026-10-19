@@ -13,6 +13,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -82,6 +84,16 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
+        // Typed decode may accept noncanonical numeric literals. Do not migrate them.
+        root["visual"]?.jsonObject?.get("profiles")?.jsonArray?.forEach { entry ->
+            val profile = entry.jsonObject
+            for (key in listOf("mobileTypeWeight", "topTextWeight")) {
+                val value = profile[key] ?: continue
+                require(value is JsonPrimitive && !value.isString && value.intOrNull != null) {
+                    "Invalid $key"
+                }
+            }
+        }
         // Original V1 archives permitted both text weights up to 1400.
         // Only convert those known legacy values before strict validation.
         val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
