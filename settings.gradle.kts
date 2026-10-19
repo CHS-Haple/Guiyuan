@@ -27,11 +27,20 @@ dependencyResolutionManagement {
                     name = "MiuixGitHubPackages"
                     url = uri("https://maven.pkg.github.com/compose-miuix-ui/miuix")
                     credentials {
-                        username = providers.environmentVariable("MIUIX_GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
-                            ?: providers.environmentVariable("GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
-                            ?: providers.gradleProperty("gpr.user").orNull?.takeIf { it.isNotBlank() }
-                        password = providers.environmentVariable("MIUIX_GITHUB_TOKEN").orNull?.takeIf { it.isNotBlank() }
-                            ?: providers.environmentVariable("GITHUB_TOKEN").orNull?.takeIf { it.isNotBlank() }
+                        val miuixToken =
+                            providers.environmentVariable("MIUIX_GITHUB_TOKEN").orNull?.takeIf { it.isNotBlank() }
+                        val githubToken =
+                            providers.environmentVariable("GITHUB_TOKEN").orNull?.takeIf { it.isNotBlank() }
+                        username = when {
+                            miuixToken != null ->
+                                providers.environmentVariable("MIUIX_GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
+                                    ?: providers.environmentVariable("GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
+                            githubToken != null ->
+                                providers.environmentVariable("GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
+                                    ?: providers.environmentVariable("MIUIX_GITHUB_ACTOR").orNull?.takeIf { it.isNotBlank() }
+                            else -> providers.gradleProperty("gpr.user").orNull?.takeIf { it.isNotBlank() }
+                        }
+                        password = miuixToken ?: githubToken
                             ?: providers.gradleProperty("gpr.key").orNull?.takeIf { it.isNotBlank() }
                     }
                 }
