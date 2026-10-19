@@ -8,7 +8,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
-No changes since the 0.8.0 development checkpoint.
+### Changed
+- Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management (B1111 on dev; not yet promoted to main).
 
 ## [0.8.0] - 2026-10-19
 
