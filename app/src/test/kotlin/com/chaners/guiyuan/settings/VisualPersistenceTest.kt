@@ -94,6 +94,29 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun corruptedSavedThicknessIsBoundedBeforeItReachesTheRenderer() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit()
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), 1401)
+            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1401)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1)
+            .apply()
+
+        assertEquals(400, prefs.readVisualCfg(dual = false, layoutOverride = layout).topTextWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
+        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
+        assertEquals(400, prefs.readVisualCfg(dual = true, layoutOverride = layout).mobileTypeWeight)
+
+        migrateTextWeightRanges(prefs)
+        assertEquals(400, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
+        assertEquals(1000, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
+        assertEquals(400, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1))
+    }
+
+    @Test
     fun remoteMirrorPreservesBothBanksWhenSwitchingModes() {
         val local = MemoryPreferences()
         val remote = MemoryPreferences()
