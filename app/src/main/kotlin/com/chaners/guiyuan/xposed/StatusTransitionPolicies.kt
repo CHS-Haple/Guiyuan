@@ -23,13 +23,16 @@ internal object MobileTypeTransitionPolicy {
             .coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
     }
 
-    // Above the native anchor, thicken visible ink without asking Typeface for >1000.
+    // Keep the accepted B1097 ink curve when restricting the user-facing slider.
+    // 1400 was the original curve endpoint, not a current selectable thickness.
     fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
-        val upper = CenterGeometry.MAX_MOBILE_TYPE_WEIGHT
-        val range = (upper - nativeWeight).coerceAtLeast(1)
-        val display = weight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, upper)
+        val range = (INK_REFERENCE_MAX - nativeWeight).coerceAtLeast(1)
+        val display =
+            weight.coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
         return (display - nativeWeight).coerceIn(0, range).toFloat() / range * 0.07f
     }
+
+    private const val INK_REFERENCE_MAX = 1400
 }
 
 internal object TransitionTypographyPolicy {
