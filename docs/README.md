@@ -14,6 +14,7 @@ Load the rest only when the task needs it:
 - [architecture/README.md](architecture/README.md) — current runtime ownership and scene/layout policy.
 - [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target SystemUI evidence and integration constraints.
 - [reference/lsposed-7927-hot-reload.md](reference/lsposed-7927-hot-reload.md) — binary-verified LSPosed generation handoff and lifecycle limits.
+- [reference/lsposed-7930-compatibility.md](reference/lsposed-7930-compatibility.md) — supplied 7930 archive integrity and pending compatibility checks.
 - [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
 
 ## Authority
