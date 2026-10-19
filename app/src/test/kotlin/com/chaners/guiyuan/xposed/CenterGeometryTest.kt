@@ -120,6 +120,19 @@ class CenterGeometryTest {
     }
 
     @Test
+    fun mobileThinTypefaceStepsAreBoundedAndReusable() {
+        val policy = MobileTypeTransitionPolicy
+        assertEquals(400, policy.thinWeight(400, 660))
+        assertEquals(400, policy.thinWeight(404, 660))
+        assertEquals(410, policy.thinWeight(405, 660))
+        assertEquals(600, policy.thinWeight(600, 660))
+        assertEquals(660, policy.thinWeight(659, 660))
+        assertEquals(660, policy.thinWeight(1400, 660))
+        assertEquals(635, policy.thinWeight(635, 635))
+        assertEquals(630, policy.thinWeight(631, 635))
+    }
+
+    @Test
     fun invalidAndOutOfRangeValuesAreClampedSafely() {
         val fallback =
             CenterGeometry.resolve(
