@@ -23,8 +23,8 @@ internal object MobileTypeTransitionPolicy {
             .coerceIn(CenterGeometry.MIN_MOBILE_TYPE_WEIGHT, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
     }
 
-    // Keep the accepted B1097 ink curve when restricting the user-facing slider.
-    // 1400 was the original curve endpoint, not a current selectable thickness.
+    // Preserve the original ink curve: 1400 is its reference endpoint,
+    // not a selectable thickness after narrowing the range.
     fun extraStrokeRatio(weight: Int, nativeWeight: Int): Float {
         val range = (INK_REFERENCE_MAX - nativeWeight).coerceAtLeast(1)
         val display =
