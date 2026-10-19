@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.7.0**, adding an opt-in dual-row SIM indicator, native Control Center signal morphing, and improvements to cache, charging handoff, and Hot Reload. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.8.0**, adding native font-weight controls for battery and network text, safer configuration backup/restore, per-layout visual adjustments, interface scaling, and further Control Center/Hot Reload compatibility improvements. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -90,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.7.0**，新增可选双排 SIM 信号显示，完善控制中心原生信号过渡、缓存、充电切换及热重载。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.8.0**，新增电量数字与网络制式原生字重调节，完善配置备份恢复、布局独立调节、界面缩放及控制中心与热重载兼容性。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
