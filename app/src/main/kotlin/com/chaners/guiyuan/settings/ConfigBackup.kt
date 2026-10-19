@@ -40,6 +40,7 @@ internal data class ConfigBackup(
 internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
+    private const val LEGACY_MOBILE_TYPE_WEIGHT_MAX = 1400
     const val MAX_BYTES = 256 * 1024
     private val json = Json {
         encodeDefaults = true
@@ -81,8 +82,17 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        // Future versions must migrate through explicit validated schema steps.
-        return json.decodeFromJsonElement(ConfigBackup.serializer(), root).also(::validate)
+        // The original V1 archives allowed mobile thickness up to 1400.
+        // Accept only that known legacy range; all other values stay strictly validated.
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
+        val profiles = decoded.visual.profiles.map { cfg ->
+            if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..LEGACY_MOBILE_TYPE_WEIGHT_MAX) {
+                cfg.copy(mobileTypeWeight = MOBILE_TYPE_WEIGHT_MAX)
+            } else {
+                cfg
+            }
+        }
+        return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
     }
 
     fun validate(backup: ConfigBackup) {
