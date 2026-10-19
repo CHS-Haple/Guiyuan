@@ -33,6 +33,7 @@ import kotlin.math.sqrt
 
 internal class StatusPainter(
     private val context: Context,
+    private val preview: Boolean = false,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
@@ -3111,7 +3112,7 @@ internal class StatusPainter(
         val suffixTextSize = baseSuffixSize + (mainTextSize - baseSuffixSize) * suffixMorph
 
         configureMobileTypeTextStyle(
-            nativeFace = indicator.typeface,
+            nativeFace = indicator.typeface ?: Typeface.DEFAULT_BOLD.takeIf { preview },
             weight = geometry.mobileTypeWeight,
             targetStyle = targetStyle,
             progress = transitionProgress,
