@@ -46,7 +46,7 @@
     <string name="battery_top_readout">Show battery level</string>
     <string name="battery_top_readout_summary">Show the current battery level as a number; the ring makes room automatically</string>
     <string name="battery_top_text_size">Number size</string>
-    <string name="battery_top_text_weight">Number weight</string>
+    <string name="battery_top_text_weight">Number thickness</string>
     <string name="battery_top_vertical_offset">Vertical offset (+ up / − down)</string>
     <string name="battery_top_charging_icon_size">Charging bolt size</string>
     <string name="battery_top_scale_value">%1$d%%</string>
@@ -88,7 +88,7 @@
     <string name="airplane_weight">Airplane mode weight</string>
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
-    <string name="mobile_type_weight">Mobile type weight</string>
+    <string name="mobile_type_weight">Mobile type thickness</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">Restore defaults</string>
