@@ -16,7 +16,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Recorded the actual Modern Xposed framework name and version in runtime diagnostics when exposed by API 102.
 
 ### Changed
-- Updated MIUIX UI, Preference, Icons, Nav and Blur modules to the published `0.9.4-54c6587e-SNAPSHOT`, including its updated Pager gesture handling.
+- Updated MIUIX UI, Preference, Icons, Nav and Blur modules to published `0.9.4-8972f941-SNAPSHOT`, including Pager gesture handling and the upstream Spec2026 palette change; saved Spec2026 selections fall back to Spec2025.
+- Aligned 5G and battery-number thickness controls to 400–1000 in 50-point steps with a default of 600, preserving existing ink values up to 1000 and bounded native Control Center transitions.
+- Converted historical 1001–1400 battery and mobile thickness values in saved profiles and validated V1 backup imports without accepting previously invalid archives.
 - Aligned secondary settings-page scrolling and rebound with the MIUIX top bar.
 - Let the triggered About logo wave finish after finger release, refined semantic setting icons, and clarified the Home Status simulation and Preview Sandbox descriptions in Chinese and English.
 
