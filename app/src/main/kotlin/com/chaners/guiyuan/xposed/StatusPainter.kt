@@ -2985,7 +2985,7 @@ internal class StatusPainter(
             layout.main,
             layout.mainX,
             layout.mainBaselineY,
-            paint,
+            mobileTypePaint,
         )
         if (layout.suffix.isNotEmpty()) {
             mobileTypePaint.textSize = layout.suffixTextSize
@@ -2996,7 +2996,7 @@ internal class StatusPainter(
                 layout.suffix,
                 layout.suffixX,
                 layout.suffixBaselineY,
-                paint,
+                mobileTypePaint,
             )
         }
     }
