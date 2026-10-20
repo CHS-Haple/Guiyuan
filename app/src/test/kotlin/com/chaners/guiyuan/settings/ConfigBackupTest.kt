@@ -305,6 +305,15 @@ class ConfigBackupTest {
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.validate(sample().copy(appVersion = "0.7\u202Eexe"))
         }
+        for (unsafeName in listOf("Alpha\u2028Beta", "Alpha\u2029Beta", "Alpha\u202EBeta")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.validate(sample().copy(
+                    batterySchemes = BatteryColorSchemeLibrary(
+                        customSchemes = listOf(custom.copy(name = unsafeName)),
+                    ),
+                ))
+            }
+        }
     }
 
     @Test fun importOwnsOnlyFeatureVisualAndSchemeKeys() {

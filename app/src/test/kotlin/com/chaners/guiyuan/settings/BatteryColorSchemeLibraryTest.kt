@@ -111,6 +111,15 @@ class BatteryColorSchemeLibraryTest {
         assertNull(customSchemeId(BATTERY_COLOR_SCHEME_HYPEROS_KEY))
     }
     @Test
+    fun customSchemeNamesNormalizePastedControlAndBidiCharacters() {
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\nBeta"))
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u2028Beta"))
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u202EBeta"))
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\uD800Beta"))
+        assertEquals("Rocket \uD83D\uDE80", normalizeCustomSchemeName("Rocket \uD83D\uDE80"))
+    }
+
+    @Test
     fun customSchemeNameLimitIsSharedAndUnicodeCodePointSafe() {
         assertEquals(
             "123456789012345678901234",
