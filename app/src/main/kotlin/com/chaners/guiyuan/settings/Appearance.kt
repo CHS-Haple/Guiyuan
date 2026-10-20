@@ -64,9 +64,8 @@ internal enum class NavContent {
 }
 
 internal enum class LiquidMode(val stored: String) {
-    // B1135 stored "Blur" for 4 dp. Keep it mapped to Default.
     Blur("Blur8"),
-    Default("Default"),
+    Balanced("Balanced"),
     Clear("Clear"),
 }
 
@@ -79,7 +78,7 @@ internal data class Appearance(
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
     val liquidContent: NavContent = NavContent.IconAndText,
-    val liquidMode: LiquidMode = LiquidMode.Default,
+    val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
 ) {
@@ -125,9 +124,8 @@ internal fun decodeNavContent(
         ?: default
 
 internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
-    LiquidMode.entries
-        .firstOrNull { it.stored == storedMode }
-        ?: LiquidMode.Default
+    if (storedMode == "Default" || storedMode == "Blur") LiquidMode.Balanced
+    else LiquidMode.entries.firstOrNull { it.stored == storedMode } ?: LiquidMode.Balanced
 
 internal fun uiScalePercent(value: Int?): Int = (value ?: 100).coerceIn(80, 110)
 

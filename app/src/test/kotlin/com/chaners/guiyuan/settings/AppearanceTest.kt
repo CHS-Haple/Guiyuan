@@ -84,7 +84,7 @@ class AppearanceTest {
         assertEquals(NavContent.IconOnly, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconOnly, settings.activeNavContent)
-        assertEquals(LiquidMode.Default, settings.liquidMode)
+        assertEquals(LiquidMode.Balanced, settings.liquidMode)
     }
 
     @Test
@@ -210,17 +210,18 @@ class AppearanceTest {
     }
 
     @Test
-    fun liquidModeKeepsSavedBlurAt4DpAndStores8DpSeparately() {
-        assertEquals(listOf(LiquidMode.Blur, LiquidMode.Default, LiquidMode.Clear), LiquidMode.entries)
-        assertEquals(LiquidMode.Default, Appearance().liquidMode)
-        assertEquals(LiquidMode.Default, decodeLiquidMode(null))
-        assertEquals(LiquidMode.Default, decodeLiquidMode("Unknown"))
-        assertEquals(LiquidMode.Default, decodeLiquidMode("Blur"))
+    fun balancedLiquidModeReadsLegacyValuesAndRoundTrips() {
+        assertEquals(listOf(LiquidMode.Blur, LiquidMode.Balanced, LiquidMode.Clear), LiquidMode.entries)
+        assertEquals(LiquidMode.Balanced, Appearance().liquidMode)
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode(null))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Unknown"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Blur"))
         assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur8"))
-        assertEquals(LiquidMode.Default, decodeLiquidMode("Default"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Default"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Balanced"))
         assertEquals(LiquidMode.Clear, decodeLiquidMode("Clear"))
         assertEquals("Blur8", LiquidMode.Blur.stored)
-        assertEquals("Default", LiquidMode.Default.stored)
+        assertEquals("Balanced", LiquidMode.Balanced.stored)
         assertEquals("Clear", LiquidMode.Clear.stored)
         LiquidMode.entries.forEach { mode ->
             assertEquals(mode, decodeLiquidMode(mode.stored))

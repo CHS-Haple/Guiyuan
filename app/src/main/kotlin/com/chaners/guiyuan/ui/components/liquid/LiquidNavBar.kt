@@ -164,7 +164,7 @@ private fun LiquidMode.params(): LiquidParams =
                 refractionAmount = 24.dp,
                 surfaceAlpha = 0.40f,
             )
-        LiquidMode.Default ->
+        LiquidMode.Balanced ->
             LiquidParams(
                 blur = 4.dp,
                 refractionHeight = 24.dp,
@@ -197,7 +197,7 @@ internal fun LiquidNavBar(
     backdrop: Backdrop,
     tabsCount: Int,
     dark: Boolean,
-    mode: LiquidMode = LiquidMode.Default,
+    mode: LiquidMode = LiquidMode.Balanced,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
