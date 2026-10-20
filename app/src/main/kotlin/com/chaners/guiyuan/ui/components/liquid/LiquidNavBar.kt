@@ -401,7 +401,9 @@ internal fun LiquidNavBar(
                                 if (dark) {
                                     Color.White.copy(alpha = 0.10f)
                                 } else {
-                                    Color.Black.copy(alpha = 0.10f)
+                                    Color.Black.copy(
+                                        alpha = if (mode == LiquidMode.Clear) 0.06f else 0.10f,
+                                    )
                                 },
                                 alpha = 1f - progress,
                             )
