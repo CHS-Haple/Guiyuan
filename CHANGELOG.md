@@ -9,6 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
+- Normalized unsafe control and bidirectional characters in custom battery scheme names before storage, including older saved names, so they do not break configuration backups.
 - Restored the exact original feature preferences and change timestamp if a configuration import fails after writing visual settings.
 
 ### Security

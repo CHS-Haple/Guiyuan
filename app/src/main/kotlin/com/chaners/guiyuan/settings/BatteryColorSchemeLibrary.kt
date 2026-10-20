@@ -464,7 +464,8 @@ internal class BatterySchemeRepo(context: Context) {
         }
         return BatteryCustomColorScheme(
             id = id,
-            name = preferences.getString(prefix + "name", "") ?: "",
+            // Old names may contain control characters that backup files reject.
+            name = normalizeCustomSchemeName(preferences.getString(prefix + "name", "") ?: ""),
             baseTemplate = base,
             entries = entries,
         )
@@ -637,8 +638,24 @@ internal fun limitCustomSchemeName(value: String): String {
     return value.substring(0, endIndex)
 }
 
-internal fun normalizeCustomSchemeName(value: String): String =
-    limitCustomSchemeName(value.trim())
+internal fun normalizeCustomSchemeName(value: String): String {
+    val clean = buildString {
+        var index = 0
+        while (index < value.length) {
+            val point = Character.codePointAt(value, index)
+            val unsafe =
+                Character.isISOControl(point) ||
+                    point in 0xD800..0xDFFF ||
+                    point == 0x061C ||
+                    point in 0x200E..0x200F ||
+                    point in 0x2028..0x202E ||
+                    point in 0x2066..0x206F
+            if (unsafe) append(' ') else appendCodePoint(point)
+            index += Character.charCount(point)
+        }
+    }
+    return limitCustomSchemeName(clean.trim())
+}
 
 
 internal fun schemeSourceFromLegacy(

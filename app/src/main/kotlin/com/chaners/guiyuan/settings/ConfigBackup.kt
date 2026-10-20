@@ -177,7 +177,8 @@ internal object ConfigBackupFormat {
         while (index < value.length) {
             val char = value[index]
             if (Character.isISOControl(char) ||
-                char in '\u202A'..'\u202E' || char in '\u2066'..'\u2069'
+                char == '\u061C' || char in '\u200E'..'\u200F' ||
+                char in '\u2028'..'\u202E' || char in '\u2066'..'\u206F'
             ) return false
             if (Character.isHighSurrogate(char)) {
                 if (index + 1 >= value.length ||
