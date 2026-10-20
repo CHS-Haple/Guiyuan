@@ -134,15 +134,8 @@ internal fun LiquidNavBar(
 
     val selectedColor = MiuixTheme.colorScheme.primary
     val params = mode.params()
-    val surfaceColor =
-        if (mode == LiquidMode.Clear) {
-            MiuixTheme.colorScheme.surfaceContainer
-        } else if (dark) {
-            Color(0xFF121212)
-        } else {
-            Color(0xFFFAFAFA)
-        }
-    val containerColor = surfaceColor.copy(alpha = params.surfaceAlpha)
+    val containerColor =
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
     val tabsBackdrop = rememberLayerBackdrop()
 
     BoxWithConstraints(
