@@ -33,7 +33,7 @@
     <string name="home_preview_switch_dark">Switch to dark mode</string>
     <string name="home_preview_sandbox_summary">Simulated states do not modify the real network or battery.</string>
     <string name="home_preview_parasite_title">Parasite mode</string>
-    <string name="home_preview_parasite_summary">Experimental feature. Shows simulated status in the regular status bar and restores it on leaving the sandbox.</string>
+    <string name="home_preview_parasite_summary">Shows simulated status in the status bar when enabled. Turning it off or leaving the sandbox restores the display.</string>
     <string name="home_preview_open_title">Preview sandbox</string>
     <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system.</string>
     <string name="home_preview_live_title">Live preview</string>
