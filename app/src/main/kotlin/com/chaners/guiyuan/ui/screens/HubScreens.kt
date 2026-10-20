@@ -611,7 +611,7 @@ internal fun FeaturesScreen(
                     listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat())
                         .filter { it in mobileWeightRange },
                 magnetThreshold = 0.035f,
-                enabled = featureCfg.enabled,
+                enabled = featureCfg.enabled && fontAxis != null,
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
