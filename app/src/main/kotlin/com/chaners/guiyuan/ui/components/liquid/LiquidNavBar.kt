@@ -314,11 +314,12 @@ internal fun LiquidNavBar(
                             backdrop = backdrop,
                             shape = { Capsule() },
                             effects = {
+                                val progress = motion.pressProgress
                                 vibrancy()
                                 blur(params.blur.toPx())
                                 lens(
-                                    params.refractionHeight.toPx(),
-                                    params.refractionAmount.toPx(),
+                                    params.refractionHeight.toPx() * progress,
+                                    params.refractionAmount.toPx() * progress,
                                 )
                             },
                             highlight = {
