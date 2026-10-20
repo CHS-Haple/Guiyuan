@@ -271,6 +271,10 @@ internal class ConfigBackupFiles(private val context: Context) {
     }
 
     suspend fun read(uri: Uri): ConfigBackup = withContext(Dispatchers.IO) {
+        // ACTION_OPEN_DOCUMENT is a document provider, not a local-file reader.
+        require(uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            "Configuration import requires a document content URI"
+        }
         val bytes = context.contentResolver.openInputStream(uri)?.use { stream ->
             stream.readNBytes(ConfigBackupFormat.MAX_BYTES + 1)
         } ?: error("Cannot read configuration file")
