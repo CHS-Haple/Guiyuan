@@ -50,7 +50,9 @@ class SandboxLeaseTest {
         assertNull(SandboxLease.decode(""))
         assertNull(SandboxLease.decode(raw.replace("FIVE_GA", "FAKE_5GA")))
         assertNull(SandboxLease.decode(raw.replace("|13|POWER_SAVE|", "|101|POWER_SAVE|")))
-        assertNull(SandboxLease.decode(raw.replace("|2|1|LTE|", "|2|7|LTE|")))
+        val malformedSignal = raw.split('|').toMutableList()
+        malformedSignal[10] = "7" // SIM2 level, not the dual-SIM enabled flag.
+        assertNull(SandboxLease.decode(malformedSignal.joinToString("|")))
         assertNull(SandboxLease.decode(raw.replace("|1|LTE|", "|x|LTE|")))
         assertNull(SandboxLease.decode(raw.replace("2|13|", "1|13|")))
         assertNull(SandboxLease.decode("x".repeat(401)))
