@@ -137,7 +137,7 @@ internal object ConfigBackupFormat {
             profiles.size == expected.size &&
                 profiles.map { it.dualSignal to it.layout }.toSet() == expected
         ) { "Missing or duplicated visual profile" }
-        // These settings have one stored value per SIM mode, shared by both layouts.
+        // V1 archives may differ by SIM mode, but each mode must agree across layouts.
         require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
             val first = sameMode.first()
             sameMode.all { cfg ->

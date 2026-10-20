@@ -362,6 +362,14 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCcTintTransition,
             )
+            SwitchPreference(
+                title = stringResource(R.string.battery_fill_follow_retract),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
+                summary = stringResource(R.string.battery_fill_follow_retract_summary),
+                checked = visual.fillFollowsRetract,
+                enabled = featureCfg.enabled,
+                onCheckedChange = visualRepo::setFillFollowsRetract,
+            )
         }
         Section(R.string.section_layout_size) {
             OverlayDropdownPreference(
@@ -681,6 +689,14 @@ internal fun FeaturesScreen(
             )
         }
         Section(R.string.section_battery) {
+            BatteryColorPreference(
+                library = schemeLibrary,
+                enabled = featureCfg.enabled,
+                holdDownState = showBatteryColorSheet,
+                onClick = {
+                    showBatteryColorSheet = true
+                },
+            )
             SliderPreference(
                 value = featureCfg.lowBatteryThreshold.toFloat(),
                 onValueChange = { featureRepo.setLowBatteryThreshold(it.roundToInt()) },
@@ -695,22 +711,6 @@ internal fun FeaturesScreen(
                 magnetThreshold = 0f,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 enabled = featureCfg.enabled,
-            )
-            BatteryColorPreference(
-                library = schemeLibrary,
-                enabled = featureCfg.enabled,
-                holdDownState = showBatteryColorSheet,
-                onClick = {
-                    showBatteryColorSheet = true
-                },
-            )
-            SwitchPreference(
-                title = stringResource(R.string.battery_fill_follow_retract),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
-                summary = stringResource(R.string.battery_fill_follow_retract_summary),
-                checked = visual.fillFollowsRetract,
-                enabled = featureCfg.enabled,
-                onCheckedChange = visualRepo::setFillFollowsRetract,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
