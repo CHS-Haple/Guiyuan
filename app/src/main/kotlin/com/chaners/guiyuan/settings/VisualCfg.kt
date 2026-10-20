@@ -195,7 +195,7 @@ internal data class VisualCfg(
     val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
-    val showTopReadout: Boolean = false,
+    val showTopReadout: Boolean = topReadoutDefault(layout),
     val topTextFollowsBatteryColor: Boolean = true,
     val showTopChargingIcon: Boolean = true,
     val topChargingIconFollowsBatteryColor: Boolean = true,

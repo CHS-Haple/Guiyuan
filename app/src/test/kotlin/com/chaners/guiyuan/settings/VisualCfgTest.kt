@@ -23,6 +23,8 @@ class VisualCfgTest {
         assertEquals(true, settings.ccTintTransition)
         assertEquals(true, settings.fillFollowsRetract)
         assertEquals(false, settings.showTopReadout)
+        assertEquals(true, VisualCfg(layout = ContentLayout.BATTERY_CENTER).showTopReadout)
+        assertEquals(false, VisualCfg(layout = ContentLayout.BATTERY_CENTER, showTopReadout = false).showTopReadout)
 
         val normalized =
             settings.copy(
@@ -451,6 +453,7 @@ class VisualCfgTest {
                 layout = ContentLayout.BATTERY_CENTER,
             )
 
+        assertEquals(true, settings.showTopReadout)
         assertEquals(
             1.3f,
             topTextUiScale(settings.topTextScale),

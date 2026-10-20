@@ -25,6 +25,7 @@ import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateBatteryTopChargingScaleReferenceIfNeeded
+import com.chaners.guiyuan.settings.migrateSharedLayoutIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
@@ -124,6 +125,7 @@ class GyApplication :
 
     override fun onCreate() {
         super.onCreate()
+        migrateSharedLayoutIfNeeded(visualPrefs)
         migrateBatteryTopChargingScaleReferenceIfNeeded(visualPrefs)
         diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.registerOnSharedPreferenceChangeListener(featListener)

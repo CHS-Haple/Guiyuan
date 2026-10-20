@@ -6,6 +6,7 @@ import kotlin.math.abs
 internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
+internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val DUAL_DOT_STYLE_KEY = "dual_dot_style"
 internal const val DUAL_DEFAULT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val DUAL_DUO_OFFSET_Y_KEY = "dual_duo_offset_y"
@@ -205,6 +206,9 @@ internal fun migrateBatteryTopChargingScaleReferenceIfNeeded(
         )
         .apply()
 }
+
+internal fun topReadoutDefault(layout: ContentLayout): Boolean =
+    layout == ContentLayout.BATTERY_CENTER
 
 internal fun topTextUiScaleDefault(
     layout: ContentLayout,
