@@ -197,7 +197,12 @@ internal object NativePresentationResolver {
                                         ?.typeface
                                 }.getOrNull()
                             }
-                    return networkType.copy(typeface = face)
+                    return networkType.copy(
+                        typeface = face,
+                        fontPath =
+                            drawable?.takeIf { face != null }
+                                ?.let { nativeFontPath(it, face!!) },
+                    )
                 }
             }
 
@@ -215,6 +220,16 @@ internal object NativePresentationResolver {
 
         return null
     }
+
+    // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
+    private fun nativeFontPath(drawable: Drawable, face: Typeface): String? =
+        runCatching {
+            val clazz = drawable.javaClass
+            val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
+            if (original !== face) return@runCatching null
+            val configs = clazz.classLoader!!.loadClass("com.miui.utils.configs.MiuiConfigs")
+            configs.getField("FONT_MIPRO_PATH").get(null) as? String
+        }.getOrNull()
 
     // Snapshot the verified native Paint; never retain its mutable SystemUI owner.
     internal fun nativeMobileTextPaint(view: View?): Paint? {
@@ -311,6 +326,7 @@ internal object NativePresentationResolver {
         val enhanced: Boolean,
         val source: NetworkTypeSource,
         val typeface: Typeface? = null,
+        val fontPath: String? = null,
     )
 
 

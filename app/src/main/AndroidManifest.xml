@@ -28,6 +28,11 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".settings.NativeFontAxisReceiver"
+            android:enabled="true"
+            android:exported="true" />
+
         <activity-alias
             android:name=".LauncherAlias"
             android:enabled="true"

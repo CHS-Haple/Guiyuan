@@ -65,7 +65,7 @@ class VisualCfgTest {
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
-        assertEquals(200, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
         assertEquals(600, MOBILE_TYPE_WEIGHT_DEFAULT)
         assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
@@ -78,10 +78,10 @@ class VisualCfgTest {
     }
 
     @Test
-    fun nativeWeightRangesStayAligned() {
+    fun nativeWeightDefaultsStayAligned() {
         assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MIN)
-        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MAX, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
     }
 
     @Test
@@ -99,7 +99,7 @@ class VisualCfgTest {
         assertEquals(1000, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
         assertEquals(900, previous.copy(topTextWeight = 900).normalized().topTextWeight)
         assertEquals(200, previous.copy(topTextWeight = 200).normalized().topTextWeight)
-        assertEquals(200, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
+        assertEquals(1, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
         assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
         assertEquals(200, previous.copy(mobileTypeWeight = 200).normalized().mobileTypeWeight)
     }

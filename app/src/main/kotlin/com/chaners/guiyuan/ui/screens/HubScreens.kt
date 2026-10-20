@@ -62,9 +62,8 @@ import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MAX
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
+import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT
-import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX
-import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
@@ -134,6 +133,12 @@ internal fun FeaturesScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
+    val fontAxis by
+        remember(context.applicationContext) {
+            NativeFontAxis.observe(context.applicationContext)
+        }.collectAsState(initial = null)
+    val mobileWeightRange =
+        (fontAxis?.min ?: 200f)..(fontAxis?.max ?: 1000f)
     val schemeRepo =
         remember(context.applicationContext) {
             BatterySchemeRepo(context.applicationContext)
@@ -573,24 +578,38 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visual.mobileTypeWeight.toFloat(),
+                value = visual.mobileTypeWeight.toFloat().coerceIn(
+                    mobileWeightRange.start, mobileWeightRange.endInclusive,
+                ),
                 onValueChange = { value ->
                     visualRepo.setMobileTypeWeight(value.roundToInt())
                 },
                 title = stringResource(R.string.mobile_type_weight),
+                summary =
+                    if (fontAxis == null) stringResource(R.string.mobile_type_weight_unverified)
+                    else stringResource(
+                        R.string.mobile_type_weight_range,
+                        mobileWeightRange.start.roundToInt(),
+                        mobileWeightRange.endInclusive.roundToInt(),
+                    ),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                 valueText =
                     stringResource(
                         R.string.integer_value,
-                        visual.mobileTypeWeight,
+                        visual.mobileTypeWeight.coerceIn(
+                            mobileWeightRange.start.roundToInt(),
+                            mobileWeightRange.endInclusive.roundToInt(),
+                        ),
                     ),
-                valueRange =
-                    MOBILE_TYPE_WEIGHT_MIN.toFloat()..
-                        MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 15,
+                valueRange = mobileWeightRange,
+                steps =
+                    ((mobileWeightRange.endInclusive - mobileWeightRange.start) / 50f)
+                        .roundToInt().coerceIn(1, 99) - 1,
                 showKeyPoints = true,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
+                keyPoints =
+                    listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat())
+                        .filter { it in mobileWeightRange },
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )

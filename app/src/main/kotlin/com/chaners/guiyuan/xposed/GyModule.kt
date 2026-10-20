@@ -1,6 +1,16 @@
 package com.chaners.guiyuan.xposed
 
+import android.app.BroadcastOptions
+import android.content.Intent
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.os.Build
+import android.view.View
+import com.chaners.guiyuan.settings.FontAxes
+import com.chaners.guiyuan.settings.NativeFontAxis
+import java.io.File
+import java.io.FileInputStream
+import java.nio.channels.FileChannel
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -99,6 +109,7 @@ class GyModule : XposedModule() {
 
     private var inSettings = false
     private var settingsHookInstalled = false
+    private var reportedFont: Typeface? = null
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         inSettings = param.processName == SETTINGS_PACKAGE
@@ -1744,6 +1755,7 @@ class GyModule : XposedModule() {
                 state = StatusStateStore.snapshot(),
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
+        reportFontAxis(presentation.networkType)
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
@@ -1808,6 +1820,35 @@ class GyModule : XposedModule() {
                 presentationTrace,
             )
         }
+    }
+
+    private fun reportFontAxis(networkType: NativePresentationResolver.NetworkType?) {
+        if (Build.VERSION.SDK_INT < 34) return
+        val face = networkType?.typeface ?: return
+        val host = SysUiHostRegistry.current() as? View ?: return
+        if (reportedFont === face) return
+        reportedFont = face
+
+        val axis = networkType.fontPath?.let { path ->
+            runCatching {
+                val file = File(path)
+                if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) null
+                else FileInputStream(file).channel.use { channel ->
+                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+                }
+            }.getOrNull()
+        }
+        val intent = Intent(NativeFontAxis.ACTION)
+            .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
+        axis?.let {
+            intent.putExtra(NativeFontAxis.MIN, it.min)
+            intent.putExtra(NativeFontAxis.DEFAULT, it.default)
+            intent.putExtra(NativeFontAxis.MAX, it.max)
+        }
+        runCatching {
+            val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
+            host.context.sendBroadcast(intent, null, options)
+        }.onFailure { Log.w(TAG, "Unable to report verified native font axis", it) }
     }
 
     private fun onCombinedStateChanged(
