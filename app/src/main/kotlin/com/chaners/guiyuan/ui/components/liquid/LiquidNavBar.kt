@@ -258,6 +258,15 @@ internal fun LiquidNavBar(
                                 params.refractionAmount.toPx(),
                             )
                         },
+                        highlight = {
+                            Highlight.Default.copy(alpha = 0.75f)
+                        },
+                        shadow = {
+                            Shadow(
+                                radius = 10.dp,
+                                color = Color.Black.copy(alpha = if (dark) 0.20f else 0.10f),
+                            )
+                        },
                         layerBlock = {
                             val progress = motion.pressProgress
                             val scale =
