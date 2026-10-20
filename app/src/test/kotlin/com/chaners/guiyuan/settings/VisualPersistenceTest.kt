@@ -228,6 +228,44 @@ class VisualPersistenceTest {
         assertEquals(before, prefs.all)
     }
 
+    @Test
+    fun featureRollbackPreservesOriginalKeysTimestampAndUnrelatedPreferences() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(FEATURE_ENABLED_KEY, false)
+            .putLong(FEATURE_CHANGED_AT_NS_KEY, 42L)
+            .putString("settings_ui_scale", "90")
+            .apply()
+        val original = prefs.all.toMap()
+        val snapshot = prefs.backupFeatureSnapshot()
+
+        // A feature commit can update memory even if its disk write later fails.
+        prefs.edit()
+            .putBoolean(FEATURE_ENABLED_KEY, true)
+            .putBoolean(FEATURE_KEYGUARD_KEY, false)
+            .putBoolean(FEATURE_AOD_KEY, false)
+            .putLong(FEATURE_CHANGED_AT_NS_KEY, 99L)
+            .apply()
+
+        assertTrue(prefs.rollbackBackupFeatures(snapshot))
+        assertEquals(original, prefs.all)
+        assertFalse(prefs.contains(FEATURE_KEYGUARD_KEY))
+        assertFalse(prefs.contains(FEATURE_AOD_KEY))
+    }
+
+    @Test
+    fun featureRollbackDoesNotCreateKeysThatWereOriginallyAbsent() {
+        val prefs = MemoryPreferences()
+        val snapshot = prefs.backupFeatureSnapshot()
+        prefs.edit()
+            .putBoolean(FEATURE_ENABLED_KEY, true)
+            .putLong(FEATURE_CHANGED_AT_NS_KEY, 99L)
+            .apply()
+
+        assertTrue(prefs.rollbackBackupFeatures(snapshot))
+        assertTrue(prefs.all.isEmpty())
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
 
