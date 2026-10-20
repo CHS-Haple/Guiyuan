@@ -133,7 +133,7 @@
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
     <string name="floating_navigation_style_liquid">Liquid Glass</string>
-    <string name="floating_navigation_liquid_mode">Glass finish</string>
+    <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
     <string name="floating_navigation_liquid_mode_summary">Choose a blurred or clearer glass look</string>
     <string name="floating_navigation_liquid_mode_blur">Blurred</string>
     <string name="floating_navigation_liquid_mode_clear">Clear</string>
