@@ -128,10 +128,10 @@ class ConfigBackupTest {
         assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
     }
 
-    @Test fun mobileWeight200RoundTripsInEveryProfile() {
+    @Test fun mobileWeight150RoundTripsInEveryProfile() {
         val archive = sample().let { source ->
             source.copy(visual = source.visual.copy(
-                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 200) },
+                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 150) },
             ))
         }
         assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
@@ -143,7 +143,7 @@ class ConfigBackupTest {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
         }
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":199"))
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":0"))
         }
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":\"1400\""))
