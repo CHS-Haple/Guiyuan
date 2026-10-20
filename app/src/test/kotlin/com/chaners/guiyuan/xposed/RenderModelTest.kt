@@ -22,7 +22,8 @@ class RenderModelTest {
         )
         fun model(battery: StatusStateStore.BatteryState, threshold: Int) =
             RenderModel.from(
-                snapshot = StatusStateStore.Snapshot(battery = battery),
+                // Airplane provides a complete native center; the test only varies battery semantics.
+                snapshot = StatusStateStore.Snapshot(battery = battery, airplaneMode = true),
                 presentation = PresentationStore.Snapshot(),
                 defaultDataSubscriptionId = -1,
                 lowBatteryThreshold = threshold,
