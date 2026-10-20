@@ -281,7 +281,8 @@ internal fun PreviewSandboxScreen(
                                     .widthIn(max = 300.dp)
                                     .fillMaxWidth()
                                     .align(Alignment.CenterHorizontally)
-                                    .padding(horizontal = 6.dp),
+                                    .padding(horizontal = 6.dp)
+                                    .padding(bottom = 12.dp),
                         )
 
                         SwitchPreference(
