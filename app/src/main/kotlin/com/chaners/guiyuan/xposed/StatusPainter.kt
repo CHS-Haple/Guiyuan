@@ -25,7 +25,9 @@ import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.WifiOpticalReference
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -63,7 +65,11 @@ internal class StatusPainter(
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val batteryTextSamples = HashMap<Int, Paint>(64)
+    private val batteryTextSamples =
+        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
+                size > 128
+        }
     private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
@@ -2153,13 +2159,18 @@ internal class StatusPainter(
         progress: Float,
         textSize: Float,
     ) {
-        val source = Typeface.DEFAULT
+        val nativeFont = if (preview) null else SysUiBatterySource.currentNumberFont()
+        val source = nativeFont?.face ?: Typeface.DEFAULT
         if (batteryTextSource != source) {
             batteryTextSource = source
             batteryTextSamples.clear()
         }
-        // Transition callers resolve the weight once; this function only draws that sample.
-        batteryTextPaint.set(weightedPaint(source, weight, batteryTextSamples, step = 10))
+        val sampledWeight = nativeFont?.axis?.let { axis ->
+            weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
+        } ?: weight.coerceIn(200, 1000)
+        batteryTextPaint.set(
+            weightedPaint(source, sampledWeight, batteryTextSamples, step = if (nativeFont == null) 10 else 1),
+        )
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         batteryTextPaint.isFakeBoldText =

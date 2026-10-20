@@ -19,6 +19,9 @@ internal object NativeFontAxis {
     const val MIN = "min"
     const val DEFAULT = "default"
     const val MAX = "max"
+    const val BAT_MIN = "battery_min"
+    const val BAT_DEFAULT = "battery_default"
+    const val BAT_MAX = "battery_max"
     private const val PREFS = "native_font_axis"
     private const val BOOT = "boot_count"
 
@@ -37,43 +40,63 @@ internal object NativeFontAxis {
             Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
         }.getOrDefault(-1)
 
-    private fun read(context: Context, prefs: SharedPreferences): FontWeightAxis? =
-        runCatching {
-            val boot = bootCount(context)
-            if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching null
-            checked(
-                FontWeightAxis(
-                    min = prefs.getFloat(MIN, Float.NaN),
-                    default = prefs.getFloat(DEFAULT, Float.NaN),
-                    max = prefs.getFloat(MAX, Float.NaN),
-                ),
-            )
-        }.getOrNull()
+    private fun read(
+        context: Context,
+        prefs: SharedPreferences,
+        min: String,
+        default: String,
+        max: String,
+    ): FontWeightAxis? = runCatching {
+        val boot = bootCount(context)
+        if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching null
+        checked(
+            FontWeightAxis(
+                min = prefs.getFloat(min, Float.NaN),
+                default = prefs.getFloat(default, Float.NaN),
+                max = prefs.getFloat(max, Float.NaN),
+            ),
+        )
+    }.getOrNull()
 
-    fun observe(context: Context): Flow<FontWeightAxis?> = callbackFlow {
+    fun observe(context: Context): Flow<FontWeightAxis?> =
+        observe(context, MIN, DEFAULT, MAX)
+
+    fun observeBattery(context: Context): Flow<FontWeightAxis?> =
+        observe(context, BAT_MIN, BAT_DEFAULT, BAT_MAX)
+
+    private fun observe(
+        context: Context,
+        min: String,
+        default: String,
+        max: String,
+    ): Flow<FontWeightAxis?> = callbackFlow {
         val app = context.applicationContext
         val prefs = prefs(app)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == MIN || key == DEFAULT || key == MAX || key == BOOT) {
-                trySend(read(app, prefs))
+            if (key == min || key == default || key == max || key == BOOT) {
+                trySend(read(app, prefs, min, default, max))
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(read(app, prefs))
+        trySend(read(app, prefs, min, default, max))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
-    fun save(context: Context, axis: FontWeightAxis?) {
+    fun save(context: Context, mobile: FontWeightAxis?, battery: FontWeightAxis?) {
         val boot = bootCount(context)
         val editor = prefs(context).edit()
-        if (axis == null || boot < 0) {
-            editor.remove(MIN).remove(DEFAULT).remove(MAX).remove(BOOT)
-        } else {
-            editor.putFloat(MIN, axis.min)
-                .putFloat(DEFAULT, axis.default)
-                .putFloat(MAX, axis.max)
-                .putInt(BOOT, boot)
+        fun write(axis: FontWeightAxis?, min: String, default: String, max: String) {
+            if (axis == null || boot < 0) {
+                editor.remove(min).remove(default).remove(max)
+            } else {
+                editor.putFloat(min, axis.min)
+                    .putFloat(default, axis.default)
+                    .putFloat(max, axis.max)
+            }
         }
+        write(mobile, MIN, DEFAULT, MAX)
+        write(battery, BAT_MIN, BAT_DEFAULT, BAT_MAX)
+        if (boot < 0) editor.remove(BOOT) else editor.putInt(BOOT, boot)
         editor.apply()
     }
 }
@@ -86,19 +109,20 @@ class NativeFontAxisReceiver : BroadcastReceiver() {
             intent.action != NativeFontAxis.ACTION
         ) return
 
-        val axis =
-            if (intent.hasExtra(NativeFontAxis.MIN) &&
-                intent.hasExtra(NativeFontAxis.DEFAULT) &&
-                intent.hasExtra(NativeFontAxis.MAX)
-            ) {
+        fun axis(min: String, default: String, max: String): FontWeightAxis? =
+            if (intent.hasExtra(min) && intent.hasExtra(default) && intent.hasExtra(max)) {
                 NativeFontAxis.checked(
                     FontWeightAxis(
-                        intent.getFloatExtra(NativeFontAxis.MIN, Float.NaN),
-                        intent.getFloatExtra(NativeFontAxis.DEFAULT, Float.NaN),
-                        intent.getFloatExtra(NativeFontAxis.MAX, Float.NaN),
+                        intent.getFloatExtra(min, Float.NaN),
+                        intent.getFloatExtra(default, Float.NaN),
+                        intent.getFloatExtra(max, Float.NaN),
                     ),
                 )
             } else null
-        NativeFontAxis.save(context, axis)
+        NativeFontAxis.save(
+            context,
+            mobile = axis(NativeFontAxis.MIN, NativeFontAxis.DEFAULT, NativeFontAxis.MAX),
+            battery = axis(NativeFontAxis.BAT_MIN, NativeFontAxis.BAT_DEFAULT, NativeFontAxis.BAT_MAX),
+        )
     }
 }

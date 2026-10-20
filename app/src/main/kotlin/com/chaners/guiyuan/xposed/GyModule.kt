@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.view.View
 import com.chaners.guiyuan.settings.FontAxes
+import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.settings.NativeFontAxis
 import java.io.File
 import java.io.FileInputStream
@@ -110,6 +111,8 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedBatteryFont: Typeface? = null
+    private var reportedFontHost: View? = null
     private var fontAxisReported = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
@@ -1827,31 +1830,55 @@ class GyModule : XposedModule() {
         if (Build.VERSION.SDK_INT < 34) return
         val host = SysUiHostRegistry.current() as? View ?: return
         val face = networkType?.typeface
-        if (fontAxisReported && reportedFont === face) return
+        val batteryFont = SysUiBatterySource.readHostNumberFont(host)
+        val batteryFace = batteryFont?.first
+        if (fontAxisReported && reportedFontHost === host &&
+            reportedFont === face && reportedBatteryFont === batteryFace
+        ) return
 
-        val axis = networkType?.fontPath?.let { path ->
-            runCatching {
-                val file = File(path)
-                if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) null
-                else FileInputStream(file).channel.use { channel ->
-                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-                }
-            }.getOrNull()
+        fun weightAxis(path: String?): FontWeightAxis? =
+            path?.let {
+                runCatching {
+                    val file = File(it)
+                    if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) null
+                    else FileInputStream(file).channel.use { channel ->
+                        FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+                    }
+                }.getOrNull()
+                    ?.let(NativeFontAxis::checked)
+                    ?.takeIf { axis ->
+                        kotlin.math.ceil(axis.min.toDouble()).toInt() <
+                            kotlin.math.floor(axis.max.toDouble()).toInt()
+                    }
+            }
+        val mobileAxis = weightAxis(networkType?.fontPath)
+        val batteryAxis = if (batteryFont?.second == networkType?.fontPath) {
+            mobileAxis
+        } else {
+            weightAxis(batteryFont?.second)
         }
+        SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
-        axis?.let {
+        mobileAxis?.let {
             intent.putExtra(NativeFontAxis.MIN, it.min)
             intent.putExtra(NativeFontAxis.DEFAULT, it.default)
             intent.putExtra(NativeFontAxis.MAX, it.max)
+        }
+        batteryAxis?.let {
+            intent.putExtra(NativeFontAxis.BAT_MIN, it.min)
+            intent.putExtra(NativeFontAxis.BAT_DEFAULT, it.default)
+            intent.putExtra(NativeFontAxis.BAT_MAX, it.max)
         }
         runCatching {
             val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
             host.context.sendBroadcast(intent, null, options)
         }.onSuccess {
             reportedFont = face
+            reportedBatteryFont = batteryFace
+            reportedFontHost = host
             fontAxisReported = true
-        }.onFailure { Log.w(TAG, "Unable to report verified native font axis", it) }
+        }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
     }
 
     private fun onCombinedStateChanged(
