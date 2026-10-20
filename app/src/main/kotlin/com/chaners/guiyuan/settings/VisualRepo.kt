@@ -287,12 +287,11 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setDualMobileOffsetY(offset: Float) {
-        val key = if (preferences.readVisualCfg().dualDotStyle == DualDotStyle.DUO) {
-            DUAL_DUO_OFFSET_Y_KEY
-        } else {
-            DUAL_DEFAULT_OFFSET_Y_KEY
-        }
         if (!preferences.dualSignalEnabled()) return
+        val style = DualDotStyle.fromPersisted(
+            preferences.getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null),
+        )
+        val key = if (style == DualDotStyle.DUO) DUAL_DUO_OFFSET_Y_KEY else DUAL_DEFAULT_OFFSET_Y_KEY
         preferences.edit()
             .putFloat(
                 activeProfileKey(key),
