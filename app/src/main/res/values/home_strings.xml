@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="section_home_runtime">Runtime</string>
+    <string name="home_runtime_enable_title">Enable Guiyuan</string>
     <string name="home_version_line">Version  %1$s</string>
     <string name="home_build_line">Build  %1$s</string>
 

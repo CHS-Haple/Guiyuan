@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="section_home_runtime">运行状态</string>
+    <string name="home_runtime_enable_title">启用归元</string>
     <string name="home_version_line">版本  %1$s</string>
     <string name="home_build_line">构建  %1$s</string>
 

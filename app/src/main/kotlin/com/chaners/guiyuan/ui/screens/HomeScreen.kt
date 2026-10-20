@@ -65,13 +65,13 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 private enum class RuntimeStatusTone {
     Success,
@@ -186,6 +186,20 @@ internal fun HomeScreen(
             ) {
                 item {
                     SmallTitle(stringResource(R.string.section_home_runtime))
+                    Card(
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 12.dp)
+                                .padding(bottom = 8.dp),
+                    ) {
+                        SwitchPreference(
+                            checked = featureSettings.enabled,
+                            onCheckedChange = featureRepository::setEnabled,
+                            title = stringResource(R.string.home_runtime_enable_title),
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        )
+                    }
                     HomeRuntimeStatusCard(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
@@ -194,7 +208,6 @@ internal fun HomeScreen(
                         scopeRequestInProgress = scopeRequestInProgress,
                         onRestart = onRestart,
                         onRequestScope = onRequestScope,
-                        onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
@@ -230,7 +243,6 @@ private fun HomeRuntimeStatusCard(
     scopeRequestInProgress: Boolean,
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
-    onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state =
@@ -349,11 +361,6 @@ private fun HomeRuntimeStatusCard(
                 )
             }
 
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
         }
     }
 }
