@@ -65,6 +65,11 @@ internal class FeatureRepo(context: Context) {
         writeBool(FEATURE_AOD_KEY, enabled)
     }
 
+    fun backupSnapshot(): Map<String, Any?> = prefs.backupFeatureSnapshot()
+
+    fun rollbackBackup(snapshot: Map<String, Any?>): Boolean =
+        prefs.rollbackBackupFeatures(snapshot)
+
     fun restore(cfg: FeatureCfg): Boolean =
         prefs.edit()
             .putBoolean(FEATURE_ENABLED_KEY, cfg.enabled)
@@ -105,3 +110,28 @@ internal fun isFeatureKey(key: String?): Boolean =
         key == FEATURE_ENABLED_KEY ||
         key == FEATURE_KEYGUARD_KEY ||
         key == FEATURE_AOD_KEY
+
+private val featureBackupKeys = setOf(
+    FEATURE_ENABLED_KEY,
+    FEATURE_KEYGUARD_KEY,
+    FEATURE_AOD_KEY,
+    FEATURE_CHANGED_AT_NS_KEY,
+)
+
+// Restore absent keys as absent too: failed imports must not synthesize defaults or a new change timestamp.
+internal fun SharedPreferences.backupFeatureSnapshot(): Map<String, Any?> =
+    all.filterKeys { it in featureBackupKeys }
+
+internal fun SharedPreferences.rollbackBackupFeatures(snapshot: Map<String, Any?>): Boolean {
+    val editor = edit()
+    featureBackupKeys.forEach(editor::remove)
+    snapshot.forEach { (key, value) ->
+        when (key) {
+            FEATURE_ENABLED_KEY, FEATURE_KEYGUARD_KEY, FEATURE_AOD_KEY ->
+                editor.putBoolean(key, value as Boolean)
+            FEATURE_CHANGED_AT_NS_KEY -> editor.putLong(key, value as Long)
+            else -> error("Unexpected feature preference key")
+        }
+    }
+    return editor.commit()
+}

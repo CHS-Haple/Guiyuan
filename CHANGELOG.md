@@ -8,6 +8,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Fixed
+- Restored the exact original feature preferences and change timestamp if a configuration import fails after writing visual settings.
+
 ### Security
 - Restricted configuration import to document-provider content URIs, rejecting local-file and resource URI inputs.
 

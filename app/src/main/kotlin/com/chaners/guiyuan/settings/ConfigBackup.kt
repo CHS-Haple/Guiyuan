@@ -284,7 +284,7 @@ internal class ConfigBackupFiles(private val context: Context) {
 
     suspend fun restore(backup: ConfigBackup): Boolean = withContext(Dispatchers.IO) {
         ConfigBackupFormat.validate(backup)
-        val previousFeature = feature.current()
+        val previousFeature = feature.backupSnapshot()
         val previousVisual = visual.backupSnapshot()
         if (!visual.restore(backup.visual, backup.batterySchemes)) {
             check(visual.rollbackBackup(previousVisual)) { "Could not roll back incomplete visual restore" }
@@ -293,7 +293,7 @@ internal class ConfigBackupFiles(private val context: Context) {
         if (feature.restore(backup.feature)) {
             true
         } else {
-            val featureRolledBack = feature.restore(previousFeature)
+            val featureRolledBack = feature.rollbackBackup(previousFeature)
             val visualRolledBack = visual.rollbackBackup(previousVisual)
             check(featureRolledBack && visualRolledBack) {
                 "Could not roll back incomplete feature restore"
