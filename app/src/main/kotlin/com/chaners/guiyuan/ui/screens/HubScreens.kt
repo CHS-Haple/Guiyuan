@@ -602,15 +602,8 @@ internal fun FeaturesScreen(
                         ),
                     ),
                 valueRange = mobileWeightRange,
-                steps =
-                    ((mobileWeightRange.endInclusive - mobileWeightRange.start) / 50f)
-                        .roundToInt().coerceIn(1, 99) - 1,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints =
-                    listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat())
-                        .filter { it in mobileWeightRange },
-                magnetThreshold = 0.035f,
+                steps = 0,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Edge,
                 enabled = featureCfg.enabled && fontAxis != null,
             )
             SwitchPreference(
