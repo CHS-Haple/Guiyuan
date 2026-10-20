@@ -53,6 +53,12 @@ class VisualCfgTest {
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        val invalidOffsets = settings.copy(
+            dualDefaultOffsetY = Float.NaN,
+            dualDuoOffsetY = Float.POSITIVE_INFINITY,
+        ).normalized()
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDefaultOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDuoOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)

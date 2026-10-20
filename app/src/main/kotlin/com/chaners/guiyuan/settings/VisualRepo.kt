@@ -295,7 +295,9 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(key),
-                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+                offset.takeIf(Float::isFinite)
+                    ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                    ?: NETWORK_TOP_OFFSET_DEFAULT,
             ).apply()
     }
 

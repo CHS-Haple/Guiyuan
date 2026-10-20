@@ -252,9 +252,13 @@ internal fun VisualCfg.normalized(): VisualCfg =
         mobileTypeOffsetY =
             mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         dualDefaultOffsetY =
-            dualDefaultOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            dualDefaultOffsetY.takeIf(Float::isFinite)
+                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                ?: NETWORK_TOP_OFFSET_DEFAULT,
         dualDuoOffsetY =
-            dualDuoOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            dualDuoOffsetY.takeIf(Float::isFinite)
+                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                ?: NETWORK_TOP_OFFSET_DEFAULT,
         topChargingIconScale =
             topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
