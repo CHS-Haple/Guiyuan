@@ -6,6 +6,10 @@ import kotlin.math.abs
 internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
+internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
+internal const val DUAL_DOT_STYLE_KEY = "dual_dot_style"
+internal const val DUAL_DEFAULT_OFFSET_Y_KEY = "dual_default_offset_y"
+internal const val DUAL_DUO_OFFSET_Y_KEY = "dual_duo_offset_y"
 internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
 internal const val CENTER_FOLLOWS_BATTERY_COLOR_KEY = "center_follows_battery_color"
 internal const val BATTERY_TOP_READOUT_ENABLED_KEY = "battery_top_readout_enabled"
@@ -62,6 +66,8 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
+        DUAL_DEFAULT_OFFSET_Y_KEY,
+        DUAL_DUO_OFFSET_Y_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
@@ -76,6 +82,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
 
 internal val GLOBAL_VISUAL_KEYS =
     setOf(
+        DUAL_DOT_STYLE_KEY,
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         BATTERY_COLOR_PRESET_KEY,
@@ -199,6 +206,9 @@ internal fun migrateBatteryTopChargingScaleReferenceIfNeeded(
         )
         .apply()
 }
+
+internal fun topReadoutDefault(layout: ContentLayout): Boolean =
+    layout == ContentLayout.BATTERY_CENTER
 
 internal fun topTextUiScaleDefault(
     layout: ContentLayout,

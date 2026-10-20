@@ -8,9 +8,100 @@ import org.junit.Test
 
 class VisualPersistenceTest {
     @Test
-    fun singleAndDualKeepIndependentLayoutsSizesAndColors() {
+    fun duoStyleIsModeWideAndSurvivesLayoutSwitches() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
+            .apply()
+        for (layout in ContentLayout.entries) {
+            assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = true, layoutOverride = layout).dualDotStyle)
+            assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = false, layoutOverride = layout).dualDotStyle)
+        }
+        prefs.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), "invalid")
+            .apply()
+        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+    }
+
+    @Test
+    fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
+        val prefs = MemoryPreferences()
+        val dual = VisualCfg(
+            dualSignal = true,
+            dualDefaultOffsetY = 4f,
+            dualDuoOffsetY = -7f,
+        )
+        prefs.edit().putVisualCfg(dual).apply()
+        val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(4f, network.dualMobileOffsetY, 0f)
+        assertEquals(-7f, network.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+
+        prefs.edit().putVisualCfg(
+            dual.copy(
+                layout = ContentLayout.BATTERY_CENTER,
+                dualDotStyle = DualDotStyle.DUO,
+                dualDefaultOffsetY = -2f,
+                dualDuoOffsetY = 5f,
+            ),
+        ).apply()
+        val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
+        assertEquals(5f, battery.dualMobileOffsetY, 0f)
+        assertEquals(-2f, battery.copy(dualDotStyle = DualDotStyle.DEFAULT).dualMobileOffsetY, 0f)
+        val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(4f, original.dualDefaultOffsetY, 0f)
+        assertEquals(-7f, original.dualDuoOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg(dual = false).dualMobileOffsetY, 0f)
+    }
+
+    @Test
+    fun batteryReadoutDefaultsOnOnlyForUnconfiguredBatteryCenteredProfiles() {
+        val prefs = MemoryPreferences()
+        for (dual in listOf(false, true)) {
+            assertFalse(prefs.readVisualCfg(dual = dual, layoutOverride = ContentLayout.NETWORK_CENTER).showTopReadout)
+            assertTrue(prefs.readVisualCfg(dual = dual, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
+        }
+        prefs.edit()
+            .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY), false)
+            .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY, dual = true), false)
+            .apply()
+        assertFalse(prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
+        assertFalse(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
+    }
+
+    @Test
+    fun legacyDualLayoutMigratesToSingleSourceWithoutOverridingLaterChanges() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), ContentLayout.BATTERY_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        migrateSharedLayoutIfNeeded(prefs)
+        assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
+        assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
+        assertFalse(prefs.contains(visualModeKey(true, CONTENT_LAYOUT_KEY)))
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .apply()
+        migrateSharedLayoutIfNeeded(prefs)
+        assertEquals(ContentLayout.NETWORK_CENTER, prefs.readLayout())
+
+        val previouslySingle = MemoryPreferences()
+        previouslySingle.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), ContentLayout.BATTERY_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .apply()
+        migrateSharedLayoutIfNeeded(previouslySingle)
+        assertEquals(ContentLayout.NETWORK_CENTER, previouslySingle.readLayout())
+    }
+
+    @Test
+    fun singleAndDualKeepIndependentVisualProfilesAndShareCurrentLayout() {
         val prefs = MemoryPreferences()
         val single = VisualCfg(
+            layout = ContentLayout.BATTERY_CENTER,
             combinedScale = 0.9f,
             outerWeightScale = 1.1f,
             wifiOffsetY = -3f,
@@ -38,8 +129,7 @@ class VisualPersistenceTest {
 
         assertEquals(dual.normalized(), prefs.readVisualCfg())
         assertEquals(single.normalized(), prefs.readVisualCfg(dual = false))
-        assertEquals(ContentLayout.NETWORK_CENTER, prefs.readLayout(dual = false))
-        assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout(dual = true))
+        assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
         assertEquals(
             single.batteryColorOverrides.charging,
             prefs.readVisualCfg(dual = false).batteryColorOverrides.charging,

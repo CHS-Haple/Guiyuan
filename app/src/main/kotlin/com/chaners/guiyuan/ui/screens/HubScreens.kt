@@ -79,6 +79,7 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -146,6 +147,10 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
+    val dualDotStyles = listOf(
+        stringResource(R.string.dual_dot_style_default),
+        stringResource(R.string.dual_dot_style_duo),
+    )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
     }
@@ -320,6 +325,42 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setDualSignal,
             )
+            AnimatedPreferenceGroup(visible = visual.dualSignal) {
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.dual_dot_style_title),
+                    items = dualDotStyles,
+                    selectedIndex = visual.dualDotStyle.ordinal,
+                    showValue = true,
+                    enabled = featureCfg.enabled,
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers, featureCfg.enabled) },
+                    onSelectedIndexChange = { index ->
+                        DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
+                    },
+                )
+                SliderPreference(
+                    value = visual.dualMobileOffsetY,
+                    onValueChange = visualRepo::setDualMobileOffsetY,
+                    title = stringResource(R.string.dual_mobile_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_signal_cellular_alt,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height_w500,
+                        )
+                    },
+                    valueText = stringResource(
+                        R.string.battery_top_offset_value,
+                        visual.dualMobileOffsetY.roundToInt(),
+                    ),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            }
             SliderPreference(
                 value = visual.combinedScale,
                 onValueChange = visualRepo::setCombinedScale,

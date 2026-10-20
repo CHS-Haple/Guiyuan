@@ -8,6 +8,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Added
+- Added an optional Duo horizontal eight-dot layout for dual-SIM signals, retaining the original curved layout by default and sharing the existing Control Center transition, with separately saved vertical offsets for the two dual-row styles.
+
 ### Fixed
 - Rejected conflicting per-mode visual settings in imported backups instead of silently overwriting them by layout order.
 - Normalized unsafe control and bidirectional characters in custom battery scheme names before storage, including older saved names, so they do not break configuration backups.
@@ -17,6 +20,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Restricted configuration import to document-provider content URIs, rejecting local-file and resource URI inputs.
 
 ### Changed
+- Shared the content layout across single- and dual-row signal modes, preserving the active layout from existing configurations, and enabled the battery number by default only for unconfigured battery-centered profiles.
+- Aligned both liquid-glass finishes with the MIUIX theme container color: Clear uses 30% overlay and 2 dp blur; Blur keeps 40% overlay and 8 dp blur. Clear uses 24 dp refraction height and 16 dp displacement to reduce high-contrast text stretching; Blur remains 24 / 24 dp. Both selected-content backdrops gradually reach their own main-glass refraction values only on press, with MIUIX content colors, a broader native 1 dp / 0.5 dp feathered main-glass edge highlight at 75% opacity, a 10 dp shadow (10% light / 20% dark), and a softer 6% idle selected-capsule tint in light Clear mode (10% otherwise).
 - Updated AndroidX Core from 1.17.0 to 1.19.1.
 - Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management (B1111 on dev; not yet promoted to main).
 

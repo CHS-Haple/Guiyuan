@@ -64,6 +64,55 @@ class ConfigBackupTest {
         assertEquals(independent, ConfigBackupFormat.decode(ConfigBackupFormat.encode(independent)))
     }
 
+    @Test fun legacyArchivesDefaultToOriginalDotStyle() {
+        val json = ConfigBackupFormat.encode(sample())
+            .replace("\"dualDotStyle\":\"DEFAULT\",", "")
+        assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
+            it.dualDotStyle == DualDotStyle.DEFAULT
+        })
+    }
+
+    @Test fun modeWideDuoStyleMustAgreeAcrossLayouts() {
+        val source = sample()
+        val valid = source.copy(visual = source.visual.copy(profiles =
+            source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) cfg.copy(dualDotStyle = DualDotStyle.DUO) else cfg
+            },
+        ))
+        assertEquals(valid, ConfigBackupFormat.decode(ConfigBackupFormat.encode(valid)))
+        val invalid = valid.copy(visual = valid.visual.copy(
+            profiles = valid.visual.profiles.mapIndexed { index, cfg ->
+                if (index == 2) cfg.copy(dualDotStyle = DualDotStyle.DEFAULT) else cfg
+            },
+        ))
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(invalid)
+        }
+    }
+
+    @Test fun offsetValuesSurviveBackupsAndRejectInvalidRanges() {
+        val original = sample()
+        val changed = original.copy(visual = original.visual.copy(
+            profiles = original.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) {
+                    cfg.copy(
+                        dualDefaultOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
+                        dualDuoOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
+                    )
+                } else cfg
+            },
+        ))
+        assertEquals(changed, ConfigBackupFormat.decode(ConfigBackupFormat.encode(changed)))
+        val corrupt = changed.copy(visual = changed.visual.copy(
+            profiles = changed.visual.profiles.mapIndexed { index, cfg ->
+                if (index == 2) cfg.copy(dualDuoOffsetY = 11f) else cfg
+            },
+        ))
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(corrupt)
+        }
+    }
+
     @Test fun roundTripKeepsEveryProfileAndActiveMode() {
         val source = sample()
         assertEquals(source, ConfigBackupFormat.decode(ConfigBackupFormat.encode(source)))

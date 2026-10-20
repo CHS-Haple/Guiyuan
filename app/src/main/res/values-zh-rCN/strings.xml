@@ -12,7 +12,11 @@
     <string name="section_layout_size">布局与尺寸</string>
     <string name="section_network">网络与信号</string>
     <string name="dual_signal_title">双排信号</string>
-    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n单排与双排分别记忆配置</string>
+    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n内容布局保持不变，其他视觉配置分别记忆</string>
+    <string name="dual_dot_style_title">双排样式</string>
+    <string name="dual_dot_style_default">默认</string>
+    <string name="dual_dot_style_duo">Duo</string>
+    <string name="dual_mobile_vertical_offset">信号点上下偏移</string>
     <string name="section_battery">电量与充电</string>
     <string name="section_management">配置管理</string>
     <string name="content_layout_title">内容布局</string>

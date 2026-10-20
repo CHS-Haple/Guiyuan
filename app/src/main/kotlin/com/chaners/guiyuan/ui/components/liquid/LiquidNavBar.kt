@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -72,6 +71,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.sign
@@ -102,9 +102,9 @@ private fun LiquidMode.params(): LiquidParams =
         LiquidMode.Clear ->
             LiquidParams(
                 blur = 2.dp,
-                refractionHeight = 12.dp,
-                refractionAmount = 24.dp,
-                surfaceAlpha = 0.18f,
+                refractionHeight = 24.dp,
+                refractionAmount = 16.dp,
+                surfaceAlpha = 0.30f,
             )
     }
 
@@ -133,13 +133,10 @@ internal fun LiquidNavBar(
     require(tabsCount > 0)
 
     val selectedColor = MiuixTheme.colorScheme.primary
+    val normalColor = MiuixTheme.colorScheme.onSurface
     val params = mode.params()
     val containerColor =
-        if (dark) {
-            Color(0xFF121212).copy(alpha = params.surfaceAlpha)
-        } else {
-            Color(0xFFFAFAFA).copy(alpha = params.surfaceAlpha)
-        }
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
     val tabsBackdrop = rememberLayerBackdrop()
 
     BoxWithConstraints(
@@ -262,6 +259,19 @@ internal fun LiquidNavBar(
                                 params.refractionAmount.toPx(),
                             )
                         },
+                        highlight = {
+                            Highlight.Default.copy(
+                                width = 1.dp,
+                                blurRadius = 0.5.dp,
+                                alpha = 0.75f,
+                            )
+                        },
+                        shadow = {
+                            Shadow(
+                                radius = 10.dp,
+                                color = Color.Black.copy(alpha = if (dark) 0.20f else 0.10f),
+                            )
+                        },
                         layerBlock = {
                             val progress = motion.pressProgress
                             val scale =
@@ -282,13 +292,18 @@ internal fun LiquidNavBar(
                     .fillMaxWidth()
                     .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            content = content,
+            content = {
+                CompositionLocalProvider(LocalContentColor provides normalColor) {
+                    content()
+                }
+            },
         )
 
         CompositionLocalProvider(
             LocalLiquidItemScale provides {
                 lerp(1f, 1.2f, motion.pressProgress)
             },
+            LocalContentColor provides selectedColor,
         ) {
             Row(
                 modifier =
@@ -321,10 +336,7 @@ internal fun LiquidNavBar(
                         .then(highlight.modifier)
                         .height(56.dp)
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
-                        .graphicsLayer(
-                            colorFilter = ColorFilter.tint(selectedColor),
-                        ),
+                        .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content,
             )
@@ -389,7 +401,9 @@ internal fun LiquidNavBar(
                                 if (dark) {
                                     Color.White.copy(alpha = 0.10f)
                                 } else {
-                                    Color.Black.copy(alpha = 0.10f)
+                                    Color.Black.copy(
+                                        alpha = if (mode == LiquidMode.Clear) 0.06f else 0.10f,
+                                    )
                                 },
                                 alpha = 1f - progress,
                             )
@@ -450,22 +464,18 @@ internal fun RowScope.LiquidNavEntry(
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
-    dark: Boolean,
     interactive: Boolean = true,
 ) {
-    val contentColor = if (dark) Color.White else Color.Black
     LiquidNavItem(onClick = onClick, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =
                 if (contentMode == NavContent.IconOnly) label else null,
             modifier = Modifier.size(28.dp),
-            tint = contentColor,
         )
         if (contentMode == NavContent.IconAndText) {
             Text(
                 text = label,
-                color = contentColor,
                 fontSize = 12.sp,
             )
         }
