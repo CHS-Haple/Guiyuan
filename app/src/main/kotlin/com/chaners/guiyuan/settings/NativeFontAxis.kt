@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Process
+import android.provider.Settings
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -19,6 +20,7 @@ internal object NativeFontAxis {
     const val DEFAULT = "default"
     const val MAX = "max"
     private const val PREFS = "native_font_axis"
+    private const val BOOT = "boot_count"
 
     fun checked(axis: FontWeightAxis?): FontWeightAxis? =
         axis?.takeIf {
@@ -30,8 +32,15 @@ internal object NativeFontAxis {
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    private fun read(prefs: SharedPreferences): FontWeightAxis? =
+    private fun bootCount(context: Context): Int =
         runCatching {
+            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
+        }.getOrDefault(-1)
+
+    private fun read(context: Context, prefs: SharedPreferences): FontWeightAxis? =
+        runCatching {
+            val boot = bootCount(context)
+            if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching null
             checked(
                 FontWeightAxis(
                     min = prefs.getFloat(MIN, Float.NaN),
@@ -42,23 +51,28 @@ internal object NativeFontAxis {
         }.getOrNull()
 
     fun observe(context: Context): Flow<FontWeightAxis?> = callbackFlow {
-        val prefs = prefs(context.applicationContext)
+        val app = context.applicationContext
+        val prefs = prefs(app)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == MIN || key == DEFAULT || key == MAX) trySend(read(prefs))
+            if (key == MIN || key == DEFAULT || key == MAX || key == BOOT) {
+                trySend(read(app, prefs))
+            }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(read(prefs))
+        trySend(read(app, prefs))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
     fun save(context: Context, axis: FontWeightAxis?) {
+        val boot = bootCount(context)
         val editor = prefs(context).edit()
-        if (axis == null) {
-            editor.remove(MIN).remove(DEFAULT).remove(MAX)
+        if (axis == null || boot < 0) {
+            editor.remove(MIN).remove(DEFAULT).remove(MAX).remove(BOOT)
         } else {
             editor.putFloat(MIN, axis.min)
                 .putFloat(DEFAULT, axis.default)
                 .putFloat(MAX, axis.max)
+                .putInt(BOOT, boot)
         }
         editor.apply()
     }
