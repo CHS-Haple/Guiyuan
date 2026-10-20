@@ -103,7 +103,7 @@ private fun LiquidMode.params(): LiquidParams =
             LiquidParams(
                 blur = 2.dp,
                 refractionHeight = 24.dp,
-                refractionAmount = 24.dp,
+                refractionAmount = 16.dp,
                 surfaceAlpha = 0.30f,
             )
     }
