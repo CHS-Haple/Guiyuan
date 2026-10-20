@@ -133,6 +133,7 @@ internal fun AppearanceScreen(
     val liquidModeOptions =
         listOf(
             stringResource(R.string.floating_navigation_liquid_mode_blur),
+            stringResource(R.string.floating_navigation_liquid_mode_default),
             stringResource(R.string.floating_navigation_liquid_mode_clear),
         )
 
