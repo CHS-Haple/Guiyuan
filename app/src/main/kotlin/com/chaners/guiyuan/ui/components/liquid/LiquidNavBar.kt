@@ -101,7 +101,7 @@ private fun LiquidMode.params(): LiquidParams =
             )
         LiquidMode.Clear ->
             LiquidParams(
-                blur = 4.dp,
+                blur = 2.dp,
                 refractionHeight = 24.dp,
                 refractionAmount = 24.dp,
                 surfaceAlpha = 0.20f,
