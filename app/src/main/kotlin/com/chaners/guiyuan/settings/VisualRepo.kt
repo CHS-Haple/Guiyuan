@@ -286,6 +286,20 @@ internal class VisualRepo(context: Context) {
             ).apply()
     }
 
+    fun setDualMobileOffsetY(offset: Float) {
+        val key = if (preferences.readVisualCfg().dualDotStyle == DualDotStyle.DUO) {
+            DUAL_DUO_OFFSET_Y_KEY
+        } else {
+            DUAL_DEFAULT_OFFSET_Y_KEY
+        }
+        if (!preferences.dualSignalEnabled()) return
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(key),
+                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
     fun setCombinedScale(scale: Float) {
         preferences.edit()
             .putFloat(
@@ -565,6 +579,8 @@ internal fun SharedPreferences.readVisualCfg(
         topOffsetY = topOffset,
         wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
+        dualDefaultOffsetY = size(DUAL_DEFAULT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        dualDuoOffsetY = size(DUAL_DUO_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -680,6 +696,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.mobileTypeOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, DUAL_DEFAULT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.dualDefaultOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, DUAL_DUO_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.dualDuoOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,

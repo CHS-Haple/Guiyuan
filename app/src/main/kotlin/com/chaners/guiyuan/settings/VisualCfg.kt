@@ -206,6 +206,8 @@ internal data class VisualCfg(
     val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
     val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val dualDefaultOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val dualDuoOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -223,7 +225,10 @@ internal data class VisualCfg(
         BatteryColorModes(),
     val batteryColorOverrides: BatteryColorOverrides =
         BatteryColorOverrides(),
-)
+) {
+    val dualMobileOffsetY: Float
+        get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+}
 
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
@@ -246,6 +251,10 @@ internal fun VisualCfg.normalized(): VisualCfg =
             wifiOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         mobileTypeOffsetY =
             mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+        dualDefaultOffsetY =
+            dualDefaultOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+        dualDuoOffsetY =
+            dualDuoOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         topChargingIconScale =
             topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,

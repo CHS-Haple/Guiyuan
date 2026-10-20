@@ -24,6 +24,36 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
+        val prefs = MemoryPreferences()
+        val dual = VisualCfg(
+            dualSignal = true,
+            dualDefaultOffsetY = 4f,
+            dualDuoOffsetY = -7f,
+        )
+        prefs.edit().putVisualCfg(dual).apply()
+        val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(4f, network.dualMobileOffsetY, 0f)
+        assertEquals(-7f, network.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+
+        prefs.edit().putVisualCfg(
+            dual.copy(
+                layout = ContentLayout.BATTERY_CENTER,
+                dualDotStyle = DualDotStyle.DUO,
+                dualDefaultOffsetY = -2f,
+                dualDuoOffsetY = 5f,
+            ),
+        ).apply()
+        val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
+        assertEquals(5f, battery.dualMobileOffsetY, 0f)
+        assertEquals(-2f, battery.copy(dualDotStyle = DualDotStyle.DEFAULT).dualMobileOffsetY, 0f)
+        val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(4f, original.dualDefaultOffsetY, 0f)
+        assertEquals(-7f, original.dualDuoOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg(dual = false).dualMobileOffsetY, 0f)
+    }
+
+    @Test
     fun singleAndDualKeepIndependentLayoutsSizesAndColors() {
         val prefs = MemoryPreferences()
         val single = VisualCfg(

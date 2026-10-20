@@ -325,7 +325,7 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setDualSignal,
             )
-            if (visual.dualSignal) {
+            AnimatedPreferenceGroup(visible = visual.dualSignal) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.dual_dot_style_title),
                     items = dualDotStyles,
@@ -336,6 +336,29 @@ internal fun FeaturesScreen(
                     onSelectedIndexChange = { index ->
                         DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
                     },
+                )
+                SliderPreference(
+                    value = visual.dualMobileOffsetY,
+                    onValueChange = visualRepo::setDualMobileOffsetY,
+                    title = stringResource(R.string.dual_mobile_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_signal_cellular_alt,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height_w500,
+                        )
+                    },
+                    valueText = stringResource(
+                        R.string.battery_top_offset_value,
+                        visual.dualMobileOffsetY.roundToInt(),
+                    ),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
                 )
             }
             SliderPreference(

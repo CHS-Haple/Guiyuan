@@ -149,6 +149,7 @@ internal object ConfigBackupFormat {
         profiles.forEach { cfg ->
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
+                cfg.dualDefaultOffsetY, cfg.dualDuoOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             )

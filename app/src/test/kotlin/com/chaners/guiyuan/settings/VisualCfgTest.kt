@@ -12,6 +12,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.wifiScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
+        assertEquals(0f, settings.dualMobileOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -30,6 +31,8 @@ class VisualCfgTest {
                 wifiScale = 9f,
                 wifiOffsetY = -99f,
                 mobileTypeOffsetY = 99f,
+                dualDefaultOffsetY = -99f,
+                dualDuoOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -46,6 +49,10 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)

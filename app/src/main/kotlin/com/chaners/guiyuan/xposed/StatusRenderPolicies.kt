@@ -374,11 +374,16 @@ internal object OuterGeometry {
         fun dualDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (dualDotSpan / (DOT_COUNT - 1))
 
-        fun dualDotY(index: Int, row: Int, style: DualDotStyle = DualDotStyle.DEFAULT): Float {
+        fun dualDotY(
+            index: Int,
+            row: Int,
+            style: DualDotStyle = DualDotStyle.DEFAULT,
+            offsetY: Float = 0f,
+        ): Float {
             val x = if (style == DualDotStyle.DUO) dualDotSpan / 6f else dualDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
-                offset - dualOpticalRise
+                offset - dualOpticalRise - offsetY
         }
     }
 

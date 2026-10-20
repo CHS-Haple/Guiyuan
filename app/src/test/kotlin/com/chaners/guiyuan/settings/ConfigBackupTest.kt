@@ -90,6 +90,29 @@ class ConfigBackupTest {
         }
     }
 
+    @Test fun offsetValuesSurviveBackupsAndRejectInvalidRanges() {
+        val original = sample()
+        val changed = original.copy(visual = original.visual.copy(
+            profiles = original.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) {
+                    cfg.copy(
+                        dualDefaultOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
+                        dualDuoOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
+                    )
+                } else cfg
+            },
+        ))
+        assertEquals(changed, ConfigBackupFormat.decode(ConfigBackupFormat.encode(changed)))
+        val corrupt = changed.copy(visual = changed.visual.copy(
+            profiles = changed.visual.profiles.mapIndexed { index, cfg ->
+                if (index == 2) cfg.copy(dualDuoOffsetY = 11f) else cfg
+            },
+        ))
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(corrupt)
+        }
+    }
+
     @Test fun roundTripKeepsEveryProfileAndActiveMode() {
         val source = sample()
         assertEquals(source, ConfigBackupFormat.decode(ConfigBackupFormat.encode(source)))

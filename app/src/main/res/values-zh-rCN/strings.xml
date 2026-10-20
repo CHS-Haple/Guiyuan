@@ -16,6 +16,7 @@
     <string name="dual_dot_style_title">双排样式</string>
     <string name="dual_dot_style_default">默认</string>
     <string name="dual_dot_style_duo">Duo</string>
+    <string name="dual_mobile_vertical_offset">信号点上下偏移</string>
     <string name="section_battery">电量与充电</string>
     <string name="section_management">配置管理</string>
     <string name="content_layout_title">内容布局</string>

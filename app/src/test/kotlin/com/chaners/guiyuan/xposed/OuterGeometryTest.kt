@@ -148,6 +148,22 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun bothDualStylesApplyTheSameSignedVerticalOffset() {
+        for (scale in TEST_SCALES) {
+            val geometry = OuterGeometry.resolve(scale)
+            for (style in DualDotStyle.entries) {
+                for (row in 0..1) {
+                    for (index in 0..3) {
+                        val original = geometry.dualDotY(index, row, style)
+                        assertEquals(original - 8f, geometry.dualDotY(index, row, style, 8f), 0.0001f)
+                        assertEquals(original + 10f, geometry.dualDotY(index, row, style, -10f), 0.0001f)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun dualRowSourceCoordinatesRemainSharedAcrossWeights() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
