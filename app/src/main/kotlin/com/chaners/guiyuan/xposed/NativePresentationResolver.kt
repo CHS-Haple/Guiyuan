@@ -9,6 +9,11 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
+import java.io.File
+import java.io.FileInputStream
+import java.nio.channels.FileChannel
+import com.chaners.guiyuan.settings.FontAxes
+import com.chaners.guiyuan.settings.NativeFontAxis
 import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
@@ -220,6 +225,30 @@ internal object NativePresentationResolver {
 
         return null
     }
+
+    // The static native glyph face is available even when Wi-Fi hides the mobile type.
+    // Follow SystemUI's own fallback selection; never substitute a guessed app font.
+    fun sandboxMobileTypeface(context: Context): Typeface? = runCatching {
+        val loader = context.classLoader
+        val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
+        val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
+            ?: return@runCatching null
+        val paint = Paint()
+        clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
+            .invoke(null, arrayOf(paint) as Any)
+        if (paint.typeface !== face) return@runCatching null
+        val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
+        val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
+            ?: return@runCatching null
+        val file = File(path)
+        if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) {
+            return@runCatching null
+        }
+        val axis = FileInputStream(file).channel.use { channel ->
+            FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+        }?.let(NativeFontAxis::checked)
+        face.takeIf { axis != null }
+    }.getOrNull()
 
     // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
     private fun nativeFontPath(drawable: Drawable, face: Typeface): String? =

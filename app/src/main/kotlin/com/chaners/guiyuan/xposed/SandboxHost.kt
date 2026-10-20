@@ -20,6 +20,8 @@ internal object SandboxHost {
     private var onChanged: (() -> Unit)? = null
     @Volatile private var current: SandboxLease? = null
     private var resources: PreviewSysUiResources? = null
+    private var staticMobileFaceChecked = false
+    private var staticMobileFace: android.graphics.Typeface? = null
     private val expiry = Runnable { refresh() }
 
     fun bind(prefs: SharedPreferences, changed: () -> Unit) {
@@ -59,6 +61,8 @@ internal object SandboxHost {
         listener = null
         onChanged = null
         resources = null
+        staticMobileFace = null
+        staticMobileFaceChecked = false
     }
 
     fun active(): Boolean = validLease() != null
@@ -80,6 +84,7 @@ internal object SandboxHost {
             }
             val native = PresentationStore.snapshot().mobilePresentation?.networkType
             val verifiedFace = native?.takeIf { it.fontPath != null }?.typeface
+                ?: staticMobileFace(context)
             if (lease.state.dataMobileNetwork ==
                 com.chaners.guiyuan.ui.screens.PreviewMobileNetwork.FIVE_GA &&
                 lease.state.previewCenterSource() ==
@@ -88,6 +93,14 @@ internal object SandboxHost {
             ) return@runCatching null
             lease.state.toRenderModel(resolver, mobileTypeface = verifiedFace)
         }.getOrNull()
+    }
+
+    private fun staticMobileFace(context: Context): android.graphics.Typeface? {
+        if (!staticMobileFaceChecked) {
+            staticMobileFaceChecked = true
+            staticMobileFace = NativePresentationResolver.sandboxMobileTypeface(context)
+        }
+        return staticMobileFace
     }
 
     private fun refresh() {
