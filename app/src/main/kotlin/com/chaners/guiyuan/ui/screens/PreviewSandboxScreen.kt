@@ -273,7 +273,6 @@ internal fun PreviewSandboxScreen(
                         modifier = Modifier
                             .padding(horizontal = 12.dp)
                             .padding(bottom = 12.dp),
-                        insideMargin = PaddingValues(vertical = 8.dp),
                     ) {
                         SwitchPreference(
                             checked = parasiteActive,
@@ -281,7 +280,7 @@ internal fun PreviewSandboxScreen(
                             title = stringResource(R.string.home_preview_parasite_title),
                             summary = stringResource(R.string.home_preview_parasite_summary),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
-                            insideMargin = SandboxPreferenceInsideMargin,
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
                         )
                     }
                 }
