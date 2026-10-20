@@ -30,6 +30,8 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.sandbox.SandboxClient
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -67,6 +69,13 @@ class GyApplication :
 
     @Volatile
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
+
+    private val sandbox = SandboxClient { xposedService }
+    internal val sandboxActive = sandbox.active
+
+    internal fun startSandbox(state: PreviewSandboxUiState) = sandbox.start(state)
+    internal fun updateSandbox(state: PreviewSandboxUiState) = sandbox.update(state)
+    internal fun stopSandbox() = sandbox.stop()
 
     private val handler = Handler(Looper.getMainLooper())
     private val pendingScope = MutableStateFlow<ScopeRequest?>(null)
@@ -143,6 +152,7 @@ class GyApplication :
         handler.post {
             handler.removeCallbacks(bindTimeout)
             if (xposedService !== service) {
+                sandbox.stop()
                 finishScopeRequest(false)
                 finishHotReload()
             }
@@ -156,6 +166,7 @@ class GyApplication :
     override fun onServiceDied(service: XposedService) {
         handler.post {
             if (xposedService === service) {
+                sandbox.stop()
                 xposedService = null
                 lastMirror = null
                 finishScopeRequest(false)
@@ -166,6 +177,7 @@ class GyApplication :
     }
 
     override fun onTerminate() {
+        sandbox.stop()
         diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)

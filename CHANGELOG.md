@@ -9,6 +9,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Added
+- Add an experimental, Home-only steady Preview Sandbox parasite with explicit route/Activity/framework cleanup, a bounded 3-second expiry lease, and an original bacteriophage vector icon. It does not modify real network/battery state and never injects simulated CC/Keyguard/AOD models.
 - Added an optional Duo horizontal eight-dot layout for dual-SIM signals, retaining the original curved layout by default and sharing the existing Control Center transition, with separately saved vertical offsets for the two dual-row styles.
 
 ### Fixed

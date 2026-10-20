@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Typeface
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.PresentationStore
@@ -207,6 +208,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSysUiResources,
+    mobileTypeface: Typeface? = null,
 ): RenderModel {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
@@ -257,6 +259,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     label = dataMobileNetwork.systemLabel,
                     enhanced = false,
                     internet = InternetState.VALIDATED,
+                    typeface = mobileTypeface,
                 )
         }
 

@@ -31,7 +31,9 @@
     <string name="home_preview_sandbox_title">预览沙盒</string>
     <string name="home_preview_switch_light">切换到浅色模式</string>
     <string name="home_preview_switch_dark">切换到深色模式</string>
-    <string name="home_preview_sandbox_summary">所有调整仅用于预览，不影响系统实际状态。</string>
+    <string name="home_preview_sandbox_summary">模拟状态不会修改实际网络或电池数据。</string>
+    <string name="home_preview_parasite_title">寄生模式</string>
+    <string name="home_preview_parasite_summary">实验性功能，仅在普通状态栏显示模拟状态；退出沙盒后自动恢复，不作用于控制中心、锁屏和息屏。</string>
     <string name="home_preview_open_title">预览沙盒</string>
     <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态。</string>
     <string name="home_preview_live_title">实时预览</string>

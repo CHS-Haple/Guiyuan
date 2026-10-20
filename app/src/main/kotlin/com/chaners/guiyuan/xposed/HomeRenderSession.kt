@@ -395,6 +395,7 @@ internal object HomeRenderSession {
                 return
             }
             controlCenterAllowsHome = homeEligible
+            if (SandboxHost.active()) update(StatusStateStore.snapshot())
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderControlCenterEligibility" +
@@ -433,6 +434,7 @@ internal object HomeRenderSession {
                 return
             }
             nativeHandoffActive = active
+            if (SandboxHost.active()) update(StatusStateStore.snapshot())
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderHandoff nativeActive=" + nativeHandoffActive +
@@ -500,8 +502,13 @@ internal object HomeRenderSession {
                 renderController.update(
                     snapshot = snapshot,
                     trace = visibleTrace,
+                    preview = if (
+                        featureEnabled && controlCenterAllowsHome && !nativeHandoffActive
+                    ) SandboxHost.model(probeView.context) else null,
                 )
 
+            // Lease expiry must restore the latest real model even if this native frame is incomplete.
+            if (update.changed) layoutProbe()
             if (!update.candidateComplete) {
                 if (update.retainedStable && !deferredStateLogged) {
                     deferredStateLogged = true
@@ -516,9 +523,6 @@ internal object HomeRenderSession {
             val model = update.model
             if (update.candidateComplete && model != null) {
                 modelReady = true
-            }
-            if (update.changed) {
-                layoutProbe()
             }
             if (model != null && !readyLogged) {
                 readyLogged = true

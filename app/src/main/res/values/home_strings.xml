@@ -31,7 +31,9 @@
     <string name="home_preview_sandbox_title">Preview sandbox</string>
     <string name="home_preview_switch_light">Switch to light mode</string>
     <string name="home_preview_switch_dark">Switch to dark mode</string>
-    <string name="home_preview_sandbox_summary">Changes are for preview only and do not affect the system.</string>
+    <string name="home_preview_sandbox_summary">Simulated states do not modify the real network or battery.</string>
+    <string name="home_preview_parasite_title">Parasite mode</string>
+    <string name="home_preview_parasite_summary">Experimental: shows simulated status only in the regular status bar. Restores on exit; excludes Control Center, lock screen and AOD.</string>
     <string name="home_preview_open_title">Preview sandbox</string>
     <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system.</string>
     <string name="home_preview_live_title">Live preview</string>
