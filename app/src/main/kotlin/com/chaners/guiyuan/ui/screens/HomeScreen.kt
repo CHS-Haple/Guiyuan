@@ -7,6 +7,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
@@ -280,6 +282,17 @@ private fun HomeRuntimeStatusCard(
             animationSpec = tween(StatusColorAnimMillis),
             label = "runtimeContainer",
         )
+    val cardGradient =
+        Brush.linearGradient(
+            colors =
+                listOf(
+                    MiuixTheme.colorScheme.surfaceContainer
+                        .copy(alpha = 0.24f)
+                        .compositeOver(containerColor),
+                    containerColor,
+                    accentColor.copy(alpha = 0.10f).compositeOver(containerColor),
+                ),
+        )
 
     Card(
         modifier = modifier,
@@ -301,6 +314,7 @@ private fun HomeRuntimeStatusCard(
                 Modifier
                     .fillMaxWidth()
                     .height(RuntimeCardHeight)
+                    .background(cardGradient)
                     .padding(horizontal = 22.dp, vertical = 18.dp),
         ) {
             RuntimeStatusMark(
