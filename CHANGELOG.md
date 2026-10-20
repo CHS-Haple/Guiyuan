@@ -11,6 +11,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ### Added
 - Added an optional Duo horizontal eight-dot layout for dual-SIM signals, retaining the original curved layout by default and sharing the existing Control Center transition, with separately saved vertical offsets for the two dual-row styles.
 
+### Changed
+- Updated the clear liquid-glass bottom bar to follow the MIUIX theme container color, with 20% overlay, 4 dp blur and 24 dp refraction height; the blurred finish keeps its existing parameters.
+
 ### Fixed
 - Rejected conflicting per-mode visual settings in imported backups instead of silently overwriting them by layout order.
 - Normalized unsafe control and bidirectional characters in custom battery scheme names before storage, including older saved names, so they do not break configuration backups.

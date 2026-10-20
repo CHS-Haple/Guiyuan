@@ -101,10 +101,10 @@ private fun LiquidMode.params(): LiquidParams =
             )
         LiquidMode.Clear ->
             LiquidParams(
-                blur = 2.dp,
-                refractionHeight = 12.dp,
+                blur = 4.dp,
+                refractionHeight = 24.dp,
                 refractionAmount = 24.dp,
-                surfaceAlpha = 0.18f,
+                surfaceAlpha = 0.20f,
             )
     }
 
@@ -134,12 +134,15 @@ internal fun LiquidNavBar(
 
     val selectedColor = MiuixTheme.colorScheme.primary
     val params = mode.params()
-    val containerColor =
-        if (dark) {
-            Color(0xFF121212).copy(alpha = params.surfaceAlpha)
+    val surfaceColor =
+        if (mode == LiquidMode.Clear) {
+            MiuixTheme.colorScheme.surfaceContainer
+        } else if (dark) {
+            Color(0xFF121212)
         } else {
-            Color(0xFFFAFAFA).copy(alpha = params.surfaceAlpha)
+            Color(0xFFFAFAFA)
         }
+    val containerColor = surfaceColor.copy(alpha = params.surfaceAlpha)
     val tabsBackdrop = rememberLayerBackdrop()
 
     BoxWithConstraints(
