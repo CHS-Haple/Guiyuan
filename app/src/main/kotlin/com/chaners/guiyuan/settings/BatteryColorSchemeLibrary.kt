@@ -646,8 +646,10 @@ internal fun normalizeCustomSchemeName(value: String): String {
             val unsafe =
                 Character.isISOControl(point) ||
                     point in 0xD800..0xDFFF ||
+                    point == 0x061C ||
+                    point in 0x200E..0x200F ||
                     point in 0x2028..0x202E ||
-                    point in 0x2066..0x2069
+                    point in 0x2066..0x206F
             if (unsafe) append(' ') else appendCodePoint(point)
             index += Character.charCount(point)
         }

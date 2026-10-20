@@ -115,6 +115,8 @@ class BatteryColorSchemeLibraryTest {
         assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\nBeta"))
         assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u2028Beta"))
         assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u202EBeta"))
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u200FBeta"))
+        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u061CBeta"))
         assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\uD800Beta"))
         assertEquals("Rocket \uD83D\uDE80", normalizeCustomSchemeName("Rocket \uD83D\uDE80"))
     }
