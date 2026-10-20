@@ -332,7 +332,7 @@ internal fun FeaturesScreen(
                     selectedIndex = visual.dualDotStyle.ordinal,
                     showValue = true,
                     enabled = featureCfg.enabled,
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards, featureCfg.enabled) },
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style, featureCfg.enabled) },
                     onSelectedIndexChange = { index ->
                         DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
                     },
