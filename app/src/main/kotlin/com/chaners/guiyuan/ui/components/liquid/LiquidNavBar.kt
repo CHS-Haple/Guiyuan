@@ -260,7 +260,11 @@ internal fun LiquidNavBar(
                             )
                         },
                         highlight = {
-                            Highlight.Default.copy(alpha = 0.75f)
+                            Highlight.Default.copy(
+                                width = 1.dp,
+                                blurRadius = 0.5.dp,
+                                alpha = 0.75f,
+                            )
                         },
                         shadow = {
                             Shadow(

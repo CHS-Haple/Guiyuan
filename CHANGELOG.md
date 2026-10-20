@@ -21,7 +21,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Changed
 - Shared the content layout across single- and dual-row signal modes, preserving the active layout from existing configurations, and enabled the battery number by default only for unconfigured battery-centered profiles.
-- Aligned both liquid-glass finishes with the MIUIX theme container color: Clear uses 30% overlay and 2 dp blur; Blur keeps 40% overlay and 8 dp blur. Both use 24 dp main-glass refraction height and amount; the selected-content backdrop gradually reaches the same values only on press, with MIUIX content colors, 75% native main-glass edge highlight and a 10 dp shadow (10% light / 20% dark).
+- Aligned both liquid-glass finishes with the MIUIX theme container color: Clear uses 30% overlay and 2 dp blur; Blur keeps 40% overlay and 8 dp blur. Both use 24 dp main-glass refraction height and amount; the selected-content backdrop gradually reaches the same values only on press, with MIUIX content colors, a broader native 1 dp / 0.5 dp feathered main-glass edge highlight at 75% opacity and a 10 dp shadow (10% light / 20% dark).
 - Updated AndroidX Core from 1.17.0 to 1.19.1.
 - Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management (B1111 on dev; not yet promoted to main).
 
