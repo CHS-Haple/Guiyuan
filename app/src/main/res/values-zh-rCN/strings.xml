@@ -136,7 +136,7 @@
     <string name="floating_navigation_liquid_mode">液态玻璃质感</string>
     <string name="floating_navigation_liquid_mode_summary">调整液态玻璃的背景模糊程度</string>
     <string name="floating_navigation_liquid_mode_blur">模糊</string>
-    <string name="floating_navigation_liquid_mode_default">默认</string>
+    <string name="floating_navigation_liquid_mode_balanced">均衡</string>
     <string name="floating_navigation_liquid_mode_clear">通透</string>
     <string name="floating_navigation_content">悬浮导航栏内容</string>
     <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>

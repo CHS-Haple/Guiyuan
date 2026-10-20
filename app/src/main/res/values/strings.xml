@@ -137,7 +137,7 @@
     <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
     <string name="floating_navigation_liquid_mode_summary">Choose how much the glass blurs the background</string>
     <string name="floating_navigation_liquid_mode_blur">Blurred</string>
-    <string name="floating_navigation_liquid_mode_default">Default</string>
+    <string name="floating_navigation_liquid_mode_balanced">Balanced</string>
     <string name="floating_navigation_liquid_mode_clear">Clear</string>
     <string name="floating_navigation_content">Floating navigation content</string>
     <string name="floating_navigation_content_summary">Choose whether floating navigation items show icons only or icons with labels</string>
