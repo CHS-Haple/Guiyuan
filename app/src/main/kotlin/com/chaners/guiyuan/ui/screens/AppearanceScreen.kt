@@ -778,7 +778,6 @@ private fun MiniNavigationPreview(
                                 onClick = {},
                                 icon = icons[index],
                                 label = labels[index],
-                                dark = dark,
                                 interactive = false,
                             )
                         }

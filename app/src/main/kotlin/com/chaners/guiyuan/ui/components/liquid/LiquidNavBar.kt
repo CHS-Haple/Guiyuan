@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -72,6 +71,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.sign
@@ -104,7 +104,7 @@ private fun LiquidMode.params(): LiquidParams =
                 blur = 2.dp,
                 refractionHeight = 24.dp,
                 refractionAmount = 24.dp,
-                surfaceAlpha = 0.20f,
+                surfaceAlpha = 0.30f,
             )
     }
 
@@ -133,6 +133,7 @@ internal fun LiquidNavBar(
     require(tabsCount > 0)
 
     val selectedColor = MiuixTheme.colorScheme.primary
+    val normalColor = MiuixTheme.colorScheme.onSurface
     val params = mode.params()
     val containerColor =
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
@@ -287,13 +288,18 @@ internal fun LiquidNavBar(
                     .fillMaxWidth()
                     .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            content = content,
+            content = {
+                CompositionLocalProvider(LocalContentColor provides normalColor) {
+                    content()
+                }
+            },
         )
 
         CompositionLocalProvider(
             LocalLiquidItemScale provides {
                 lerp(1f, 1.2f, motion.pressProgress)
             },
+            LocalContentColor provides selectedColor,
         ) {
             Row(
                 modifier =
@@ -308,12 +314,11 @@ internal fun LiquidNavBar(
                             backdrop = backdrop,
                             shape = { Capsule() },
                             effects = {
-                                val progress = motion.pressProgress
                                 vibrancy()
                                 blur(params.blur.toPx())
                                 lens(
-                                    params.refractionHeight.toPx() * progress,
-                                    params.refractionAmount.toPx() * progress,
+                                    params.refractionHeight.toPx(),
+                                    params.refractionAmount.toPx(),
                                 )
                             },
                             highlight = {
@@ -326,10 +331,7 @@ internal fun LiquidNavBar(
                         .then(highlight.modifier)
                         .height(56.dp)
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
-                        .graphicsLayer(
-                            colorFilter = ColorFilter.tint(selectedColor),
-                        ),
+                        .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content,
             )
@@ -455,22 +457,18 @@ internal fun RowScope.LiquidNavEntry(
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
-    dark: Boolean,
     interactive: Boolean = true,
 ) {
-    val contentColor = if (dark) Color.White else Color.Black
     LiquidNavItem(onClick = onClick, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =
                 if (contentMode == NavContent.IconOnly) label else null,
             modifier = Modifier.size(28.dp),
-            tint = contentColor,
         )
         if (contentMode == NavContent.IconAndText) {
             Text(
                 text = label,
-                color = contentColor,
                 fontSize = 12.sp,
             )
         }

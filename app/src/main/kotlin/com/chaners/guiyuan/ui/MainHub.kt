@@ -272,7 +272,6 @@ internal fun MainHub(
                                     onClick = { selectPage(index) },
                                     icon = item.icon,
                                     label = item.label,
-                                    dark = dark,
                                 )
                             }
                         }
