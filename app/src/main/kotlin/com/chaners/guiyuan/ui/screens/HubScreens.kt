@@ -94,13 +94,17 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import com.chaners.guiyuan.ui.navigation.AppRoute
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -108,6 +112,7 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -137,8 +142,12 @@ internal fun FeaturesScreen(
         remember(context.applicationContext) {
             NativeFontAxis.observe(context.applicationContext)
         }.collectAsState(initial = null)
+    val verifiedWeightRange = fontAxis?.let { axis ->
+        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
+    }?.takeIf { it.last > it.first }
     val mobileWeightRange =
-        (fontAxis?.min ?: 200f)..(fontAxis?.max ?: 1000f)
+        (verifiedWeightRange?.first ?: 200).toFloat()..
+            (verifiedWeightRange?.last ?: 1000).toFloat()
     val schemeRepo =
         remember(context.applicationContext) {
             BatterySchemeRepo(context.applicationContext)
@@ -195,6 +204,7 @@ internal fun FeaturesScreen(
             }
         }
     }
+    var showWeightDialog by rememberSaveable { mutableStateOf(false) }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -244,6 +254,23 @@ internal fun FeaturesScreen(
                 repository = schemeRepo,
                 onDismiss = {
                     showBatteryColorSheet = false
+                },
+            )
+            IntegerInputDialog(
+                show = showWeightDialog && verifiedWeightRange != null,
+                title = stringResource(R.string.mobile_type_weight),
+                summary = verifiedWeightRange?.let { "${it.first}–${it.last}" }.orEmpty(),
+                value = visual.mobileTypeWeight.coerceIn(
+                    mobileWeightRange.start.roundToInt(),
+                    mobileWeightRange.endInclusive.roundToInt(),
+                ),
+                range = verifiedWeightRange ?: 200..1000,
+                onDismiss = { showWeightDialog = false },
+                onConfirm = { value ->
+                    showWeightDialog = false
+                    verifiedWeightRange?.let { range ->
+                        visualRepo.setMobileTypeWeight(value.coerceIn(range))
+                    }
                 },
             )
             OverlayDialog(
@@ -577,34 +604,50 @@ internal fun FeaturesScreen(
                 magnetThreshold = 0.035f,
                 enabled = featureCfg.enabled,
             )
-            SliderPreference(
-                value = visual.mobileTypeWeight.toFloat().coerceIn(
-                    mobileWeightRange.start, mobileWeightRange.endInclusive,
-                ),
-                onValueChange = { value ->
-                    visualRepo.setMobileTypeWeight(value.roundToInt())
-                },
+            ArrowPreference(
                 title = stringResource(R.string.mobile_type_weight),
                 summary =
-                    if (fontAxis == null) stringResource(R.string.mobile_type_weight_unverified)
+                    if (verifiedWeightRange == null) stringResource(R.string.mobile_type_weight_unverified)
                     else stringResource(
                         R.string.mobile_type_weight_range,
-                        mobileWeightRange.start.roundToInt(),
-                        mobileWeightRange.endInclusive.roundToInt(),
+                        verifiedWeightRange.first,
+                        verifiedWeightRange.last,
                     ),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                valueText =
-                    stringResource(
-                        R.string.integer_value,
-                        visual.mobileTypeWeight.coerceIn(
-                            mobileWeightRange.start.roundToInt(),
-                            mobileWeightRange.endInclusive.roundToInt(),
+                endActions = {
+                    Text(
+                        text = stringResource(
+                            R.string.integer_value,
+                            visual.mobileTypeWeight.coerceIn(
+                                mobileWeightRange.start.roundToInt(),
+                                mobileWeightRange.endInclusive.roundToInt(),
+                            ),
                         ),
-                    ),
-                valueRange = mobileWeightRange,
-                steps = 0,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Edge,
-                enabled = featureCfg.enabled && fontAxis != null,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
+                holdDownState = showWeightDialog,
+                enabled = featureCfg.enabled && verifiedWeightRange != null,
+                onClick = { showWeightDialog = true },
+                bottomAction = {
+                    Slider(
+                        value = visual.mobileTypeWeight.toFloat().coerceIn(
+                            mobileWeightRange.start, mobileWeightRange.endInclusive,
+                        ),
+                        onValueChange = { value ->
+                            visualRepo.setMobileTypeWeight(value.roundToInt())
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        valueRange = mobileWeightRange,
+                        enabled = featureCfg.enabled && verifiedWeightRange != null,
+                        steps = 0,
+                        showKeyPoints = true,
+                        keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat())
+                            .filter { it in mobileWeightRange },
+                        magnetThreshold = 0.01f,
+                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    )
+                },
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
