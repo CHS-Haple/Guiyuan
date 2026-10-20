@@ -84,7 +84,7 @@ class AppearanceTest {
         assertEquals(NavContent.IconOnly, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconOnly, settings.activeNavContent)
-        assertEquals(LiquidMode.Clear, settings.liquidMode)
+        assertEquals(LiquidMode.Blur, settings.liquidMode)
     }
 
     @Test
@@ -210,9 +210,9 @@ class AppearanceTest {
     }
 
     @Test
-    fun liquidModeDefaultsToClearAndRoundTrips() {
-        assertEquals(LiquidMode.Clear, decodeLiquidMode(null))
-        assertEquals(LiquidMode.Clear, decodeLiquidMode("Unknown"))
+    fun liquidModeDefaultsToBlurAndRoundTrips() {
+        assertEquals(LiquidMode.Blur, decodeLiquidMode(null))
+        assertEquals(LiquidMode.Blur, decodeLiquidMode("Unknown"))
         assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur"))
         assertEquals(LiquidMode.Clear, decodeLiquidMode("Clear"))
     }

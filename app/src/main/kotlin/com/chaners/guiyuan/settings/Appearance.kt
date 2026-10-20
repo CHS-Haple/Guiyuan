@@ -77,7 +77,7 @@ internal data class Appearance(
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconOnly,
     val liquidContent: NavContent = NavContent.IconAndText,
-    val liquidMode: LiquidMode = LiquidMode.Clear,
+    val liquidMode: LiquidMode = LiquidMode.Blur,
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
 ) {
@@ -125,7 +125,7 @@ internal fun decodeNavContent(
 internal fun decodeLiquidMode(storedMode: String?): LiquidMode =
     LiquidMode.entries
         .firstOrNull { it.name == storedMode }
-        ?: LiquidMode.Clear
+        ?: LiquidMode.Blur
 
 internal fun uiScalePercent(value: Int?): Int = (value ?: 100).coerceIn(80, 110)
 

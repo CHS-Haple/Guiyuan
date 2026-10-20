@@ -13,9 +13,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.util.fastCoerceIn
-import com.kyant.backdrop.RuntimeShader
-import com.kyant.backdrop.asComposeShader
-import com.kyant.backdrop.isRuntimeShaderSupported
+import android.graphics.RuntimeShader
+import androidx.compose.ui.graphics.toArgb
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -58,14 +58,14 @@ half4 main(float2 coord) {
                 val runtimeShader = shader
                 if (runtimeShader != null) {
                     drawRect(
-                        Color.White.copy(alpha = 0.08f * progress),
+                        Color.White.copy(alpha = 0.06f * progress),
                         blendMode = BlendMode.Plus,
                     )
                     runtimeShader.apply {
                         val highlightPos = position(size, positionAnim.value)
                         setFloatUniform("size", size.width, size.height)
-                        setColorUniform("color", Color.White.copy(alpha = 0.15f * progress))
-                        setFloatUniform("radius", size.minDimension * 1.5f)
+                        setColorUniform("color", Color.White.copy(alpha = 0.12f * progress).toArgb())
+                        setFloatUniform("radius", size.minDimension * 1.2f)
                         setFloatUniform(
                             "position",
                             highlightPos.x.fastCoerceIn(0f, size.width),
@@ -73,7 +73,7 @@ half4 main(float2 coord) {
                         )
                     }
                     drawRect(
-                        ShaderBrush(runtimeShader.asComposeShader()),
+                        ShaderBrush(runtimeShader),
                         blendMode = BlendMode.Plus,
                     )
                 } else {

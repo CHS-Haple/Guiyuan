@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,6 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,11 +39,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -54,18 +59,16 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
-import com.kyant.shapes.Capsule
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.highlight.LightPosition
+import top.yukonga.miuix.kmp.blur.highlight.LightSource
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -73,11 +76,73 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sign
+import kotlin.math.sin
 
-// Adapted from AndroidLiquidGlass catalog's LiquidBottomTabs/LiquidBottomTab
-// (Apache-2.0). Guiyuan only supplies its own tab content and app theme state.
+// Liquid optics adapted from the MIUIX Liquid Glass example (Apache-2.0).
+// Guiyuan retains navigation content, gestures and fallback ownership.
+private val glassHighlight = Highlight(
+    width = 1.dp,
+    alpha = 1f,
+    style = BloomStroke(
+        color = Color.White.copy(alpha = 0.12f),
+        innerBlurRadius = 2.dp,
+        primaryLight = LightSource(
+            position = LightPosition(0.5f, -0.3f, -0.05f),
+            color = Color.White,
+            intensity = 1f,
+        ),
+        secondaryLight = LightSource(
+            position = LightPosition(0.5f, 0.8f, -0.5f),
+            color = Color.White,
+            intensity = 0.4f,
+        ),
+        dualPeak = true,
+    ),
+)
+
+private const val GRAVITY_THRESHOLD_SQ = 0.01f
+private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
+
+@Composable
+private fun rememberGravityAngle(interactive: Boolean): State<Float> {
+    if (!interactive) return remember { mutableFloatStateOf((-PI / 2).toFloat()) }
+    // MIUIX owns the sensor listener; static previews do not register it.
+    val tilt = rememberDeviceTilt()
+    return remember(tilt) {
+        derivedStateOf {
+            val gx = tilt.value.gravityX
+            val gy = tilt.value.gravityY
+            if (gx * gx + gy * gy > GRAVITY_THRESHOLD_SQ) {
+                (atan2(gy, gx) / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+            } else {
+                (-PI / 2).toFloat()
+            }
+        }
+    }
+}
+
+private fun litHighlight(angle: Float, offsetDegrees: Float): Highlight {
+    val style = glassHighlight.style as BloomStroke
+    val rad = angle + (offsetDegrees * PI / 180.0).toFloat()
+    return glassHighlight.copy(
+        style = style.copy(
+            primaryLight = style.primaryLight.copy(
+                position = LightPosition(
+                    0.5f + cos(rad),
+                    0.7f + sin(rad),
+                    style.primaryLight.position.z,
+                ),
+            ),
+        ),
+    )
+}
+
 internal object LiquidNavSpec {
     val height = 64.dp
     val sidePadding = 36.dp
@@ -94,7 +159,7 @@ private fun LiquidMode.params(): LiquidParams =
     when (this) {
         LiquidMode.Blur ->
             LiquidParams(
-                blur = 8.dp,
+                blur = 4.dp,
                 refractionHeight = 24.dp,
                 refractionAmount = 24.dp,
                 surfaceAlpha = 0.40f,
@@ -103,7 +168,7 @@ private fun LiquidMode.params(): LiquidParams =
             LiquidParams(
                 blur = 2.dp,
                 refractionHeight = 24.dp,
-                refractionAmount = 16.dp,
+                refractionAmount = 24.dp,
                 surfaceAlpha = 0.30f,
             )
     }
@@ -125,7 +190,7 @@ internal fun LiquidNavBar(
     backdrop: Backdrop,
     tabsCount: Int,
     dark: Boolean,
-    mode: LiquidMode = LiquidMode.Clear,
+    mode: LiquidMode = LiquidMode.Blur,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
@@ -138,6 +203,14 @@ internal fun LiquidNavBar(
     val containerColor =
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
     val tabsBackdrop = rememberLayerBackdrop()
+    val pillShape = remember { CircleShape }
+    val gravity = rememberGravityAngle(interactive)
+    val panelHighlight = remember(gravity) {
+        derivedStateOf { litHighlight(gravity.value, -45f) }
+    }
+    val pillHighlight = remember(gravity) {
+        derivedStateOf { litHighlight(gravity.value, 90f) }
+    }
 
     BoxWithConstraints(
         modifier = modifier,
@@ -248,30 +321,24 @@ internal fun LiquidNavBar(
                     .graphicsLayer {
                         translationX = panelOffset
                     }
+                    .dropShadow(
+                        shape = pillShape,
+                        shadow = Shadow(
+                            radius = 10.dp,
+                            color = Color.Black,
+                            alpha = if (dark) 0.20f else 0.10f,
+                        ),
+                    )
                     .drawBackdrop(
                         backdrop = backdrop,
-                        shape = { Capsule() },
+                        shape = { pillShape },
                         effects = {
+                            padding = maxOf(padding, 40.dp.toPx())
                             vibrancy()
-                            blur(params.blur.toPx())
-                            lens(
-                                params.refractionHeight.toPx(),
-                                params.refractionAmount.toPx(),
-                            )
+                            blur(params.blur.toPx(), params.blur.toPx())
+                            lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
                         },
-                        highlight = {
-                            Highlight.Default.copy(
-                                width = 1.dp,
-                                blurRadius = 0.5.dp,
-                                alpha = 0.75f,
-                            )
-                        },
-                        shadow = {
-                            Shadow(
-                                radius = 10.dp,
-                                color = Color.Black.copy(alpha = if (dark) 0.20f else 0.10f),
-                            )
-                        },
+                        highlight = { panelHighlight.value.copy(alpha = 0.75f) },
                         layerBlock = {
                             val progress = motion.pressProgress
                             val scale =
@@ -316,22 +383,13 @@ internal fun LiquidNavBar(
                         }
                         .drawBackdrop(
                             backdrop = backdrop,
-                            shape = { Capsule() },
+                            shape = { pillShape },
                             effects = {
-                                val progress = motion.pressProgress
                                 vibrancy()
-                                blur(params.blur.toPx())
-                                lens(
-                                    params.refractionHeight.toPx() * progress,
-                                    params.refractionAmount.toPx() * progress,
-                                )
+                                blur(params.blur.toPx(), params.blur.toPx())
+                                lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
                             },
-                            highlight = {
-                                Highlight.Default.copy(alpha = motion.pressProgress)
-                            },
-                            onDrawSurface = {
-                                drawRect(containerColor)
-                            },
+                            onDrawSurface = { drawRect(containerColor) },
                         )
                         .then(highlight.modifier)
                         .height(56.dp)
@@ -360,28 +418,17 @@ internal fun LiquidNavBar(
                     .then(if (interactive) motion.modifier else Modifier)
                     .drawBackdrop(
                         backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
-                        shape = { Capsule() },
+                        shape = { pillShape },
                         effects = {
                             val progress = motion.pressProgress
                             lens(
                                 10.dp.toPx() * progress,
                                 14.dp.toPx() * progress,
-                                chromaticAberration = true,
+                                depthEffect = true,
+                                chromaticAberration = 0.5f,
                             )
                         },
-                        highlight = {
-                            Highlight.Default.copy(alpha = motion.pressProgress)
-                        },
-                        shadow = {
-                            Shadow(alpha = motion.pressProgress)
-                        },
-                        innerShadow = {
-                            val progress = motion.pressProgress
-                            InnerShadow(
-                                radius = 8.dp * progress,
-                                alpha = progress,
-                            )
-                        },
+                        highlight = { pillHighlight.value.copy(alpha = motion.pressProgress) },
                         layerBlock = {
                             scaleX = motion.scaleX
                             scaleY = motion.scaleY
@@ -401,9 +448,7 @@ internal fun LiquidNavBar(
                                 if (dark) {
                                     Color.White.copy(alpha = 0.10f)
                                 } else {
-                                    Color.Black.copy(
-                                        alpha = if (mode == LiquidMode.Clear) 0.06f else 0.10f,
-                                    )
+                                    Color.Black.copy(alpha = 0.10f)
                                 },
                                 alpha = 1f - progress,
                             )
@@ -412,6 +457,13 @@ internal fun LiquidNavBar(
                             )
                         },
                     )
+                    .innerShadow(shape = pillShape) {
+                        InnerShadow(
+                            radius = 8.dp * motion.pressProgress,
+                            color = Color.Black.copy(alpha = 0.15f),
+                            alpha = motion.pressProgress,
+                        )
+                    }
                     .height(56.dp)
                     .fillMaxWidth(1f / tabsCount),
         )
@@ -432,7 +484,7 @@ internal fun RowScope.LiquidNavItem(
     Column(
         modifier =
             modifier
-                .clip(Capsule())
+                .clip(CircleShape)
                 .then(
                     if (interactive) {
                         Modifier.clickable(
