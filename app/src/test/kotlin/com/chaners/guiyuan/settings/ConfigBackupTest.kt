@@ -128,10 +128,10 @@ class ConfigBackupTest {
         assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
     }
 
-    @Test fun mobileWeight200RoundTripsInEveryProfile() {
+    @Test fun mobileWeight150RoundTripsInEveryProfile() {
         val archive = sample().let { source ->
             source.copy(visual = source.visual.copy(
-                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 200) },
+                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 150) },
             ))
         }
         assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
@@ -143,7 +143,7 @@ class ConfigBackupTest {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
         }
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":199"))
+            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":0"))
         }
         assertThrows(IllegalArgumentException::class.java) {
             ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":\"1400\""))
@@ -174,10 +174,10 @@ class ConfigBackupTest {
         assertEquals(1000, boundary.visual.profiles.first().topTextWeight)
     }
 
-    @Test fun batteryWeight200RoundTripsInEveryProfile() {
+    @Test fun batteryWeight150RoundTripsInEveryProfile() {
         val archive = sample().let { source ->
             source.copy(visual = source.visual.copy(
-                profiles = source.visual.profiles.map { it.copy(topTextWeight = 200) },
+                profiles = source.visual.profiles.map { it.copy(topTextWeight = 150) },
             ))
         }
         assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
@@ -185,13 +185,13 @@ class ConfigBackupTest {
 
     @Test fun batteryThicknessImportRejectsMalformedAndOutOfRangeValues() {
         val json = ConfigBackupFormat.encode(sample())
-        for (value in listOf("199", "1401", "-1", "2147483647", "600.5", "\"1400\"", "null")) {
+        for (value in listOf("0", "1401", "-1", "2147483647", "600.5", "\"1400\"", "null")) {
             assertThrows(Exception::class.java) {
                 ConfigBackupFormat.decode(json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":$value"))
             }
         }
         val invalid = sample()
-        for (weight in listOf(199, 1001, 1401, 5000)) {
+        for (weight in listOf(0, 1001, 1401, 5000)) {
             assertThrows(IllegalArgumentException::class.java) {
                 ConfigBackupFormat.validate(invalid.copy(
                     visual = invalid.visual.copy(

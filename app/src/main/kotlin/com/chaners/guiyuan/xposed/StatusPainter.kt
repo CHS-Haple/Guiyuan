@@ -25,7 +25,9 @@ import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.WifiOpticalReference
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -40,7 +42,11 @@ internal class StatusPainter(
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mobileTextSource: Typeface? = null
-    private val mobileTextSamples = HashMap<Int, Paint>(128)
+    private val mobileTextSamples =
+        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
+                size > 128
+        }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -59,7 +65,11 @@ internal class StatusPainter(
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val batteryTextSamples = HashMap<Int, Paint>(64)
+    private val batteryTextSamples =
+        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
+                size > 128
+        }
     private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
@@ -2125,8 +2135,10 @@ internal class StatusPainter(
         source: Typeface,
         weight: Int,
         samples: MutableMap<Int, Paint>,
+        step: Int,
     ): Paint {
-        val sample = ((weight.coerceIn(1, 1000) + 5) / 10 * 10).coerceIn(1, 1000)
+        val valid = weight.coerceIn(1, 1000)
+        val sample = ((valid + step / 2) / step * step).coerceIn(1, 1000)
         return samples.getOrPut(sample) {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
@@ -2147,13 +2159,18 @@ internal class StatusPainter(
         progress: Float,
         textSize: Float,
     ) {
-        val source = Typeface.DEFAULT
+        val nativeFont = if (preview) null else SysUiBatterySource.currentNumberFont()
+        val source = nativeFont?.face ?: Typeface.DEFAULT
         if (batteryTextSource != source) {
             batteryTextSource = source
             batteryTextSamples.clear()
         }
-        // Transition callers resolve the weight once; this function only draws that sample.
-        batteryTextPaint.set(weightedPaint(source, weight, batteryTextSamples))
+        val sampledWeight = nativeFont?.axis?.let { axis ->
+            weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
+        } ?: weight.coerceIn(200, 1000)
+        batteryTextPaint.set(
+            weightedPaint(source, sampledWeight, batteryTextSamples, step = if (nativeFont == null) 10 else 1),
+        )
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         batteryTextPaint.isFakeBoldText =
@@ -3098,7 +3115,7 @@ internal class StatusPainter(
             mobileTextSource = source
             mobileTextSamples.clear()
         }
-        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples))
+        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1))
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         mobileTypePaint.isFakeBoldText =

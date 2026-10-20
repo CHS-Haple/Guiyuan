@@ -28,6 +28,12 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".settings.NativeFontAxisReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.STATUS_BAR" />
+
         <activity-alias
             android:name=".LauncherAlias"
             android:enabled="true"
