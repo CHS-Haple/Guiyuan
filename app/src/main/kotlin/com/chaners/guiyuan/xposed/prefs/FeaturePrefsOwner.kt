@@ -8,6 +8,9 @@ import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
 import java.util.concurrent.atomic.AtomicReference
@@ -93,5 +96,8 @@ internal object FeaturePrefsOwner {
             enabled = source.getBoolean(FEATURE_ENABLED_KEY, true),
             keyguard = source.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
             aod = source.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
+            lowBatteryThreshold = validLowBatteryThreshold(
+                source.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
+            ),
         )
 }

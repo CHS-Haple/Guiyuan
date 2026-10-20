@@ -13,6 +13,9 @@ import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
@@ -346,6 +349,9 @@ class GyApplication :
                         keyguard =
                             featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
                         aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
+                        lowBatteryThreshold = validLowBatteryThreshold(
+                            featurePrefs.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
+                        ),
                     ),
                 changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
                 visual = visualPrefs.readVisualCfg(),
@@ -363,6 +369,7 @@ class GyApplication :
                 .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
                 .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
                 .putBoolean(FEATURE_AOD_KEY, snapshot.feature.aod)
+                .putInt(LOW_BATTERY_THRESHOLD_KEY, snapshot.feature.lowBatteryThreshold)
                 .putLong(FEATURE_CHANGED_AT_NS_KEY, snapshot.changedAtNs)
                 .putVisualCfg(snapshot.visual)
             check(editor.commit()) { "remote preference commit failed" }

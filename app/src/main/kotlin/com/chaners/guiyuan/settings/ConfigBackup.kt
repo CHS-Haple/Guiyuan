@@ -117,6 +117,9 @@ internal object ConfigBackupFormat {
     fun validate(backup: ConfigBackup) {
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
+        require(backup.feature.lowBatteryThreshold in LOW_BATTERY_THRESHOLD_MIN..LOW_BATTERY_THRESHOLD_MAX) {
+            "Invalid low battery threshold"
+        }
         require(backup.appVersion.length in 1..80 && safeText(backup.appVersion)) {
             "Invalid appVersion"
         }

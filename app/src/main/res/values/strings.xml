@@ -339,6 +339,8 @@
     <string name="diagnostic_report_share_failed">Could not share the diagnostic report</string>
     <string name="back">Back</string>
 
+    <string name="low_battery_threshold">Low battery threshold</string>
+    <string name="low_battery_threshold_summary">Use low battery colors below this level</string>
     <string name="battery_colors">Battery colors</string>
     <string name="battery_color_scheme_summary">Scheme: %1$s</string>
     <string name="battery_color_scheme">Color scheme</string>

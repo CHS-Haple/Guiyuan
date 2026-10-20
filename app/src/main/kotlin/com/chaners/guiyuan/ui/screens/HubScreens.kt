@@ -82,6 +82,9 @@ import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MIN
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MAX
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
@@ -678,6 +681,21 @@ internal fun FeaturesScreen(
             )
         }
         Section(R.string.section_battery) {
+            SliderPreference(
+                value = featureCfg.lowBatteryThreshold.toFloat(),
+                onValueChange = { featureRepo.setLowBatteryThreshold(it.roundToInt()) },
+                title = stringResource(R.string.low_battery_threshold),
+                summary = stringResource(R.string.low_battery_threshold_summary),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_alert, featureCfg.enabled) },
+                valueText = stringResource(R.string.percent_value, featureCfg.lowBatteryThreshold),
+                valueRange = LOW_BATTERY_THRESHOLD_MIN.toFloat()..LOW_BATTERY_THRESHOLD_MAX.toFloat(),
+                steps = LOW_BATTERY_THRESHOLD_MAX - LOW_BATTERY_THRESHOLD_MIN - 1,
+                showKeyPoints = true,
+                keyPoints = listOf(LOW_BATTERY_THRESHOLD_DEFAULT.toFloat()),
+                magnetThreshold = 0f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                enabled = featureCfg.enabled,
+            )
             BatteryColorPreference(
                 library = schemeLibrary,
                 enabled = featureCfg.enabled,

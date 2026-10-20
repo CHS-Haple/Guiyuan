@@ -153,6 +153,10 @@ internal object SysUiBatterySource {
                 charging = charging,
                 semanticState = semanticState,
                 systemSemanticColor = systemSemanticColor,
+                lowSystemColor =
+                    if (miuiOptimizationEnabled) {
+                        runCatching { lowColorField.getInt(iconView) }.getOrNull()
+                    } else null,
                 chargingIconResId =
                     if (charging) {
                         readChargingIconId(iconView) ?: lastChargingIconResId

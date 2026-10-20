@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
+import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
@@ -93,8 +94,12 @@ internal fun PreviewSandboxScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val renderModel = remember(state, resourceResolver, LocalConfiguration.current) {
-        state.toRenderModel(resourceResolver)
+    val featureRepo = remember(context.applicationContext) {
+        FeatureRepo(context.applicationContext)
+    }
+    val feature by featureRepo.settings.collectAsState(initial = featureRepo.current())
+    val renderModel = remember(state, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
+        state.toRenderModel(resourceResolver, lowBatteryThreshold = feature.lowBatteryThreshold)
     }
 
     val networkModeOptions =

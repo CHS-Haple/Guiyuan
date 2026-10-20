@@ -4234,6 +4234,7 @@ class GyModule : XposedModule() {
             homeAodFallback = HomeAodFallback.NONE
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
+        if (cfg.enabled) HomeRenderSession.onPresentationStateChanged()
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
         CcRenderSession.onFeatureCfgChanged(cfg)
 

@@ -10,6 +10,7 @@ import com.chaners.guiyuan.sandbox.SANDBOX_LEASE_MS
 import com.chaners.guiyuan.sandbox.SandboxLease
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
+import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.ui.screens.previewCenterSource
 
 // Temporary Home presentation only. Native state continues updating underneath.
@@ -91,7 +92,12 @@ internal object SandboxHost {
                 com.chaners.guiyuan.ui.screens.PreviewCenterSource.MOBILE &&
                 verifiedFace == null
             ) return@runCatching null
-            lease.state.toRenderModel(resolver, mobileTypeface = verifiedFace)
+            lease.state.toRenderModel(
+                resolver,
+                mobileTypeface = verifiedFace,
+                lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
+                nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
+            )
         }.getOrNull()
     }
 
