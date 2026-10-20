@@ -8,6 +8,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Added
+- Added an optional Duo horizontal eight-dot layout for dual-SIM signals, retaining the original curved layout by default and sharing the existing Control Center transition.
+
 ### Fixed
 - Rejected conflicting per-mode visual settings in imported backups instead of silently overwriting them by layout order.
 - Normalized unsafe control and bidirectional characters in custom battery scheme names before storage, including older saved names, so they do not break configuration backups.

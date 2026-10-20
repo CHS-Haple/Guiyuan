@@ -8,6 +8,22 @@ import org.junit.Test
 
 class VisualPersistenceTest {
     @Test
+    fun duoStyleIsModeWideAndSurvivesLayoutSwitches() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
+            .apply()
+        for (layout in ContentLayout.entries) {
+            assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = true, layoutOverride = layout).dualDotStyle)
+            assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = false, layoutOverride = layout).dualDotStyle)
+        }
+        prefs.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), "invalid")
+            .apply()
+        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+    }
+
+    @Test
     fun singleAndDualKeepIndependentLayoutsSizesAndColors() {
         val prefs = MemoryPreferences()
         val single = VisualCfg(

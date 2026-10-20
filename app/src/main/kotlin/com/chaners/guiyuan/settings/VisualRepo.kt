@@ -150,6 +150,12 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
     }
 
+    fun setDualDotStyle(style: DualDotStyle) {
+        preferences.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), style.persistedValue)
+            .apply()
+    }
+
     fun setLayout(layout: ContentLayout) {
         preferences
             .edit()
@@ -543,6 +549,9 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
+        dualDotStyle = DualDotStyle.fromPersisted(
+            getString(visualModeKey(dual, DUAL_DOT_STYLE_KEY), null),
+        ),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, false),
@@ -629,6 +638,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putString(
         visualModeKey(normalized.dualSignal, CONTENT_LAYOUT_KEY),
         layout.persistedValue,
+    ).putString(
+        visualModeKey(normalized.dualSignal, DUAL_DOT_STYLE_KEY),
+        normalized.dualDotStyle.persistedValue,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
         normalized.mobileFollowsBatteryColor,

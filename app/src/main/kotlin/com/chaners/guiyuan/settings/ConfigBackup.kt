@@ -138,7 +138,8 @@ internal object ConfigBackupFormat {
         require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
             val first = sameMode.first()
             sameMode.all { cfg ->
-                cfg.fillFollowsRetract == first.fillFollowsRetract &&
+                cfg.dualDotStyle == first.dualDotStyle &&
+                    cfg.fillFollowsRetract == first.fillFollowsRetract &&
                     cfg.ccTintTransition == first.ccTintTransition &&
                     cfg.batteryColorPreset == first.batteryColorPreset &&
                     cfg.batteryColorModes == first.batteryColorModes &&

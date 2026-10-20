@@ -79,6 +79,7 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -146,6 +147,10 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
+    val dualDotStyles = listOf(
+        stringResource(R.string.dual_dot_style_default),
+        stringResource(R.string.dual_dot_style_duo),
+    )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
     }
@@ -320,6 +325,19 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setDualSignal,
             )
+            if (visual.dualSignal) {
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.dual_dot_style_title),
+                    items = dualDotStyles,
+                    selectedIndex = visual.dualDotStyle.ordinal,
+                    showValue = true,
+                    enabled = featureCfg.enabled,
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards, featureCfg.enabled) },
+                    onSelectedIndexChange = { index ->
+                        DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
+                    },
+                )
+            }
             SliderPreference(
                 value = visual.combinedScale,
                 onValueChange = visualRepo::setCombinedScale,

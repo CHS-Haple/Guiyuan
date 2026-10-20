@@ -18,6 +18,17 @@ internal enum class ContentLayout(
 }
 
 @Serializable
+internal enum class DualDotStyle(val persistedValue: String) {
+    DEFAULT("default"),
+    DUO("duo");
+
+    companion object {
+        fun fromPersisted(value: String?): DualDotStyle =
+            entries.firstOrNull { it.persistedValue == value } ?: DEFAULT
+    }
+}
+
+@Serializable
 internal enum class BatteryColorPreset(
     val persistedValue: String,
 ) {
@@ -181,6 +192,7 @@ internal object IosStyleBatteryPalette {
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
+    val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = false,

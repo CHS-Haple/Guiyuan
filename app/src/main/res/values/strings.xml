@@ -14,6 +14,9 @@
     <string name="section_network">Network &amp; signal</string>
     <string name="dual_signal_title">Dual-row signal</string>
     <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nRemember settings separately for each layout</string>
+    <string name="dual_dot_style_title">Dual-row style</string>
+    <string name="dual_dot_style_default">Default</string>
+    <string name="dual_dot_style_duo">Duo</string>
     <string name="section_battery">Battery &amp; charging</string>
     <string name="section_management">Configuration management</string>
     <string name="content_layout_title">Content layout</string>
