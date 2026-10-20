@@ -292,7 +292,6 @@ internal fun PreviewSandboxScreen(
                             Modifier
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
-                        insideMargin = PaddingValues(vertical = 8.dp),
                     ) {
                         TabRowWithContour(
                             tabs = networkModeOptions,
@@ -306,7 +305,7 @@ internal fun PreviewSandboxScreen(
                                     .fillMaxWidth()
                                     .align(Alignment.CenterHorizontally)
                                     .padding(horizontal = 6.dp)
-                                    .padding(bottom = 6.dp),
+                                    .padding(top = 8.dp, bottom = 6.dp),
                         )
 
                         SwitchPreference(
@@ -490,7 +489,7 @@ internal fun PreviewSandboxScreen(
                             title = stringResource(R.string.home_preview_airplane_title),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
-                            insideMargin = SandboxPreferenceInsideMargin,
+                            insideMargin = PaddingValues(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 18.dp),
                         )
                     }
                 }
