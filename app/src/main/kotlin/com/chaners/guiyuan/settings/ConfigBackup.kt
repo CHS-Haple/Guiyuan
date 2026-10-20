@@ -134,6 +134,17 @@ internal object ConfigBackupFormat {
             profiles.size == expected.size &&
                 profiles.map { it.dualSignal to it.layout }.toSet() == expected
         ) { "Missing or duplicated visual profile" }
+        // These settings have one stored value per SIM mode, shared by both layouts.
+        require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
+            val first = sameMode.first()
+            sameMode.all { cfg ->
+                cfg.fillFollowsRetract == first.fillFollowsRetract &&
+                    cfg.ccTintTransition == first.ccTintTransition &&
+                    cfg.batteryColorPreset == first.batteryColorPreset &&
+                    cfg.batteryColorModes == first.batteryColorModes &&
+                    cfg.batteryColorOverrides == first.batteryColorOverrides
+            }
+        }) { "Conflicting mode-wide visual settings" }
         profiles.forEach { cfg ->
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,

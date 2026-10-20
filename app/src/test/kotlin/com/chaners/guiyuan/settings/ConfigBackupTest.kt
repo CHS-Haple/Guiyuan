@@ -25,6 +25,45 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun rejectsConflictingModeWideValues() {
+        val source = sample()
+        val first = source.visual.profiles.first()
+        val altered = listOf(
+            first.copy(fillFollowsRetract = false),
+            first.copy(ccTintTransition = false),
+            first.copy(batteryColorPreset = BatteryColorPreset.IOS_STYLE),
+            first.copy(batteryColorModes = first.batteryColorModes.copy(charging = BatteryColorMode.CUSTOM)),
+            first.copy(batteryColorOverrides = first.batteryColorOverrides.copy(charging = 0xFF123456.toInt())),
+        )
+        altered.forEach { cfg ->
+            val invalid = source.copy(
+                visual = source.visual.copy(profiles = listOf(cfg) + source.visual.profiles.drop(1)),
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.validate(invalid)
+            }
+        }
+        val json = ConfigBackupFormat.encode(source)
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(
+                json.replaceFirst("\"fillFollowsRetract\":true", "\"fillFollowsRetract\":false"),
+            )
+        }
+    }
+
+    @Test fun keepsSingleAndDualModeValuesIndependent() {
+        val source = sample()
+        val independent = source.copy(
+            visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) cfg.copy(
+                    fillFollowsRetract = false,
+                    batteryColorPreset = BatteryColorPreset.IOS_STYLE,
+                ) else cfg
+            }),
+        )
+        assertEquals(independent, ConfigBackupFormat.decode(ConfigBackupFormat.encode(independent)))
+    }
+
     @Test fun roundTripKeepsEveryProfileAndActiveMode() {
         val source = sample()
         assertEquals(source, ConfigBackupFormat.decode(ConfigBackupFormat.encode(source)))
