@@ -110,6 +110,7 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var fontAxisReported = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         inSettings = param.processName == SETTINGS_PACKAGE
@@ -1824,12 +1825,11 @@ class GyModule : XposedModule() {
 
     private fun reportFontAxis(networkType: NativePresentationResolver.NetworkType?) {
         if (Build.VERSION.SDK_INT < 34) return
-        val face = networkType?.typeface ?: return
         val host = SysUiHostRegistry.current() as? View ?: return
-        if (reportedFont === face) return
-        reportedFont = face
+        val face = networkType?.typeface
+        if (fontAxisReported && reportedFont === face) return
 
-        val axis = networkType.fontPath?.let { path ->
+        val axis = networkType?.fontPath?.let { path ->
             runCatching {
                 val file = File(path)
                 if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) null
@@ -1848,6 +1848,9 @@ class GyModule : XposedModule() {
         runCatching {
             val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
             host.context.sendBroadcast(intent, null, options)
+        }.onSuccess {
+            reportedFont = face
+            fontAxisReported = true
         }.onFailure { Log.w(TAG, "Unable to report verified native font axis", it) }
     }
 
