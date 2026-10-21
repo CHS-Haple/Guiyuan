@@ -1,12 +1,12 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import java.util.concurrent.atomic.AtomicReference
-import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.NativeFontAxis
-import java.util.concurrent.atomic.AtomicLong
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.readVisualCfg
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 internal object VisualPrefsOwner {
     private data class State(
@@ -30,7 +30,16 @@ internal object VisualPrefsOwner {
 
         val token = Any()
         val initial = resolve(source)
-        val lastRequest = AtomicLong(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+        val lastRequest = AtomicLong(0L)
+
+        // A remote request may already exist before this SystemUI binding is installed.
+        fun deliverAxisRequest(request: Long) {
+            if (request > 0L && lastRequest.getAndSet(request) != request &&
+                state.get().token === token
+            ) {
+                onAxisRequest()
+            }
+        }
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
@@ -42,10 +51,7 @@ internal object VisualPrefsOwner {
                     return@OnSharedPreferenceChangeListener
                 }
                 if (key == NativeFontAxis.REQUEST_KEY || key == null) {
-                    val request = changed.getLong(NativeFontAxis.REQUEST_KEY, 0L)
-                    if (request > 0L && lastRequest.getAndSet(request) != request) {
-                        if (state.get().token === token) onAxisRequest()
-                    }
+                    deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
                 }
                 if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
                 val next = resolve(changed)
@@ -63,6 +69,7 @@ internal object VisualPrefsOwner {
         state.set(State(source, token, initial))
         this.listener = listener
         onChanged(initial)
+        deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
         return initial
     }
 
