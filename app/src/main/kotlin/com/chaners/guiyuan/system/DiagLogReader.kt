@@ -17,10 +17,6 @@ internal object DiagLogReader {
     private const val LOGCAT_CMD =
         "logcat -d -b all -v threadtime -t 3000"
 
-    // B1181 only: include Companion-side card gestures in normal diagnosis export.
-    private const val HOME_PRESS_CMD =
-        "logcat -d -b main -v threadtime -t 100 -s GyHomePress:I '*:S'"
-
     internal enum class Source(
         val reportName: String,
     ) {
@@ -43,22 +39,13 @@ internal object DiagLogReader {
                 timeoutSeconds = TIMEOUT_SEC,
             )
         val lspLines = filterModuleLines(lspResult.output)
-        val homeLines =
-            RootShell.execute(context, HOME_PRESS_CMD, TIMEOUT_SEC)
-                .takeIf { it.isSuccess }
-                ?.output
-                ?.lineSequence()
-                ?.filter { it.contains("GyHomePress: com.chaners.guiyuan build=${BuildConfig.BUILD_ID} ") }
-                ?.toList()
-                ?.takeLast(64)
-                .orEmpty()
 
         if (lspLines.isNotEmpty()) {
             return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
-                lines = lspLines + homeLines,
-                sessionLines = latestSession(lspLines) + homeLines,
+                lines = lspLines,
+                sessionLines = latestSession(lspLines),
             )
         }
 
@@ -72,8 +59,8 @@ internal object DiagLogReader {
         Snapshot(
             source = Source.LogcatFallback,
             result = logcatResult,
-            lines = logcatLines + homeLines,
-            sessionLines = latestSession(logcatLines) + homeLines,
+            lines = logcatLines,
+            sessionLines = latestSession(logcatLines),
         )
     }
 
