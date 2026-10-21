@@ -193,7 +193,7 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(top = 8.dp, bottom = 8.dp),
+                                .padding(top = 8.dp),
                         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     )
                     HomeRuntimeStatusCard(
@@ -207,7 +207,7 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 20.dp),
+                                .padding(bottom = 24.dp),
                     )
                 }
 
