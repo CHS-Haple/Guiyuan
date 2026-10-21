@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +39,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -274,91 +276,88 @@ private fun HomeRuntimeStatusCard(
             1f to surfaceColor,
         )
 
+    val statusClick =
+        when (state.action) {
+            HomeRuntimeAction.Restart -> onRestart
+            HomeRuntimeAction.RequestScope -> onRequestScope
+            HomeRuntimeAction.None -> null
+        }
+
     Card(modifier = modifier) {
         Column(
             modifier = Modifier.fillMaxWidth().background(cardGradient),
         ) {
-            // Keep restart/scope clicks on the status area, not the master switch.
-            Card(
-                cornerRadius = 0.dp,
-                colors =
-                    CardDefaults.defaultColors(
-                        color = Color.Transparent,
-                        contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-                    ),
-                pressFeedbackType = PressFeedbackType.Tilt,
-                onClick =
-                    when (state.action) {
-                        HomeRuntimeAction.Restart -> onRestart
-                        HomeRuntimeAction.RequestScope -> onRequestScope
-                        HomeRuntimeAction.None -> null
-                    },
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(RuntimeCardHeight)
+                        .then(
+                            if (statusClick != null) {
+                                Modifier.clickable(role = Role.Button, onClick = statusClick)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
             ) {
-                Box(
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .height(RuntimeCardHeight)
-                            .padding(horizontal = 22.dp, vertical = 18.dp),
+                            .align(Alignment.CenterEnd)
+                            .size(RuntimeStatusMarkSize),
+                )
+
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(end = 98.dp),
                 ) {
-                    RuntimeStatusMark(
-                        kind = state.mark,
-                        color = accentColor,
-                        modifier =
-                            Modifier
-                                .align(Alignment.CenterEnd)
-                                .size(RuntimeStatusMarkSize),
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style =
+                            MiuixTheme.textStyles.title3.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
                     )
-
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(end = 98.dp),
-                    ) {
-                        Text(
-                            text = stringResource(state.titleRes),
-                            style =
-                                MiuixTheme.textStyles.title3.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.home_version_line,
-                                    BuildConfig.VERSION_NAME,
-                                ),
-                            modifier = Modifier.padding(top = 5.dp),
-                            style =
-                                MiuixTheme.textStyles.body1.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.home_build_line,
-                                    BuildConfig.BUILD_ID,
-                                ),
-                            modifier = Modifier.padding(top = 1.dp),
-                            style =
-                                MiuixTheme.textStyles.body1.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        )
-                        Text(
-                            text = stringResource(state.summaryRes),
-                            modifier = Modifier.padding(top = 12.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            maxLines = 2,
-                        )
-                    }
-
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_version_line,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                        modifier = Modifier.padding(top = 5.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_build_line,
+                                BuildConfig.BUILD_ID,
+                            ),
+                        modifier = Modifier.padding(top = 1.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        maxLines = 2,
+                    )
                 }
+
             }
             SwitchPreference(
                 checked = enabled,
