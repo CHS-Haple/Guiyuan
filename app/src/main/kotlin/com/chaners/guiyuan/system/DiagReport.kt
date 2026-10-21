@@ -99,6 +99,15 @@ internal object DiagReport {
                 logLines.forEach(::appendLine)
             }
             appendLine()
+            appendLine("[Home card comparison]")
+            appendLine("source=companion-memory")
+            appendLine("lines=" + snapshot.homePress.size)
+            if (snapshot.homePress.isEmpty()) {
+                appendLine("No Home card events were captured.")
+            } else {
+                snapshot.homePress.forEach(::appendLine)
+            }
+            appendLine()
             appendLine("[Report]")
             appendLine("generatedAt=" + snapshot.capturedAt)
         }
