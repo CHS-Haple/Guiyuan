@@ -320,9 +320,10 @@ private fun HomeRuntimeStatusCard(
             1f to surfaceColor,
         )
 
+    // Diagnostic only: isolate native Card Tilt from Switch/state transitions.
     Card(
         modifier = modifier,
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.None,
         onClick =
             when (state.action) {
                 HomeRuntimeAction.Restart -> onRestart
