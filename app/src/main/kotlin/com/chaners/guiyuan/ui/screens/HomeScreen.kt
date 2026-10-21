@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,7 +38,6 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -283,16 +281,15 @@ private fun HomeRuntimeStatusCard(
             1f to surfaceColor,
         )
 
-    val statusClick =
-        when (state.action) {
-            HomeRuntimeAction.Restart -> onRestart
-            HomeRuntimeAction.RequestScope -> onRequestScope
-            HomeRuntimeAction.None -> null
-        }
-
     Card(
         modifier = modifier,
         pressFeedbackType = PressFeedbackType.Tilt,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().background(cardGradient),
@@ -302,18 +299,6 @@ private fun HomeRuntimeStatusCard(
                     Modifier
                         .fillMaxWidth()
                         .height(RuntimeCardHeight)
-                        .then(
-                            if (statusClick != null) {
-                                Modifier.clickable(
-                                    interactionSource = null,
-                                    indication = null,
-                                    role = Role.Button,
-                                    onClick = statusClick,
-                                )
-                            } else {
-                                Modifier
-                            },
-                        )
                         .padding(horizontal = 22.dp, vertical = 18.dp),
             ) {
                 RuntimeStatusMark(
