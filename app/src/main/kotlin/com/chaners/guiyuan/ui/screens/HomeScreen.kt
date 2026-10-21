@@ -7,8 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,8 +73,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import top.yukonga.miuix.kmp.utils.TiltFeedback
-import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Switch
@@ -325,20 +321,18 @@ private fun HomeRuntimeStatusCard(
             1f to surfaceColor,
         )
 
-    // Only Card hits drive MIUIX Tilt; the native Switch has its own hit path.
-    val cardPress = remember { MutableInteractionSource() }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
-    Box(modifier = modifier.indication(cardPress, remember { TiltFeedback() })) {
-        Card(
-            modifier = Modifier.pressable(cardPress, indication = null, delay = null),
-            pressFeedbackType = PressFeedbackType.None,
-            onClick =
-                when (state.action) {
-                    HomeRuntimeAction.Restart -> onRestart
-                    HomeRuntimeAction.RequestScope -> onRequestScope
-                    HomeRuntimeAction.None -> null
-                },
-        ) {
+    Card(
+        modifier = modifier,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.fillMaxWidth().background(cardGradient),
             ) {
@@ -414,17 +408,15 @@ private fun HomeRuntimeStatusCard(
                     insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                 )
             }
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 16.dp)
+                    .semantics { contentDescription = switchTitle },
+            )
         }
-        Switch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 16.dp)
-                // Share the Card's MIUIX Tilt without sharing its click action.
-                .pressable(cardPress, indication = null, delay = null)
-                .semantics { contentDescription = switchTitle },
-        )
     }
 }
 
