@@ -91,7 +91,7 @@
     <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
     <string name="mobile_type_weight">移动制式字重</string>
-    <string name="font_weight_range">%1$d - %2$d</string>
+    <string name="font_weight_range">当前字体可调范围：%1$d - %2$d</string>
     <string name="font_weight_unverified">未能确认当前字体的字重轴，暂不可调</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
@@ -338,6 +338,8 @@
     <string name="diagnostic_report_share_failed">诊断报告分享失败</string>
     <string name="back">返回</string>
 
+    <string name="low_battery_threshold">低电量阈值</string>
+    <string name="low_battery_threshold_summary">电量低于设定值时使用低电量颜色</string>
     <string name="battery_colors">电量颜色</string>
     <string name="battery_color_scheme_summary">当前方案：%1$s</string>
     <string name="battery_color_scheme">配色方案</string>

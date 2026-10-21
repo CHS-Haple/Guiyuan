@@ -141,6 +141,7 @@ internal object StatusStateStore {
                     putBoolean(KEY_BATTERY_SYSTEM_COLOR_PRESENT, true)
                     putInt(KEY_BATTERY_SYSTEM_COLOR, color)
                 }
+                battery.lowSystemColor?.let { putInt(KEY_BATTERY_LOW_SYSTEM_COLOR, it) }
             }
             when (val wifi = current.wifi) {
                 WifiState.Unknown -> putInt(KEY_WIFI_KIND, WIFI_KIND_UNKNOWN)
@@ -204,6 +205,10 @@ internal object StatusStateStore {
                     systemSemanticColor =
                         if (bundle.getBoolean(KEY_BATTERY_SYSTEM_COLOR_PRESENT, false)) {
                             bundle.getInt(KEY_BATTERY_SYSTEM_COLOR)
+                        } else null,
+                    lowSystemColor =
+                        if (bundle.containsKey(KEY_BATTERY_LOW_SYSTEM_COLOR)) {
+                            bundle.getInt(KEY_BATTERY_LOW_SYSTEM_COLOR)
                         } else null,
                 )
             } else {
@@ -292,6 +297,7 @@ internal object StatusStateStore {
         val semanticState: BatterySemanticState? = null,
         val systemSemanticColor: Int? = null,
         val chargingIconResId: Int? = null,
+        val lowSystemColor: Int? = null,
     )
 
     internal sealed interface WifiState {
@@ -316,6 +322,7 @@ internal object StatusStateStore {
     private const val KEY_BATTERY_SEMANTIC = "batterySemantic"
     private const val KEY_BATTERY_SYSTEM_COLOR_PRESENT = "batterySystemColorPresent"
     private const val KEY_BATTERY_SYSTEM_COLOR = "batterySystemColor"
+    private const val KEY_BATTERY_LOW_SYSTEM_COLOR = "batteryLowSystemColor"
     private const val KEY_WIFI_KIND = "wifiKind"
     private const val KEY_WIFI_RES_ID = "wifiResId"
     private const val KEY_WIFI_SIGNAL = "wifiSignal"

@@ -9,6 +9,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Added
+- Added a temporary Home-status-bar sandbox parasite preview with bounded lease expiry and automatic display restoration on exit.
+- Added a configurable low-battery threshold from 5–30% (20% default) for live rendering and preview.
 - Added an optional Duo horizontal eight-dot layout for dual-SIM signals, retaining the original curved layout by default and sharing the existing Control Center transition, with separately saved vertical offsets for the two dual-row styles.
 
 ### Fixed
@@ -20,6 +22,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Restricted configuration import to document-provider content URIs, rejecting local-file and resource URI inputs.
 
 ### Changed
+- Shared display and transition settings across single/dual signal presentation and content layouts, with migration for stored profiles.
 - Detect each verified SystemUI mobile-type and battery-number variable font's actual `fvar.wght` range, independently checking their native Typeface/file identities. Display the real minimum and maximum, provide continuous (non-snapping) MIUIX slider adjustment and precise number entry, and align slider value typography with MIUIX. Use the authenticated, read-only native axis report; an unverified source cannot inherit MiSans bounds and retains its native-safe drawing fallback. Preserve saved weight values, backup compatibility and native Control Center endpoints.
 
 - Shared the content layout across single- and dual-row signal modes, preserving the active layout from existing configurations, and enabled the battery number by default only for unconfigured battery-centered profiles.

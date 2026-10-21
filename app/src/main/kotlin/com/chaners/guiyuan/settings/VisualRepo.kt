@@ -7,7 +7,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+internal const val SHARED_TRANSITIONS_SCHEMA_KEY = "shared_transitions_schema"
+
 private val visualPreferenceKeys = buildSet {
+    add(SHARED_TRANSITIONS_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
@@ -102,6 +105,29 @@ internal fun migrateSharedLayoutIfNeeded(prefs: SharedPreferences) {
         .apply()
 }
 
+
+// Show/transition settings use one value for every layout and SIM mode.
+// Keep the current mode on upgrade, then retire the old dual bank.
+internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_TRANSITIONS_SCHEMA_KEY, 0) >= 1) return
+    val dual = prefs.dualSignalEnabled()
+    val editor = prefs.edit()
+    for (key in listOf(
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+    )) {
+        val current = visualModeKey(dual, key)
+        val value = when {
+            prefs.contains(current) -> prefs.getBoolean(current, true)
+            prefs.contains(key) -> prefs.getBoolean(key, true)
+            else -> true
+        }
+        editor.putBoolean(key, value)
+            .remove(visualModeKey(true, key))
+    }
+    editor.putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1).apply()
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -112,6 +138,7 @@ internal class VisualRepo(context: Context) {
 
     init {
         migrateSharedLayoutIfNeeded(preferences)
+        migrateSharedTransitionsIfNeeded(preferences)
         migrateBatteryColorPresetDefaultIfNeeded(preferences)
         migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
         migrateTextWeightRanges(preferences)
@@ -233,14 +260,14 @@ internal class VisualRepo(context: Context) {
     fun setFillFollowsRetract(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeGlobalKey(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), enabled)
+            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, enabled)
             .apply()
     }
 
     fun setCcTintTransition(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeGlobalKey(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), enabled)
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, enabled)
             .apply()
     }
 
@@ -458,6 +485,11 @@ internal class VisualRepo(context: Context) {
         val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
+        // V1 archives may differ across SIM modes; the active bank wins.
+        val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
+        editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
+            .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
         BatterySchemeRepo(context).putBackup(editor, library)
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
         editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
@@ -584,8 +616,8 @@ internal fun SharedPreferences.readVisualCfg(
         topTextFollowsBatteryColor = flag(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, true),
         showTopChargingIcon = flag(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, true),
         topChargingIconFollowsBatteryColor = flag(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, true),
-        fillFollowsRetract = getBoolean(visualModeKey(dual, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), true),
-        ccTintTransition = getBoolean(visualModeKey(dual, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true),
+        fillFollowsRetract = getBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true),
+        ccTintTransition = getBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, true),
         topTextScale = size(BATTERY_TOP_TEXT_SCALE_KEY, topTextScaleDefault(layout)),
         topTextWeight = weight(BATTERY_TOP_TEXT_WEIGHT_KEY, BATTERY_TOP_TEXT_WEIGHT_DEFAULT),
         topOffsetY = topOffset,
@@ -688,10 +720,10 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
         normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
-        visualModeKey(normalized.dualSignal, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY),
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         normalized.fillFollowsRetract,
     ).putBoolean(
-        visualModeKey(normalized.dualSignal, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY),
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         normalized.ccTintTransition,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY, normalized.dualSignal),

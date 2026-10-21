@@ -1,0 +1,35 @@
+<!-- Original Guiyuan bacteriophage, maintainer-approved optical W400 revision. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.40"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12 3 L15.55 5.02 Q15.7 5.12 15.7 5.32 L15.7 8.35 Q15.7 8.55 15.48 8.68 L12.65 10.38 L11.35 10.38 L8.52 8.68 Q8.3 8.55 8.3 8.35 L8.3 5.32 Q8.3 5.12 8.45 5.02 Z"/>
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.52"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M10.86 10.38 V11.26 Q10.86 11.48 11.15 11.48 H12.85 Q13.14 11.48 13.14 11.26 V10.38 M11.16 11.48 V15.05 M12.84 11.48 V15.05"/>
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.55"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M10.62 15.05 H13.38 Q13.6 15.05 13.6 15.3 V15.9 Q13.6 16.12 13.38 16.12 H10.62 Q10.4 16.12 10.4 15.9 V15.3 Q10.4 15.05 10.62 15.05 Z"/>
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.57"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M10.45 15.65 L8.7 15.15 L4.65 19.25 M13.55 15.65 L15.3 15.15 L19.35 19.25 M10.55 16.13 L8.95 17.15 L7.4 20.4 M13.45 16.13 L15.05 17.15 L16.6 20.4 M12 16.12 V20.15"/>
+</vector>

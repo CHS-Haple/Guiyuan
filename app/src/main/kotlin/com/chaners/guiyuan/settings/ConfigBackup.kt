@@ -117,6 +117,9 @@ internal object ConfigBackupFormat {
     fun validate(backup: ConfigBackup) {
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
+        require(backup.feature.lowBatteryThreshold in LOW_BATTERY_THRESHOLD_MIN..LOW_BATTERY_THRESHOLD_MAX) {
+            "Invalid low battery threshold"
+        }
         require(backup.appVersion.length in 1..80 && safeText(backup.appVersion)) {
             "Invalid appVersion"
         }
@@ -134,7 +137,7 @@ internal object ConfigBackupFormat {
             profiles.size == expected.size &&
                 profiles.map { it.dualSignal to it.layout }.toSet() == expected
         ) { "Missing or duplicated visual profile" }
-        // These settings have one stored value per SIM mode, shared by both layouts.
+        // V1 archives may differ by SIM mode, but each mode must agree across layouts.
         require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
             val first = sameMode.first()
             sameMode.all { cfg ->

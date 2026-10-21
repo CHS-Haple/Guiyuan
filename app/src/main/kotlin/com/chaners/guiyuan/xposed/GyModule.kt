@@ -21,6 +21,7 @@ import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -122,6 +123,7 @@ class GyModule : XposedModule() {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
+        bindSandbox()
         logDiagnostic(
             level = Log.INFO,
             event = "module.loaded",
@@ -420,6 +422,7 @@ class GyModule : XposedModule() {
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
+            bindSandbox()
             logDiagnostic(
                 level = Log.INFO,
                 event = "module.reloaded",
@@ -3753,6 +3756,7 @@ class GyModule : XposedModule() {
         release { unbindRuntimeDiagnostics() }
         release { FeaturePrefsOwner.unbind() }
         release { VisualPrefsOwner.unbind() }
+        release { SandboxHost.unbind() }
 
         if (errors.isNotEmpty()) {
             val failure =
@@ -4230,6 +4234,7 @@ class GyModule : XposedModule() {
             homeAodFallback = HomeAodFallback.NONE
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
+        if (cfg.enabled) HomeRenderSession.onPresentationStateChanged()
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
         CcRenderSession.onFeatureCfgChanged(cfg)
 
@@ -4287,6 +4292,18 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivate(source)
         NativeNetworkSuppressor.deactivate(source)
         HomeRenderSession.setNativeHandoffActive(true)
+    }
+
+    private fun bindSandbox() {
+        runCatching {
+            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
+                // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
+                HomeRenderSession.onPresentationStateChanged()
+            }
+        }.onFailure {
+            SandboxHost.unbind()
+            log(Log.WARN, TAG, "Steady sandbox unavailable", it)
+        }
     }
 
     private fun bindVisualCfg() {

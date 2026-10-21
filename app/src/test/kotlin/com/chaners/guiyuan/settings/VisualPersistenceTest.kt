@@ -7,6 +7,50 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualPersistenceTest {
+
+    @Test
+    fun displayTransitionsUseActiveModeOnMigrationAndRemainShared() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true)
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, false)
+            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), false)
+            .putBoolean(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true)
+            .apply()
+        migrateSharedTransitionsIfNeeded(prefs)
+        assertFalse(prefs.contains(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY)))
+        assertFalse(prefs.contains(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY)))
+        assertEquals(1, prefs.getInt(SHARED_TRANSITIONS_SCHEMA_KEY, 0))
+        for (dual in listOf(false, true)) {
+            for (layout in ContentLayout.entries) {
+                val cfg = prefs.readVisualCfg(dual = dual, layoutOverride = layout)
+                assertFalse(cfg.fillFollowsRetract)
+                assertTrue(cfg.ccTintTransition)
+            }
+        }
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
+        migrateSharedTransitionsIfNeeded(prefs)
+        assertFalse(prefs.readVisualCfg().fillFollowsRetract)
+        prefs.edit().putVisualCfg(VisualCfg(
+            dualSignal = true,
+            fillFollowsRetract = true,
+            ccTintTransition = false,
+        )).apply()
+        assertTrue(prefs.readVisualCfg(dual = false).fillFollowsRetract)
+        assertFalse(prefs.readVisualCfg(dual = false).ccTintTransition)
+    }
+
+    @Test
+    fun displayTransitionMigrationPreservesLegacySingleMode() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, false)
+            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), true)
+            .apply()
+        migrateSharedTransitionsIfNeeded(prefs)
+        assertFalse(prefs.readVisualCfg(dual = false).fillFollowsRetract)
+        assertFalse(prefs.readVisualCfg(dual = true).fillFollowsRetract)
+    }
     @Test
     fun duoStyleIsModeWideAndSurvivesLayoutSwitches() {
         val prefs = MemoryPreferences()

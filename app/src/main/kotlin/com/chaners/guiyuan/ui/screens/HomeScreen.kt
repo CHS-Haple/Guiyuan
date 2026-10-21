@@ -208,6 +208,7 @@ internal fun HomeScreen(
                         state = previewState,
                         resources = previewResources,
                         visual = visual,
+                        lowBatteryThreshold = featureSettings.lowBatteryThreshold,
                         onOpen = onOpenPreviewSandbox,
                         modifier =
                             Modifier
@@ -362,11 +363,12 @@ private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSysUiResources,
     visual: VisualCfg,
+    lowBatteryThreshold: Int,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val model = remember(state, resources, LocalConfiguration.current) {
-        state.toRenderModel(resources)
+    val model = remember(state, resources, lowBatteryThreshold, LocalConfiguration.current) {
+        state.toRenderModel(resources, lowBatteryThreshold = lowBatteryThreshold)
     }
 
     Card(
