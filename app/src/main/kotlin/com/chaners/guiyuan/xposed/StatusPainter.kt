@@ -73,7 +73,15 @@ internal class StatusPainter(
     private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
-    private val mobileTypeSuffixBounds = Rect()
+    private val mobileTypeMainInk = RectF()
+    private val mobileTypeSuffixInk = RectF()
+    private val mobileInkPath = Path()
+    private val mobileInkFallback = Rect()
+    private val mobileInkSamples =
+        object : LinkedHashMap<MobileInkKey, RectF>(48, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<MobileInkKey, RectF>?): Boolean =
+                size > 48
+        }
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null
@@ -113,6 +121,7 @@ internal class StatusPainter(
         nativeWifiReferenceIds.clear()
         batteryTextSamples.clear()
         mobileTextSamples.clear()
+        mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
@@ -2998,17 +3007,16 @@ internal class StatusPainter(
         val inkPad =
             if (mobileTypePaint.style == Paint.Style.FILL) 0f else mobileTypePaint.strokeWidth / 2f
         mobileTypePaint.textAlign = Paint.Align.LEFT
-        mobileTypePaint.getTextBounds(
-            split.first,
-            0,
-            split.first.length,
-            mobileTypeMainBounds,
-        )
-        val mainBaselineY =
-            MOBILE_TYPE_CENTER_Y -
-                (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
-
         if (split.second.isEmpty()) {
+            mobileTypePaint.getTextBounds(
+                split.first,
+                0,
+                split.first.length,
+                mobileTypeMainBounds,
+            )
+            val mainBaselineY =
+                MOBILE_TYPE_CENTER_Y -
+                    (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
             val mainX =
                 MOBILE_TYPE_CENTER_X -
                     (mobileTypeMainBounds.left + mobileTypeMainBounds.right) / 2f
@@ -3031,24 +3039,23 @@ internal class StatusPainter(
             )
         }
 
+        mobileInkBounds(split.first, mobileTypeMainInk)
+        val mainBaselineY =
+            MOBILE_TYPE_CENTER_Y -
+                (mobileTypeMainInk.top + mobileTypeMainInk.bottom) / 2f
         mobileTypePaint.textSize = suffixTextSize
-        mobileTypePaint.getTextBounds(
-            split.second,
-            0,
-            split.second.length,
-            mobileTypeSuffixBounds,
-        )
+        mobileInkBounds(split.second, mobileTypeSuffixInk)
         val totalInkWidth =
-            mobileTypeMainBounds.width() +
+            mobileTypeMainInk.width() +
                 MOBILE_TYPE_SUFFIX_GAP +
-                mobileTypeSuffixBounds.width()
+                mobileTypeSuffixInk.width()
         val groupLeft = MOBILE_TYPE_CENTER_X - totalInkWidth / 2f
-        val mainX = groupLeft - mobileTypeMainBounds.left
+        val mainX = groupLeft - mobileTypeMainInk.left
         val suffixX =
             groupLeft +
-                mobileTypeMainBounds.width() +
+                mobileTypeMainInk.width() +
                 MOBILE_TYPE_SUFFIX_GAP -
-                mobileTypeSuffixBounds.left
+                mobileTypeSuffixInk.left
         val suffixOffset =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixRise,
@@ -3064,7 +3071,7 @@ internal class StatusPainter(
                 )
         val sourceSuffixBaseline =
             suffixCenterY -
-                (mobileTypeSuffixBounds.top + mobileTypeSuffixBounds.bottom) / 2f
+                (mobileTypeSuffixInk.top + mobileTypeSuffixInk.bottom) / 2f
         val suffixBaselineY =
             sourceSuffixBaseline + (mainBaselineY - sourceSuffixBaseline) * suffixMorph
 
@@ -3081,26 +3088,55 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left - inkPad,
-                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
+                            mainX + mobileTypeMainInk.left - inkPad,
+                            suffixX + mobileTypeSuffixInk.left - inkPad * suffixTextSize / mainTextSize,
                         ),
                     top =
                         min(
-                            mainBaselineY + mobileTypeMainBounds.top - inkPad,
-                            suffixBaselineY + mobileTypeSuffixBounds.top - inkPad * suffixTextSize / mainTextSize,
+                            mainBaselineY + mobileTypeMainInk.top - inkPad,
+                            suffixBaselineY + mobileTypeSuffixInk.top - inkPad * suffixTextSize / mainTextSize,
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right + inkPad,
-                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
+                            mainX + mobileTypeMainInk.right + inkPad,
+                            suffixX + mobileTypeSuffixInk.right + inkPad * suffixTextSize / mainTextSize,
                         ),
                     bottom =
                         max(
-                            mainBaselineY + mobileTypeMainBounds.bottom + inkPad,
-                            suffixBaselineY + mobileTypeSuffixBounds.bottom + inkPad * suffixTextSize / mainTextSize,
+                            mainBaselineY + mobileTypeMainInk.bottom + inkPad,
+                            suffixBaselineY + mobileTypeSuffixInk.bottom + inkPad * suffixTextSize / mainTextSize,
                         ),
                 ),
         )
+    }
+
+    private fun mobileInkBounds(text: String, result: RectF) {
+        val key =
+            MobileInkKey(
+                text = text,
+                face = mobileTypePaint.typeface,
+                variation = mobileTypePaint.fontVariationSettings,
+                size = mobileTypePaint.textSize,
+                scaleX = mobileTypePaint.textScaleX,
+                skewX = mobileTypePaint.textSkewX,
+                spacing = mobileTypePaint.letterSpacing,
+                fakeBold = mobileTypePaint.isFakeBoldText,
+            )
+        mobileInkSamples[key]?.let { cached ->
+            result.set(cached)
+            return
+        }
+
+        // Use fractional glyph outlines to avoid independent integer rounding of split text.
+        mobileInkPath.rewind()
+        mobileTypePaint.getTextPath(text, 0, text.length, 0f, 0f, mobileInkPath)
+        if (mobileInkPath.isEmpty) {
+            mobileTypePaint.getTextBounds(text, 0, text.length, mobileInkFallback)
+            result.set(mobileInkFallback)
+        } else {
+            mobileInkPath.computeBounds(result, true)
+        }
+        mobileInkSamples[key] = RectF(result)
     }
 
     private fun configureMobileTypeTextStyle(
@@ -3114,6 +3150,7 @@ internal class StatusPainter(
         if (mobileTextSource != source) {
             mobileTextSource = source
             mobileTextSamples.clear()
+            mobileInkSamples.clear()
         }
         mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1))
         val styleProgress =
@@ -3812,6 +3849,17 @@ internal class StatusPainter(
         val sourceOpticalWidth: Float,
         val sourceOpticalHeight: Float,
         val targetOpticalBounds: TransitionNormalizedBounds,
+    )
+
+    private data class MobileInkKey(
+        val text: String,
+        val face: Typeface?,
+        val variation: String?,
+        val size: Float,
+        val scaleX: Float,
+        val skewX: Float,
+        val spacing: Float,
+        val fakeBold: Boolean,
     )
 
     private data class MobileTypeLayout(
