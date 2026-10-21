@@ -101,4 +101,5 @@
     <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer\nNetwork type follows data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
+    <string name="home_runtime_enable_title">Enable module</string>
 </resources>
