@@ -6,6 +6,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +35,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -38,6 +45,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -45,6 +54,8 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureRepo
+import com.chaners.guiyuan.system.HomePressTrace
+import com.chaners.guiyuan.ui.components.homeNodeTrace
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
@@ -59,6 +70,8 @@ import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -114,6 +127,7 @@ internal fun HomeScreen(
     onOpenPreviewSandbox: () -> Unit,
 ) {
     val context = LocalContext.current
+    var compareMode by rememberSaveable { mutableIntStateOf(0) }
     val application =
         remember(context.applicationContext) {
             context.applicationContext as GyApplication
@@ -154,6 +168,20 @@ internal fun HomeScreen(
                     title = stringResource(R.string.home_title),
                     color = barColor,
                     actions = {
+                        if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                            TextButton(
+                                text = when (compareMode) {
+                                    0 -> "A1179"
+                                    1 -> "B1173"
+                                    2 -> "C1174"
+                                    else -> "D1174+"
+                                },
+                                onClick = {
+                                    compareMode = (compareMode + 1) % 4
+                                    HomePressTrace.record("matrix.select mode=$compareMode")
+                                },
+                            )
+                        }
                         HotReloadAction(
                             inProgress = hotReloadInProgress,
                             enabled = !restartInProgress && !scopeRequestInProgress,
@@ -185,21 +213,41 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    SmallTitle(stringResource(R.string.section_home_runtime))
-                    HomeRuntimeStatusCard(
-                        enabled = featureSettings.enabled,
-                        runtimeStatus = xposedStatus,
-                        hotReloadInProgress = hotReloadInProgress,
-                        restartInProgress = restartInProgress,
-                        scopeRequestInProgress = scopeRequestInProgress,
-                        onRestart = onRestart,
-                        onRequestScope = onRequestScope,
-                        onEnabledChange = featureRepository::setEnabled,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                    )
+                    if (compareMode == 0 || compareMode == 3) {
+                        SmallTitle(stringResource(R.string.section_home_runtime))
+                    }
+                    if (compareMode == 0) {
+                        HomeRuntimeStatusCard(
+                            enabled = featureSettings.enabled,
+                            runtimeStatus = xposedStatus,
+                            hotReloadInProgress = hotReloadInProgress,
+                            restartInProgress = restartInProgress,
+                            scopeRequestInProgress = scopeRequestInProgress,
+                            onRestart = onRestart,
+                            onRequestScope = onRequestScope,
+                            onEnabledChange = featureRepository::setEnabled,
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = 12.dp)
+                                    .padding(bottom = 12.dp),
+                        )
+                    } else {
+                        CompoundHomeRuntimeStatusCard(
+                            mode = compareMode,
+                            enabled = featureSettings.enabled,
+                            runtimeStatus = xposedStatus,
+                            hotReloadInProgress = hotReloadInProgress,
+                            restartInProgress = restartInProgress,
+                            scopeRequestInProgress = scopeRequestInProgress,
+                            onRestart = onRestart,
+                            onRequestScope = onRequestScope,
+                            onEnabledChange = featureRepository::setEnabled,
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = 12.dp)
+                                    .padding(bottom = 12.dp),
+                        )
+                    }
                 }
 
                 item {
@@ -268,8 +316,18 @@ private fun HomeRuntimeStatusCard(
             label = "runtimeContainer",
         )
 
+    val trace = remember { Any() }
+    val traceId = System.identityHashCode(trace)
+    DisposableEffect(trace) {
+        HomePressTrace.record("matrix.enter mode=0 id=$traceId")
+        onDispose { HomePressTrace.record("matrix.leave mode=0 id=$traceId") }
+    }
+    LaunchedEffect(enabled) {
+        HomePressTrace.record("matrix.state mode=0 enabled=$enabled action=${state.action} id=$traceId")
+    }
+
     Card(
-        modifier = modifier,
+        modifier = modifier.homeNodeTrace("card-0", traceId),
         colors =
             CardDefaults.defaultColors(
                 color = containerColor,
@@ -351,7 +409,276 @@ private fun HomeRuntimeStatusCard(
             Switch(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
-                modifier = Modifier.align(Alignment.TopEnd),
+                modifier = Modifier.align(Alignment.TopEnd).homeNodeTrace("switch-0", traceId),
+            )
+        }
+    }
+}
+
+// B1173/B1174 diagnostic controls only. Keep the historic paint paths isolated.
+private data class CardPaint(val accent: Color, val gradient: Brush)
+
+@Composable
+private fun LegacyCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+    val targetAccentColor =
+        when (state.tone) {
+            RuntimeStatusTone.Success -> RuntimeSuccessAccent
+            RuntimeStatusTone.Warning -> RuntimeWarningAccent
+            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
+            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.onSurfaceContainerVariant
+        }
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
+    val targetContainerColor =
+        when (state.tone) {
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    surfaceColor
+                } else {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                        .copy(alpha = 0.20f)
+                        .compositeOver(surfaceColor)
+                }
+            else ->
+                targetAccentColor
+                    .copy(alpha = 0.15f)
+                    .compositeOver(surfaceColor)
+        }
+    val accentColor by
+        animateColorAsState(
+            targetValue = targetAccentColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeAccent",
+        )
+    val containerColor by
+        animateColorAsState(
+            targetValue = targetContainerColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeContainer",
+        )
+    val cardGradient =
+        if (!enabled) {
+            Brush.verticalGradient(
+                0f to containerColor,
+                0.72f to surfaceColor.copy(alpha = 0.30f).compositeOver(containerColor),
+                1f to surfaceColor,
+            )
+        } else {
+            Brush.verticalGradient(
+                0f to surfaceColor.copy(alpha = 0.24f).compositeOver(containerColor),
+                0.5f to containerColor,
+                1f to surfaceColor,
+            )
+        }
+
+    return CardPaint(accentColor, cardGradient)
+}
+
+@Composable
+private fun AnimatedCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+    val targetAccentColor =
+        when (state.tone) {
+            RuntimeStatusTone.Success -> RuntimeSuccessAccent
+            RuntimeStatusTone.Warning -> RuntimeWarningAccent
+            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                } else {
+                    lerp(
+                        MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        MiuixTheme.colorScheme.primary,
+                        0.35f,
+                    )
+                }
+        }
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
+    val targetContainerColor =
+        when (state.tone) {
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    surfaceColor
+                } else {
+                    MiuixTheme.colorScheme.primary
+                        .copy(alpha = 0.14f)
+                        .compositeOver(surfaceColor)
+                }
+            else ->
+                targetAccentColor
+                    .copy(alpha = 0.15f)
+                    .compositeOver(surfaceColor)
+        }
+    val accentColor by
+        animateColorAsState(
+            targetValue = targetAccentColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeAccent",
+        )
+    // Keep gradient stops fixed while the enabled state changes.
+    val topTarget =
+        if (enabled) {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        } else {
+            targetContainerColor
+        }
+    val midTarget =
+        if (enabled) {
+            targetContainerColor
+        } else {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        }
+    val lowerTarget =
+        surfaceColor
+            .copy(alpha = if (enabled) 0.44f else 0.34f)
+            .compositeOver(targetContainerColor)
+    val topColor by animateColorAsState(
+        targetValue = topTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientTop",
+    )
+    val midColor by animateColorAsState(
+        targetValue = midTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientMid",
+    )
+    val lowerColor by animateColorAsState(
+        targetValue = lowerTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientLower",
+    )
+    val cardGradient =
+        Brush.verticalGradient(
+            0f to topColor,
+            0.5f to midColor,
+            0.72f to lowerColor,
+            1f to surfaceColor,
+        )
+
+    return CardPaint(accentColor, cardGradient)
+}
+
+@Composable
+private fun CompoundHomeRuntimeStatusCard(
+    mode: Int,
+    enabled: Boolean,
+    runtimeStatus: XposedStatus,
+    hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
+    onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state =
+        resolveHomeRuntimeCardState(
+            enabled = enabled,
+            runtimeStatus = runtimeStatus,
+            hotReloadInProgress = hotReloadInProgress,
+            restartInProgress = restartInProgress,
+            scopeRequestInProgress = scopeRequestInProgress,
+        )
+    val (accentColor, cardGradient) =
+        if (mode == 1) LegacyCardPaint(state, enabled) else AnimatedCardPaint(state, enabled)
+    val trace = remember { Any() }
+    val traceId = System.identityHashCode(trace)
+    DisposableEffect(trace) {
+        HomePressTrace.record("matrix.enter mode=$mode id=$traceId")
+        onDispose { HomePressTrace.record("matrix.leave mode=$mode id=$traceId") }
+    }
+    LaunchedEffect(enabled, mode) {
+        HomePressTrace.record("matrix.state mode=$mode enabled=$enabled action=${state.action} id=$traceId")
+    }
+
+    Card(
+        modifier = modifier.homeNodeTrace("card-$mode", traceId),
+        pressFeedbackType = PressFeedbackType.Tilt,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(cardGradient),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(RuntimeCardHeight)
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
+            ) {
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(RuntimeStatusMarkSize),
+                )
+
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(end = 98.dp),
+                ) {
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style =
+                            MiuixTheme.textStyles.title3.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_version_line,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                        modifier = Modifier.padding(top = 5.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_build_line,
+                                BuildConfig.BUILD_ID,
+                            ),
+                        modifier = Modifier.padding(top = 1.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        maxLines = 2,
+                    )
+                }
+
+            }
+            val switchTitle = stringResource(R.string.home_runtime_enable_title)
+            BasicComponent(
+                title = switchTitle,
+                startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                endActions = {
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = onEnabledChange,
+                        modifier = Modifier.homeNodeTrace("switch-$mode", traceId).semantics { contentDescription = switchTitle },
+                    )
+                },
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             )
         }
     }
