@@ -14,6 +14,7 @@
     <string name="home_runtime_restarting_summary">Reloading Guiyuan through SystemUI</string>
     <string name="home_runtime_disabled">Disabled</string>
     <string name="home_runtime_disabled_summary">Native system status icons are in use</string>
+    <string name="home_runtime_enable_title">Enable module</string>
     <string name="home_runtime_framework_unavailable">Not connected</string>
     <string name="home_runtime_framework_unavailable_summary">Cannot connect to framework service\nCheck framework and module setup</string>
     <string name="home_runtime_unknown">Status unavailable</string>

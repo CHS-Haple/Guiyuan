@@ -7,6 +7,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,13 +21,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
@@ -38,12 +43,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
@@ -58,7 +66,7 @@ import com.chaners.guiyuan.ui.layout.pageContentPadding
 import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -122,7 +130,7 @@ internal fun HomeScreen(
         remember(context.applicationContext) {
             FeatureRepo(context.applicationContext)
         }
-    val featureSettings by
+    val featureSettings =
         featureRepository.settings.collectAsState(
             initial = featureRepository.current(),
         )
@@ -134,7 +142,7 @@ internal fun HomeScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val xposedStatus by
+    val xposedStatus =
         application.xposedStatus.collectAsState()
     val previewResources =
         remember(context.applicationContext) {
@@ -185,9 +193,8 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    SmallTitle(stringResource(R.string.section_home_runtime))
                     HomeRuntimeStatusCard(
-                        enabled = featureSettings.enabled,
+                        featureSettings = featureSettings,
                         runtimeStatus = xposedStatus,
                         hotReloadInProgress = hotReloadInProgress,
                         restartInProgress = restartInProgress,
@@ -198,7 +205,7 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(top = 8.dp, bottom = 24.dp),
                     )
                 }
 
@@ -208,7 +215,7 @@ internal fun HomeScreen(
                         state = previewState,
                         resources = previewResources,
                         visual = visual,
-                        lowBatteryThreshold = featureSettings.lowBatteryThreshold,
+                        featureSettings = featureSettings,
                         onOpen = onOpenPreviewSandbox,
                         modifier =
                             Modifier
@@ -221,10 +228,95 @@ internal fun HomeScreen(
     }
 }
 
+private data class CardPaint(val accent: Color, val gradient: Brush)
+
+@Composable
+private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+    val targetAccentColor =
+        when (state.tone) {
+            RuntimeStatusTone.Success -> RuntimeSuccessAccent
+            RuntimeStatusTone.Warning -> RuntimeWarningAccent
+            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                } else {
+                    lerp(
+                        MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        MiuixTheme.colorScheme.primary,
+                        0.35f,
+                    )
+                }
+        }
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
+    val targetContainerColor =
+        when (state.tone) {
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    surfaceColor
+                } else {
+                    MiuixTheme.colorScheme.primary
+                        .copy(alpha = 0.14f)
+                        .compositeOver(surfaceColor)
+                }
+            else ->
+                targetAccentColor
+                    .copy(alpha = 0.15f)
+                    .compositeOver(surfaceColor)
+        }
+    val accentColor by
+        animateColorAsState(
+            targetValue = targetAccentColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeAccent",
+        )
+    // Keep gradient stops fixed while the enabled state changes.
+    val topTarget =
+        if (enabled) {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        } else {
+            targetContainerColor
+        }
+    val midTarget =
+        if (enabled) {
+            targetContainerColor
+        } else {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        }
+    val lowerTarget =
+        surfaceColor
+            .copy(alpha = if (enabled) 0.44f else 0.34f)
+            .compositeOver(targetContainerColor)
+    val topColor by animateColorAsState(
+        targetValue = topTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientTop",
+    )
+    val midColor by animateColorAsState(
+        targetValue = midTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientMid",
+    )
+    val lowerColor by animateColorAsState(
+        targetValue = lowerTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientLower",
+    )
+    val cardGradient =
+        Brush.verticalGradient(
+            0f to topColor,
+            0.5f to midColor,
+            0.72f to lowerColor,
+            1f to surfaceColor,
+        )
+
+    return CardPaint(accentColor, cardGradient)
+}
+
 @Composable
 private fun HomeRuntimeStatusCard(
-    enabled: Boolean,
-    runtimeStatus: XposedStatus,
+    featureSettings: State<FeatureCfg>,
+    runtimeStatus: State<XposedStatus>,
     hotReloadInProgress: Boolean,
     restartInProgress: Boolean,
     scopeRequestInProgress: Boolean,
@@ -233,56 +325,54 @@ private fun HomeRuntimeStatusCard(
     onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val state =
-        resolveHomeRuntimeCardState(
-            enabled = enabled,
+    // The native Tilt node belongs to the Card, not the changing runtime content.
+    Card(
+        modifier = modifier,
+        pressFeedbackType = PressFeedbackType.Tilt,
+    ) {
+        HomeRuntimeCardBody(
+            featureSettings = featureSettings,
             runtimeStatus = runtimeStatus,
             hotReloadInProgress = hotReloadInProgress,
             restartInProgress = restartInProgress,
             scopeRequestInProgress = scopeRequestInProgress,
+            onRestart = onRestart,
+            onRequestScope = onRequestScope,
+            onEnabledChange = onEnabledChange,
         )
-    val targetAccentColor =
-        when (state.tone) {
-            RuntimeStatusTone.Success -> RuntimeSuccessAccent
-            RuntimeStatusTone.Warning -> RuntimeWarningAccent
-            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
-            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.onSurfaceContainerVariant
-        }
-    val targetContainerColor =
-        when (state.tone) {
-            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.surfaceContainer
-            else ->
-                targetAccentColor
-                    .copy(alpha = 0.15f)
-                    .compositeOver(MiuixTheme.colorScheme.surfaceContainer)
-        }
-    val accentColor by
-        animateColorAsState(
-            targetValue = targetAccentColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeAccent",
-        )
-    val containerColor by
-        animateColorAsState(
-            targetValue = targetContainerColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeContainer",
-        )
+    }
+}
 
-    Card(
-        modifier = modifier,
-        colors =
-            CardDefaults.defaultColors(
-                color = containerColor,
-                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-            ),
-        pressFeedbackType = PressFeedbackType.Tilt,
-        onClick =
-            when (state.action) {
-                HomeRuntimeAction.Restart -> onRestart
-                HomeRuntimeAction.RequestScope -> onRequestScope
-                HomeRuntimeAction.None -> null
-            },
+@Composable
+private fun HomeRuntimeCardBody(
+    featureSettings: State<FeatureCfg>,
+    runtimeStatus: State<XposedStatus>,
+    hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
+    onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    val enabled = featureSettings.value.enabled
+    val state = resolveHomeRuntimeCardState(
+        enabled = enabled,
+        runtimeStatus = runtimeStatus.value,
+        hotReloadInProgress = hotReloadInProgress,
+        restartInProgress = restartInProgress,
+        scopeRequestInProgress = scopeRequestInProgress,
+    )
+    val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
+    val onCardClick = when (state.action) {
+        HomeRuntimeAction.Restart -> onRestart
+        HomeRuntimeAction.RequestScope -> onRequestScope
+        HomeRuntimeAction.None -> null
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(cardGradient)
+            .then(if (onCardClick == null) Modifier else Modifier.clickable(onClick = onCardClick)),
     ) {
         Box(
             modifier =
@@ -296,8 +386,7 @@ private fun HomeRuntimeStatusCard(
                 color = accentColor,
                 modifier =
                     Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(y = 6.dp)
+                        .align(Alignment.CenterEnd)
                         .size(RuntimeStatusMarkSize),
             )
 
@@ -348,13 +437,20 @@ private fun HomeRuntimeStatusCard(
                     maxLines = 2,
                 )
             }
-
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
         }
+        val switchTitle = stringResource(R.string.home_runtime_enable_title)
+        BasicComponent(
+            title = switchTitle,
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_extension) },
+            endActions = {
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onEnabledChange,
+                    modifier = Modifier.semantics { contentDescription = switchTitle },
+                )
+            },
+            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        )
     }
 }
 
@@ -363,10 +459,11 @@ private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSysUiResources,
     visual: VisualCfg,
-    lowBatteryThreshold: Int,
+    featureSettings: State<FeatureCfg>,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val lowBatteryThreshold = featureSettings.value.lowBatteryThreshold
     val model = remember(state, resources, lowBatteryThreshold, LocalConfiguration.current) {
         state.toRenderModel(resources, lowBatteryThreshold = lowBatteryThreshold)
     }
