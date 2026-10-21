@@ -80,6 +80,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import com.chaners.guiyuan.ui.components.RuntimeCardTilt
+import com.chaners.guiyuan.ui.components.homeNodeTrace
 import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -332,6 +333,7 @@ private fun HomeRuntimeStatusCard(
 
     // Only Card hits drive MIUIX Tilt; the native Switch has its own hit path.
     val cardPress = remember { MutableInteractionSource() }
+    val tilt = remember { RuntimeCardTilt() }
     val sourceId = System.identityHashCode(cardPress)
     DisposableEffect(cardPress) {
         HomePressTrace.record("composition.enter source=$sourceId")
@@ -358,13 +360,21 @@ private fun HomeRuntimeStatusCard(
             }
         }
     }
-    LaunchedEffect(enabled) {
-        HomePressTrace.record("state.enabled=$enabled source=$sourceId")
+    LaunchedEffect(enabled, state.action) {
+        HomePressTrace.record(
+            "state.enabled=$enabled action=${state.action} source=$sourceId " +
+                "factory=${System.identityHashCode(tilt)} runtime=${runtimeStatus.javaClass.simpleName}",
+        )
     }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
-    Box(modifier = modifier.indication(cardPress, remember { RuntimeCardTilt() })) {
+    Box(
+        modifier = modifier
+            .homeNodeTrace("box.outer", sourceId)
+            .indication(cardPress, tilt)
+            .homeNodeTrace("box.inner", sourceId),
+    ) {
         Card(
-            modifier = Modifier.pressable(cardPress, indication = null, delay = null),
+            modifier = Modifier.homeNodeTrace("card", sourceId).pressable(cardPress, indication = null, delay = null),
             pressFeedbackType = PressFeedbackType.None,
             onClick =
                 when (state.action) {
@@ -458,6 +468,7 @@ private fun HomeRuntimeStatusCard(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 16.dp)
+                .homeNodeTrace("switch", sourceId)
                 // Share the Card's MIUIX Tilt without sharing its click action.
                 .pressable(cardPress, indication = null, delay = null)
                 .semantics { contentDescription = switchTitle },
