@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -246,7 +247,16 @@ private fun HomeRuntimeStatusCard(
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
             RuntimeStatusTone.Warning -> RuntimeWarningAccent
             RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
-            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.onSurfaceContainerVariant
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                } else {
+                    lerp(
+                        MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        MiuixTheme.colorScheme.primary,
+                        0.35f,
+                    )
+                }
         }
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
     val targetContainerColor =
@@ -255,8 +265,8 @@ private fun HomeRuntimeStatusCard(
                 if (enabled) {
                     surfaceColor
                 } else {
-                    MiuixTheme.colorScheme.onSurfaceContainerVariant
-                        .copy(alpha = 0.20f)
+                    MiuixTheme.colorScheme.primary
+                        .copy(alpha = 0.14f)
                         .compositeOver(surfaceColor)
                 }
             else ->
@@ -270,26 +280,45 @@ private fun HomeRuntimeStatusCard(
             animationSpec = tween(StatusColorAnimMillis),
             label = "runtimeAccent",
         )
-    val containerColor by
-        animateColorAsState(
-            targetValue = targetContainerColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeContainer",
-        )
-    val cardGradient =
-        if (!enabled) {
-            Brush.verticalGradient(
-                0f to containerColor,
-                0.72f to surfaceColor.copy(alpha = 0.30f).compositeOver(containerColor),
-                1f to surfaceColor,
-            )
+    // Keep gradient stops fixed while the enabled state changes.
+    val topTarget =
+        if (enabled) {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
         } else {
-            Brush.verticalGradient(
-                0f to surfaceColor.copy(alpha = 0.24f).compositeOver(containerColor),
-                0.5f to containerColor,
-                1f to surfaceColor,
-            )
+            targetContainerColor
         }
+    val midTarget =
+        if (enabled) {
+            targetContainerColor
+        } else {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        }
+    val lowerTarget =
+        surfaceColor
+            .copy(alpha = if (enabled) 0.44f else 0.34f)
+            .compositeOver(targetContainerColor)
+    val topColor by animateColorAsState(
+        targetValue = topTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientTop",
+    )
+    val midColor by animateColorAsState(
+        targetValue = midTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientMid",
+    )
+    val lowerColor by animateColorAsState(
+        targetValue = lowerTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientLower",
+    )
+    val cardGradient =
+        Brush.verticalGradient(
+            0f to topColor,
+            0.5f to midColor,
+            0.72f to lowerColor,
+            1f to surfaceColor,
+        )
 
     Card(
         modifier = modifier,
