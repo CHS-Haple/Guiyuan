@@ -9,6 +9,8 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -439,10 +441,15 @@ private fun HomeRuntimeCardBody(
         }
         val switchTitle = stringResource(R.string.home_runtime_enable_title)
         BasicComponent(
+            modifier = Modifier.toggleable(
+                value = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Switch,
+                onValueChange = onEnabledChange,
+            ),
             title = switchTitle,
             startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-            onClick = { onEnabledChange(!enabled) },
-            role = Role.Switch,
             endActions = {
                 Switch(
                     checked = enabled,
