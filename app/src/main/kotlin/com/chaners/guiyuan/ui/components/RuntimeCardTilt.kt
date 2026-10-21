@@ -34,8 +34,15 @@ internal data class RuntimeCardTilt(
     val tiltAmount: Float = 8f,
     val animationSpec: AnimationSpec<Float> = spring(0.6f, 400f),
 ) : IndicationNodeFactory {
-    override fun create(interactionSource: InteractionSource): DelegatableNode =
-        TiltNode(interactionSource, tiltAmount, animationSpec)
+    override fun create(interactionSource: InteractionSource): DelegatableNode {
+        val node = TiltNode(interactionSource, tiltAmount, animationSpec)
+        HomePressTrace.record(
+            "tilt.factory.create factory=${System.identityHashCode(this)} " +
+                "source=${System.identityHashCode(interactionSource)} " +
+                "node=${System.identityHashCode(node)}",
+        )
+        return node
+    }
 
     private class TiltNode(
         val interactionSource: InteractionSource,
@@ -100,6 +107,11 @@ internal data class RuntimeCardTilt(
 
         override fun onDetach() {
             HomePressTrace.record("tilt.detach node=$nodeId x=${animatedTiltX.value} y=${animatedTiltY.value}")
+            if (kotlin.math.abs(animatedTiltX.value) > 0.5f) {
+                val path = Throwable().stackTrace.drop(1).take(14)
+                    .joinToString(">") { "${it.className.substringAfterLast('.') }.${it.methodName}" }
+                HomePressTrace.record("tilt.detach.path node=$nodeId path=$path")
+            }
         }
 
         override fun onPointerEvent(
