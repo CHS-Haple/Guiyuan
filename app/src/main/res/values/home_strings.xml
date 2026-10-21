@@ -31,11 +31,11 @@
     <string name="home_preview_sandbox_title">Preview sandbox</string>
     <string name="home_preview_switch_light">Switch to light mode</string>
     <string name="home_preview_switch_dark">Switch to dark mode</string>
-    <string name="home_preview_sandbox_summary">Simulated states do not modify the real network or battery.</string>
+    <string name="home_preview_sandbox_summary">Simulated states do not modify the real network or battery</string>
     <string name="home_preview_parasite_title">Parasite mode</string>
-    <string name="home_preview_parasite_summary">Temporarily shows simulated status in the system status bar. Turning it off or leaving the sandbox restores the display.</string>
+    <string name="home_preview_parasite_summary">Temporarily shows simulated status in the system status bar. Turning it off or leaving the sandbox restores the display</string>
     <string name="home_preview_open_title">Preview sandbox</string>
-    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system.</string>
+    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system</string>
     <string name="home_preview_live_title">Live preview</string>
     <string name="home_preview_section_preview">Preview</string>
     <string name="home_preview_section_network">Network</string>
@@ -94,7 +94,7 @@
     <string name="home_preview_battery_mode_performance_compact">Perf.</string>
     <string name="home_preview_battery_mode_super_power_save_compact">Ultra saver</string>
     <string name="home_preview_charging_state_title">Charging state</string>
-    <string name="home_preview_charging_state_summary">Charging is independent from battery mode.</string>
+    <string name="home_preview_charging_state_summary">Charging is independent from battery mode</string>
     <string name="home_preview_charging_none">Not charging</string>
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>

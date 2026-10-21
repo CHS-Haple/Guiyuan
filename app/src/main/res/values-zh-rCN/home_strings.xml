@@ -31,11 +31,11 @@
     <string name="home_preview_sandbox_title">预览沙盒</string>
     <string name="home_preview_switch_light">切换到浅色模式</string>
     <string name="home_preview_switch_dark">切换到深色模式</string>
-    <string name="home_preview_sandbox_summary">模拟状态不会修改实际网络或电池数据。</string>
+    <string name="home_preview_sandbox_summary">模拟状态不会修改实际网络或电池数据</string>
     <string name="home_preview_parasite_title">寄生模式</string>
-    <string name="home_preview_parasite_summary">让模拟状态临时接管系统状态栏，关闭或退出沙盒后恢复。</string>
+    <string name="home_preview_parasite_summary">让模拟状态临时接管系统状态栏，关闭或退出沙盒后恢复</string>
     <string name="home_preview_open_title">预览沙盒</string>
-    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态。</string>
+    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态</string>
     <string name="home_preview_live_title">实时预览</string>
     <string name="home_preview_section_preview">预览</string>
     <string name="home_preview_section_network">网络</string>
@@ -94,7 +94,7 @@
     <string name="home_preview_battery_mode_performance_compact">性能模式</string>
     <string name="home_preview_battery_mode_super_power_save_compact">超级省电</string>
     <string name="home_preview_charging_state_title">充电状态</string>
-    <string name="home_preview_charging_state_summary">充电状态与电量模式互不排斥。</string>
+    <string name="home_preview_charging_state_summary">充电状态与电量模式互不排斥</string>
     <string name="home_preview_charging_none">非充电</string>
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
