@@ -7,7 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,6 +38,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -70,10 +70,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.utils.MiuixIndication
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Switch
 
 private enum class RuntimeStatusTone {
     Success,
@@ -256,7 +256,7 @@ private fun HomeRuntimeStatusCard(
                     surfaceColor
                 } else {
                     MiuixTheme.colorScheme.onSurfaceContainerVariant
-                        .copy(alpha = 0.14f)
+                        .copy(alpha = 0.20f)
                         .compositeOver(surfaceColor)
                 }
             else ->
@@ -280,7 +280,7 @@ private fun HomeRuntimeStatusCard(
         if (!enabled) {
             Brush.verticalGradient(
                 0f to containerColor,
-                0.5f to surfaceColor.copy(alpha = 0.4f).compositeOver(containerColor),
+                0.72f to surfaceColor.copy(alpha = 0.30f).compositeOver(containerColor),
                 1f to surfaceColor,
             )
         } else {
@@ -369,17 +369,19 @@ private fun HomeRuntimeStatusCard(
                 }
 
             }
-            CompositionLocalProvider(
-                LocalIndication provides remember { MiuixIndication(Color.Transparent) },
-            ) {
-                SwitchPreference(
-                    checked = enabled,
-                    onCheckedChange = onEnabledChange,
-                    title = stringResource(R.string.home_runtime_enable_title),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                )
-            }
+            val switchTitle = stringResource(R.string.home_runtime_enable_title)
+            BasicComponent(
+                title = switchTitle,
+                startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                endActions = {
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = onEnabledChange,
+                        modifier = Modifier.semantics { contentDescription = switchTitle },
+                    )
+                },
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            )
         }
     }
 }
