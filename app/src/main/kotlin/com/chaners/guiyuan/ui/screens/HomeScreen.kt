@@ -7,13 +7,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -75,8 +72,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import top.yukonga.miuix.kmp.utils.TiltFeedback
-import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Switch
@@ -325,106 +320,98 @@ private fun HomeRuntimeStatusCard(
             1f to surfaceColor,
         )
 
-    // Only Card hits drive MIUIX Tilt; the native Switch has its own hit path.
-    val cardPress = remember { MutableInteractionSource() }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
-    Box(modifier = modifier.indication(cardPress, remember { TiltFeedback() })) {
-        Card(
-            modifier = Modifier.pressable(cardPress, indication = null, delay = null),
-            pressFeedbackType = PressFeedbackType.None,
-            onClick =
-                when (state.action) {
-                    HomeRuntimeAction.Restart -> onRestart
-                    HomeRuntimeAction.RequestScope -> onRequestScope
-                    HomeRuntimeAction.None -> null
-                },
+    Card(
+        modifier = modifier,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        onClick =
+            when (state.action) {
+                HomeRuntimeAction.Restart -> onRestart
+                HomeRuntimeAction.RequestScope -> onRequestScope
+                HomeRuntimeAction.None -> null
+            },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(cardGradient),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().background(cardGradient),
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(RuntimeCardHeight)
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
             ) {
-                Box(
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .height(RuntimeCardHeight)
-                            .padding(horizontal = 22.dp, vertical = 18.dp),
-                ) {
-                    RuntimeStatusMark(
-                        kind = state.mark,
-                        color = accentColor,
-                        modifier =
-                            Modifier
-                                .align(Alignment.CenterEnd)
-                                .size(RuntimeStatusMarkSize),
-                    )
-
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(end = 98.dp),
-                    ) {
-                        Text(
-                            text = stringResource(state.titleRes),
-                            style =
-                                MiuixTheme.textStyles.title3.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.home_version_line,
-                                    BuildConfig.VERSION_NAME,
-                                ),
-                            modifier = Modifier.padding(top = 5.dp),
-                            style =
-                                MiuixTheme.textStyles.body1.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.home_build_line,
-                                    BuildConfig.BUILD_ID,
-                                ),
-                            modifier = Modifier.padding(top = 1.dp),
-                            style =
-                                MiuixTheme.textStyles.body1.copy(
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        )
-                        Text(
-                            text = stringResource(state.summaryRes),
-                            modifier = Modifier.padding(top = 12.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            maxLines = 2,
-                        )
-                    }
-
-                }
-                BasicComponent(
-                    title = switchTitle,
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-                    endActions = { Spacer(Modifier.size(49.dp, 28.dp)) },
-                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                            .align(Alignment.CenterEnd)
+                            .size(RuntimeStatusMarkSize),
                 )
+
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(end = 98.dp),
+                ) {
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style =
+                            MiuixTheme.textStyles.title3.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_version_line,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                        modifier = Modifier.padding(top = 5.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_build_line,
+                                BuildConfig.BUILD_ID,
+                            ),
+                        modifier = Modifier.padding(top = 1.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        maxLines = 2,
+                    )
+                }
+
             }
+            BasicComponent(
+                title = switchTitle,
+                startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                endActions = {
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = onEnabledChange,
+                        modifier = Modifier.semantics { contentDescription = switchTitle },
+                    )
+                },
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            )
         }
-        Switch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 16.dp)
-                // Share the Card's MIUIX Tilt without sharing its click action.
-                .pressable(cardPress, indication = null, delay = null)
-                .semantics { contentDescription = switchTitle },
-        )
     }
 }
 
