@@ -185,17 +185,6 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    SwitchPreference(
-                        checked = featureSettings.enabled,
-                        onCheckedChange = featureRepository::setEnabled,
-                        title = stringResource(R.string.home_runtime_enable_title),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(top = 8.dp),
-                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    )
                     HomeRuntimeStatusCard(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
@@ -207,8 +196,22 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 24.dp),
+                                .padding(top = 8.dp, bottom = 8.dp),
                     )
+                    Card(
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 12.dp)
+                                .padding(bottom = 24.dp),
+                    ) {
+                        SwitchPreference(
+                            checked = featureSettings.enabled,
+                            onCheckedChange = featureRepository::setEnabled,
+                            title = stringResource(R.string.home_runtime_enable_title),
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        )
+                    }
                 }
 
                 item {
