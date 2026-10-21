@@ -421,6 +421,8 @@ private fun HomeRuntimeStatusCard(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 16.dp)
+                // Share the Card's MIUIX Tilt without sharing its click action.
+                .pressable(cardPress, indication = null, delay = null)
                 .semantics { contentDescription = switchTitle },
         )
     }
