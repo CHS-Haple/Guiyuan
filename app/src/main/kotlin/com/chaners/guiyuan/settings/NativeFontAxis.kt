@@ -22,6 +22,7 @@ internal object NativeFontAxis {
     const val BAT_MIN = "battery_min"
     const val BAT_DEFAULT = "battery_default"
     const val BAT_MAX = "battery_max"
+    const val REQUEST_KEY = "native_font_axis_request"
     private const val PREFS = "native_font_axis"
     private const val BOOT = "boot_count"
 

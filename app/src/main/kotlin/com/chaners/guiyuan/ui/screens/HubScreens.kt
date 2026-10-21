@@ -152,6 +152,9 @@ internal fun FeaturesScreen(
     val mobileWeightRange =
         (verifiedWeightRange?.first ?: 200).toFloat()..
             (verifiedWeightRange?.last ?: 1000).toFloat()
+    val mobileWeightPoints = remember(verifiedWeightRange) {
+        verifiedWeightRange?.let(::weightSnapPoints)
+    }
     val mobileWeightRangeText = verifiedWeightRange?.let { range ->
         stringResource(R.string.font_weight_range, range.first, range.last)
     }
@@ -161,6 +164,9 @@ internal fun FeaturesScreen(
     val batteryWeightRange =
         (verifiedBatteryRange?.first ?: BATTERY_TOP_TEXT_WEIGHT_MIN).toFloat()..
             (verifiedBatteryRange?.last ?: BATTERY_TOP_TEXT_WEIGHT_MAX).toFloat()
+    val batteryWeightPoints = remember(verifiedBatteryRange) {
+        verifiedBatteryRange?.let(::weightSnapPoints)
+    }
     val batteryWeightRangeText = verifiedBatteryRange?.let { range ->
         stringResource(R.string.font_weight_range, range.first, range.last)
     }
@@ -666,7 +672,9 @@ internal fun FeaturesScreen(
                 ),
                 valueRange = mobileWeightRange,
                 steps = 0,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Edge,
+                keyPoints = mobileWeightPoints,
+                magnetThreshold = verifiedWeightRange?.let(::weightSnapThreshold) ?: 0f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 holdDownState = showWeightDialog,
                 enabled = featureCfg.enabled && verifiedWeightRange != null,
                 onClick = { showWeightDialog = true },
@@ -770,7 +778,9 @@ internal fun FeaturesScreen(
                     ),
                     valueRange = batteryWeightRange,
                     steps = 0,
-                    hapticEffect = SliderDefaults.SliderHapticEffect.Edge,
+                    keyPoints = batteryWeightPoints,
+                    magnetThreshold = verifiedBatteryRange?.let(::weightSnapThreshold) ?: 0f,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     holdDownState = showBatteryWeightDialog,
                     enabled = featureCfg.enabled && verifiedBatteryRange != null,
                     onClick = { showBatteryWeightDialog = true },
@@ -1171,3 +1181,13 @@ private fun HubPage(
         overlay()
     }
 }
+
+internal fun weightSnapPoints(range: IntRange): List<Float> {
+    if (range.isEmpty()) return emptyList()
+    val first = ((range.first + 49) / 50) * 50
+    return if (first > range.last) emptyList() else (first..range.last step 50).map(Int::toFloat)
+}
+
+// MIUIX's magnet threshold is normalized; shrink it when 50-point anchors get dense.
+internal fun weightSnapThreshold(range: IntRange): Float =
+    minOf(0.02f, 12.5f / (range.last - range.first).coerceAtLeast(1))
