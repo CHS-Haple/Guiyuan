@@ -14,6 +14,7 @@ internal data class DiagSnapshot(
     val runtimeEvents: RuntimeEventSnapshot,
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
+    val homePress: List<String> = emptyList(),
 ) {
     companion object {
         // Capture once so the screen and exported report describe the same runtime session.
@@ -35,6 +36,7 @@ internal data class DiagSnapshot(
                 runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
+                homePress = HomePressTrace.snapshot(),
             )
         }
     }
