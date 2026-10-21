@@ -3,7 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +40,6 @@ import com.chaners.guiyuan.ui.layout.pageContentPadding
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -236,48 +234,53 @@ internal fun PreviewSandboxScreen(
                             Modifier
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
+                        insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
                     ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                        Text(
+                            text = stringResource(R.string.home_preview_live_title),
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurfaceContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.home_preview_sandbox_summary),
+                            modifier = Modifier.padding(top = 2.dp),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .height(192.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(R.string.home_preview_live_title),
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                            )
-                            Text(
-                                text = stringResource(R.string.home_preview_sandbox_summary),
-                                modifier = Modifier.padding(top = 2.dp),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            )
-                            Box(
+                            StatusPreview(
+                                model = renderModel,
+                                visual = visual,
                                 modifier =
                                     Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                        .height(192.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                StatusPreview(
-                                    model = renderModel,
-                                    visual = visual,
-                                    modifier =
-                                        Modifier
-                                            .width(120.dp)
-                                            .height(184.dp),
-                                )
-                            }
-                            PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+                                        .width(120.dp)
+                                        .height(184.dp),
+                            )
                         }
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
                         SwitchPreference(
                             checked = parasiteActive,
                             onCheckedChange = onParasiteChange,
                             title = stringResource(R.string.home_preview_parasite_title),
                             summary = stringResource(R.string.home_preview_parasite_summary),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
-                            insideMargin = SandboxPreferenceInsideMargin,
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
                         )
                     }
                 }

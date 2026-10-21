@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,7 +65,6 @@ import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -187,21 +185,17 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    SmallTitle(stringResource(R.string.section_home_runtime))
-                    Card(
+                    SwitchPreference(
+                        checked = featureSettings.enabled,
+                        onCheckedChange = featureRepository::setEnabled,
+                        title = stringResource(R.string.home_runtime_enable_title),
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 8.dp),
-                    ) {
-                        SwitchPreference(
-                            checked = featureSettings.enabled,
-                            onCheckedChange = featureRepository::setEnabled,
-                            title = stringResource(R.string.home_runtime_enable_title),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        )
-                    }
+                                .padding(top = 8.dp, bottom = 8.dp),
+                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    )
                     HomeRuntimeStatusCard(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
@@ -213,12 +207,11 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 20.dp),
                     )
                 }
 
                 item {
-                    SmallTitle(stringResource(R.string.section_home_preview_sandbox))
                     HomePreviewSandboxCard(
                         state = previewState,
                         resources = previewResources,
@@ -322,8 +315,7 @@ private fun HomeRuntimeStatusCard(
                 color = accentColor,
                 modifier =
                     Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(y = 6.dp)
+                        .align(Alignment.CenterEnd)
                         .size(RuntimeStatusMarkSize),
             )
 
