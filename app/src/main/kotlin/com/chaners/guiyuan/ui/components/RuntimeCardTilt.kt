@@ -24,6 +24,8 @@ import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import com.chaners.guiyuan.system.HomePressTrace
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.interfaces.HoldDownInteraction
 
@@ -47,15 +49,41 @@ internal data class RuntimeCardTilt(
         private val animatedTiltY = Animatable(0f)
         private var isPressed = false
         private var isHoldDown = false
+        private val nodeId = System.identityHashCode(this)
 
         private fun updateState() {
-            val x = if (isPressed || isHoldDown) targetX else 0f
-            val y = if (isPressed || isHoldDown) targetY else 0f
-            coroutineScope.launch { animatedTiltX.animateTo(x, animationSpec) }
-            coroutineScope.launch { animatedTiltY.animateTo(y, animationSpec) }
+            val home = !isPressed && !isHoldDown
+            val x = if (home) 0f else targetX
+            val y = if (home) 0f else targetY
+            HomePressTrace.record("tilt.target node=$nodeId home=$home x=${animatedTiltX.value} y=${animatedTiltY.value}")
+            coroutineScope.launch {
+                try {
+                    animatedTiltX.animateTo(x, animationSpec)
+                    if (home) HomePressTrace.record("tilt.x.rest node=$nodeId x=${animatedTiltX.value}")
+                } catch (e: CancellationException) {
+                    if (home) HomePressTrace.record("tilt.x.interrupted node=$nodeId x=${animatedTiltX.value}")
+                    throw e
+                }
+            }
+            coroutineScope.launch {
+                try {
+                    animatedTiltY.animateTo(y, animationSpec)
+                    if (home) HomePressTrace.record("tilt.y.rest node=$nodeId y=${animatedTiltY.value}")
+                } catch (e: CancellationException) {
+                    if (home) HomePressTrace.record("tilt.y.interrupted node=$nodeId y=${animatedTiltY.value}")
+                    throw e
+                }
+            }
+            if (home) {
+                coroutineScope.launch {
+                    delay(80)
+                    HomePressTrace.record("tilt.after80 node=$nodeId x=${animatedTiltX.value} y=${animatedTiltY.value}")
+                }
+            }
         }
 
         override fun onAttach() {
+            HomePressTrace.record("tilt.attach node=$nodeId")
             coroutineScope.launch {
                 interactionSource.interactions.collect { interaction: Interaction ->
                     when (interaction) {
@@ -68,6 +96,10 @@ internal data class RuntimeCardTilt(
                     updateState()
                 }
             }
+        }
+
+        override fun onDetach() {
+            HomePressTrace.record("tilt.detach node=$nodeId x=${animatedTiltX.value} y=${animatedTiltY.value}")
         }
 
         override fun onPointerEvent(
