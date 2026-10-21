@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Compact UI symbol: preserve the launcher paths, omit adaptive-icon safe-area spacing. -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.30"
+        android:scaleY="1.30">
+
+        <!-- Three rotationally symmetric orbit segments.
+             Equal radius, stroke width, sweep and round caps make all
+             dot-to-tail gaps optically consistent. -->
+        <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="@color/launcher_icon_foreground"
+            android:strokeWidth="7.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M65.019,28.042 C76.599,32.957 83.523,44.950 81.990,57.437" />
+
+        <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="@color/launcher_icon_foreground"
+            android:strokeWidth="7.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M70.971,76.522 C60.924,84.093 47.076,84.093 37.029,76.522" />
+
+        <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="@color/launcher_icon_foreground"
+            android:strokeWidth="7.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M26.010,57.437 C24.477,44.950 31.401,32.957 42.981,28.042" />
+
+        <!-- Center and three equal orbit nodes. -->
+        <path
+            android:fillColor="@color/launcher_icon_foreground"
+            android:pathData="M54,42 C60.627,42 66,47.373 66,54 C66,60.627 60.627,66 54,66 C47.373,66 42,60.627 42,54 C42,47.373 47.373,42 54,42 Z" />
+
+        <path
+            android:fillColor="@color/launcher_icon_foreground"
+            android:pathData="M54,20.65 C56.844,20.65 59.15,22.956 59.15,25.8 C59.15,28.644 56.844,30.95 54,30.95 C51.156,30.95 48.85,28.644 48.85,25.8 C48.85,22.956 51.156,20.65 54,20.65 Z" />
+
+        <path
+            android:fillColor="@color/launcher_icon_foreground"
+            android:pathData="M78.422,62.95 C81.266,62.95 83.572,65.256 83.572,68.1 C83.572,70.944 81.266,73.25 78.422,73.25 C75.578,73.25 73.272,70.944 73.272,68.1 C73.272,65.256 75.578,62.95 78.422,62.95 Z" />
+
+        <path
+            android:fillColor="@color/launcher_icon_foreground"
+            android:pathData="M29.578,62.95 C32.422,62.95 34.728,65.256 34.728,68.1 C34.728,70.944 32.422,73.25 29.578,73.25 C26.734,73.25 24.428,70.944 24.428,68.1 C24.428,65.256 26.734,62.95 29.578,62.95 Z" />
+
+    </group>
+
+</vector>
