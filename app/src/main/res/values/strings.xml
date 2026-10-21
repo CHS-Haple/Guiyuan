@@ -258,7 +258,7 @@
     <string name="diagnostics_log_summary_total_time">Total %1$s</string>
     <string name="diagnostics_log_summary_source">Source: %1$s</string>
     <string name="diagnostics_log_summary_separator">, </string>
-    <string name="diagnostics_log_setting_combined">Combined</string>
+    <string name="diagnostics_log_setting_combined">Guiyuan status bar icon</string>
     <string name="diagnostics_log_setting_keyguard">Lock screen</string>
     <string name="diagnostics_log_setting_aod">AOD</string>
     <string name="diagnostics_log_switch_on">On</string>
@@ -269,7 +269,7 @@
     <string name="diagnostics_log_state_prepared">Prepared</string>
     <string name="diagnostics_log_state_released">Released</string>
     <string name="diagnostics_log_state_native">Native</string>
-    <string name="diagnostics_log_state_combined">Combined</string>
+    <string name="diagnostics_log_state_combined">Guiyuan status bar icon</string>
     <string name="diagnostics_log_state_keyguard">Lock screen</string>
     <string name="diagnostics_log_state_aod">AOD</string>
     <string name="diagnostics_log_state_home">Home</string>
