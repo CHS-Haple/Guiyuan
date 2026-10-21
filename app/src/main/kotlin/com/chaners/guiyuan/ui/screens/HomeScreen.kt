@@ -245,7 +245,7 @@ internal fun HomeScreen(
                             modifier =
                                 Modifier
                                     .padding(horizontal = 12.dp)
-                                    .padding(bottom = 12.dp),
+                                    .padding(top = 8.dp, bottom = 24.dp),
                         )
                     }
                 }
