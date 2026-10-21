@@ -20,9 +20,9 @@ class VisualPrefsOwnerTest {
         val next = FakePreferences(dual = true)
         val observed = mutableListOf<VisualCfg>()
 
-        VisualPrefsOwner.bind(old, observed::add)
+        VisualPrefsOwner.bind(old, onChanged = observed::add)
         val stale = old.lastListener
-        VisualPrefsOwner.bind(next, observed::add)
+        VisualPrefsOwner.bind(next, onChanged = observed::add)
 
         assertEquals(0, old.listenerCount)
         assertEquals(1, next.listenerCount)
@@ -39,7 +39,7 @@ class VisualPrefsOwnerTest {
     fun unbindRejectsLateCallbacks() {
         val prefs = FakePreferences(dual = true)
         val observed = mutableListOf<VisualCfg>()
-        VisualPrefsOwner.bind(prefs, observed::add)
+        VisualPrefsOwner.bind(prefs, onChanged = observed::add)
         val stale = prefs.lastListener
 
         VisualPrefsOwner.unbind()
@@ -55,7 +55,7 @@ class VisualPrefsOwnerTest {
     fun unchangedAndUnrelatedNotificationsDoNotEmit() {
         val prefs = FakePreferences(dual = false)
         val observed = mutableListOf<VisualCfg>()
-        VisualPrefsOwner.bind(prefs, observed::add)
+        VisualPrefsOwner.bind(prefs, onChanged = observed::add)
 
         prefs.notify("unrelated")
         prefs.notify(DUAL_SIGNAL_ENABLED_KEY)
