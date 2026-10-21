@@ -146,6 +146,8 @@ private class InnerShadowNode(
     }
 
     override fun onAttach() {
+        // The radius cache belongs to this graphics layer, not to the reusable modifier node.
+        prevRadius = Float.NaN
         shadowLayer = requireGraphicsContext().createGraphicsLayer().apply {
             compositingStrategy = CompositingStrategy.Offscreen
         }
