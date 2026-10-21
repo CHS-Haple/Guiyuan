@@ -1835,17 +1835,16 @@ class GyModule : XposedModule() {
     ) {
         if (Build.VERSION.SDK_INT < 34) return
         val host = SysUiHostRegistry.current() as? View ?: return
-        val mobileFont = networkType?.let { type ->
-            val face = type.typeface
-            val path = type.fontPath
-            if (face != null && path != null) face to path else null
-        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
-        val face = mobileFont?.first
+        val face = networkType?.typeface
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
         if (!force && fontAxisReported && reportedFontHost === host &&
             reportedFont === face && reportedBatteryFont === batteryFace
         ) return
+        val mobileFont = networkType?.let { type ->
+            val path = type.fontPath
+            if (face != null && path != null) face to path else null
+        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
 
         fun weightAxis(path: String?): FontWeightAxis? =
             path?.let {
@@ -4352,7 +4351,7 @@ class GyModule : XposedModule() {
     // An app data reset loses the received axis report, not SystemUI's font source.
     private fun onFontAxisRequest() {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            Handler(Looper.getMainLooper()).post(::onFontAxisRequest)
+            Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
         }
         reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)

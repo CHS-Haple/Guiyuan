@@ -95,13 +95,14 @@ class VisualPrefsOwnerTest {
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+            private set
+
         private var requestId = 0L
 
         fun requestAxis(id: Long) {
             requestId = id
             notify(NativeFontAxis.REQUEST_KEY)
         }
-            private set
 
         val listenerCount: Int
             get() = listeners.size
