@@ -92,7 +92,7 @@
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
     <string name="mobile_type_weight">Mobile type font weight</string>
-    <string name="font_weight_range">%1$d - %2$d</string>
+    <string name="font_weight_range">Current font adjustable range: %1$d - %2$d</string>
     <string name="font_weight_unverified">Current font axis not verified; adjustment unavailable</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
@@ -339,6 +339,8 @@
     <string name="diagnostic_report_share_failed">Could not share the diagnostic report</string>
     <string name="back">Back</string>
 
+    <string name="low_battery_threshold">Low battery threshold</string>
+    <string name="low_battery_threshold_summary">Use low battery colors below this level</string>
     <string name="battery_colors">Battery colors</string>
     <string name="battery_color_scheme_summary">Scheme: %1$s</string>
     <string name="battery_color_scheme">Color scheme</string>

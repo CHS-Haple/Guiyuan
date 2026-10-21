@@ -4,6 +4,8 @@ import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.settings.isFeatureKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,6 +20,7 @@ class FeaturePrefsOwnerTest {
         assertTrue(isFeatureKey(FEATURE_ENABLED_KEY))
         assertTrue(isFeatureKey(FEATURE_KEYGUARD_KEY))
         assertTrue(isFeatureKey(FEATURE_AOD_KEY))
+        assertTrue(isFeatureKey(LOW_BATTERY_THRESHOLD_KEY))
         assertFalse(isFeatureKey(FEATURE_CHANGED_AT_NS_KEY))
         assertFalse(isFeatureKey("unrelated"))
     }
@@ -28,6 +31,7 @@ class FeaturePrefsOwnerTest {
         assertEquals(true, cfg.enabled)
         assertEquals(true, cfg.keyguard)
         assertEquals(true, cfg.aod)
+        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, cfg.lowBatteryThreshold)
     }
 
     @Test

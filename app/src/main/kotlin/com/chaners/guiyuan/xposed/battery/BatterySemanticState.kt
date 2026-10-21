@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed.battery
 
+import com.chaners.guiyuan.settings.validLowBatteryThreshold
+
 internal enum class BatterySemanticState {
     NORMAL,
     CHARGING,
@@ -10,6 +12,14 @@ internal enum class BatterySemanticState {
     ;
 
     companion object {
+        // Only ordinary and native LOW states may change with the user threshold.
+        fun atThreshold(native: BatterySemanticState?, percent: Int, threshold: Int): BatterySemanticState =
+            when (native) {
+                NORMAL, LOW -> if (percent < validLowBatteryThreshold(threshold)) LOW else NORMAL
+                null -> NORMAL
+                else -> native
+            }
+
         fun fromNativeProgressStatus(statusName: String?): BatterySemanticState? {
             val normalized = statusName?.removeSuffix("_DARK") ?: return null
             return when (normalized) {

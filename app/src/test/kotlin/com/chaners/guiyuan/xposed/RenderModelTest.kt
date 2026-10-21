@@ -4,12 +4,51 @@ import com.chaners.guiyuan.xposed.network.InternetState
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import com.chaners.guiyuan.xposed.network.SignalStrength
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RenderModelTest {
+    @Test
+    fun nativeLowColorAndThresholdReclassificationAreConsistent() {
+        val native = StatusStateStore.BatteryState(
+            percent = 24,
+            charging = false,
+            semanticState = BatterySemanticState.NORMAL,
+            systemSemanticColor = null,
+            lowSystemColor = 0xFFFF5500.toInt(),
+        )
+        fun model(battery: StatusStateStore.BatteryState, threshold: Int) =
+            RenderModel.from(
+                // Airplane provides a complete native center; the test only varies battery semantics.
+                snapshot = StatusStateStore.Snapshot(battery = battery, airplaneMode = true),
+                presentation = PresentationStore.Snapshot(),
+                defaultDataSubscriptionId = -1,
+                lowBatteryThreshold = threshold,
+            )
+
+        val early = model(native, 30)
+        assertEquals(BatterySemanticState.LOW, early?.batterySemanticState)
+        assertEquals(native.lowSystemColor, early?.batterySystemSemanticColor)
+        val normal = model(native, 20)
+        assertEquals(BatterySemanticState.NORMAL, normal?.batterySemanticState)
+        assertEquals(null, normal?.batterySystemSemanticColor)
+
+        val nativeLow = native.copy(
+            percent = 12,
+            semanticState = BatterySemanticState.LOW,
+            systemSemanticColor = 0xFFFF5500.toInt(),
+        )
+        val suppressed = model(nativeLow, 5)
+        assertEquals(BatterySemanticState.NORMAL, suppressed?.batterySemanticState)
+        assertEquals(null, suppressed?.batterySystemSemanticColor)
+        val retained = model(nativeLow, 20)
+        assertEquals(BatterySemanticState.LOW, retained?.batterySemanticState)
+        assertEquals(nativeLow.lowSystemColor, retained?.batterySystemSemanticColor)
+    }
+
     @Test
     fun wifiValidatedWinsTheCenterIndicator() {
         val model =

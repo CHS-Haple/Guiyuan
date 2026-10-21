@@ -13,6 +13,9 @@ import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
@@ -30,6 +33,8 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.sandbox.SandboxClient
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -67,6 +72,13 @@ class GyApplication :
 
     @Volatile
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
+
+    private val sandbox = SandboxClient { xposedService }
+    internal val sandboxActive = sandbox.active
+
+    internal fun startSandbox(state: PreviewSandboxUiState) = sandbox.start(state)
+    internal fun updateSandbox(state: PreviewSandboxUiState) = sandbox.update(state)
+    internal fun stopSandbox() = sandbox.stop()
 
     private val handler = Handler(Looper.getMainLooper())
     private val pendingScope = MutableStateFlow<ScopeRequest?>(null)
@@ -143,6 +155,7 @@ class GyApplication :
         handler.post {
             handler.removeCallbacks(bindTimeout)
             if (xposedService !== service) {
+                sandbox.stop()
                 finishScopeRequest(false)
                 finishHotReload()
             }
@@ -156,6 +169,7 @@ class GyApplication :
     override fun onServiceDied(service: XposedService) {
         handler.post {
             if (xposedService === service) {
+                sandbox.stop()
                 xposedService = null
                 lastMirror = null
                 finishScopeRequest(false)
@@ -166,6 +180,7 @@ class GyApplication :
     }
 
     override fun onTerminate() {
+        sandbox.stop()
         diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
         featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
         visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
@@ -334,6 +349,9 @@ class GyApplication :
                         keyguard =
                             featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
                         aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
+                        lowBatteryThreshold = validLowBatteryThreshold(
+                            featurePrefs.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
+                        ),
                     ),
                 changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
                 visual = visualPrefs.readVisualCfg(),
@@ -351,6 +369,7 @@ class GyApplication :
                 .putBoolean(FEATURE_ENABLED_KEY, snapshot.feature.enabled)
                 .putBoolean(FEATURE_KEYGUARD_KEY, snapshot.feature.keyguard)
                 .putBoolean(FEATURE_AOD_KEY, snapshot.feature.aod)
+                .putInt(LOW_BATTERY_THRESHOLD_KEY, snapshot.feature.lowBatteryThreshold)
                 .putLong(FEATURE_CHANGED_AT_NS_KEY, snapshot.changedAtNs)
                 .putVisualCfg(snapshot.visual)
             check(editor.commit()) { "remote preference commit failed" }

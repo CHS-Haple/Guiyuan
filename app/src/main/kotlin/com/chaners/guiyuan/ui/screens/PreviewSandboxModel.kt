@@ -2,8 +2,10 @@ package com.chaners.guiyuan.ui.screens
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Typeface
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.DualMobileLevels
 import com.chaners.guiyuan.xposed.RenderModel
@@ -207,6 +209,9 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSysUiResources,
+    mobileTypeface: Typeface? = null,
+    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
+    nativeLowColor: Int? = null,
 ): RenderModel {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     val mobileLevel =
@@ -257,11 +262,12 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     label = dataMobileNetwork.systemLabel,
                     enhanced = false,
                     internet = InternetState.VALIDATED,
+                    typeface = mobileTypeface,
                 )
         }
 
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
-    val semanticState =
+    val baseState =
         if (charging) {
             BatterySemanticState.CHARGING
         } else {
@@ -273,6 +279,11 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     BatterySemanticState.SUPER_POWER_SAVE
             }
         }
+    val semanticState = BatterySemanticState.atThreshold(
+        baseState,
+        batteryPercent,
+        lowBatteryThreshold,
+    )
 
     return RenderModel(
         batteryPercent = batteryPercent.coerceIn(0, 100),
@@ -294,7 +305,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 batteryMode = batteryMode,
                 chargingState = chargingState,
                 semanticState = semanticState,
-            ),
+            ) ?: nativeLowColor.takeIf { semanticState == BatterySemanticState.LOW },
     )
 }
 

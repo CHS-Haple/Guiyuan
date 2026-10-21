@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,10 @@ internal fun GyApp(
     appearance: Appearance,
     dark: Boolean,
     onPreviewThemeChange: (Boolean?) -> Unit,
+    sandboxActive: Boolean,
+    onSandboxToggle: (Boolean, PreviewSandboxUiState) -> Unit,
+    onSandboxUpdate: (PreviewSandboxUiState) -> Unit,
+    onSandboxStop: () -> Unit,
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: () -> Unit,
@@ -167,7 +172,17 @@ internal fun GyApp(
                     ],
             )
 
+        LaunchedEffect(previewState, sandboxActive) {
+            if (sandboxActive) onSandboxUpdate(previewState)
+        }
+
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
+        val currentRoute = backStack.lastOrNull()
+        DisposableEffect(currentRoute) {
+            onDispose {
+                if (currentRoute == AppRoute.PreviewSandbox) onSandboxStop()
+            }
+        }
         val swipeBackDirection = when {
             !appearance.swipeBack -> NavSwipeDirection.None
             LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
@@ -244,6 +259,8 @@ internal fun GyApp(
                 ) {
                     PreviewSandboxScreen(
                         state = previewState,
+                        parasiteActive = sandboxActive,
+                        onParasiteChange = { onSandboxToggle(it, previewState) },
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
@@ -283,7 +300,10 @@ internal fun GyApp(
                         },
                         dark = previewDark,
                         onToggleTheme = { sandboxDark = !previewDark },
-                        onBack = ::navigateBack,
+                        onBack = {
+                            onSandboxStop()
+                            navigateBack()
+                        },
                     )
                 }
             }

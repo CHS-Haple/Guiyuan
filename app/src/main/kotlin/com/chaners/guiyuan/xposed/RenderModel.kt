@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
@@ -27,6 +28,7 @@ internal data class RenderModel(
             presentation: PresentationStore.Snapshot,
             defaultDataSubscriptionId: Int,
             dualSignalEnabled: Boolean = false,
+            lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
         ): RenderModel? {
             val battery = snapshot.battery ?: return null
 
@@ -190,9 +192,11 @@ internal data class RenderModel(
                 } else null
 
             val batteryPercent = battery.percent.coerceIn(0, 100)
-            val batterySemanticState =
-                battery.semanticState
-                    ?: BatterySemanticState.NORMAL
+            val batterySemanticState = BatterySemanticState.atThreshold(
+                battery.semanticState,
+                batteryPercent,
+                lowBatteryThreshold,
+            )
 
             return RenderModel(
                 batteryPercent = batteryPercent,
@@ -204,7 +208,15 @@ internal data class RenderModel(
                 effectiveDataSubscriptionId = selectedSubscriptionId,
                 dualMobileLevels = dualLevels,
                 batterySemanticState = batterySemanticState,
-                batterySystemSemanticColor = battery.systemSemanticColor,
+                batterySystemSemanticColor = when (batterySemanticState) {
+                    BatterySemanticState.NORMAL -> null
+                    BatterySemanticState.LOW ->
+                        battery.lowSystemColor
+                            ?: battery.systemSemanticColor.takeIf {
+                                battery.semanticState == BatterySemanticState.LOW
+                            }
+                    else -> battery.systemSemanticColor
+                },
             )
         }
     }
