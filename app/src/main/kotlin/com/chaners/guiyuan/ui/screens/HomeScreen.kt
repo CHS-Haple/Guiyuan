@@ -7,6 +7,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -38,6 +41,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -59,6 +64,7 @@ import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -185,7 +191,6 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    SmallTitle(stringResource(R.string.section_home_runtime))
                     HomeRuntimeStatusCard(
                         enabled = featureSettings.enabled,
                         runtimeStatus = xposedStatus,
@@ -198,7 +203,7 @@ internal fun HomeScreen(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(top = 8.dp, bottom = 24.dp),
                     )
                 }
 
@@ -218,6 +223,91 @@ internal fun HomeScreen(
             }
         }
     }
+}
+
+private data class CardPaint(val accent: Color, val gradient: Brush)
+
+@Composable
+private fun RuntimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+    val targetAccentColor =
+        when (state.tone) {
+            RuntimeStatusTone.Success -> RuntimeSuccessAccent
+            RuntimeStatusTone.Warning -> RuntimeWarningAccent
+            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                } else {
+                    lerp(
+                        MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        MiuixTheme.colorScheme.primary,
+                        0.35f,
+                    )
+                }
+        }
+    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
+    val targetContainerColor =
+        when (state.tone) {
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    surfaceColor
+                } else {
+                    MiuixTheme.colorScheme.primary
+                        .copy(alpha = 0.14f)
+                        .compositeOver(surfaceColor)
+                }
+            else ->
+                targetAccentColor
+                    .copy(alpha = 0.15f)
+                    .compositeOver(surfaceColor)
+        }
+    val accentColor by
+        animateColorAsState(
+            targetValue = targetAccentColor,
+            animationSpec = tween(StatusColorAnimMillis),
+            label = "runtimeAccent",
+        )
+    // Keep gradient stops fixed while the enabled state changes.
+    val topTarget =
+        if (enabled) {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        } else {
+            targetContainerColor
+        }
+    val midTarget =
+        if (enabled) {
+            targetContainerColor
+        } else {
+            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+        }
+    val lowerTarget =
+        surfaceColor
+            .copy(alpha = if (enabled) 0.44f else 0.34f)
+            .compositeOver(targetContainerColor)
+    val topColor by animateColorAsState(
+        targetValue = topTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientTop",
+    )
+    val midColor by animateColorAsState(
+        targetValue = midTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientMid",
+    )
+    val lowerColor by animateColorAsState(
+        targetValue = lowerTarget,
+        animationSpec = tween(StatusColorAnimMillis),
+        label = "runtimeGradientLower",
+    )
+    val cardGradient =
+        Brush.verticalGradient(
+            0f to topColor,
+            0.5f to midColor,
+            0.72f to lowerColor,
+            1f to surfaceColor,
+        )
+
+    return CardPaint(accentColor, cardGradient)
 }
 
 @Composable
@@ -240,41 +330,10 @@ private fun HomeRuntimeStatusCard(
             restartInProgress = restartInProgress,
             scopeRequestInProgress = scopeRequestInProgress,
         )
-    val targetAccentColor =
-        when (state.tone) {
-            RuntimeStatusTone.Success -> RuntimeSuccessAccent
-            RuntimeStatusTone.Warning -> RuntimeWarningAccent
-            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
-            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.onSurfaceContainerVariant
-        }
-    val targetContainerColor =
-        when (state.tone) {
-            RuntimeStatusTone.Neutral -> MiuixTheme.colorScheme.surfaceContainer
-            else ->
-                targetAccentColor
-                    .copy(alpha = 0.15f)
-                    .compositeOver(MiuixTheme.colorScheme.surfaceContainer)
-        }
-    val accentColor by
-        animateColorAsState(
-            targetValue = targetAccentColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeAccent",
-        )
-    val containerColor by
-        animateColorAsState(
-            targetValue = targetContainerColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeContainer",
-        )
+    val (accentColor, cardGradient) = RuntimeCardPaint(state, enabled)
 
     Card(
         modifier = modifier,
-        colors =
-            CardDefaults.defaultColors(
-                color = containerColor,
-                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-            ),
         pressFeedbackType = PressFeedbackType.Tilt,
         onClick =
             when (state.action) {
@@ -283,75 +342,86 @@ private fun HomeRuntimeStatusCard(
                 HomeRuntimeAction.None -> null
             },
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(RuntimeCardHeight)
-                    .padding(horizontal = 22.dp, vertical = 18.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth().background(cardGradient),
         ) {
-            RuntimeStatusMark(
-                kind = state.mark,
-                color = accentColor,
+            Box(
                 modifier =
                     Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(y = 6.dp)
-                        .size(RuntimeStatusMarkSize),
-            )
-
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(end = 98.dp),
+                        .fillMaxWidth()
+                        .height(RuntimeCardHeight)
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
             ) {
-                Text(
-                    text = stringResource(state.titleRes),
-                    style =
-                        MiuixTheme.textStyles.title3.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(RuntimeStatusMarkSize),
                 )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_version_line,
-                            BuildConfig.VERSION_NAME,
-                        ),
-                    modifier = Modifier.padding(top = 5.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_build_line,
-                            BuildConfig.BUILD_ID,
-                        ),
-                    modifier = Modifier.padding(top = 1.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = stringResource(state.summaryRes),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    maxLines = 2,
-                )
-            }
 
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                modifier = Modifier.align(Alignment.TopEnd),
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(end = 98.dp),
+                ) {
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style =
+                            MiuixTheme.textStyles.title3.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_version_line,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                        modifier = Modifier.padding(top = 5.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_build_line,
+                                BuildConfig.BUILD_ID,
+                            ),
+                        modifier = Modifier.padding(top = 1.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        maxLines = 2,
+                    )
+                }
+
+            }
+            val switchTitle = stringResource(R.string.home_runtime_enable_title)
+            BasicComponent(
+                title = switchTitle,
+                startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+                endActions = {
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = onEnabledChange,
+                        modifier = Modifier.semantics { contentDescription = switchTitle },
+                    )
+                },
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             )
         }
     }
