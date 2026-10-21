@@ -146,6 +146,8 @@ private class InnerShadowNode(
     }
 
     override fun onAttach() {
+        // A fresh graphics layer must not reuse the previous layer's blur-radius cache.
+        prevRadius = Float.NaN
         shadowLayer = requireGraphicsContext().createGraphicsLayer().apply {
             compositingStrategy = CompositingStrategy.Offscreen
         }
