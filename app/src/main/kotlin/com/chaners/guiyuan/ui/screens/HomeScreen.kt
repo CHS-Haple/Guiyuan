@@ -231,7 +231,7 @@ internal fun HomeScreen(
 private data class CardPaint(val accent: Color, val gradient: Brush)
 
 @Composable
-private fun RuntimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
     val targetAccentColor =
         when (state.tone) {
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
@@ -362,7 +362,7 @@ private fun HomeRuntimeCardBody(
         restartInProgress = restartInProgress,
         scopeRequestInProgress = scopeRequestInProgress,
     )
-    val (accentColor, cardGradient) = RuntimeCardPaint(state, enabled)
+    val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
     val onCardClick = when (state.action) {
         HomeRuntimeAction.Restart -> onRestart
         HomeRuntimeAction.RequestScope -> onRequestScope
