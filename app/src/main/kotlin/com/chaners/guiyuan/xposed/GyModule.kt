@@ -1829,13 +1829,21 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun reportFontAxis(networkType: NativePresentationResolver.NetworkType?) {
+    private fun reportFontAxis(
+        networkType: NativePresentationResolver.NetworkType?,
+        force: Boolean = false,
+    ) {
         if (Build.VERSION.SDK_INT < 34) return
         val host = SysUiHostRegistry.current() as? View ?: return
-        val face = networkType?.typeface
+        val mobileFont = networkType?.let { type ->
+            val face = type.typeface
+            val path = type.fontPath
+            if (face != null && path != null) face to path else null
+        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
+        val face = mobileFont?.first
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
-        if (fontAxisReported && reportedFontHost === host &&
+        if (!force && fontAxisReported && reportedFontHost === host &&
             reportedFont === face && reportedBatteryFont === batteryFace
         ) return
 
@@ -1854,8 +1862,8 @@ class GyModule : XposedModule() {
                             kotlin.math.floor(axis.max.toDouble()).toInt()
                     }
             }
-        val mobileAxis = weightAxis(networkType?.fontPath)
-        val batteryAxis = if (batteryFont?.second == networkType?.fontPath) {
+        val mobileAxis = weightAxis(mobileFont?.second)
+        val batteryAxis = if (batteryFont?.second == mobileFont?.second) {
             mobileAxis
         } else {
             weightAxis(batteryFont?.second)
@@ -4310,6 +4318,7 @@ class GyModule : XposedModule() {
         runCatching {
             VisualPrefsOwner.bind(
                 source = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                onAxisRequest = ::onFontAxisRequest,
                 onChanged = ::onVisualCfgChanged,
             )
         }.onSuccess { settings ->
@@ -4338,6 +4347,15 @@ class GyModule : XposedModule() {
                 "reason" to (error.message ?: error.javaClass.simpleName),
             )
         }
+    }
+
+    // An app data reset loses the received axis report, not SystemUI's font source.
+    private fun onFontAxisRequest() {
+        if (Looper.myLooper() !== Looper.getMainLooper()) {
+            Handler(Looper.getMainLooper()).post(::onFontAxisRequest)
+            return
+        }
+        reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
     }
 
     private fun onVisualCfgChanged(

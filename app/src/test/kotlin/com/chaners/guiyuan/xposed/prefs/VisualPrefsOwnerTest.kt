@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DUAL_SIGNAL_ENABLED_KEY
+import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -65,11 +66,41 @@ class VisualPrefsOwnerTest {
         assertEquals(listOf(false, true), observed.map { it.dualSignal })
     }
 
+    @Test
+    fun fontAxisRequestOnlyNotifiesTheBoundGeneration() {
+        val old = FakePreferences(dual = false)
+        val next = FakePreferences(dual = false)
+        val seen = mutableListOf<VisualCfg>()
+        var requests = 0
+        VisualPrefsOwner.bind(old, onAxisRequest = { requests++ }, onChanged = seen::add)
+
+        old.requestAxis(100L)
+        old.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(1, requests)
+        assertEquals(1, seen.size)
+
+        val stale = old.lastListener
+        VisualPrefsOwner.bind(next, onAxisRequest = { requests++ }, onChanged = seen::add)
+        old.requestAxis(101L)
+        stale?.onSharedPreferenceChanged(old, NativeFontAxis.REQUEST_KEY)
+        assertEquals(1, requests)
+
+        next.requestAxis(102L)
+        assertEquals(2, requests)
+        assertEquals(2, seen.size)
+    }
+
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+        private var requestId = 0L
+
+        fun requestAxis(id: Long) {
+            requestId = id
+            notify(NativeFontAxis.REQUEST_KEY)
+        }
             private set
 
         val listenerCount: Int
@@ -113,7 +144,8 @@ class VisualPrefsOwnerTest {
         ): MutableSet<String>? = defValues
 
         override fun getInt(key: String?, defValue: Int): Int = defValue
-        override fun getLong(key: String?, defValue: Long): Long = defValue
+        override fun getLong(key: String?, defValue: Long): Long =
+            if (key == NativeFontAxis.REQUEST_KEY) requestId else defValue
         override fun getFloat(key: String?, defValue: Float): Float = defValue
         override fun edit(): SharedPreferences.Editor =
             throw UnsupportedOperationException("Not required")

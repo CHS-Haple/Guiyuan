@@ -228,7 +228,20 @@ internal object NativePresentationResolver {
 
     // The static native glyph face is available even when Wi-Fi hides the mobile type.
     // Follow SystemUI's own fallback selection; never substitute a guessed app font.
-    fun sandboxMobileTypeface(context: Context): Typeface? = runCatching {
+    fun sandboxMobileTypeface(context: Context): Typeface? =
+        verifiedMobileFont(context)?.let { (face, path) ->
+            val file = File(path)
+            if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) return@let null
+            val axis = runCatching {
+                FileInputStream(file).channel.use { channel ->
+                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+                }
+            }.getOrNull()?.let(NativeFontAxis::checked)
+            face.takeIf { axis != null }
+        }
+
+    // This static SystemUI face remains authoritative when no mobile type is visible.
+    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = runCatching {
         val loader = context.classLoader
         val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
         val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
@@ -240,14 +253,7 @@ internal object NativePresentationResolver {
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
             ?: return@runCatching null
-        val file = File(path)
-        if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) {
-            return@runCatching null
-        }
-        val axis = FileInputStream(file).channel.use { channel ->
-            FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-        }?.let(NativeFontAxis::checked)
-        face.takeIf { axis != null }
+        face to path
     }.getOrNull()
 
     // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
