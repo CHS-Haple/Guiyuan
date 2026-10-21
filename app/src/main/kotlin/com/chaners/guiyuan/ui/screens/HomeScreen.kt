@@ -72,7 +72,6 @@ import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -210,7 +209,6 @@ internal fun HomeScreen(
                 }
 
                 item {
-                    SmallTitle(stringResource(R.string.section_home_preview_sandbox))
                     HomePreviewSandboxCard(
                         state = previewState,
                         resources = previewResources,
@@ -441,7 +439,7 @@ private fun HomeRuntimeCardBody(
         val switchTitle = stringResource(R.string.home_runtime_enable_title)
         BasicComponent(
             title = switchTitle,
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_extension) },
+            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
             endActions = {
                 Switch(
                     checked = enabled,

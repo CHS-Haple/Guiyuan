@@ -28,7 +28,6 @@
     <string name="home_scope_request_failed">Scope request unavailable</string>
     <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your module manager.</string>
 
-    <string name="section_home_preview_sandbox">Status simulation</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>
     <string name="home_preview_switch_light">Switch to light mode</string>
     <string name="home_preview_switch_dark">Switch to dark mode</string>
