@@ -79,7 +79,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import top.yukonga.miuix.kmp.utils.TiltFeedback
+import com.chaners.guiyuan.ui.components.RuntimeCardTilt
 import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -362,7 +362,7 @@ private fun HomeRuntimeStatusCard(
         HomePressTrace.record("state.enabled=$enabled source=$sourceId")
     }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
-    Box(modifier = modifier.indication(cardPress, remember { TiltFeedback() })) {
+    Box(modifier = modifier.indication(cardPress, remember { RuntimeCardTilt() })) {
         Card(
             modifier = Modifier.pressable(cardPress, indication = null, delay = null),
             pressFeedbackType = PressFeedbackType.None,
