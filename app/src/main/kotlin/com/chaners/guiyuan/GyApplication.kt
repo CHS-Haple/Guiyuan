@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
@@ -33,6 +34,7 @@ import com.chaners.guiyuan.settings.putVisualCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.sandbox.SandboxClient
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.system.RestartTarget
@@ -72,6 +74,8 @@ class GyApplication :
 
     @Volatile
     private var lastMirror: Pair<XposedService, RuntimeSnapshot>? = null
+
+    private val fontAxisRequestId = SystemClock.elapsedRealtimeNanos().coerceAtLeast(1L)
 
     private val sandbox = SandboxClient { xposedService }
     internal val sandboxActive = sandbox.active
@@ -371,6 +375,7 @@ class GyApplication :
                 .putBoolean(FEATURE_AOD_KEY, snapshot.feature.aod)
                 .putInt(LOW_BATTERY_THRESHOLD_KEY, snapshot.feature.lowBatteryThreshold)
                 .putLong(FEATURE_CHANGED_AT_NS_KEY, snapshot.changedAtNs)
+                .putLong(NativeFontAxis.REQUEST_KEY, fontAxisRequestId)
                 .putVisualCfg(snapshot.visual)
             check(editor.commit()) { "remote preference commit failed" }
             if (xposedService === service) lastMirror = service to snapshot
