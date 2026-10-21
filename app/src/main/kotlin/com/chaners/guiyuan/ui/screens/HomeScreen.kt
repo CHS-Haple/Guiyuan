@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -9,6 +10,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -80,6 +84,7 @@ import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Switch
+import kotlinx.coroutines.flow.collect
 
 private enum class RuntimeStatusTone {
     Success,
@@ -327,6 +332,35 @@ private fun HomeRuntimeStatusCard(
 
     // Only Card hits drive MIUIX Tilt; the native Switch has its own hit path.
     val cardPress = remember { MutableInteractionSource() }
+    val sourceId = System.identityHashCode(cardPress)
+    DisposableEffect(cardPress) {
+        homePressTrace("composition.enter source=$sourceId")
+        onDispose { homePressTrace("composition.leave source=$sourceId") }
+    }
+    LaunchedEffect(cardPress) {
+        cardPress.interactions.collect { event ->
+            val press = when (event) {
+                is PressInteraction.Press -> event
+                is PressInteraction.Release -> event.press
+                is PressInteraction.Cancel -> event.press
+                else -> null
+            }
+            if (press != null) {
+                val action = when (event) {
+                    is PressInteraction.Press -> "press"
+                    is PressInteraction.Release -> "release"
+                    else -> "cancel"
+                }
+                homePressTrace(
+                    "interaction=$action source=$sourceId id=${System.identityHashCode(press)} " +
+                        "x=${press.pressPosition.x.toInt()} y=${press.pressPosition.y.toInt()}",
+                )
+            }
+        }
+    }
+    LaunchedEffect(enabled) {
+        homePressTrace("state.enabled=$enabled source=$sourceId")
+    }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
     Box(modifier = modifier.indication(cardPress, remember { TiltFeedback() })) {
         Card(
@@ -417,7 +451,10 @@ private fun HomeRuntimeStatusCard(
         }
         Switch(
             checked = enabled,
-            onCheckedChange = onEnabledChange,
+            onCheckedChange = { next ->
+                homePressTrace("switch.change from=$enabled to=$next source=$sourceId")
+                onEnabledChange(next)
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 16.dp)
@@ -426,6 +463,11 @@ private fun HomeRuntimeStatusCard(
                 .semantics { contentDescription = switchTitle },
         )
     }
+}
+
+// Diagnostic branch only: actual press transitions, never animation frames.
+private fun homePressTrace(event: String) {
+    Log.i("GyHomePress", "com.chaners.guiyuan build=${BuildConfig.BUILD_ID} $event")
 }
 
 @Composable
