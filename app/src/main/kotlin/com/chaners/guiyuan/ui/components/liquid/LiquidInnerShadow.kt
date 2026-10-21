@@ -101,6 +101,8 @@ private class InnerShadowNode(
         drawContent()
 
         val shadow = shadow() ?: return
+        // An invisible shadow does not need an offscreen recording.
+        if (shadow.alpha <= 0f) return
         val layer = shadowLayer ?: return
 
         val radius = shadow.radius.toPx()
