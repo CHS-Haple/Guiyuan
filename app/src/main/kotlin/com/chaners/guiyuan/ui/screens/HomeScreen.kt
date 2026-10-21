@@ -63,6 +63,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -193,25 +194,12 @@ internal fun HomeScreen(
                         scopeRequestInProgress = scopeRequestInProgress,
                         onRestart = onRestart,
                         onRequestScope = onRequestScope,
+                        onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(top = 8.dp, bottom = 8.dp),
+                                .padding(top = 8.dp, bottom = 24.dp),
                     )
-                    Card(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 24.dp),
-                    ) {
-                        SwitchPreference(
-                            checked = featureSettings.enabled,
-                            onCheckedChange = featureRepository::setEnabled,
-                            title = stringResource(R.string.home_runtime_enable_title),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
-                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        )
-                    }
                 }
 
                 item {
@@ -241,6 +229,7 @@ private fun HomeRuntimeStatusCard(
     scopeRequestInProgress: Boolean,
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state =
@@ -290,87 +279,98 @@ private fun HomeRuntimeStatusCard(
                 ),
         )
 
-    Card(
-        modifier = modifier,
-        colors =
-            CardDefaults.defaultColors(
-                color = containerColor,
-                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-            ),
-        pressFeedbackType = PressFeedbackType.Tilt,
-        onClick =
-            when (state.action) {
-                HomeRuntimeAction.Restart -> onRestart
-                HomeRuntimeAction.RequestScope -> onRequestScope
-                HomeRuntimeAction.None -> null
-            },
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(RuntimeCardHeight)
-                    .background(cardGradient)
-                    .padding(horizontal = 22.dp, vertical = 18.dp),
+    Card(modifier = modifier) {
+        // Keep restart/scope clicks on the status area, not the master switch.
+        Card(
+            cornerRadius = 0.dp,
+            colors =
+                CardDefaults.defaultColors(
+                    color = containerColor,
+                    contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
+                ),
+            pressFeedbackType = PressFeedbackType.Tilt,
+            onClick =
+                when (state.action) {
+                    HomeRuntimeAction.Restart -> onRestart
+                    HomeRuntimeAction.RequestScope -> onRequestScope
+                    HomeRuntimeAction.None -> null
+                },
         ) {
-            RuntimeStatusMark(
-                kind = state.mark,
-                color = accentColor,
+            Box(
                 modifier =
                     Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(RuntimeStatusMarkSize),
-            )
-
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(end = 98.dp),
+                        .fillMaxWidth()
+                        .height(RuntimeCardHeight)
+                        .background(cardGradient)
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
             ) {
-                Text(
-                    text = stringResource(state.titleRes),
-                    style =
-                        MiuixTheme.textStyles.title3.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(RuntimeStatusMarkSize),
                 )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_version_line,
-                            BuildConfig.VERSION_NAME,
-                        ),
-                    modifier = Modifier.padding(top = 5.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_build_line,
-                            BuildConfig.BUILD_ID,
-                        ),
-                    modifier = Modifier.padding(top = 1.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = stringResource(state.summaryRes),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    maxLines = 2,
-                )
-            }
 
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(end = 98.dp),
+                ) {
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style =
+                            MiuixTheme.textStyles.title3.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_version_line,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                        modifier = Modifier.padding(top = 5.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_build_line,
+                                BuildConfig.BUILD_ID,
+                            ),
+                        modifier = Modifier.padding(top = 1.dp),
+                        style =
+                            MiuixTheme.textStyles.body1.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        maxLines = 2,
+                    )
+                }
+
+            }
         }
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        SwitchPreference(
+            checked = enabled,
+            onCheckedChange = onEnabledChange,
+            title = stringResource(R.string.home_runtime_enable_title),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_guiyuan_mark) },
+            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        )
     }
 }
 
