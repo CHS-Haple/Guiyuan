@@ -51,7 +51,7 @@
     <string name="home_preview_sim2_only">SIM 2</string>
     <string name="home_preview_sim_none">None</string>
     <string name="home_preview_airplane_title">Airplane mode</string>
-    <string name="home_preview_airplane_summary">Pauses mobile simulation\nWi‑Fi remains available</string>
+    <string name="home_preview_airplane_summary">Pauses mobile simulation, Wi‑Fi remains available</string>
     <string name="home_preview_mobile_network_title">Mobile network</string>
     <string name="home_preview_data_sim_title">Data SIM</string>
     <string name="home_preview_data_sim1">SIM 1</string>
@@ -100,7 +100,7 @@
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
     <string name="home_preview_dual_mobile_title">Dual-row signal preview</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer\nNetwork type follows data SIM</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer, network type follows data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>
