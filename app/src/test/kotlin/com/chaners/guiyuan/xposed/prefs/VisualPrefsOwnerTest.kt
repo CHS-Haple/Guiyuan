@@ -90,6 +90,27 @@ class VisualPrefsOwnerTest {
         assertEquals(2, seen.size)
     }
 
+    @Test
+    fun requestWrittenBeforeBindIsDeliveredOnce() {
+        val prefs = FakePreferences(dual = false)
+        prefs.requestAxis(200L)
+        var requests = 0
+
+        VisualPrefsOwner.bind(prefs, onAxisRequest = { requests++ }, onChanged = {})
+        assertEquals(1, requests)
+
+        prefs.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(1, requests)
+
+        prefs.requestAxis(201L)
+        assertEquals(2, requests)
+        VisualPrefsOwner.unbind()
+
+        // Rebinding must resynchronize a pending request in this new owner generation.
+        VisualPrefsOwner.bind(prefs, onAxisRequest = { requests++ }, onChanged = {})
+        assertEquals(3, requests)
+    }
+
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
