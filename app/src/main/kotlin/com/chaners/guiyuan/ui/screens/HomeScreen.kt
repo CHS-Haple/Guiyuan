@@ -120,18 +120,6 @@ internal fun HomeScreen(
     onOpenPreviewSandbox: () -> Unit,
 ) {
     val context = LocalContext.current
-    val application =
-        remember(context.applicationContext) {
-            context.applicationContext as GyApplication
-        }
-    val featureRepository =
-        remember(context.applicationContext) {
-            FeatureRepo(context.applicationContext)
-        }
-    val featureSettings by
-        featureRepository.settings.collectAsState(
-            initial = featureRepository.current(),
-        )
     val visualRepo =
         remember(context.applicationContext) {
             VisualRepo(context.applicationContext)
@@ -140,8 +128,6 @@ internal fun HomeScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val xposedStatus by
-        application.xposedStatus.collectAsState()
     val previewResources =
         remember(context.applicationContext) {
             PreviewSysUiResources(context.applicationContext)
@@ -191,15 +177,12 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    HomeRuntimeStatusCard(
-                        enabled = featureSettings.enabled,
-                        runtimeStatus = xposedStatus,
+                    HomeRuntimeCard(
                         hotReloadInProgress = hotReloadInProgress,
                         restartInProgress = restartInProgress,
                         scopeRequestInProgress = scopeRequestInProgress,
                         onRestart = onRestart,
                         onRequestScope = onRequestScope,
-                        onEnabledChange = featureRepository::setEnabled,
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
@@ -223,6 +206,35 @@ internal fun HomeScreen(
             }
         }
     }
+}
+
+// A Switch toggle should recompose the Card, not its enclosing LazyColumn.
+@Composable
+private fun HomeRuntimeCard(
+    hotReloadInProgress: Boolean,
+    restartInProgress: Boolean,
+    scopeRequestInProgress: Boolean,
+    onRestart: () -> Unit,
+    onRequestScope: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current.applicationContext
+    val repo = remember(context) { FeatureRepo(context) }
+    val cfg by repo.settings.collectAsState(initial = repo.current())
+    val application = remember(context) { context as GyApplication }
+    val runtimeStatus by application.xposedStatus.collectAsState()
+
+    HomeRuntimeStatusCard(
+        enabled = cfg.enabled,
+        runtimeStatus = runtimeStatus,
+        hotReloadInProgress = hotReloadInProgress,
+        restartInProgress = restartInProgress,
+        scopeRequestInProgress = scopeRequestInProgress,
+        onRestart = onRestart,
+        onRequestScope = onRequestScope,
+        onEnabledChange = repo::setEnabled,
+        modifier = modifier,
+    )
 }
 
 private data class CardPaint(val accent: Color, val gradient: Brush)
