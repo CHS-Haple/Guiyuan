@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -59,6 +58,7 @@ import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
+import com.chaners.guiyuan.system.HomePressTrace
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.HotReloadAction
@@ -334,8 +334,8 @@ private fun HomeRuntimeStatusCard(
     val cardPress = remember { MutableInteractionSource() }
     val sourceId = System.identityHashCode(cardPress)
     DisposableEffect(cardPress) {
-        homePressTrace("composition.enter source=$sourceId")
-        onDispose { homePressTrace("composition.leave source=$sourceId") }
+        HomePressTrace.record("composition.enter source=$sourceId")
+        onDispose { HomePressTrace.record("composition.leave source=$sourceId") }
     }
     LaunchedEffect(cardPress) {
         cardPress.interactions.collect { event ->
@@ -351,7 +351,7 @@ private fun HomeRuntimeStatusCard(
                     is PressInteraction.Release -> "release"
                     else -> "cancel"
                 }
-                homePressTrace(
+                HomePressTrace.record(
                     "interaction=$action source=$sourceId id=${System.identityHashCode(press)} " +
                         "x=${press.pressPosition.x.toInt()} y=${press.pressPosition.y.toInt()}",
                 )
@@ -359,7 +359,7 @@ private fun HomeRuntimeStatusCard(
         }
     }
     LaunchedEffect(enabled) {
-        homePressTrace("state.enabled=$enabled source=$sourceId")
+        HomePressTrace.record("state.enabled=$enabled source=$sourceId")
     }
     val switchTitle = stringResource(R.string.home_runtime_enable_title)
     Box(modifier = modifier.indication(cardPress, remember { TiltFeedback() })) {
@@ -452,7 +452,7 @@ private fun HomeRuntimeStatusCard(
         Switch(
             checked = enabled,
             onCheckedChange = { next ->
-                homePressTrace("switch.change from=$enabled to=$next source=$sourceId")
+                HomePressTrace.record("switch.change from=$enabled to=$next source=$sourceId")
                 onEnabledChange(next)
             },
             modifier = Modifier
@@ -463,11 +463,6 @@ private fun HomeRuntimeStatusCard(
                 .semantics { contentDescription = switchTitle },
         )
     }
-}
-
-// Diagnostic branch only: actual press transitions, never animation frames.
-private fun homePressTrace(event: String) {
-    Log.i("GyHomePress", "com.chaners.guiyuan build=${BuildConfig.BUILD_ID} $event")
 }
 
 @Composable
