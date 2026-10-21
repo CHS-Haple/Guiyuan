@@ -99,6 +99,15 @@ internal object DiagReport {
                 logLines.forEach(::appendLine)
             }
             appendLine()
+            appendLine("[Home press trace]")
+            appendLine("source=companion-memory")
+            appendLine("lines=" + snapshot.homePress.size)
+            if (snapshot.homePress.isEmpty()) {
+                appendLine("No Home press events were captured in the Companion process.")
+            } else {
+                snapshot.homePress.forEach(::appendLine)
+            }
+            appendLine()
             appendLine("[Report]")
             appendLine("generatedAt=" + snapshot.capturedAt)
         }
