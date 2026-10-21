@@ -257,7 +257,7 @@
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
     <string name="diagnostics_log_summary_source">来源：%1$s</string>
     <string name="diagnostics_log_summary_separator">，</string>
-    <string name="diagnostics_log_setting_combined">三合一</string>
+    <string name="diagnostics_log_setting_combined">归元状态栏图标</string>
     <string name="diagnostics_log_setting_keyguard">锁屏</string>
     <string name="diagnostics_log_setting_aod">AOD</string>
     <string name="diagnostics_log_switch_on">开</string>
@@ -268,7 +268,7 @@
     <string name="diagnostics_log_state_prepared">已准备</string>
     <string name="diagnostics_log_state_released">已释放</string>
     <string name="diagnostics_log_state_native">原生</string>
-    <string name="diagnostics_log_state_combined">三合一</string>
+    <string name="diagnostics_log_state_combined">归元状态栏图标</string>
     <string name="diagnostics_log_state_keyguard">锁屏</string>
     <string name="diagnostics_log_state_aod">息屏显示</string>
     <string name="diagnostics_log_state_home">桌面</string>
