@@ -251,7 +251,14 @@ private fun HomeRuntimeStatusCard(
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
     val targetContainerColor =
         when (state.tone) {
-            RuntimeStatusTone.Neutral -> surfaceColor
+            RuntimeStatusTone.Neutral ->
+                if (enabled) {
+                    surfaceColor
+                } else {
+                    MiuixTheme.colorScheme.onSurfaceContainerVariant
+                        .copy(alpha = 0.06f)
+                        .compositeOver(surfaceColor)
+                }
             else ->
                 targetAccentColor
                     .copy(alpha = 0.15f)
@@ -283,7 +290,10 @@ private fun HomeRuntimeStatusCard(
             HomeRuntimeAction.None -> null
         }
 
-    Card(modifier = modifier) {
+    Card(
+        modifier = modifier,
+        pressFeedbackType = PressFeedbackType.Tilt,
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().background(cardGradient),
         ) {
@@ -294,7 +304,12 @@ private fun HomeRuntimeStatusCard(
                         .height(RuntimeCardHeight)
                         .then(
                             if (statusClick != null) {
-                                Modifier.clickable(role = Role.Button, onClick = statusClick)
+                                Modifier.clickable(
+                                    interactionSource = null,
+                                    indication = null,
+                                    role = Role.Button,
+                                    onClick = statusClick,
+                                )
                             } else {
                                 Modifier
                             },
