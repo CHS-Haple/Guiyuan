@@ -303,19 +303,67 @@ internal class ConfigBackupFiles(private val context: Context) {
         ConfigBackupFormat.validate(backup)
         val previousFeature = feature.backupSnapshot()
         val previousVisual = visual.backupSnapshot()
-        if (!visual.restore(backup.visual, backup.batterySchemes)) {
-            check(visual.rollbackBackup(previousVisual)) { "Could not roll back incomplete visual restore" }
-            return@withContext false
+        restoreBackupStores(
+            restoreVisual = { visual.restore(backup.visual, backup.batterySchemes) },
+            restoreFeature = { feature.restore(backup.feature) },
+            rollbackVisual = { visual.rollbackBackup(previousVisual) },
+            rollbackFeature = { feature.rollbackBackup(previousFeature) },
+        )
+    }
+}
+
+// SharedPreferences commits may partially mutate memory before returning false or throwing.
+// Compensate every store whose write was attempted, without claiming cross-store atomicity.
+internal fun restoreBackupStores(
+    restoreVisual: () -> Boolean,
+    restoreFeature: () -> Boolean,
+    rollbackVisual: () -> Boolean,
+    rollbackFeature: () -> Boolean,
+): Boolean {
+    var featureAttempted = false
+    var writeFailure: Exception? = null
+    try {
+        if (restoreVisual()) {
+            featureAttempted = true
+            if (restoreFeature()) return true
         }
-        if (feature.restore(backup.feature)) {
-            true
-        } else {
-            val featureRolledBack = feature.rollbackBackup(previousFeature)
-            val visualRolledBack = visual.rollbackBackup(previousVisual)
-            check(featureRolledBack && visualRolledBack) {
-                "Could not roll back incomplete feature restore"
+    } catch (failure: Exception) {
+        writeFailure = failure
+    }
+
+    var rollbackFailure: Exception? = null
+    fun compensate(name: String, rollback: () -> Boolean) {
+        try {
+            check(rollback()) { "Could not roll back $name restore" }
+        } catch (failure: Exception) {
+            val previous = rollbackFailure
+            if (previous == null) {
+                rollbackFailure = failure
+            } else if (failure is java.util.concurrent.CancellationException &&
+                previous !is java.util.concurrent.CancellationException
+            ) {
+                failure.addSuppressed(previous)
+                rollbackFailure = failure
+            } else if (failure !== previous) {
+                previous.addSuppressed(failure)
             }
-            false
         }
     }
+
+    if (featureAttempted) compensate("feature", rollbackFeature)
+    compensate("visual", rollbackVisual)
+
+    val failure =
+        when {
+            writeFailure is java.util.concurrent.CancellationException -> writeFailure
+            rollbackFailure is java.util.concurrent.CancellationException -> rollbackFailure
+            writeFailure != null -> writeFailure
+            else -> rollbackFailure
+        }
+    if (failure != null) {
+        writeFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
+        rollbackFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
+        throw failure
+    }
+    return false
 }
