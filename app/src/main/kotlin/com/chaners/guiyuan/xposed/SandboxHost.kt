@@ -52,18 +52,24 @@ internal object SandboxHost {
             return
         }
         handler.removeCallbacks(expiry)
-        val wasActive = current != null
+        val notify = if (current != null) onChanged else null
         current = null
-        if (wasActive) onChanged?.invoke()
-        source?.let { prefs ->
-            listener?.let(prefs::unregisterOnSharedPreferenceChangeListener)
-        }
+        val prefs = source
+        val observer = listener
+        // Retire state before entering the framework listener and notifying renderers.
         source = null
         listener = null
         onChanged = null
         resources = null
         staticMobileFace = null
         staticMobileFaceChecked = false
+        try {
+            if (prefs != null && observer != null) {
+                prefs.unregisterOnSharedPreferenceChangeListener(observer)
+            }
+        } finally {
+            notify?.invoke()
+        }
     }
 
     fun active(): Boolean = validLease() != null
