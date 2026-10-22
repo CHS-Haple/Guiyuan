@@ -16,7 +16,7 @@ internal object MobileGlyphFit {
             main.size % 3 != 0 || suffix.size % 3 != 0 ||
             main.size > 2048 || suffix.size > 2048 ||
             !suffixY.isFinite() || !clearance.isFinite() ||
-            !main.all(Float::isFinite) || !suffix.all(Float::isFinite)
+            !main.all { it.isFinite() } || !suffix.all { it.isFinite() }
         ) return null
 
         var offset = Float.NEGATIVE_INFINITY
@@ -29,8 +29,8 @@ internal object MobileGlyphFit {
         // For linearized contours the extreme envelope separation occurs at a vertex height.
         for (i in main.indices step 3) sample(main[i + 2])
         for (i in suffix.indices step 3) sample(suffix[i + 2] + suffixY)
-        return offset.takeIf(Float::isFinite)?.plus(clearance.coerceAtLeast(0f))
-            ?.takeIf(Float::isFinite)
+        return offset.takeIf { it.isFinite() }?.plus(clearance.coerceAtLeast(0f))
+            ?.takeIf { it.isFinite() }
     }
 
     private fun edgeAt(points: FloatArray, y: Float, right: Boolean): Float? {
