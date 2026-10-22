@@ -312,7 +312,7 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
             0f to topColor,
             0.45f to midColor,
             0.7f to lowerColor,
-            0.85f to surfaceColor,
+            0.8f to surfaceColor,
         )
 
     return CardPaint(accentColor, cardGradient)
