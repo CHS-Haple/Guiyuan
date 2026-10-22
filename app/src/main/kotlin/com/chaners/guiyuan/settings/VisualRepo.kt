@@ -128,6 +128,15 @@ internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
     editor.putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1).apply()
 }
 
+// Migrations must finish before the app mirrors its first runtime snapshot.
+internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
+    migrateSharedLayoutIfNeeded(preferences)
+    migrateSharedTransitionsIfNeeded(preferences)
+    migrateBatteryColorPresetDefaultIfNeeded(preferences)
+    migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
+    migrateTextWeightRanges(preferences)
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -137,11 +146,7 @@ internal class VisualRepo(context: Context) {
         )
 
     init {
-        migrateSharedLayoutIfNeeded(preferences)
-        migrateSharedTransitionsIfNeeded(preferences)
-        migrateBatteryColorPresetDefaultIfNeeded(preferences)
-        migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
-        migrateTextWeightRanges(preferences)
+        migrateVisualPrefsIfNeeded(preferences)
     }
 
     val settings: Flow<VisualCfg> =
