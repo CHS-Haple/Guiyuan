@@ -34,9 +34,9 @@ internal object VisualPrefsOwner {
 
         // A remote request may already exist before this SystemUI binding is installed.
         fun deliverAxisRequest(request: Long) {
-            // A listener can fire before bind publishes this generation.
-            if (request <= 0L || state.get().token !== token) return
-            if (lastRequest.getAndSet(request) != request && state.get().token === token) {
+            if (request > 0L && lastRequest.getAndSet(request) != request &&
+                state.get().token === token
+            ) {
                 onAxisRequest()
             }
         }

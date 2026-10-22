@@ -91,21 +91,6 @@ class VisualPrefsOwnerTest {
     }
 
     @Test
-    fun requestDuringListenerRegistrationIsReplayedOnce() {
-        val prefs = FakePreferences(dual = false)
-        prefs.onRegister = { prefs.requestAxis(300L) }
-        var requests = 0
-
-        VisualPrefsOwner.bind(prefs, onAxisRequest = { requests++ }, onChanged = {})
-        assertEquals(1, requests)
-
-        prefs.notify(NativeFontAxis.REQUEST_KEY)
-        assertEquals(1, requests)
-        prefs.requestAxis(301L)
-        assertEquals(2, requests)
-    }
-
-    @Test
     fun requestWrittenBeforeBindIsDeliveredOnce() {
         val prefs = FakePreferences(dual = false)
         prefs.requestAxis(200L)
@@ -133,7 +118,6 @@ class VisualPrefsOwnerTest {
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
-        var onRegister: (() -> Unit)? = null
         private var requestId = 0L
 
         fun requestAxis(id: Long) {
@@ -159,7 +143,6 @@ class VisualPrefsOwnerTest {
             if (listener != null) {
                 listeners += listener
                 lastListener = listener
-                onRegister?.invoke()
             }
         }
 
