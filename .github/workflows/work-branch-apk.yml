@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MIUIX_GITHUB_ACTOR: ${{ github.repository_owner }}
+      MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
       MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
       GITHUB_ACTOR: ${{ github.actor }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
