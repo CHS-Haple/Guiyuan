@@ -190,7 +190,7 @@
     <string name="static_scope_sysui_advice">Authorize this scope to use these core features.</string>
     <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
     <string name="static_scope_settings_advice">Authorize this scope only if you use that entry. Core features work without it.</string>
-    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by Xposed.</string>
+    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by the framework service.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
     <string name="static_scope_version_unavailable">Version unavailable</string>
