@@ -452,4 +452,10 @@
     <string name="config_restore_failed">Restore failed. Try again.</string>
     <string name="config_restore_invalid">Invalid or incompatible backup file</string>
     <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
+    <string name="home_gradient_lab_title">Gradient tuning · test only</string>
+    <string name="home_gradient_lab_middle">Middle color position</string>
+    <string name="home_gradient_lab_lower">Lower color position</string>
+    <string name="home_gradient_lab_end">Surface color endpoint</string>
+    <string name="home_gradient_lab_values">Current stops: %1$s / %2$s / %3$s</string>
+    <string name="home_gradient_lab_notice">Drag to update the card above immediately. These values are not saved.</string>
 </resources>
