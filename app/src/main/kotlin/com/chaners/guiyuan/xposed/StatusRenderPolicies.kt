@@ -98,6 +98,28 @@ internal object MobileTypeSuffixPolicy {
         }
 }
 
+internal object MobileTypeSpacing {
+    data class Ink(val left: Float, val right: Float, val advance: Float)
+    data class Fit(val suffixX: Float, val left: Float, val right: Float)
+
+    fun fit(main: Ink, suffix: Ink, clearance: Float): Fit? {
+        if (
+            !main.left.isFinite() || !main.right.isFinite() || !main.advance.isFinite() ||
+            !suffix.left.isFinite() || !suffix.right.isFinite() || !suffix.advance.isFinite() ||
+            !clearance.isFinite() ||
+            main.right <= main.left || suffix.right <= suffix.left ||
+            main.advance <= 0f || suffix.advance <= 0f
+        ) return null
+
+        // Respect the font's natural side bearings; never let the suffix enter the main ink box.
+        val suffixX = max(main.advance, main.right - suffix.left + clearance.coerceAtLeast(0f))
+        val left = min(main.left, suffixX + suffix.left)
+        val right = max(main.right, suffixX + suffix.right)
+        return Fit(suffixX, left, right)
+            .takeIf { it.suffixX.isFinite() && it.left.isFinite() && it.right.isFinite() }
+    }
+}
+
 internal fun nativeCenterTintEntryName(entryName: String): String {
     val base =
         entryName
