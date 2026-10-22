@@ -310,8 +310,8 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
     val cardGradient =
         Brush.verticalGradient(
             0f to topColor,
-            0.5f to midColor,
-            0.72f to lowerColor,
+            0.35f to midColor,
+            0.6f to lowerColor,
             1f to surfaceColor,
         )
 
