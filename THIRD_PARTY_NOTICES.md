@@ -15,7 +15,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-8972f941-SNAPSHOT (`8972f941c194bd3c4e14c34543d5ebc7b39e40da`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
-| kotlinx.serialization core / JSON | 1.11.0 | Versioned configuration file serialization | Apache-2.0 |
+| kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Adapted optical code
 
