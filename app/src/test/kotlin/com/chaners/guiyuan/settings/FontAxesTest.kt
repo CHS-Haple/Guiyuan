@@ -30,6 +30,24 @@ class FontAxesTest {
     }
 
     @Test
+    fun requiresVerifiedFaceIndexForMultiFaceCollections() {
+        val font = ByteBuffer.allocate(400).order(ByteOrder.BIG_ENDIAN)
+        font.putInt(0, 0x74746366)
+        font.putInt(4, 0x00010000)
+        font.putInt(8, 2)
+        font.putInt(12, 32)
+        font.putInt(16, 96)
+        putSfnt(font, 32, 176)
+        putSfnt(font, 96, 256)
+        font.putInt(256 + 20, 250 * 65536)
+        font.putInt(256 + 24, 400 * 65536)
+        font.putInt(256 + 28, 750 * 65536)
+        assertNull(FontAxes.weight(font))
+        assertEquals(FontWeightAxis(150f, 330f, 700f), FontAxes.weight(font, 0))
+        assertEquals(FontWeightAxis(250f, 400f, 750f), FontAxes.weight(font, 1))
+    }
+
+    @Test
     fun rejectsMalformedTablesAndAxes() {
         val font = sfnt()
         font.putInt(20, Int.MAX_VALUE)
