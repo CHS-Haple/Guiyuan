@@ -50,6 +50,6 @@ internal object MobileGlyphFit {
                 }
             result = if (right) max(result, x) else min(result, x)
         }
-        return result.takeIf(Float::isFinite)
+        return result.takeIf { it.isFinite() }
     }
 }
