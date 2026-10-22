@@ -1,9 +1,18 @@
 version: 2
 
+registries:
+  miuix-github-packages:
+    type: maven-repository
+    url: https://maven.pkg.github.com/compose-miuix-ui/miuix
+    username: ${{secrets.MIUIX_GITHUB_ACTOR}}
+    password: ${{secrets.MIUIX_GITHUB_TOKEN}}
+
 updates:
   - package-ecosystem: gradle
     directory: "/"
     target-branch: dev
+    registries:
+      - miuix-github-packages
     schedule:
       interval: daily
     open-pull-requests-limit: 3
