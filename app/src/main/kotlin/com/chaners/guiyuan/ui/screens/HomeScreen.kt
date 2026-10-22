@@ -80,13 +80,13 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.preference.SliderPreference
-import java.util.Locale
-import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.preference.SliderPreference
+import java.util.Locale
+import kotlin.math.roundToInt
 
 private enum class RuntimeStatusTone {
     Success,
@@ -224,12 +224,20 @@ internal fun HomeScreen(
     }
 }
 
-private data class GradientStops(val middle: Float = 0.4f, val lower: Float = 0.7f, val end: Float = 1f)
+private data class GradientStops(
+    val middle: Float = 0.4f,
+    val lower: Float = 0.7f,
+    val end: Float = 1f,
+)
 
 private data class CardPaint(val accent: Color, val gradient: Brush)
 
 @Composable
-private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean, stops: GradientStops): CardPaint {
+private fun runtimeCardPaint(
+    state: HomeRuntimeCardState,
+    enabled: Boolean,
+    stops: GradientStops,
+): CardPaint {
     val targetAccentColor =
         when (state.tone) {
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
@@ -461,7 +469,6 @@ private fun HomeRuntimeCardBody(
         )
     }
 }
-
 
 @Composable
 private fun HomeGradientLabControls(
