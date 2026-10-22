@@ -20,13 +20,21 @@ internal class RenderView(
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     preview: Boolean = false,
+    traceMobileTypeEnabled: () -> Boolean = { false },
+    onMobileTypeTrace: ((String) -> Unit)? = null,
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
         sample: RuntimeRenderLatencySample?,
     ) -> Unit = { _, _, _ -> },
 ) : View(context) {
-    private val painter = StatusPainter(context, preview = preview)
+    private val painter =
+        StatusPainter(
+            context = context,
+            preview = preview,
+            traceMobileTypeEnabled = traceMobileTypeEnabled,
+            onMobileTypeTrace = onMobileTypeTrace,
+        )
     private val centerEnterInterpolator: Interpolator =
         AnimationUtils.loadInterpolator(
             context,
