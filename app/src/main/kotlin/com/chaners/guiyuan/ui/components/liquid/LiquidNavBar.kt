@@ -264,8 +264,12 @@ internal fun LiquidNavBar(
                             targetValue
                                 .fastRoundToInt()
                                 .fastCoerceIn(0, tabsCount - 1)
-                        currentIndex = target
-                        animateToValue(target.toFloat())
+                        if (currentIndex == target) {
+                            // A drag may stop between tabs without changing the selected index.
+                            animateToValue(target.toFloat())
+                        } else {
+                            currentIndex = target
+                        }
                         scope.launch {
                             offsetAnim.animateTo(
                                 0f,
