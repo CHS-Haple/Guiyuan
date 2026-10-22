@@ -35,6 +35,23 @@ class SandboxLeaseTest {
         assertEquals(lease, SandboxLease.decode(lease.encode()))
     }
 
+    @Test fun dualPreviewSurvivesFirstLeaseBeforeAnyUpdates() {
+        val selected = PreviewSandboxUiState(
+            networkMode = PreviewNetworkMode.WIFI,
+            dualMobile = true,
+            simCards = PreviewSimCards.BOTH,
+            mobileSignalLevel = 3,
+            sim2SignalLevel = 1,
+        )
+        val received = SandboxLease(21, 10_000, 1_000_000, selected)
+            .encode()
+            .let(SandboxLease::decode)
+        assertNotNull(received)
+        assertTrue(received!!.state.dualMobile)
+        assertEquals(com.chaners.guiyuan.xposed.DualMobileLevels(3, 1), received.state.dualLevels)
+        assertEquals(PreviewNetworkMode.WIFI, received.state.networkMode)
+    }
+
     @Test fun expiryAndClockResetRejectFrames() {
         assertTrue(lease.valid(12_999, 1_002_999))
         assertFalse(lease.valid(13_000, 1_002_000))
