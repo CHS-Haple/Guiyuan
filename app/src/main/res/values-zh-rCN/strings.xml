@@ -451,4 +451,10 @@
     <string name="config_restore_failed">恢复失败，请重试</string>
     <string name="config_restore_invalid">备份文件无效或不兼容</string>
     <string name="config_restore_confirm">将使用备份覆盖当前功能配置，是否继续？</string>
+    <string name="home_gradient_lab_title">渐变调试 · 实验版</string>
+    <string name="home_gradient_lab_middle">中间颜色位置</string>
+    <string name="home_gradient_lab_lower">下层颜色位置</string>
+    <string name="home_gradient_lab_end">背景色终点</string>
+    <string name="home_gradient_lab_values">当前参数：%1$s / %2$s / %3$s</string>
+    <string name="home_gradient_lab_notice">拖动后立即更新上方卡片。仅供测试，不写入设置。</string>
 </resources>
