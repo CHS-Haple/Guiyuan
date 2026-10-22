@@ -262,7 +262,7 @@ internal fun GyApp(
                     PreviewSandboxScreen(
                         state = previewState,
                         parasiteActive = sandboxActive,
-                        onParasiteChange = { onSandboxToggle(it, latestPreview.value) }
+                        onParasiteChange = { onSandboxToggle(it, latestPreview.value) },
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
