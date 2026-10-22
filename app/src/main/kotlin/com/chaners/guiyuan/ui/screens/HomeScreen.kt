@@ -275,23 +275,10 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
             animationSpec = tween(StatusColorAnimMillis),
             label = "runtimeAccent",
         )
-    // Keep gradient stops fixed while the enabled state changes.
-    val topTarget =
-        if (enabled) {
-            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
-        } else {
-            targetContainerColor
-        }
-    val midTarget =
-        if (enabled) {
-            targetContainerColor
-        } else {
-            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
-        }
-    val lowerTarget =
-        surfaceColor
-            .copy(alpha = if (enabled) 0.44f else 0.34f)
-            .compositeOver(targetContainerColor)
+    // All states share one monotonic fade, so the color band never shifts on toggle.
+    val topTarget = surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
+    val midTarget = surfaceColor.copy(alpha = 0.44f).compositeOver(targetContainerColor)
+    val lowerTarget = surfaceColor.copy(alpha = 0.76f).compositeOver(targetContainerColor)
     val topColor by animateColorAsState(
         targetValue = topTarget,
         animationSpec = tween(StatusColorAnimMillis),
@@ -310,9 +297,9 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
     val cardGradient =
         Brush.verticalGradient(
             0f to topColor,
-            0.5f to midColor,
-            0.72f to lowerColor,
-            1f to surfaceColor,
+            0.32f to midColor,
+            0.57f to lowerColor,
+            0.78f to surfaceColor,
         )
 
     return CardPaint(accentColor, cardGradient)
