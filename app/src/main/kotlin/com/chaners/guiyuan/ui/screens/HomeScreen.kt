@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -151,6 +152,8 @@ internal fun HomeScreen(
             PreviewSysUiResources(context.applicationContext)
         }
 
+    val listState = rememberLazyListState()
+    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
@@ -182,10 +185,11 @@ internal fun HomeScreen(
                     .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
+                state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .scrollEndHaptic()
+                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
