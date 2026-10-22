@@ -9,6 +9,35 @@ import org.junit.Test
 class VisualPersistenceTest {
 
     @Test
+    fun firstRuntimeSnapshotUsesMigratedVisualPreferences() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.BATTERY_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), layout.persistedValue)
+            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), false)
+            .putBoolean(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), false)
+            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1400)
+            .putString("other_setting", "untouched")
+            .apply()
+
+        // The first runtime snapshot must not observe legacy transition defaults.
+        assertTrue(prefs.readVisualCfg().fillFollowsRetract)
+        migrateVisualPrefsIfNeeded(prefs)
+        val migrated = prefs.readVisualCfg()
+        assertEquals(layout, migrated.layout)
+        assertFalse(migrated.fillFollowsRetract)
+        assertFalse(migrated.ccTintTransition)
+        assertEquals(1000, migrated.mobileTypeWeight)
+        assertEquals(BatteryColorPreset.HYPEROS.persistedValue, prefs.getString(BATTERY_COLOR_PRESET_KEY, null))
+        assertEquals("untouched", prefs.getString("other_setting", null))
+
+        val once = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(once, prefs.all)
+    }
+
+    @Test
     fun displayTransitionsUseActiveModeOnMigrationAndRemainShared() {
         val prefs = MemoryPreferences()
         prefs.edit()
