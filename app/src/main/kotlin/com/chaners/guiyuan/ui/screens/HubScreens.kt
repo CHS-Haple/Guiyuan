@@ -142,12 +142,12 @@ internal fun FeaturesScreen(
     val fontAxis by
         remember(context.applicationContext) {
             NativeFontAxis.observe(context.applicationContext)
-        }.collectAsState(initial = null)
+        }.collectAsState(initial = NativeFontAxis.State.Pending)
     val batteryAxis by
         remember(context.applicationContext) {
             NativeFontAxis.observeBattery(context.applicationContext)
-        }.collectAsState(initial = null)
-    val verifiedWeightRange = fontAxis?.let { axis ->
+        }.collectAsState(initial = NativeFontAxis.State.Pending)
+    val verifiedWeightRange = (fontAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
         ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
     }?.takeIf { it.last > it.first }
     val mobileWeightRange =
@@ -159,7 +159,7 @@ internal fun FeaturesScreen(
     val mobileWeightRangeText = verifiedWeightRange?.let { range ->
         stringResource(R.string.font_weight_range, range.first, range.last)
     }
-    val verifiedBatteryRange = batteryAxis?.let { axis ->
+    val verifiedBatteryRange = (batteryAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
         ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
     }?.takeIf { it.last > it.first }
     val batteryWeightRange =
@@ -662,7 +662,10 @@ internal fun FeaturesScreen(
                 },
                 title = stringResource(R.string.mobile_type_weight),
                 summary = mobileWeightRangeText
-                    ?: stringResource(R.string.font_weight_unverified),
+                    ?: stringResource(
+                        if (fontAxis == NativeFontAxis.State.Pending) R.string.font_weight_pending
+                        else R.string.font_weight_unverified,
+                    ),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                 valueText = stringResource(
                     R.string.integer_value,
@@ -768,7 +771,10 @@ internal fun FeaturesScreen(
                     },
                     title = stringResource(R.string.battery_top_text_weight),
                     summary = batteryWeightRangeText
-                        ?: stringResource(R.string.font_weight_unverified),
+                        ?: stringResource(
+                            if (batteryAxis == NativeFontAxis.State.Pending) R.string.font_weight_pending
+                            else R.string.font_weight_unverified,
+                        ),
                     startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                     valueText = stringResource(
                         R.string.integer_value,

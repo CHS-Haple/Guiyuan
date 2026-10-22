@@ -25,6 +25,17 @@ internal object NativeFontAxis {
     const val REQUEST_KEY = "native_font_axis_request"
     private const val PREFS = "native_font_axis"
     private const val BOOT = "boot_count"
+    private const val REPORTED = "reported"
+
+    internal sealed interface State {
+        data object Pending : State
+        data object Unavailable : State
+        data class Variable(val axis: FontWeightAxis) : State
+    }
+
+    internal fun state(reported: Boolean, axis: FontWeightAxis?): State =
+        if (!reported) State.Pending
+        else checked(axis)?.let(State::Variable) ?: State.Unavailable
 
     fun checked(axis: FontWeightAxis?): FontWeightAxis? =
         axis?.takeIf {
@@ -47,22 +58,23 @@ internal object NativeFontAxis {
         min: String,
         default: String,
         max: String,
-    ): FontWeightAxis? = runCatching {
+    ): State = runCatching {
         val boot = bootCount(context)
-        if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching null
-        checked(
-            FontWeightAxis(
+        if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching State.Pending
+        state(
+            reported = prefs.getBoolean(REPORTED, false),
+            axis = FontWeightAxis(
                 min = prefs.getFloat(min, Float.NaN),
                 default = prefs.getFloat(default, Float.NaN),
                 max = prefs.getFloat(max, Float.NaN),
             ),
         )
-    }.getOrNull()
+    }.getOrDefault(State.Pending)
 
-    fun observe(context: Context): Flow<FontWeightAxis?> =
+    fun observe(context: Context): Flow<State> =
         observe(context, MIN, DEFAULT, MAX)
 
-    fun observeBattery(context: Context): Flow<FontWeightAxis?> =
+    fun observeBattery(context: Context): Flow<State> =
         observe(context, BAT_MIN, BAT_DEFAULT, BAT_MAX)
 
     private fun observe(
@@ -70,11 +82,11 @@ internal object NativeFontAxis {
         min: String,
         default: String,
         max: String,
-    ): Flow<FontWeightAxis?> = callbackFlow {
+    ): Flow<State> = callbackFlow {
         val app = context.applicationContext
         val prefs = prefs(app)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == min || key == default || key == max || key == BOOT) {
+            if (key == min || key == default || key == max || key == BOOT || key == REPORTED) {
                 trySend(read(app, prefs, min, default, max))
             }
         }
@@ -97,7 +109,8 @@ internal object NativeFontAxis {
         }
         write(mobile, MIN, DEFAULT, MAX)
         write(battery, BAT_MIN, BAT_DEFAULT, BAT_MAX)
-        if (boot < 0) editor.remove(BOOT) else editor.putInt(BOOT, boot)
+        if (boot < 0) editor.remove(BOOT).remove(REPORTED)
+        else editor.putInt(BOOT, boot).putBoolean(REPORTED, true)
         editor.apply()
     }
 }

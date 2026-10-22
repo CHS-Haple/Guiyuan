@@ -14,7 +14,8 @@ internal object FontAxes {
     private const val FVAR = 0x66766172
     private const val WGHT = 0x77676874
 
-    fun weight(font: ByteBuffer, faceIndex: Int = 0): FontWeightAxis? {
+    // Without a verified TTC face index, a multi-face collection is ambiguous.
+    fun weight(font: ByteBuffer, faceIndex: Int? = null): FontWeightAxis? {
         val data = font.slice().order(ByteOrder.BIG_ENDIAN)
         val size = data.limit().toLong()
         fun valid(at: Long, bytes: Long): Boolean =
@@ -22,15 +23,16 @@ internal object FontAxes {
         fun int(at: Long): Int = data.getInt(at.toInt())
         fun uint(at: Long): Long = int(at).toLong() and 0xffffffffL
         fun short(at: Long): Int = data.getShort(at.toInt()).toInt() and 0xffff
-        if (faceIndex < 0 || !valid(0, 12)) return null
+        if ((faceIndex != null && faceIndex < 0) || !valid(0, 12)) return null
         val start =
             if (int(0) == TTC) {
                 val faces = uint(8)
-                val offset = 12L + faceIndex.toLong() * 4
-                if (faces < 1 || faces > 4096 || faceIndex >= faces || !valid(offset, 4)) return null
+                val index = faceIndex ?: if (faces == 1L) 0 else return null
+                val offset = 12L + index.toLong() * 4
+                if (faces < 1 || faces > 4096 || index >= faces || !valid(offset, 4)) return null
                 uint(offset)
             } else {
-                if (faceIndex != 0) return null
+                if (faceIndex != null && faceIndex != 0) return null
                 0L
             }
         if (!valid(start, 12) || int(start) !in setOf(TRUE_TYPE, OTTO, TRUE, TYP1)) return null
