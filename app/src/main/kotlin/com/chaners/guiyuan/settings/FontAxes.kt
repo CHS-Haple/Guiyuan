@@ -23,7 +23,7 @@ internal object FontAxes {
         fun int(at: Long): Int = data.getInt(at.toInt())
         fun uint(at: Long): Long = int(at).toLong() and 0xffffffffL
         fun short(at: Long): Int = data.getShort(at.toInt()).toInt() and 0xffff
-        if (faceIndex != null && faceIndex < 0 || !valid(0, 12)) return null
+        if ((faceIndex != null && faceIndex < 0) || !valid(0, 12)) return null
         val start =
             if (int(0) == TTC) {
                 val faces = uint(8)
