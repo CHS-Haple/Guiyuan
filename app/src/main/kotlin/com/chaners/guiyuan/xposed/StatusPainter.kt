@@ -3170,11 +3170,8 @@ internal class StatusPainter(
             MobileTypeSpacing.Ink(
                 left = bounds.left,
                 right = bounds.right,
-                advance = mobileTypePaint.measureText(text),
             )
-        if (!ink.left.isFinite() || !ink.right.isFinite() || !ink.advance.isFinite() ||
-            ink.right <= ink.left || ink.advance <= 0f
-        ) return null
+        if (!ink.left.isFinite() || !ink.right.isFinite() || ink.right <= ink.left) return null
         mobileInkSamples[key] = ink
         return ink
     }
