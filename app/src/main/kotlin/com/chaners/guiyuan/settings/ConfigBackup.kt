@@ -361,8 +361,8 @@ internal fun restoreBackupStores(
             else -> rollbackFailure
         }
     if (failure != null) {
-        if (writeFailure != null && writeFailure !== failure) failure.addSuppressed(writeFailure)
-        if (rollbackFailure != null && rollbackFailure !== failure) failure.addSuppressed(rollbackFailure)
+        writeFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
+        rollbackFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
         throw failure
     }
     return false
