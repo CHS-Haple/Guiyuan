@@ -13,7 +13,7 @@ val libxposedVersion = "102.0.0"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.2.0"
 val dataStorePreferencesVersion = "1.2.1"
-val kotlinxSerializationCoreVersion = "1.11.0"
+val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
 
