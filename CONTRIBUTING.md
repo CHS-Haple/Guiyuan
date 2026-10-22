@@ -244,6 +244,7 @@ Developer-facing scopes:
 - **Full** — stable boundaries plus dependency/build/CI/tooling/signing/release changes; validates Debug and signed Canary where applicable.
 
 CI proves configured source/build checks, not SystemUI runtime correctness.
+Preserve each pushed `dev`/`main` commit's required integration check: a later documentation-only push must not cancel an unfinished Runtime/Full validation. Superseded PR revisions may cancel their older checks.
 
 Use concise PR titles, typically `type(scope): description`. GitHub Actions appends `| CI #PR` for PR checks. For a Build-labeled APK run, an owner comment such as `B850 Canary` produces `type(scope): description | B850 Canary #PR`; the workflow verifies the requested Build against the checked-out Gradle source. The older `/canary` and `/internal` comments remain compatible but cannot show a Build in the run title.
 
