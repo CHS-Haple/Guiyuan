@@ -16,7 +16,7 @@
     <string name="home_runtime_disabled_summary">当前使用系统原生状态栏图标</string>
     <string name="home_runtime_enable_title">启用模块</string>
     <string name="home_runtime_framework_unavailable">未连接</string>
-    <string name="home_runtime_framework_unavailable_summary">无法连接框架服务\n请检查框架及模块启用状态</string>
+    <string name="home_runtime_framework_unavailable_summary">无法连接框架服务\n请检查框架服务及模块启用状态</string>
     <string name="home_runtime_unknown">状态未知</string>
     <string name="home_runtime_unknown_summary">SystemUI 运行状态暂不可用\n请稍后重试或查看诊断</string>
     <string name="home_runtime_checking">正在检查</string>
@@ -33,7 +33,7 @@
     <string name="home_preview_switch_dark">切换到深色模式</string>
     <string name="home_preview_sandbox_summary">模拟状态不会修改实际网络或电池数据</string>
     <string name="home_preview_parasite_title">寄生模式</string>
-    <string name="home_preview_parasite_summary">让模拟状态临时接管系统状态栏，关闭或退出沙盒后恢复</string>
+    <string name="home_preview_parasite_summary">让模拟状态临时接管系统状态栏，关闭或离开沙盒页面后恢复</string>
     <string name="home_preview_open_title">预览沙盒</string>
     <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态</string>
     <string name="home_preview_live_title">实时预览</string>
