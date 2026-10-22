@@ -7,7 +7,6 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -241,8 +240,6 @@ internal fun SettingsPage(
                             .then(if (springScroll && canScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
-                    // Keep the native list rebound alongside the MIUIX folding top bar.
-                    overscrollEffect = rememberOverscrollEffect(),
                     content = content,
                 )
             }
