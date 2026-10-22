@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
@@ -230,11 +231,14 @@ private fun BatterySchemePageContent(
     onCopy: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
+    val scrollState = rememberScrollState()
+    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                .verticalScroll(scrollState),
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
