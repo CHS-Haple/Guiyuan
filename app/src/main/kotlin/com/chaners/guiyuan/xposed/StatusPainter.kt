@@ -2142,13 +2142,8 @@ internal class StatusPainter(
         return samples.getOrPut(sample) {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
-                val supported = runCatching {
-                    setFontVariationSettings("'wght' $sample")
-                }.getOrDefault(false)
-                if (!supported) {
-                    // Android's static font-weight fallback is limited to 1..1000.
-                    typeface = Typeface.create(source, sample.coerceAtMost(1000), source.isItalic)
-                }
+                // A rejected variation keeps the captured source face unchanged.
+                runCatching { setFontVariationSettings("'wght' $sample") }
             }
         }
     }
