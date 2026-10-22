@@ -50,13 +50,15 @@ half4 main(float2 coord) {
         } else {
             null
         }
+    private val shaderBrush = shader?.let { ShaderBrush(it) }
 
     val modifier: Modifier =
         Modifier.drawWithContent {
             val progress = pressAnim.value
             if (progress > 0f) {
                 val runtimeShader = shader
-                if (runtimeShader != null) {
+                val brush = shaderBrush
+                if (runtimeShader != null && brush != null) {
                     drawRect(
                         Color.White.copy(alpha = 0.06f * progress),
                         blendMode = BlendMode.Plus,
@@ -73,7 +75,7 @@ half4 main(float2 coord) {
                         )
                     }
                     drawRect(
-                        ShaderBrush(runtimeShader),
+                        brush,
                         blendMode = BlendMode.Plus,
                     )
                 } else {
