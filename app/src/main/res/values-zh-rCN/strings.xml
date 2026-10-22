@@ -92,7 +92,8 @@
     <string name="mobile_type_size">移动制式大小</string>
     <string name="mobile_type_weight">移动制式字重</string>
     <string name="font_weight_range">当前字体可调范围：%1$d - %2$d</string>
-    <string name="font_weight_unverified">未能确认当前字体的字重轴，暂不可调</string>
+    <string name="font_weight_pending">正在等待系统字体检测结果，暂不可调</string>
+    <string name="font_weight_unverified">当前字体不支持可验证的可变字重，暂不可调</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">恢复默认设置</string>
