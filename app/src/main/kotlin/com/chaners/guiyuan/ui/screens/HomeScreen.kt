@@ -27,7 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -58,7 +60,6 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
-import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
@@ -79,6 +80,9 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.SliderPreference
+import java.util.Locale
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -137,20 +141,9 @@ internal fun HomeScreen(
         featureRepository.settings.collectAsState(
             initial = featureRepository.current(),
         )
-    val visualRepo =
-        remember(context.applicationContext) {
-            VisualRepo(context.applicationContext)
-        }
-    val visual by
-        visualRepo.settings.collectAsState(
-            initial = visualRepo.current(),
-        )
+    var gradientStops by remember { mutableStateOf(GradientStops()) }
     val xposedStatus =
         application.xposedStatus.collectAsState()
-    val previewResources =
-        remember(context.applicationContext) {
-            PreviewSysUiResources(context.applicationContext)
-        }
 
     val listState = rememberLazyListState()
     val canScroll = listState.canScrollBackward || listState.canScrollForward
@@ -208,6 +201,7 @@ internal fun HomeScreen(
                         onRestart = onRestart,
                         onRequestScope = onRequestScope,
                         onEnabledChange = featureRepository::setEnabled,
+                        gradientStops = gradientStops,
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
@@ -216,12 +210,9 @@ internal fun HomeScreen(
                 }
 
                 item {
-                    HomePreviewSandboxCard(
-                        state = previewState,
-                        resources = previewResources,
-                        visual = visual,
-                        featureSettings = featureSettings,
-                        onOpen = onOpenPreviewSandbox,
+                    HomeGradientLabControls(
+                        stops = gradientStops,
+                        onChange = { gradientStops = it },
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
@@ -233,10 +224,12 @@ internal fun HomeScreen(
     }
 }
 
+private data class GradientStops(val middle: Float = 0.4f, val lower: Float = 0.7f, val end: Float = 1f)
+
 private data class CardPaint(val accent: Color, val gradient: Brush)
 
 @Composable
-private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean, stops: GradientStops): CardPaint {
     val targetAccentColor =
         when (state.tone) {
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
@@ -310,9 +303,9 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
     val cardGradient =
         Brush.verticalGradient(
             0f to topColor,
-            0.5f to midColor,
-            0.72f to lowerColor,
-            1f to surfaceColor,
+            stops.middle to midColor,
+            stops.lower to lowerColor,
+            stops.end to surfaceColor,
         )
 
     return CardPaint(accentColor, cardGradient)
@@ -328,6 +321,7 @@ private fun HomeRuntimeStatusCard(
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
+    gradientStops: GradientStops,
     modifier: Modifier = Modifier,
 ) {
     // The native Tilt node belongs to the Card, not the changing runtime content.
@@ -344,6 +338,7 @@ private fun HomeRuntimeStatusCard(
             onRestart = onRestart,
             onRequestScope = onRequestScope,
             onEnabledChange = onEnabledChange,
+            gradientStops = gradientStops,
         )
     }
 }
@@ -358,6 +353,7 @@ private fun HomeRuntimeCardBody(
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
+    gradientStops: GradientStops,
 ) {
     val enabled = featureSettings.value.enabled
     val state = resolveHomeRuntimeCardState(
@@ -367,7 +363,7 @@ private fun HomeRuntimeCardBody(
         restartInProgress = restartInProgress,
         scopeRequestInProgress = scopeRequestInProgress,
     )
-    val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
+    val (accentColor, cardGradient) = runtimeCardPaint(state, enabled, gradientStops)
     val onCardClick = when (state.action) {
         HomeRuntimeAction.Restart -> onRestart
         HomeRuntimeAction.RequestScope -> onRequestScope
@@ -462,6 +458,69 @@ private fun HomeRuntimeCardBody(
                 )
             },
             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        )
+    }
+}
+
+
+@Composable
+private fun HomeGradientLabControls(
+    stops: GradientStops,
+    onChange: (GradientStops) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.home_gradient_lab_title),
+            modifier = Modifier.padding(start = 18.dp, bottom = 8.dp),
+            style = MiuixTheme.textStyles.title3,
+            color = MiuixTheme.colorScheme.onSurfaceContainer,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(vertical = 8.dp),
+        ) {
+            SliderPreference(
+                title = stringResource(R.string.home_gradient_lab_middle),
+                value = stops.middle,
+                onValueChange = { onChange(stops.copy(middle = (it * 100f).roundToInt() / 100f)) },
+                valueText = String.format(Locale.ROOT, "%.2f", stops.middle),
+                valueRange = 0f..1f,
+                steps = 99,
+            )
+            SliderPreference(
+                title = stringResource(R.string.home_gradient_lab_lower),
+                value = stops.lower,
+                onValueChange = { onChange(stops.copy(lower = (it * 100f).roundToInt() / 100f)) },
+                valueText = String.format(Locale.ROOT, "%.2f", stops.lower),
+                valueRange = 0f..1f,
+                steps = 99,
+            )
+            SliderPreference(
+                title = stringResource(R.string.home_gradient_lab_end),
+                value = stops.end,
+                onValueChange = { onChange(stops.copy(end = (it * 100f).roundToInt() / 100f)) },
+                valueText = String.format(Locale.ROOT, "%.2f", stops.end),
+                valueRange = 0f..1f,
+                steps = 99,
+            )
+        }
+        Text(
+            text = stringResource(
+                R.string.home_gradient_lab_values,
+                String.format(Locale.ROOT, "%.2f", stops.middle),
+                String.format(Locale.ROOT, "%.2f", stops.lower),
+                String.format(Locale.ROOT, "%.2f", stops.end),
+            ),
+            modifier = Modifier.padding(start = 18.dp, top = 10.dp),
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceContainer,
+        )
+        Text(
+            text = stringResource(R.string.home_gradient_lab_notice),
+            modifier = Modifier.padding(start = 18.dp, top = 4.dp),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
     }
 }
