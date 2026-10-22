@@ -101,6 +101,7 @@ internal class SandboxClient(
 
     @Synchronized
     fun update(state: PreviewSandboxUiState) {
+        if (latest == state) return
         latest = state
         val session = id
         if (session != 0L) updates.trySend(Update.Show(session, state))
