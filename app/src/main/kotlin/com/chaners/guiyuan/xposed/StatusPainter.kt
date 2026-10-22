@@ -74,6 +74,23 @@ internal class StatusPainter(
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
+    private data class MobileInkKey(
+        val face: Typeface?,
+        val variation: String?,
+        val text: String,
+        val size: Float,
+        val scaleX: Float,
+        val skewX: Float,
+        val spacing: Float,
+        val fakeBold: Boolean,
+    )
+
+    private val mobileInkSamples =
+        object : LinkedHashMap<MobileInkKey, MobileTypeSpacing.Ink>(48, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<MobileInkKey, MobileTypeSpacing.Ink>?,
+            ): Boolean = size > 48
+        }
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null
@@ -2999,6 +3016,8 @@ internal class StatusPainter(
             split.first.length,
             mobileTypeMainBounds,
         )
+        val mainInk =
+            if (split.first == "5G" && split.second == "A") mobileInk("5G") else null
         val mainBaselineY =
             MOBILE_TYPE_CENTER_Y -
                 (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
@@ -3033,17 +3052,48 @@ internal class StatusPainter(
             split.second.length,
             mobileTypeSuffixBounds,
         )
+        val suffixInk = mainInk?.let { mobileInk("A") }
+        val fitted =
+            if (mainInk != null && suffixInk != null) {
+                MobileTypeSpacing.fit(
+                    main = mainInk,
+                    suffix = suffixInk,
+                    clearance =
+                        suffixTextSize * MOBILE_TYPE_SUFFIX_EM_CLEARANCE +
+                            inkPad * (1f + suffixTextSize / mainTextSize),
+                )
+            } else {
+                null
+            }
+
+        val mainLeft =
+            if (fitted != null && mainInk != null) mainInk.left else mobileTypeMainBounds.left.toFloat()
+        val mainRight =
+            if (fitted != null && mainInk != null) mainInk.right else mobileTypeMainBounds.right.toFloat()
+        val suffixLeft =
+            if (fitted != null && suffixInk != null) suffixInk.left else mobileTypeSuffixBounds.left.toFloat()
+        val suffixRight =
+            if (fitted != null && suffixInk != null) suffixInk.right else mobileTypeSuffixBounds.right.toFloat()
         val totalInkWidth =
             mobileTypeMainBounds.width() +
                 MOBILE_TYPE_SUFFIX_GAP +
                 mobileTypeSuffixBounds.width()
         val groupLeft = MOBILE_TYPE_CENTER_X - totalInkWidth / 2f
-        val mainX = groupLeft - mobileTypeMainBounds.left
+        val mainX =
+            if (fitted != null) {
+                MOBILE_TYPE_CENTER_X - (fitted.left + fitted.right) / 2f
+            } else {
+                groupLeft - mobileTypeMainBounds.left
+            }
         val suffixX =
-            groupLeft +
-                mobileTypeMainBounds.width() +
-                MOBILE_TYPE_SUFFIX_GAP -
-                mobileTypeSuffixBounds.left
+            if (fitted != null) {
+                mainX + fitted.suffixX
+            } else {
+                groupLeft +
+                    mobileTypeMainBounds.width() +
+                    MOBILE_TYPE_SUFFIX_GAP -
+                    mobileTypeSuffixBounds.left
+            }
         val suffixOffset =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixRise,
@@ -3076,8 +3126,8 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left - inkPad,
-                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainLeft - inkPad,
+                            suffixX + suffixLeft - inkPad * suffixTextSize / mainTextSize,
                         ),
                     top =
                         min(
@@ -3086,8 +3136,8 @@ internal class StatusPainter(
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right + inkPad,
-                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainRight + inkPad,
+                            suffixX + suffixRight + inkPad * suffixTextSize / mainTextSize,
                         ),
                     bottom =
                         max(
@@ -3096,6 +3146,34 @@ internal class StatusPainter(
                         ),
                 ),
         )
+    }
+
+    private fun mobileInk(text: String): MobileTypeSpacing.Ink? {
+        val key =
+            MobileInkKey(
+                face = mobileTypePaint.typeface,
+                variation = mobileTypePaint.fontVariationSettings,
+                text = text,
+                size = mobileTypePaint.textSize,
+                scaleX = mobileTypePaint.textScaleX,
+                skewX = mobileTypePaint.textSkewX,
+                spacing = mobileTypePaint.letterSpacing,
+                fakeBold = mobileTypePaint.isFakeBoldText,
+            )
+        mobileInkSamples[key]?.let { return it }
+        val path = Path()
+        mobileTypePaint.getTextPath(text, 0, text.length, 0f, 0f, path)
+        if (path.isEmpty) return null
+        val bounds = RectF()
+        path.computeBounds(bounds, true)
+        val ink =
+            MobileTypeSpacing.Ink(
+                left = bounds.left,
+                right = bounds.right,
+            )
+        if (!ink.left.isFinite() || !ink.right.isFinite() || ink.right <= ink.left) return null
+        mobileInkSamples[key] = ink
+        return ink
     }
 
     private fun configureMobileTypeTextStyle(
@@ -3109,6 +3187,7 @@ internal class StatusPainter(
         if (mobileTextSource != source) {
             mobileTextSource = source
             mobileTextSamples.clear()
+            mobileInkSamples.clear()
         }
         mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1))
         val styleProgress =
@@ -3751,6 +3830,7 @@ internal class StatusPainter(
         const val MOBILE_TYPE_CENTER_X = 60f
         const val MOBILE_TYPE_CENTER_Y = 60f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
+        const val MOBILE_TYPE_SUFFIX_EM_CLEARANCE = 0.08f
         const val NATIVE_CENTER_CACHE_SIZE = 8
         const val MIN_OPTICAL_RATIO = 0.08f
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
