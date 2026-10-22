@@ -3091,29 +3091,27 @@ internal class StatusPainter(
                 null
             }
         val suffixPad = inkPad * suffixTextSize / mainTextSize
-        val fittedOffset =
-            contact?.let {
-                (it.offset + suffixTextSize * 0.025f + inkPad + suffixPad)
-                    .takeIf { value -> value.isFinite() && value > 0f }
+        val fitted =
+            contact?.let { result ->
+                val offset = result.offset + suffixTextSize * 0.025f + inkPad + suffixPad
+                result.copy(offset = offset).takeIf { offset.isFinite() && offset > 0f }
             }
-        val mainLeft = if (fittedOffset != null) contact!!.mainLeft else mobileTypeMainBounds.left.toFloat()
-        val mainRight = if (fittedOffset != null) contact!!.mainRight else mobileTypeMainBounds.right.toFloat()
-        val suffixLeft = if (fittedOffset != null) contact!!.suffixLeft else mobileTypeSuffixBounds.left.toFloat()
-        val suffixRight = if (fittedOffset != null) contact!!.suffixRight else mobileTypeSuffixBounds.right.toFloat()
-        val groupLeft =
-            min(mainLeft, (fittedOffset ?: 0f) + suffixLeft)
-        val groupRight =
-            max(mainRight, (fittedOffset ?: 0f) + suffixRight)
+        val mainLeft = fitted?.mainLeft ?: mobileTypeMainBounds.left.toFloat()
+        val mainRight = fitted?.mainRight ?: mobileTypeMainBounds.right.toFloat()
+        val suffixLeft = fitted?.suffixLeft ?: mobileTypeSuffixBounds.left.toFloat()
+        val suffixRight = fitted?.suffixRight ?: mobileTypeSuffixBounds.right.toFloat()
         val mainX =
-            if (fittedOffset != null) {
-                MOBILE_TYPE_CENTER_X - (groupLeft + groupRight) / 2f
+            if (fitted != null) {
+                val left = min(mainLeft, fitted.offset + suffixLeft)
+                val right = max(mainRight, fitted.offset + suffixRight)
+                MOBILE_TYPE_CENTER_X - (left + right) / 2f
             } else {
                 val total = mobileTypeMainBounds.width() + MOBILE_TYPE_SUFFIX_GAP + mobileTypeSuffixBounds.width()
                 MOBILE_TYPE_CENTER_X - total / 2f - mobileTypeMainBounds.left
             }
         val suffixX =
-            if (fittedOffset != null) {
-                mainX + fittedOffset
+            if (fitted != null) {
+                mainX + fitted.offset
             } else {
                 mainX + mobileTypeMainBounds.right + MOBILE_TYPE_SUFFIX_GAP - mobileTypeSuffixBounds.left
             }
