@@ -49,6 +49,8 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.RefreshState
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -181,7 +183,6 @@ internal fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
-    val springScroll = pullToRefresh == null
 
     Scaffold(
         snackbarHost = snackbarHost,
@@ -230,14 +231,14 @@ internal fun SettingsPage(
             background(contentPadding)
 
             @Composable
-            fun SettingsList() {
+            fun SettingsList(allowEdgeHaptic: Boolean = true) {
                 val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
                 LazyColumn(
                     state = resolvedListState,
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(if (springScroll && canScroll) Modifier.scrollEndHaptic() else Modifier)
+                            .then(if (allowEdgeHaptic && canScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
                     content = content,
@@ -245,15 +246,17 @@ internal fun SettingsPage(
             }
 
             if (pullToRefresh != null) {
+                val pullState = rememberPullToRefreshState()
                 PullToRefresh(
                     isRefreshing = pullToRefresh.refreshing,
                     onRefresh = pullToRefresh.onRefresh,
+                    pullToRefreshState = pullState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = contentPadding,
                     topAppBarScrollBehavior = scrollBehavior,
                     refreshTexts = pullToRefresh.texts,
                 ) {
-                    SettingsList()
+                    SettingsList(allowEdgeHaptic = pullState.refreshState == RefreshState.Idle)
                 }
             } else {
                 SettingsList()
