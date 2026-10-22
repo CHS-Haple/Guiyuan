@@ -3066,10 +3066,10 @@ internal class StatusPainter(
                 null
             }
 
-        val mainLeft = if (fitted != null) mainInk!!.left else mobileTypeMainBounds.left.toFloat()
-        val mainRight = if (fitted != null) mainInk!!.right else mobileTypeMainBounds.right.toFloat()
-        val suffixLeft = if (fitted != null) suffixInk!!.left else mobileTypeSuffixBounds.left.toFloat()
-        val suffixRight = if (fitted != null) suffixInk!!.right else mobileTypeSuffixBounds.right.toFloat()
+        val mainLeft = if (fitted != null && mainInk != null) mainInk.left else mobileTypeMainBounds.left.toFloat()
+        val mainRight = if (fitted != null && mainInk != null) mainInk.right else mobileTypeMainBounds.right.toFloat()
+        val suffixLeft = if (fitted != null && suffixInk != null) suffixInk.left else mobileTypeSuffixBounds.left.toFloat()
+        val suffixRight = if (fitted != null && suffixInk != null) suffixInk.right else mobileTypeSuffixBounds.right.toFloat()
         val totalInkWidth =
             mobileTypeMainBounds.width() +
                 MOBILE_TYPE_SUFFIX_GAP +
