@@ -37,6 +37,8 @@ import kotlin.math.sqrt
 internal class StatusPainter(
     private val context: Context,
     private val preview: Boolean = false,
+    private val traceMobileTypeEnabled: () -> Boolean = { false },
+    private val onMobileTypeTrace: ((String) -> Unit)? = null,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
@@ -74,6 +76,9 @@ internal class StatusPainter(
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
+    private var lastMobileTraceWeight = Int.MIN_VALUE
+    private var lastMobileTraceFace: Typeface? = null
+    private var lastMobileTraceFitted: Boolean? = null
     private data class MobileInkKey(
         val face: Typeface?,
         val variation: String?,
@@ -3094,6 +3099,53 @@ internal class StatusPainter(
                     MOBILE_TYPE_SUFFIX_GAP -
                     mobileTypeSuffixBounds.left
             }
+        if (split.first == "5G" && split.second == "A" && onMobileTypeTrace != null &&
+            traceMobileTypeEnabled()
+        ) {
+            val currentFace = mobileTypePaint.typeface
+            val currentWeight = geometry.mobileTypeWeight
+            if (currentWeight != lastMobileTraceWeight ||
+                currentFace !== lastMobileTraceFace ||
+                (fitted != null) != lastMobileTraceFitted
+            ) {
+                lastMobileTraceWeight = currentWeight
+                lastMobileTraceFace = currentFace
+                lastMobileTraceFitted = fitted != null
+                // Preserve the Paint's suffix style used by drawText.
+                val size = mobileTypePaint.textSize
+                val suffixAdvance = mobileTypePaint.measureText("A")
+                mobileTypePaint.textSize = mainTextSize
+                val mainAdvance = mobileTypePaint.measureText("5G")
+                mobileTypePaint.textSize = size
+                val mainVisibleRight = mainX + (mainInk?.right ?: mobileTypeMainBounds.right.toFloat())
+                val suffixVisibleLeft = suffixX + (suffixInk?.left ?: mobileTypeSuffixBounds.left.toFloat())
+                onMobileTypeTrace(
+                    "mobileTypeGapProbe" +
+                        " requestedWeight=" + currentWeight +
+                        " fitted=" + (fitted != null) +
+                        " faceId=" + System.identityHashCode(currentFace) +
+                        " faceStyle=" + (currentFace?.style ?: -1) +
+                        " variation=" + (mobileTypePaint.fontVariationSettings ?: "none") +
+                        " nativeSource=" + (indicator.typeface != null) +
+                        " canvasScale=" + scale +
+                        " mainSize=" + mainTextSize +
+                        " suffixSize=" + suffixTextSize +
+                        " suffixMorph=" + suffixMorph +
+                        " mainRect=" + mobileTypeMainBounds.left + ":" + mobileTypeMainBounds.right +
+                        " suffixRect=" + mobileTypeSuffixBounds.left + ":" + mobileTypeSuffixBounds.right +
+                        " mainInk=" + mainInk?.left + ":" + mainInk?.right +
+                        " suffixInk=" + suffixInk?.left + ":" + suffixInk?.right +
+                        " mainAdvance=" + mainAdvance +
+                        " suffixAdvance=" + suffixAdvance +
+                        " mainX=" + mainX +
+                        " suffixX=" + suffixX +
+                        " visibleGap=" + (suffixVisibleLeft - mainVisibleRight) +
+                        " paintStyle=" + mobileTypePaint.style +
+                        " textScaleX=" + mobileTypePaint.textScaleX +
+                        " letterSpacing=" + mobileTypePaint.letterSpacing,
+                )
+            }
+        }
         val suffixOffset =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixRise,
