@@ -11,6 +11,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -40,6 +41,8 @@ internal class LiquidDragMotion(
     private val scaleYAnim = Animatable(initialScale, 0.001f)
     private val mutex = MutatorMutex()
     private val velocityTracker = VelocityTracker()
+    private var pressJob: Job? = null
+    private var releaseJob: Job? = null
 
     val value: Float get() = valueAnim.value
     val targetValue: Float get() = valueAnim.targetValue
@@ -68,8 +71,10 @@ internal class LiquidDragMotion(
         }
 
     fun press() {
+        releaseJob?.cancel()
+        pressJob?.cancel()
         velocityTracker.resetTracking()
-        scope.launch {
+        pressJob = scope.launch {
             launch { pressAnim.animateTo(1f, pressSpec) }
             launch { scaleXAnim.animateTo(pressedScale, scaleXSpec) }
             launch { scaleYAnim.animateTo(pressedScale, scaleYSpec) }
@@ -77,7 +82,8 @@ internal class LiquidDragMotion(
     }
 
     fun release() {
-        scope.launch {
+        releaseJob?.cancel()
+        releaseJob = scope.launch {
             withFrameNanos { }
             if (value != targetValue) {
                 val threshold = (range.endInclusive - range.start) * 0.025f

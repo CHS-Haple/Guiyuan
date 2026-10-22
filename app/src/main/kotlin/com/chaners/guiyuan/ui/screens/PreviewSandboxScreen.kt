@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -163,6 +164,8 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
+    val listState = rememberLazyListState()
+    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
@@ -216,10 +219,11 @@ internal fun PreviewSandboxScreen(
                     .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
+                state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .scrollEndHaptic()
+                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
