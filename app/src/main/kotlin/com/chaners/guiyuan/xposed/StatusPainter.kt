@@ -74,6 +74,37 @@ internal class StatusPainter(
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
+    private data class MobileContactKey(
+        val face: Typeface?,
+        val variation: String?,
+        val mainSize: Float,
+        val suffixSize: Float,
+        val scaleX: Float,
+        val skewX: Float,
+        val spacing: Float,
+        val fakeBold: Boolean,
+        val suffixY: Float,
+    )
+
+    private data class MobileContour(
+        val points: FloatArray,
+        val left: Float,
+        val right: Float,
+    )
+
+    private data class MobileContact(
+        val offset: Float,
+        val mainLeft: Float,
+        val mainRight: Float,
+        val suffixLeft: Float,
+        val suffixRight: Float,
+    )
+
+    private val mobileContacts =
+        object : LinkedHashMap<MobileContactKey, MobileContact>(64, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<MobileContactKey, MobileContact>?): Boolean =
+                size > 64
+        }
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null
@@ -3033,17 +3064,6 @@ internal class StatusPainter(
             split.second.length,
             mobileTypeSuffixBounds,
         )
-        val totalInkWidth =
-            mobileTypeMainBounds.width() +
-                MOBILE_TYPE_SUFFIX_GAP +
-                mobileTypeSuffixBounds.width()
-        val groupLeft = MOBILE_TYPE_CENTER_X - totalInkWidth / 2f
-        val mainX = groupLeft - mobileTypeMainBounds.left
-        val suffixX =
-            groupLeft +
-                mobileTypeMainBounds.width() +
-                MOBILE_TYPE_SUFFIX_GAP -
-                mobileTypeSuffixBounds.left
         val suffixOffset =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixRise,
@@ -3063,6 +3083,41 @@ internal class StatusPainter(
         val suffixBaselineY =
             sourceSuffixBaseline + (mainBaselineY - sourceSuffixBaseline) * suffixMorph
 
+        // Use the same measured paint and vertical baseline as the two drawText calls.
+        val contact =
+            if (split.first == "5G" && split.second == "A") {
+                mobileContact(mainTextSize, suffixTextSize, suffixBaselineY - mainBaselineY)
+            } else {
+                null
+            }
+        val suffixPad = inkPad * suffixTextSize / mainTextSize
+        val fittedOffset =
+            contact?.let {
+                (it.offset + suffixTextSize * 0.025f + inkPad + suffixPad)
+                    .takeIf { value -> value.isFinite() && value > 0f }
+            }
+        val mainLeft = if (fittedOffset != null) contact!!.mainLeft else mobileTypeMainBounds.left.toFloat()
+        val mainRight = if (fittedOffset != null) contact!!.mainRight else mobileTypeMainBounds.right.toFloat()
+        val suffixLeft = if (fittedOffset != null) contact!!.suffixLeft else mobileTypeSuffixBounds.left.toFloat()
+        val suffixRight = if (fittedOffset != null) contact!!.suffixRight else mobileTypeSuffixBounds.right.toFloat()
+        val groupLeft =
+            min(mainLeft, (fittedOffset ?: 0f) + suffixLeft)
+        val groupRight =
+            max(mainRight, (fittedOffset ?: 0f) + suffixRight)
+        val mainX =
+            if (fittedOffset != null) {
+                MOBILE_TYPE_CENTER_X - (groupLeft + groupRight) / 2f
+            } else {
+                val total = mobileTypeMainBounds.width() + MOBILE_TYPE_SUFFIX_GAP + mobileTypeSuffixBounds.width()
+                MOBILE_TYPE_CENTER_X - total / 2f - mobileTypeMainBounds.left
+            }
+        val suffixX =
+            if (fittedOffset != null) {
+                mainX + fittedOffset
+            } else {
+                mainX + mobileTypeMainBounds.right + MOBILE_TYPE_SUFFIX_GAP - mobileTypeSuffixBounds.left
+            }
+
         return MobileTypeLayout(
             main = split.first,
             suffix = split.second,
@@ -3076,8 +3131,8 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left - inkPad,
-                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainLeft - inkPad,
+                            suffixX + suffixLeft - suffixPad,
                         ),
                     top =
                         min(
@@ -3086,8 +3141,8 @@ internal class StatusPainter(
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right + inkPad,
-                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainRight + inkPad,
+                            suffixX + suffixRight + suffixPad,
                         ),
                     bottom =
                         max(
@@ -3096,6 +3151,62 @@ internal class StatusPainter(
                         ),
                 ),
         )
+    }
+
+    private fun mobileContact(
+        mainSize: Float,
+        suffixSize: Float,
+        suffixY: Float,
+    ): MobileContact? {
+        val key =
+            MobileContactKey(
+                face = mobileTypePaint.typeface,
+                variation = mobileTypePaint.fontVariationSettings,
+                mainSize = mainSize,
+                suffixSize = suffixSize,
+                scaleX = mobileTypePaint.textScaleX,
+                skewX = mobileTypePaint.textSkewX,
+                spacing = mobileTypePaint.letterSpacing,
+                fakeBold = mobileTypePaint.isFakeBoldText,
+                suffixY = suffixY,
+            )
+        mobileContacts[key]?.let { return it }
+        mobileTypePaint.textSize = mainSize
+        val main = mobileContour("5G")
+        mobileTypePaint.textSize = suffixSize
+        val suffix = mobileContour("A")
+        if (main == null || suffix == null) return null
+        val offset =
+            MobileGlyphFit.contactOffset(
+                main = main.points,
+                suffix = suffix.points,
+                suffixY = suffixY,
+                clearance = 0f,
+            ) ?: return null
+        return MobileContact(
+            offset = offset,
+            mainLeft = main.left,
+            mainRight = main.right,
+            suffixLeft = suffix.left,
+            suffixRight = suffix.right,
+        ).also { mobileContacts[key] = it }
+    }
+
+    private fun mobileContour(text: String): MobileContour? {
+        val path = Path()
+        mobileTypePaint.getTextPath(text, 0, text.length, 0f, 0f, path)
+        if (path.isEmpty) return null
+        val points = path.approximate(0.15f)
+        if (points.size < 6 || points.size > 2048 || points.size % 3 != 0) return null
+        var left = Float.POSITIVE_INFINITY
+        var right = Float.NEGATIVE_INFINITY
+        for (i in 1 until points.size step 3) {
+            val x = points[i]
+            if (!x.isFinite()) return null
+            left = min(left, x)
+            right = max(right, x)
+        }
+        return if (left.isFinite() && right > left) MobileContour(points, left, right) else null
     }
 
     private fun configureMobileTypeTextStyle(
@@ -3109,6 +3220,7 @@ internal class StatusPainter(
         if (mobileTextSource != source) {
             mobileTextSource = source
             mobileTextSamples.clear()
+            mobileContacts.clear()
         }
         mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1))
         val styleProgress =
