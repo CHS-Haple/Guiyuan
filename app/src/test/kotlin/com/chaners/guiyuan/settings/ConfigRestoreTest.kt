@@ -150,6 +150,44 @@ class ConfigRestoreTest {
     }
 
     @Test
+    fun bothRollbackFailuresRemainVisibleOnTheOriginalWriteException() {
+        val cause = IOException("feature commit threw")
+        val thrown =
+            assertThrows(IOException::class.java) {
+                restoreBackupStores(
+                    restoreVisual = { true },
+                    restoreFeature = { throw cause },
+                    rollbackVisual = { false },
+                    rollbackFeature = { throw IllegalStateException("feature rollback") },
+                )
+            }
+        assertTrue(thrown === cause)
+        assertEquals(1, thrown.suppressed.size)
+        val rollbackFailure = thrown.suppressed[0]
+        assertTrue(rollbackFailure.message!!.contains("feature rollback"))
+        assertEquals(1, rollbackFailure.suppressed.size)
+        assertTrue(rollbackFailure.suppressed[0].message!!.contains("visual"))
+    }
+
+    @Test
+    fun cancellationDuringRollbackTakesPriorityWithoutHidingTheWriteError() {
+        val cause = IOException("feature write")
+        val cancellation = CancellationException("cancelled during visual rollback")
+        val thrown =
+            assertThrows(CancellationException::class.java) {
+                restoreBackupStores(
+                    restoreVisual = { true },
+                    restoreFeature = { throw cause },
+                    rollbackVisual = { throw cancellation },
+                    rollbackFeature = { true },
+                )
+            }
+        assertTrue(thrown === cancellation)
+        assertEquals(1, thrown.suppressed.size)
+        assertTrue(thrown.suppressed[0] === cause)
+    }
+
+    @Test
     fun cancellationIsPropagatedAfterCompensation() {
         val cancellation = CancellationException("cancelled")
         var restored = false
