@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -241,14 +244,28 @@ internal fun PreviewSandboxScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.home_preview_live_title),
-                                style = MiuixTheme.textStyles.body1,
+                                style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                             )
-                            StatusPreview(
-                                model = renderModel,
-                                visual = visual,
-                                modifier = Modifier.width(120.dp).height(128.dp),
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .width(60.dp)
+                                    .height(92.dp)
+                                    .clipToBounds(),
+                            ) {
+                                StatusPreview(
+                                    model = renderModel,
+                                    visual = visual,
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(184.dp)
+                                        .graphicsLayer {
+                                            scaleX = 0.5f
+                                            scaleY = 0.5f
+                                            transformOrigin = TransformOrigin(0f, 0f)
+                                        },
+                                )
+                            }
                         }
                     }
                 }
