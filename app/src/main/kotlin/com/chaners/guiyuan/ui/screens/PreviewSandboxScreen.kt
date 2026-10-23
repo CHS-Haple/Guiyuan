@@ -92,6 +92,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class SandboxHint {
     BATTERY,
+    DUAL_SIGNAL,
     BATTERY_MODE,
     CHARGING,
     NETWORK,
@@ -232,40 +233,73 @@ internal fun PreviewSandboxScreen(
         if (!showDock) previewExpanded = false
     }
 
-    val hintText = when (hint) {
+    val hintLabel = when (hint) {
+        SandboxHint.BATTERY -> stringResource(R.string.home_preview_battery_level_title)
+        SandboxHint.DUAL_SIGNAL -> stringResource(R.string.home_preview_dual_mobile_title)
+        SandboxHint.BATTERY_MODE -> stringResource(R.string.home_preview_battery_mode_title)
+        SandboxHint.CHARGING -> stringResource(R.string.home_preview_charging_state_title)
+        SandboxHint.NETWORK -> stringResource(R.string.home_preview_network_mode_title)
+        SandboxHint.WIFI_STATE -> stringResource(R.string.home_preview_wifi_state_title)
+        SandboxHint.WIFI_SIGNAL -> stringResource(R.string.home_preview_wifi_signal_title)
+        SandboxHint.MOBILE_NETWORK -> stringResource(
+            if (state.dualMobile) R.string.home_preview_sim1_network_title
+            else R.string.home_preview_mobile_network_title,
+        )
+        SandboxHint.SIM2_NETWORK -> stringResource(R.string.home_preview_sim2_network_title)
+        SandboxHint.MOBILE_SIGNAL -> stringResource(
+            if (state.dualMobile) R.string.home_preview_sim1_signal_title
+            else R.string.home_preview_mobile_signal_title,
+        )
+        SandboxHint.SIM2_SIGNAL -> stringResource(R.string.home_preview_sim2_signal_title)
+        SandboxHint.SIM -> stringResource(R.string.home_preview_sim_title)
+        SandboxHint.DATA_SIM -> stringResource(R.string.home_preview_data_sim_title)
+        SandboxHint.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
+        SandboxHint.PARASITE -> stringResource(R.string.home_preview_parasite_title)
+    }
+    val onText = stringResource(R.string.home_preview_state_on)
+    val offText = stringResource(R.string.home_preview_state_off)
+    val hintValue = when (hint) {
         SandboxHint.BATTERY -> stringResource(R.string.home_preview_battery_percent, state.batteryPercent)
+        SandboxHint.DUAL_SIGNAL -> if (state.dualMobile) onText else offText
         SandboxHint.BATTERY_MODE -> batteryModeOptions[state.batteryMode.ordinal]
         SandboxHint.CHARGING -> chargingOptions[state.chargingState.ordinal]
         SandboxHint.NETWORK -> networkModeOptions[previewNetworkTabs.indexOf(state.networkMode)]
         SandboxHint.WIFI_STATE -> wifiOptions[state.wifiState.ordinal]
-        SandboxHint.WIFI_SIGNAL ->
-            stringResource(R.string.home_preview_wifi_signal_title) + " " +
-                signalValueText(state.wifiSignalLevel)
-        SandboxHint.MOBILE_NETWORK ->
-            mobileNetworkChoices.firstOrNull { it.first == state.mobileNetwork }?.second.orEmpty()
-        SandboxHint.SIM2_NETWORK ->
-            mobileNetworkChoices.firstOrNull { it.first == state.sim2MobileNetwork }?.second.orEmpty()
-        SandboxHint.MOBILE_SIGNAL ->
-            stringResource(
-                if (state.dualMobile) R.string.home_preview_sim1_signal_title
-                else R.string.home_preview_mobile_signal_title,
-            ) + " " + signalValueText(state.mobileSignalLevel)
-        SandboxHint.SIM2_SIGNAL ->
-            stringResource(R.string.home_preview_sim2_signal_title) + " " +
-                signalValueText(state.sim2SignalLevel)
+        SandboxHint.WIFI_SIGNAL -> signalValueText(state.wifiSignalLevel)
+        SandboxHint.MOBILE_NETWORK -> mobileNetworkChoices.firstOrNull {
+            it.first == state.mobileNetwork
+        }?.second ?: stringResource(R.string.home_preview_network_mode_mobile)
+        SandboxHint.SIM2_NETWORK -> mobileNetworkChoices.firstOrNull {
+            it.first == state.sim2MobileNetwork
+        }?.second ?: stringResource(R.string.home_preview_network_mode_mobile)
+        SandboxHint.MOBILE_SIGNAL -> signalValueText(state.mobileSignalLevel)
+        SandboxHint.SIM2_SIGNAL -> signalValueText(state.sim2SignalLevel)
         SandboxHint.SIM -> if (state.dualMobile) {
             dualSimOptions[state.simCards.ordinal]
         } else {
             simOptions[if (state.simPresent) 0 else 1]
         }
         SandboxHint.DATA_SIM -> dataSimOptions[state.dataSim.ordinal]
-        SandboxHint.AIRPLANE -> if (state.airplaneMode) {
-            stringResource(R.string.home_preview_airplane_title)
-        } else {
-            networkModeOptions[previewNetworkTabs.indexOf(state.networkMode)]
-        }
-        SandboxHint.PARASITE -> stringResource(R.string.home_preview_parasite_title)
+        SandboxHint.AIRPLANE -> if (state.airplaneMode) onText else offText
+        SandboxHint.PARASITE -> if (parasiteActive) onText else offText
     }
+    val hintIcon = when (hint) {
+        SandboxHint.BATTERY, SandboxHint.BATTERY_MODE -> R.drawable.ic_material_symbol_battery_5_bar
+        SandboxHint.CHARGING -> R.drawable.ic_material_symbol_bolt
+        SandboxHint.DUAL_SIGNAL -> R.drawable.ic_material_symbol_sim_cards
+        SandboxHint.SIM, SandboxHint.DATA_SIM -> R.drawable.ic_material_symbol_sim_card
+        SandboxHint.WIFI_STATE, SandboxHint.WIFI_SIGNAL -> R.drawable.ic_material_symbol_wifi
+        SandboxHint.AIRPLANE -> R.drawable.ic_material_symbol_airplanemode_active
+        SandboxHint.PARASITE -> R.drawable.ic_material_symbol_bacteriophage
+        else -> R.drawable.ic_material_symbol_signal_cellular_alt
+    }
+    val hintDetail = when (hint) {
+        SandboxHint.BATTERY_MODE -> R.drawable.ic_material_symbol_tune
+        SandboxHint.WIFI_STATE, SandboxHint.DATA_SIM -> R.drawable.ic_material_symbol_swap_horiz
+        SandboxHint.MOBILE_NETWORK, SandboxHint.SIM2_NETWORK -> R.drawable.ic_material_symbol_category_w500
+        else -> null
+    }
+    val hintText = "$hintLabel $hintValue"
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
@@ -411,7 +445,7 @@ internal fun PreviewSandboxScreen(
                             summary = stringResource(R.string.home_preview_dual_mobile_summary),
                             checked = state.dualMobile,
                             onCheckedChange = { enabled ->
-                                hint = SandboxHint.SIM
+                                hint = SandboxHint.DUAL_SIGNAL
                                 onDualMobileChange(enabled)
                             },
                             startAction = {
