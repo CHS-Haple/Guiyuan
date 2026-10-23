@@ -12,8 +12,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -44,6 +44,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -65,7 +66,7 @@ import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
+import com.chaners.guiyuan.ui.components.MiuixTopBarBackdrop
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
@@ -309,52 +310,45 @@ internal fun PreviewSandboxScreen(
 
     Scaffold(
         topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
+            SmallTopAppBar(
+                title = stringResource(R.string.home_preview_sandbox_title),
+                color = Color.Transparent,
                 scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                SmallTopAppBar(
-                    title = stringResource(R.string.home_preview_sandbox_title),
-                    color = barColor,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        TooltipBox(text = stringResource(R.string.back)) {
-                            IconButton(onClick = { if (previewExpanded) previewExpanded = false else onBack() }) {
-                                Icon(
-                                    MiuixIcons.Back,
-                                    contentDescription = stringResource(R.string.back),
-                                )
-                            }
+                navigationIcon = {
+                    TooltipBox(text = stringResource(R.string.back)) {
+                        IconButton(onClick = { if (previewExpanded) previewExpanded = false else onBack() }) {
+                            Icon(
+                                MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.back),
+                            )
                         }
-                    },
-                    actions = {
-                        val title = stringResource(
-                            if (dark) R.string.home_preview_switch_light
-                            else R.string.home_preview_switch_dark,
-                        )
-                        TooltipBox(text = title) {
-                            IconButton(onClick = onToggleTheme) {
-                                Image(
-                                    painter = painterResource(
-                                        if (dark) R.drawable.ic_material_symbol_light_mode
-                                        else R.drawable.ic_material_symbol_dark_mode,
-                                    ),
-                                    contentDescription = title,
-                                    modifier = Modifier.size(24.dp),
-                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                )
-                            }
+                    }
+                },
+                actions = {
+                    val title = stringResource(
+                        if (dark) R.string.home_preview_switch_light
+                        else R.string.home_preview_switch_dark,
+                    )
+                    TooltipBox(text = title) {
+                        IconButton(onClick = onToggleTheme) {
+                            Image(
+                                painter = painterResource(
+                                    if (dark) R.drawable.ic_material_symbol_light_mode
+                                    else R.drawable.ic_material_symbol_dark_mode,
+                                ),
+                                contentDescription = title,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                            )
                         }
-                    },
-                )
-            }
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .topBarBackdropSource(topBarBackdrop),
+                Modifier.fillMaxSize(),
         ) {
             // The scroll viewport and floating preview share the same Scaffold top inset.
             LazyColumn(
@@ -364,7 +358,8 @@ internal fun PreviewSandboxScreen(
                         .fillMaxSize()
                         .padding(top = paddingValues.calculateTopPadding())
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .topBarBackdropSource(topBarBackdrop),
                 contentPadding =
                     pageContentPadding(
                         innerPadding = PaddingValues(
@@ -701,13 +696,20 @@ internal fun PreviewSandboxScreen(
             }
 
             // The dock animates outside the LazyColumn's layout and joins the top bar surface.
-            AnimatedVisibility(
-                visible = showDock,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = paddingValues.calculateTopPadding())
-                    .fillMaxWidth()
-                    .zIndex(1f),
+            // A single backdrop spans the app bar and drawer without changing LazyColumn measurements.
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(1f),
+            ) {
+                MiuixTopBarBackdrop(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                    modifier = Modifier.matchParentSize(),
+                )
+                Column {
+                    Spacer(Modifier.height(paddingValues.calculateTopPadding()))
+                    AnimatedVisibility(
+                        visible = showDock,
+                        modifier = Modifier.fillMaxWidth(),
                 enter = expandVertically(
                     expandFrom = Alignment.Top,
                     animationSpec = tween(240),
@@ -717,11 +719,7 @@ internal fun PreviewSandboxScreen(
                     animationSpec = tween(240),
                 ) + fadeOut(animationSpec = tween(160)),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MiuixTheme.colorScheme.surface),
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -789,6 +787,8 @@ internal fun PreviewSandboxScreen(
                         }
                     }
                     HorizontalDivider()
+                }
+            }
                 }
             }
         }
