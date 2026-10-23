@@ -85,7 +85,6 @@
 
     <string name="home_preview_battery_level_title">电量</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
-    <string name="home_preview_dock_battery">电量 %1$d%%</string>
     <string name="home_preview_battery_mode_title">电量模式</string>
     <string name="home_preview_battery_mode_balanced">均衡模式</string>
     <string name="home_preview_battery_mode_power_save">省电模式</string>
