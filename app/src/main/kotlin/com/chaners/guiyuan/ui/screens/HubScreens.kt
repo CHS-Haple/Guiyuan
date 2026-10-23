@@ -13,6 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
+import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -1326,29 +1328,27 @@ private fun HubPage(
                         bottomContent = {
                             if (search.active) {
                                 val requester = remember { FocusRequester() }
-                                TextField(
-                                    value = search.query,
-                                    onValueChange = search::update,
-                                    label = stringResource(R.string.feature_search),
-                                    useLabelAsPlaceholder = true,
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                    trailingIcon = {
-                                        if (search.query.isNotEmpty()) {
-                                            val label = stringResource(R.string.feature_search_clear)
-                                            TooltipBox(text = label) {
-                                                IconButton(onClick = { search.update("") }) {
-                                                    Icon(
-                                                        MiuixIcons.Basic.SearchCleanup,
-                                                        contentDescription = label,
-                                                    )
-                                                }
-                                            }
-                                        }
+                                SearchBar(
+                                    inputField = {
+                                        InputField(
+                                            query = search.query,
+                                            onQueryChange = search::update,
+                                            onSearch = {},
+                                            expanded = search.active,
+                                            onExpandedChange = { if (!it) search.close() },
+                                            label = stringResource(R.string.feature_search),
+                                            modifier = Modifier.focusRequester(requester),
+                                        )
                                     },
-                                    modifier = Modifier.fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .focusRequester(requester),
+                                    expanded = search.active,
+                                    onExpandedChange = { if (!it) search.close() },
+                                    outsideEndAction = {
+                                        TextButton(
+                                            text = stringResource(R.string.feature_search_close),
+                                            onClick = search::close,
+                                        )
+                                    },
+                                    content = {},
                                 )
                                 LaunchedEffect(requester) { requester.requestFocus() }
                             }
