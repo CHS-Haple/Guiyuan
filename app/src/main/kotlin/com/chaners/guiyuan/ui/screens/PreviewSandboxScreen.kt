@@ -774,15 +774,14 @@ internal fun PreviewSandboxScreen(
                                 if (previewExpanded) R.string.home_preview_collapse
                                 else R.string.home_preview_expand,
                             )
-                            TooltipBox(text = label) {
-                                IconButton(
-                                    onClick = { previewExpanded = !previewExpanded },
-                                    modifier = Modifier.align(Alignment.TopEnd),
-                                ) {
-                                    Icon(
-                                        if (previewExpanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                                        contentDescription = label,
-                                    )
+                            Box(modifier = Modifier.align(Alignment.TopEnd)) {
+                                TooltipBox(text = label) {
+                                    IconButton(onClick = { previewExpanded = !previewExpanded }) {
+                                        Icon(
+                                            if (previewExpanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                                            contentDescription = label,
+                                        )
+                                    }
                                 }
                             }
                         }
