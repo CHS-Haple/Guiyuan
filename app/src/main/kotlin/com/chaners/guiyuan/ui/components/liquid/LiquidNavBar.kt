@@ -109,7 +109,7 @@ private val glassHighlight = Highlight(
 private const val GRAVITY_THRESHOLD_SQ = 0.01f
 private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
 private const val TILT_LIGHT_SENSITIVITY = 0.12f
-private const val PITCH_SWEEP_GAIN = 0.4f
+private const val PITCH_SWEEP_PER_RAD = 4f / 15f
 private val PITCH_SWEEP_LIMIT = (12.0 * PI / 180.0).toFloat()
 
 internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
@@ -141,8 +141,10 @@ private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
 
 internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
     val style = glassHighlight.style as BloomStroke
-    // Pitch rotates the rim highlight; translating its Y position was lost during light normalization.
-    val pitchSweep = (tilt.pitch * PITCH_SWEEP_GAIN).coerceIn(-PITCH_SWEEP_LIMIT, PITCH_SWEEP_LIMIT)
+    // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
+    val pitchSweep =
+        ((abs(tilt.pitch) - (PI / 4).toFloat()) * PITCH_SWEEP_PER_RAD)
+            .coerceIn(-PITCH_SWEEP_LIMIT, PITCH_SWEEP_LIMIT)
     val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
     val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
     return glassHighlight.copy(
