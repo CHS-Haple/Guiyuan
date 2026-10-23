@@ -8,6 +8,10 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+No changes since the 0.9.0 development checkpoint.
+
+## [0.9.0] - 2026-10-23
+
 ### Added
 - Added a temporary Home-status-bar sandbox parasite preview with bounded lease expiry and automatic display restoration on exit.
 - Added a configurable low-battery threshold from 5–30% (20% default) for live rendering and preview.
@@ -17,6 +21,10 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Rejected conflicting per-mode visual settings in imported backups instead of silently overwriting them by layout order.
 - Normalized unsafe control and bidirectional characters in custom battery scheme names before storage, including older saved names, so they do not break configuration backups.
 - Restored the exact original feature preferences and change timestamp if a configuration import fails after writing visual settings.
+- Compensated preference-store exceptions during configuration restore and preserved original/rollback failure details.
+- Corrected 5GA suffix spacing using native font ink bounds and a bounded optical allowance, including heavier weights.
+- Settled Liquid navigation drag-stop transitions through a single animation owner.
+- Rebound late or replaced native airplane-mode and no-SIM Control Center targets on existing layout events, retaining the current reservation/retarget policy.
 
 ### Security
 - Restricted configuration import to document-provider content URIs, rejecting local-file and resource URI inputs.
@@ -28,7 +36,14 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Shared the content layout across single- and dual-row signal modes, preserving the active layout from existing configurations, and enabled the battery number by default only for unconfigured battery-centered profiles.
 - Rebuilt the optional liquid-glass finish on the pinned MIUIX Blur API with locally adapted upstream lens and inner-shadow effects. The three finishes are Blur (8 dp, 40% theme-colored surface), Balanced (4 dp, 40%) and Clear (2 dp, 30%). Balanced is the unconfigured choice; stored Default and older Blur values continue to select the same 4 dp finish, while the 8 dp option retains its distinct stored value. Both use a 24 / 24 dp lens, a gravity-responsive dual-light edge highlight, a 10 dp cast shadow and a separate pressure-responsive selected capsule with depth refraction and chromatic dispersion. Preserved independent tab content settings and the native navigation fallback; removed the no-longer-used Backdrop and Shapes runtime libraries.
 - Updated AndroidX Core from 1.17.0 to 1.19.1.
-- Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management (B1111 on dev; not yet promoted to main).
+- Refined the Home runtime-status card with a single settled gradient and consistent switch interactions.
+- Improved normal-path API 102 Hot Reload generation retirement and preserved native recovery on unsupported handoffs.
+- Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management.
+
+### Engineering
+- Updated the verified Gradle Wrapper to 9.8.2 and kotlinx.serialization core/JSON to 1.12.0; retained the pinned MIUIX snapshot and Modern Xposed API 102.
+- Strengthened CI checks for independent dev commits and authenticated Dependabot MIUIX package access; a fresh bot-origin cold-cache resolution of all five pinned artifacts is not yet proven.
+- Confirmed consecutive same-Build Hot Reload handoffs and bounded Sandbox force-stop restoration on the tested device; other SystemUI/LSPosed failure paths remain unverified.
 
 ## [0.8.0] - 2026-10-19
 
