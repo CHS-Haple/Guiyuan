@@ -202,12 +202,16 @@ internal fun PreviewSandboxScreen(
         when {
             listState.firstVisibleItemIndex >= 4 ->
                 stringResource(R.string.home_preview_battery_percent, state.batteryPercent)
+            state.airplaneMode -> stringResource(R.string.home_preview_airplane_title)
             state.networkMode == PreviewNetworkMode.WIFI ->
                 stringResource(R.string.home_preview_wifi_signal_title) + " · " +
                     signalValueText(state.wifiSignalLevel)
-            else ->
+            state.networkMode == PreviewNetworkMode.MOBILE && !state.hasSim ->
+                stringResource(R.string.home_preview_sim_absent)
+            state.networkMode == PreviewNetworkMode.MOBILE ->
                 stringResource(R.string.home_preview_mobile_signal_title) + " · " +
                     signalValueText(state.mobileSignalLevel)
+            else -> stringResource(R.string.home_preview_network_none)
         }
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
