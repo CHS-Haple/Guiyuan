@@ -1,7 +1,11 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,13 +24,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -57,6 +59,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -71,7 +74,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
@@ -186,17 +188,10 @@ internal fun PreviewSandboxScreen(
         }
 
     val listState = rememberLazyListState()
-    var previewExpanded by remember { mutableStateOf(false) }
-    val fullPreviewVisible by remember {
-        derivedStateOf { listState.firstVisibleItemIndex == 0 }
+    val showDock by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
     }
-    LaunchedEffect(fullPreviewVisible) {
-        if (fullPreviewVisible) previewExpanded = false
-    }
-    val previewScale by animateFloatAsState(
-        targetValue = if (previewExpanded) 0.9f else 0.38f,
-        label = "sandboxPreviewScale",
-    )
+    val scope = rememberCoroutineScope()
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
@@ -304,6 +299,65 @@ internal fun PreviewSandboxScreen(
                     }
                 }
 
+                stickyHeader(key = "livePreview") {
+                    AnimatedVisibility(
+                        visible = showDock,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut(),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MiuixTheme.colorScheme.surface),
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                                insideMargin = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.home_preview_live_title),
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = MiuixTheme.colorScheme.onSurfaceContainer,
+                                        )
+                                        Text(
+                                            text = stringResource(
+                                                R.string.home_preview_battery_percent,
+                                                state.batteryPercent,
+                                            ),
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                        )
+                                    }
+                                    ScaledSandboxPreview(
+                                        model = renderModel,
+                                        visual = visual,
+                                        scale = 0.33f,
+                                    )
+                                    val actionLabel = stringResource(R.string.home_preview_expand)
+                                    TooltipBox(text = actionLabel) {
+                                        IconButton(
+                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                        ) {
+                                            Icon(
+                                                MiuixIcons.ExpandLess,
+                                                contentDescription = actionLabel,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 item {
                     Card(
                         modifier = Modifier
@@ -318,61 +372,6 @@ internal fun PreviewSandboxScreen(
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
                             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
                         )
-                    }
-                }
-
-                stickyHeader(key = "livePreview") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MiuixTheme.colorScheme.surface),
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
-                            insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.body1,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                                    )
-                                    Text(
-                                        text = stringResource(
-                                            R.string.home_preview_battery_percent,
-                                            state.batteryPercent,
-                                        ),
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                    )
-                                }
-                                ScaledSandboxPreview(
-                                    model = renderModel,
-                                    visual = visual,
-                                    scale = previewScale,
-                                )
-                                val actionLabel = stringResource(
-                                    if (previewExpanded) R.string.home_preview_collapse
-                                    else R.string.home_preview_expand,
-                                )
-                                TooltipBox(text = actionLabel) {
-                                    IconButton(onClick = { previewExpanded = !previewExpanded }) {
-                                        Icon(
-                                            if (previewExpanded) MiuixIcons.ExpandLess
-                                            else MiuixIcons.ExpandMore,
-                                            contentDescription = actionLabel,
-                                        )
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
 
