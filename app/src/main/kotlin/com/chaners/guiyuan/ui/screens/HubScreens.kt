@@ -12,9 +12,11 @@ import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1329,9 +1331,16 @@ private fun HubPage(
                                     expanded = search.active,
                                     onExpandedChange = { if (!it) search.close() },
                                     outsideEndAction = {
-                                        TextButton(
+                                        Text(
                                             text = stringResource(R.string.cancel),
-                                            onClick = search::close,
+                                            color = MiuixTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .padding(start = 12.dp)
+                                                .clickable(
+                                                    interactionSource = null,
+                                                    indication = null,
+                                                    onClick = search::close,
+                                                ),
                                         )
                                     },
                                     content = {},
