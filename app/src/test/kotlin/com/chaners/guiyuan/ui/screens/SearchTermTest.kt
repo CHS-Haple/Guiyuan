@@ -103,6 +103,49 @@ class SearchTermTest {
     }
 
     @Test
+    fun recoverySynonymsAreScopedToRecoveryActions() {
+        val restore = searchAliases(R.string.config_restore_title)
+        val defaults = searchAliases(R.string.restore_feature_defaults)
+        val backup = searchAliases(R.string.config_backup_title)
+        for (word in listOf("还原", "还原配置", "配置还原", "还原备份", "导入备份", "配置导入")) {
+            assertTrue("Restore configuration: $word", restore.any { SearchTerm(it, it).matches(word) })
+        }
+        for (word in listOf("还原", "还原设置", "还原默认", "重置配置")) {
+            assertTrue("Restore defaults: $word", defaults.any { SearchTerm(it, it).matches(word) })
+        }
+        for (word in listOf("配置导出", "保存配置")) {
+            assertTrue("Backup configuration: $word", backup.any { SearchTerm(it, it).matches(word) })
+        }
+        for (word in listOf("还原", "重置配置", "导入备份")) {
+            assertFalse("Backup should not handle: $word", backup.any { SearchTerm(it, it).matches(word) })
+        }
+        assertFalse(restore.any { SearchTerm(it, it).matches("导出") })
+    }
+
+    @Test
+    fun highConfidenceAliasesStayTargeted() {
+        val pairs = listOf(
+            R.string.aod_combined_status_title to "AOD",
+            R.string.dual_signal_title to "单排信号",
+            R.string.combined_size to "三合一缩放",
+            R.string.outer_weight to "电量环粗细",
+            R.string.wifi_size to "无线图标尺寸",
+            R.string.battery_colors to "电量配色",
+            R.string.low_battery_threshold to "低电量提醒",
+            R.string.battery_top_readout to "显示百分比",
+        )
+        for ((id, word) in pairs) {
+            assertTrue("Alias $word missing from $id", searchAliases(id).any {
+                SearchTerm(it, it).matches(word)
+            })
+        }
+        for (id in listOf(R.string.wifi_weight, R.string.mobile_type_weight, R.string.airplane_weight)) {
+            assertFalse(searchAliases(id).any { SearchTerm(it, it).matches("无线图标尺寸") })
+            assertFalse(searchAliases(id).any { SearchTerm(it, it).matches("还原") })
+        }
+    }
+
+    @Test
     fun batteryAndWeightSynonymsRetainMeaning() {
         val weight = searchAliases(R.string.mobile_type_weight)
         assertTrue(weight.any { it.contains("粗细") })
