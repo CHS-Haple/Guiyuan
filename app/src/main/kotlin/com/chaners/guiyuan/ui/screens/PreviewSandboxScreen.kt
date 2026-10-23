@@ -356,7 +356,7 @@ internal fun PreviewSandboxScreen(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
-            // A sticky header pins to the scroll viewport, not LazyColumn's content padding.
+            // The scroll viewport and floating preview share the same Scaffold top inset.
             LazyColumn(
                 state = listState,
                 modifier =
