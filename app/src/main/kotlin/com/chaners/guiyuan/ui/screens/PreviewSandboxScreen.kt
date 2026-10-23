@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +43,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -195,6 +198,7 @@ internal fun PreviewSandboxScreen(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
@@ -245,16 +249,22 @@ internal fun PreviewSandboxScreen(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
+            // A sticky header pins to the scroll viewport, not LazyColumn's content padding.
             LazyColumn(
                 state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .padding(top = paddingValues.calculateTopPadding())
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
-                        innerPadding = paddingValues,
+                        innerPadding = PaddingValues(
+                            start = paddingValues.calculateStartPadding(layoutDirection),
+                            end = paddingValues.calculateEndPadding(layoutDirection),
+                            bottom = paddingValues.calculateBottomPadding(),
+                        ),
                         extraBottom = 12.dp,
                     ),
             ) {
