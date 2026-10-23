@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -8,21 +7,14 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.input.ImeAction
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1279,7 +1271,6 @@ private fun HubPage(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val restorePosition = remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    BackHandler(enabled = search?.active == true) { search?.close() }
     LaunchedEffect(search?.active, search?.query) {
         if (search?.active == true) {
             listState.scrollToItem(0)
@@ -1305,29 +1296,25 @@ private fun HubPage(
                         color = barColor,
                         scrollBehavior = scrollBehavior,
                         actions = {
-                            val label = stringResource(
-                                if (search.active) R.string.feature_search_close else R.string.feature_search,
-                            )
-                            TooltipBox(text = label) {
-                                IconButton(onClick = {
-                                    if (search.active) {
-                                        search.close()
-                                    } else {
+                            if (!search.active) {
+                                val label = stringResource(R.string.feature_search)
+                                TooltipBox(text = label) {
+                                    IconButton(onClick = {
                                         restorePosition.value =
                                             listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
                                         search.open()
+                                    }) {
+                                        Icon(MiuixIcons.Search, contentDescription = label)
                                     }
-                                }) {
-                                    Icon(
-                                        if (search.active) MiuixIcons.Back else MiuixIcons.Search,
-                                        contentDescription = label,
-                                    )
                                 }
                             }
                         },
                         bottomContent = {
-                            if (search.active) {
-                                val requester = remember { FocusRequester() }
+                            AnimatedVisibility(
+                                visible = search.active,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
                                 SearchBar(
                                     inputField = {
                                         InputField(
@@ -1337,20 +1324,18 @@ private fun HubPage(
                                             expanded = search.active,
                                             onExpandedChange = { if (!it) search.close() },
                                             label = stringResource(R.string.feature_search),
-                                            modifier = Modifier.focusRequester(requester),
                                         )
                                     },
                                     expanded = search.active,
                                     onExpandedChange = { if (!it) search.close() },
                                     outsideEndAction = {
                                         TextButton(
-                                            text = stringResource(R.string.feature_search_close),
+                                            text = stringResource(R.string.cancel),
                                             onClick = search::close,
                                         )
                                     },
                                     content = {},
                                 )
-                                LaunchedEffect(requester) { requester.requestFocus() }
                             }
                         },
                     )
