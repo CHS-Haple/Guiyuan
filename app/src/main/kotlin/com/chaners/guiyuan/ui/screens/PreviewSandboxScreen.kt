@@ -198,34 +198,29 @@ internal fun PreviewSandboxScreen(
         }
     }
     var previewExpanded by remember { mutableStateOf(false) }
-    val dockSummary =
-        when {
-            listState.firstVisibleItemIndex >= 4 ->
-                stringResource(R.string.home_preview_battery_percent, state.batteryPercent)
-            else ->
-                when (state.previewCenterSource()) {
-                    PreviewCenterSource.WIFI ->
-                        stringResource(R.string.home_preview_wifi_signal_title) + " · " +
-                            signalValueText(state.wifiSignalLevel)
-                    PreviewCenterSource.MOBILE ->
-                        stringResource(R.string.home_preview_mobile_signal_title) + " · " +
-                            (if (state.dualLevels != null) {
-                                stringResource(
-                                    R.string.home_preview_signal_dual,
-                                    state.mobileSignalLevel,
-                                    state.sim2SignalLevel,
-                                )
-                            } else {
-                                signalValueText(state.displayedSignalLevel)
-                            })
-                    PreviewCenterSource.AIRPLANE ->
-                        stringResource(R.string.home_preview_airplane_title)
-                    PreviewCenterSource.NO_SIM ->
-                        stringResource(R.string.home_preview_sim_absent)
-                    PreviewCenterSource.EMPTY ->
-                        stringResource(R.string.home_preview_network_none)
-                }
+    val dockNetwork = when (state.previewCenterSource()) {
+        PreviewCenterSource.WIFI ->
+            stringResource(R.string.home_preview_network_mode_wifi) + " · " +
+                signalValueText(state.wifiSignalLevel)
+        PreviewCenterSource.MOBILE -> {
+            val network = mobileNetworkChoices.firstOrNull {
+                it.first == state.dataMobileNetwork
+            }?.second ?: stringResource(R.string.home_preview_network_mode_mobile)
+            val signal = if (state.dualLevels != null) {
+                stringResource(
+                    R.string.home_preview_signal_dual,
+                    state.mobileSignalLevel,
+                    state.sim2SignalLevel,
+                )
+            } else {
+                signalValueText(state.displayedSignalLevel)
+            }
+            "$network · $signal"
         }
+        PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
+        PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
+        PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
+    }
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
@@ -367,7 +362,16 @@ internal fun PreviewSandboxScreen(
                                                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                                             )
                                             Text(
-                                                text = dockSummary,
+                                                text = dockNetwork,
+                                                style = MiuixTheme.textStyles.body2,
+                                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                                maxLines = 1,
+                                            )
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.home_preview_dock_battery,
+                                                    state.batteryPercent,
+                                                ),
                                                 style = MiuixTheme.textStyles.body2,
                                                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                                                 maxLines = 1,
