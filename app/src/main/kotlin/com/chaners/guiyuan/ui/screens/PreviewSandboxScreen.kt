@@ -1,6 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -165,13 +174,17 @@ internal fun PreviewSandboxScreen(
         }
 
     val listState = rememberLazyListState()
+    val compactPreview by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
     Scaffold(
         topBar = {
-            MiuixBlurredTopBar(
+            Column {
+                MiuixBlurredTopBar(
                 backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
             ) { barColor ->
@@ -209,6 +222,36 @@ internal fun PreviewSandboxScreen(
                         }
                     },
                 )
+            }
+                AnimatedVisibility(
+                    visible = compactPreview,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 8.dp),
+                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_preview_live_title),
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                            )
+                            StatusPreview(
+                                model = renderModel,
+                                visual = visual,
+                                modifier = Modifier.width(120.dp).height(128.dp),
+                            )
+                        }
+                    }
+                }
             }
         },
     ) { paddingValues ->
