@@ -110,6 +110,7 @@ private const val GRAVITY_THRESHOLD_SQ = 0.01f
 private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
 private const val TILT_LIGHT_SENSITIVITY = 0.12f
 private const val PITCH_SWEEP_PER_RAD = 4f / 15f
+private val PITCH_NEUTRAL = (PI / 4).toFloat()
 private val PITCH_SWEEP_LIMIT = (12.0 * PI / 180.0).toFloat()
 
 internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
@@ -117,23 +118,31 @@ internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Floa
 @Composable
 private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
     if (!interactive) {
-        return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), 0f, 0f)) }
+        return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), PITCH_NEUTRAL, 0f)) }
     }
     // Reuse MIUIX's smoothed, lifecycle-owned sensor state; previews stay static.
     val tilt = rememberDeviceTilt()
     return remember(tilt) {
         derivedStateOf {
             val pose = tilt.value
-            val angle =
-                if (pose.gravityX * pose.gravityX + pose.gravityY * pose.gravityY > GRAVITY_THRESHOLD_SQ) {
+            val validGravity =
+                pose.gravityX * pose.gravityX + pose.gravityY * pose.gravityY > GRAVITY_THRESHOLD_SQ
+            GlassTilt(
+                if (validGravity) {
                     (atan2(pose.gravityY, pose.gravityX) / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
                 } else {
                     (-PI / 2).toFloat()
-                }
-            GlassTilt(
-                angle,
-                (pose.pitch / GRAVITY_STEP).roundToInt() * GRAVITY_STEP,
-                (pose.roll / GRAVITY_STEP).roundToInt() * GRAVITY_STEP,
+                },
+                if (validGravity) {
+                    (pose.pitch / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    PITCH_NEUTRAL
+                },
+                if (validGravity) {
+                    (pose.roll / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    0f
+                },
             )
         }
     }
@@ -143,7 +152,7 @@ internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
     val style = glassHighlight.style as BloomStroke
     // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
     val pitchSweep =
-        ((abs(tilt.pitch) - (PI / 4).toFloat()) * PITCH_SWEEP_PER_RAD)
+        ((abs(tilt.pitch) - PITCH_NEUTRAL) * PITCH_SWEEP_PER_RAD)
             .coerceIn(-PITCH_SWEEP_LIMIT, PITCH_SWEEP_LIMIT)
     val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
     val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
