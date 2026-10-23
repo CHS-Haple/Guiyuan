@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -46,7 +45,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.GyApplication
@@ -1339,8 +1337,6 @@ private fun HubPage(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp),
-                                    // The outer gutter already provides the SearchBar margin.
-                                    insideMargin = DpSize(0.dp, 0.dp),
                                     inputField = {
                                         InputField(
                                             query = search.query,
@@ -1354,22 +1350,17 @@ private fun HubPage(
                                     expanded = search.active,
                                     onExpandedChange = { if (!it) search.close() },
                                     outsideEndAction = {
-                                        Box(
+                                        Text(
+                                            text = stringResource(R.string.cancel),
+                                            color = MiuixTheme.colorScheme.primary,
                                             modifier = Modifier
-                                                .padding(start = 8.dp)
-                                                .sizeIn(minHeight = 48.dp)
+                                                .padding(start = 12.dp)
                                                 .clickable(
                                                     interactionSource = null,
                                                     indication = null,
                                                     onClick = search::close,
                                                 ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.cancel),
-                                                color = MiuixTheme.colorScheme.primary,
-                                            )
-                                        }
+                                        )
                                     },
                                     content = {},
                                 )
