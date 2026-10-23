@@ -181,6 +181,111 @@ class SearchTermTest {
     }
 
     @Test
+    fun currentLanguagePinyinTakesPrecedenceOverTranslatedInitials() {
+        val native = mapOf(
+            1 to SearchTerm("电量数字", "dian liang shu zi"),
+            2 to SearchTerm("内容布局", "nei rong bu ju"),
+        )
+        val foreign = mapOf(
+            1 to SearchTerm("Show battery level", "Show battery level"),
+            2 to SearchTerm("Display layout", "Display layout"),
+        )
+        val all = intArrayOf(1, 2)
+        val result = SearchMatches(
+            all,
+            { native[it]?.matches("dl") == true },
+            { false },
+            { foreign[it]?.matches("dl") == true },
+        )
+        assertTrue(result.matches(1))
+        assertFalse("Translated English initials must not pollute dl results", result.matches(2))
+        assertTrue(foreign.getValue(2).matches("dl"))
+    }
+
+    @Test
+    fun foreignNamesAreConsideredOnlyWhenNoCurrentLanguageResultExists() {
+        val ids = intArrayOf(1, 2, 3)
+        val current = mapOf(
+            1 to SearchTerm("电量颜色", "dian liang yan se"),
+            2 to SearchTerm("内容布局", "nei rong bu ju"),
+            3 to SearchTerm("恢复配置", "hui fu pei zhi"),
+        )
+        val translated = mapOf(
+            1 to SearchTerm("Battery colors", "Battery colors"),
+            2 to SearchTerm("Content layout", "Content layout"),
+            3 to SearchTerm("Restore configuration", "Restore configuration"),
+        )
+        val byBattery = SearchMatches(
+            ids,
+            { current[it]?.matches("Battery") == true },
+            { false },
+            { translated[it]?.matches("Battery") == true },
+        )
+        assertTrue(byBattery.matches(1))
+        assertFalse(byBattery.matches(2))
+        assertFalse(byBattery.matches(3))
+
+        val byChinese = SearchMatches(
+            ids,
+            { current[it]?.matches("电量") == true },
+            { false },
+            { translated[it]?.matches("电量") == true },
+        )
+        assertTrue(byChinese.matches(1))
+        assertFalse(byChinese.matches(2))
+        assertFalse(byChinese.matches(3))
+
+        val byRestore = SearchMatches(
+            ids,
+            { current[it]?.matches("Restore") == true },
+            { false },
+            { translated[it]?.matches("Restore") == true },
+        )
+        assertTrue(byRestore.matches(3))
+        assertFalse(byRestore.matches(1))
+    }
+
+    @Test
+    fun aliasesRemainAvailableWithoutMaskingOtherLanguageTitles() {
+        val ids = intArrayOf(1, 2)
+        val original = mapOf(
+            1 to SearchTerm("Dual-row signal", "Dual-row signal"),
+            2 to SearchTerm("Signal dots vertical offset", "Signal dots vertical offset"),
+        )
+        val aliases = mapOf(
+            1 to SearchTerm("双卡信号", "shuang ka xin hao"),
+        )
+        val chinese = mapOf(
+            1 to SearchTerm("双排信号", "shuang pai xin hao"),
+            2 to SearchTerm("信号点上下偏移", "xin hao dian shang xia pian yi"),
+        )
+        val query = "信号"
+        val results = SearchMatches(
+            ids,
+            { original[it]?.matches(query) == true },
+            { aliases[it]?.matches(query) == true },
+            { chinese[it]?.matches(query) == true },
+        )
+        assertTrue("Curated alias is still visible", results.matches(1))
+        assertTrue("Alias must not hide another translated official title", results.matches(2))
+    }
+
+    @Test
+    fun groupsAndSearchScopeShareOneRegistry() {
+        val grouped = FeatureSearchIds.display +
+            FeatureSearchIds.layout +
+            FeatureSearchIds.network +
+            FeatureSearchIds.battery +
+            FeatureSearchIds.management
+        assertTrue(grouped.isNotEmpty())
+        assertTrue(grouped.contentEquals(FeatureSearchIds.all))
+        assertTrue(grouped.toSet().size == grouped.size)
+        assertTrue(R.string.battery_top_readout in grouped)
+        assertTrue(R.string.config_restore_title in grouped)
+        assertTrue(R.string.restore_feature_defaults in grouped)
+    }
+
+    @Test
     fun batteryAndWeightSynonymsRetainMeaning() {
         val weight = searchAliases(R.string.mobile_type_weight)
         assertTrue(weight.any { it.contains("粗细") })

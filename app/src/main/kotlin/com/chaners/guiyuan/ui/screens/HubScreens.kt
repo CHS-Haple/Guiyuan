@@ -253,11 +253,11 @@ internal fun FeaturesScreen(
         if (!visible) search.close()
     }
     val searching = search.filtering
-    val displayMatches = search.any(R.string.keyguard_combined_status_title, R.string.aod_combined_status_title, R.string.control_center_tint_transition, R.string.battery_fill_follow_retract)
-    val layoutMatches = search.any(R.string.content_layout_title, R.string.dual_signal_title, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)
-    val networkMatches = search.any(R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight, R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color, R.string.center_follow_battery_color)
-    val batteryMatches = search.any(R.string.battery_colors, R.string.low_battery_threshold, R.string.battery_top_readout, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_charging_icon, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color)
-    val managementMatches = search.any(R.string.config_backup_title, R.string.config_restore_title, R.string.restore_feature_defaults)
+    val displayMatches = search.any(*FeatureSearchIds.display)
+    val layoutMatches = search.any(*FeatureSearchIds.layout)
+    val networkMatches = search.any(*FeatureSearchIds.network)
+    val batteryMatches = search.any(*FeatureSearchIds.battery)
+    val managementMatches = search.any(*FeatureSearchIds.management)
 
     HubPage(
         title = stringResource(R.string.features_title),

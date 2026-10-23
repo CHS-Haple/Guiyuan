@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.icu.text.Transliterator
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,69 @@ private val cellularTerms = listOf(
 
 internal fun isSearchFiltering(active: Boolean, query: String): Boolean =
     active && query.any(Char::isLetterOrDigit)
+
+
+internal object FeatureSearchIds {
+    val display = intArrayOf(
+        R.string.keyguard_combined_status_title,
+        R.string.aod_combined_status_title,
+        R.string.control_center_tint_transition,
+        R.string.battery_fill_follow_retract,
+    )
+    val layout = intArrayOf(
+        R.string.content_layout_title,
+        R.string.dual_signal_title,
+        R.string.dual_dot_style_title,
+        R.string.dual_mobile_vertical_offset,
+        R.string.combined_size,
+        R.string.outer_weight,
+        R.string.wifi_vertical_offset,
+        R.string.mobile_type_vertical_offset,
+        R.string.top_info_vertical_offset,
+    )
+    val network = intArrayOf(
+        R.string.wifi_size,
+        R.string.wifi_weight,
+        R.string.airplane_size,
+        R.string.airplane_weight,
+        R.string.no_sim_size,
+        R.string.mobile_type_size,
+        R.string.mobile_type_weight,
+        R.string.mobile_follow_battery_color,
+        R.string.center_follow_battery_color,
+    )
+    val battery = intArrayOf(
+        R.string.battery_colors,
+        R.string.low_battery_threshold,
+        R.string.battery_top_readout,
+        R.string.battery_top_text_size,
+        R.string.battery_top_text_weight,
+        R.string.battery_text_follow_battery_color,
+        R.string.battery_charging_icon,
+        R.string.battery_top_charging_icon_size,
+        R.string.charging_icon_follow_battery_color,
+    )
+    val management = intArrayOf(
+        R.string.config_backup_title,
+        R.string.config_restore_title,
+        R.string.restore_feature_defaults,
+    )
+    val all = display + layout + network + battery + management
+}
+
+// Resolve a search against the whole page before admitting translated titles.
+// Per-item fallback would leak unrelated English initials into Chinese pinyin results.
+internal class SearchMatches(
+    ids: IntArray,
+    private val current: (Int) -> Boolean,
+    private val aliases: (Int) -> Boolean,
+    private val translated: (Int) -> Boolean,
+) {
+    private val useTranslations = ids.none(current)
+
+    fun matches(id: Int): Boolean =
+        current(id) || aliases(id) || (useTranslations && translated(id))
+}
 
 internal class PageSearch(private val context: Context) {
     var active by mutableStateOf(false)
@@ -82,8 +146,23 @@ internal class PageSearch(private val context: Context) {
             }
         }
     }
-    private val cache = mutableMapOf<Int, List<SearchTerm>>()
+    private data class LocalizedTerms(
+        val current: SearchTerm,
+        val other: List<SearchTerm>,
+    )
+
+    private val cache = mutableMapOf<Int, LocalizedTerms>()
     private val aliasCache = mutableMapOf<Int, List<SearchTerm>>()
+
+    private val matchSet by derivedStateOf {
+        if (filtering) {
+            SearchMatches(
+                FeatureSearchIds.all, ::currentMatches, ::aliasMatches, ::translatedMatches,
+            )
+        } else {
+            null
+        }
+    }
 
     fun open() { active = true }
 
@@ -94,24 +173,30 @@ internal class PageSearch(private val context: Context) {
 
     fun update(value: String) { query = value.take(80) }
 
-    fun matches(@StringRes title: Int): Boolean {
-        if (!filtering) return true
-        return matchesId(title) ||
-            aliasCache.getOrPut(title) { searchAliases(title).map(::makeTerm) }
-                .any { it.matches(query) }
-    }
+    fun matches(@StringRes title: Int): Boolean =
+        matchSet?.matches(title) ?: true
 
     fun any(vararg ids: Int): Boolean =
         !filtering || ids.any(::matches)
 
-    private fun matchesId(@StringRes id: Int): Boolean =
+    private fun currentMatches(@StringRes id: Int): Boolean =
+        terms(id).current.matches(query)
+
+    private fun aliasMatches(@StringRes id: Int): Boolean =
+        aliasCache.getOrPut(id) { searchAliases(id).map(::makeTerm) }
+            .any { it.matches(query) }
+
+    private fun translatedMatches(@StringRes id: Int): Boolean =
+        terms(id).other.any { it.matches(query) }
+
+    private fun terms(@StringRes id: Int): LocalizedTerms =
         cache.getOrPut(id) {
-            localizedContexts.map { it.getString(id) }.distinct().map(::makeTerm)
-        }.any { it.matches(query) }
+            val names = localizedContexts.map { it.getString(id) }.distinct().map(::makeTerm)
+            LocalizedTerms(names.first(), names.drop(1))
+        }
 
     private fun makeTerm(text: String): SearchTerm =
         SearchTerm(text, runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text)
-
 
 }
 
