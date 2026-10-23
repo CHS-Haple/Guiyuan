@@ -28,15 +28,16 @@ The maintainer supplied the following release notes (not independently proven by
 
 Injection versus mount-based delivery is an **LSPosed/Zygisk framework responsibility**. Guiyuan must not add mount heuristics, custom process injection, hidden bypasses or detection-evasion code to emulate it.
 
-## Observed target-device runtime (2026-10-20–21)
+## Observed target-device runtime (2026-10-20–23)
 
 These observations are from maintainer-provided diagnostics for Xiaomi 15 Pro / Android 17 / SystemUI `17.03.260226.r`, **not** conclusions drawn only from the supplied archive:
 
 - **Settings load:** B1136 (2026-10-20 22:54 +08) records `module.loaded` in `com.android.settings:remote` with API 102, `framework=LSPosed`, `frameworkVersion=2.2.1` and `frameworkVersionCode=7930`.
 - **SystemUI V10 normal handoff:** B1181 (2026-10-21 15:53 +08), B1186 (17:54) and B1187 (18:56) independently record `module.reloaded` reporting 7930, `compatibility.revalidated statusHost=available`, `statusHostHook hook.replace`, `hotReload.generationHandoff mode=retired-before-reload` and `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`. The reported SystemUI PID and restored host identity are consistent across those three captures.
+- **Consecutive same-Build reloads:** Two B1232 Canary diagnostic reports on 2026-10-23 show completed Hot Reload at 15:35:14.086 and 15:35:25.656 (+08:00) within the same SystemUI PID `16822`, retaining host identity `146151917` across distinct module diagnostic sessions. Each records `hotReload.generationHandoff mode=retired-before-reload`, `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`, and Home combined presentation restored. This is two consecutive successful normal-path reloads of the same reported Build, not a byte-for-byte installed APK verification, memory-leak proof or failure-path stress test.
 - **Presentation boundary:** B1181 records the Home presentation restored as combined. The B1186/B1187 reports also include native-systemui fallback with the feature disabled. `controlCenterFakePrearm=restored-laid-out-native-layout-pending` must not be interpreted as proof of finished CC native layout or frame-atomic drawing.
 
-This is positive evidence for repeated **normal-path** API 102 V10 module reloads and Settings loading on the observed 7930 installation. The logs do **not** prove two immediate consecutive reloads of one unchanged APK, a clean full reboot, soft reboot/wrapper upgrade, injection internals, simulated failure paths, ClassLoader disposal or absence of every listener leak. They also do not cryptographically tie the installed LSPosed files to the separately inspected ZIP.
+This is positive evidence for repeated **normal-path** API 102 V10 module reloads and Settings loading on the observed 7930 installation. The B1232 captures add two consecutive same-Build normal-path reloads; the logs do **not** prove a cryptographically identical installed APK, a clean full reboot, soft reboot/wrapper upgrade, injection internals, simulated failure paths, ClassLoader disposal or absence of every listener leak. They also do not cryptographically tie the installed LSPosed files to the separately inspected ZIP.
 
 ## Guiyuan boundary and remaining validation
 
@@ -45,9 +46,8 @@ Guiyuan's `GyModule` uses API 102 `onHotReloading` to retire its old owner synch
 **Do not change the core ownership/Hot Reload implementation based only on the changelog.** The observed 7930 normal-path handoffs narrow the remaining gates to:
 
 1. After full reboot, the SystemUI module initializes once, the settings listener is connected, and Home/Keyguard/AOD/Control Center fall back natively if a target is missing.
-2. After two immediate API 102 Hot Reload operations of the **same APK**, stale listeners and Hooks are gone and the SystemUI host/native icon state remains correct. The three historical captures are different Builds, not this exact stress test.
-3. After a *supported* soft reboot, scope and wrapper registration are correct and SystemUI still loads the module. Do not assume a soft reboot is equivalent to API 102 Hot Reload.
-4. Late-load/restart of SystemUI and companion Settings do not duplicate owners, reserve stale widths, or retain old generation UI.
-5. Monitor framework and module logs for early injection, ClassLoader and async callback errors before changing the API boundary.
+2. After a *supported* soft reboot, scope and wrapper registration are correct and SystemUI still loads the module. Do not assume a soft reboot is equivalent to API 102 Hot Reload.
+3. Late-load/restart of SystemUI and companion Settings do not duplicate owners, reserve stale widths, or retain old generation UI.
+4. Monitor framework and module logs for early injection, ClassLoader and async callback errors before changing the API boundary. The B1232 consecutive normal-path reloads are not failure-path or long-run leak testing.
 
 On failure, preserve native SystemUI and require an explicit process restart; do not compensate with a timer. These tests are the acceptance gate for a 7930 compatibility claim.
