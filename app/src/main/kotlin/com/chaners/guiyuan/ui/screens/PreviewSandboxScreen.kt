@@ -296,30 +296,7 @@ internal fun PreviewSandboxScreen(
                             style = MiuixTheme.textStyles.body1,
                             color = MiuixTheme.colorScheme.onSurfaceContainer,
                         )
-                        Text(
-                            text = stringResource(R.string.home_preview_sandbox_summary),
-                            modifier = Modifier.padding(top = 2.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        )
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                                    .height(192.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            StatusPreview(
-                                model = renderModel,
-                                visual = visual,
-                                modifier =
-                                    Modifier
-                                        .width(SandboxPreviewWidth)
-                                        .height(SandboxPreviewHeight),
-                            )
-                        }
-                        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+                        SandboxFullPreview(state, renderModel, visual)
                     }
                 }
 
@@ -667,7 +644,55 @@ internal fun PreviewSandboxScreen(
                 }
             }
         }
+
+        OverlayDialog(
+            title = stringResource(R.string.home_preview_live_title),
+            show = previewExpanded,
+            largeScreen = true,
+            enableWindowDim = false,
+            renderInRootScaffold = false,
+            onDismissRequest = { previewExpanded = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                SandboxFullPreview(state, renderModel, visual)
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { previewExpanded = false },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun SandboxFullPreview(
+    state: PreviewSandboxUiState,
+    model: RenderModel,
+    visual: VisualCfg,
+) {
+    Text(
+        text = stringResource(R.string.home_preview_sandbox_summary),
+        modifier = Modifier.padding(top = 2.dp),
+        style = MiuixTheme.textStyles.body2,
+        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .height(192.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        StatusPreview(
+            model = model,
+            visual = visual,
+            modifier = Modifier
+                .width(SandboxPreviewWidth)
+                .height(SandboxPreviewHeight),
+        )
+    }
+    PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
 }
 
 @Composable
