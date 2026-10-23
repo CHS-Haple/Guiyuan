@@ -39,7 +39,19 @@ internal class PageSearch(private val context: Context) {
         private set
 
     private val romanizer by lazy(LazyThreadSafetyMode.NONE) {
-        Transliterator.getInstance("Han-Latin; Latin-ASCII")
+        runCatching {
+            val ids = Transliterator.getAvailableIDs()
+            var han = false
+            var latinAscii = false
+            while (ids.hasMoreElements()) {
+                when (ids.nextElement()) {
+                    "Han-Latin" -> han = true
+                    "Latin-ASCII" -> latinAscii = true
+                }
+            }
+            if (han && latinAscii) Transliterator.getInstance("Han-Latin; Latin-ASCII")
+            else null
+        }.getOrNull()
     }
     private val cache = mutableMapOf<Int, SearchTerm>()
     private val aliasCache = mutableMapOf<Int, List<SearchTerm>>()
@@ -67,17 +79,20 @@ internal class PageSearch(private val context: Context) {
         cache.getOrPut(id) { makeTerm(context.getString(id)) }.matches(query)
 
     private fun makeTerm(text: String): SearchTerm =
-        SearchTerm(text, romanizer.transliterate(text))
+        SearchTerm(text, runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text)
 
     private fun searchAliases(@StringRes title: Int): List<String> = when (title) {
-        R.string.dual_signal_title, R.string.dual_dot_style_title,
-        R.string.dual_mobile_vertical_offset -> listOf("双卡", "双排")
+        R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset -> listOf("双卡", "双排")
+        R.string.dual_signal_title -> listOf("双卡", "双排", "双排样式", "信号点上下偏移")
         R.string.mobile_type_size, R.string.mobile_type_vertical_offset -> listOf("网络制式", "5G")
         R.string.mobile_type_weight -> listOf("网络制式", "5G", "字体粗细", "数字粗细")
         R.string.battery_top_text_weight -> listOf("字体粗细", "数字粗细", "电量数字")
         R.string.battery_top_text_size -> listOf("电量数字", "数字大小")
-        R.string.battery_top_readout -> listOf("电量数字", "电池数字")
+        R.string.battery_top_readout -> listOf("电量数字", "电池数字", "数字大小", "数字字重", "字体粗细")
         R.string.wifi_size, R.string.wifi_weight -> listOf("wifi", "wlan", "无线网络")
+        R.string.battery_charging_icon -> listOf("充电闪电大小", "充电图标跟随电量颜色")
+        R.string.settings_entry_title -> listOf("设置入口图标")
+        R.string.content_layout_title -> listOf("Wi-Fi 上下偏移", "移动制式上下偏移", "顶部信息上下偏移")
         R.string.restart_scope -> listOf("systemui", "重启系统界面")
         else -> emptyList()
     }
