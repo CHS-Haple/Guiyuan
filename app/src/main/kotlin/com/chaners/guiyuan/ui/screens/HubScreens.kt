@@ -1297,7 +1297,18 @@ private fun HubPage(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val restorePosition = remember { mutableStateOf<Pair<Int, Int>?>(null) }
     BackHandler(enabled = search?.active == true) { search?.close() }
+    LaunchedEffect(search?.active, search?.query) {
+        if (search?.active == true) {
+            listState.scrollToItem(0)
+        } else {
+            restorePosition.value?.let { (index, offset) ->
+                listState.scrollToItem(index, offset)
+                restorePosition.value = null
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -1316,7 +1327,13 @@ private fun HubPage(
                             )
                             TooltipBox(text = label) {
                                 IconButton(onClick = {
-                                    if (search.active) search.close() else search.open()
+                                    if (search.active) {
+                                        search.close()
+                                    } else {
+                                        restorePosition.value =
+                                            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+                                        search.open()
+                                    }
                                 }) {
                                     Icon(
                                         if (search.active) MiuixIcons.Back else MiuixIcons.Search,
