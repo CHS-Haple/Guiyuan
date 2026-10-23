@@ -38,9 +38,9 @@ The one-root aggregate shape morph from historic [#511](https://github.com/CHS-H
 Remaining work is evidence-led:
 1. Revisit third-party native child/rebind paths only when authoritative callbacks or reproducible device evidence show a new membership change. The previous [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) audit is **closed** after the accepted native-slot/cache invalidation and observer-cleanup fixes; it is not a standing implementation task.
 2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown signal, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC reversals on new topologies; keep this separate from B1023 focused acceptance.
-3. Add optional alternative eight-dot styles only with a concrete UX design, a single-choice selector and demonstrated compatibility value.
+3. The optional Duo eight-dot style is integrated. Consider any further style only with a concrete UX need, a single-choice selector and demonstrated compatibility value.
 4. Reconsider single/dual **settings-bank** selection only if a transient SIM fallback produces an observed unwanted visual shift. The chosen dual preference must survive SIM loss.
-5. Track abnormal Hot Reload framework generation cleanup under [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) without guessed cleanup, polling or a second writer.
+5. Revisit exceptional Hot Reload generation cleanup only with a reproducible failure or new authoritative framework contract, without guessed cleanup, polling or a second writer.
 
 
 
