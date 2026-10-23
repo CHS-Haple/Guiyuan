@@ -203,6 +203,30 @@ class SearchTermTest {
     }
 
     @Test
+    fun realWifiLabelsDoNotCrossMatchOnChineseInitials() {
+        // These are the actual zh-CN/en resource titles for two distinct controls.
+        val native = mapOf(
+            R.string.wifi_vertical_offset to SearchTerm("Wi-Fi 上下偏移", "Wi-Fi shang xia pian yi"),
+            R.string.wifi_size to SearchTerm("Wi-Fi 大小", "Wi-Fi da xiao"),
+        )
+        val english = mapOf(
+            R.string.wifi_vertical_offset to SearchTerm("Wi-Fi vertical offset", "Wi-Fi vertical offset"),
+            R.string.wifi_size to SearchTerm("Wi-Fi size", "Wi-Fi size"),
+        )
+        val query = "wfs"
+        val result = SearchMatches(
+            intArrayOf(R.string.wifi_vertical_offset, R.string.wifi_size),
+            { native[it]?.matches(query) == true },
+            { false },
+            { english[it]?.matches(query) == true },
+        )
+        assertTrue(native.getValue(R.string.wifi_vertical_offset).matches(query))
+        assertTrue(english.getValue(R.string.wifi_size).matches(query))
+        assertTrue(result.matches(R.string.wifi_vertical_offset))
+        assertFalse(result.matches(R.string.wifi_size))
+    }
+
+    @Test
     fun foreignNamesAreConsideredOnlyWhenNoCurrentLanguageResultExists() {
         val ids = intArrayOf(1, 2, 3)
         val current = mapOf(
