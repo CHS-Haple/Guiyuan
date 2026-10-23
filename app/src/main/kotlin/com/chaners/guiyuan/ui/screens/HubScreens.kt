@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -1286,6 +1287,7 @@ private fun HubPage(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val keyboardController = LocalSoftwareKeyboardController.current
     val restorePosition = remember { mutableStateOf<Pair<Int, Int>?>(null) }
     LaunchedEffect(search?.active, search?.query) {
         if (search?.active == true) {
@@ -1340,7 +1342,7 @@ private fun HubPage(
                                         InputField(
                                             query = search.query,
                                             onQueryChange = search::update,
-                                            onSearch = {},
+                                            onSearch = { keyboardController?.hide() },
                                             expanded = search.active,
                                             onExpandedChange = { if (!it) search.close() },
                                             label = stringResource(R.string.feature_search),
