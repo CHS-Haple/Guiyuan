@@ -2,17 +2,18 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,11 +35,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -60,9 +59,6 @@ import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
-import com.chaners.guiyuan.ui.components.MiuixTopBarBackdrop
-import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
-import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -70,12 +66,12 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -193,15 +189,19 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
+    // Keep the list's scroll geometry anchored to the native title row, not the optional dock.
+    val topInset = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
+    val pinnedTop = topInset + TopAppBarDefaults.CollapsedHeight
+    val pinnedTopPx = with(LocalDensity.current) { pinnedTop.roundToPx() }
     val listState = rememberLazyListState()
-    val showDock by remember {
+    val showDock by remember(listState, pinnedTopPx) {
         derivedStateOf {
             val info = listState.layoutInfo
             val preview = info.visibleItemsInfo.firstOrNull { it.key == "fullPreview" }
-            if (preview != null) {
-                preview.offset + preview.size <= info.viewportStartOffset
-            } else {
-                listState.firstVisibleItemIndex > 0
+            when {
+                info.totalItemsCount == 0 -> false
+                preview != null -> preview.offset + preview.size <= pinnedTopPx
+                else -> listState.firstVisibleItemIndex > 0
             }
         }
     }
@@ -209,14 +209,12 @@ internal fun PreviewSandboxScreen(
 
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
-    val topBarBackdrop = rememberTopBarBackdrop()
     val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
             SmallTopAppBar(
                 title = stringResource(R.string.home_preview_sandbox_title),
-                color = Color.Transparent,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     TooltipBox(text = stringResource(R.string.back)) {
@@ -247,6 +245,45 @@ internal fun PreviewSandboxScreen(
                         }
                     }
                 },
+                bottomContent = {
+                    AnimatedVisibility(
+                        visible = showDock,
+                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = TopAppBarDefaults.NavigationIconPadding,
+                                    vertical = 8.dp,
+                                ),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_preview_live_title),
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            SandboxDockIcon(renderModel, visual)
+                            val backTop = stringResource(R.string.diagnostics_scroll_top)
+                            TooltipBox(text = backTop) {
+                                IconButton(
+                                    onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                ) {
+                                    Icon(
+                                        MiuixIcons.ExpandLess,
+                                        contentDescription = backTop,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
             )
         },
     ) { paddingValues ->
@@ -254,20 +291,18 @@ internal fun PreviewSandboxScreen(
             modifier =
                 Modifier.fillMaxSize(),
         ) {
-            // The scroll viewport and floating preview share the same Scaffold top inset.
             LazyColumn(
                 state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(top = paddingValues.calculateTopPadding())
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .topBarBackdropSource(topBarBackdrop),
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
                         innerPadding = PaddingValues(
                             start = paddingValues.calculateStartPadding(layoutDirection),
+                            top = pinnedTop,
                             end = paddingValues.calculateEndPadding(layoutDirection),
                             bottom = paddingValues.calculateBottomPadding(),
                         ),
@@ -584,69 +619,6 @@ internal fun PreviewSandboxScreen(
                 }
             }
 
-            // Floating chrome must not resize the scrolling list's viewport.
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(1f),
-            ) {
-                MiuixTopBarBackdrop(
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                    modifier = Modifier.matchParentSize(),
-                )
-                Column {
-                    Spacer(Modifier.height(paddingValues.calculateTopPadding()))
-                    AnimatedVisibility(
-                        visible = showDock,
-                        modifier = Modifier.fillMaxWidth(),
-                        enter = expandVertically(
-                            expandFrom = Alignment.Top,
-                            animationSpec = tween(240),
-                        ) + fadeIn(animationSpec = tween(170)),
-                        exit = shrinkVertically(
-                            shrinkTowards = Alignment.Top,
-                            animationSpec = tween(240),
-                        ) + fadeOut(animationSpec = tween(160)),
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp)
-                                    .padding(bottom = 8.dp),
-                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.body1,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    SandboxDockIcon(renderModel, visual)
-                                    val backTop = stringResource(R.string.diagnostics_scroll_top)
-                                    TooltipBox(text = backTop) {
-                                        IconButton(
-                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                        ) {
-                                            Icon(
-                                                MiuixIcons.ExpandLess,
-                                                contentDescription = backTop,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            HorizontalDivider()
-                        }
-                    }
-                }
-            }
         }
     }
 }
