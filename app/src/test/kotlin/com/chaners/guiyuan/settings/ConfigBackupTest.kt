@@ -64,6 +64,39 @@ class ConfigBackupTest {
         assertEquals(independent, ConfigBackupFormat.decode(ConfigBackupFormat.encode(independent)))
     }
 
+    @Test fun mainB1110SchemaOneArchiveKeepsProfilesAndDefaultsNewFields() {
+        val source = sample().let { backup ->
+            backup.copy(
+                feature = backup.feature.copy(enabled = false, aod = false),
+                visual = backup.visual.copy(
+                    profiles = backup.visual.profiles.mapIndexed { index, cfg ->
+                        cfg.copy(
+                            combinedScale = if (index % 2 == 0) 0.9f else 1.1f,
+                            mobileTypeWeight = if (cfg.dualSignal) 700 else 800,
+                            showTopReadout = false,
+                        )
+                    },
+                ),
+            )
+        }
+        // Stable B1110 V1 archives predate these fields but explicitly stored readout choices.
+        val legacy = ConfigBackupFormat.encode(source)
+            .replace(",\"lowBatteryThreshold\":${source.feature.lowBatteryThreshold}", "")
+            .replace(",\"dualDotStyle\":\"DEFAULT\"", "")
+            .replace(",\"dualDefaultOffsetY\":0.0", "")
+            .replace(",\"dualDuoOffsetY\":0.0", "")
+        for (key in listOf(
+            "lowBatteryThreshold", "dualDotStyle", "dualDefaultOffsetY", "dualDuoOffsetY",
+        )) {
+            assertFalse(legacy.contains("\"${key}\""))
+        }
+
+        val restored = ConfigBackupFormat.decode(legacy)
+        assertEquals(source, restored)
+        assertTrue(restored.visual.profiles.all { !it.showTopReadout })
+        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, restored.feature.lowBatteryThreshold)
+    }
+
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
         val json = ConfigBackupFormat.encode(sample())
             .replace("\"dualDotStyle\":\"DEFAULT\",", "")
