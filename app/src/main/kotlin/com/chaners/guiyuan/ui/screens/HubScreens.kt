@@ -767,8 +767,9 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.low_battery_threshold, R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon, R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
+        if (search.any(R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.low_battery_threshold, R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon, R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
             Section(R.string.section_battery) {
+                if (search.matches(R.string.battery_colors, R.string.battery_color_scheme_summary)) {
                 BatteryColorPreference(
                     library = schemeLibrary,
                     enabled = featureCfg.enabled,
@@ -777,6 +778,7 @@ internal fun FeaturesScreen(
                         showBatteryColorSheet = true
                     },
                 )
+                }
                 if (search.matches(R.string.low_battery_threshold, R.string.low_battery_threshold_summary)) {
                     SliderPreference(
                         value = featureCfg.lowBatteryThreshold.toFloat(),
@@ -981,7 +983,7 @@ internal fun FeaturesScreen(
                 R.string.config_backup_title, R.string.config_backup_summary, R.string.config_restore_title, R.string.config_restore_summary,
                 R.string.restore_feature_defaults, R.string.restore_feature_defaults_summary,
         )) {
-            item { SmallTitle(stringResource(R.string.settings_search_empty)) }
+            item { SmallTitle(stringResource(R.string.feature_search_empty)) }
         }
     }
 }
@@ -1039,12 +1041,9 @@ internal fun SettingsHubScreen(
         stringResource(R.string.language_english),
         stringResource(R.string.language_simplified_chinese),
     )
-    val search = rememberPageSearch()
-
     HubPage(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
-        search = search,
         overlay = {
             OverlayDialog(
                 title = stringResource(R.string.settings_entry_scope_title),
@@ -1107,166 +1106,134 @@ internal fun SettingsHubScreen(
             }
         },
     ) {
-        if (search.any(R.string.appearance_title, R.string.appearance_summary, R.string.swipe_back, R.string.swipe_back_summary)) {
-            Section(R.string.section_appearance_interaction) {
-                if (search.matches(R.string.appearance_title, R.string.appearance_summary)) {
-                    ArrowPreference(
-                        title = stringResource(R.string.appearance_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_display_settings,
-                            )
-                        },
-                        summary = stringResource(R.string.appearance_summary),
-                        onClick = { onNavigate(AppRoute.Appearance) },
+        Section(R.string.section_appearance_interaction) {
+            ArrowPreference(
+                title = stringResource(R.string.appearance_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_display_settings,
                     )
-                }
-                if (search.matches(R.string.swipe_back, R.string.swipe_back_summary)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.swipe_back),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_swipe,
-                            )
-                        },
-                        summary = stringResource(R.string.swipe_back_summary),
-                        checked = swipeBackEnabled,
-                        onCheckedChange = onSwipeBackChange,
+                },
+                summary = stringResource(R.string.appearance_summary),
+                onClick = { onNavigate(AppRoute.Appearance) },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.swipe_back),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_swipe,
                     )
-                }
-            }
+                },
+                summary = stringResource(R.string.swipe_back_summary),
+                checked = swipeBackEnabled,
+                onCheckedChange = onSwipeBackChange,
+            )
         }
-        if (search.any(R.string.language_title, R.string.language_summary, R.string.hide_launcher_icon, R.string.hide_launcher_icon_summary, R.string.settings_entry_title, R.string.settings_entry_icon_title, R.string.settings_entry_icon_summary)) {
-            Section(R.string.section_app) {
-                if (search.matches(R.string.language_title, R.string.language_summary)) {
-                    OverlayDropdownPreference(
-                        items = languageOptions,
-                        selectedIndex = lang.ordinal,
-                        title = stringResource(R.string.language_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_language,
-                            )
-                        },
-                        summary = stringResource(R.string.language_summary),
-                        showValue = true,
-                        onSelectedIndexChange = { index ->
-                            AppLang.entries.getOrNull(index)?.let(onLangChange)
-                        },
+        Section(R.string.section_app) {
+            OverlayDropdownPreference(
+                items = languageOptions,
+                selectedIndex = lang.ordinal,
+                title = stringResource(R.string.language_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_language,
                     )
-                }
-                if (search.matches(R.string.hide_launcher_icon, R.string.hide_launcher_icon_summary)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.hide_launcher_icon),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_visibility_off,
-                            )
-                        },
-                        summary = stringResource(R.string.hide_launcher_icon_summary),
-                        checked = iconHidden,
-                        onCheckedChange = onIconHiddenChange,
+                },
+                summary = stringResource(R.string.language_summary),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    AppLang.entries.getOrNull(index)?.let(onLangChange)
+                },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.hide_launcher_icon),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_visibility_off,
                     )
-                }
-                if (search.matches(R.string.settings_entry_title)) {
-                    OverlayDropdownPreference(
-                        items = entryOptions,
-                        selectedIndex = entry.ordinal,
-                        title = stringResource(R.string.settings_entry_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_settings_applications,
-                                enabled = scopeApplying == null && !runtimeBusy,
-                            )
-                        },
+                },
+                summary = stringResource(R.string.hide_launcher_icon_summary),
+                checked = iconHidden,
+                onCheckedChange = onIconHiddenChange,
+            )
+            OverlayDropdownPreference(
+                items = entryOptions,
+                selectedIndex = entry.ordinal,
+                title = stringResource(R.string.settings_entry_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_settings_applications,
                         enabled = scopeApplying == null && !runtimeBusy,
-                        summary = stringResource(
-                            if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
-                            else R.string.settings_entry_restart_hint,
-                        ),
-                        showValue = true,
-                        onSelectedIndexChange = { index ->
-                            SettingsEntry.entries.getOrNull(index)?.let { selected ->
-                                if (selected != entry) {
-                                    if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
-                                        saveEntry(selected)
-                                    } else {
-                                        pending = selected
-                                    }
-                                }
+                    )
+                },
+                enabled = scopeApplying == null && !runtimeBusy,
+                summary = stringResource(
+                    if (entry == SettingsEntry.Disabled) R.string.settings_entry_summary
+                    else R.string.settings_entry_restart_hint,
+                ),
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    SettingsEntry.entries.getOrNull(index)?.let { selected ->
+                        if (selected != entry) {
+                            if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
+                                saveEntry(selected)
+                            } else {
+                                pending = selected
                             }
-                        },
-                    )
-                }
-                if (entry != SettingsEntry.Disabled) {
-                    if (search.matches(R.string.settings_entry_icon_title, R.string.settings_entry_icon_summary)) {
-                        OverlayDropdownPreference(
-                            items = iconOptions,
-                            selectedIndex = entryIcon.ordinal,
-                            title = stringResource(R.string.settings_entry_icon_title),
-                            startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_filter_none)
-                            },
-                            summary = stringResource(R.string.settings_entry_icon_summary),
-                            showValue = true,
-                            onSelectedIndexChange = { index ->
-                                SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
-                            },
-                        )
+                        }
                     }
-                }
+                },
+            )
+            if (entry != SettingsEntry.Disabled) {
+                OverlayDropdownPreference(
+                    items = iconOptions,
+                    selectedIndex = entryIcon.ordinal,
+                    title = stringResource(R.string.settings_entry_icon_title),
+                    startAction = {
+                        SemanticLeadingIcon(R.drawable.ic_material_symbol_filter_none)
+                    },
+                    summary = stringResource(R.string.settings_entry_icon_summary),
+                    showValue = true,
+                    onSelectedIndexChange = { index ->
+                        SettingsEntryIcon.entries.getOrNull(index)?.let(::saveEntryIcon)
+                    },
+                )
             }
         }
-        if (search.any(R.string.about_title, R.string.about_summary, R.string.diagnostics_title, R.string.diagnostics_summary, R.string.restart_scope, R.string.restart_scope_summary)) {
-            Section(R.string.section_diagnostics_maintenance) {
-                if (search.matches(R.string.about_title, R.string.about_summary)) {
-                    ArrowPreference(
-                        title = stringResource(R.string.about_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_info,
-                            )
-                        },
-                        summary = stringResource(R.string.about_summary),
-                        onClick = { onNavigate(AppRoute.About) },
+        Section(R.string.section_diagnostics_maintenance) {
+            ArrowPreference(
+                title = stringResource(R.string.about_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_info,
                     )
-                }
-                if (search.matches(R.string.diagnostics_title, R.string.diagnostics_summary)) {
-                    ArrowPreference(
-                        title = stringResource(R.string.diagnostics_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
-                            )
-                        },
-                        summary = stringResource(R.string.diagnostics_summary),
-                        onClick = { onNavigate(AppRoute.Diagnostics) },
+                },
+                summary = stringResource(R.string.about_summary),
+                onClick = { onNavigate(AppRoute.About) },
+            )
+            ArrowPreference(
+                title = stringResource(R.string.diagnostics_title),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
                     )
-                }
-                if (search.matches(R.string.restart_scope, R.string.restart_scope_summary)) {
-                    BasicComponent(
-                        title = stringResource(R.string.restart_scope),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_restart_alt,
-                                enabled = !runtimeBusy && scopeApplying == null,
-                            )
-                        },
-                        summary = stringResource(R.string.restart_scope_summary),
+                },
+                summary = stringResource(R.string.diagnostics_summary),
+                onClick = { onNavigate(AppRoute.Diagnostics) },
+            )
+            BasicComponent(
+                title = stringResource(R.string.restart_scope),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_restart_alt,
                         enabled = !runtimeBusy && scopeApplying == null,
-                        onClick = onRestart,
                     )
-                }
-            }
-        }
-        if (search.active && search.query.isNotBlank() && !search.any(
-                R.string.appearance_title, R.string.appearance_summary, R.string.swipe_back, R.string.swipe_back_summary,
-                R.string.language_title, R.string.language_summary, R.string.hide_launcher_icon, R.string.hide_launcher_icon_summary,
-                R.string.settings_entry_title, R.string.settings_entry_icon_title, R.string.settings_entry_icon_summary, R.string.about_title,
-                R.string.about_summary, R.string.diagnostics_title, R.string.diagnostics_summary, R.string.restart_scope,
-                R.string.restart_scope_summary,
-        )) {
-            item { SmallTitle(stringResource(R.string.settings_search_empty)) }
+                },
+                summary = stringResource(R.string.restart_scope_summary),
+                enabled = !runtimeBusy && scopeApplying == null,
+                onClick = onRestart,
+            )
+
         }
     }
 }
@@ -1323,7 +1290,7 @@ private fun HubPage(
                     actions = {
                         if (search != null) {
                             val label = stringResource(
-                                if (search.active) R.string.settings_search_close else R.string.settings_search,
+                                if (search.active) R.string.feature_search_close else R.string.feature_search,
                             )
                             TooltipBox(text = label) {
                                 IconButton(onClick = {
@@ -1349,7 +1316,7 @@ private fun HubPage(
                             TextField(
                                 value = search.query,
                                 onValueChange = search::update,
-                                label = stringResource(R.string.settings_search),
+                                label = stringResource(R.string.feature_search),
                                 useLabelAsPlaceholder = true,
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
