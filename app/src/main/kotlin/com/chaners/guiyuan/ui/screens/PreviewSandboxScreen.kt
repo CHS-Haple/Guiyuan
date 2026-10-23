@@ -296,8 +296,8 @@ internal fun PreviewSandboxScreen(
                                 visual = visual,
                                 modifier =
                                     Modifier
-                                        .width(120.dp)
-                                        .height(184.dp),
+                                        .width(SandboxPreviewWidth)
+                                        .height(SandboxPreviewHeight),
                             )
                         }
                         PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
@@ -644,8 +644,8 @@ private fun ScaledSandboxPreview(
     scale: Float,
 ) {
     val density = LocalDensity.current
-    val width = with(density) { 120.dp.roundToPx() }
-    val height = with(density) { 184.dp.roundToPx() }
+    val width = with(density) { SandboxPreviewWidth.roundToPx() }
+    val height = with(density) { SandboxPreviewHeight.roundToPx() }
 
     // Keep the renderer's logical viewport unchanged; only the composed layer shrinks.
     Layout(
@@ -706,6 +706,9 @@ private fun SandboxSegmentedField(
         },
     )
 }
+
+private val SandboxPreviewWidth = 120.dp
+private val SandboxPreviewHeight = 184.dp
 
 private val SandboxPreferenceInsideMargin =
     PaddingValues(
