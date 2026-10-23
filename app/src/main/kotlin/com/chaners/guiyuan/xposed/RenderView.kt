@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.Canvas
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Size
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
@@ -19,7 +20,7 @@ internal class RenderView(
     context: Context,
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
-    preview: Boolean = false,
+    private val preview: Boolean = false,
     private val onStateRendered: (
         latencyMs: Long,
         committedOnMainThread: Boolean,
@@ -67,6 +68,9 @@ internal class RenderView(
 
     @Volatile
     private var scaleMobileTypeWithCanvas = false
+
+    // Preview-only virtual canvas; the View remains at its final pixel size.
+    private var previewSourceSize: Size? = null
 
     @Volatile
     private var pendingStateUptimeMs: Long = 0
@@ -151,6 +155,25 @@ internal class RenderView(
         }
         scaleMobileTypeWithCanvas = enabled
         requestRedraw()
+    }
+
+    fun setPreviewSourceSize(size: Size?) {
+        if (!preview || previewSourceSize == size) return
+        previewSourceSize = size?.takeIf { it.width > 0 && it.height > 0 }
+        syncPreviewViewport()
+        requestRedraw()
+    }
+
+    fun syncPreviewViewport() {
+        if (!preview || width <= 0 || height <= 0) return
+        val sourceWidth = previewSourceSize?.width ?: width
+        val sourceHeight = previewSourceSize?.height ?: height
+        val logicalSize = minOf(sourceWidth, sourceHeight)
+        setLogicalViewport(
+            widthPx = sourceWidth,
+            heightPx = logicalSize,
+            topInsetPx = (sourceHeight - logicalSize).coerceAtLeast(0) / 2,
+        )
     }
 
     fun setLogicalViewport(
@@ -320,6 +343,19 @@ internal class RenderView(
         val logicalHeight = currentLogicalViewportHeightPx()
         val logicalTopInset = currentLogicalViewportTopInsetPx()
         val viewportSave = canvas.save()
+        if (preview) {
+            previewSourceSize?.let { source ->
+                val scale = minOf(
+                    width.toFloat() / source.width,
+                    height.toFloat() / source.height,
+                )
+                canvas.translate(
+                    (width - source.width * scale) / 2f,
+                    (height - source.height * scale) / 2f,
+                )
+                canvas.scale(scale, scale)
+            }
+        }
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
         }

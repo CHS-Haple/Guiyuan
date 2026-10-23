@@ -34,10 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -49,8 +45,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Constraints
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
@@ -262,33 +258,41 @@ internal fun PreviewSandboxScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        start = TopAppBarDefaults.TitlePadding,
-                                        end = TopAppBarDefaults.ActionIconPadding,
-                                        top = 8.dp,
-                                        bottom = 8.dp,
-                                    ),
+                                    .padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Text(
-                                    text = stringResource(R.string.home_preview_live_title),
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = TopAppBarDefaults.TitlePadding),
+                                    contentAlignment = Alignment.CenterStart,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.home_preview_live_title),
+                                        style = MiuixTheme.textStyles.subtitle,
+                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                                 SandboxDockIcon(renderModel, visual)
-                                val backTop = stringResource(R.string.diagnostics_scroll_top)
-                                TooltipBox(text = backTop) {
-                                    IconButton(
-                                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                            contentDescription = backTop,
-                                        )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = TopAppBarDefaults.ActionIconPadding),
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) {
+                                    val backTop = stringResource(R.string.diagnostics_scroll_top)
+                                    TooltipBox(text = backTop) {
+                                        IconButton(
+                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                                contentDescription = backTop,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -668,41 +672,20 @@ private fun SandboxFullPreview(
     PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
 }
 
-// Keep the renderer's logical canvas unchanged while scaling its dock viewport.
+// Draw into the actual compact View rather than resampling a full-sized GPU layer.
 @Composable
 private fun SandboxDockIcon(
     model: RenderModel,
     visual: VisualCfg,
 ) {
-    val density = LocalDensity.current
-    val width = with(density) { SandboxPreviewWidth.roundToPx() }
-    val height = with(density) { SandboxPreviewHeight.roundToPx() }
-    val compactHeight = with(density) { TopAppBarDefaults.SmallTopAppBarCenterHeight.roundToPx() }
-    val scale = compactHeight.toFloat() / height
-    Layout(
-        content = {
-            StatusPreview(
-                model = model,
-                visual = visual,
-                modifier = Modifier.graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    transformOrigin = TransformOrigin(0f, 0f)
-                },
-            )
-        },
-        modifier = Modifier.clipToBounds(),
-    ) { measurables, constraints ->
-        val view = measurables.single().measure(Constraints.fixed(width, height))
-        val scaledWidth = (width * scale).roundToInt()
-        val scaledHeight = (height * scale).roundToInt()
-        layout(
-            scaledWidth.coerceIn(constraints.minWidth, constraints.maxWidth),
-            scaledHeight.coerceIn(constraints.minHeight, constraints.maxHeight),
-        ) {
-            view.place(0, 0)
-        }
-    }
+    val compactHeight = TopAppBarDefaults.SmallTopAppBarCenterHeight
+    val compactWidth = compactHeight * (SandboxPreviewWidth.value / SandboxPreviewHeight.value)
+    StatusPreview(
+        model = model,
+        visual = visual,
+        modifier = Modifier.size(compactWidth, compactHeight),
+        referenceSize = DpSize(SandboxPreviewWidth, SandboxPreviewHeight),
+    )
 }
 
 @Composable
