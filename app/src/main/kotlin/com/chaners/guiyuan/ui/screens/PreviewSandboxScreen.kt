@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Constraints
@@ -371,6 +372,7 @@ internal fun PreviewSandboxScreen(
                                                 style = MiuixTheme.textStyles.body2,
                                                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                                                 maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
                                             )
                                             Text(
                                                 text = stringResource(
