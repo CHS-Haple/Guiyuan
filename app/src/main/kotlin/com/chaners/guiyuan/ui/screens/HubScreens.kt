@@ -252,7 +252,7 @@ internal fun FeaturesScreen(
     LaunchedEffect(visible) {
         if (!visible) search.close()
     }
-    val searching = search.active && search.query.isNotBlank()
+    val searching = search.filtering
     val displayMatches = search.any(R.string.keyguard_combined_status_title, R.string.aod_combined_status_title, R.string.control_center_tint_transition, R.string.battery_fill_follow_retract)
     val layoutMatches = search.any(R.string.content_layout_title, R.string.dual_signal_title, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)
     val networkMatches = search.any(R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight, R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color, R.string.center_follow_battery_color)
@@ -419,10 +419,11 @@ internal fun FeaturesScreen(
         if (layoutMatches) {
             Section(R.string.section_layout_size) {
                 if (search.matches(R.string.content_layout_title) ||
-                    (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
-                        search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
-                    (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
-                        search.matches(R.string.top_info_vertical_offset))) {
+                    (searching && search.any(
+                        R.string.wifi_vertical_offset,
+                        R.string.mobile_type_vertical_offset,
+                        R.string.top_info_vertical_offset,
+                    ))) {
                     OverlayDropdownPreference(
                         items = layoutOptions,
                         selectedIndex = visual.layout.ordinal,
@@ -991,7 +992,7 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.active && search.query.isNotBlank() &&
+        if (search.filtering &&
             !displayMatches && !layoutMatches && !networkMatches &&
             !batteryMatches && !managementMatches
         ) {
@@ -1283,21 +1284,17 @@ private fun HubPage(
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
-    val listState = rememberLazyListState()
+    // Browsing and filtered results must not overwrite each other's scroll position.
+    val browsingState = rememberLazyListState()
+    val resultsState = rememberLazyListState()
+    val filtering = search?.filtering == true
+    val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val keyboardController = LocalSoftwareKeyboardController.current
-    val restorePosition = remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    LaunchedEffect(search?.active, search?.query) {
-        if (search?.active == true) {
-            listState.scrollToItem(0)
-        } else {
-            restorePosition.value?.let { (index, offset) ->
-                listState.scrollToItem(index, offset)
-                restorePosition.value = null
-            }
-        }
+    LaunchedEffect(filtering, search?.query) {
+        if (filtering) resultsState.scrollToItem(0)
     }
 
     Scaffold(
@@ -1317,11 +1314,7 @@ private fun HubPage(
                             if (!search.active) {
                                 val label = stringResource(R.string.feature_search)
                                 TooltipBox(text = label) {
-                                    IconButton(onClick = {
-                                        restorePosition.value =
-                                            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-                                        search.open()
-                                    }) {
+                                    IconButton(onClick = search::open) {
                                         Icon(MiuixIcons.Search, contentDescription = label)
                                     }
                                 }

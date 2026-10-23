@@ -7,6 +7,16 @@ import org.junit.Test
 
 class SearchTermTest {
     @Test
+    fun blankInputDoesNotEnterFilteredMode() {
+        assertFalse(isSearchFiltering(false, ""))
+        assertFalse(isSearchFiltering(true, ""))
+        assertFalse(isSearchFiltering(true, "  \t"))
+        assertFalse(isSearchFiltering(false, "5G"))
+        assertTrue(isSearchFiltering(true, "5G"))
+        assertTrue(isSearchFiltering(true, "电量"))
+    }
+
+    @Test
     fun chineseAndPinyinPrefixes() {
         val term = SearchTerm("电量数字", "dian liang shu zi")
         assertTrue(term.matches("电量"))

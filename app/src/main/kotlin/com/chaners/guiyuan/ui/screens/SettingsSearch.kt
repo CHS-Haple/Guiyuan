@@ -37,11 +37,15 @@ private val cellularTerms = listOf(
     "蜂窝数据", "蜂窝移动", "移动通信", "4G", "LTE", "5G", "5GA",
 )
 
+internal fun isSearchFiltering(active: Boolean, query: String): Boolean = active && query.isNotBlank()
+
 internal class PageSearch(private val context: Context) {
     var active by mutableStateOf(false)
         private set
     var query by mutableStateOf("")
         private set
+
+    val filtering get() = isSearchFiltering(active, query)
 
     private val romanizer by lazy(LazyThreadSafetyMode.NONE) {
         runCatching {
@@ -71,14 +75,14 @@ internal class PageSearch(private val context: Context) {
     fun update(value: String) { query = value.take(80) }
 
     fun matches(@StringRes title: Int): Boolean {
-        if (!active || query.isBlank()) return true
+        if (!filtering) return true
         return matchesId(title) ||
             aliasCache.getOrPut(title) { searchAliases(title).map(::makeTerm) }
                 .any { it.matches(query) }
     }
 
     fun any(vararg ids: Int): Boolean =
-        !active || query.isBlank() || ids.any(::matches)
+        !filtering || ids.any(::matches)
 
     private fun matchesId(@StringRes id: Int): Boolean =
         cache.getOrPut(id) { makeTerm(context.getString(id)) }.matches(query)
