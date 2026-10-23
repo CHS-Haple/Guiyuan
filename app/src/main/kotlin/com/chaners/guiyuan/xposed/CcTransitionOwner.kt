@@ -253,12 +253,41 @@ internal object CcTransitionOwner {
         // Native children can change while the icon container keeps the same bounds.
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
-                if (
-                    started &&
-                    captureNativeChildren() &&
-                    currentSnapshot.model.dualMobileLevels == null
-                ) {
-                    markMobileTargetsDirty()
+                if (started) {
+                    if (
+                        captureNativeChildren() &&
+                        currentSnapshot.model.dualMobileLevels == null
+                    ) {
+                        markMobileTargetsDirty()
+                    }
+                    var changed = false
+                    if (
+                        supplementalTargetChanged(
+                            AIRPLANE_SLOT,
+                            airplaneTargetResolved,
+                            frozenAirplaneTarget,
+                        )
+                    ) {
+                        airplaneTargetResolved = false
+                        frozenAirplaneTarget = null
+                        changed = true
+                    }
+                    if (
+                        supplementalTargetChanged(
+                            NO_SIM_SLOT,
+                            noSimTargetResolved,
+                            frozenNoSimTarget,
+                        )
+                    ) {
+                        noSimTargetResolved = false
+                        frozenNoSimTarget = null
+                        changed = true
+                    }
+                    if (changed) {
+                        // Retarget the existing reservation instead of jumping to a new width.
+                        reservationLayout = null
+                        drawable.invalidateSelf()
+                    }
                 }
             }
         private var frozenAirplaneTarget: TargetWitness? = null
@@ -381,6 +410,24 @@ internal object CcTransitionOwner {
         private fun isMobileSlot(view: View): Boolean {
             val slot = NativeParticipantAccess.slotOf(view)
             return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
+        }
+
+        private fun supplementalTargetChanged(
+            slot: String,
+            resolved: Boolean,
+            witness: TargetWitness?,
+        ): Boolean {
+            if (!resolved) return false
+            // A native icon may be laid out after its first attempted resolution.
+            val live = slotViews(finalStatusIcons, slot).firstOrNull { view ->
+                view.visibility == View.VISIBLE && isUsableSlotView(view)
+            }
+            if (witness == null) return live != null
+            return live !== witness.slotView ||
+                witness.opticalView?.let { optical ->
+                    !isReliableSemanticTarget(optical) ||
+                        !belongsToSlot(optical, witness.slotView)
+                } == true
         }
 
         fun matches(
