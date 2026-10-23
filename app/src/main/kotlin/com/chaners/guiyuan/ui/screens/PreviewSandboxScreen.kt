@@ -739,12 +739,14 @@ internal fun PreviewSandboxScreen(
                                 label = "sandboxPreviewDrawer",
                             ) { expanded ->
                                 if (expanded) {
-                                    SandboxFullPreview(
-                                        state = state,
-                                        model = renderModel,
-                                        visual = visual,
-                                        showDescription = false,
-                                    )
+                                    Column(modifier = Modifier.fillMaxWidth().padding(end = 44.dp)) {
+                                        SandboxFullPreview(
+                                            state = state,
+                                            model = renderModel,
+                                            visual = visual,
+                                            showDescription = false,
+                                        )
+                                    }
                                 } else {
                                     Row(
                                         modifier = Modifier
