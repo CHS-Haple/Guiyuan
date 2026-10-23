@@ -146,6 +146,41 @@ class SearchTermTest {
     }
 
     @Test
+    fun translatedTitlesMatchInEitherInterfaceLanguage() {
+        val localized = listOf(
+            SearchTerm("电量颜色", "dian liang yan se"),
+            SearchTerm("Battery colors", "Battery colors"),
+        )
+        for (word in listOf("电量", "Battery", "colors", "dlys")) {
+            assertTrue("Translated title missing $word", localized.any { it.matches(word) })
+        }
+        assertFalse(localized.any { it.matches("Wi-Fi") })
+        assertFalse(localized.any { it.matches("Reset") })
+
+        val restore = listOf(
+            SearchTerm("恢复配置", "hui fu pei zhi"),
+            SearchTerm("Restore configuration", "Restore configuration"),
+        )
+        assertTrue(restore.any { it.matches("恢复") })
+        assertTrue(restore.any { it.matches("Restore") })
+        assertTrue(restore.any { it.matches("configuration") })
+        assertFalse(restore.any { it.matches("Backup") })
+    }
+
+    @Test
+    fun EnglishTaskSynonymsRemainScoped() {
+        val restore = searchAliases(R.string.config_restore_title)
+        val defaults = searchAliases(R.string.restore_feature_defaults)
+        val backup = searchAliases(R.string.config_backup_title)
+        assertTrue(restore.any { SearchTerm(it, it).matches("Import") })
+        assertTrue(backup.any { SearchTerm(it, it).matches("Export") })
+        assertTrue(defaults.any { SearchTerm(it, it).matches("Reset") })
+        assertFalse(backup.any { SearchTerm(it, it).matches("Restore") })
+        assertFalse(restore.any { SearchTerm(it, it).matches("Export") })
+        assertFalse(defaults.any { SearchTerm(it, it).matches("Import") })
+    }
+
+    @Test
     fun batteryAndWeightSynonymsRetainMeaning() {
         val weight = searchAliases(R.string.mobile_type_weight)
         assertTrue(weight.any { it.contains("粗细") })

@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.ui.screens
 
+import android.app.LocaleConfig
 import android.content.Context
+import android.content.res.Configuration
 import android.icu.text.Transliterator
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
@@ -63,7 +65,24 @@ internal class PageSearch(private val context: Context) {
             else null
         }.getOrNull()
     }
-    private val cache = mutableMapOf<Int, SearchTerm>()
+    // Each title ID indexes every supported locale without changing the displayed language.
+    private val localizedContexts by lazy(LazyThreadSafetyMode.NONE) {
+        buildList {
+            add(context)
+            val supported = runCatching { LocaleConfig(context).supportedLocales }.getOrNull()
+            if (supported != null) {
+                for (i in 0 until supported.size()) {
+                    val localized = runCatching {
+                        val config = Configuration(context.resources.configuration)
+                        config.setLocale(supported[i])
+                        context.createConfigurationContext(config)
+                    }.getOrNull()
+                    if (localized != null) add(localized)
+                }
+            }
+        }
+    }
+    private val cache = mutableMapOf<Int, List<SearchTerm>>()
     private val aliasCache = mutableMapOf<Int, List<SearchTerm>>()
 
     fun open() { active = true }
@@ -86,7 +105,9 @@ internal class PageSearch(private val context: Context) {
         !filtering || ids.any(::matches)
 
     private fun matchesId(@StringRes id: Int): Boolean =
-        cache.getOrPut(id) { makeTerm(context.getString(id)) }.matches(query)
+        cache.getOrPut(id) {
+            localizedContexts.map { it.getString(id) }.distinct().map(::makeTerm)
+        }.any { it.matches(query) }
 
     private fun makeTerm(text: String): SearchTerm =
         SearchTerm(text, runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text)
@@ -128,9 +149,9 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.battery_charging_icon -> listOf("充电闪电", "充电标志", "充电图标显示")
     R.string.battery_top_charging_icon_size -> listOf("充电图标大小", "闪电大小")
     R.string.charging_icon_follow_battery_color -> listOf("闪电颜色", "充电图标颜色")
-    R.string.config_backup_title -> listOf("导出配置", "保存设置", "备份设置", "配置导出", "保存配置")
-    R.string.config_restore_title -> listOf("导入配置", "读取备份", "恢复备份", "还原配置", "配置还原", "还原备份", "配置导入", "导入备份")
-    R.string.restore_feature_defaults -> listOf("重置设置", "重置功能", "恢复功能默认值", "还原默认设置", "还原设置", "重置配置")
+    R.string.config_backup_title -> listOf("导出配置", "保存设置", "备份设置", "配置导出", "保存配置", "Export configuration", "Export backup")
+    R.string.config_restore_title -> listOf("导入配置", "读取备份", "恢复备份", "还原配置", "配置还原", "还原备份", "配置导入", "导入备份", "Import configuration", "Import backup")
+    R.string.restore_feature_defaults -> listOf("重置设置", "重置功能", "恢复功能默认值", "还原默认设置", "还原设置", "重置配置", "Reset defaults", "Reset settings")
     else -> emptyList()
 }
 
