@@ -590,6 +590,7 @@ private fun TopLevelPager(
             )
             1 -> FeaturesScreen(
                 bottomContentPadding = bottom,
+                visible = pagerState.currentPage == 1,
                 snackbarState = featureSnackbarState,
                 onNavigate = onNavigate,
             )
