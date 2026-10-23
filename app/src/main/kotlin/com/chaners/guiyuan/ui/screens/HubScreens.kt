@@ -1290,12 +1290,14 @@ private fun HubPage(
                 backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
             ) { barColor ->
-                TopAppBar(
-                    title = title,
-                    color = barColor,
-                    scrollBehavior = scrollBehavior,
-                    actions = {
-                        if (search != null) {
+                if (search == null) {
+                    TopAppBar(title = title, color = barColor, scrollBehavior = scrollBehavior)
+                } else {
+                    TopAppBar(
+                        title = title,
+                        color = barColor,
+                        scrollBehavior = scrollBehavior,
+                        actions = {
                             val label = stringResource(
                                 if (search.active) R.string.feature_search_close else R.string.feature_search,
                             )
@@ -1315,26 +1317,26 @@ private fun HubPage(
                                     )
                                 }
                             }
-                        }
-                    },
-                    bottomContent = {
-                        if (search?.active == true) {
-                            val requester = remember { FocusRequester() }
-                            TextField(
-                                value = search.query,
-                                onValueChange = search::update,
-                                label = stringResource(R.string.feature_search),
-                                useLabelAsPlaceholder = true,
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .focusRequester(requester),
-                            )
-                            LaunchedEffect(requester) { requester.requestFocus() }
-                        }
-                    },
-                )
+                        },
+                        bottomContent = {
+                            if (search.active) {
+                                val requester = remember { FocusRequester() }
+                                TextField(
+                                    value = search.query,
+                                    onValueChange = search::update,
+                                    label = stringResource(R.string.feature_search),
+                                    useLabelAsPlaceholder = true,
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .focusRequester(requester),
+                                )
+                                LaunchedEffect(requester) { requester.requestFocus() }
+                            }
+                        },
+                    )
+                }
             }
         },
     ) { paddingValues ->
