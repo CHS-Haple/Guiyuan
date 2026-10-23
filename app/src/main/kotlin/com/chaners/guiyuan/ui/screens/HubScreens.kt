@@ -767,7 +767,7 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.low_battery_threshold, R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon, R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
+        if (search.any(R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.low_battery_threshold, R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon, R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
             Section(R.string.section_battery) {
                 if (search.matches(R.string.battery_colors, R.string.battery_color_scheme_summary)) {
                 BatteryColorPreference(
