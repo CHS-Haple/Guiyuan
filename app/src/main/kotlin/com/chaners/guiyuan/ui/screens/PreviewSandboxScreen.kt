@@ -1,9 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -29,17 +27,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -48,10 +45,10 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Constraints
@@ -68,6 +65,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -84,7 +82,6 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -208,11 +205,7 @@ internal fun PreviewSandboxScreen(
             }
         }
     }
-    var previewExpanded by remember { mutableStateOf(false) }
-    BackHandler(enabled = previewExpanded) { previewExpanded = false }
-    LaunchedEffect(showDock) {
-        if (!showDock) previewExpanded = false
-    }
+    val scope = rememberCoroutineScope()
 
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
@@ -227,7 +220,7 @@ internal fun PreviewSandboxScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     TooltipBox(text = stringResource(R.string.back)) {
-                        IconButton(onClick = { if (previewExpanded) previewExpanded = false else onBack() }) {
+                        IconButton(onClick = onBack) {
                             Icon(
                                 MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.back),
@@ -591,8 +584,7 @@ internal fun PreviewSandboxScreen(
                 }
             }
 
-            // The dock animates outside the LazyColumn's layout and joins the top bar surface.
-            // A single backdrop spans the app bar and drawer without changing LazyColumn measurements.
+            // Floating chrome must not resize the scrolling list's viewport.
             Box(
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(1f),
             ) {
@@ -606,37 +598,56 @@ internal fun PreviewSandboxScreen(
                     AnimatedVisibility(
                         visible = showDock,
                         modifier = Modifier.fillMaxWidth(),
-                enter = expandVertically(
-                    expandFrom = Alignment.Top,
-                    animationSpec = tween(240),
-                ) + fadeIn(animationSpec = tween(170)),
-                exit = shrinkVertically(
-                    shrinkTowards = Alignment.Top,
-                    animationSpec = tween(240),
-                ) + fadeOut(animationSpec = tween(160)),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
-                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        enter = expandVertically(
+                            expandFrom = Alignment.Top,
+                            animationSpec = tween(240),
+                        ) + fadeIn(animationSpec = tween(170)),
+                        exit = shrinkVertically(
+                            shrinkTowards = Alignment.Top,
+                            animationSpec = tween(240),
+                        ) + fadeOut(animationSpec = tween(160)),
                     ) {
-                        SandboxDockPreview(
-                            state = state,
-                            model = renderModel,
-                            visual = visual,
-                            expanded = previewExpanded,
-                            onToggle = { previewExpanded = !previewExpanded },
-                        )
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp)
+                                    .padding(bottom = 8.dp),
+                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.home_preview_live_title),
+                                        style = MiuixTheme.textStyles.body1,
+                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    SandboxDockIcon(renderModel, visual)
+                                    val backTop = stringResource(R.string.diagnostics_scroll_top)
+                                    TooltipBox(text = backTop) {
+                                        IconButton(
+                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                        ) {
+                                            Icon(
+                                                MiuixIcons.ExpandLess,
+                                                contentDescription = backTop,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            HorizontalDivider()
+                        }
                     }
-                    HorizontalDivider()
-                }
-            }
                 }
             }
         }
-
     }
 }
 
@@ -673,94 +684,34 @@ private fun SandboxFullPreview(
     PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
 }
 
-// Preserve RenderView's logical viewport across compact and expanded sizes.
+// Keep the renderer's logical canvas unchanged while scaling its dock viewport.
 @Composable
-private fun SandboxDockPreview(
-    state: PreviewSandboxUiState,
+private fun SandboxDockIcon(
     model: RenderModel,
     visual: VisualCfg,
-    expanded: Boolean,
-    onToggle: () -> Unit,
 ) {
-    val progress by animateFloatAsState(
-        targetValue = if (expanded) 1f else 0f,
-        label = "sandboxPreviewExpand",
-    )
-    val density = LocalDensity.current
-    val direction = LocalLayoutDirection.current
-    val previewWidth = with(density) { SandboxPreviewWidth.roundToPx() }
-    val previewHeight = with(density) { SandboxPreviewHeight.roundToPx() }
-    val gapPx = with(density) { 12.dp.roundToPx() }
-    val smallHeight = with(density) { 72.dp.roundToPx() }
-    val smallScale = smallHeight.toFloat() / previewHeight
-    val smallWidth = (previewWidth * smallScale).roundToInt()
-
+    val width = with(LocalDensity.current) { SandboxPreviewWidth.roundToPx() }
+    val height = with(LocalDensity.current) { SandboxPreviewHeight.roundToPx() }
+    val scale = 0.4f
     Layout(
-        modifier = Modifier.fillMaxWidth().clipToBounds(),
         content = {
-            Text(
-                text = stringResource(R.string.home_preview_live_title),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
             StatusPreview(
                 model = model,
                 visual = visual,
-                modifier = Modifier.width(SandboxPreviewWidth).height(SandboxPreviewHeight),
+                modifier = Modifier.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    transformOrigin = TransformOrigin(0f, 0f)
+                },
             )
-            Box {
-                val label = stringResource(
-                    if (expanded) R.string.home_preview_collapse
-                    else R.string.home_preview_expand,
-                )
-                TooltipBox(text = label) {
-                    IconButton(onClick = onToggle) {
-                        Icon(
-                            if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                            contentDescription = label,
-                        )
-                    }
-                }
-            }
-            Box(modifier = Modifier.fillMaxWidth()) {
-                PreviewSummary(state)
-            }
         },
+        modifier = Modifier.clipToBounds(),
     ) { measurables, constraints ->
-        val width = constraints.maxWidth
-        val button = measurables[2].measure(Constraints())
-        val textMax = (width - button.width - smallWidth - gapPx * 2).coerceAtLeast(0)
-        val title = measurables[0].measure(Constraints(maxWidth = textMax))
-        val preview = measurables[1].measure(Constraints.fixed(previewWidth, previewHeight))
-        val summary = measurables[3].measure(Constraints(maxWidth = width))
-        val rowHeight = maxOf(smallHeight, title.height, button.height)
-        val largeTop = rowHeight + gapPx
-        val summaryTop = largeTop + preview.height + gapPx
-        val fullHeight = summaryTop + summary.height
-        val height = rowHeight + ((fullHeight - rowHeight) * progress).roundToInt()
-
-        layout(width, height) {
-            val scale = smallScale + (1f - smallScale) * progress
-            val compactX = width - button.width - gapPx - smallWidth
-            val largeX = (width - preview.width) / 2
-            val previewX = compactX + ((largeX - compactX) * progress).roundToInt()
-            val compactY = (rowHeight - smallHeight) / 2
-            val previewY = compactY + ((largeTop - compactY) * progress).roundToInt()
-            val visualX = if (direction == LayoutDirection.Rtl) {
-                width - previewX - (preview.width * scale).roundToInt()
-            } else {
-                previewX
-            }
-            preview.placeWithLayer(visualX, previewY) {
-                scaleX = scale
-                scaleY = scale
-                transformOrigin = TransformOrigin(0f, 0f)
-            }
-            summary.placeRelative(0, summaryTop)
-            title.placeRelative(0, (rowHeight - title.height) / 2)
-            button.placeRelative(width - button.width, (rowHeight - button.height) / 2)
+        val view = measurables.single().measure(Constraints.fixed(width, height))
+        val scaledWidth = (width * scale).roundToInt()
+        val scaledHeight = (height * scale).roundToInt()
+        layout(constraints.constrainWidth(scaledWidth), constraints.constrainHeight(scaledHeight)) {
+            view.place(0, 0)
         }
     }
 }

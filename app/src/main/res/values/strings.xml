@@ -454,6 +454,4 @@
     <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
     <string name="feature_search">Search features</string>
     <string name="feature_search_empty">No matching features</string>
-    <string name="home_preview_expand">Expand preview</string>
-    <string name="home_preview_collapse">Collapse preview</string>
 </resources>
