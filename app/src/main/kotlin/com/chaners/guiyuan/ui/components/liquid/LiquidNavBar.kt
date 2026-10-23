@@ -25,7 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -108,33 +108,59 @@ private val glassHighlight = Highlight(
 
 private const val GRAVITY_THRESHOLD_SQ = 0.01f
 private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
+private const val TILT_LIGHT_SENSITIVITY = 0.12f
+private const val PITCH_SWEEP_PER_RAD = 2f / 3f
+private val PITCH_NEUTRAL = (PI / 4).toFloat()
+private val PITCH_SWEEP_LIMIT = (30.0 * PI / 180.0).toFloat()
+
+internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
 
 @Composable
-private fun rememberGravityAngle(interactive: Boolean): State<Float> {
-    if (!interactive) return remember { mutableFloatStateOf((-PI / 2).toFloat()) }
-    // MIUIX owns the sensor listener; static previews do not register it.
+private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
+    if (!interactive) {
+        return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), PITCH_NEUTRAL, 0f)) }
+    }
+    // Reuse MIUIX's smoothed, lifecycle-owned sensor state; previews stay static.
     val tilt = rememberDeviceTilt()
     return remember(tilt) {
         derivedStateOf {
-            val gx = tilt.value.gravityX
-            val gy = tilt.value.gravityY
-            if (gx * gx + gy * gy > GRAVITY_THRESHOLD_SQ) {
-                (atan2(gy, gx) / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
-            } else {
-                (-PI / 2).toFloat()
-            }
+            val pose = tilt.value
+            val validGravity =
+                pose.gravityX * pose.gravityX + pose.gravityY * pose.gravityY > GRAVITY_THRESHOLD_SQ
+            GlassTilt(
+                if (validGravity) {
+                    (atan2(pose.gravityY, pose.gravityX) / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    (-PI / 2).toFloat()
+                },
+                if (validGravity) {
+                    (pose.pitch / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    PITCH_NEUTRAL
+                },
+                if (validGravity) {
+                    (pose.roll / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    0f
+                },
+            )
         }
     }
 }
 
-private fun litHighlight(angle: Float, offsetDegrees: Float): Highlight {
+internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
     val style = glassHighlight.style as BloomStroke
-    val rad = angle + (offsetDegrees * PI / 180.0).toFloat()
+    // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
+    val pitchSweep =
+        ((abs(tilt.pitch) - PITCH_NEUTRAL) * PITCH_SWEEP_PER_RAD)
+            .coerceIn(-PITCH_SWEEP_LIMIT, PITCH_SWEEP_LIMIT)
+    val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
+    val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
     return glassHighlight.copy(
         style = style.copy(
             primaryLight = style.primaryLight.copy(
                 position = LightPosition(
-                    0.5f + cos(rad),
+                    0.5f + cos(rad) + dx,
                     0.7f + sin(rad),
                     style.primaryLight.position.z,
                 ),
@@ -211,12 +237,12 @@ internal fun LiquidNavBar(
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
     val tabsBackdrop = rememberLayerBackdrop()
     val pillShape = remember { CircleShape }
-    val gravity = rememberGravityAngle(interactive)
-    val panelHighlight = remember(gravity) {
-        derivedStateOf { litHighlight(gravity.value, -45f) }
+    val tilt = rememberGlassTilt(interactive)
+    val panelHighlight = remember(tilt) {
+        derivedStateOf { litHighlight(tilt.value, -45f) }
     }
-    val pillHighlight = remember(gravity) {
-        derivedStateOf { litHighlight(gravity.value, 90f) }
+    val pillHighlight = remember(tilt) {
+        derivedStateOf { litHighlight(tilt.value, 90f) }
     }
 
     BoxWithConstraints(
