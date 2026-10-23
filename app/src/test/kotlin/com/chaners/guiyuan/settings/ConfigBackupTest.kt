@@ -71,7 +71,7 @@ class ConfigBackupTest {
                 visual = backup.visual.copy(
                     profiles = backup.visual.profiles.mapIndexed { index, cfg ->
                         cfg.copy(
-                            combinedScale = if (index % 2 == 0) 0.9f else 1.1f,
+                            combinedScale = if (index % 2 == 0) 0.9f else 0.7f,
                             mobileTypeWeight = if (cfg.dualSignal) 700 else 800,
                             showTopReadout = false,
                         )
