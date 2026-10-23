@@ -247,6 +247,12 @@ internal fun FeaturesScreen(
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
     val search = rememberPageSearch()
+    val searching = search.active && search.query.isNotBlank()
+    val displayMatches = search.any(R.string.keyguard_combined_status_title, R.string.aod_combined_status_title, R.string.control_center_tint_transition, R.string.battery_fill_follow_retract)
+    val layoutMatches = search.any(R.string.content_layout_title, R.string.dual_signal_title, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)
+    val networkMatches = search.any(R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight, R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color, R.string.center_follow_battery_color)
+    val batteryMatches = search.any(R.string.battery_colors, R.string.low_battery_threshold, R.string.battery_top_readout, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_charging_icon, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color)
+    val managementMatches = search.any(R.string.config_backup_title, R.string.config_restore_title, R.string.restore_feature_defaults)
 
     HubPage(
         title = stringResource(R.string.features_title),
@@ -361,9 +367,9 @@ internal fun FeaturesScreen(
             }
         },
     ) {
-        if (search.any(R.string.keyguard_combined_status_title, R.string.keyguard_combined_status_summary, R.string.aod_combined_status_title, R.string.aod_combined_status_summary, R.string.control_center_tint_transition, R.string.control_center_tint_transition_summary, R.string.battery_fill_follow_retract, R.string.battery_fill_follow_retract_summary)) {
+        if (displayMatches) {
             Section(R.string.section_display_transition) {
-                if (search.matches(R.string.keyguard_combined_status_title, R.string.keyguard_combined_status_summary)) {
+                if (search.matches(R.string.keyguard_combined_status_title)) {
                     SwitchPreference(
                         title = stringResource(R.string.keyguard_combined_status_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
@@ -373,7 +379,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = featureRepo::setKeyguard,
                     )
                 }
-                if (search.matches(R.string.aod_combined_status_title, R.string.aod_combined_status_summary)) {
+                if (search.matches(R.string.aod_combined_status_title)) {
                     SwitchPreference(
                         title = stringResource(R.string.aod_combined_status_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
@@ -383,7 +389,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = featureRepo::setAod,
                     )
                 }
-                if (search.matches(R.string.control_center_tint_transition, R.string.control_center_tint_transition_summary)) {
+                if (search.matches(R.string.control_center_tint_transition)) {
                     SwitchPreference(
                         title = stringResource(R.string.control_center_tint_transition),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
@@ -393,7 +399,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setCcTintTransition,
                     )
                 }
-                if (search.matches(R.string.battery_fill_follow_retract, R.string.battery_fill_follow_retract_summary)) {
+                if (search.matches(R.string.battery_fill_follow_retract)) {
                     SwitchPreference(
                         title = stringResource(R.string.battery_fill_follow_retract),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
@@ -405,9 +411,13 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.content_layout_title, R.string.content_layout_summary, R.string.dual_signal_title, R.string.dual_signal_summary, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.outer_weight_summary, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)) {
+        if (layoutMatches) {
             Section(R.string.section_layout_size) {
-                if (search.matches(R.string.content_layout_title, R.string.content_layout_summary)) {
+                if (search.matches(R.string.content_layout_title) ||
+                    (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
+                        search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
+                    (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
+                        search.matches(R.string.top_info_vertical_offset))) {
                     OverlayDropdownPreference(
                         items = layoutOptions,
                         selectedIndex = visual.layout.ordinal,
@@ -423,7 +433,9 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                if (search.matches(R.string.dual_signal_title, R.string.dual_signal_summary)) {
+                if (search.matches(R.string.dual_signal_title) ||
+                    (searching && !visual.dualSignal &&
+                        search.any(R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset))) {
                     SwitchPreference(
                         title = stringResource(R.string.dual_signal_title),
                         startAction = {
@@ -498,7 +510,7 @@ internal fun FeaturesScreen(
                         enabled = featureCfg.enabled,
                     )
                 }
-                if (search.matches(R.string.outer_weight, R.string.outer_weight_summary)) {
+                if (search.matches(R.string.outer_weight)) {
                     SliderPreference(
                         value = visual.outerWeightScale,
                         onValueChange = visualRepo::setOuterWeightScale,
@@ -594,7 +606,7 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight, R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color, R.string.mobile_follow_battery_color_summary, R.string.center_follow_battery_color, R.string.center_follow_battery_color_summary)) {
+        if (networkMatches) {
             Section(R.string.section_network) {
                 if (search.matches(R.string.wifi_size)) {
                     SliderPreference(
@@ -745,7 +757,7 @@ internal fun FeaturesScreen(
                         onClick = { showWeightDialog = true },
                     )
                 }
-                if (search.matches(R.string.mobile_follow_battery_color, R.string.mobile_follow_battery_color_summary)) {
+                if (search.matches(R.string.mobile_follow_battery_color)) {
                     SwitchPreference(
                         title = stringResource(R.string.mobile_follow_battery_color),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
@@ -755,7 +767,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setMobileFollowsBatteryColor,
                     )
                 }
-                if (search.matches(R.string.center_follow_battery_color, R.string.center_follow_battery_color_summary)) {
+                if (search.matches(R.string.center_follow_battery_color)) {
                     SwitchPreference(
                         title = stringResource(R.string.center_follow_battery_color),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
@@ -767,9 +779,9 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.battery_colors, R.string.battery_color_scheme_summary, R.string.low_battery_threshold, R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon, R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
+        if (batteryMatches) {
             Section(R.string.section_battery) {
-                if (search.matches(R.string.battery_colors, R.string.battery_color_scheme_summary)) {
+                if (search.matches(R.string.battery_colors)) {
                 BatteryColorPreference(
                     library = schemeLibrary,
                     enabled = featureCfg.enabled,
@@ -779,7 +791,7 @@ internal fun FeaturesScreen(
                     },
                 )
                 }
-                if (search.matches(R.string.low_battery_threshold, R.string.low_battery_threshold_summary)) {
+                if (search.matches(R.string.low_battery_threshold)) {
                     SliderPreference(
                         value = featureCfg.lowBatteryThreshold.toFloat(),
                         onValueChange = { featureRepo.setLowBatteryThreshold(it.roundToInt()) },
@@ -796,7 +808,10 @@ internal fun FeaturesScreen(
                         enabled = featureCfg.enabled,
                     )
                 }
-                if (search.matches(R.string.battery_top_readout, R.string.battery_top_readout_summary)) {
+                if (search.matches(R.string.battery_top_readout) ||
+                    (searching && !visual.showTopReadout &&
+                        search.any(R.string.battery_top_text_size, R.string.battery_top_text_weight,
+                            R.string.battery_text_follow_battery_color))) {
                     SwitchPreference(
                         title = stringResource(R.string.battery_top_readout),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled) },
@@ -870,7 +885,7 @@ internal fun FeaturesScreen(
                             onClick = { showBatteryWeightDialog = true },
                         )
                     }
-                    if (search.matches(R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary)) {
+                    if (search.matches(R.string.battery_text_follow_battery_color)) {
                         SwitchPreference(
                             title = stringResource(R.string.battery_text_follow_battery_color),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
@@ -882,7 +897,10 @@ internal fun FeaturesScreen(
                     }
                 }
 
-                if (search.matches(R.string.battery_charging_icon, R.string.battery_charging_icon_summary)) {
+                if (search.matches(R.string.battery_charging_icon) ||
+                    (searching && !visual.showTopChargingIcon &&
+                        search.any(R.string.battery_top_charging_icon_size,
+                            R.string.charging_icon_follow_battery_color))) {
                     SwitchPreference(
                         title = stringResource(R.string.battery_charging_icon),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
@@ -924,7 +942,7 @@ internal fun FeaturesScreen(
                             enabled = featureCfg.enabled,
                         )
                     }
-                    if (search.matches(R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary)) {
+                    if (search.matches(R.string.charging_icon_follow_battery_color)) {
                         SwitchPreference(
                             title = stringResource(R.string.charging_icon_follow_battery_color),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
@@ -938,9 +956,9 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.any(R.string.config_backup_title, R.string.config_backup_summary, R.string.config_restore_title, R.string.config_restore_summary, R.string.restore_feature_defaults, R.string.restore_feature_defaults_summary)) {
+        if (managementMatches) {
             Section(R.string.section_management) {
-                if (search.matches(R.string.config_backup_title, R.string.config_backup_summary)) {
+                if (search.matches(R.string.config_backup_title)) {
                     BasicComponent(
                         title = stringResource(R.string.config_backup_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_save) },
@@ -949,7 +967,7 @@ internal fun FeaturesScreen(
                         onClick = { createDocument.launch(backupFiles.fileName()) },
                     )
                 }
-                if (search.matches(R.string.config_restore_title, R.string.config_restore_summary)) {
+                if (search.matches(R.string.config_restore_title)) {
                     BasicComponent(
                         title = stringResource(R.string.config_restore_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_open) },
@@ -958,7 +976,7 @@ internal fun FeaturesScreen(
                         onClick = { openDocument.launch(arrayOf("application/json", "text/plain")) },
                     )
                 }
-                if (search.matches(R.string.restore_feature_defaults, R.string.restore_feature_defaults_summary)) {
+                if (search.matches(R.string.restore_feature_defaults)) {
                     BasicComponent(
                         title = stringResource(R.string.restore_feature_defaults),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
@@ -968,21 +986,10 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.active && search.query.isNotBlank() && !search.any(
-                R.string.keyguard_combined_status_title, R.string.keyguard_combined_status_summary, R.string.aod_combined_status_title, R.string.aod_combined_status_summary,
-                R.string.control_center_tint_transition, R.string.control_center_tint_transition_summary, R.string.battery_fill_follow_retract, R.string.battery_fill_follow_retract_summary,
-                R.string.content_layout_title, R.string.content_layout_summary, R.string.dual_signal_title, R.string.dual_signal_summary,
-                R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight,
-                R.string.outer_weight_summary, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset,
-                R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight,
-                R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color,
-                R.string.mobile_follow_battery_color_summary, R.string.center_follow_battery_color, R.string.center_follow_battery_color_summary, R.string.low_battery_threshold,
-                R.string.low_battery_threshold_summary, R.string.battery_top_readout, R.string.battery_top_readout_summary, R.string.battery_top_text_size,
-                R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_text_follow_battery_color_summary, R.string.battery_charging_icon,
-                R.string.battery_charging_icon_summary, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color, R.string.charging_icon_follow_battery_color_summary,
-                R.string.config_backup_title, R.string.config_backup_summary, R.string.config_restore_title, R.string.config_restore_summary,
-                R.string.restore_feature_defaults, R.string.restore_feature_defaults_summary,
-        )) {
+        if (search.active && search.query.isNotBlank() &&
+            !displayMatches && !layoutMatches && !networkMatches &&
+            !batteryMatches && !managementMatches
+        ) {
             item { SmallTitle(stringResource(R.string.feature_search_empty)) }
         }
     }
