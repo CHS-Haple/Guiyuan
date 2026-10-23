@@ -42,6 +42,7 @@ internal class PageSearch(private val context: Context) {
         Transliterator.getInstance("Han-Latin; Latin-ASCII")
     }
     private val cache = mutableMapOf<Int, SearchTerm>()
+    private val aliasCache = mutableMapOf<Int, List<SearchTerm>>()
 
     fun open() { active = true }
 
@@ -55,11 +56,12 @@ internal class PageSearch(private val context: Context) {
     fun matches(@StringRes title: Int, @StringRes summary: Int? = null): Boolean {
         if (!active || query.isBlank()) return true
         return matchesId(title) || (summary != null && matchesId(summary)) ||
-            searchAliases(title).any { makeTerm(it).matches(query) }
+            aliasCache.getOrPut(title) { searchAliases(title).map(::makeTerm) }
+                .any { it.matches(query) }
     }
 
     fun any(vararg ids: Int): Boolean =
-        !active || query.isBlank() || ids.any(::matchesId)
+        !active || query.isBlank() || ids.any { matches(it) }
 
     private fun matchesId(@StringRes id: Int): Boolean =
         cache.getOrPut(id) { makeTerm(context.getString(id)) }.matches(query)
@@ -72,7 +74,8 @@ internal class PageSearch(private val context: Context) {
         R.string.dual_mobile_vertical_offset -> listOf("双卡", "双排")
         R.string.mobile_type_size, R.string.mobile_type_vertical_offset -> listOf("网络制式", "5G")
         R.string.mobile_type_weight -> listOf("网络制式", "5G", "字体粗细", "数字粗细")
-        R.string.battery_top_text_weight -> listOf("字体粗细", "数字粗细")
+        R.string.battery_top_text_weight -> listOf("字体粗细", "数字粗细", "电量数字")
+        R.string.battery_top_text_size -> listOf("电量数字", "数字大小")
         R.string.battery_top_readout -> listOf("电量数字", "电池数字")
         R.string.wifi_size, R.string.wifi_weight -> listOf("wifi", "wlan", "无线网络")
         R.string.restart_scope -> listOf("systemui", "重启系统界面")
