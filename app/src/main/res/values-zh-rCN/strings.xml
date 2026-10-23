@@ -453,4 +453,6 @@
     <string name="config_restore_confirm">将使用备份覆盖当前功能配置，是否继续？</string>
     <string name="feature_search">搜索功能项</string>
     <string name="feature_search_empty">没有找到相关功能项</string>
+    <string name="home_preview_expand">展开预览</string>
+    <string name="home_preview_collapse">收起预览</string>
 </resources>

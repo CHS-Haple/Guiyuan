@@ -1341,6 +1341,7 @@ private fun HubPage(
                                             query = search.query,
                                             onQueryChange = search::update,
                                             onSearch = { keyboardController?.hide() },
+                                            modifier = Modifier.fillMaxWidth(),
                                             expanded = search.active,
                                             onExpandedChange = { if (!it) search.close() },
                                             label = stringResource(R.string.feature_search),
@@ -1351,7 +1352,7 @@ private fun HubPage(
                                     outsideEndAction = {
                                         Text(
                                             modifier = Modifier
-                                                .padding(start = 12.dp, end = 12.dp)
+                                                .padding(start = 4.dp, end = 16.dp)
                                                 .clickable(
                                                     interactionSource = null,
                                                     indication = null,
