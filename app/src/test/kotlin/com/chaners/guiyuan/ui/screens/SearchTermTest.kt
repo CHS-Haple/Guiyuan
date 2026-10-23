@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import com.chaners.guiyuan.R
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -59,5 +60,43 @@ class SearchTermTest {
         val color = SearchTerm("电池颜色", "dian chi yan se")
         assertTrue(color.matches("电池颜色"))
         assertFalse(color.matches("字重"))
+    }
+
+    @Test
+    fun cellularSynonymsCoverOnlyRelatedFunctions() {
+        val cellularEntries = listOf(
+            R.string.mobile_type_size,
+            R.string.mobile_type_weight,
+            R.string.mobile_type_vertical_offset,
+            R.string.mobile_follow_battery_color,
+        )
+        for (id in cellularEntries) {
+            val words = searchAliases(id)
+            for (word in listOf("5G", "流量", "蜂窝", "移动数据", "移动网络", "LTE")) {
+                assertTrue("Missing $word for $id", words.any { SearchTerm(it, it).matches(word) })
+            }
+        }
+
+        for (id in listOf(
+            R.string.battery_colors, R.string.battery_top_text_weight,
+            R.string.wifi_weight, R.string.battery_charging_icon,
+        )) {
+            val words = searchAliases(id)
+            for (word in listOf("流量", "蜂窝", "5G")) {
+                assertFalse("Unrelated $word in $id", words.any { SearchTerm(it, it).matches(word) })
+            }
+        }
+    }
+
+    @Test
+    fun batteryAndWeightSynonymsRetainMeaning() {
+        val weight = searchAliases(R.string.mobile_type_weight)
+        assertTrue(weight.any { it.contains("粗细") })
+        assertTrue(weight.any { it.contains("字重") })
+        val battery = SearchTerm("低电量阈值", "di dian liang yu zhi")
+        assertTrue(battery.matches("电量"))
+        assertFalse(searchAliases(R.string.battery_colors).any {
+            SearchTerm(it, it).matches("粗细")
+        })
     }
 }
