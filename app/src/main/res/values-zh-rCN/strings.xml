@@ -453,5 +453,6 @@
     <string name="config_restore_confirm">将使用备份覆盖当前功能配置，是否继续？</string>
     <string name="feature_search">搜索功能项</string>
     <string name="feature_search_close">退出搜索</string>
+    <string name="feature_search_clear">清除搜索内容</string>
     <string name="feature_search_empty">没有找到相关功能项</string>
 </resources>
