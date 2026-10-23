@@ -263,7 +263,7 @@ internal fun PreviewSandboxScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.home_preview_live_title),
-                                style = MiuixTheme.textStyles.body1,
+                                style = MiuixTheme.textStyles.subtitle,
                                 color = MiuixTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
