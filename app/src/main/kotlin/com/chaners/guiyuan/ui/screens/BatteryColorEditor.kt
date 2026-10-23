@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -137,11 +138,14 @@ internal fun BatteryCustomModeEditor(
             else -> stringResource(R.string.battery_color_follow_inversion)
         }
 
+    val scrollState = rememberScrollState()
+    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                .verticalScroll(scrollState)
                 .padding(bottom = 24.dp),
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {

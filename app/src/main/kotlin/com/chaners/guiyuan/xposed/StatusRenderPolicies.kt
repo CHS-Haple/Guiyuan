@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SC
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
 import kotlin.math.max
@@ -95,6 +96,27 @@ internal object MobileTypeSuffixPolicy {
         } else {
             -magnitude
         }
+}
+
+internal object MobileTypeSpacing {
+    data class Ink(val left: Float, val right: Float)
+    data class Fit(val suffixX: Float, val left: Float, val right: Float)
+
+    fun fit(main: Ink, suffix: Ink, clearance: Float): Fit? {
+        if (
+            !main.left.isFinite() || !main.right.isFinite() ||
+            !suffix.left.isFinite() || !suffix.right.isFinite() ||
+            !clearance.isFinite() ||
+            main.right <= main.left || suffix.right <= suffix.left
+        ) return null
+
+        // Keep the visible edge gap stable as native glyph advances change with weight.
+        val suffixX = main.right - suffix.left + clearance.coerceAtLeast(0f)
+        val left = min(main.left, suffixX + suffix.left)
+        val right = max(main.right, suffixX + suffix.right)
+        return Fit(suffixX, left, right)
+            .takeIf { it.suffixX.isFinite() && it.left.isFinite() && it.right.isFinite() }
+    }
 }
 
 internal fun nativeCenterTintEntryName(entryName: String): String {
@@ -373,11 +395,16 @@ internal object OuterGeometry {
         fun dualDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (dualDotSpan / (DOT_COUNT - 1))
 
-        fun dualDotY(index: Int, row: Int): Float {
-            val x = dualDotX(index)
+        fun dualDotY(
+            index: Int,
+            row: Int,
+            style: DualDotStyle = DualDotStyle.DEFAULT,
+            offsetY: Float = 0f,
+        ): Float {
+            val x = if (style == DualDotStyle.DUO) dualDotSpan / 6f else dualDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
-                offset - dualOpticalRise
+                offset - dualOpticalRise - offsetY
         }
     }
 

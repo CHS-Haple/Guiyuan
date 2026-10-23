@@ -11,11 +11,15 @@
     <string name="features_title">Features</string>
     <string name="section_display_transition">Display &amp; transitions</string>
     <string name="section_layout_size">Layout &amp; size</string>
-    <string name="section_network">Network icons</string>
+    <string name="section_network">Network &amp; signal</string>
     <string name="dual_signal_title">Dual-row signal</string>
-    <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nRemember settings separately for each layout</string>
+    <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nKeep the content layout; remember other visual settings separately</string>
+    <string name="dual_dot_style_title">Dual-row style</string>
+    <string name="dual_dot_style_default">Default</string>
+    <string name="dual_dot_style_duo">Duo</string>
+    <string name="dual_mobile_vertical_offset">Signal dots vertical offset</string>
     <string name="section_battery">Battery &amp; charging</string>
-    <string name="section_management">Management</string>
+    <string name="section_management">Configuration management</string>
     <string name="content_layout_title">Content layout</string>
     <string name="content_layout_summary">Each layout remembers its own settings</string>
     <string name="content_layout_network_center">Network centered</string>
@@ -88,6 +92,9 @@
     <string name="no_sim_size">No SIM size</string>
     <string name="mobile_type_size">Mobile type size</string>
     <string name="mobile_type_weight">Mobile type font weight</string>
+    <string name="font_weight_range">Current font adjustable range: %1$d - %2$d</string>
+    <string name="font_weight_pending">Waiting for SystemUI font verification; adjustment unavailable</string>
+    <string name="font_weight_unverified">No verifiable variable-weight axis for this font; adjustment unavailable</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">Restore defaults</string>
@@ -130,9 +137,10 @@
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
     <string name="floating_navigation_style_liquid">Liquid Glass</string>
-    <string name="floating_navigation_liquid_mode">Glass finish</string>
-    <string name="floating_navigation_liquid_mode_summary">Choose a blurred or clearer glass look</string>
+    <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
+    <string name="floating_navigation_liquid_mode_summary">Choose how much the glass blurs the background</string>
     <string name="floating_navigation_liquid_mode_blur">Blurred</string>
+    <string name="floating_navigation_liquid_mode_balanced">Balanced</string>
     <string name="floating_navigation_liquid_mode_clear">Clear</string>
     <string name="floating_navigation_content">Floating navigation content</string>
     <string name="floating_navigation_content_summary">Choose whether floating navigation items show icons only or icons with labels</string>
@@ -182,7 +190,7 @@
     <string name="static_scope_sysui_advice">Authorize this scope to use these core features.</string>
     <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
     <string name="static_scope_settings_advice">Authorize this scope only if you use that entry. Core features work without it.</string>
-    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by Xposed.</string>
+    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by the framework service.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
     <string name="static_scope_version_unavailable">Version unavailable</string>
@@ -251,7 +259,7 @@
     <string name="diagnostics_log_summary_total_time">Total %1$s</string>
     <string name="diagnostics_log_summary_source">Source: %1$s</string>
     <string name="diagnostics_log_summary_separator">, </string>
-    <string name="diagnostics_log_setting_combined">Combined</string>
+    <string name="diagnostics_log_setting_combined">Guiyuan status bar icon</string>
     <string name="diagnostics_log_setting_keyguard">Lock screen</string>
     <string name="diagnostics_log_setting_aod">AOD</string>
     <string name="diagnostics_log_switch_on">On</string>
@@ -262,7 +270,7 @@
     <string name="diagnostics_log_state_prepared">Prepared</string>
     <string name="diagnostics_log_state_released">Released</string>
     <string name="diagnostics_log_state_native">Native</string>
-    <string name="diagnostics_log_state_combined">Combined</string>
+    <string name="diagnostics_log_state_combined">Guiyuan status bar icon</string>
     <string name="diagnostics_log_state_keyguard">Lock screen</string>
     <string name="diagnostics_log_state_aod">AOD</string>
     <string name="diagnostics_log_state_home">Home</string>
@@ -332,6 +340,8 @@
     <string name="diagnostic_report_share_failed">Could not share the diagnostic report</string>
     <string name="back">Back</string>
 
+    <string name="low_battery_threshold">Low battery threshold</string>
+    <string name="low_battery_threshold_summary">Use low battery colors below this level</string>
     <string name="battery_colors">Battery colors</string>
     <string name="battery_color_scheme_summary">Scheme: %1$s</string>
     <string name="battery_color_scheme">Color scheme</string>

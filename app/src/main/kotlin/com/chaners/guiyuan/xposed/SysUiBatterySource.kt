@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.xposed
 
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.view.View
+import android.widget.TextView
+import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -39,7 +43,25 @@ internal object SysUiBatterySource {
     private var lastState: StatusStateStore.BatteryState? = null
 
     @Volatile
+
     private var lastChargingIconResId: Int? = null
+
+    internal data class VerifiedFont(
+        val host: View,
+        val face: Typeface,
+        val axis: FontWeightAxis,
+    )
+
+    @Volatile
+    private var verifiedFont: VerifiedFont? = null
+
+    fun currentNumberFont(): VerifiedFont? =
+        verifiedFont?.takeIf { it.host === SysUiHostRegistry.current() }
+
+    fun setVerifiedNumberFont(host: View, face: Typeface?, axis: FontWeightAxis?) {
+        verifiedFont =
+            if (face != null && axis != null) VerifiedFont(host, face, axis) else null
+    }
 
     fun install(
         module: XposedModule,
@@ -131,6 +153,10 @@ internal object SysUiBatterySource {
                 charging = charging,
                 semanticState = semanticState,
                 systemSemanticColor = systemSemanticColor,
+                lowSystemColor =
+                    if (miuiOptimizationEnabled) {
+                        runCatching { lowColorField.getInt(iconView) }.getOrNull()
+                    } else null,
                 chargingIconResId =
                     if (charging) {
                         readChargingIconId(iconView) ?: lastChargingIconResId
@@ -294,6 +320,39 @@ internal object SysUiBatterySource {
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
 
+    // Verified against the exact SystemUI fingerprint: both native number
+    // routes must use the known file-backed faces, not mipro family fallbacks.
+    fun readHostNumberFont(host: View): Pair<Typeface, String>? = runCatching {
+        val root = host as? ViewGroup ?: return@runCatching null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return@runCatching null
+        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
+            ?: return@runCatching null
+        val loader = battery.javaClass.classLoader ?: return@runCatching null
+        val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
+        val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
+            ?: return@runCatching null
+        val markFace = config.getField("sMiproTypefaceWght600").get(null) as? Typeface
+            ?: return@runCatching null
+        val percent = battery.javaClass.getField("mBatteryPercentView").get(battery) as? TextView
+            ?: return@runCatching null
+        val mark = battery.javaClass.getField("mBatteryPercentMarkView").get(battery) as? TextView
+            ?: return@runCatching null
+        if (percent.typeface !== percentFace || mark.typeface !== markFace) {
+            return@runCatching null
+        }
+        val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
+            ?: return@runCatching null
+        val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
+            ?: return@runCatching null
+        val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
+            .getField("FONT_WGHT").get(null) as? Typeface ?: return@runCatching null
+        if (hollowPaint.typeface !== hollowFace) return@runCatching null
+        val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
+            ?: return@runCatching null
+        hollowFace to path
+    }.getOrNull()
+
     fun readHostChargingIconId(host: Any): Int? {
         val root = host as? ViewGroup ?: return null
         val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
@@ -366,5 +425,6 @@ internal object SysUiBatterySource {
         hooksReady = false
         lastState = null
         lastChargingIconResId = null
+        verifiedFont = null
     }
 }

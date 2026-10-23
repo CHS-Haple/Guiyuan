@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,9 +63,8 @@ import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_MAX
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
+import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT
-import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX
-import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
@@ -79,9 +79,13 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MIN
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MAX
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
@@ -94,6 +98,8 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import com.chaners.guiyuan.ui.navigation.AppRoute
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -133,6 +139,38 @@ internal fun FeaturesScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
+    val fontAxis by
+        remember(context.applicationContext) {
+            NativeFontAxis.observe(context.applicationContext)
+        }.collectAsState(initial = NativeFontAxis.State.Pending)
+    val batteryAxis by
+        remember(context.applicationContext) {
+            NativeFontAxis.observeBattery(context.applicationContext)
+        }.collectAsState(initial = NativeFontAxis.State.Pending)
+    val verifiedWeightRange = (fontAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
+        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
+    }?.takeIf { it.last > it.first }
+    val mobileWeightRange =
+        (verifiedWeightRange?.first ?: 200).toFloat()..
+            (verifiedWeightRange?.last ?: 1000).toFloat()
+    val mobileWeightPoints = remember(verifiedWeightRange) {
+        verifiedWeightRange?.let(::weightSnapPoints)
+    }
+    val mobileWeightRangeText = verifiedWeightRange?.let { range ->
+        stringResource(R.string.font_weight_range, range.first, range.last)
+    }
+    val verifiedBatteryRange = (batteryAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
+        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
+    }?.takeIf { it.last > it.first }
+    val batteryWeightRange =
+        (verifiedBatteryRange?.first ?: BATTERY_TOP_TEXT_WEIGHT_MIN).toFloat()..
+            (verifiedBatteryRange?.last ?: BATTERY_TOP_TEXT_WEIGHT_MAX).toFloat()
+    val batteryWeightPoints = remember(verifiedBatteryRange) {
+        verifiedBatteryRange?.let(::weightSnapPoints)
+    }
+    val batteryWeightRangeText = verifiedBatteryRange?.let { range ->
+        stringResource(R.string.font_weight_range, range.first, range.last)
+    }
     val schemeRepo =
         remember(context.applicationContext) {
             BatterySchemeRepo(context.applicationContext)
@@ -146,6 +184,10 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
+    val dualDotStyles = listOf(
+        stringResource(R.string.dual_dot_style_default),
+        stringResource(R.string.dual_dot_style_duo),
+    )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
     }
@@ -185,6 +227,8 @@ internal fun FeaturesScreen(
             }
         }
     }
+    var showWeightDialog by rememberSaveable { mutableStateOf(false) }
+    var showBatteryWeightDialog by rememberSaveable { mutableStateOf(false) }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -234,6 +278,40 @@ internal fun FeaturesScreen(
                 repository = schemeRepo,
                 onDismiss = {
                     showBatteryColorSheet = false
+                },
+            )
+            IntegerInputDialog(
+                show = showWeightDialog && verifiedWeightRange != null,
+                title = stringResource(R.string.mobile_type_weight),
+                summary = mobileWeightRangeText.orEmpty(),
+                value = visual.mobileTypeWeight.coerceIn(
+                    mobileWeightRange.start.roundToInt(),
+                    mobileWeightRange.endInclusive.roundToInt(),
+                ),
+                range = verifiedWeightRange ?: 200..1000,
+                onDismiss = { showWeightDialog = false },
+                onConfirm = { value ->
+                    showWeightDialog = false
+                    verifiedWeightRange?.let { range ->
+                        visualRepo.setMobileTypeWeight(value.coerceIn(range))
+                    }
+                },
+            )
+            IntegerInputDialog(
+                show = showBatteryWeightDialog && verifiedBatteryRange != null,
+                title = stringResource(R.string.battery_top_text_weight),
+                summary = batteryWeightRangeText.orEmpty(),
+                value = visual.topTextWeight.coerceIn(
+                    batteryWeightRange.start.roundToInt(),
+                    batteryWeightRange.endInclusive.roundToInt(),
+                ),
+                range = verifiedBatteryRange ?: BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX,
+                onDismiss = { showBatteryWeightDialog = false },
+                onConfirm = { value ->
+                    showBatteryWeightDialog = false
+                    verifiedBatteryRange?.let { range ->
+                        visualRepo.setTopTextWeight(value.coerceIn(range))
+                    }
                 },
             )
             OverlayDialog(
@@ -291,6 +369,14 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCcTintTransition,
             )
+            SwitchPreference(
+                title = stringResource(R.string.battery_fill_follow_retract),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
+                summary = stringResource(R.string.battery_fill_follow_retract_summary),
+                checked = visual.fillFollowsRetract,
+                enabled = featureCfg.enabled,
+                onCheckedChange = visualRepo::setFillFollowsRetract,
+            )
         }
         Section(R.string.section_layout_size) {
             OverlayDropdownPreference(
@@ -320,6 +406,42 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setDualSignal,
             )
+            AnimatedPreferenceGroup(visible = visual.dualSignal) {
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.dual_dot_style_title),
+                    items = dualDotStyles,
+                    selectedIndex = visual.dualDotStyle.ordinal,
+                    showValue = true,
+                    enabled = featureCfg.enabled,
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers, featureCfg.enabled) },
+                    onSelectedIndexChange = { index ->
+                        DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
+                    },
+                )
+                SliderPreference(
+                    value = visual.dualMobileOffsetY,
+                    onValueChange = visualRepo::setDualMobileOffsetY,
+                    title = stringResource(R.string.dual_mobile_vertical_offset),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            R.drawable.ic_material_symbol_signal_cellular_alt,
+                            featureCfg.enabled,
+                            R.drawable.ic_material_symbol_height_w500,
+                        )
+                    },
+                    valueText = stringResource(
+                        R.string.battery_top_offset_value,
+                        visual.dualMobileOffsetY.roundToInt(),
+                    ),
+                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                    steps = 19,
+                    showKeyPoints = true,
+                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                    keyPoints = listOf(0f),
+                    magnetThreshold = 0.035f,
+                    enabled = featureCfg.enabled,
+                )
+            }
             SliderPreference(
                 value = visual.combinedScale,
                 onValueChange = visualRepo::setCombinedScale,
@@ -532,26 +654,34 @@ internal fun FeaturesScreen(
                 enabled = featureCfg.enabled,
             )
             SliderPreference(
-                value = visual.mobileTypeWeight.toFloat(),
+                value = visual.mobileTypeWeight.toFloat().coerceIn(
+                    mobileWeightRange.start, mobileWeightRange.endInclusive,
+                ),
                 onValueChange = { value ->
                     visualRepo.setMobileTypeWeight(value.roundToInt())
                 },
                 title = stringResource(R.string.mobile_type_weight),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                valueText =
-                    stringResource(
-                        R.string.integer_value,
-                        visual.mobileTypeWeight,
+                summary = mobileWeightRangeText
+                    ?: stringResource(
+                        if (fontAxis == NativeFontAxis.State.Pending) R.string.font_weight_pending
+                        else R.string.font_weight_unverified,
                     ),
-                valueRange =
-                    MOBILE_TYPE_WEIGHT_MIN.toFloat()..
-                        MOBILE_TYPE_WEIGHT_MAX.toFloat(),
-                steps = 15,
-                showKeyPoints = true,
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                valueText = stringResource(
+                    R.string.integer_value,
+                    visual.mobileTypeWeight.coerceIn(
+                        mobileWeightRange.start.roundToInt(),
+                        mobileWeightRange.endInclusive.roundToInt(),
+                    ),
+                ),
+                valueRange = mobileWeightRange,
+                steps = 0,
+                keyPoints = mobileWeightPoints,
+                magnetThreshold = verifiedWeightRange?.let(::weightSnapThreshold) ?: 0f,
                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(MOBILE_TYPE_WEIGHT_DEFAULT.toFloat()),
-                magnetThreshold = 0.035f,
-                enabled = featureCfg.enabled,
+                holdDownState = showWeightDialog,
+                enabled = featureCfg.enabled && verifiedWeightRange != null,
+                onClick = { showWeightDialog = true },
             )
             SwitchPreference(
                 title = stringResource(R.string.mobile_follow_battery_color),
@@ -579,13 +709,20 @@ internal fun FeaturesScreen(
                     showBatteryColorSheet = true
                 },
             )
-            SwitchPreference(
-                title = stringResource(R.string.battery_fill_follow_retract),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
-                summary = stringResource(R.string.battery_fill_follow_retract_summary),
-                checked = visual.fillFollowsRetract,
+            SliderPreference(
+                value = featureCfg.lowBatteryThreshold.toFloat(),
+                onValueChange = { featureRepo.setLowBatteryThreshold(it.roundToInt()) },
+                title = stringResource(R.string.low_battery_threshold),
+                summary = stringResource(R.string.low_battery_threshold_summary),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_alert, featureCfg.enabled) },
+                valueText = stringResource(R.string.percent_value, featureCfg.lowBatteryThreshold),
+                valueRange = LOW_BATTERY_THRESHOLD_MIN.toFloat()..LOW_BATTERY_THRESHOLD_MAX.toFloat(),
+                steps = LOW_BATTERY_THRESHOLD_MAX - LOW_BATTERY_THRESHOLD_MIN - 1,
+                showKeyPoints = true,
+                keyPoints = listOf(LOW_BATTERY_THRESHOLD_DEFAULT.toFloat()),
+                magnetThreshold = 0f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 enabled = featureCfg.enabled,
-                onCheckedChange = visualRepo::setFillFollowsRetract,
             )
             SwitchPreference(
                 title = stringResource(R.string.battery_top_readout),
@@ -626,26 +763,34 @@ internal fun FeaturesScreen(
                     enabled = featureCfg.enabled,
                 )
                 SliderPreference(
-                    value = visual.topTextWeight.toFloat(),
+                    value = visual.topTextWeight.toFloat().coerceIn(
+                        batteryWeightRange.start, batteryWeightRange.endInclusive,
+                    ),
                     onValueChange = { value ->
                         visualRepo.setTopTextWeight(value.roundToInt())
                     },
                     title = stringResource(R.string.battery_top_text_weight),
-                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                    valueText =
-                        stringResource(
-                            R.string.integer_value,
-                            visual.topTextWeight,
+                    summary = batteryWeightRangeText
+                        ?: stringResource(
+                            if (batteryAxis == NativeFontAxis.State.Pending) R.string.font_weight_pending
+                            else R.string.font_weight_unverified,
                         ),
-                    valueRange =
-                        BATTERY_TOP_TEXT_WEIGHT_MIN.toFloat()..
-                            BATTERY_TOP_TEXT_WEIGHT_MAX.toFloat(),
-                    steps = 15,
-                    showKeyPoints = true,
+                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                    valueText = stringResource(
+                        R.string.integer_value,
+                        visual.topTextWeight.coerceIn(
+                            batteryWeightRange.start.roundToInt(),
+                            batteryWeightRange.endInclusive.roundToInt(),
+                        ),
+                    ),
+                    valueRange = batteryWeightRange,
+                    steps = 0,
+                    keyPoints = batteryWeightPoints,
+                    magnetThreshold = verifiedBatteryRange?.let(::weightSnapThreshold) ?: 0f,
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(BATTERY_TOP_TEXT_WEIGHT_DEFAULT.toFloat()),
-                    magnetThreshold = 0.035f,
-                    enabled = featureCfg.enabled,
+                    holdDownState = showBatteryWeightDialog,
+                    enabled = featureCfg.enabled && verifiedBatteryRange != null,
+                    onClick = { showBatteryWeightDialog = true },
                 )
                 SwitchPreference(
                     title = stringResource(R.string.battery_text_follow_battery_color),
@@ -1002,6 +1147,8 @@ private fun HubPage(
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
@@ -1026,10 +1173,11 @@ private fun HubPage(
                     .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
+                state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .scrollEndHaptic()
+                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = pageContentPadding(
                     innerPadding = paddingValues,
@@ -1043,3 +1191,13 @@ private fun HubPage(
         overlay()
     }
 }
+
+internal fun weightSnapPoints(range: IntRange): List<Float> {
+    if (range.isEmpty()) return emptyList()
+    val first = ((range.first + 49) / 50) * 50
+    return if (first > range.last) emptyList() else (first..range.last step 50).map(Int::toFloat)
+}
+
+// MIUIX's magnet threshold is normalized; shrink it when 50-point anchors get dense.
+internal fun weightSnapThreshold(range: IntRange): Float =
+    minOf(0.02f, 12.5f / (range.last - range.first).coerceAtLeast(1))

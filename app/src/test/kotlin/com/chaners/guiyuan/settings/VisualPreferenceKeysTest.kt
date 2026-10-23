@@ -10,6 +10,7 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey(null)) // SharedPreferences.clear()
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
+        assertTrue(isVisualPreferenceKey(DUAL_PROFILES_INITIALIZED_KEY))
         assertTrue(isVisualPreferenceKey(visualModeKey(true, CONTENT_LAYOUT_KEY)))
         assertTrue(isVisualPreferenceKey(visualModeKey(true, BATTERY_COLOR_PRESET_KEY)))
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, true)))

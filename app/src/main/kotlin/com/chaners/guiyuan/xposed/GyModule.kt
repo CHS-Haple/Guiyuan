@@ -1,6 +1,17 @@
 package com.chaners.guiyuan.xposed
 
+import android.app.BroadcastOptions
+import android.content.Intent
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.os.Build
+import android.view.View
+import com.chaners.guiyuan.settings.FontAxes
+import com.chaners.guiyuan.settings.FontWeightAxis
+import com.chaners.guiyuan.settings.NativeFontAxis
+import java.io.File
+import java.io.FileInputStream
+import java.nio.channels.FileChannel
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -10,6 +21,7 @@ import android.view.ViewGroup
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -99,6 +111,10 @@ class GyModule : XposedModule() {
 
     private var inSettings = false
     private var settingsHookInstalled = false
+    private var reportedFont: Typeface? = null
+    private var reportedBatteryFont: Typeface? = null
+    private var reportedFontHost: View? = null
+    private var fontAxisReported = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         inSettings = param.processName == SETTINGS_PACKAGE
@@ -107,6 +123,7 @@ class GyModule : XposedModule() {
         bindRuntimeDiagnostics()
         bindFeatureCfg()
         bindVisualCfg()
+        bindSandbox()
         logDiagnostic(
             level = Log.INFO,
             event = "module.loaded",
@@ -405,6 +422,7 @@ class GyModule : XposedModule() {
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
+            bindSandbox()
             logDiagnostic(
                 level = Log.INFO,
                 event = "module.reloaded",
@@ -1744,6 +1762,7 @@ class GyModule : XposedModule() {
                 state = StatusStateStore.snapshot(),
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
+        reportFontAxis(presentation.networkType)
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
@@ -1808,6 +1827,68 @@ class GyModule : XposedModule() {
                 presentationTrace,
             )
         }
+    }
+
+    private fun reportFontAxis(
+        networkType: NativePresentationResolver.NetworkType?,
+        force: Boolean = false,
+    ) {
+        if (Build.VERSION.SDK_INT < 34) return
+        val host = SysUiHostRegistry.current() as? View ?: return
+        val face = networkType?.typeface
+        val batteryFont = SysUiBatterySource.readHostNumberFont(host)
+        val batteryFace = batteryFont?.first
+        if (!force && fontAxisReported && reportedFontHost === host &&
+            reportedFont === face && reportedBatteryFont === batteryFace
+        ) return
+        val mobileFont = networkType?.let { type ->
+            val path = type.fontPath
+            if (face != null && path != null) face to path else null
+        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
+
+        fun weightAxis(path: String?): FontWeightAxis? =
+            path?.let {
+                runCatching {
+                    val file = File(it)
+                    if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) null
+                    else FileInputStream(file).channel.use { channel ->
+                        FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+                    }
+                }.getOrNull()
+                    ?.let(NativeFontAxis::checked)
+                    ?.takeIf { axis ->
+                        kotlin.math.ceil(axis.min.toDouble()).toInt() <
+                            kotlin.math.floor(axis.max.toDouble()).toInt()
+                    }
+            }
+        val mobileAxis = weightAxis(mobileFont?.second)
+        val batteryAxis = if (batteryFont?.second == mobileFont?.second) {
+            mobileAxis
+        } else {
+            weightAxis(batteryFont?.second)
+        }
+        SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
+        val intent = Intent(NativeFontAxis.ACTION)
+            .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
+        mobileAxis?.let {
+            intent.putExtra(NativeFontAxis.MIN, it.min)
+            intent.putExtra(NativeFontAxis.DEFAULT, it.default)
+            intent.putExtra(NativeFontAxis.MAX, it.max)
+        }
+        batteryAxis?.let {
+            intent.putExtra(NativeFontAxis.BAT_MIN, it.min)
+            intent.putExtra(NativeFontAxis.BAT_DEFAULT, it.default)
+            intent.putExtra(NativeFontAxis.BAT_MAX, it.max)
+        }
+        runCatching {
+            val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
+            host.context.sendBroadcast(intent, null, options)
+        }.onSuccess {
+            reportedFont = face
+            reportedBatteryFont = batteryFace
+            reportedFontHost = host
+            fontAxisReported = true
+        }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
     }
 
     private fun onCombinedStateChanged(
@@ -3682,6 +3763,7 @@ class GyModule : XposedModule() {
         release { unbindRuntimeDiagnostics() }
         release { FeaturePrefsOwner.unbind() }
         release { VisualPrefsOwner.unbind() }
+        release { SandboxHost.unbind() }
 
         if (errors.isNotEmpty()) {
             val failure =
@@ -4159,6 +4241,7 @@ class GyModule : XposedModule() {
             homeAodFallback = HomeAodFallback.NONE
         }
         HomeRenderSession.onFeatureCfgChanged(cfg)
+        if (cfg.enabled) HomeRenderSession.onPresentationStateChanged()
         KeyguardRenderSession.onFeatureCfgChanged(cfg)
         CcRenderSession.onFeatureCfgChanged(cfg)
 
@@ -4218,10 +4301,23 @@ class GyModule : XposedModule() {
         HomeRenderSession.setNativeHandoffActive(true)
     }
 
+    private fun bindSandbox() {
+        runCatching {
+            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
+                // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
+                HomeRenderSession.onPresentationStateChanged()
+            }
+        }.onFailure {
+            SandboxHost.unbind()
+            log(Log.WARN, TAG, "Steady sandbox unavailable", it)
+        }
+    }
+
     private fun bindVisualCfg() {
         runCatching {
             VisualPrefsOwner.bind(
                 source = getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME),
+                onAxisRequest = ::onFontAxisRequest,
                 onChanged = ::onVisualCfgChanged,
             )
         }.onSuccess { settings ->
@@ -4250,6 +4346,15 @@ class GyModule : XposedModule() {
                 "reason" to (error.message ?: error.javaClass.simpleName),
             )
         }
+    }
+
+    // An app data reset loses the received axis report, not SystemUI's font source.
+    private fun onFontAxisRequest() {
+        if (Looper.myLooper() !== Looper.getMainLooper()) {
+            Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
+            return
+        }
+        reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
     }
 
     private fun onVisualCfgChanged(

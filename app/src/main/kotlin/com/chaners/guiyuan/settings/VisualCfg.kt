@@ -18,6 +18,17 @@ internal enum class ContentLayout(
 }
 
 @Serializable
+internal enum class DualDotStyle(val persistedValue: String) {
+    DEFAULT("default"),
+    DUO("duo");
+
+    companion object {
+        fun fromPersisted(value: String?): DualDotStyle =
+            entries.firstOrNull { it.persistedValue == value } ?: DEFAULT
+    }
+}
+
+@Serializable
 internal enum class BatteryColorPreset(
     val persistedValue: String,
 ) {
@@ -181,9 +192,10 @@ internal object IosStyleBatteryPalette {
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
+    val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
-    val showTopReadout: Boolean = false,
+    val showTopReadout: Boolean = topReadoutDefault(layout),
     val topTextFollowsBatteryColor: Boolean = true,
     val showTopChargingIcon: Boolean = true,
     val topChargingIconFollowsBatteryColor: Boolean = true,
@@ -194,6 +206,8 @@ internal data class VisualCfg(
     val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
     val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val dualDefaultOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val dualDuoOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -211,7 +225,10 @@ internal data class VisualCfg(
         BatteryColorModes(),
     val batteryColorOverrides: BatteryColorOverrides =
         BatteryColorOverrides(),
-)
+) {
+    val dualMobileOffsetY: Float
+        get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+}
 
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
@@ -234,6 +251,14 @@ internal fun VisualCfg.normalized(): VisualCfg =
             wifiOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
         mobileTypeOffsetY =
             mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+        dualDefaultOffsetY =
+            dualDefaultOffsetY.takeIf(Float::isFinite)
+                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                ?: NETWORK_TOP_OFFSET_DEFAULT,
+        dualDuoOffsetY =
+            dualDuoOffsetY.takeIf(Float::isFinite)
+                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                ?: NETWORK_TOP_OFFSET_DEFAULT,
         topChargingIconScale =
             topChargingIconScale.coerceIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,

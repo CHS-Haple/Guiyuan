@@ -1,10 +1,12 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import java.util.concurrent.atomic.AtomicReference
+import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.readVisualCfg
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 internal object VisualPrefsOwner {
     private data class State(
@@ -21,20 +23,37 @@ internal object VisualPrefsOwner {
     @Synchronized
     fun bind(
         source: SharedPreferences,
+        onAxisRequest: () -> Unit = {},
         onChanged: (VisualCfg) -> Unit,
     ): VisualCfg {
         unbindLocked()
 
         val token = Any()
         val initial = resolve(source)
+        val lastRequest = AtomicLong(0L)
+
+        // A remote request may already exist before this SystemUI binding is installed.
+        fun deliverAxisRequest(request: Long) {
+            if (request > 0L && lastRequest.getAndSet(request) != request &&
+                state.get().token === token
+            ) {
+                onAxisRequest()
+            }
+        }
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
+                if (key != NativeFontAxis.REQUEST_KEY && !isVisualPreferenceKey(key)) {
+                    return@OnSharedPreferenceChangeListener
+                }
                 val before = state.get()
                 if (before.source !== changed || before.token !== token) {
                     return@OnSharedPreferenceChangeListener
                 }
+                if (key == NativeFontAxis.REQUEST_KEY || key == null) {
+                    deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+                }
+                if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
                 val next = resolve(changed)
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
@@ -50,6 +69,7 @@ internal object VisualPrefsOwner {
         state.set(State(source, token, initial))
         this.listener = listener
         onChanged(initial)
+        deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
         return initial
     }
 

@@ -18,18 +18,17 @@ permissions:
   actions: read
   contents: read
   packages: read
-  statuses: write
 
 concurrency:
-  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MIUIX_GITHUB_ACTOR: ${{ github.repository_owner }}
+      MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
       MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
       GITHUB_ACTOR: ${{ github.actor }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -180,14 +179,16 @@ jobs:
               detect_surfaces "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA"
             fi
           elif [[ "$EVENT_NAME" == "pull_request" ]]; then
-            detect_surfaces "$PR_BASE_SHA" "$PR_HEAD_SHA"
+            # Only the PR's changes count; the base branch may have advanced independently.
+            PR_DIFF_BASE="$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+            detect_surfaces "$PR_DIFF_BASE" "$PR_HEAD_SHA"
             if [[ "$PR_DRAFT" == "true" ]]; then
               SCOPE=light
               REASON="draft pull request"
             elif [[ "$PR_BASE_REF" == "main" ]]; then
-              classify_paths "$PR_BASE_SHA" "$PR_HEAD_SHA" full
+              classify_paths "$PR_DIFF_BASE" "$PR_HEAD_SHA" full
             else
-              classify_paths "$PR_BASE_SHA" "$PR_HEAD_SHA" runtime
+              classify_paths "$PR_DIFF_BASE" "$PR_HEAD_SHA" runtime
             fi
           fi
 
@@ -232,6 +233,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           if [[ -n "$BASE_SHA" && "$BASE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              BASE_SHA="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            fi
             git diff --check "$BASE_SHA" "$HEAD_SHA"
           fi
 
@@ -241,7 +245,7 @@ jobs:
 
       - name: Set up Java
         if: steps.scope.outputs.run_android == 'true'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'

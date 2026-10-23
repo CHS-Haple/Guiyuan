@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.DualDotStyle
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -119,6 +120,47 @@ class OuterGeometryTest {
         assertEquals(62.258f, max.dualDotSpan, 0.0002f)
         assertEquals(7.53225f, OuterGeometry.resolve(1.5f).dualMobileDotRadius, 0.0001f)
         assertTrue(max.dualOpticalRise > default.dualOpticalRise)
+    }
+
+    @Test
+    fun duoKeepsDotSizesAndHorizontalSpacingWithFlatRows() {
+        for (scale in TEST_SCALES) {
+            val geometry = OuterGeometry.resolve(scale)
+            for (row in 0..1) {
+                val baseline = geometry.dualDotY(0, row, DualDotStyle.DUO)
+                for (index in 1..3) {
+                    assertEquals(baseline, geometry.dualDotY(index, row, DualDotStyle.DUO), 0.0001f)
+                    assertEquals(
+                        geometry.dualDotSpan / 3f,
+                        geometry.dualDotX(index) - geometry.dualDotX(index - 1),
+                        0.0001f,
+                    )
+                }
+                assertTrue(58f + baseline + geometry.dualMobileDotRadius <= 117.9001f)
+            }
+            assertEquals(
+                geometry.dualRowGap,
+                geometry.dualDotY(0, 1, DualDotStyle.DUO) -
+                    geometry.dualDotY(0, 0, DualDotStyle.DUO),
+                0.0002f,
+            )
+        }
+    }
+
+    @Test
+    fun bothDualStylesApplyTheSameSignedVerticalOffset() {
+        for (scale in TEST_SCALES) {
+            val geometry = OuterGeometry.resolve(scale)
+            for (style in DualDotStyle.entries) {
+                for (row in 0..1) {
+                    for (index in 0..3) {
+                        val original = geometry.dualDotY(index, row, style)
+                        assertEquals(original - 8f, geometry.dualDotY(index, row, style, 8f), 0.0001f)
+                        assertEquals(original + 10f, geometry.dualDotY(index, row, style, -10f), 0.0001f)
+                    }
+                }
+            }
+        }
     }
 
     @Test

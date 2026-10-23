@@ -36,6 +36,12 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    // The shade can pause but does not stop the Activity.
+    override fun onStop() {
+        (application as GyApplication).stopSandbox()
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         (application as GyApplication).refreshXposedStatus()
@@ -65,6 +71,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appearance by repo.settings.collectAsState(initial = Appearance())
+            val sandboxActive by (application as GyApplication).sandboxActive.collectAsState()
             val scope = rememberCoroutineScope()
             val sysDark = isSystemInDarkTheme()
             val dark =
@@ -117,6 +124,13 @@ class MainActivity : ComponentActivity() {
                     appearance = appearance,
                     dark = dark,
                     onPreviewThemeChange = { previewBarDark = it },
+                    sandboxActive = sandboxActive,
+                    onSandboxToggle = { enabled, state ->
+                        val app = application as GyApplication
+                        if (enabled) app.startSandbox(state) else app.stopSandbox()
+                    },
+                    onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
+                    onSandboxStop = { (application as GyApplication).stopSandbox() },
                     lang = lang,
                     iconHidden = iconHidden,
                     onHotReload = {

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
+import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
@@ -59,6 +61,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
+    parasiteActive: Boolean,
+    onParasiteChange: (Boolean) -> Unit,
     onSimPresentChange: (Boolean) -> Unit,
     onAirplaneModeChange: (Boolean) -> Unit,
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
@@ -91,8 +95,12 @@ internal fun PreviewSandboxScreen(
         visualRepo.settings.collectAsState(
             initial = visualRepo.current(),
         )
-    val renderModel = remember(state, resourceResolver, LocalConfiguration.current) {
-        state.toRenderModel(resourceResolver)
+    val featureRepo = remember(context.applicationContext) {
+        FeatureRepo(context.applicationContext)
+    }
+    val feature by featureRepo.settings.collectAsState(initial = featureRepo.current())
+    val renderModel = remember(state, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
+        state.toRenderModel(resourceResolver, lowBatteryThreshold = feature.lowBatteryThreshold)
     }
 
     val networkModeOptions =
@@ -156,6 +164,8 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
+    val listState = rememberLazyListState()
+    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
@@ -209,10 +219,11 @@ internal fun PreviewSandboxScreen(
                     .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
+                state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .scrollEndHaptic()
+                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
@@ -262,13 +273,29 @@ internal fun PreviewSandboxScreen(
                 }
 
                 item {
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
+                        SwitchPreference(
+                            checked = parasiteActive,
+                            onCheckedChange = onParasiteChange,
+                            title = stringResource(R.string.home_preview_parasite_title),
+                            summary = stringResource(R.string.home_preview_parasite_summary),
+                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
+                        )
+                    }
+                }
+
+                item {
                     SmallTitle(stringResource(R.string.home_preview_section_network))
                     Card(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
-                        insideMargin = PaddingValues(vertical = 8.dp),
                     ) {
                         TabRowWithContour(
                             tabs = networkModeOptions,
@@ -281,7 +308,8 @@ internal fun PreviewSandboxScreen(
                                     .widthIn(max = 300.dp)
                                     .fillMaxWidth()
                                     .align(Alignment.CenterHorizontally)
-                                    .padding(horizontal = 6.dp),
+                                    .padding(horizontal = 6.dp)
+                                    .padding(top = 8.dp, bottom = 6.dp),
                         )
 
                         SwitchPreference(
@@ -465,7 +493,7 @@ internal fun PreviewSandboxScreen(
                             title = stringResource(R.string.home_preview_airplane_title),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
-                            insideMargin = SandboxPreferenceInsideMargin,
+                            insideMargin = PaddingValues(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 18.dp),
                         )
                     }
                 }

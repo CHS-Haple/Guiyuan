@@ -14,6 +14,7 @@
     <string name="home_runtime_restarting_summary">Reloading Guiyuan through SystemUI</string>
     <string name="home_runtime_disabled">Disabled</string>
     <string name="home_runtime_disabled_summary">Native system status icons are in use</string>
+    <string name="home_runtime_enable_title">Enable module</string>
     <string name="home_runtime_framework_unavailable">Not connected</string>
     <string name="home_runtime_framework_unavailable_summary">Cannot connect to framework service\nCheck framework and module setup</string>
     <string name="home_runtime_unknown">Status unavailable</string>
@@ -27,13 +28,14 @@
     <string name="home_scope_request_failed">Scope request unavailable</string>
     <string name="home_scope_request_failed_summary">Enable the SystemUI scope manually in your module manager.</string>
 
-    <string name="section_home_preview_sandbox">Status simulation</string>
     <string name="home_preview_sandbox_title">Preview sandbox</string>
     <string name="home_preview_switch_light">Switch to light mode</string>
     <string name="home_preview_switch_dark">Switch to dark mode</string>
-    <string name="home_preview_sandbox_summary">Changes are for preview only and do not affect the system.</string>
+    <string name="home_preview_sandbox_summary">Simulated states do not modify the real network or battery</string>
+    <string name="home_preview_parasite_title">Parasite mode</string>
+    <string name="home_preview_parasite_summary">Temporarily shows simulated status in the system status bar. Turning it off or leaving the sandbox page restores the display</string>
     <string name="home_preview_open_title">Preview sandbox</string>
-    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system.</string>
+    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system</string>
     <string name="home_preview_live_title">Live preview</string>
     <string name="home_preview_section_preview">Preview</string>
     <string name="home_preview_section_network">Network</string>
@@ -49,7 +51,7 @@
     <string name="home_preview_sim2_only">SIM 2</string>
     <string name="home_preview_sim_none">None</string>
     <string name="home_preview_airplane_title">Airplane mode</string>
-    <string name="home_preview_airplane_summary">Pauses mobile simulation\nWi‑Fi remains available</string>
+    <string name="home_preview_airplane_summary">Pauses mobile simulation, Wi‑Fi remains available</string>
     <string name="home_preview_mobile_network_title">Mobile network</string>
     <string name="home_preview_data_sim_title">Data SIM</string>
     <string name="home_preview_data_sim1">SIM 1</string>
@@ -92,13 +94,13 @@
     <string name="home_preview_battery_mode_performance_compact">Perf.</string>
     <string name="home_preview_battery_mode_super_power_save_compact">Ultra saver</string>
     <string name="home_preview_charging_state_title">Charging state</string>
-    <string name="home_preview_charging_state_summary">Charging is independent from battery mode.</string>
+    <string name="home_preview_charging_state_summary">Charging is independent from battery mode</string>
     <string name="home_preview_charging_none">Not charging</string>
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
     <string name="home_preview_dual_mobile_title">Dual-row signal preview</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer\nNetwork type follows data SIM</string>
+    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer, network type follows data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
 </resources>

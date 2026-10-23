@@ -14,6 +14,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
+import com.chaners.guiyuan.settings.DualDotStyle
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.battery.BatteryArcSegments
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
@@ -24,7 +25,9 @@ import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.WifiOpticalReference
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -39,7 +42,11 @@ internal class StatusPainter(
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mobileTextSource: Typeface? = null
-    private val mobileTextSamples = HashMap<Int, Paint>(128)
+    private val mobileTextSamples =
+        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
+                size > 128
+        }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val nativeCenterAssets =
@@ -58,11 +65,32 @@ internal class StatusPainter(
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val batteryTextSamples = HashMap<Int, Paint>(64)
+    private val batteryTextSamples =
+        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
+                size > 128
+        }
     private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
     private val mobileTypeSuffixBounds = Rect()
+    private data class MobileInkKey(
+        val face: Typeface?,
+        val variation: String?,
+        val text: String,
+        val size: Float,
+        val scaleX: Float,
+        val skewX: Float,
+        val spacing: Float,
+        val fakeBold: Boolean,
+    )
+
+    private val mobileInkSamples =
+        object : LinkedHashMap<MobileInkKey, MobileTypeSpacing.Ink>(48, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<MobileInkKey, MobileTypeSpacing.Ink>?,
+            ): Boolean = size > 48
+        }
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null
@@ -198,6 +226,8 @@ internal class StatusPainter(
             tint = colors.mobileTint,
             opacity = opacity,
             geometry = outerGeometry,
+            style = visual.dualDotStyle,
+            mobileOffsetY = visual.dualMobileOffsetY,
         )
         canvas.restoreToCount(save)
     }
@@ -398,6 +428,8 @@ internal class StatusPainter(
                         targetBars = mobileTargetBars,
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
+                        style = visual.dualDotStyle,
+                        mobileOffsetY = visual.dualMobileOffsetY,
                     )
                 } else {
                     drawMobile(
@@ -406,6 +438,8 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
+                        style = visual.dualDotStyle,
+                        mobileOffsetY = visual.dualMobileOffsetY,
                     )
                 }
             }
@@ -705,7 +739,7 @@ internal class StatusPainter(
 
         val mobileBounds =
             if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
-                dualMobileTransitionBounds(outerGeometry)
+                dualMobileTransitionBounds(outerGeometry, visual.dualDotStyle, visual.dualMobileOffsetY)
             } else {
                 resolveMobileSignalTransitionLayout(
                     geometry = outerGeometry,
@@ -739,10 +773,10 @@ internal class StatusPainter(
         visual: VisualCfg,
     ): List<TransitionComponentSpec> {
         val geometry = resolveOuterGeometry(visual.outerWeightScale)
-        val group = dualMobileTransitionBounds(geometry)
+        val group = dualMobileTransitionBounds(geometry, visual.dualDotStyle, visual.dualMobileOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
-            val local = dualMobileRowBounds(geometry, row)
+            val local = dualMobileRowBounds(geometry, row, visual.dualDotStyle, visual.dualMobileOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
@@ -2118,18 +2152,15 @@ internal class StatusPainter(
         source: Typeface,
         weight: Int,
         samples: MutableMap<Int, Paint>,
+        step: Int,
     ): Paint {
-        val sample = ((weight.coerceIn(1, 1000) + 5) / 10 * 10).coerceIn(1, 1000)
+        val valid = weight.coerceIn(1, 1000)
+        val sample = ((valid + step / 2) / step * step).coerceIn(1, 1000)
         return samples.getOrPut(sample) {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
-                val supported = runCatching {
-                    setFontVariationSettings("'wght' $sample")
-                }.getOrDefault(false)
-                if (!supported) {
-                    // Android's static font-weight fallback is limited to 1..1000.
-                    typeface = Typeface.create(source, sample.coerceAtMost(1000), source.isItalic)
-                }
+                // A rejected variation keeps the captured source face unchanged.
+                runCatching { setFontVariationSettings("'wght' $sample") }
             }
         }
     }
@@ -2140,13 +2171,18 @@ internal class StatusPainter(
         progress: Float,
         textSize: Float,
     ) {
-        val source = Typeface.DEFAULT
+        val nativeFont = if (preview) null else SysUiBatterySource.currentNumberFont()
+        val source = nativeFont?.face ?: Typeface.DEFAULT
         if (batteryTextSource != source) {
             batteryTextSource = source
             batteryTextSamples.clear()
         }
-        // Transition callers resolve the weight once; this function only draws that sample.
-        batteryTextPaint.set(weightedPaint(source, weight, batteryTextSamples))
+        val sampledWeight = nativeFont?.axis?.let { axis ->
+            weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
+        } ?: weight.coerceIn(200, 1000)
+        batteryTextPaint.set(
+            weightedPaint(source, sampledWeight, batteryTextSamples, step = if (nativeFont == null) 10 else 1),
+        )
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         batteryTextPaint.isFakeBoldText =
@@ -2980,6 +3016,8 @@ internal class StatusPainter(
             split.first.length,
             mobileTypeMainBounds,
         )
+        val mainInk =
+            if (split.first == "5G" && split.second == "A") mobileInk("5G") else null
         val mainBaselineY =
             MOBILE_TYPE_CENTER_Y -
                 (mobileTypeMainBounds.top + mobileTypeMainBounds.bottom) / 2f
@@ -3014,17 +3052,48 @@ internal class StatusPainter(
             split.second.length,
             mobileTypeSuffixBounds,
         )
+        val suffixInk = mainInk?.let { mobileInk("A") }
+        val fitted =
+            if (mainInk != null && suffixInk != null) {
+                MobileTypeSpacing.fit(
+                    main = mainInk,
+                    suffix = suffixInk,
+                    clearance =
+                        suffixTextSize * MOBILE_TYPE_SUFFIX_EM_CLEARANCE +
+                            inkPad * (1f + suffixTextSize / mainTextSize),
+                )
+            } else {
+                null
+            }
+
+        val mainLeft =
+            if (fitted != null && mainInk != null) mainInk.left else mobileTypeMainBounds.left.toFloat()
+        val mainRight =
+            if (fitted != null && mainInk != null) mainInk.right else mobileTypeMainBounds.right.toFloat()
+        val suffixLeft =
+            if (fitted != null && suffixInk != null) suffixInk.left else mobileTypeSuffixBounds.left.toFloat()
+        val suffixRight =
+            if (fitted != null && suffixInk != null) suffixInk.right else mobileTypeSuffixBounds.right.toFloat()
         val totalInkWidth =
             mobileTypeMainBounds.width() +
                 MOBILE_TYPE_SUFFIX_GAP +
                 mobileTypeSuffixBounds.width()
         val groupLeft = MOBILE_TYPE_CENTER_X - totalInkWidth / 2f
-        val mainX = groupLeft - mobileTypeMainBounds.left
+        val mainX =
+            if (fitted != null) {
+                MOBILE_TYPE_CENTER_X - (fitted.left + fitted.right) / 2f
+            } else {
+                groupLeft - mobileTypeMainBounds.left
+            }
         val suffixX =
-            groupLeft +
-                mobileTypeMainBounds.width() +
-                MOBILE_TYPE_SUFFIX_GAP -
-                mobileTypeSuffixBounds.left
+            if (fitted != null) {
+                mainX + fitted.suffixX
+            } else {
+                groupLeft +
+                    mobileTypeMainBounds.width() +
+                    MOBILE_TYPE_SUFFIX_GAP -
+                    mobileTypeSuffixBounds.left
+            }
         val suffixOffset =
             MobileTypeScalePolicy.localValue(
                 baseValue = geometry.mobileTypeSuffixRise,
@@ -3057,8 +3126,8 @@ internal class StatusPainter(
                 TransitionBounds(
                     left =
                         min(
-                            mainX + mobileTypeMainBounds.left - inkPad,
-                            suffixX + mobileTypeSuffixBounds.left - inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainLeft - inkPad,
+                            suffixX + suffixLeft - inkPad * suffixTextSize / mainTextSize,
                         ),
                     top =
                         min(
@@ -3067,8 +3136,8 @@ internal class StatusPainter(
                         ),
                     right =
                         max(
-                            mainX + mobileTypeMainBounds.right + inkPad,
-                            suffixX + mobileTypeSuffixBounds.right + inkPad * suffixTextSize / mainTextSize,
+                            mainX + mainRight + inkPad,
+                            suffixX + suffixRight + inkPad * suffixTextSize / mainTextSize,
                         ),
                     bottom =
                         max(
@@ -3077,6 +3146,34 @@ internal class StatusPainter(
                         ),
                 ),
         )
+    }
+
+    private fun mobileInk(text: String): MobileTypeSpacing.Ink? {
+        val key =
+            MobileInkKey(
+                face = mobileTypePaint.typeface,
+                variation = mobileTypePaint.fontVariationSettings,
+                text = text,
+                size = mobileTypePaint.textSize,
+                scaleX = mobileTypePaint.textScaleX,
+                skewX = mobileTypePaint.textSkewX,
+                spacing = mobileTypePaint.letterSpacing,
+                fakeBold = mobileTypePaint.isFakeBoldText,
+            )
+        mobileInkSamples[key]?.let { return it }
+        val path = Path()
+        mobileTypePaint.getTextPath(text, 0, text.length, 0f, 0f, path)
+        if (path.isEmpty) return null
+        val bounds = RectF()
+        path.computeBounds(bounds, true)
+        val ink =
+            MobileTypeSpacing.Ink(
+                left = bounds.left,
+                right = bounds.right,
+            )
+        if (!ink.left.isFinite() || !ink.right.isFinite() || ink.right <= ink.left) return null
+        mobileInkSamples[key] = ink
+        return ink
     }
 
     private fun configureMobileTypeTextStyle(
@@ -3090,8 +3187,9 @@ internal class StatusPainter(
         if (mobileTextSource != source) {
             mobileTextSource = source
             mobileTextSamples.clear()
+            mobileInkSamples.clear()
         }
-        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples))
+        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1))
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         mobileTypePaint.isFakeBoldText =
@@ -3115,10 +3213,12 @@ internal class StatusPainter(
     private fun dualMobileRowBounds(
         geometry: OuterGeometry.Resolved,
         row: Int,
+        style: DualDotStyle,
+        mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
         val ys = (0 until MOBILE_DOT_COUNT).map { index ->
-            MOBILE_CENTER_Y + geometry.dualDotY(index, row)
+            MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY)
         }
         return TransitionBounds(
             MOBILE_CENTER_X + geometry.dualDotX(0) - radius,
@@ -3130,6 +3230,8 @@ internal class StatusPainter(
 
     private fun dualMobileTransitionBounds(
         geometry: OuterGeometry.Resolved,
+        style: DualDotStyle,
+        mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
         var left = Float.POSITIVE_INFINITY
@@ -3139,7 +3241,7 @@ internal class StatusPainter(
         for (row in 0..1) {
             for (index in 0 until MOBILE_DOT_COUNT) {
                 val x = MOBILE_CENTER_X + geometry.dualDotX(index)
-                val y = MOBILE_CENTER_Y + geometry.dualDotY(index, row)
+                val y = MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY)
                 left = min(left, x - radius)
                 top = min(top, y - radius)
                 right = max(right, x + radius)
@@ -3207,12 +3309,14 @@ internal class StatusPainter(
     private fun resolveDualMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         row: Int,
+        style: DualDotStyle,
+        mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
-        val bounds = dualMobileRowBounds(geometry, row)
+        val bounds = dualMobileRowBounds(geometry, row, style, mobileOffsetY)
         val centers = (0 until MOBILE_DOT_COUNT).map { index ->
             TransitionPoint(
                 MOBILE_CENTER_X + geometry.dualDotX(index),
-                MOBILE_CENTER_Y + geometry.dualDotY(index, row),
+                MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY),
             )
         }
         return MobileSignalTransitionLayout(
@@ -3241,9 +3345,11 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>?,
         aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
         row: Int?,
+        style: DualDotStyle,
+        mobileOffsetY: Float,
     ) {
         val layout =
-            if (row != null) resolveDualMobileSignalTransitionLayout(geometry, row)
+            if (row != null) resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
             else resolveMobileSignalTransitionLayout(geometry, model)
         val radius =
             if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
@@ -3259,7 +3365,7 @@ internal class StatusPainter(
         val barProgress = MobileSignalMorphPolicy.barProgress(phase)
         val diameter = radius * 2f
         if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
-            val bounds = dualMobileTransitionBounds(geometry)
+            val bounds = dualMobileTransitionBounds(geometry, style, mobileOffsetY)
             val top = aggregateRows.top
             val bottom = aggregateRows.bottom
             val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
@@ -3289,7 +3395,7 @@ internal class StatusPainter(
                     TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
                 }
                 val rowLayout =
-                    resolveDualMobileSignalTransitionLayout(geometry, index)
+                    resolveDualMobileSignalTransitionLayout(geometry, index, style, mobileOffsetY)
                         .copy(bounds = bounds)
                 drawMobileSignalTransitionToExactBars(
                     canvas = canvas,
@@ -3531,6 +3637,8 @@ internal class StatusPainter(
         tint: Int,
         opacity: Float,
         geometry: OuterGeometry.Resolved,
+        style: DualDotStyle,
+        mobileOffsetY: Float,
     ) {
         val dualLevels = model.dualMobileLevels
         if (dualLevels != null && !model.mobileUnavailableMark) {
@@ -3543,7 +3651,7 @@ internal class StatusPainter(
                         opacity = opacity,
                     )
                     val x = geometry.dualDotX(index)
-                    val y = geometry.dualDotY(index, row)
+                    val y = geometry.dualDotY(index, row, style, mobileOffsetY)
                     canvas.drawCircle(
                         MOBILE_CENTER_X + x,
                         MOBILE_CENTER_Y + y,
@@ -3722,6 +3830,7 @@ internal class StatusPainter(
         const val MOBILE_TYPE_CENTER_X = 60f
         const val MOBILE_TYPE_CENTER_Y = 60f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
+        const val MOBILE_TYPE_SUFFIX_EM_CLEARANCE = 0.08f
         const val NATIVE_CENTER_CACHE_SIZE = 8
         const val MIN_OPTICAL_RATIO = 0.08f
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f

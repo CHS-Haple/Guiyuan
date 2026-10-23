@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
@@ -8,32 +10,38 @@ internal class RenderController(
     private val view: RenderView,
 ) {
     private var stableModel: RenderModel? = null
+    private var stableReal: RenderModel? = null
     private var stableTint: TintState? = null
 
     fun update(
         snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
+        preview: RenderModel? = null,
     ): ModelUpdate {
         val defaultDataSubscriptionId =
             SysUiDefaultDataSubSource.currentSubscriptionId()
-        val candidate =
+        val real =
             RenderModel.from(
                 snapshot = snapshot,
                 presentation = PresentationStore.snapshot(),
                 defaultDataSubscriptionId = defaultDataSubscriptionId,
                 dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
+                lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
             )
+        if (real != null) stableReal = real
+        // A temporary preview must never become the fallback when it expires.
+        val candidate = real ?: stableReal
         val previous = stableModel
-        val model = candidate ?: previous
+        val model = candidate?.let { preview ?: it }
 
         if (model != previous) {
             stableModel = model
-            view.setModel(model, trace)
+            if (model != null) view.setModel(model, trace)
         }
 
         return ModelUpdate(
-            candidateComplete = candidate != null,
-            retainedStable = candidate == null && previous != null,
+            candidateComplete = real != null,
+            retainedStable = real == null && model != null,
             model = model,
             changed = model != previous,
             defaultDataSubscriptionId = defaultDataSubscriptionId,

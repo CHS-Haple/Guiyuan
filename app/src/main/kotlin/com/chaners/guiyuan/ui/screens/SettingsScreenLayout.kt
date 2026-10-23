@@ -7,7 +7,6 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,6 +49,8 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.RefreshState
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -182,7 +183,6 @@ internal fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
-    val springScroll = pullToRefresh == null
 
     Scaffold(
         snackbarHost = snackbarHost,
@@ -231,32 +231,32 @@ internal fun SettingsPage(
             background(contentPadding)
 
             @Composable
-            fun SettingsList() {
+            fun SettingsList(allowEdgeHaptic: Boolean = true) {
                 val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
                 LazyColumn(
                     state = resolvedListState,
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(if (springScroll && canScroll) Modifier.scrollEndHaptic() else Modifier)
+                            .then(if (allowEdgeHaptic && canScroll) Modifier.scrollEndHaptic() else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
-                    // Keep the native list rebound alongside the MIUIX folding top bar.
-                    overscrollEffect = rememberOverscrollEffect(),
                     content = content,
                 )
             }
 
             if (pullToRefresh != null) {
+                val pullState = rememberPullToRefreshState()
                 PullToRefresh(
                     isRefreshing = pullToRefresh.refreshing,
                     onRefresh = pullToRefresh.onRefresh,
+                    pullToRefreshState = pullState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = contentPadding,
                     topAppBarScrollBehavior = scrollBehavior,
                     refreshTexts = pullToRefresh.texts,
                 ) {
-                    SettingsList()
+                    SettingsList(allowEdgeHaptic = pullState.refreshState == RefreshState.Idle)
                 }
             } else {
                 SettingsList()

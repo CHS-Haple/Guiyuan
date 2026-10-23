@@ -16,14 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,7 +49,6 @@ import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
@@ -62,8 +59,6 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -71,8 +66,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -133,6 +127,7 @@ internal fun AppearanceScreen(
     val liquidModeOptions =
         listOf(
             stringResource(R.string.floating_navigation_liquid_mode_blur),
+            stringResource(R.string.floating_navigation_liquid_mode_balanced),
             stringResource(R.string.floating_navigation_liquid_mode_clear),
         )
 
@@ -145,9 +140,13 @@ internal fun AppearanceScreen(
         title = stringResource(R.string.appearance_title),
         onBack = onBack,
         overlay = {
-            UiScaleDialog(
+            IntegerInputDialog(
                 show = inputOpen,
+                title = stringResource(R.string.ui_scale_title),
+                summary = "80% - 110%",
                 value = appearance.uiScalePercent,
+                range = 80..110,
+                suffix = "%",
                 onDismiss = { inputOpen = false },
                 onConfirm = { percent ->
                     inputOpen = false
@@ -234,37 +233,27 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_visual_effects) {
-            ArrowPreference(
+            SliderPreference(
+                value = sliderPercent,
+                onValueChange = { sliderPercent = it.roundToInt().toFloat() },
+                onValueChangeFinished = {
+                    val percent = sliderPercent.roundToInt().coerceIn(80, 110)
+                    if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
+                },
                 title = stringResource(R.string.ui_scale_title),
                 summary = stringResource(R.string.ui_scale_summary),
                 startAction = {
                     SemanticLeadingIcon(R.drawable.ic_material_symbol_display_settings)
                 },
-                endActions = {
-                    Text(
-                        text = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
+                valueText = stringResource(R.string.percent_value, sliderPercent.roundToInt()),
+                valueRange = 80f..110f,
+                steps = 29,
+                showKeyPoints = true,
+                keyPoints = listOf(80f, 90f, 100f, 110f),
+                magnetThreshold = 0.01f,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                 holdDownState = inputOpen,
                 onClick = { inputOpen = true },
-                bottomAction = {
-                    Slider(
-                        value = sliderPercent,
-                        onValueChange = { sliderPercent = it.roundToInt().toFloat() },
-                        onValueChangeFinished = {
-                            val percent = sliderPercent.roundToInt().coerceIn(80, 110)
-                            if (percent != appearance.uiScalePercent) onUiScaleChange(percent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        valueRange = 80f..110f,
-                        steps = 29,
-                        showKeyPoints = true,
-                        keyPoints = listOf(80f, 90f, 100f, 110f),
-                        magnetThreshold = 0.01f,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    )
-                },
             )
             SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
@@ -339,61 +328,6 @@ internal fun AppearanceScreen(
                 )
             }
 
-        }
-    }
-}
-
-@Composable
-private fun UiScaleDialog(
-    show: Boolean,
-    value: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit,
-) {
-    var input by remember(show) { mutableStateOf(value.toString()) }
-    OverlayDialog(
-        title = stringResource(R.string.ui_scale_title),
-        summary = "80% - 110%",
-        show = show,
-        onDismissRequest = onDismiss,
-    ) {
-        Column {
-            TextField(
-                value = input,
-                onValueChange = { text ->
-                    if (text.length <= 3 && text.all(Char::isDigit)) input = text
-                },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = {
-                    Text(
-                        text = "%",
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                },
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    modifier = Modifier.weight(1f),
-                    onClick = onDismiss,
-                )
-                TextButton(
-                    text = stringResource(R.string.confirm),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        onConfirm((input.toIntOrNull() ?: value).coerceIn(80, 110))
-                    },
-                )
-            }
         }
     }
 }
@@ -778,7 +712,6 @@ private fun MiniNavigationPreview(
                                 onClick = {},
                                 icon = icons[index],
                                 label = labels[index],
-                                dark = dark,
                                 interactive = false,
                             )
                         }

@@ -9,13 +9,11 @@ val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get(
 val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
-val backdropVersion = providers.gradleProperty("backdrop.version").get()
-val shapesVersion = providers.gradleProperty("shapes.version").get()
 val libxposedVersion = "102.0.0"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.2.0"
 val dataStorePreferencesVersion = "1.2.1"
-val kotlinxSerializationCoreVersion = "1.11.0"
+val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
 
@@ -49,8 +47,6 @@ android {
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
         buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
-        buildConfigField("String", "BACKDROP_VERSION", "\"$backdropVersion\"")
-        buildConfigField("String", "SHAPES_VERSION", "\"$shapesVersion\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
@@ -147,7 +143,7 @@ dependencies {
 
     testImplementation("junit:junit:$junitVersion")
 
-    implementation("androidx.core:core:1.17.0")
+    implementation("androidx.core:core:1.19.1")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")
@@ -156,8 +152,6 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
-    implementation("io.github.kyant0:backdrop:$backdropVersion")
-    implementation("io.github.kyant0:shapes:$shapesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationCoreVersion")
 }

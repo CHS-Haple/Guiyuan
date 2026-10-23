@@ -10,11 +10,15 @@
     <string name="features_title">功能</string>
     <string name="section_display_transition">显示与过渡</string>
     <string name="section_layout_size">布局与尺寸</string>
-    <string name="section_network">网络图标</string>
+    <string name="section_network">网络与信号</string>
     <string name="dual_signal_title">双排信号</string>
-    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n单排与双排分别记忆配置</string>
+    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n内容布局保持不变，其他视觉配置分别记忆</string>
+    <string name="dual_dot_style_title">双排样式</string>
+    <string name="dual_dot_style_default">默认</string>
+    <string name="dual_dot_style_duo">Duo</string>
+    <string name="dual_mobile_vertical_offset">信号点上下偏移</string>
     <string name="section_battery">电量与充电</string>
-    <string name="section_management">管理</string>
+    <string name="section_management">配置管理</string>
     <string name="content_layout_title">内容布局</string>
     <string name="content_layout_summary">两种布局分别记忆设置</string>
     <string name="content_layout_network_center">网络居中</string>
@@ -87,6 +91,9 @@
     <string name="no_sim_size">无 SIM 大小</string>
     <string name="mobile_type_size">移动制式大小</string>
     <string name="mobile_type_weight">移动制式字重</string>
+    <string name="font_weight_range">当前字体可调范围：%1$d - %2$d</string>
+    <string name="font_weight_pending">正在等待系统字体检测结果，暂不可调</string>
+    <string name="font_weight_unverified">当前字体不支持可验证的可变字重，暂不可调</string>
     <string name="percent_value">%1$d%%</string>
     <string name="integer_value">%1$d</string>
     <string name="restore_feature_defaults">恢复默认设置</string>
@@ -129,9 +136,10 @@
     <string name="floating_navigation_style_blur">模糊</string>
     <string name="floating_navigation_style_glass">玻璃</string>
     <string name="floating_navigation_style_liquid">液态玻璃</string>
-    <string name="floating_navigation_liquid_mode">玻璃质感</string>
-    <string name="floating_navigation_liquid_mode_summary">选择模糊或通透的玻璃观感</string>
+    <string name="floating_navigation_liquid_mode">液态玻璃质感</string>
+    <string name="floating_navigation_liquid_mode_summary">调整液态玻璃的背景模糊程度</string>
     <string name="floating_navigation_liquid_mode_blur">模糊</string>
+    <string name="floating_navigation_liquid_mode_balanced">均衡</string>
     <string name="floating_navigation_liquid_mode_clear">通透</string>
     <string name="floating_navigation_content">悬浮导航栏内容</string>
     <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>
@@ -181,7 +189,7 @@
     <string name="static_scope_sysui_advice">使用这些功能时需要授权此作用域。</string>
     <string name="static_scope_settings_usage">用于在系统设置中显示归元入口。</string>
     <string name="static_scope_settings_advice">仅使用此入口时需要授权，不影响主要功能。</string>
-    <string name="static_scope_description">显示已声明宿主及本机可读取版本。\n授权状态以 Xposed 框架记录为准。</string>
+    <string name="static_scope_description">显示已声明宿主及本机可读取版本。\n授权状态以框架服务记录为准。</string>
     <string name="static_scope_sysui">系统界面</string>
     <string name="static_scope_installed_version">已安装版本 %1$s</string>
     <string name="static_scope_version_unavailable">版本不可用</string>
@@ -250,7 +258,7 @@
     <string name="diagnostics_log_summary_total_time">总耗时 %1$s</string>
     <string name="diagnostics_log_summary_source">来源：%1$s</string>
     <string name="diagnostics_log_summary_separator">，</string>
-    <string name="diagnostics_log_setting_combined">三合一</string>
+    <string name="diagnostics_log_setting_combined">归元状态栏图标</string>
     <string name="diagnostics_log_setting_keyguard">锁屏</string>
     <string name="diagnostics_log_setting_aod">AOD</string>
     <string name="diagnostics_log_switch_on">开</string>
@@ -261,7 +269,7 @@
     <string name="diagnostics_log_state_prepared">已准备</string>
     <string name="diagnostics_log_state_released">已释放</string>
     <string name="diagnostics_log_state_native">原生</string>
-    <string name="diagnostics_log_state_combined">三合一</string>
+    <string name="diagnostics_log_state_combined">归元状态栏图标</string>
     <string name="diagnostics_log_state_keyguard">锁屏</string>
     <string name="diagnostics_log_state_aod">息屏显示</string>
     <string name="diagnostics_log_state_home">桌面</string>
@@ -331,6 +339,8 @@
     <string name="diagnostic_report_share_failed">诊断报告分享失败</string>
     <string name="back">返回</string>
 
+    <string name="low_battery_threshold">低电量阈值</string>
+    <string name="low_battery_threshold_summary">电量低于设定值时使用低电量颜色</string>
     <string name="battery_colors">电量颜色</string>
     <string name="battery_color_scheme_summary">当前方案：%1$s</string>
     <string name="battery_color_scheme">配色方案</string>

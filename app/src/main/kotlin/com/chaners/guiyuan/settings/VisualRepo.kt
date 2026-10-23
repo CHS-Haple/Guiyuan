@@ -7,9 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+internal const val SHARED_TRANSITIONS_SCHEMA_KEY = "shared_transitions_schema"
+
 private val visualPreferenceKeys = buildSet {
+    add(SHARED_TRANSITIONS_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
+    add(DUAL_PROFILES_INITIALIZED_KEY)
     add(visualModeKey(true, CONTENT_LAYOUT_KEY))
     addAll(PROFILE_VISUAL_BASE_KEYS)
     addAll(GLOBAL_VISUAL_KEYS)
@@ -85,6 +89,54 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     return editor.commit()
 }
 
+// Retire the old dual-only layout value. The active layout wins at migration.
+internal fun migrateSharedLayoutIfNeeded(prefs: SharedPreferences) {
+    val legacyKey = visualModeKey(true, CONTENT_LAYOUT_KEY)
+    if (!prefs.contains(legacyKey)) return
+    val editor = prefs.edit()
+    if (prefs.dualSignalEnabled()) {
+        editor.putString(
+            CONTENT_LAYOUT_KEY,
+            ContentLayout.fromPersisted(prefs.getString(legacyKey, null)).persistedValue,
+        )
+    }
+    editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+        .remove(legacyKey)
+        .apply()
+}
+
+
+// Show/transition settings use one value for every layout and SIM mode.
+// Keep the current mode on upgrade, then retire the old dual bank.
+internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_TRANSITIONS_SCHEMA_KEY, 0) >= 1) return
+    val dual = prefs.dualSignalEnabled()
+    val editor = prefs.edit()
+    for (key in listOf(
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
+    )) {
+        val current = visualModeKey(dual, key)
+        val value = when {
+            prefs.contains(current) -> prefs.getBoolean(current, true)
+            prefs.contains(key) -> prefs.getBoolean(key, true)
+            else -> true
+        }
+        editor.putBoolean(key, value)
+            .remove(visualModeKey(true, key))
+    }
+    editor.putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1).apply()
+}
+
+// Migrations must finish before the app mirrors its first runtime snapshot.
+internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
+    migrateSharedLayoutIfNeeded(preferences)
+    migrateSharedTransitionsIfNeeded(preferences)
+    migrateBatteryColorPresetDefaultIfNeeded(preferences)
+    migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
+    migrateTextWeightRanges(preferences)
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -94,9 +146,7 @@ internal class VisualRepo(context: Context) {
         )
 
     init {
-        migrateBatteryColorPresetDefaultIfNeeded(preferences)
-        migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
-        migrateTextWeightRanges(preferences)
+        migrateVisualPrefsIfNeeded(preferences)
     }
 
     val settings: Flow<VisualCfg> =
@@ -133,27 +183,30 @@ internal class VisualRepo(context: Context) {
 
     fun setDualSignal(enabled: Boolean) {
         val editor = preferences.edit()
-        if (enabled && !preferences.contains(visualModeKey(true, CONTENT_LAYOUT_KEY))) {
-            // Clone both existing layout profiles once, then keep them independent.
-            val singleLayout = preferences.readLayout(dual = false)
-            ContentLayout.entries.forEach { layout ->
+        if (enabled && !preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)) {
+            val layout = preferences.readLayout()
+            ContentLayout.entries.forEach { profile ->
                 editor.putVisualCfg(
-                    preferences.readVisualCfg(dual = false, layoutOverride = layout)
+                    preferences.readVisualCfg(dual = false, layoutOverride = profile)
                         .copy(dualSignal = true),
                 )
             }
-            editor.putString(
-                visualModeKey(true, CONTENT_LAYOUT_KEY),
-                singleLayout.persistedValue,
-            )
+            editor.putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
+            editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
+    }
+
+    fun setDualDotStyle(style: DualDotStyle) {
+        preferences.edit()
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), style.persistedValue)
+            .apply()
     }
 
     fun setLayout(layout: ContentLayout) {
         preferences
             .edit()
-            .putString(activeGlobalKey(CONTENT_LAYOUT_KEY), layout.persistedValue)
+            .putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
             .apply()
     }
 
@@ -212,14 +265,14 @@ internal class VisualRepo(context: Context) {
     fun setFillFollowsRetract(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeGlobalKey(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), enabled)
+            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, enabled)
             .apply()
     }
 
     fun setCcTintTransition(enabled: Boolean) {
         preferences
             .edit()
-            .putBoolean(activeGlobalKey(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), enabled)
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, enabled)
             .apply()
     }
 
@@ -277,6 +330,21 @@ internal class VisualRepo(context: Context) {
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
                 offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            ).apply()
+    }
+
+    fun setDualMobileOffsetY(offset: Float) {
+        if (!preferences.dualSignalEnabled()) return
+        val style = DualDotStyle.fromPersisted(
+            preferences.getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null),
+        )
+        val key = if (style == DualDotStyle.DUO) DUAL_DUO_OFFSET_Y_KEY else DUAL_DEFAULT_OFFSET_Y_KEY
+        preferences.edit()
+            .putFloat(
+                activeProfileKey(key),
+                offset.takeIf(Float::isFinite)
+                    ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
+                    ?: NETWORK_TOP_OFFSET_DEFAULT,
             ).apply()
     }
 
@@ -402,10 +470,10 @@ internal class VisualRepo(context: Context) {
 
     fun backup(): VisualBackup =
         VisualBackup(
-            singleLayout = preferences.readLayout(dual = false),
-            dualLayout = preferences.readLayout(dual = true),
+            singleLayout = preferences.readLayout(),
+            dualLayout = preferences.readLayout(),
             dualEnabled = preferences.dualSignalEnabled(),
-            dualInitialized = preferences.contains(visualModeKey(true, CONTENT_LAYOUT_KEY)),
+            dualInitialized = preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false),
             profiles = listOf(false, true).flatMap { dual ->
                 ContentLayout.entries.map { layout ->
                     preferences.readVisualCfg(dual = dual, layoutOverride = layout)
@@ -422,10 +490,16 @@ internal class VisualRepo(context: Context) {
         val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
+        // V1 archives may differ across SIM modes; the active bank wins.
+        val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
+        editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
+            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
+            .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
         BatterySchemeRepo(context).putBackup(editor, library)
-        editor.putString(CONTENT_LAYOUT_KEY, backup.singleLayout.persistedValue)
+        val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
+        editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
         if (backup.dualInitialized) {
-            editor.putString(visualModeKey(true, CONTENT_LAYOUT_KEY), backup.dualLayout.persistedValue)
+            editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         // Restored physical charging scales use the current reference.
@@ -463,14 +537,9 @@ internal fun visualModeKey(dual: Boolean, key: String): String =
 internal fun SharedPreferences.dualSignalEnabled(): Boolean =
     getBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
 
-internal fun SharedPreferences.readLayout(
-    dual: Boolean = dualSignalEnabled(),
-): ContentLayout =
+internal fun SharedPreferences.readLayout(): ContentLayout =
     ContentLayout.fromPersisted(
-        getString(
-            visualModeKey(dual, CONTENT_LAYOUT_KEY),
-            ContentLayout.NETWORK_CENTER.persistedValue,
-        ),
+        getString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue),
     )
 
 internal fun visualProfileKey(
@@ -531,7 +600,7 @@ internal fun SharedPreferences.readVisualCfg(
     dual: Boolean = dualSignalEnabled(),
     layoutOverride: ContentLayout? = null,
 ): VisualCfg {
-    val layout = layoutOverride ?: readLayout(dual)
+    val layout = layoutOverride ?: readLayout()
     fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default, dual)
     fun size(key: String, default: Float) = profileFloat(layout, key, default, dual)
     fun weight(key: String, default: Int) = profileInt(layout, key, default, dual)
@@ -543,19 +612,24 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
+        dualDotStyle = DualDotStyle.fromPersisted(
+            getString(visualModeKey(dual, DUAL_DOT_STYLE_KEY), null),
+        ),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
-        showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, false),
+        showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
         topTextFollowsBatteryColor = flag(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, true),
         showTopChargingIcon = flag(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, true),
         topChargingIconFollowsBatteryColor = flag(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, true),
-        fillFollowsRetract = getBoolean(visualModeKey(dual, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), true),
-        ccTintTransition = getBoolean(visualModeKey(dual, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true),
+        fillFollowsRetract = getBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true),
+        ccTintTransition = getBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, true),
         topTextScale = size(BATTERY_TOP_TEXT_SCALE_KEY, topTextScaleDefault(layout)),
         topTextWeight = weight(BATTERY_TOP_TEXT_WEIGHT_KEY, BATTERY_TOP_TEXT_WEIGHT_DEFAULT),
         topOffsetY = topOffset,
         wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
+        dualDefaultOffsetY = size(DUAL_DEFAULT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        dualDuoOffsetY = size(DUAL_DUO_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -623,12 +697,15 @@ internal fun SharedPreferences.Editor.putVisualCfg(
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
     val layout = normalized.layout
-    return putBoolean(
+    val editor = putBoolean(
         DUAL_SIGNAL_ENABLED_KEY,
         normalized.dualSignal,
     ).putString(
-        visualModeKey(normalized.dualSignal, CONTENT_LAYOUT_KEY),
+        CONTENT_LAYOUT_KEY,
         layout.persistedValue,
+    ).putString(
+        visualModeKey(normalized.dualSignal, DUAL_DOT_STYLE_KEY),
+        normalized.dualDotStyle.persistedValue,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
         normalized.mobileFollowsBatteryColor,
@@ -648,10 +725,10 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
         normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
-        visualModeKey(normalized.dualSignal, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY),
+        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         normalized.fillFollowsRetract,
     ).putBoolean(
-        visualModeKey(normalized.dualSignal, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY),
+        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         normalized.ccTintTransition,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY, normalized.dualSignal),
@@ -668,6 +745,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.mobileTypeOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, DUAL_DEFAULT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.dualDefaultOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, DUAL_DUO_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.dualDuoOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,
@@ -703,6 +786,11 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.batteryColorPreset.persistedValue,
     ).applyBatteryColorModes(normalized.batteryColorModes, normalized.dualSignal)
         .applyBatteryColorOverrides(normalized.batteryColorOverrides, normalized.dualSignal)
+    return if (normalized.dualSignal) {
+        editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+    } else {
+        editor
+    }
 }
 
 private fun SharedPreferences.batteryColorMode(

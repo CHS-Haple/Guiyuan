@@ -12,16 +12,19 @@ class VisualCfgTest {
         assertEquals(1f, settings.wifiScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
+        assertEquals(0f, settings.dualMobileOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
         assertEquals(600, settings.mobileTypeWeight)
         assertEquals(600, settings.topTextWeight)
-        assertEquals(200, BATTERY_TOP_TEXT_WEIGHT_MIN)
+        assertEquals(1, BATTERY_TOP_TEXT_WEIGHT_MIN)
         assertEquals(1000, BATTERY_TOP_TEXT_WEIGHT_MAX)
         assertEquals(true, settings.ccTintTransition)
         assertEquals(true, settings.fillFollowsRetract)
         assertEquals(false, settings.showTopReadout)
+        assertEquals(true, VisualCfg(layout = ContentLayout.BATTERY_CENTER).showTopReadout)
+        assertEquals(false, VisualCfg(layout = ContentLayout.BATTERY_CENTER, showTopReadout = false).showTopReadout)
 
         val normalized =
             settings.copy(
@@ -30,6 +33,8 @@ class VisualCfgTest {
                 wifiScale = 9f,
                 wifiOffsetY = -99f,
                 mobileTypeOffsetY = 99f,
+                dualDefaultOffsetY = -99f,
+                dualDuoOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -46,11 +51,21 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        val invalidOffsets = settings.copy(
+            dualDefaultOffsetY = Float.NaN,
+            dualDuoOffsetY = Float.POSITIVE_INFINITY,
+        ).normalized()
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDefaultOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDuoOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
         assertEquals(MOBILE_TYPE_WEIGHT_MAX, normalized.mobileTypeWeight)
-        assertEquals(200, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
         assertEquals(600, MOBILE_TYPE_WEIGHT_DEFAULT)
         assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
         assertEquals(0.60f, COMBINED_SCALE_MIN, 0.0001f)
@@ -63,10 +78,10 @@ class VisualCfgTest {
     }
 
     @Test
-    fun nativeWeightRangesStayAligned() {
+    fun nativeWeightDefaultsStayAligned() {
         assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MIN)
-        assertEquals(BATTERY_TOP_TEXT_WEIGHT_MAX, MOBILE_TYPE_WEIGHT_MAX)
+        assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
+        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
     }
 
     @Test
@@ -80,11 +95,11 @@ class VisualCfgTest {
         assertEquals(1000, updated.mobileTypeWeight)
         assertEquals(WIFI_WEIGHT_MAX, updated.wifiWeight)
         assertEquals(1000, updated.topTextWeight)
-        assertEquals(200, previous.copy(topTextWeight = -1).normalized().topTextWeight)
+        assertEquals(1, previous.copy(topTextWeight = -1).normalized().topTextWeight)
         assertEquals(1000, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
         assertEquals(900, previous.copy(topTextWeight = 900).normalized().topTextWeight)
         assertEquals(200, previous.copy(topTextWeight = 200).normalized().topTextWeight)
-        assertEquals(200, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
+        assertEquals(1, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
         assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
         assertEquals(200, previous.copy(mobileTypeWeight = 200).normalized().mobileTypeWeight)
     }
@@ -438,6 +453,7 @@ class VisualCfgTest {
                 layout = ContentLayout.BATTERY_CENTER,
             )
 
+        assertEquals(true, settings.showTopReadout)
         assertEquals(
             1.3f,
             topTextUiScale(settings.topTextScale),

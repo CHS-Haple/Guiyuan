@@ -10,14 +10,20 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | --- | ---: | --- | --- |
 | libxposed API | 102.0.0 | Modern Xposed API surface | Apache-2.0 |
 | libxposed service | 102.0.0 | Modern Xposed service integration | Apache-2.0 |
-| AndroidX Core | 1.17.0 | Android compatibility and core APIs | Apache-2.0 |
+| AndroidX Core | 1.19.1 | Android compatibility and core APIs | Apache-2.0 |
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
 | MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-8972f941-SNAPSHOT (`8972f941c194bd3c4e14c34543d5ebc7b39e40da`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
-| Backdrop | 2.0.1 | Liquid Glass backdrop, blur and refraction effects for the companion-app navigation bar | Apache-2.0 |
-| Kyant Shapes | 1.2.1 | Capsule geometry used by the Liquid Glass navigation bar | Apache-2.0 |
-| kotlinx.serialization core / JSON | 1.11.0 | Versioned configuration file serialization | Apache-2.0 |
+| kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
+
+## Adapted optical code
+
+Guiyuan's liquid navigation includes Apache-2.0 optical helpers adapted from the
+pinned [MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tree/8972f941c194bd3c4e14c34543d5ebc7b39e40da/example/shared/src/commonMain/kotlin/component/liquid),
+which credits AndroidLiquidGlass. Source copyright and license headers are
+retained in the adapted files. Neither Backdrop nor Kyant Shapes is a direct
+runtime dependency in this experimental implementation.
 
 ## Embedded icon assets
 
@@ -35,7 +41,7 @@ The selected Material Symbols are stored as local Android vector drawables sourc
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper for Gradle 9.8.1. Gradle 9.8.1 is distributed under Apache-2.0.
+The repository includes the official Gradle Wrapper for Gradle 9.8.2. Gradle 9.8.2 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
 
@@ -45,8 +51,7 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 - libxposed service (browsable source): https://github.com/JingMatrix/libxposed-service
 - AndroidX: https://github.com/androidx/androidx
 - MIUIX: https://github.com/compose-miuix-ui/miuix
-- Backdrop: https://github.com/Kyant0/AndroidLiquidGlass
-- Kyant Shapes: https://github.com/Kyant0/Shapes
+- AndroidLiquidGlass: https://github.com/Kyant0/AndroidLiquidGlass (Apache-2.0; source of adapted optics, not a direct runtime dependency)
 - Material Symbols: https://github.com/google/material-design-icons
 - kotlinx.serialization: https://github.com/Kotlin/kotlinx.serialization
 - JUnit 4: https://github.com/junit-team/junit4

@@ -117,6 +117,9 @@ internal object ConfigBackupFormat {
     fun validate(backup: ConfigBackup) {
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
+        require(backup.feature.lowBatteryThreshold in LOW_BATTERY_THRESHOLD_MIN..LOW_BATTERY_THRESHOLD_MAX) {
+            "Invalid low battery threshold"
+        }
         require(backup.appVersion.length in 1..80 && safeText(backup.appVersion)) {
             "Invalid appVersion"
         }
@@ -134,9 +137,22 @@ internal object ConfigBackupFormat {
             profiles.size == expected.size &&
                 profiles.map { it.dualSignal to it.layout }.toSet() == expected
         ) { "Missing or duplicated visual profile" }
+        // V1 archives may differ by SIM mode, but each mode must agree across layouts.
+        require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
+            val first = sameMode.first()
+            sameMode.all { cfg ->
+                cfg.dualDotStyle == first.dualDotStyle &&
+                    cfg.fillFollowsRetract == first.fillFollowsRetract &&
+                    cfg.ccTintTransition == first.ccTintTransition &&
+                    cfg.batteryColorPreset == first.batteryColorPreset &&
+                    cfg.batteryColorModes == first.batteryColorModes &&
+                    cfg.batteryColorOverrides == first.batteryColorOverrides
+            }
+        }) { "Conflicting mode-wide visual settings" }
         profiles.forEach { cfg ->
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
+                cfg.dualDefaultOffsetY, cfg.dualDuoOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             )
@@ -177,7 +193,8 @@ internal object ConfigBackupFormat {
         while (index < value.length) {
             val char = value[index]
             if (Character.isISOControl(char) ||
-                char in '\u202A'..'\u202E' || char in '\u2066'..'\u2069'
+                char == '\u061C' || char in '\u200E'..'\u200F' ||
+                char in '\u2028'..'\u202E' || char in '\u2066'..'\u206F'
             ) return false
             if (Character.isHighSurrogate(char)) {
                 if (index + 1 >= value.length ||
@@ -271,6 +288,10 @@ internal class ConfigBackupFiles(private val context: Context) {
     }
 
     suspend fun read(uri: Uri): ConfigBackup = withContext(Dispatchers.IO) {
+        // ACTION_OPEN_DOCUMENT is a document provider, not a local-file reader.
+        require(uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            "Configuration import requires a document content URI"
+        }
         val bytes = context.contentResolver.openInputStream(uri)?.use { stream ->
             stream.readNBytes(ConfigBackupFormat.MAX_BYTES + 1)
         } ?: error("Cannot read configuration file")
@@ -280,21 +301,69 @@ internal class ConfigBackupFiles(private val context: Context) {
 
     suspend fun restore(backup: ConfigBackup): Boolean = withContext(Dispatchers.IO) {
         ConfigBackupFormat.validate(backup)
-        val previousFeature = feature.current()
+        val previousFeature = feature.backupSnapshot()
         val previousVisual = visual.backupSnapshot()
-        if (!visual.restore(backup.visual, backup.batterySchemes)) {
-            check(visual.rollbackBackup(previousVisual)) { "Could not roll back incomplete visual restore" }
-            return@withContext false
+        restoreBackupStores(
+            restoreVisual = { visual.restore(backup.visual, backup.batterySchemes) },
+            restoreFeature = { feature.restore(backup.feature) },
+            rollbackVisual = { visual.rollbackBackup(previousVisual) },
+            rollbackFeature = { feature.rollbackBackup(previousFeature) },
+        )
+    }
+}
+
+// SharedPreferences commits may partially mutate memory before returning false or throwing.
+// Compensate every store whose write was attempted, without claiming cross-store atomicity.
+internal fun restoreBackupStores(
+    restoreVisual: () -> Boolean,
+    restoreFeature: () -> Boolean,
+    rollbackVisual: () -> Boolean,
+    rollbackFeature: () -> Boolean,
+): Boolean {
+    var featureAttempted = false
+    var writeFailure: Exception? = null
+    try {
+        if (restoreVisual()) {
+            featureAttempted = true
+            if (restoreFeature()) return true
         }
-        if (feature.restore(backup.feature)) {
-            true
-        } else {
-            val featureRolledBack = feature.restore(previousFeature)
-            val visualRolledBack = visual.rollbackBackup(previousVisual)
-            check(featureRolledBack && visualRolledBack) {
-                "Could not roll back incomplete feature restore"
+    } catch (failure: Exception) {
+        writeFailure = failure
+    }
+
+    var rollbackFailure: Exception? = null
+    fun compensate(name: String, rollback: () -> Boolean) {
+        try {
+            check(rollback()) { "Could not roll back $name restore" }
+        } catch (failure: Exception) {
+            val previous = rollbackFailure
+            if (previous == null) {
+                rollbackFailure = failure
+            } else if (failure is java.util.concurrent.CancellationException &&
+                previous !is java.util.concurrent.CancellationException
+            ) {
+                failure.addSuppressed(previous)
+                rollbackFailure = failure
+            } else if (failure !== previous) {
+                previous.addSuppressed(failure)
             }
-            false
         }
     }
+
+    if (featureAttempted) compensate("feature", rollbackFeature)
+    compensate("visual", rollbackVisual)
+
+    val failure =
+        when {
+            writeFailure is java.util.concurrent.CancellationException -> writeFailure
+            rollbackFailure is java.util.concurrent.CancellationException -> rollbackFailure
+            writeFailure != null -> writeFailure
+            else -> rollbackFailure
+        }
+    if (failure != null) {
+        writeFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
+        rollbackFailure?.takeIf { it !== failure }?.let(failure::addSuppressed)
+        throw failure
+    }
+    return false
 }
