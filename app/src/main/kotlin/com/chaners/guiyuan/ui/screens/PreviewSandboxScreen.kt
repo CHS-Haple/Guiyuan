@@ -673,7 +673,7 @@ private fun SandboxFullPreview(
     PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
 }
 
-// Keep one RenderView and fixed header anchors across the in-place size transition.
+// Preserve RenderView's logical viewport across compact and expanded sizes.
 @Composable
 private fun SandboxDockPreview(
     state: PreviewSandboxUiState,
@@ -684,14 +684,16 @@ private fun SandboxDockPreview(
 ) {
     val progress by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,
-        animationSpec = tween(320),
         label = "sandboxPreviewExpand",
     )
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    val previewPx = with(density) { SandboxPreviewWidth.roundToPx() }
+    val previewWidth = with(density) { SandboxPreviewWidth.roundToPx() }
+    val previewHeight = with(density) { SandboxPreviewHeight.roundToPx() }
     val gapPx = with(density) { 12.dp.roundToPx() }
-    val smallScale = 0.5f
+    val smallHeight = with(density) { 72.dp.roundToPx() }
+    val smallScale = smallHeight.toFloat() / previewHeight
+    val smallWidth = (previewWidth * smallScale).roundToInt()
 
     Layout(
         modifier = Modifier.fillMaxWidth().clipToBounds(),
@@ -706,7 +708,7 @@ private fun SandboxDockPreview(
             StatusPreview(
                 model = model,
                 visual = visual,
-                modifier = Modifier.size(SandboxPreviewWidth),
+                modifier = Modifier.width(SandboxPreviewWidth).height(SandboxPreviewHeight),
             )
             Box {
                 val label = stringResource(
@@ -729,12 +731,11 @@ private fun SandboxDockPreview(
     ) { measurables, constraints ->
         val width = constraints.maxWidth
         val button = measurables[2].measure(Constraints())
-        val smallSize = (previewPx * smallScale).roundToInt()
-        val textMax = (width - button.width - smallSize - gapPx * 2).coerceAtLeast(0)
+        val textMax = (width - button.width - smallWidth - gapPx * 2).coerceAtLeast(0)
         val title = measurables[0].measure(Constraints(maxWidth = textMax))
-        val preview = measurables[1].measure(Constraints.fixed(previewPx, previewPx))
+        val preview = measurables[1].measure(Constraints.fixed(previewWidth, previewHeight))
         val summary = measurables[3].measure(Constraints(maxWidth = width))
-        val rowHeight = maxOf(smallSize, title.height, button.height)
+        val rowHeight = maxOf(smallHeight, title.height, button.height)
         val largeTop = rowHeight + gapPx
         val summaryTop = largeTop + preview.height + gapPx
         val fullHeight = summaryTop + summary.height
@@ -742,10 +743,10 @@ private fun SandboxDockPreview(
 
         layout(width, height) {
             val scale = smallScale + (1f - smallScale) * progress
-            val compactX = width - button.width - gapPx - smallSize
+            val compactX = width - button.width - gapPx - smallWidth
             val largeX = (width - preview.width) / 2
             val previewX = compactX + ((largeX - compactX) * progress).roundToInt()
-            val compactY = (rowHeight - smallSize) / 2
+            val compactY = (rowHeight - smallHeight) / 2
             val previewY = compactY + ((largeTop - compactY) * progress).roundToInt()
             val visualX = if (direction == LayoutDirection.Rtl) {
                 width - previewX - (preview.width * scale).roundToInt()
@@ -757,9 +758,7 @@ private fun SandboxDockPreview(
                 scaleY = scale
                 transformOrigin = TransformOrigin(0f, 0f)
             }
-            summary.placeWithLayer(0, summaryTop) {
-                alpha = ((progress - 0.6f) / 0.4f).coerceIn(0f, 1f)
-            }
+            summary.placeRelative(0, summaryTop)
             title.placeRelative(0, (rowHeight - title.height) / 2)
             button.placeRelative(width - button.width, (rowHeight - button.height) / 2)
         }
