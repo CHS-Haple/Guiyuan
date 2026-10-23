@@ -33,7 +33,7 @@ class LiquidNavBarLightTest {
         val upright = (litHighlight(GlassTilt(0f, 0f, 0f), 90f).style as BloomStroke).primaryLight.position
         val extreme = (litHighlight(GlassTilt(0f, 20f, -20f), 90f).style as BloomStroke).primaryLight.position
         assertEquals(upright.x - 0.12f, extreme.x, 0.0001f)
-        assertEquals(upright.y + 0.12f, extreme.y, 0.0001f)
+        assertEquals(upright.y - 0.12f, extreme.y, 0.0001f)
         assertTrue(extreme.x.isFinite() && extreme.y.isFinite())
     }
 }
