@@ -1356,6 +1356,7 @@ private fun HubPage(
                                     outsideEndAction = {
                                         Box(
                                             modifier = Modifier
+                                                .padding(start = 8.dp)
                                                 .sizeIn(minHeight = 48.dp)
                                                 .clickable(
                                                     interactionSource = null,
