@@ -85,6 +85,7 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
+import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -705,12 +706,7 @@ internal fun PreviewSandboxScreen(
                                 if (previewExpanded) {
                                     Icon(MiuixIcons.ExpandLess, contentDescription = label)
                                 } else {
-                                    Image(
-                                        painter = painterResource(R.drawable.ic_material_symbol_open_in_full),
-                                        contentDescription = label,
-                                        modifier = Modifier.size(24.dp),
-                                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                    )
+                                    Icon(MiuixIcons.ExpandMore, contentDescription = label)
                                 }
                             }
                         }
