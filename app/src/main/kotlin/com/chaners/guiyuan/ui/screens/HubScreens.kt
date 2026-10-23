@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.GyApplication
@@ -1338,6 +1339,8 @@ private fun HubPage(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp),
+                                    // The outer gutter already provides the SearchBar margin.
+                                    insideMargin = DpSize(0.dp, 0.dp),
                                     inputField = {
                                         InputField(
                                             query = search.query,
