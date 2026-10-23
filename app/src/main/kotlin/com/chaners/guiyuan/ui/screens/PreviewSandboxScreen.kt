@@ -365,7 +365,10 @@ internal fun PreviewSandboxScreen(
                     ) {
                         SwitchPreference(
                             checked = parasiteActive,
-                            onCheckedChange = onParasiteChange,
+                            onCheckedChange = { enabled ->
+                                hint = SandboxHint.PARASITE
+                                onParasiteChange(enabled)
+                            },
                             title = stringResource(R.string.home_preview_parasite_title),
                             summary = stringResource(R.string.home_preview_parasite_summary),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
@@ -399,7 +402,10 @@ internal fun PreviewSandboxScreen(
                             tabs = networkModeOptions,
                             selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
                             onTabSelected = { index ->
-                                previewNetworkTabs.getOrNull(index)?.let(onNetworkModeChange)
+                                previewNetworkTabs.getOrNull(index)?.let { mode ->
+                                    hint = SandboxHint.NETWORK
+                                    onNetworkModeChange(mode)
+                                }
                             },
                             modifier =
                                 Modifier
@@ -414,7 +420,10 @@ internal fun PreviewSandboxScreen(
                             title = stringResource(R.string.home_preview_dual_mobile_title),
                             summary = stringResource(R.string.home_preview_dual_mobile_summary),
                             checked = state.dualMobile,
-                            onCheckedChange = onDualMobileChange,
+                            onCheckedChange = { enabled ->
+                                hint = SandboxHint.SIM
+                                onDualMobileChange(enabled)
+                            },
                             startAction = {
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
                             },
@@ -428,6 +437,7 @@ internal fun PreviewSandboxScreen(
                                 if (state.dualMobile) state.simCards.ordinal
                                 else if (state.simPresent) 0 else 1,
                             onSelected = { index ->
+                                hint = SandboxHint.SIM
                                 if (state.dualMobile) {
                                     PreviewSimCards.entries.getOrNull(index)?.let(onSimCardsChange)
                                 } else {
@@ -448,7 +458,10 @@ internal fun PreviewSandboxScreen(
                                 items = dataSimOptions,
                                 selectedIndex = state.dataSim.ordinal,
                                 onSelectedIndexChange = { index ->
-                                    PreviewDataSim.entries.getOrNull(index)?.let(onDataSimChange)
+                                    PreviewDataSim.entries.getOrNull(index)?.let { selected ->
+                                        hint = SandboxHint.DATA_SIM
+                                        onDataSimChange(selected)
+                                    }
                                 },
                                 insideMargin = SandboxPreferenceInsideMargin,
                                 maxHeight = 240.dp,
@@ -463,6 +476,7 @@ internal fun PreviewSandboxScreen(
                                 options = wifiOptions,
                                 selectedIndex = state.wifiState.ordinal,
                                 onSelected = { index ->
+                                    hint = SandboxHint.WIFI_STATE
                                     onWifiStateChange(PreviewWifiState.entries[index])
                                 },
                                 modifier = Modifier.padding(top = 4.dp),
@@ -470,6 +484,7 @@ internal fun PreviewSandboxScreen(
                             SliderPreference(
                                 value = state.wifiSignalLevel.toFloat(),
                                 onValueChange = { value ->
+                                    hint = SandboxHint.WIFI_SIGNAL
                                     onWifiSignalLevelChange(value.roundToInt().coerceIn(0, 3))
                                 },
                                 title = stringResource(R.string.home_preview_wifi_signal_title),
@@ -506,7 +521,10 @@ internal fun PreviewSandboxScreen(
                                         onSelectedIndexChange = { index ->
                                             mobileNetworkChoices.getOrNull(index)
                                                 ?.first
-                                                ?.let(onMobileNetworkChange)
+                                                ?.let { network ->
+                                                    hint = SandboxHint.MOBILE_NETWORK
+                                                    onMobileNetworkChange(network)
+                                                }
                                         },
                                         insideMargin = SandboxPreferenceInsideMargin,
                                         maxHeight = 360.dp,
@@ -516,6 +534,7 @@ internal fun PreviewSandboxScreen(
                                 SliderPreference(
                                     value = state.mobileSignalLevel.toFloat(),
                                     onValueChange = { value ->
+                                        hint = SandboxHint.MOBILE_SIGNAL
                                         onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
                                     },
                                     title = stringResource(
@@ -550,7 +569,10 @@ internal fun PreviewSandboxScreen(
                                         onSelectedIndexChange = { index ->
                                             mobileNetworkChoices.getOrNull(index)
                                                 ?.first
-                                                ?.let(onSim2NetworkChange)
+                                                ?.let { network ->
+                                                    hint = SandboxHint.SIM2_NETWORK
+                                                    onSim2NetworkChange(network)
+                                                }
                                         },
                                         insideMargin = SandboxPreferenceInsideMargin,
                                         maxHeight = 360.dp,
@@ -560,6 +582,7 @@ internal fun PreviewSandboxScreen(
                                 SliderPreference(
                                     value = state.sim2SignalLevel.toFloat(),
                                     onValueChange = { value ->
+                                        hint = SandboxHint.SIM2_SIGNAL
                                         onSim2SignalLevelChange(value.roundToInt().coerceIn(0, 4))
                                     },
                                     title = stringResource(R.string.home_preview_sim2_signal_title),
@@ -587,7 +610,10 @@ internal fun PreviewSandboxScreen(
                         }
                         SwitchPreference(
                             checked = state.airplaneMode,
-                            onCheckedChange = onAirplaneModeChange,
+                            onCheckedChange = { enabled ->
+                                hint = SandboxHint.AIRPLANE
+                                onAirplaneModeChange(enabled)
+                            },
                             title = stringResource(R.string.home_preview_airplane_title),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
@@ -608,6 +634,7 @@ internal fun PreviewSandboxScreen(
                         SliderPreference(
                             value = state.batteryPercent.toFloat(),
                             onValueChange = { value ->
+                                hint = SandboxHint.BATTERY
                                 onBatteryPercentChange(value.roundToInt().coerceIn(0, 100))
                             },
                             title = stringResource(R.string.home_preview_battery_level_title),
@@ -627,6 +654,7 @@ internal fun PreviewSandboxScreen(
                             options = batteryModeOptions,
                             selectedIndex = state.batteryMode.ordinal,
                             onSelected = { index ->
+                                hint = SandboxHint.BATTERY_MODE
                                 onBatteryModeChange(PreviewBatteryMode.entries[index])
                             },
                             modifier = Modifier,
@@ -637,6 +665,7 @@ internal fun PreviewSandboxScreen(
                             options = chargingOptions,
                             selectedIndex = state.chargingState.ordinal,
                             onSelected = { index ->
+                                hint = SandboxHint.CHARGING
                                 onChargingStateChange(PreviewChargingState.entries[index])
                             },
                             modifier = Modifier,
