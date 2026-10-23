@@ -20,6 +20,7 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -133,6 +134,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
+    visible: Boolean,
     snackbarState: SnackbarHostState,
     onNavigate: (AppRoute) -> Unit,
 ) {
@@ -247,6 +249,9 @@ internal fun FeaturesScreen(
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
     val search = rememberPageSearch()
+    LaunchedEffect(visible) {
+        if (!visible) search.close()
+    }
     val searching = search.active && search.query.isNotBlank()
     val displayMatches = search.any(R.string.keyguard_combined_status_title, R.string.aod_combined_status_title, R.string.control_center_tint_transition, R.string.battery_fill_follow_retract)
     val layoutMatches = search.any(R.string.content_layout_title, R.string.dual_signal_title, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)
@@ -1328,6 +1333,19 @@ private fun HubPage(
                                     useLabelAsPlaceholder = true,
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                    trailingIcon = {
+                                        if (search.query.isNotEmpty()) {
+                                            val label = stringResource(R.string.feature_search_clear)
+                                            TooltipBox(text = label) {
+                                                IconButton(onClick = { search.update("") }) {
+                                                    Icon(
+                                                        MiuixIcons.Basic.SearchCleanup,
+                                                        contentDescription = label,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    },
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
                                         .focusRequester(requester),
