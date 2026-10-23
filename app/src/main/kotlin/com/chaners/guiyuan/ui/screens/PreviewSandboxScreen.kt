@@ -77,7 +77,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -276,7 +275,7 @@ internal fun PreviewSandboxScreen(
                                     onClick = { scope.launch { listState.animateScrollToItem(0) } },
                                 ) {
                                     Icon(
-                                        MiuixIcons.ExpandLess,
+                                        painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
                                         contentDescription = backTop,
                                     )
                                 }
