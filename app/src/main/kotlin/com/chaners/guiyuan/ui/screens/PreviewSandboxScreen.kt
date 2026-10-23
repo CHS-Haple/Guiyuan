@@ -697,20 +697,11 @@ internal fun PreviewSandboxScreen(
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_preview_live_title),
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                            modifier = Modifier.weight(1f),
-                        )
-                        val label = stringResource(
-                            if (previewExpanded) R.string.home_preview_collapse
-                            else R.string.home_preview_expand,
-                        )
+                    val label = stringResource(
+                        if (previewExpanded) R.string.home_preview_collapse
+                        else R.string.home_preview_expand,
+                    )
+                    val toggle: @Composable () -> Unit = {
                         TooltipBox(text = label) {
                             IconButton(onClick = { previewExpanded = !previewExpanded }) {
                                 if (previewExpanded) {
@@ -730,37 +721,53 @@ internal fun PreviewSandboxScreen(
                         targetState = previewExpanded,
                         contentAlignment = Alignment.TopStart,
                         transitionSpec = {
-                            (fadeIn(animationSpec = tween(160)) togetherWith
-                                fadeOut(animationSpec = tween(120)))
-                                .using(
-                                    SizeTransform(clip = true) { _, _ ->
-                                        tween(durationMillis = 280)
-                                    },
-                                )
+                            (fadeIn(tween(170)) togetherWith fadeOut(tween(120)))
+                                .using(SizeTransform(clip = true) { _, _ -> tween(280) })
                         },
                         label = "sandboxPreviewDrawer",
                     ) { expanded ->
                         if (expanded) {
-                            SandboxFullPreview(state, renderModel, visual)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.home_preview_live_title),
+                                        style = MiuixTheme.textStyles.body1,
+                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    toggle()
+                                }
+                                SandboxFullPreview(state, renderModel, visual)
+                            }
                         } else {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Text(
-                                    text = hintText,
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.home_preview_live_title),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                                    )
+                                    Text(
+                                        text = hintText,
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                                 ScaledSandboxPreview(
                                     model = renderModel,
                                     visual = visual,
                                     scale = 0.30f,
                                 )
+                                toggle()
                             }
                         }
                     }
