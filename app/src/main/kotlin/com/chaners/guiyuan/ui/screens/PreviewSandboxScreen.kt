@@ -710,7 +710,10 @@ private fun SandboxDockIcon(
         val view = measurables.single().measure(Constraints.fixed(width, height))
         val scaledWidth = (width * scale).roundToInt()
         val scaledHeight = (height * scale).roundToInt()
-        layout(constraints.constrainWidth(scaledWidth), constraints.constrainHeight(scaledHeight)) {
+        layout(
+            scaledWidth.coerceIn(constraints.minWidth, constraints.maxWidth),
+            scaledHeight.coerceIn(constraints.minHeight, constraints.maxHeight),
+        ) {
             view.place(0, 0)
         }
     }
