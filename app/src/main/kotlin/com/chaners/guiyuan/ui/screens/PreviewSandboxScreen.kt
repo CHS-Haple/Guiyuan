@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -73,6 +74,7 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
@@ -698,7 +700,7 @@ internal fun PreviewSandboxScreen(
                 }
             }
 
-            // The dock is an overlay owned by the Scaffold's content, not the list's measure pass.
+            // The dock animates outside the LazyColumn's layout and joins the top bar surface.
             AnimatedVisibility(
                 visible = showDock,
                 modifier = Modifier
@@ -715,81 +717,77 @@ internal fun PreviewSandboxScreen(
                     animationSpec = tween(240),
                 ) + fadeOut(animationSpec = tween(160)),
             ) {
-                Card(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        .background(MiuixTheme.colorScheme.surface),
                 ) {
-                    val label = stringResource(
-                        if (previewExpanded) R.string.home_preview_collapse
-                        else R.string.home_preview_expand,
-                    )
-                    val toggle: @Composable () -> Unit = {
-                        TooltipBox(text = label) {
-                            IconButton(onClick = { previewExpanded = !previewExpanded }) {
-                                if (previewExpanded) {
-                                    Icon(MiuixIcons.ExpandLess, contentDescription = label)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            AnimatedContent(
+                                targetState = previewExpanded,
+                                contentAlignment = Alignment.TopStart,
+                                transitionSpec = {
+                                    (fadeIn(tween(170)) togetherWith fadeOut(tween(120)))
+                                        .using(SizeTransform(clip = true) { _, _ -> tween(280) })
+                                },
+                                label = "sandboxPreviewDrawer",
+                            ) { expanded ->
+                                if (expanded) {
+                                    SandboxFullPreview(
+                                        state = state,
+                                        model = renderModel,
+                                        visual = visual,
+                                        showDescription = false,
+                                    )
                                 } else {
-                                    Icon(MiuixIcons.ExpandMore, contentDescription = label)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(end = 44.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        SemanticLeadingIcon(hintIcon, detailRes = hintDetail)
+                                        Text(
+                                            text = hintText,
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        ScaledSandboxPreview(
+                                            model = renderModel,
+                                            visual = visual,
+                                            scale = 0.30f,
+                                        )
+                                    }
                                 }
                             }
-                        }
-                    }
-                    AnimatedContent(
-                        targetState = previewExpanded,
-                        contentAlignment = Alignment.TopStart,
-                        transitionSpec = {
-                            (fadeIn(tween(170)) togetherWith fadeOut(tween(120)))
-                                .using(SizeTransform(clip = true) { _, _ -> tween(280) })
-                        },
-                        label = "sandboxPreviewDrawer",
-                    ) { expanded ->
-                        if (expanded) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
+                            val label = stringResource(
+                                if (previewExpanded) R.string.home_preview_collapse
+                                else R.string.home_preview_expand,
+                            )
+                            TooltipBox(text = label) {
+                                IconButton(
+                                    onClick = { previewExpanded = !previewExpanded },
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.body1,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    toggle()
-                                }
-                                SandboxFullPreview(state, renderModel, visual)
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                                    )
-                                    Text(
-                                        text = hintText,
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                    Icon(
+                                        if (previewExpanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                                        contentDescription = label,
                                     )
                                 }
-                                ScaledSandboxPreview(
-                                    model = renderModel,
-                                    visual = visual,
-                                    scale = 0.30f,
-                                )
-                                toggle()
                             }
                         }
                     }
+                    HorizontalDivider()
                 }
             }
         }
@@ -802,17 +800,20 @@ private fun SandboxFullPreview(
     state: PreviewSandboxUiState,
     model: RenderModel,
     visual: VisualCfg,
+    showDescription: Boolean = true,
 ) {
-    Text(
-        text = stringResource(R.string.home_preview_sandbox_summary),
-        modifier = Modifier.padding(top = 2.dp),
-        style = MiuixTheme.textStyles.body2,
-        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-    )
+    if (showDescription) {
+        Text(
+            text = stringResource(R.string.home_preview_sandbox_summary),
+            modifier = Modifier.padding(top = 2.dp),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
+            .padding(top = if (showDescription) 8.dp else 0.dp)
             .height(192.dp),
         contentAlignment = Alignment.Center,
     ) {
