@@ -419,11 +419,10 @@ internal fun FeaturesScreen(
         if (layoutMatches) {
             Section(R.string.section_layout_size) {
                 if (search.matches(R.string.content_layout_title) ||
-                    (searching && search.any(
-                        R.string.wifi_vertical_offset,
-                        R.string.mobile_type_vertical_offset,
-                        R.string.top_info_vertical_offset,
-                    ))) {
+                    (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
+                        search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
+                    (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
+                        search.matches(R.string.top_info_vertical_offset))) {
                     OverlayDropdownPreference(
                         items = layoutOptions,
                         selectedIndex = visual.layout.ordinal,
