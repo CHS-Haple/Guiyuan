@@ -1,8 +1,17 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.Crossfade
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.using
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,6 +33,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
@@ -75,12 +86,28 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.basic.TextButton
+
+private enum class SandboxHint {
+    BATTERY,
+    BATTERY_MODE,
+    CHARGING,
+    NETWORK,
+    WIFI_STATE,
+    WIFI_SIGNAL,
+    MOBILE_NETWORK,
+    SIM2_NETWORK,
+    MOBILE_SIGNAL,
+    SIM2_SIGNAL,
+    SIM,
+    DATA_SIM,
+    AIRPLANE,
+    PARASITE,
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -199,33 +226,45 @@ internal fun PreviewSandboxScreen(
         }
     }
     var previewExpanded by remember { mutableStateOf(false) }
-    val dockNetwork = when (state.previewCenterSource()) {
-        PreviewCenterSource.WIFI -> {
-            val network = when (state.wifiState) {
-                PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
-                PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
-                PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
-            }
-            "$network · ${signalValueText(state.wifiSignalLevel)}"
+    var hint by remember { mutableStateOf(SandboxHint.BATTERY) }
+    BackHandler(enabled = previewExpanded) { previewExpanded = false }
+    LaunchedEffect(showDock) {
+        if (!showDock) previewExpanded = false
+    }
+
+    val hintText = when (hint) {
+        SandboxHint.BATTERY -> stringResource(R.string.home_preview_battery_percent, state.batteryPercent)
+        SandboxHint.BATTERY_MODE -> batteryModeOptions[state.batteryMode.ordinal]
+        SandboxHint.CHARGING -> chargingOptions[state.chargingState.ordinal]
+        SandboxHint.NETWORK -> networkModeOptions[previewNetworkTabs.indexOf(state.networkMode)]
+        SandboxHint.WIFI_STATE -> wifiOptions[state.wifiState.ordinal]
+        SandboxHint.WIFI_SIGNAL ->
+            stringResource(R.string.home_preview_wifi_signal_title) + " " +
+                signalValueText(state.wifiSignalLevel)
+        SandboxHint.MOBILE_NETWORK ->
+            mobileNetworkChoices.firstOrNull { it.first == state.mobileNetwork }?.second.orEmpty()
+        SandboxHint.SIM2_NETWORK ->
+            mobileNetworkChoices.firstOrNull { it.first == state.sim2MobileNetwork }?.second.orEmpty()
+        SandboxHint.MOBILE_SIGNAL ->
+            stringResource(
+                if (state.dualMobile) R.string.home_preview_sim1_signal_title
+                else R.string.home_preview_mobile_signal_title,
+            ) + " " + signalValueText(state.mobileSignalLevel)
+        SandboxHint.SIM2_SIGNAL ->
+            stringResource(R.string.home_preview_sim2_signal_title) + " " +
+                signalValueText(state.sim2SignalLevel)
+        SandboxHint.SIM -> if (state.dualMobile) {
+            dualSimOptions[state.simCards.ordinal]
+        } else {
+            simOptions[if (state.simPresent) 0 else 1]
         }
-        PreviewCenterSource.MOBILE -> {
-            val network = mobileNetworkChoices.firstOrNull {
-                it.first == state.dataMobileNetwork
-            }?.second ?: stringResource(R.string.home_preview_network_mode_mobile)
-            val signal = if (state.dualLevels != null) {
-                stringResource(
-                    R.string.home_preview_signal_dual,
-                    state.mobileSignalLevel,
-                    state.sim2SignalLevel,
-                )
-            } else {
-                signalValueText(state.displayedSignalLevel)
-            }
-            "$network · $signal"
+        SandboxHint.DATA_SIM -> dataSimOptions[state.dataSim.ordinal]
+        SandboxHint.AIRPLANE -> if (state.airplaneMode) {
+            stringResource(R.string.home_preview_airplane_title)
+        } else {
+            networkModeOptions[previewNetworkTabs.indexOf(state.networkMode)]
         }
-        PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
-        PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
-        PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
+        SandboxHint.PARASITE -> stringResource(R.string.home_preview_parasite_title)
     }
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
@@ -244,7 +283,7 @@ internal fun PreviewSandboxScreen(
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         TooltipBox(text = stringResource(R.string.back)) {
-                            IconButton(onClick = onBack) {
+                            IconButton(onClick = { if (previewExpanded) previewExpanded = false else onBack() }) {
                                 Icon(
                                     MiuixIcons.Back,
                                     contentDescription = stringResource(R.string.back),
@@ -336,81 +375,15 @@ internal fun PreviewSandboxScreen(
                 }
 
                 stickyHeader(key = "livePreview") {
-                    // Keep the list anchor fixed while the title becomes the pinned preview.
+                    // A fixed-height anchor prevents the dock transition from moving list items.
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(76.dp)
-                            .background(MiuixTheme.colorScheme.surface),
+                            .height(76.dp),
                         contentAlignment = Alignment.CenterStart,
                     ) {
-                        Crossfade(
-                            targetState = showDock,
-                            animationSpec = tween(durationMillis = 160),
-                            label = "sandboxPreviewDock",
-                        ) { pinned ->
-                            if (pinned) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                                    insideMargin = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = stringResource(R.string.home_preview_live_title),
-                                                style = MiuixTheme.textStyles.body2,
-                                                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                                            )
-                                            Text(
-                                                text = dockNetwork,
-                                                style = MiuixTheme.textStyles.body2,
-                                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                            Text(
-                                                text = stringResource(
-                                                    R.string.home_preview_dock_battery,
-                                                    state.batteryPercent,
-                                                ),
-                                                style = MiuixTheme.textStyles.body2,
-                                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                                maxLines = 1,
-                                            )
-                                        }
-                                        ScaledSandboxPreview(
-                                            model = renderModel,
-                                            visual = visual,
-                                            scale = 0.30f,
-                                        )
-                                        val actionLabel = stringResource(R.string.home_preview_expand)
-                                        TooltipBox(text = actionLabel) {
-                                            IconButton(onClick = { previewExpanded = true }) {
-                                                Image(
-                                                    painter = painterResource(
-                                                        R.drawable.ic_material_symbol_open_in_full,
-                                                    ),
-                                                    contentDescription = actionLabel,
-                                                    modifier = Modifier.size(24.dp),
-                                                    colorFilter = ColorFilter.tint(
-                                                        MiuixTheme.colorScheme.onSurface,
-                                                    ),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                SmallTitle(
-                                    text = stringResource(R.string.home_preview_section_network),
-                                )
-                            }
+                        if (!showDock) {
+                            SmallTitle(stringResource(R.string.home_preview_section_network))
                         }
                     }
                 }
@@ -671,25 +644,101 @@ internal fun PreviewSandboxScreen(
                     }
                 }
             }
-        }
 
-        OverlayDialog(
-            title = stringResource(R.string.home_preview_live_title),
-            show = previewExpanded,
-            largeScreen = true,
-            enableWindowDim = false,
-            renderInRootScaffold = false,
-            onDismissRequest = { previewExpanded = false },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                SandboxFullPreview(state, renderModel, visual)
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { previewExpanded = false },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            // The dock is an overlay owned by the Scaffold's content, not the list's measure pass.
+            AnimatedVisibility(
+                visible = showDock,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = paddingValues.calculateTopPadding())
+                    .fillMaxWidth()
+                    .zIndex(1f),
+                enter = expandVertically(
+                    expandFrom = Alignment.Top,
+                    animationSpec = tween(240),
+                ) + fadeIn(animationSpec = tween(170)),
+                exit = shrinkVertically(
+                    shrinkTowards = Alignment.Top,
+                    animationSpec = tween(240),
+                ) + fadeOut(animationSpec = tween(160)),
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.home_preview_live_title),
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurfaceContainer,
+                            modifier = Modifier.weight(1f),
+                        )
+                        val label = stringResource(
+                            if (previewExpanded) R.string.home_preview_collapse
+                            else R.string.home_preview_expand,
+                        )
+                        TooltipBox(text = label) {
+                            IconButton(onClick = { previewExpanded = !previewExpanded }) {
+                                if (previewExpanded) {
+                                    Icon(MiuixIcons.ExpandLess, contentDescription = label)
+                                } else {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_material_symbol_open_in_full),
+                                        contentDescription = label,
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    AnimatedContent(
+                        targetState = previewExpanded,
+                        contentAlignment = Alignment.TopStart,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(160)) togetherWith
+                                fadeOut(animationSpec = tween(120)))
+                                .using(
+                                    SizeTransform(clip = true) { _, _ ->
+                                        tween(durationMillis = 280)
+                                    },
+                                )
+                        },
+                        label = "sandboxPreviewDrawer",
+                    ) { expanded ->
+                        if (expanded) {
+                            SandboxFullPreview(state, renderModel, visual)
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = hintText,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                ScaledSandboxPreview(
+                                    model = renderModel,
+                                    visual = visual,
+                                    scale = 0.30f,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
+
     }
 }
 
