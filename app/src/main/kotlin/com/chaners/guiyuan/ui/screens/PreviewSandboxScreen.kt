@@ -199,9 +199,14 @@ internal fun PreviewSandboxScreen(
     }
     var previewExpanded by remember { mutableStateOf(false) }
     val dockNetwork = when (state.previewCenterSource()) {
-        PreviewCenterSource.WIFI ->
-            stringResource(R.string.home_preview_network_mode_wifi) + " · " +
-                signalValueText(state.wifiSignalLevel)
+        PreviewCenterSource.WIFI -> {
+            val network = when (state.wifiState) {
+                PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
+                PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
+                PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
+            }
+            "$network · ${signalValueText(state.wifiSignalLevel)}"
+        }
         PreviewCenterSource.MOBILE -> {
             val network = mobileNetworkChoices.firstOrNull {
                 it.first == state.dataMobileNetwork
