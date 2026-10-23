@@ -37,7 +37,6 @@ No changes since the 0.9.0 development checkpoint.
 - Rebuilt the optional liquid-glass finish on the pinned MIUIX Blur API with locally adapted upstream lens and inner-shadow effects. The three finishes are Blur (8 dp, 40% theme-colored surface), Balanced (4 dp, 40%) and Clear (2 dp, 30%). Balanced is the unconfigured choice; stored Default and older Blur values continue to select the same 4 dp finish, while the 8 dp option retains its distinct stored value. Both use a 24 / 24 dp lens, a gravity-responsive dual-light edge highlight, a 10 dp cast shadow and a separate pressure-responsive selected capsule with depth refraction and chromatic dispersion. Preserved independent tab content settings and the native navigation fallback; removed the no-longer-used Backdrop and Shapes runtime libraries.
 - Updated AndroidX Core from 1.17.0 to 1.19.1.
 - Refined the Home runtime-status card with a single settled gradient and consistent switch interactions.
-- Improved normal-path API 102 Hot Reload generation retirement and preserved native recovery on unsupported handoffs.
 - Clarified the Chinese and English Features-section titles: Network icons → Network & signal, and Management → Configuration management.
 
 ### Engineering

@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.9.0**, adding an opt-in Duo dual-SIM style, a temporary leased Home status simulator, native variable-font weight controls, adjustable low-battery threshold, and refined MIUIX liquid-glass navigation. Backup restoration, Control Center transitions, and API 102 Hot Reload are further hardened for the verified SystemUI target. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current pre-release version is **0.9.0**, adding an opt-in Duo dual-SIM style, a temporary leased Home status simulator, native variable-font weight controls, adjustable low-battery threshold, and refined MIUIX liquid-glass navigation. Backup restoration and Control Center transitions are further hardened for the verified SystemUI target, with additional normal-path API 102 Hot Reload validation. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
 
 | Item | Current scope |
 | --- | --- |
@@ -90,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.9.0**，新增可选 Duo 双排信号样式、临时状态模拟、原生可变字体字重调节和可设置的低电量阈值，并优化 MIUIX 液态玻璃底栏、配置恢复、控制中心过渡与 API 102 热重载兼容性。兼容性仍以已验证的 SystemUI 为准。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前预发布版本为 **0.9.0**，新增可选 Duo 双排信号样式、临时状态模拟、原生可变字体字重调节和可设置的低电量阈值，并优化 MIUIX 液态玻璃底栏、配置恢复及控制中心过渡，补充 API 102 热重载正常路径的验证。兼容性仍以已验证的 SystemUI 为准。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
 
 | 项目 | 当前范围 |
 | --- | --- |
