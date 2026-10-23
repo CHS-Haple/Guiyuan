@@ -44,6 +44,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -1334,7 +1335,7 @@ private fun HubPage(
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
                                 SearchBar(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
                                     inputField = {
                                         InputField(
                                             query = search.query,
@@ -1350,13 +1351,14 @@ private fun HubPage(
                                     outsideEndAction = {
                                         Text(
                                             modifier = Modifier
-                                                .padding(start = 12.dp)
+                                                .padding(start = 12.dp, end = 12.dp)
                                                 .clickable(
                                                     interactionSource = null,
                                                     indication = null,
                                                     onClick = search::close,
                                                 ),
                                             text = stringResource(R.string.cancel),
+                                            fontWeight = FontWeight.Bold,
                                             color = MiuixTheme.colorScheme.primary,
                                         )
                                     },
