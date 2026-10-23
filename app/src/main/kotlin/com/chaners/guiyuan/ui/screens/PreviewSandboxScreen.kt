@@ -185,44 +185,44 @@ internal fun PreviewSandboxScreen(
         topBar = {
             Column {
                 MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                SmallTopAppBar(
-                    title = stringResource(R.string.home_preview_sandbox_title),
-                    color = barColor,
+                    backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        TooltipBox(text = stringResource(R.string.back)) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    MiuixIcons.Back,
-                                    contentDescription = stringResource(R.string.back),
-                                )
+                ) { barColor ->
+                    SmallTopAppBar(
+                        title = stringResource(R.string.home_preview_sandbox_title),
+                        color = barColor,
+                        scrollBehavior = scrollBehavior,
+                        navigationIcon = {
+                            TooltipBox(text = stringResource(R.string.back)) {
+                                IconButton(onClick = onBack) {
+                                    Icon(
+                                        MiuixIcons.Back,
+                                        contentDescription = stringResource(R.string.back),
+                                    )
+                                }
                             }
-                        }
-                    },
-                    actions = {
-                        val title = stringResource(
-                            if (dark) R.string.home_preview_switch_light
-                            else R.string.home_preview_switch_dark,
-                        )
-                        TooltipBox(text = title) {
-                            IconButton(onClick = onToggleTheme) {
-                                Image(
-                                    painter = painterResource(
-                                        if (dark) R.drawable.ic_material_symbol_light_mode
-                                        else R.drawable.ic_material_symbol_dark_mode,
-                                    ),
-                                    contentDescription = title,
-                                    modifier = Modifier.size(24.dp),
-                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                )
+                        },
+                        actions = {
+                            val title = stringResource(
+                                if (dark) R.string.home_preview_switch_light
+                                else R.string.home_preview_switch_dark,
+                            )
+                            TooltipBox(text = title) {
+                                IconButton(onClick = onToggleTheme) {
+                                    Image(
+                                        painter = painterResource(
+                                            if (dark) R.drawable.ic_material_symbol_light_mode
+                                            else R.drawable.ic_material_symbol_dark_mode,
+                                        ),
+                                        contentDescription = title,
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                                    )
+                                }
                             }
-                        }
-                    },
-                )
-            }
+                        },
+                    )
+                }
                 AnimatedVisibility(
                     visible = compactPreview,
                     enter = fadeIn() + expandVertically(),
