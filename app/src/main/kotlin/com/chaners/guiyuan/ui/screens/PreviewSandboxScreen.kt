@@ -56,6 +56,9 @@ import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
+import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
+import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
+import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
@@ -208,89 +211,97 @@ internal fun PreviewSandboxScreen(
 
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
+    val topBarBackdrop = rememberTopBarBackdrop()
     val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
-            SmallTopAppBar(
-                title = stringResource(R.string.home_preview_sandbox_title),
+            MiuixBlurredTopBar(
+                backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    TooltipBox(text = stringResource(R.string.back)) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.back),
-                            )
+            ) { barColor ->
+                SmallTopAppBar(
+                    title = stringResource(R.string.home_preview_sandbox_title),
+                    color = barColor,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        TooltipBox(text = stringResource(R.string.back)) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    MiuixIcons.Back,
+                                    contentDescription = stringResource(R.string.back),
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    val title = stringResource(
-                        if (dark) R.string.home_preview_switch_light
-                        else R.string.home_preview_switch_dark,
-                    )
-                    TooltipBox(text = title) {
-                        IconButton(onClick = onToggleTheme) {
-                            Image(
-                                painter = painterResource(
-                                    if (dark) R.drawable.ic_material_symbol_light_mode
-                                    else R.drawable.ic_material_symbol_dark_mode,
-                                ),
-                                contentDescription = title,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                            )
+                    },
+                    actions = {
+                        val title = stringResource(
+                            if (dark) R.string.home_preview_switch_light
+                            else R.string.home_preview_switch_dark,
+                        )
+                        TooltipBox(text = title) {
+                            IconButton(onClick = onToggleTheme) {
+                                Image(
+                                    painter = painterResource(
+                                        if (dark) R.drawable.ic_material_symbol_light_mode
+                                        else R.drawable.ic_material_symbol_dark_mode,
+                                    ),
+                                    contentDescription = title,
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                                )
+                            }
                         }
-                    }
-                },
-                bottomContent = {
-                    AnimatedVisibility(
-                        visible = showDock,
-                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    start = TopAppBarDefaults.TitlePadding,
-                                    end = TopAppBarDefaults.ActionIconPadding,
-                                    top = 8.dp,
-                                    bottom = 8.dp,
-                                ),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    },
+                    bottomContent = {
+                        AnimatedVisibility(
+                            visible = showDock,
+                            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
                         ) {
-                            Text(
-                                text = stringResource(R.string.home_preview_live_title),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            SandboxDockIcon(renderModel, visual)
-                            val backTop = stringResource(R.string.diagnostics_scroll_top)
-                            TooltipBox(text = backTop) {
-                                IconButton(
-                                    onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                        contentDescription = backTop,
-                                    )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = TopAppBarDefaults.TitlePadding,
+                                        end = TopAppBarDefaults.ActionIconPadding,
+                                        top = 8.dp,
+                                        bottom = 8.dp,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.home_preview_live_title),
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                SandboxDockIcon(renderModel, visual)
+                                val backTop = stringResource(R.string.diagnostics_scroll_top)
+                                TooltipBox(text = backTop) {
+                                    IconButton(
+                                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                            contentDescription = backTop,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            }
         },
     ) { paddingValues ->
         Box(
-            modifier =
-                Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
                 state = listState,
