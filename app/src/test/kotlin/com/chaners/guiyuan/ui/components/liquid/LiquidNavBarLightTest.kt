@@ -29,8 +29,8 @@ class LiquidNavBarLightTest {
         val delta = (PI / 12).toFloat()
         val towardUpright = (litHighlight(GlassTilt(0f, neutral + delta, 0f), -45f).style as BloomStroke).primaryLight.position
         val towardFlat = (litHighlight(GlassTilt(0f, neutral - delta, 0f), -45f).style as BloomStroke).primaryLight.position
-        val plus = (-PI / 4 + 4 * PI / 180).toFloat()
-        val minus = (-PI / 4 - 4 * PI / 180).toFloat()
+        val plus = (-PI / 4 + 10 * PI / 180).toFloat()
+        val minus = (-PI / 4 - 10 * PI / 180).toFloat()
         assertEquals(0.5f + cos(plus), towardUpright.x, 0.0001f)
         assertEquals(0.7f + sin(plus), towardUpright.y, 0.0001f)
         assertEquals(0.5f + cos(minus), towardFlat.x, 0.0001f)
@@ -67,7 +67,7 @@ class LiquidNavBarLightTest {
         val upright = (litHighlight(GlassTilt(0f, 0f, 0f), 90f).style as BloomStroke).primaryLight.position
         val pitched = (litHighlight(GlassTilt(0f, 20f, 0f), 90f).style as BloomStroke).primaryLight.position
         val rolled = (litHighlight(GlassTilt(0f, 0f, -20f), 90f).style as BloomStroke).primaryLight.position
-        val limitAngle = (PI / 2 + 12 * PI / 180).toFloat()
+        val limitAngle = (PI / 2 + 30 * PI / 180).toFloat()
         assertEquals(0.5f + cos(limitAngle), pitched.x, 0.0001f)
         assertEquals(0.7f + sin(limitAngle), pitched.y, 0.0001f)
         assertEquals(upright.x - 0.12f, rolled.x, 0.0001f)

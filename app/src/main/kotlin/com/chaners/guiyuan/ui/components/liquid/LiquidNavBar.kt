@@ -109,9 +109,9 @@ private val glassHighlight = Highlight(
 private const val GRAVITY_THRESHOLD_SQ = 0.01f
 private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
 private const val TILT_LIGHT_SENSITIVITY = 0.12f
-private const val PITCH_SWEEP_PER_RAD = 4f / 15f
+private const val PITCH_SWEEP_PER_RAD = 2f / 3f
 private val PITCH_NEUTRAL = (PI / 4).toFloat()
-private val PITCH_SWEEP_LIMIT = (12.0 * PI / 180.0).toFloat()
+private val PITCH_SWEEP_LIMIT = (30.0 * PI / 180.0).toFloat()
 
 internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
 
