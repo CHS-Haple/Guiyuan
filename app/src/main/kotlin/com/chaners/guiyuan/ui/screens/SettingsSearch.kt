@@ -37,7 +37,8 @@ private val cellularTerms = listOf(
     "蜂窝数据", "蜂窝移动", "移动通信", "4G", "LTE", "5G", "5GA",
 )
 
-internal fun isSearchFiltering(active: Boolean, query: String): Boolean = active && query.isNotBlank()
+internal fun isSearchFiltering(active: Boolean, query: String): Boolean =
+    active && query.any(Char::isLetterOrDigit)
 
 internal class PageSearch(private val context: Context) {
     var active by mutableStateOf(false)
