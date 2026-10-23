@@ -1315,10 +1315,14 @@ private fun HubPage(
                         bottomContent = {
                             AnimatedVisibility(
                                 visible = search.active,
+                                modifier = Modifier.fillMaxWidth(),
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
                                 SearchBar(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp),
                                     inputField = {
                                         InputField(
                                             query = search.query,
