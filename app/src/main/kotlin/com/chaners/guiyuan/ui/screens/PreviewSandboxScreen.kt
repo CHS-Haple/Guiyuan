@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
@@ -108,7 +107,6 @@ private enum class SandboxHint {
     PARASITE,
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
@@ -219,8 +217,11 @@ internal fun PreviewSandboxScreen(
     val showDock by remember {
         derivedStateOf {
             val info = listState.layoutInfo
-            info.visibleItemsInfo.any { item ->
-                item.key == "livePreview" && item.offset <= info.viewportStartOffset
+            val preview = info.visibleItemsInfo.firstOrNull { it.key == "fullPreview" }
+            if (preview != null) {
+                preview.offset + preview.size <= info.viewportStartOffset
+            } else {
+                listState.firstVisibleItemIndex > 0
             }
         }
     }
@@ -338,7 +339,7 @@ internal fun PreviewSandboxScreen(
                         extraBottom = 12.dp,
                     ),
             ) {
-                item {
+                item(key = "fullPreview") {
                     SmallTitle(stringResource(R.string.home_preview_section_preview))
                     Card(
                         modifier =
@@ -376,18 +377,8 @@ internal fun PreviewSandboxScreen(
                     }
                 }
 
-                stickyHeader(key = "livePreview") {
-                    // A fixed-height anchor prevents the dock transition from moving list items.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(76.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (!showDock) {
-                            SmallTitle(stringResource(R.string.home_preview_section_network))
-                        }
-                    }
+                item {
+                    SmallTitle(stringResource(R.string.home_preview_section_network))
                 }
 
                 item {
