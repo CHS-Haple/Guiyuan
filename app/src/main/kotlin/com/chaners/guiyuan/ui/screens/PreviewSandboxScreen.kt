@@ -254,16 +254,18 @@ internal fun PreviewSandboxScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
-                                    horizontal = TopAppBarDefaults.NavigationIconPadding,
-                                    vertical = 8.dp,
+                                    start = TopAppBarDefaults.TitlePadding,
+                                    end = TopAppBarDefaults.ActionIconPadding,
+                                    top = 8.dp,
+                                    bottom = 8.dp,
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
                                 text = stringResource(R.string.home_preview_live_title),
-                                style = MiuixTheme.textStyles.subtitle,
-                                color = MiuixTheme.colorScheme.onSurface,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
@@ -661,9 +663,11 @@ private fun SandboxDockIcon(
     model: RenderModel,
     visual: VisualCfg,
 ) {
-    val width = with(LocalDensity.current) { SandboxPreviewWidth.roundToPx() }
-    val height = with(LocalDensity.current) { SandboxPreviewHeight.roundToPx() }
-    val scale = 0.4f
+    val density = LocalDensity.current
+    val width = with(density) { SandboxPreviewWidth.roundToPx() }
+    val height = with(density) { SandboxPreviewHeight.roundToPx() }
+    val compactHeight = with(density) { TopAppBarDefaults.SmallTopAppBarCenterHeight.roundToPx() }
+    val scale = compactHeight.toFloat() / height
     Layout(
         content = {
             StatusPreview(
