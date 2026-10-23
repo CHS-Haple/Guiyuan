@@ -85,6 +85,7 @@
 
     <string name="home_preview_battery_level_title">Battery level</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
+    <string name="home_preview_dock_battery">Battery %1$d%%</string>
     <string name="home_preview_battery_mode_title">Battery mode</string>
     <string name="home_preview_battery_mode_balanced">Balanced</string>
     <string name="home_preview_battery_mode_power_save">Battery saver</string>
