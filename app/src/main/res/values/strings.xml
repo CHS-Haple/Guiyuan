@@ -285,6 +285,7 @@
     <string name="diagnostics_log_source_hot_reload_transfer">Hot reload transfer</string>
     <string name="diagnostics_log_reason_saved_state">Saved state missing or incompatible</string>
     <string name="diagnostics_log_reason_dispatch">Main-thread dispatch failed</string>
+    <string name="diagnostics_log_state_unknown">Unknown</string>
     <string name="diagnostics_log_state_ready">Ready</string>
     <string name="diagnostics_log_state_observed">Observed</string>
     <string name="diagnostics_log_state_disabled">Disabled</string>
