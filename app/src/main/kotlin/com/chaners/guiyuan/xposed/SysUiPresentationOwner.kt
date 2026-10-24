@@ -701,15 +701,18 @@ internal object SysUiPresentationOwner {
         val session = keyguardFamilyCurrent ?: return Result.Inactive(0)
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
-        val restored = session.stop(source)
-        keyguardFamilyEventSink?.invoke(
-            surface.eventPrefix + " inactive source=" + source +
-                " restoredViews=" + restored,
-        )
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
-        return Result.Inactive(restored)
+        return try {
+            val restored = session.stop(source)
+            keyguardFamilyEventSink?.invoke(
+                surface.eventPrefix + " inactive source=" + source +
+                    " restoredViews=" + restored,
+            )
+            Result.Inactive(restored)
+        } finally {
+            keyguardFamilyEventSink = null
+            keyguardFamilyFailNativeSink = null
+            keyguardFamilyReadySink = null
+        }
     }
 
     @Synchronized
@@ -906,15 +909,18 @@ internal object SysUiPresentationOwner {
             controlCenterCurrent
                 ?: return Result.Inactive(0)
         controlCenterCurrent = null
-        val restored = session.stop(source)
-        controlCenterEventSink?.invoke(
-            "controlCenterPresentation inactive source=" + source +
-                " restoredViews=" + restored,
-        )
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
-        return Result.Inactive(restored)
+        return try {
+            val restored = session.stop(source)
+            controlCenterEventSink?.invoke(
+                "controlCenterPresentation inactive source=" + source +
+                    " restoredViews=" + restored,
+            )
+            Result.Inactive(restored)
+        } finally {
+            controlCenterEventSink = null
+            controlCenterFailNativeSink = null
+            controlCenterReadySink = null
+        }
     }
 
     @Synchronized
@@ -961,31 +967,33 @@ internal object SysUiPresentationOwner {
     fun releaseGenerationForHotReload(
         requestLayout: Boolean = true,
     ): Int {
-        val controlCenterRestored =
-            controlCenterCurrent?.let { session ->
-                controlCenterCurrent = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
+        val failures = ArrayList<Throwable>(1)
+        fun stop(session: Session?): Int =
+            session?.let {
+                runCatching {
+                    it.stop(
+                        source = "hotReload-oldGeneration",
+                        requestLayout = requestLayout,
+                    )
+                }.getOrElse { error ->
+                    failures.add(error)
+                    0
+                }
             } ?: 0
-        val homeRestored =
-            current?.let { session ->
-                current = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
-            } ?: 0
-        val keyguardFamilyRestored =
-            keyguardFamilyCurrent?.let { session ->
-                keyguardFamilyCurrent = null
-                keyguardFamilySurface = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
-            } ?: 0
+
+        val cc = controlCenterCurrent
+        controlCenterCurrent = null
+        val controlCenterRestored = stop(cc)
+
+        val home = current
+        current = null
+        val homeRestored = stop(home)
+
+        val keyguard = keyguardFamilyCurrent
+        keyguardFamilyCurrent = null
+        keyguardFamilySurface = null
+        val keyguardFamilyRestored = stop(keyguard)
+
         controlCenterEventSink = null
         controlCenterFailNativeSink = null
         controlCenterReadySink = null
@@ -997,20 +1005,35 @@ internal object SysUiPresentationOwner {
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
+
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("hotReload-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
     @Synchronized
     fun resetRuntimeState(source: String) {
-        deactivateCc(source)
-        deactivateAod(source)
-        deactivateKeyguard(source)
-        deactivate(source)
+        val failures = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            runCatching(action).onFailure(failures::add)
+        }
+        release { deactivateCc(source) }
+        release { deactivateAod(source) }
+        release { deactivateKeyguard(source) }
+        release { deactivate(source) }
         runCatching { measureHook?.unhook() }
         runCatching { layoutHook?.unhook() }
         runCatching { batteryHideHook?.unhook() }
         runCatching { islandShowingHook?.unhook() }
         clearInstallState()
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("presentation-reset-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 
     @Synchronized
@@ -1186,18 +1209,28 @@ internal object SysUiPresentationOwner {
             result
         }
 
+    // A failed restore must not prevent the other owners from reaching native fallback.
+    private fun finishFailure(vararg actions: () -> Unit) {
+        val failures = ArrayList<Throwable>(1)
+        actions.forEach { runCatching(it).onFailure(failures::add) }
+        failures.firstOrNull()?.let { error ->
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
+    }
+
     @Synchronized
     private fun onSessionFailure(reason: String) {
         val session = current ?: return
         current = null
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet())
-        session.stop("fail-native:" + reason)
-        eventSink?.invoke(
-            "homePresentation failNative reason=" + reason,
+        finishFailure(
+            { controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet()) },
+            { session.stop("fail-native:" + reason) },
+            { eventSink?.invoke("homePresentation failNative reason=" + reason) },
+            { failNativeSink?.invoke(reason) },
         )
-        failNativeSink?.invoke(reason)
     }
 
     @Synchronized
@@ -1206,14 +1239,21 @@ internal object SysUiPresentationOwner {
         val surface = keyguardFamilySurface ?: return
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
-        session.stop("fail-native:" + reason)
-        keyguardFamilyEventSink?.invoke(
-            surface.eventPrefix + " failNative reason=" + reason,
-        )
-        keyguardFamilyFailNativeSink?.invoke(reason)
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
+        try {
+            finishFailure(
+                { session.stop("fail-native:" + reason) },
+                {
+                    keyguardFamilyEventSink?.invoke(
+                        surface.eventPrefix + " failNative reason=" + reason,
+                    )
+                },
+                { keyguardFamilyFailNativeSink?.invoke(reason) },
+            )
+        } finally {
+            keyguardFamilyEventSink = null
+            keyguardFamilyFailNativeSink = null
+            keyguardFamilyReadySink = null
+        }
     }
 
     @Synchronized
@@ -1284,14 +1324,17 @@ internal object SysUiPresentationOwner {
     private fun onCcSessionFailure(reason: String) {
         val session = controlCenterCurrent ?: return
         controlCenterCurrent = null
-        session.stop("fail-native:" + reason)
-        controlCenterEventSink?.invoke(
-            "controlCenterPresentation failNative reason=" + reason,
-        )
-        controlCenterFailNativeSink?.invoke(reason)
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
+        try {
+            finishFailure(
+                { session.stop("fail-native:" + reason) },
+                { controlCenterEventSink?.invoke("controlCenterPresentation failNative reason=" + reason) },
+                { controlCenterFailNativeSink?.invoke(reason) },
+            )
+        } finally {
+            controlCenterEventSink = null
+            controlCenterFailNativeSink = null
+            controlCenterReadySink = null
+        }
     }
 
     private fun rollbackInstall(
@@ -1778,27 +1821,41 @@ internal object SysUiPresentationOwner {
             leasePhase = LeasePhase.PREARM
             pendingNativeCarrierWidth = null
             deferVisualMaskUntilLayout = false
-            host.get()?.removeOnAttachStateChangeListener(this)
-            battery.get()?.removeOnLayoutChangeListener(batteryLayoutListener)
-            batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            val reservationRestored = restoreEndReservation()
-            val ignoredSlotsRestored =
-                restorePersistentIgnoredSlots(
-                    requestLayout = requestLayout,
-                )
-            val restored = restoreClipMasks(clipStates) + restoreClipMasks(mirroredPeerClipStates)
+
+            val failures = ArrayList<Throwable>(1)
+            fun release(action: () -> Unit) {
+                runCatching(action).onFailure(failures::add)
+            }
+            release { host.get()?.removeOnAttachStateChangeListener(this) }
+            release { battery.get()?.removeOnLayoutChangeListener(batteryLayoutListener) }
+            release { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) }
+
+            var reservationRestored = false
+            var ignoredSlotsRestored = false
+            var restored = 0
+            release { reservationRestored = restoreEndReservation() }
+            release { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
+            release { restored += restoreClipMasks(clipStates, failures) }
+            release { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
+
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
-                batteryContainer.get()?.requestLayout()
+                release { batteryContainer.get()?.requestLayout() }
             }
-            onEvent(
-                eventPrefix + " cleanup source=" + source +
-                    " restoredClipBounds=" + restored +
-                    " restoredEndReservation=" + reservationRestored +
-                    " restoredIgnoredSlots=" + ignoredSlotsRestored +
-                    " requestLayout=" + explicitLayoutRequest,
-            )
+            release {
+                onEvent(
+                    eventPrefix + " cleanup source=" + source +
+                        " restoredClipBounds=" + restored +
+                        " restoredEndReservation=" + reservationRestored +
+                        " restoredIgnoredSlots=" + ignoredSlotsRestored +
+                        " requestLayout=" + explicitLayoutRequest,
+                )
+            }
+            failures.firstOrNull()?.let { error ->
+                failures.drop(1).forEach(error::addSuppressed)
+                throw error
+            }
             return restored
         }
 
@@ -2236,34 +2293,40 @@ internal object SysUiPresentationOwner {
         private fun restoreEndReservation(): Boolean {
             var paddingRestored = appliedPadding == null
             val applied = appliedPadding
-            if (applied != null) {
-                val group = statusIcons.get()
-                val baseline = nativePadding
-                if (group == null || baseline == null) {
-                    paddingRestored = false
-                    appliedPadding = null
-                } else {
-                    val live = PaddingState.from(group)
-                    if (live != applied) {
-                        onEvent(
-                            eventPrefix + " endReservation restore=skipped reason=writer-changed " +
-                                "livePaddingEnd=" + live.end +
-                                " appliedPaddingEnd=" + applied.end,
-                        )
+            val paddingFailure = runCatching {
+                if (applied != null) {
+                    val group = statusIcons.get()
+                    val baseline = nativePadding
+                    if (group == null || baseline == null) {
                         paddingRestored = false
                     } else {
-                        group.setPaddingRelative(
-                            baseline.start,
-                            baseline.top,
-                            baseline.end,
-                            baseline.bottom,
-                        )
-                        paddingRestored = PaddingState.from(group) == baseline
+                        val live = PaddingState.from(group)
+                        if (live != applied) {
+                            paddingRestored = false
+                            onEvent(
+                                eventPrefix + " endReservation restore=skipped reason=writer-changed " +
+                                    "livePaddingEnd=" + live.end +
+                                    " appliedPaddingEnd=" + applied.end,
+                            )
+                        } else {
+                            group.setPaddingRelative(
+                                baseline.start,
+                                baseline.top,
+                                baseline.end,
+                                baseline.bottom,
+                            )
+                            paddingRestored = PaddingState.from(group) == baseline
+                        }
                     }
-                    appliedPadding = null
                 }
+            }.exceptionOrNull()
+            appliedPadding = null
+            val carrier = runCatching { restoreFakeCarrierCapacityLease() }
+            if (paddingFailure != null) {
+                carrier.exceptionOrNull()?.let(paddingFailure::addSuppressed)
+                throw paddingFailure
             }
-            val carrierRestored = restoreFakeCarrierCapacityLease()
+            val carrierRestored = carrier.getOrThrow()
             return paddingRestored && carrierRestored
         }
 
@@ -2499,22 +2562,27 @@ internal object SysUiPresentationOwner {
                 return false
             }
             if (params.width != appliedWidthPx) {
-                onEvent(
-                    eventPrefix +
-                        " fakeCarrierCapacity restore=skipped reason=writer-changed" +
-                        " liveWidth=" + params.width +
-                        " appliedWidth=" + appliedWidthPx,
-                )
-                clearCapacityLeaseSnapshot()
+                try {
+                    onEvent(
+                        eventPrefix +
+                            " fakeCarrierCapacity restore=skipped reason=writer-changed" +
+                            " liveWidth=" + params.width +
+                            " appliedWidth=" + appliedWidthPx,
+                    )
+                } finally {
+                    clearCapacityLeaseSnapshot()
+                }
                 return false
             }
 
-            params.width = baselineLayoutWidthPx
-            hostView.layoutParams = params
-            val restored = hostView.layoutParams?.width == baselineLayoutWidthPx
-            clearCapacityLeaseSnapshot()
-            pendingNativeCarrierWidth = null
-            return restored
+            return try {
+                params.width = baselineLayoutWidthPx
+                hostView.layoutParams = params
+                hostView.layoutParams?.width == baselineLayoutWidthPx
+            } finally {
+                clearCapacityLeaseSnapshot()
+                pendingNativeCarrierWidth = null
+            }
         }
 
         private fun clearCapacityLeaseSnapshot() {
@@ -2817,14 +2885,17 @@ internal object SysUiPresentationOwner {
             }
         }
 
-        private fun restoreClipMasks(states: MutableList<ClipState>): Int {
+        private fun restoreClipMasks(
+            states: MutableList<ClipState>,
+            failures: MutableList<Throwable>,
+        ): Int {
             val snapshot = states.toList()
             states.clear()
             var restored = 0
             snapshot.forEach { state ->
-                if (restoreClipState(state)) {
-                    restored += 1
-                }
+                runCatching { restoreClipState(state) }
+                    .onSuccess { if (it) restored += 1 }
+                    .onFailure(failures::add)
             }
             return restored
         }

@@ -36,6 +36,14 @@ internal object SysUiHostRegistry {
         )
     }
 
+    // A failed callback may only retire the host it attempted to attach.
+    @Synchronized
+    fun discardIfCurrent(host: Any): Boolean {
+        if (statusHost.get() !== host) return false
+        statusHost = WeakReference(null)
+        return true
+    }
+
     internal data class Capture(
         val host: Any,
         val identity: Int,
