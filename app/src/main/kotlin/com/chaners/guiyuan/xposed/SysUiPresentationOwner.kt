@@ -1835,8 +1835,8 @@ internal object SysUiPresentationOwner {
             var restored = 0
             release { reservationRestored = restoreEndReservation() }
             release { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
-            release { restored += restoreClipMasks(clipStates) }
-            release { restored += restoreClipMasks(mirroredPeerClipStates) }
+            release { restored += restoreClipMasks(clipStates, failures) }
+            release { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
 
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
@@ -2874,14 +2874,17 @@ internal object SysUiPresentationOwner {
             }
         }
 
-        private fun restoreClipMasks(states: MutableList<ClipState>): Int {
+        private fun restoreClipMasks(
+            states: MutableList<ClipState>,
+            failures: MutableList<Throwable>,
+        ): Int {
             val snapshot = states.toList()
             states.clear()
             var restored = 0
             snapshot.forEach { state ->
-                if (restoreClipState(state)) {
-                    restored += 1
-                }
+                runCatching { restoreClipState(state) }
+                    .onSuccess { if (it) restored += 1 }
+                    .onFailure(failures::add)
             }
             return restored
         }
