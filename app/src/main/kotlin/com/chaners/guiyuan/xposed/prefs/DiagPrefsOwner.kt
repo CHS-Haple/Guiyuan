@@ -57,15 +57,19 @@ internal object DiagPrefsOwner {
         binding = Binding(prefs, token)
         this.listener = listener
 
+        var latest = detailed
         runCatching {
             onChanged(detailed)
+            // A change before listener registration cannot produce a callback.
+            latest = isDetailed(prefs, forceDetailed)
+            if (latest != detailed) onChanged(latest)
         }.onFailure {
             unbindLocked()
             throw it
         }
 
         return BindResult(
-            detailed = detailed,
+            detailed = latest,
         )
     }
 
