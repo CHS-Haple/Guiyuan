@@ -230,12 +230,16 @@ internal data class VisualCfg(
         get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 }
 
+private fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
+    takeIf(Float::isFinite)?.coerceIn(min, max) ?: fallback
+
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
         topTextScale =
-            topTextScale.coerceIn(
+            topTextScale.finiteIn(
                 BATTERY_TOP_TEXT_SCALE_MIN,
                 BATTERY_TOP_TEXT_SCALE_MAX,
+                topTextScaleDefault(layout),
             ),
         topTextWeight =
             topTextWeight.coerceIn(
@@ -243,39 +247,77 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_TEXT_WEIGHT_MAX,
             ),
         topOffsetY =
-            topOffsetY.coerceIn(
+            topOffsetY.finiteIn(
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
+                BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
             ),
         wifiOffsetY =
-            wifiOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            wifiOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
         mobileTypeOffsetY =
-            mobileTypeOffsetY.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+            mobileTypeOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
         dualDefaultOffsetY =
-            dualDefaultOffsetY.takeIf(Float::isFinite)
-                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
-                ?: NETWORK_TOP_OFFSET_DEFAULT,
+            dualDefaultOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
         dualDuoOffsetY =
-            dualDuoOffsetY.takeIf(Float::isFinite)
-                ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
-                ?: NETWORK_TOP_OFFSET_DEFAULT,
+            dualDuoOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
         topChargingIconScale =
-            topChargingIconScale.coerceIn(
+            topChargingIconScale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
                 BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
+                topChargingIconScaleDefault(layout),
             ),
-        combinedScale = combinedScale.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX),
+        combinedScale = combinedScale.finiteIn(
+                COMBINED_SCALE_MIN,
+                COMBINED_SCALE_MAX,
+                COMBINED_SCALE_DEFAULT,
+            ),
         outerWeightScale =
-            outerWeightScale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
-        wifiScale = wifiScale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+            outerWeightScale.finiteIn(
+                OUTER_WEIGHT_SCALE_MIN,
+                OUTER_WEIGHT_SCALE_MAX,
+                OUTER_WEIGHT_SCALE_DEFAULT,
+            ),
+        wifiScale = wifiScale.finiteIn(
+                WIFI_SIZE_SCALE_MIN,
+                WIFI_SIZE_SCALE_MAX,
+                WIFI_SIZE_SCALE_DEFAULT,
+            ),
         wifiWeight = wifiWeight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX),
         airplaneScale =
-            airplaneScale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+            airplaneScale.finiteIn(
+                AIRPLANE_SIZE_SCALE_MIN,
+                AIRPLANE_SIZE_SCALE_MAX,
+                AIRPLANE_SIZE_SCALE_DEFAULT,
+            ),
         airplaneWeight = airplaneWeight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX),
         noSimScale =
-            noSimScale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
+            noSimScale.finiteIn(
+                NO_SIM_SIZE_SCALE_MIN,
+                NO_SIM_SIZE_SCALE_MAX,
+                NO_SIM_SIZE_SCALE_DEFAULT,
+            ),
         mobileTypeScale =
-            mobileTypeScale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
+            mobileTypeScale.finiteIn(
+                MOBILE_TYPE_SIZE_SCALE_MIN,
+                MOBILE_TYPE_SIZE_SCALE_MAX,
+                MOBILE_TYPE_SIZE_SCALE_DEFAULT,
+            ),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
         batteryColorOverrides =

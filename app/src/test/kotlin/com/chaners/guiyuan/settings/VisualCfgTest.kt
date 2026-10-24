@@ -78,6 +78,42 @@ class VisualCfgTest {
     }
 
     @Test
+    fun nonFiniteGeometryFallsBackToLayoutDefaults() {
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            val raw =
+                VisualCfg(layout = ContentLayout.BATTERY_CENTER).copy(
+                    topTextScale = invalid,
+                    topOffsetY = invalid,
+                    wifiOffsetY = invalid,
+                    mobileTypeOffsetY = invalid,
+                    dualDefaultOffsetY = invalid,
+                    dualDuoOffsetY = invalid,
+                    topChargingIconScale = invalid,
+                    combinedScale = invalid,
+                    outerWeightScale = invalid,
+                    wifiScale = invalid,
+                    airplaneScale = invalid,
+                    noSimScale = invalid,
+                    mobileTypeScale = invalid,
+                )
+            val normalized = raw.normalized()
+            assertEquals(topTextScaleDefault(raw.layout), normalized.topTextScale, 0f)
+            assertEquals(BATTERY_TOP_VERTICAL_OFFSET_DEFAULT, normalized.topOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.wifiOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDefaultOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDuoOffsetY, 0f)
+            assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
+            assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
+            assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)
+            assertEquals(WIFI_SIZE_SCALE_DEFAULT, normalized.wifiScale, 0f)
+            assertEquals(AIRPLANE_SIZE_SCALE_DEFAULT, normalized.airplaneScale, 0f)
+            assertEquals(NO_SIM_SIZE_SCALE_DEFAULT, normalized.noSimScale, 0f)
+            assertEquals(MOBILE_TYPE_SIZE_SCALE_DEFAULT, normalized.mobileTypeScale, 0f)
+        }
+    }
+
+    @Test
     fun nativeWeightDefaultsStayAligned() {
         assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
         assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
