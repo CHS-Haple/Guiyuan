@@ -45,15 +45,7 @@ internal object SysUiIslandSource {
                                 islandShowing = showing
                             }
                             if (onEvent != null && isProbeEnabled()) {
-                                val shouldReport =
-                                    synchronized(this) {
-                                        val changed = lastDiagnosticShowing != showing
-                                        if (changed) {
-                                            lastDiagnosticShowing = showing
-                                        }
-                                        changed
-                                    }
-                                if (shouldReport) {
+                                if (synchronized(this) { lastDiagnosticShowing != showing }) {
                                     val secondary = chain.getArg(1) as? Boolean ?: false
                                     val animate = chain.getArg(2) as? Boolean ?: false
                                     onEvent(
@@ -61,6 +53,7 @@ internal object SysUiIslandSource {
                                             " secondary=" + secondary +
                                             " animate=" + animate,
                                     )
+                                    synchronized(this) { lastDiagnosticShowing = showing }
                                 }
                             }
                         } catch (error: Throwable) {
