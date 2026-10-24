@@ -2293,35 +2293,40 @@ internal object SysUiPresentationOwner {
         private fun restoreEndReservation(): Boolean {
             var paddingRestored = appliedPadding == null
             val applied = appliedPadding
-            if (applied != null) {
-                val group = statusIcons.get()
-                val baseline = nativePadding
-                if (group == null || baseline == null) {
-                    paddingRestored = false
-                    appliedPadding = null
-                } else {
-                    val live = PaddingState.from(group)
-                    if (live != applied) {
-                        onEvent(
-                            eventPrefix + " endReservation restore=skipped reason=writer-changed " +
-                                "livePaddingEnd=" + live.end +
-                                " appliedPaddingEnd=" + applied.end,
-                        )
+            val paddingFailure = runCatching {
+                if (applied != null) {
+                    val group = statusIcons.get()
+                    val baseline = nativePadding
+                    if (group == null || baseline == null) {
                         paddingRestored = false
                     } else {
-                        group.setPaddingRelative(
-                            baseline.start,
-                            baseline.top,
-                            baseline.end,
-                            baseline.bottom,
-                        )
-                        paddingRestored = PaddingState.from(group) == baseline
+                        val live = PaddingState.from(group)
+                        if (live != applied) {
+                            paddingRestored = false
+                            onEvent(
+                                eventPrefix + " endReservation restore=skipped reason=writer-changed " +
+                                    "livePaddingEnd=" + live.end +
+                                    " appliedPaddingEnd=" + applied.end,
+                            )
+                        } else {
+                            group.setPaddingRelative(
+                                baseline.start,
+                                baseline.top,
+                                baseline.end,
+                                baseline.bottom,
+                            )
+                            paddingRestored = PaddingState.from(group) == baseline
+                        }
                     }
-                    appliedPadding = null
                 }
+            }.exceptionOrNull()
+            appliedPadding = null
+            val carrier = runCatching { restoreFakeCarrierCapacityLease() }
+            if (paddingFailure != null) {
+                carrier.exceptionOrNull()?.let(paddingFailure::addSuppressed)
+                throw paddingFailure
             }
-            val carrierRestored = restoreFakeCarrierCapacityLease()
-            return paddingRestored && carrierRestored
+            return paddingRestored && carrier.getOrThrow()
         }
 
         private fun ensureFakeCarrierCapacityLease(hostView: ViewGroup): Int? {
@@ -2556,22 +2561,27 @@ internal object SysUiPresentationOwner {
                 return false
             }
             if (params.width != appliedWidthPx) {
-                onEvent(
-                    eventPrefix +
-                        " fakeCarrierCapacity restore=skipped reason=writer-changed" +
-                        " liveWidth=" + params.width +
-                        " appliedWidth=" + appliedWidthPx,
-                )
-                clearCapacityLeaseSnapshot()
+                try {
+                    onEvent(
+                        eventPrefix +
+                            " fakeCarrierCapacity restore=skipped reason=writer-changed" +
+                            " liveWidth=" + params.width +
+                            " appliedWidth=" + appliedWidthPx,
+                    )
+                } finally {
+                    clearCapacityLeaseSnapshot()
+                }
                 return false
             }
 
-            params.width = baselineLayoutWidthPx
-            hostView.layoutParams = params
-            val restored = hostView.layoutParams?.width == baselineLayoutWidthPx
-            clearCapacityLeaseSnapshot()
-            pendingNativeCarrierWidth = null
-            return restored
+            return try {
+                params.width = baselineLayoutWidthPx
+                hostView.layoutParams = params
+                hostView.layoutParams?.width == baselineLayoutWidthPx
+            } finally {
+                clearCapacityLeaseSnapshot()
+                pendingNativeCarrierWidth = null
+            }
         }
 
         private fun clearCapacityLeaseSnapshot() {
