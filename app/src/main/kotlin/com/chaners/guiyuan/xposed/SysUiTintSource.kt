@@ -110,33 +110,33 @@ internal object SysUiTintSource {
                                         source = UPDATE_TINT_METHOD_NAME,
                                         onEvent = onEvent,
                                     )
-                                if (
-                                    state != null &&
-                                    synchronized(this) {
-                                        !firstEventLogged.containsKey(sourceView)
+                                    if (
+                                        state != null &&
+                                        synchronized(this) {
+                                            !firstEventLogged.containsKey(sourceView)
+                                        }
+                                    ) {
+                                        val darkIntensity =
+                                            (chain.getArg(1) as? Number)?.toFloat()
+                                                ?: Float.NaN
+                                        val lightColor =
+                                            (chain.getArg(3) as? Number)?.toInt() ?: 0
+                                        val darkColor =
+                                            (chain.getArg(4) as? Number)?.toInt() ?: 0
+                                        val useTint =
+                                            chain.getArg(5) as? Boolean ?: false
+                                        onEvent(
+                                            "tintSource receiver=" +
+                                                sourceView.javaClass.simpleName +
+                                                " batteryApplied=" + colorHex(state.appliedTint) +
+                                                " authority=battery-anchor-fallback" +
+                                                " intensity=" + darkIntensity +
+                                                " light=" + colorHex(lightColor) +
+                                                " dark=" + colorHex(darkColor) +
+                                                " useTint=" + useTint,
+                                        )
+                                        synchronized(this) { firstEventLogged[sourceView] = Unit }
                                     }
-                                ) {
-                                    val darkIntensity =
-                                        (chain.getArg(1) as? Number)?.toFloat()
-                                            ?: Float.NaN
-                                    val lightColor =
-                                        (chain.getArg(3) as? Number)?.toInt() ?: 0
-                                    val darkColor =
-                                        (chain.getArg(4) as? Number)?.toInt() ?: 0
-                                    val useTint =
-                                        chain.getArg(5) as? Boolean ?: false
-                                    onEvent(
-                                        "tintSource receiver=" +
-                                            sourceView.javaClass.simpleName +
-                                            " batteryApplied=" + colorHex(state.appliedTint) +
-                                            " authority=battery-anchor-fallback" +
-                                            " intensity=" + darkIntensity +
-                                            " light=" + colorHex(lightColor) +
-                                            " dark=" + colorHex(darkColor) +
-                                            " useTint=" + useTint,
-                                    )
-                                    synchronized(this) { firstEventLogged[sourceView] = Unit }
-                                }
                                 }
                             }
 
