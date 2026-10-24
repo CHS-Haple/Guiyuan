@@ -204,6 +204,28 @@ internal fun PreviewSandboxScreen(
             }
         }
     }
+    val dockStatus = when (state.previewCenterSource()) {
+        PreviewCenterSource.WIFI -> {
+            val wifi = when (state.wifiState) {
+                PreviewWifiState.CONNECTED -> R.string.home_preview_wifi_connected
+                PreviewWifiState.NO_INTERNET -> R.string.home_preview_wifi_no_internet
+                PreviewWifiState.HOTSPOT -> R.string.home_preview_wifi_hotspot
+            }
+            "${stringResource(R.string.home_preview_wifi_state_title)} ${stringResource(wifi)}"
+        }
+        PreviewCenterSource.MOBILE ->
+            if (state.dualLevels != null) {
+                "${stringResource(R.string.home_preview_dual_mobile_title)} ${stringResource(R.string.home_preview_state_on)}"
+            } else {
+                "${stringResource(R.string.home_preview_mobile_network_title)} ${state.dataMobileNetwork.systemLabel}"
+            }
+        PreviewCenterSource.AIRPLANE ->
+            "${stringResource(R.string.home_preview_airplane_title)} ${stringResource(R.string.home_preview_state_on)}"
+        PreviewCenterSource.NO_SIM ->
+            "${stringResource(R.string.home_preview_sim_title)} ${stringResource(R.string.home_preview_sim_absent)}"
+        PreviewCenterSource.EMPTY ->
+            "${stringResource(R.string.home_preview_network_mode_title)} ${stringResource(R.string.home_preview_network_none)}"
+    }
     val scope = rememberCoroutineScope()
 
     val canScroll = listState.canScrollBackward || listState.canScrollForward
@@ -269,14 +291,23 @@ internal fun PreviewSandboxScreen(
                                         .padding(start = TopAppBarDefaults.TitlePadding),
                                     contentAlignment = Alignment.CenterStart,
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.title4,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MiuixTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.home_preview_live_title),
+                                            style = MiuixTheme.textStyles.title4,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MiuixTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            text = dockStatus,
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
                                 }
                                 SandboxDockIcon(renderModel, visual)
                                 Box(
