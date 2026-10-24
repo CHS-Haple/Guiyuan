@@ -1214,33 +1214,51 @@ private fun switchLabel(
     )
 }
 
-private fun stateLabel(
-    context: Context,
-    state: String,
-): String =
-    when (state.lowercase(Locale.ROOT)) {
-        "unknown" -> context.getString(R.string.diagnostics_log_state_unknown)
-        "ready" -> context.getString(R.string.diagnostics_log_state_ready)
-        "observed" -> context.getString(R.string.diagnostics_log_state_observed)
-        "enabled" -> context.getString(R.string.diagnostics_log_state_enabled)
-        "disabled" -> context.getString(R.string.diagnostics_log_state_disabled)
-        "unavailable" -> context.getString(R.string.diagnostics_log_state_unavailable)
-        "partial" -> context.getString(R.string.diagnostics_log_state_partial)
-        "error" -> context.getString(R.string.diagnostics_log_state_error)
-        "scheduled" -> context.getString(R.string.diagnostics_log_state_scheduled)
-        "restart-required" -> context.getString(R.string.diagnostics_log_state_restart_required)
-        "pending" -> context.getString(R.string.diagnostics_log_state_pending)
-        "prepared" -> context.getString(R.string.diagnostics_log_state_prepared)
-        "released" -> context.getString(R.string.diagnostics_log_state_released)
-        "native" -> context.getString(R.string.diagnostics_log_state_native)
-        "combined" -> context.getString(R.string.diagnostics_log_state_combined)
-        "keyguard" -> context.getString(R.string.diagnostics_log_state_keyguard)
-        "aod" -> context.getString(R.string.diagnostics_log_state_aod)
-        "home" -> context.getString(R.string.diagnostics_log_state_home)
-        "aod-stable" -> context.getString(R.string.diagnostics_log_state_aod_stable)
-        "native-transition" -> context.getString(R.string.diagnostics_log_state_native_transition)
-        "keyguard-eligible" -> context.getString(R.string.diagnostics_log_state_keyguard_eligible)
-        else -> state
+private fun stateLabel(context: Context, state: String): String =
+    stateRes(state)?.let(context::getString) ?: state
+
+internal fun stateRes(state: String): Int? =
+    when (state.lowercase(Locale.ROOT).replace('_', '-')) {
+        "unknown" -> R.string.diagnostics_log_state_unknown
+        "ready" -> R.string.diagnostics_log_state_ready
+        "observed" -> R.string.diagnostics_log_state_observed
+        "enabled" -> R.string.diagnostics_log_state_enabled
+        "disabled" -> R.string.diagnostics_log_state_disabled
+        "unavailable" -> R.string.diagnostics_log_state_unavailable
+        "partial" -> R.string.diagnostics_log_state_partial
+        "error" -> R.string.diagnostics_log_state_error
+        "scheduled" -> R.string.diagnostics_log_state_scheduled
+        "restart-required" -> R.string.diagnostics_log_state_restart_required
+        "pending" -> R.string.diagnostics_log_state_pending
+        "prepared" -> R.string.diagnostics_log_state_prepared
+        "released" -> R.string.diagnostics_log_state_released
+        "native" -> R.string.diagnostics_log_state_native
+        "combined" -> R.string.diagnostics_log_state_combined
+        "keyguard" -> R.string.diagnostics_log_state_keyguard
+        "aod" -> R.string.diagnostics_log_state_aod
+        "home" -> R.string.diagnostics_log_state_home
+        "aod-stable" -> R.string.diagnostics_log_state_aod_stable
+        "native-transition" -> R.string.diagnostics_log_state_native_transition
+        "keyguard-eligible" -> R.string.diagnostics_log_state_keyguard_eligible
+        "preparing" -> R.string.diagnostics_log_state_preparing
+        "active" -> R.string.diagnostics_log_state_active
+        "cleared" -> R.string.diagnostics_log_state_cleared
+        "eligible" -> R.string.diagnostics_log_state_eligible
+        "acquired" -> R.string.diagnostics_log_state_acquired
+        "armed" -> R.string.diagnostics_log_state_armed
+        "fallback" -> R.string.diagnostics_log_state_fallback
+        "held" -> R.string.diagnostics_log_state_held
+        "retained" -> R.string.diagnostics_log_state_retained
+        "revealed" -> R.string.diagnostics_log_state_revealed
+        "sampled" -> R.string.diagnostics_log_state_sampled
+        "visual-only" -> R.string.diagnostics_log_state_visual_only
+        "panel-hidden" -> R.string.diagnostics_log_state_panel_hidden
+        "after-panel-hidden" -> R.string.diagnostics_log_state_after_panel_hidden
+        "before-stable-commit" -> R.string.diagnostics_log_state_before_stable_commit
+        "prelayout-pending" -> R.string.diagnostics_log_state_prelayout_pending
+        "waiting-prelayout" -> R.string.diagnostics_log_state_waiting_prelayout
+        "visual-handoff-layout-pending" -> R.string.diagnostics_log_state_visual_handoff_layout_pending
+        else -> null
     }
 
 private fun sourceLabel(
