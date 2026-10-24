@@ -19,14 +19,14 @@ internal object SandboxHost {
     private val handler = Handler(Looper.getMainLooper())
     private var source: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var onChanged: (() -> Unit)? = null
+    private var onChanged: ((PreviewSandboxUiState?) -> Unit)? = null
     @Volatile private var current: SandboxLease? = null
     private var resources: PreviewSysUiResources? = null
     private var staticMobileFaceChecked = false
     private var staticMobileFace: android.graphics.Typeface? = null
     private val expiry = Runnable { refresh() }
 
-    fun bind(prefs: SharedPreferences, changed: () -> Unit) {
+    fun bind(prefs: SharedPreferences, changed: (PreviewSandboxUiState?) -> Unit) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             handler.post { bind(prefs, changed) }
             return
@@ -69,14 +69,11 @@ internal object SandboxHost {
                 prefs.unregisterOnSharedPreferenceChangeListener(observer)
             }
         } finally {
-            notify?.invoke()
+            notify?.invoke(null)
         }
     }
 
     fun active(): Boolean = validLease() != null
-
-    // Observe only the received lease at changes, never duplicate its ownership.
-    fun currentState(): PreviewSandboxUiState? = validLease()?.state
 
     private fun validLease(): SandboxLease? {
         val lease = current ?: return null
@@ -135,7 +132,7 @@ internal object SandboxHost {
             handler.postDelayed(expiry, remaining + 1L)
         }
         if ((previous?.state != next?.state) || (previous == null) != (next == null)) {
-            onChanged?.invoke()
+            onChanged?.invoke(next?.state)
         }
     }
 }

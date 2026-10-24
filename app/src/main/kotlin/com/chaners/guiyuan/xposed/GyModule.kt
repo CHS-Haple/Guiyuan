@@ -4303,10 +4303,9 @@ class GyModule : XposedModule() {
 
     private fun bindSandbox() {
         runCatching {
-            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
+            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) { received ->
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
-                val received = SandboxHost.currentState()
                 logDiagnostic(
                     level = Log.INFO,
                     event = "sandbox.lease",
