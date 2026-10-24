@@ -282,7 +282,8 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
                 topChargingIconScaleDefault(layout),
             ),
-        combinedScale = combinedScale.finiteIn(
+        combinedScale =
+            combinedScale.finiteIn(
                 COMBINED_SCALE_MIN,
                 COMBINED_SCALE_MAX,
                 COMBINED_SCALE_DEFAULT,
