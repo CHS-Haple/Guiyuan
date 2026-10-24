@@ -4120,8 +4120,15 @@ class GyModule : XposedModule() {
             // The host Hook keeps native onFinishInflate intact. Release any
             // presentation ownership acquired before this attach failed.
             if (SysUiHostRegistry.current() === capture.host) {
-                runCatching { releaseFeatureOwnership("host-attach-failed") }
-                    .onFailure(error::addSuppressed)
+                // A failed attach can already own Views and process-wide sources.
+                // Release each owner even if a sibling's cleanup fails.
+                fun retire(action: () -> Unit) {
+                    runCatching(action).onFailure(error::addSuppressed)
+                }
+                retire { releaseFeatureOwnership("host-attach-failed") }
+                retire { HomeRenderSession.detach() }
+                retire { StatusBarStableSession.detach() }
+                retire { SysUiCoreRuntime.detach() }
             }
             throw error
         }
