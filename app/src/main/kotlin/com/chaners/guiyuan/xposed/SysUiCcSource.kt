@@ -117,54 +117,54 @@ internal object SysUiCcSource {
                     .setId(CONTROL_CENTER_VISIBLE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
-                            val visible = chain.getArg(0) as? Boolean
                             val result = chain.proceed()
-                            homeEligible =
-                                allowsHome(visible)
-                            val presentationHost =
-                                if (visible == true) {
-                                    resolveFakePresentationHost(chain.thisObject)
-                                } else {
-                                    null
-                                }
-                            val sourceScene =
-                                if (visible == true) {
-                                    resolveSourceScene(chain.thisObject)
-                                } else {
-                                    null
-                                }
-                            val transitionEndpoints =
-                                if (visible == true) {
-                                    resolveTransitionEndpoints(chain.thisObject)
-                                } else {
-                                    null
-                                }
-                            val update =
-                                Update(
-                                    source = Source.CONTROL_CENTER,
-                                    fraction = null,
-                                    expanded = null,
-                                    tracking = null,
-                                    visible = visible,
-                                    presentationHost = presentationHost,
-                                    sourceScene = sourceScene,
-                                    transitionEndpoints = transitionEndpoints,
-                                    batteryIslandActive =
+                            val handled = dispatchRuntimeCallback(
+                                callback = {
+                                    val visible = chain.getArg(0) as? Boolean
+                                    homeEligible = allowsHome(visible)
+                                    val presentationHost =
                                         if (visible == true) {
-                                            resolveBatteryIslandActive(chain.thisObject)
+                                            resolveFakePresentationHost(chain.thisObject)
                                         } else {
                                             null
-                                        },
-                                )
-                            dispatchRuntimeCallback(
-                                callback = onUpdate?.let { callback -> { callback(update) } },
+                                        }
+                                    val sourceScene =
+                                        if (visible == true) {
+                                            resolveSourceScene(chain.thisObject)
+                                        } else {
+                                            null
+                                        }
+                                    val transitionEndpoints =
+                                        if (visible == true) {
+                                            resolveTransitionEndpoints(chain.thisObject)
+                                        } else {
+                                            null
+                                        }
+                                    val update =
+                                        Update(
+                                            source = Source.CONTROL_CENTER,
+                                            fraction = null,
+                                            expanded = null,
+                                            tracking = null,
+                                            visible = visible,
+                                            presentationHost = presentationHost,
+                                            sourceScene = sourceScene,
+                                            transitionEndpoints = transitionEndpoints,
+                                            batteryIslandActive =
+                                                if (visible == true) {
+                                                    resolveBatteryIslandActive(chain.thisObject)
+                                                } else {
+                                                    null
+                                                },
+                                        )
+                                    onUpdate?.invoke(update)
+                                    dispatchRuntimeCallback {
+                                        emitDiagnostic(update, onEvent, isProbeEnabled)
+                                    }
+                                },
                                 onFailure = onRuntimeFailure,
                             )
-                            emitDiagnostic(
-                                update = update,
-                                onEvent = onEvent,
-                                isProbeEnabled = isProbeEnabled,
-                            )
+                            if (!handled) homeEligible = false
                             result
                         },
                     )
@@ -185,9 +185,9 @@ internal object SysUiCcSource {
                                         },
                                     onFailure = onRuntimeFailure,
                                 )
-                                if (onEvent != null && isProbeEnabled()) {
-                                    dispatchRuntimeCallback(
-                                        callback = {
+                                dispatchRuntimeCallback(
+                                    callback = {
+                                        if (onEvent != null && isProbeEnabled()) {
                                             onEvent(
                                                 "controlCenterFakeLifecycle attached " +
                                                     "root=" + root.javaClass.name +
@@ -195,9 +195,9 @@ internal object SysUiCcSource {
                                                     root.isAttachedToWindow,
                                             )
                                             describeFakeIslandContractOnce(root)?.let(onEvent)
-                                        },
-                                    )
-                                }
+                                        }
+                                    },
+                                )
                             }
                             result
                         },
@@ -215,44 +215,44 @@ internal object SysUiCcSource {
                     .setId(CONTROL_CENTER_EXPANSION_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
-                            val fraction =
-                                nativeFraction(
-                                    (chain.getArg(0) as? Number)?.toFloat(),
-                                )
-                            val transitionEndpoints =
-                                anchorContract
-                                    ?.transitionEndpointsFromCallback(chain.thisObject)
-                            val batteryIslandActive =
-                                anchorContract
-                                    ?.batteryIslandFromCallback(chain.thisObject)
-                            val preNativeUpdate =
-                                Update(
-                                    source = Source.CONTROL_CENTER,
-                                    fraction = fraction,
-                                    expanded = null,
-                                    tracking = null,
-                                    visible = null,
-                                    transitionEndpoints = transitionEndpoints,
-                                    batteryIslandActive = batteryIslandActive,
-                                )
-                            // Reservation/source projection must be committed before
-                            // HyperOS consumes this expansion sample. Drawing still
-                            // happens on the normal traversal after the native callback.
-                            dispatchRuntimeCallback(
-                                callback =
-                                    onUpdate?.let { callback ->
-                                        { callback(preNativeUpdate) }
-                                    },
+                            var fraction: Float? = null
+                            // Commit the projection before native expansion without
+                            // letting a failed contract read suppress native execution.
+                            val handled = dispatchRuntimeCallback(
+                                callback = {
+                                    fraction =
+                                        nativeFraction(
+                                            (chain.getArg(0) as? Number)?.toFloat(),
+                                        )
+                                    val transitionEndpoints =
+                                        anchorContract
+                                            ?.transitionEndpointsFromCallback(chain.thisObject)
+                                    val batteryIslandActive =
+                                        anchorContract
+                                            ?.batteryIslandFromCallback(chain.thisObject)
+                                    val update =
+                                        Update(
+                                            source = Source.CONTROL_CENTER,
+                                            fraction = fraction,
+                                            expanded = null,
+                                            tracking = null,
+                                            visible = null,
+                                            transitionEndpoints = transitionEndpoints,
+                                            batteryIslandActive = batteryIslandActive,
+                                        )
+                                    onUpdate?.invoke(update)
+                                },
                                 onFailure = onRuntimeFailure,
                             )
                             val result = chain.proceed()
-                            if (fraction != null && isProbeEnabled()) {
+                            val sample = fraction
+                            if (handled && sample != null) {
                                 dispatchRuntimeCallback(
-                                    callback = onAfterNativeExpansion?.let { observer ->
-                                        { observer(fraction) }
+                                    callback = {
+                                        if (isProbeEnabled()) {
+                                            onAfterNativeExpansion?.invoke(sample)
+                                        }
                                     },
-                                    // A diagnostic read must never trip CC runtime fallback.
-                                    onFailure = null,
                                 )
                             }
                             result
@@ -265,27 +265,29 @@ internal object SysUiCcSource {
                     .setId(CONTROL_CENTER_APPEARANCE_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
-                            val first = chain.getArg(0) as? Boolean
-                            val second = chain.getArg(1) as? Boolean
                             val result = chain.proceed()
-                            val update =
-                                Update(
-                                    source = Source.CONTROL_CENTER,
-                                    fraction = null,
-                                    expanded = null,
-                                    tracking = null,
-                                    visible = null,
-                                    appearance = first,
-                                    appearanceAnimated = second,
-                                    transitionEndpoints =
-                                        anchorContract
-                                            ?.transitionEndpointsFromCallback(chain.thisObject),
-                                    batteryIslandActive =
-                                        anchorContract
-                                            ?.batteryIslandFromCallback(chain.thisObject),
-                                )
                             dispatchRuntimeCallback(
-                                callback = onUpdate?.let { callback -> { callback(update) } },
+                                callback = {
+                                    val first = chain.getArg(0) as? Boolean
+                                    val second = chain.getArg(1) as? Boolean
+                                    val update =
+                                        Update(
+                                            source = Source.CONTROL_CENTER,
+                                            fraction = null,
+                                            expanded = null,
+                                            tracking = null,
+                                            visible = null,
+                                            appearance = first,
+                                            appearanceAnimated = second,
+                                            transitionEndpoints =
+                                                anchorContract
+                                                    ?.transitionEndpointsFromCallback(chain.thisObject),
+                                            batteryIslandActive =
+                                                anchorContract
+                                                    ?.batteryIslandFromCallback(chain.thisObject),
+                                        )
+                                    onUpdate?.invoke(update)
+                                },
                                 onFailure = onRuntimeFailure,
                             )
                             result
