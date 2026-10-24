@@ -779,7 +779,7 @@ private fun LogCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            LogLevelTag(entry.level)
+            LogLevelTag(context, entry.level)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = category,
@@ -886,7 +886,7 @@ private fun LogStateCard(
 }
 
 @Composable
-private fun LogLevelTag(level: LogLevel) {
+private fun LogLevelTag(context: Context, level: LogLevel) {
     val colors = MiuixTheme.colorScheme
     val warningColor = RuntimeWarningAccent
     val containerColor =
@@ -919,7 +919,7 @@ private fun LogLevelTag(level: LogLevel) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = levelLabel(level),
+                text = context.getString(levelRes(level)),
                 style =
                     MiuixTheme.textStyles.footnote2.copy(
                         fontWeight = FontWeight.ExtraBold,
@@ -993,15 +993,15 @@ private fun isRuntimeLog(entry: LogEntry): Boolean {
     return entry.event in RUNTIME_EVENTS
 }
 
-private fun levelLabel(level: LogLevel): String =
+internal fun levelRes(level: LogLevel): Int =
     when (level) {
-        LogLevel.Verbose -> "VERBOSE"
-        LogLevel.Debug -> "DEBUG"
-        LogLevel.Info -> "INFO"
-        LogLevel.Warning -> "WARN"
-        LogLevel.Error -> "ERROR"
-        LogLevel.Fatal -> "FATAL"
-        LogLevel.Unknown -> "LOG"
+        LogLevel.Verbose -> R.string.diagnostics_log_level_verbose
+        LogLevel.Debug -> R.string.diagnostics_log_level_debug
+        LogLevel.Info -> R.string.diagnostics_log_level_info
+        LogLevel.Warning -> R.string.diagnostics_log_level_warn
+        LogLevel.Error -> R.string.diagnostics_log_level_error
+        LogLevel.Fatal -> R.string.diagnostics_log_level_fatal
+        LogLevel.Unknown -> R.string.diagnostics_log_level_log
     }
 
 private fun categoryLabel(
@@ -1021,12 +1021,11 @@ private fun categoryLabel(
         },
     )
 
-private fun logTitle(
-    context: Context,
-    entry: LogEntry,
-): String {
-    val res =
-        when (entry.event) {
+private fun logTitle(context: Context, entry: LogEntry): String =
+    context.getString(titleRes(entry.event))
+
+internal fun titleRes(event: String?): Int =
+    when (event) {
             "module.loaded" -> R.string.diagnostics_log_event_module_loaded
             "module.reloaded" -> R.string.diagnostics_log_event_module_reloaded
             "compatibility.probe",
@@ -1068,19 +1067,50 @@ private fun logTitle(
             "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
             "tintCommit" -> R.string.diagnostics_log_event_tint_commit
             "homeRenderTint" -> R.string.diagnostics_log_event_home_tint
-            else -> null
+            "aod.authority" -> R.string.diagnostics_log_event_aod_authority
+            "aod.batteryHandoff",
+            "aod.visualHandoff" -> R.string.diagnostics_log_event_aod_handoff
+            "aod.ccAppearance",
+            "aod.homePrearm",
+            "aod.homeTransientKeyguard" -> R.string.diagnostics_log_event_aod_preparation
+            "aod.nativeSleepLinkage" -> R.string.diagnostics_log_event_aod_native_link
+            "aod.geometry",
+            "aod.targetWindow",
+            "aod.visibleLayers",
+            "aod.visualBoundary",
+            "aod.windowWitness" -> R.string.diagnostics_log_event_aod_layout
+            "featureSettings.dispatch" -> R.string.diagnostics_log_event_feature_dispatch
+            "visualSettings.dispatch" -> R.string.diagnostics_log_event_visual_dispatch
+            "glyph.seed" -> R.string.diagnostics_log_event_glyph_source
+            "host.resolve",
+            "keyguard.hostProbe" -> R.string.diagnostics_log_event_host_resolve
+            "hotReload.cleanup" -> R.string.diagnostics_log_event_hot_reload_cleanup
+            "presentation.lease" -> R.string.diagnostics_log_event_presentation_lease
+            "presentation.readiness" -> R.string.diagnostics_log_event_presentation_readiness
+            "projection.attach" -> R.string.diagnostics_log_event_projection_attach
+            "projection.hiddenLayers",
+            "projection.visibleCycle" -> R.string.diagnostics_log_event_projection_layers
+            "projection.prearm",
+            "projection.prepare",
+            "projection.restore",
+            "projection.yield" -> R.string.diagnostics_log_event_projection_handoff
+            "runtime.callback" -> R.string.diagnostics_log_event_runtime_callback
+            "sandbox.lease" -> R.string.diagnostics_log_event_sandbox_lease
+            "scene.defer" -> R.string.diagnostics_log_event_scene_defer
+            "scene.eligibility" -> R.string.diagnostics_log_event_scene_eligibility
+            "slot.probe",
+            "target.probe" -> R.string.diagnostics_log_event_view_probe
+            "source.install.branch" -> R.string.diagnostics_log_event_source_branch
+            "transition.geometry" -> R.string.diagnostics_log_event_transition_geometry
+            else -> R.string.diagnostics_log_event_generic
         }
-    return res?.let(context::getString)
-        ?: entry.event
-        ?: context.getString(R.string.diagnostics_log_event_generic)
-}
 
 private fun logSummary(
     context: Context,
     entry: LogEntry,
 ): String {
     // The compact line adds meaning beyond the title; the raw event stays available in details.
-    val fallback = if (entry.structured) "" else entry.message
+    val fallback = if (entry.structured) "" else context.getString(R.string.diagnostics_log_compact_details)
     val fields = entry.fields
     val separator = context.getString(R.string.diagnostics_log_summary_separator)
     fun join(vararg parts: String?): String =
@@ -1146,7 +1176,7 @@ private fun logSummary(
                 when (fields["level"]) {
                     "detailed" -> context.getString(R.string.diagnostics_mode_detailed)
                     "general" -> context.getString(R.string.diagnostics_mode_basic)
-                    else -> fields["level"]
+                    else -> context.getString(R.string.diagnostics_log_state_other)
                 },
                 reason,
             )
@@ -1214,60 +1244,113 @@ private fun switchLabel(
     )
 }
 
-private fun stateLabel(
-    context: Context,
-    state: String,
-): String =
-    when (state.lowercase(Locale.ROOT)) {
-        "unknown" -> context.getString(R.string.diagnostics_log_state_unknown)
-        "ready" -> context.getString(R.string.diagnostics_log_state_ready)
-        "observed" -> context.getString(R.string.diagnostics_log_state_observed)
-        "enabled" -> context.getString(R.string.diagnostics_log_state_enabled)
-        "disabled" -> context.getString(R.string.diagnostics_log_state_disabled)
-        "unavailable" -> context.getString(R.string.diagnostics_log_state_unavailable)
-        "partial" -> context.getString(R.string.diagnostics_log_state_partial)
-        "error" -> context.getString(R.string.diagnostics_log_state_error)
-        "scheduled" -> context.getString(R.string.diagnostics_log_state_scheduled)
-        "restart-required" -> context.getString(R.string.diagnostics_log_state_restart_required)
-        "pending" -> context.getString(R.string.diagnostics_log_state_pending)
-        "prepared" -> context.getString(R.string.diagnostics_log_state_prepared)
-        "released" -> context.getString(R.string.diagnostics_log_state_released)
-        "native" -> context.getString(R.string.diagnostics_log_state_native)
-        "combined" -> context.getString(R.string.diagnostics_log_state_combined)
-        "keyguard" -> context.getString(R.string.diagnostics_log_state_keyguard)
-        "aod" -> context.getString(R.string.diagnostics_log_state_aod)
-        "home" -> context.getString(R.string.diagnostics_log_state_home)
-        "aod-stable" -> context.getString(R.string.diagnostics_log_state_aod_stable)
-        "native-transition" -> context.getString(R.string.diagnostics_log_state_native_transition)
-        "keyguard-eligible" -> context.getString(R.string.diagnostics_log_state_keyguard_eligible)
-        else -> state
+private fun stateLabel(context: Context, state: String): String =
+    context.getString(stateRes(state))
+
+internal fun stateRes(state: String): Int =
+    when (state.lowercase(Locale.ROOT).replace('_', '-')) {
+        "unknown" -> R.string.diagnostics_log_state_unknown
+        "ready" -> R.string.diagnostics_log_state_ready
+        "observed" -> R.string.diagnostics_log_state_observed
+        "enabled" -> R.string.diagnostics_log_state_enabled
+        "disabled" -> R.string.diagnostics_log_state_disabled
+        "unavailable" -> R.string.diagnostics_log_state_unavailable
+        "partial" -> R.string.diagnostics_log_state_partial
+        "error" -> R.string.diagnostics_log_state_error
+        "scheduled" -> R.string.diagnostics_log_state_scheduled
+        "restart-required" -> R.string.diagnostics_log_state_restart_required
+        "pending" -> R.string.diagnostics_log_state_pending
+        "prepared" -> R.string.diagnostics_log_state_prepared
+        "released" -> R.string.diagnostics_log_state_released
+        "native" -> R.string.diagnostics_log_state_native
+        "combined" -> R.string.diagnostics_log_state_combined
+        "keyguard" -> R.string.diagnostics_log_state_keyguard
+        "aod" -> R.string.diagnostics_log_state_aod
+        "home" -> R.string.diagnostics_log_state_home
+        "aod-stable" -> R.string.diagnostics_log_state_aod_stable
+        "native-transition" -> R.string.diagnostics_log_state_native_transition
+        "keyguard-eligible" -> R.string.diagnostics_log_state_keyguard_eligible
+        "active" -> R.string.diagnostics_log_state_active
+        "cleared" -> R.string.diagnostics_log_state_cleared
+        "eligible" -> R.string.diagnostics_log_state_eligible
+        "acquired" -> R.string.diagnostics_log_state_acquired
+        "armed" -> R.string.diagnostics_log_state_armed
+        "fallback" -> R.string.diagnostics_log_state_fallback
+        "held" -> R.string.diagnostics_log_state_held
+        "retained" -> R.string.diagnostics_log_state_retained
+        "revealed" -> R.string.diagnostics_log_state_revealed
+        "sampled" -> R.string.diagnostics_log_state_sampled
+        "preparing" -> R.string.diagnostics_log_state_preparing
+        "panel-hidden" -> R.string.diagnostics_log_state_panel_hidden
+        "after-panel-hidden" -> R.string.diagnostics_log_state_after_panel_hidden
+        "before-stable-commit" -> R.string.diagnostics_log_state_before_stable_commit
+        "prelayout-pending" -> R.string.diagnostics_log_state_prelayout_pending
+        "waiting-prelayout" -> R.string.diagnostics_log_state_waiting_prelayout
+        "visual-handoff-layout-pending" -> R.string.diagnostics_log_state_visual_handoff_layout_pending
+        "visual-only" -> R.string.diagnostics_log_state_visual_only
+        "inactive" -> R.string.diagnostics_log_state_inactive
+        "waiting" -> R.string.diagnostics_log_state_waiting
+        "none" -> R.string.diagnostics_log_state_none
+        "true" -> R.string.diagnostics_log_switch_on
+        "false" -> R.string.diagnostics_log_switch_off
+        else -> R.string.diagnostics_log_state_other
     }
 
-private fun sourceLabel(
-    context: Context,
-    value: String,
-): String =
+private fun sourceLabel(context: Context, value: String): String =
+    context.getString(sourceRes(value))
+
+internal fun sourceRes(value: String): Int =
     when (value.lowercase(Locale.ROOT)) {
-        "wifi" -> "Wi-Fi"
-        "mobile" -> context.getString(R.string.diagnostics_log_source_mobile)
-        "native" -> context.getString(R.string.diagnostics_log_source_native)
-        "coldstart" -> context.getString(R.string.diagnostics_log_source_cold_start)
-        "hotreload" -> context.getString(R.string.diagnostics_log_source_hot_reload)
-        "hotreloadrestore" -> context.getString(R.string.diagnostics_log_source_hot_reload_restore)
-        "hotreloadtransfer" -> context.getString(R.string.diagnostics_log_source_hot_reload_transfer)
-        else -> value
+        "wifi" -> R.string.diagnostics_log_source_wifi
+        "mobile" -> R.string.diagnostics_log_source_mobile
+        "native" -> R.string.diagnostics_log_source_native
+        "coldstart" -> R.string.diagnostics_log_source_cold_start
+        "hotreload" -> R.string.diagnostics_log_source_hot_reload
+        "hotreloadrestore" -> R.string.diagnostics_log_source_hot_reload_restore
+        "hotreloadtransfer" -> R.string.diagnostics_log_source_hot_reload_transfer
+        "hot-reload-transfer" -> R.string.diagnostics_log_source_hot_reload_transfer
+        "hotreloadhook" -> R.string.diagnostics_log_source_hot_reload
+        "hotreload.oldgeneration" -> R.string.diagnostics_log_source_old_generation
+        "ethernet" -> R.string.diagnostics_log_source_ethernet
+        "bluetooth" -> R.string.diagnostics_log_source_bluetooth
+        "vpn" -> R.string.diagnostics_log_source_vpn
+        "cellular" -> R.string.diagnostics_log_source_mobile
+        "none" -> R.string.diagnostics_log_source_none
+        "unknown" -> R.string.diagnostics_log_source_unknown
+        "animatefullaod:after" -> R.string.diagnostics_log_source_aod_transition
+        "animatefullaod:before" -> R.string.diagnostics_log_source_aod_transition
+        "steady-source-view" -> R.string.diagnostics_log_source_native_view
+        "native-appearance" -> R.string.diagnostics_log_source_native
+        "native-battery-mode" -> R.string.diagnostics_log_source_native
+        "fake-root-attached" -> R.string.diagnostics_log_source_cc_host
+        "miuibatterymeterview.updatestate" -> R.string.diagnostics_log_source_native_battery
+        "animateiconcontainer" -> R.string.diagnostics_log_source_native_animation
+        else -> R.string.diagnostics_log_source_other
     }
 
-private fun reasonLabel(
-    context: Context,
-    value: String,
-): String =
+private fun reasonLabel(context: Context, value: String): String =
+    context.getString(reasonRes(value))
+
+internal fun reasonRes(value: String): Int =
     when (value) {
-        "saved-state-missing-or-unsupported-generation" ->
-            context.getString(R.string.diagnostics_log_reason_saved_state)
-        "main-thread-dispatch-failed" ->
-            context.getString(R.string.diagnostics_log_reason_dispatch)
-        else -> value
+        "saved-state-missing-or-unsupported-generation" -> R.string.diagnostics_log_reason_saved_state
+        "main-thread-dispatch-failed" -> R.string.diagnostics_log_reason_dispatch
+        "aod-to-home-continuous-handoff" -> R.string.diagnostics_log_reason_aod_home_handoff
+        "fake-presentation-root-unresolved" -> R.string.diagnostics_log_reason_fake_root
+        "incoming-boundary-presentation-ready" -> R.string.diagnostics_log_reason_boundary_ready
+        "legacy-participant-removed-native-mask-state-untrusted" -> R.string.diagnostics_log_reason_legacy_mask
+        "main-thread-restore-scheduling-failed" -> R.string.diagnostics_log_reason_restore_schedule
+        "main-thread-retirement-unavailable" -> R.string.diagnostics_log_reason_retirement
+        "unexpected-prepared-state" -> R.string.diagnostics_log_reason_unexpected_prepare
+        "visible-cycle-rearm-failed" -> R.string.diagnostics_log_reason_rearm
+        "status-host-hook-not-ready" -> R.string.diagnostics_log_reason_hook_not_ready
+        "status-host-not-captured" -> R.string.diagnostics_log_reason_host_missing
+        "status-host-detached" -> R.string.diagnostics_log_reason_host_detached
+        "network-bindings-not-ready" -> R.string.diagnostics_log_reason_network_not_ready
+        "state-transfer-capture-failed" -> R.string.diagnostics_log_reason_transfer_failed
+        "status-host-hook-missing" -> R.string.diagnostics_log_reason_hook_missing
+        "stale-hook-unhook-failed" -> R.string.diagnostics_log_reason_unhook_failed
+        else -> R.string.diagnostics_log_reason_details
     }
 
 private fun formatMicros(micros: Long): String =
