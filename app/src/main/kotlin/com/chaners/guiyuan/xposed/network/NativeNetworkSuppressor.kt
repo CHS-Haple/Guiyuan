@@ -1296,6 +1296,15 @@ internal object NativeNetworkSuppressor {
     private fun restoreMobileVisualMaskLocked(state: MobileVisualMaskState): Boolean {
         val view = state.view.get() ?: return false
         return runCatching {
+            // Restore only our applied mask; a changed value belongs to another writer.
+            if (view.alpha != 0f) {
+                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+                    "nativeNetworkSuppression alphaRestore skipped reason=writer-changed " +
+                        "liveAlpha=" + view.alpha +
+                        " savedAlpha=" + state.nativeAlpha,
+                )
+                return@runCatching false
+            }
             if (view.alpha != state.nativeAlpha) {
                 view.alpha = state.nativeAlpha
             }
