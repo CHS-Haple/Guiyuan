@@ -1026,84 +1026,84 @@ private fun logTitle(context: Context, entry: LogEntry): String =
 
 internal fun titleRes(event: String?): Int =
     when (event) {
-            "module.loaded" -> R.string.diagnostics_log_event_module_loaded
-            "module.reloaded" -> R.string.diagnostics_log_event_module_reloaded
-            "compatibility.probe",
-            "compatibility.revalidated",
-            -> R.string.diagnostics_log_event_compatibility
-            "hook.install",
-            "hook.replace",
-            -> R.string.diagnostics_log_event_hook
-            "source.install",
-            "source.attach",
-            -> R.string.diagnostics_log_event_source
-            "runtime.attach" -> R.string.diagnostics_log_event_runtime_attach
-            "runtime.teardown" -> R.string.diagnostics_log_event_runtime_teardown
-            "runtimePreferences.bind" -> R.string.diagnostics_log_event_runtime_preferences
-            "diagnostics.bind" -> R.string.diagnostics_log_event_diagnostics_bind
-            "host.capture" -> R.string.diagnostics_log_event_host_capture
-            "host.restore" -> R.string.diagnostics_log_event_host_restore
-            "session.attach" -> R.string.diagnostics_log_event_session_attach
-            "presentation.cutover" -> R.string.diagnostics_log_event_presentation_cutover
-            "presentation.failNative" -> R.string.diagnostics_log_event_fail_native
-            "presentation.resolve" -> R.string.diagnostics_log_event_presentation_resolve
-            "renderer.attach" -> R.string.diagnostics_log_event_renderer_attach
-            "diagnostics.snapshot" -> R.string.diagnostics_log_event_diagnostics_snapshot
-            "diagnostics.level" -> R.string.diagnostics_log_event_diagnostics_level
-            "pipeline.latency" -> R.string.diagnostics_log_event_pipeline_latency
-            "visualSettings.changed" -> R.string.diagnostics_log_event_visual_settings
-            "featureSettings.changed" -> R.string.diagnostics_log_event_feature_settings
-            "hotReload.prepare" -> R.string.diagnostics_log_event_hot_reload_prepare
-            "hotReload.generationHandoff" -> R.string.diagnostics_log_event_hot_reload_handoff
-            "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
-            "hotReload.restore" -> R.string.diagnostics_log_event_hot_reload_restore
-            "hotReload.complete" -> R.string.diagnostics_log_event_hot_reload
-            "mobile.recovery" -> R.string.diagnostics_log_event_mobile_recovery
-            "scene.stableFamily" -> R.string.diagnostics_log_event_scene_stable
-            "aod.state" -> R.string.diagnostics_log_event_aod_state
-            "aod.target" -> R.string.diagnostics_log_event_aod_target
-            "connectivity" -> R.string.diagnostics_log_event_connectivity
-            "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
-            "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
-            "tintCommit" -> R.string.diagnostics_log_event_tint_commit
-            "homeRenderTint" -> R.string.diagnostics_log_event_home_tint
-            "aod.authority" -> R.string.diagnostics_log_event_aod_authority
-            "aod.batteryHandoff",
-            "aod.visualHandoff" -> R.string.diagnostics_log_event_aod_handoff
-            "aod.ccAppearance",
-            "aod.homePrearm",
-            "aod.homeTransientKeyguard" -> R.string.diagnostics_log_event_aod_preparation
-            "aod.nativeSleepLinkage" -> R.string.diagnostics_log_event_aod_native_link
-            "aod.geometry",
-            "aod.targetWindow",
-            "aod.visibleLayers",
-            "aod.visualBoundary",
-            "aod.windowWitness" -> R.string.diagnostics_log_event_aod_layout
-            "featureSettings.dispatch" -> R.string.diagnostics_log_event_feature_dispatch
-            "visualSettings.dispatch" -> R.string.diagnostics_log_event_visual_dispatch
-            "glyph.seed" -> R.string.diagnostics_log_event_glyph_source
-            "host.resolve",
-            "keyguard.hostProbe" -> R.string.diagnostics_log_event_host_resolve
-            "hotReload.cleanup" -> R.string.diagnostics_log_event_hot_reload_cleanup
-            "presentation.lease" -> R.string.diagnostics_log_event_presentation_lease
-            "presentation.readiness" -> R.string.diagnostics_log_event_presentation_readiness
-            "projection.attach" -> R.string.diagnostics_log_event_projection_attach
-            "projection.hiddenLayers",
-            "projection.visibleCycle" -> R.string.diagnostics_log_event_projection_layers
-            "projection.prearm",
-            "projection.prepare",
-            "projection.restore",
-            "projection.yield" -> R.string.diagnostics_log_event_projection_handoff
-            "runtime.callback" -> R.string.diagnostics_log_event_runtime_callback
-            "sandbox.lease" -> R.string.diagnostics_log_event_sandbox_lease
-            "scene.defer" -> R.string.diagnostics_log_event_scene_defer
-            "scene.eligibility" -> R.string.diagnostics_log_event_scene_eligibility
-            "slot.probe",
-            "target.probe" -> R.string.diagnostics_log_event_view_probe
-            "source.install.branch" -> R.string.diagnostics_log_event_source_branch
-            "transition.geometry" -> R.string.diagnostics_log_event_transition_geometry
-            else -> R.string.diagnostics_log_event_generic
-        }
+        "module.loaded" -> R.string.diagnostics_log_event_module_loaded
+        "module.reloaded" -> R.string.diagnostics_log_event_module_reloaded
+        "compatibility.probe",
+        "compatibility.revalidated",
+        -> R.string.diagnostics_log_event_compatibility
+        "hook.install",
+        "hook.replace",
+        -> R.string.diagnostics_log_event_hook
+        "source.install",
+        "source.attach",
+        -> R.string.diagnostics_log_event_source
+        "runtime.attach" -> R.string.diagnostics_log_event_runtime_attach
+        "runtime.teardown" -> R.string.diagnostics_log_event_runtime_teardown
+        "runtimePreferences.bind" -> R.string.diagnostics_log_event_runtime_preferences
+        "diagnostics.bind" -> R.string.diagnostics_log_event_diagnostics_bind
+        "host.capture" -> R.string.diagnostics_log_event_host_capture
+        "host.restore" -> R.string.diagnostics_log_event_host_restore
+        "session.attach" -> R.string.diagnostics_log_event_session_attach
+        "presentation.cutover" -> R.string.diagnostics_log_event_presentation_cutover
+        "presentation.failNative" -> R.string.diagnostics_log_event_fail_native
+        "presentation.resolve" -> R.string.diagnostics_log_event_presentation_resolve
+        "renderer.attach" -> R.string.diagnostics_log_event_renderer_attach
+        "diagnostics.snapshot" -> R.string.diagnostics_log_event_diagnostics_snapshot
+        "diagnostics.level" -> R.string.diagnostics_log_event_diagnostics_level
+        "pipeline.latency" -> R.string.diagnostics_log_event_pipeline_latency
+        "visualSettings.changed" -> R.string.diagnostics_log_event_visual_settings
+        "featureSettings.changed" -> R.string.diagnostics_log_event_feature_settings
+        "hotReload.prepare" -> R.string.diagnostics_log_event_hot_reload_prepare
+        "hotReload.generationHandoff" -> R.string.diagnostics_log_event_hot_reload_handoff
+        "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
+        "hotReload.restore" -> R.string.diagnostics_log_event_hot_reload_restore
+        "hotReload.complete" -> R.string.diagnostics_log_event_hot_reload
+        "mobile.recovery" -> R.string.diagnostics_log_event_mobile_recovery
+        "scene.stableFamily" -> R.string.diagnostics_log_event_scene_stable
+        "aod.state" -> R.string.diagnostics_log_event_aod_state
+        "aod.target" -> R.string.diagnostics_log_event_aod_target
+        "connectivity" -> R.string.diagnostics_log_event_connectivity
+        "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
+        "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
+        "tintCommit" -> R.string.diagnostics_log_event_tint_commit
+        "homeRenderTint" -> R.string.diagnostics_log_event_home_tint
+        "aod.authority" -> R.string.diagnostics_log_event_aod_authority
+        "aod.batteryHandoff",
+        "aod.visualHandoff" -> R.string.diagnostics_log_event_aod_handoff
+        "aod.ccAppearance",
+        "aod.homePrearm",
+        "aod.homeTransientKeyguard" -> R.string.diagnostics_log_event_aod_preparation
+        "aod.nativeSleepLinkage" -> R.string.diagnostics_log_event_aod_native_link
+        "aod.geometry",
+        "aod.targetWindow",
+        "aod.visibleLayers",
+        "aod.visualBoundary",
+        "aod.windowWitness" -> R.string.diagnostics_log_event_aod_layout
+        "featureSettings.dispatch" -> R.string.diagnostics_log_event_feature_dispatch
+        "visualSettings.dispatch" -> R.string.diagnostics_log_event_visual_dispatch
+        "glyph.seed" -> R.string.diagnostics_log_event_glyph_source
+        "host.resolve",
+        "keyguard.hostProbe" -> R.string.diagnostics_log_event_host_resolve
+        "hotReload.cleanup" -> R.string.diagnostics_log_event_hot_reload_cleanup
+        "presentation.lease" -> R.string.diagnostics_log_event_presentation_lease
+        "presentation.readiness" -> R.string.diagnostics_log_event_presentation_readiness
+        "projection.attach" -> R.string.diagnostics_log_event_projection_attach
+        "projection.hiddenLayers",
+        "projection.visibleCycle" -> R.string.diagnostics_log_event_projection_layers
+        "projection.prearm",
+        "projection.prepare",
+        "projection.restore",
+        "projection.yield" -> R.string.diagnostics_log_event_projection_handoff
+        "runtime.callback" -> R.string.diagnostics_log_event_runtime_callback
+        "sandbox.lease" -> R.string.diagnostics_log_event_sandbox_lease
+        "scene.defer" -> R.string.diagnostics_log_event_scene_defer
+        "scene.eligibility" -> R.string.diagnostics_log_event_scene_eligibility
+        "slot.probe",
+        "target.probe" -> R.string.diagnostics_log_event_view_probe
+        "source.install.branch" -> R.string.diagnostics_log_event_source_branch
+        "transition.geometry" -> R.string.diagnostics_log_event_transition_geometry
+        else -> R.string.diagnostics_log_event_generic
+    }
 
 private fun logSummary(
     context: Context,
