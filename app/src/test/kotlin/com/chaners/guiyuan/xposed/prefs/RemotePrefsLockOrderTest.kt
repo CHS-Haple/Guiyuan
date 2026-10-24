@@ -59,6 +59,24 @@ class RemotePrefsLockOrderTest {
         assertTrue(FeaturePrefsOwner.current().enabled)
     }
 
+    @Test
+    fun featureChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { featureEnabled = false }
+        }
+        FeaturePrefsOwner.bind(prefs) { _, _ -> }
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun visualChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { dual = true }
+        }
+        VisualPrefsOwner.bind(prefs) { }
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+    }
+
     private fun testStaleRead(
         old: LockedPrefs,
         key: String,
@@ -123,6 +141,7 @@ class RemotePrefsLockOrderTest {
         private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
         @Volatile var dual = false
         @Volatile var featureEnabled = true
+        @Volatile var onRegister: (() -> Unit)? = null
         @Volatile var beforeUnregister: (() -> Unit)? = null
         @Volatile private var pause: Pause? = null
 
@@ -159,6 +178,7 @@ class RemotePrefsLockOrderTest {
         override fun registerOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            onRegister?.invoke()
             if (listener != null) synchronized(lock) { listeners.add(listener) }
         }
 
