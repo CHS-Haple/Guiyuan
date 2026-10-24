@@ -688,6 +688,8 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            retireFailedHostAttach(capture.host, error)
+            SysUiHostRegistry.discardIfCurrent(capture.host)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -4117,21 +4119,22 @@ class GyModule : XposedModule() {
                 source = if (capture.replacement) "hostReplacement" else "hostCapture",
             )
         } catch (error: Throwable) {
-            // The host Hook keeps native onFinishInflate intact. Release any
-            // presentation ownership acquired before this attach failed.
-            if (SysUiHostRegistry.current() === capture.host) {
-                // A failed attach can already own Views and process-wide sources.
-                // Release each owner even if a sibling's cleanup fails.
-                fun retire(action: () -> Unit) {
-                    runCatching(action).onFailure(error::addSuppressed)
-                }
-                retire { releaseFeatureOwnership("host-attach-failed") }
-                retire { HomeRenderSession.detach() }
-                retire { StatusBarStableSession.detach() }
-                retire { SysUiCoreRuntime.detach() }
-            }
+            retireFailedHostAttach(capture.host, error)
             throw error
         }
+    }
+
+    private fun retireFailedHostAttach(host: Any, error: Throwable) {
+        if (SysUiHostRegistry.current() !== host) return
+
+        // Independently retire partial ownership without hiding the attach error.
+        fun retire(action: () -> Unit) {
+            runCatching(action).onFailure(error::addSuppressed)
+        }
+        retire { releaseFeatureOwnership("host-attach-failed") }
+        retire { HomeRenderSession.detach() }
+        retire { StatusBarStableSession.detach() }
+        retire { SysUiCoreRuntime.detach() }
     }
 
     private fun bindRuntimeDiagnostics() {
