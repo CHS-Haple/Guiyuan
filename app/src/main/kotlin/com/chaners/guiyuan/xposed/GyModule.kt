@@ -4104,18 +4104,34 @@ class GyModule : XposedModule() {
     }
 
     private fun onStatusHostCaptured(capture: SysUiHostRegistry.Capture) {
-        logDiagnostic(
-            level = Log.INFO,
-            event = "host.capture",
-            component = "statusHost",
-            "identity" to capture.identity,
-            "replacement" to capture.replacement,
-        )
-        attachHostRuntime(
-            host = capture.host,
-            source = if (capture.replacement) "hostReplacement" else "hostCapture",
-        )
-
+        try {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "host.capture",
+                component = "statusHost",
+                "identity" to capture.identity,
+                "replacement" to capture.replacement,
+            )
+            attachHostRuntime(
+                host = capture.host,
+                source = if (capture.replacement) "hostReplacement" else "hostCapture",
+            )
+        } catch (error: Throwable) {
+            // The host Hook keeps native onFinishInflate intact. Release any
+            // presentation ownership acquired before this attach failed.
+            if (SysUiHostRegistry.current() === capture.host) {
+                // A failed attach can already own Views and process-wide sources.
+                // Release each owner even if a sibling's cleanup fails.
+                fun retire(action: () -> Unit) {
+                    runCatching(action).onFailure(error::addSuppressed)
+                }
+                retire { releaseFeatureOwnership("host-attach-failed") }
+                retire { HomeRenderSession.detach() }
+                retire { StatusBarStableSession.detach() }
+                retire { SysUiCoreRuntime.detach() }
+            }
+            throw error
+        }
     }
 
     private fun bindRuntimeDiagnostics() {

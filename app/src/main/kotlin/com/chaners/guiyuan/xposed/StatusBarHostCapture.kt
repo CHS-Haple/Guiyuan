@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -46,7 +47,13 @@ internal object StatusBarHostCapture {
         val result = chain.proceed()
 
         chain.thisObject?.let { host ->
-            SysUiHostRegistry.capture(host)?.let(onCaptured)
+            try {
+                SysUiHostRegistry.capture(host)?.let(onCaptured)
+            } catch (error: Throwable) {
+                // The callback is ours; onFinishInflate must still return natively.
+                runCatching { SysUiHostRegistry.discardIfCurrent(host) }
+                runCatching { Log.w("Guiyuan[HostCapture]", "Host attachment failed", error) }
+            }
         }
 
         result
