@@ -8,6 +8,7 @@ import android.os.SystemClock
 import com.chaners.guiyuan.sandbox.SANDBOX_DATA_KEY
 import com.chaners.guiyuan.sandbox.SANDBOX_LEASE_MS
 import com.chaners.guiyuan.sandbox.SandboxLease
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -73,6 +74,9 @@ internal object SandboxHost {
     }
 
     fun active(): Boolean = validLease() != null
+
+    // Observe only the received lease at changes, never duplicate its ownership.
+    fun currentState(): PreviewSandboxUiState? = validLease()?.state
 
     private fun validLease(): SandboxLease? {
         val lease = current ?: return null

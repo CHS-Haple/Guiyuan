@@ -4306,6 +4306,18 @@ class GyModule : XposedModule() {
             SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
+                val received = SandboxHost.currentState()
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "sandbox.lease",
+                    component = "sandbox",
+                    state = if (received == null) "cleared" else "active",
+                    "network" to received?.networkMode,
+                    "wifiBars" to received?.wifiSignalLevel,
+                    "dualEnabled" to received?.dualMobile,
+                    "dualEffective" to (received?.dualLevels != null),
+                    "battery" to received?.batteryPercent,
+                )
             }
         }.onFailure {
             SandboxHost.unbind()

@@ -86,7 +86,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
     parasiteActive: Boolean,
-    onParasiteChange: (Boolean) -> Unit,
+    onParasiteChange: (Boolean, PreviewSandboxUiState) -> Unit,
     onSimPresentChange: (Boolean) -> Unit,
     onAirplaneModeChange: (Boolean) -> Unit,
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
@@ -354,7 +354,7 @@ internal fun PreviewSandboxScreen(
                         SwitchPreference(
                             checked = parasiteActive,
                             onCheckedChange = { enabled ->
-                                onParasiteChange(enabled)
+                                onParasiteChange(enabled, state)
                             },
                             title = stringResource(R.string.home_preview_parasite_title),
                             summary = stringResource(R.string.home_preview_parasite_summary),

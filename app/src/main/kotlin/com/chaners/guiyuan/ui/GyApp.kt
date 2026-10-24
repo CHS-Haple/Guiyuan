@@ -7,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -173,7 +172,6 @@ internal fun GyApp(
                     ],
             )
 
-        val latestPreview = rememberUpdatedState(previewState)
         LaunchedEffect(previewState, sandboxActive) {
             if (sandboxActive) onSandboxUpdate(previewState)
         }
@@ -262,7 +260,7 @@ internal fun GyApp(
                     PreviewSandboxScreen(
                         state = previewState,
                         parasiteActive = sandboxActive,
-                        onParasiteChange = { onSandboxToggle(it, latestPreview.value) },
+                        onParasiteChange = { enabled, snapshot -> onSandboxToggle(enabled, snapshot) },
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
