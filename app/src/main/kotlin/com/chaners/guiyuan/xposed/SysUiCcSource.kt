@@ -158,9 +158,11 @@ internal object SysUiCcSource {
                                                 },
                                         )
                                     onUpdate?.invoke(update)
-                                    dispatchRuntimeCallback {
-                                        emitDiagnostic(update, onEvent, isProbeEnabled)
-                                    }
+                                    dispatchRuntimeCallback(
+                                        callback = {
+                                            emitDiagnostic(update, onEvent, isProbeEnabled)
+                                        },
+                                    )
                                 },
                                 onFailure = onRuntimeFailure,
                             )
