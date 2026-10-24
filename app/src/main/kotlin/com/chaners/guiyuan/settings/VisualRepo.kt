@@ -323,7 +323,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -331,7 +335,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -354,7 +362,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(COMBINED_SCALE_KEY),
-                scale.finiteIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT),
+                scale.finiteIn(
+                    COMBINED_SCALE_MIN,
+                    COMBINED_SCALE_MAX,
+                    COMBINED_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -363,7 +375,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(OUTER_WEIGHT_SCALE_KEY),
-                scale.finiteIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX, OUTER_WEIGHT_SCALE_DEFAULT),
+                scale.finiteIn(
+                    OUTER_WEIGHT_SCALE_MIN,
+                    OUTER_WEIGHT_SCALE_MAX,
+                    OUTER_WEIGHT_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -378,7 +394,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
-                scale.finiteIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX, WIFI_SIZE_SCALE_DEFAULT),
+                scale.finiteIn(
+                    WIFI_SIZE_SCALE_MIN,
+                    WIFI_SIZE_SCALE_MAX,
+                    WIFI_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -393,7 +413,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
-                scale.finiteIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX, AIRPLANE_SIZE_SCALE_DEFAULT),
+                scale.finiteIn(
+                    AIRPLANE_SIZE_SCALE_MIN,
+                    AIRPLANE_SIZE_SCALE_MAX,
+                    AIRPLANE_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -402,7 +426,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
-                scale.finiteIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_DEFAULT),
+                scale.finiteIn(
+                    NO_SIM_SIZE_SCALE_MIN,
+                    NO_SIM_SIZE_SCALE_MAX,
+                    NO_SIM_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -411,7 +439,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_SIZE_SCALE_KEY),
-                scale.finiteIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX, mobileTypeScaleDefault(preferences.readLayout())),
+                scale.finiteIn(
+                    MOBILE_TYPE_SIZE_SCALE_MIN,
+                    MOBILE_TYPE_SIZE_SCALE_MAX,
+                    mobileTypeScaleDefault(preferences.readLayout()),
+                ),
             )
             .apply()
     }
