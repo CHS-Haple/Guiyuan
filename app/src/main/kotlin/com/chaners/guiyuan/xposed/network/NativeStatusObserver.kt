@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
-import com.chaners.guiyuan.xposed.distinctByIdentity
 import com.chaners.guiyuan.xposed.PresentationStore
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -15,37 +14,24 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
-internal object NativeNetworkSuppressor {
-    private const val WIFI_BINDING_CLASS =
-        "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
-    private const val MOBILE_BINDING_CLASS =
-        "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$2"
+internal object NativeStatusObserver {
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
     private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val STATUS_BAR_ICON_VIEW_CLASS =
         "com.android.systemui.statusbar.StatusBarIconView"
-    private const val MODERN_BINDING_INTERFACE =
-        "com.android.systemui.statusbar.pipeline.shared.ui.binder.ModernStatusBarViewBinding"
     private const val DARK_ICON_DISPATCHER_CLASS =
         "com.android.systemui.plugins.DarkIconDispatcher"
 
-    private const val WIFI_VISIBILITY_HOOK_ID =
-        "combinedstatus.nativeNetworkSuppression.wifiVisibility"
-    private const val MOBILE_VISIBILITY_HOOK_ID =
-        "combinedstatus.nativeNetworkSuppression.mobileVisibility"
     private const val HOME_ICON_ADDED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
     private const val HOME_MANAGER_REGISTERED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
-    private const val AIRPLANE_VISIBILITY_HOOK_ID =
+    // Retain the existing Hook ID even though this is now observation-only.
+    private const val STATUS_ICON_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
-    private val noTargetSlots = emptySet<String>()
-    private val wifiOnlyTargetSlots = setOf("wifi")
-    private val mobileOnlyTargetSlots = setOf("mobile")
-    private val wifiAndMobileTargetSlots = setOf("wifi", "mobile")
     private val observableTargetSlots = setOf("wifi", "mobile", NO_SIM_SLOT)
     private val representedTintSlots =
         setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
@@ -84,35 +70,9 @@ internal object NativeNetworkSuppressor {
         ConcurrentHashMap<Class<*>, List<Field>>()
     private val tintMethodByManagerClass =
         ConcurrentHashMap<Class<*>, Method>()
-    private val bindingGetterByClass =
-        ConcurrentHashMap<Class<*>, Method>()
-
-    @Volatile
-    private var suppressedBindings: Array<WeakReference<Any>> = emptyArray()
-
-    @Volatile
-    private var mobileVisualMasks: Array<MobileVisualMaskState> = emptyArray()
-
-    @Volatile
-    private var wifiSuppressionEnabled = false
-
-    @Volatile
-    private var mobileSuppressionEnabled = false
-
-    @Volatile
-    private var airplaneSuppressionEnabled = false
-
-    @Volatile
-    private var noSimSuppressionEnabled = false
-
-    @Volatile
-    private var observationOnly = false
 
     val installedHookCount: Int
         @Synchronized get() = installedHandles.size
-
-    val mobileSuppressionActive: Boolean
-        @Synchronized get() = activeManager != null && mobileSuppressionEnabled
 
     @Synchronized
     fun install(
@@ -135,16 +95,6 @@ internal object NativeNetworkSuppressor {
 
         val created = mutableListOf<HookHandle>()
         return runCatching {
-            val wifiVisibility =
-                resolveVisibilityMethod(
-                    classLoader = classLoader,
-                    className = WIFI_BINDING_CLASS,
-                )
-            val mobileVisibility =
-                resolveVisibilityMethod(
-                    classLoader = classLoader,
-                    className = MOBILE_BINDING_CLASS,
-                )
             val statusBarIconView =
                 Class.forName(
                     STATUS_BAR_ICON_VIEW_CLASS,
@@ -229,16 +179,6 @@ internal object NativeNetworkSuppressor {
 
             created +=
                 module
-                    .hook(wifiVisibility)
-                    .setId(WIFI_VISIBILITY_HOOK_ID)
-                    .intercept(visibilityHooker())
-            created +=
-                module
-                    .hook(mobileVisibility)
-                    .setId(MOBILE_VISIBILITY_HOOK_ID)
-                    .intercept(visibilityHooker())
-            created +=
-                module
                     .hook(onIconAdded)
                     .setId(HOME_ICON_ADDED_HOOK_ID)
                     .intercept(homeIconAddedHooker())
@@ -250,8 +190,8 @@ internal object NativeNetworkSuppressor {
             created +=
                 module
                     .hook(airplaneVisibility)
-                    .setId(AIRPLANE_VISIBILITY_HOOK_ID)
-                    .intercept(airplaneVisibilityHooker())
+                    .setId(STATUS_ICON_VISIBILITY_HOOK_ID)
+                    .intercept(statusIconVisibilityHooker())
 
             installedHandles.clear()
             installedHandles.addAll(created)
@@ -272,8 +212,6 @@ internal object NativeNetworkSuppressor {
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
             statusIconStaticColorAccessor = null
-            suppressedBindings = emptyArray()
-            mobileVisualMasks = emptyArray()
             activeManager = null
             activeGroup = null
             pendingObservationHost = null
@@ -315,26 +253,12 @@ internal object NativeNetworkSuppressor {
             return Result.Failure("home-manager-mismatch")
         }
 
-        if (
-            activeManager !== manager ||
-            activeGroup?.get() !== group ||
-            !observationOnly
-        ) {
-            restoreMobileVisualMasksLocked()
-            clearSessionLocked(
-                requestLayout = false,
-                restoreVisualMasks = false,
-            )
+        if (activeManager !== manager || activeGroup?.get() !== group) {
+            clearSessionLocked()
         }
 
         activeManager = manager
         activeGroup = WeakReference(group)
-        observationOnly = true
-        wifiSuppressionEnabled = false
-        mobileSuppressionEnabled = false
-        airplaneSuppressionEnabled = false
-        noSimSuppressionEnabled = false
-        suppressedBindings = emptyArray()
         refreshStatusPresentationLocked("observerAttach")
 
         eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
@@ -347,108 +271,24 @@ internal object NativeNetworkSuppressor {
 
     @Synchronized
     fun refreshObservation(source: String) {
-        if (observationOnly && activeGroup?.get() != null) {
+        if (activeGroup?.get() != null) {
             refreshStatusPresentationLocked(source)
         }
     }
 
     @Synchronized
-    fun activate(
-        host: Any,
-        suppressWifi: Boolean,
-        suppressMobile: Boolean,
-    ): Result {
-        if (installedHandles.size != EXPECTED_HOOK_COUNT) {
-            return Result.Failure("hooks-not-ready")
-        }
-
-        val handles =
-            when (val resolution = NativeParticipantAccess.resolve(host)) {
-                is NativeParticipantAccess.ResolveResult.Ready ->
-                    resolution.handles
-                is NativeParticipantAccess.ResolveResult.Failure ->
-                    return Result.Failure(resolution.reason)
-            }
-
-        if (handles.manager.javaClass.name != HOME_MANAGER_CLASS) {
-            return Result.Failure("home-manager-mismatch")
-        }
-
-        activeManager = handles.manager
-        activeGroup = WeakReference(handles.group)
-        observationOnly = false
-        wifiSuppressionEnabled = suppressWifi
-        mobileSuppressionEnabled = suppressMobile
-        airplaneSuppressionEnabled = true
-        refreshStatusPresentationLocked("handoff")
-
-        val snapshot = refreshBindingsLocked("handoff")
-        if (snapshot.failureReason != null) {
-            clearSessionLocked(requestLayout = true)
-            return Result.Failure(snapshot.failureReason)
-        }
-
-        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
-        return Result.Active
-    }
-
-    @Synchronized
-    fun updatePolicy(
-        suppressWifi: Boolean,
-        suppressMobile: Boolean,
-        source: String,
-        forceRevalidate: Boolean = false,
-    ): Result? {
-        val policyChanged =
-            wifiSuppressionEnabled != suppressWifi ||
-                mobileSuppressionEnabled != suppressMobile
-        if (activeManager != null && activeGroup?.get() != null) {
-            refreshStatusPresentationLocked(source)
-        }
-        if (!policyChanged && !forceRevalidate) {
-            return null
-        }
-        wifiSuppressionEnabled = suppressWifi
-        mobileSuppressionEnabled = suppressMobile
-        if (activeManager == null || activeGroup?.get() == null) {
-            return null
-        }
-
-        val snapshot = refreshBindingsLocked(source)
-        if (snapshot.failureReason != null) {
-            clearSessionLocked(requestLayout = true)
-            return Result.Failure(snapshot.failureReason)
-        }
-
-        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
-        return Result.Active
-    }
-
-    @Synchronized
-    fun deactivate(source: String): Result {
+    fun deactivate(): Result {
         pendingObservationHost = null
         pendingObservationSource = null
         val group = activeGroup?.get()
-        val previousCount = suppressedBindings.count { reference -> reference.get() != null }
-        val restoredVisualMasks = restoreMobileVisualMasksLocked()
-        clearSessionLocked(
-            requestLayout = false,
-            restoreVisualMasks = false,
-        )
+        clearSessionLocked()
         group?.requestLayout()
-        if (previousCount > 0) {
-            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
-                "nativeNetworkSuppression inactive source=" + source +
-                    " restoredBindings=" + previousCount +
-                    " restoredMobileVisualMasks=" + restoredVisualMasks,
-            )
-        }
         return Result.Inactive
     }
 
     @Synchronized
-    fun resetRuntimeState(source: String) {
-        deactivate(source)
+    fun resetRuntimeState() {
+        deactivate()
         installedHandles.clear()
         installIncomplete = false
         eventSink = null
@@ -464,22 +304,11 @@ internal object NativeNetworkSuppressor {
         transitionStateFieldCache.clear()
         tintFieldsByClass.clear()
         tintMethodByManagerClass.clear()
-        bindingGetterByClass.clear()
         lastStatusPresentation =
             PresentationStore.StatusIconPresentation()
     }
 
-    private fun visibilityHooker(): Hooker =
-        Hooker { chain ->
-            val binding = chain.thisObject
-            if (isSuppressed(binding)) {
-                false
-            } else {
-                chain.proceed()
-            }
-        }
-
-    private fun airplaneVisibilityHooker(): Hooker =
+    private fun statusIconVisibilityHooker(): Hooker =
         Hooker { chain ->
             val view = chain.thisObject as? View
             val slot =
@@ -487,18 +316,11 @@ internal object NativeNetworkSuppressor {
                     airplaneSlotAccessor?.invoke(chain.thisObject) as? String
                 }.getOrNull()
             val homeGroup = activeGroup?.get()
-            val belongsToActiveHomeGroup =
-                view != null &&
-                    homeGroup != null &&
-                    isDescendantOf(
-                        view = view,
-                        ancestor = homeGroup,
-                    )
-
             if (
                 slot == NO_SIM_SLOT &&
                 view != null &&
-                belongsToActiveHomeGroup
+                homeGroup != null &&
+                isDescendantOf(view, homeGroup)
             ) {
                 val nativeVisible = chain.proceed() as? Boolean ?: false
                 synchronized(this) {
@@ -510,24 +332,9 @@ internal object NativeNetworkSuppressor {
                         )
                     }
                 }
-                if (noSimSuppressionEnabled) {
-                    false
-                } else {
-                    nativeVisible
-                }
+                nativeVisible
             } else {
-                val suppress =
-                    shouldSuppressStaticSlot(
-                        slot = slot,
-                        airplaneSuppressionActive = airplaneSuppressionEnabled,
-                        noSimSuppressionActive = noSimSuppressionEnabled,
-                        belongsToActiveHomeGroup = belongsToActiveHomeGroup,
-                    )
-                if (suppress) {
-                    false
-                } else {
-                    chain.proceed()
-                }
+                chain.proceed()
             }
         }
 
@@ -591,26 +398,10 @@ internal object NativeNetworkSuppressor {
                 synchronized(this) {
                     if (manager === activeManager) {
                         refreshStatusPresentationLocked("iconAdded:" + slot)
-                        if (!observationOnly) {
-                            val snapshot = refreshBindingsLocked("iconAdded:" + slot)
-                            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(snapshot.logLine)
-                            if (snapshot.failureReason != null) {
-                                clearSessionLocked(requestLayout = true)
-                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
-                                    "nativeNetworkSuppression failNative source=iconAdded:" + slot +
-                                        " reason=" + snapshot.failureReason,
-                                )
-                            }
-                        }
                     }
                 }
             }
             result
-        }
-
-    private fun isSuppressed(binding: Any): Boolean =
-        suppressedBindings.any { reference ->
-            reference.get() === binding
         }
 
     internal fun readIslandVisibilityState(
@@ -768,12 +559,6 @@ internal object NativeNetworkSuppressor {
                 noSimVisible = noSimVisible,
                 noSimIcon = noSimIcon,
             )
-        val previousNoSimSuppression = noSimSuppressionEnabled
-        noSimSuppressionEnabled =
-            !observationOnly &&
-                presentation.noSimVisible &&
-                presentation.noSimIcon != null
-
         if (presentation != lastStatusPresentation) {
             lastStatusPresentation = presentation
             statusPresentationSink?.invoke(presentation)
@@ -820,15 +605,10 @@ internal object NativeNetworkSuppressor {
                         presentation.noSimIcon?.packageName +
                             ":" +
                             presentation.noSimIcon?.resourceId
-                    ) +
-                    " noSimSuppressed=" + noSimSuppressionEnabled,
+                    ),
             )
         }
 
-        if (previousNoSimSuppression != noSimSuppressionEnabled) {
-            noSimView?.invalidate()
-            group.requestLayout()
-        }
     }
 
     private fun isNativeStatusIconVisible(view: View): Boolean {
@@ -1042,152 +822,6 @@ internal object NativeNetworkSuppressor {
         return null
     }
 
-    private fun refreshBindingsLocked(source: String): BindingSnapshot {
-        val group =
-            activeGroup?.get()
-                ?: return BindingSnapshot.failure(
-                    source = source,
-                    reason = "home-status-icon-group-missing",
-                )
-
-        val targetSlots =
-            when {
-                wifiSuppressionEnabled && mobileSuppressionEnabled ->
-                    wifiAndMobileTargetSlots
-                wifiSuppressionEnabled ->
-                    wifiOnlyTargetSlots
-                mobileSuppressionEnabled ->
-                    mobileOnlyTargetSlots
-                else ->
-                    noTargetSlots
-            }
-        val targetViews = mutableListOf<Pair<String, View>>()
-        for (index in 0 until group.childCount) {
-            val child = group.getChildAt(index)
-            val slot = NativeParticipantAccess.slotOf(child) ?: continue
-            if (slot in targetSlots) {
-                targetViews += slot to child
-            }
-        }
-
-        val bindings = mutableListOf<Any>()
-        val resolvedSlots = mutableListOf<String>()
-        targetViews.forEach { (slot, view) ->
-            val binding = bindingOf(view)
-            if (binding != null) {
-                bindings += binding
-                resolvedSlots += slot
-            }
-        }
-
-        if (targetViews.isNotEmpty() && bindings.size != targetViews.size) {
-            return BindingSnapshot.failure(
-                source = source,
-                reason = "binding-resolution-incomplete",
-                targetViews = targetViews.size,
-                bindings = bindings.size,
-                slots = resolvedSlots,
-            )
-        }
-
-        suppressedBindings =
-            bindings
-                .distinctByIdentity { it }
-                .map(::WeakReference)
-                .toTypedArray()
-
-        val visualMaskResult =
-            refreshMobileVisualMasksLocked(
-                targetViews = targetViews,
-            )
-        if (visualMaskResult.failureReason != null) {
-            return BindingSnapshot.failure(
-                source = source,
-                reason = visualMaskResult.failureReason,
-                targetViews = targetViews.size,
-                bindings = bindings.size,
-                slots = resolvedSlots,
-            )
-        }
-
-        group.requestLayout()
-
-        return BindingSnapshot.ready(
-            source = source,
-            targetViews = targetViews.size,
-            bindings = bindings.size,
-            slots = resolvedSlots,
-            wifiSuppressed = wifiSuppressionEnabled,
-            mobileSuppressed = mobileSuppressionEnabled,
-            mobileVisualMasks = visualMaskResult.maskCount,
-        )
-    }
-
-    private fun refreshMobileVisualMasksLocked(
-        targetViews: List<Pair<String, View>>,
-    ): VisualMaskSnapshot {
-        val previous = mobileVisualMasks
-        val next = mutableListOf<MobileVisualMaskState>()
-
-        if (mobileSuppressionEnabled) {
-            targetViews
-                .filter { (slot, _) -> slot == "mobile" }
-                .forEach { (_, root) ->
-                    val container =
-                        findViewByResourceEntry(
-                            root = root,
-                            entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
-                        )
-                            ?: return VisualMaskSnapshot.failure(
-                                reason = "mobile-signal-container-missing",
-                            )
-
-                    val existing =
-                        previous.firstOrNull { state ->
-                            state.view.get() === container
-                        }
-                    next +=
-                        MobileVisualMaskState(
-                            view = WeakReference(container),
-                            nativeAlpha = existing?.nativeAlpha ?: container.alpha,
-                        )
-                }
-        }
-
-        val nextViews =
-            next
-                .mapNotNull { state -> state.view.get() }
-                .toSet()
-        previous
-            .filter { state ->
-                val view = state.view.get()
-                view != null && view !in nextViews
-            }
-            .forEach { state ->
-                restoreMobileVisualMaskLocked(state)
-            }
-
-        mobileVisualMasks =
-            next
-                .distinctByIdentity { state -> state.view.get() }
-                .toTypedArray()
-
-        var masked = 0
-        mobileVisualMasks.forEach { state ->
-            val view = state.view.get() ?: return@forEach
-            if (view.alpha != 0f) {
-                view.alpha = 0f
-            }
-            if (view.alpha == 0f) {
-                masked += 1
-            }
-        }
-
-        return VisualMaskSnapshot.ready(
-            maskCount = masked,
-        )
-    }
-
     private fun isDescendantOf(
         view: View,
         ancestor: ViewGroup,
@@ -1202,127 +836,11 @@ internal object NativeNetworkSuppressor {
         return false
     }
 
-    private fun restoreMobileVisualMasksLocked(): Int {
-        val states = mobileVisualMasks
-        mobileVisualMasks = emptyArray()
-        var restored = 0
-        states.forEach { state ->
-            if (restoreMobileVisualMaskLocked(state)) {
-                restored += 1
-            }
-        }
-        return restored
-    }
-
-    private fun restoreMobileVisualMaskLocked(state: MobileVisualMaskState): Boolean {
-        val view = state.view.get() ?: return false
-        return runCatching {
-            if (view.alpha != state.nativeAlpha) {
-                view.alpha = state.nativeAlpha
-            }
-            view.alpha == state.nativeAlpha
-        }.getOrDefault(false)
-    }
-
-    private fun findViewByResourceEntry(
-        root: View,
-        entryName: String,
-    ): View? {
-        if (
-            root.id != View.NO_ID &&
-            runCatching { root.resources.getResourceEntryName(root.id) }.getOrNull() == entryName
-        ) {
-            return root
-        }
-
-        val group = root as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findViewByResourceEntry(
-                root = group.getChildAt(index),
-                entryName = entryName,
-            )?.let {
-                return it
-            }
-        }
-        return null
-    }
-
-    internal fun shouldSuppressStaticSlot(
-        slot: String?,
-        airplaneSuppressionActive: Boolean,
-        noSimSuppressionActive: Boolean,
-        belongsToActiveHomeGroup: Boolean,
-    ): Boolean {
-        if (!belongsToActiveHomeGroup) {
-            return false
-        }
-        return when (slot) {
-            AIRPLANE_SLOT -> airplaneSuppressionActive
-            NO_SIM_SLOT -> noSimSuppressionActive
-            else -> false
-        }
-    }
-
-    private fun bindingOf(view: View): Any? {
-        val viewClass = view.javaClass
-        val getter =
-            bindingGetterByClass[viewClass]
-                ?: generateSequence<Class<*>>(viewClass) { it.superclass }
-                    .flatMap { it.declaredMethods.asSequence() }
-                    .firstOrNull { method ->
-                        method.parameterCount == 0 &&
-                            method.name.startsWith("getBinding\$") &&
-                            method.returnType.name == MODERN_BINDING_INTERFACE
-                    }
-                    ?.also { bindingGetterByClass[viewClass] = it }
-                ?: return null
-        return runCatching {
-            getter.isAccessible = true
-            getter.invoke(view)
-        }.getOrNull()
-    }
-
-    private fun resolveVisibilityMethod(
-        classLoader: ClassLoader,
-        className: String,
-    ): Method {
-        val clazz =
-            Class.forName(
-                className,
-                false,
-                classLoader,
-            )
-        return clazz
-            .getDeclaredMethod("getShouldIconBeVisible")
-            .apply {
-                check(returnType == java.lang.Boolean.TYPE) {
-                    "visibility-return-type-mismatch:" + className
-                }
-                isAccessible = true
-            }
-    }
-
-    private fun clearSessionLocked(
-        requestLayout: Boolean,
-        restoreVisualMasks: Boolean = true,
-    ) {
-        val group = activeGroup?.get()
-        if (restoreVisualMasks) {
-            restoreMobileVisualMasksLocked()
-        }
+    private fun clearSessionLocked() {
         activeManager = null
         activeGroup = null
-        suppressedBindings = emptyArray()
-        wifiSuppressionEnabled = false
-        mobileSuppressionEnabled = false
-        airplaneSuppressionEnabled = false
-        noSimSuppressionEnabled = false
-        observationOnly = false
         lastStatusPresentation =
             PresentationStore.StatusIconPresentation()
-        if (requestLayout) {
-            group?.requestLayout()
-        }
     }
 
     internal sealed interface Result {
@@ -1351,105 +869,6 @@ internal object NativeNetworkSuppressor {
         }
     }
 
-    private data class BindingSnapshot(
-        val source: String,
-        val targetViewCount: Int,
-        val bindingCount: Int,
-        val slots: List<String>,
-        val wifiSuppressed: Boolean,
-        val mobileSuppressed: Boolean,
-        val mobileVisualMaskCount: Int,
-        val failureReason: String?,
-    ) {
-        val logLine: String
-            get() =
-                "nativeNetworkSuppression " +
-                    if (failureReason == null) {
-                        "active"
-                    } else {
-                        "unavailable"
-                    } +
-                    " source=" + source +
-                    " targetViews=" + targetViewCount +
-                    " bindings=" + bindingCount +
-                    " slots=" + slots.joinToString(",") +
-                    " wifiSuppressed=" + wifiSuppressed +
-                    " mobileSuppressed=" + mobileSuppressed +
-                    " mobileVisualMasks=" + mobileVisualMaskCount +
-                    " visualMask=mobile_signal_container.alpha " +
-                    " reason=" + (failureReason ?: "none")
-
-        companion object {
-            fun ready(
-                source: String,
-                targetViews: Int,
-                bindings: Int,
-                slots: List<String>,
-                wifiSuppressed: Boolean,
-                mobileSuppressed: Boolean,
-                mobileVisualMasks: Int,
-            ): BindingSnapshot =
-                BindingSnapshot(
-                    source = source,
-                    targetViewCount = targetViews,
-                    bindingCount = bindings,
-                    slots = slots.distinct(),
-                    wifiSuppressed = wifiSuppressed,
-                    mobileSuppressed = mobileSuppressed,
-                    mobileVisualMaskCount = mobileVisualMasks,
-                    failureReason = null,
-                )
-
-            fun failure(
-                source: String,
-                reason: String,
-                targetViews: Int = 0,
-                bindings: Int = 0,
-                slots: List<String> = emptyList(),
-            ): BindingSnapshot =
-                BindingSnapshot(
-                    source = source,
-                    targetViewCount = targetViews,
-                    bindingCount = bindings,
-                    slots = slots.distinct(),
-                    wifiSuppressed = false,
-                    mobileSuppressed = false,
-                    mobileVisualMaskCount = 0,
-                    failureReason = reason,
-                )
-        }
-    }
-
-    private data class MobileVisualMaskState(
-        val view: WeakReference<View>,
-        val nativeAlpha: Float,
-    )
-
-    private data class VisualMaskSnapshot(
-        val maskCount: Int,
-        val failureReason: String?,
-    ) {
-        companion object {
-            fun ready(
-                maskCount: Int,
-            ): VisualMaskSnapshot =
-                VisualMaskSnapshot(
-                    maskCount = maskCount,
-                    failureReason = null,
-                )
-
-            fun failure(
-                reason: String,
-            ): VisualMaskSnapshot =
-                VisualMaskSnapshot(
-                    maskCount = 0,
-                    failureReason = reason,
-                )
-        }
-    }
-
-    private const val MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY = "mobile_signal_container"
     private const val AIRPLANE_SLOT = "airplane"
     private const val NO_SIM_SLOT = "no_sim"
-    private const val EXPECTED_HOOK_COUNT = 5
 }

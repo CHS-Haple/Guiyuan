@@ -33,7 +33,7 @@ import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
-import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
@@ -271,7 +271,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkRuntime.installedHookCount +
                 SysUiPresentationRuntime.installedHookCount +
                 SysUiPresentationOwner.installedHookCount +
-                NativeNetworkSuppressor.installedHookCount +
+                NativeStatusObserver.installedHookCount +
                 if (islandSourceInstalled) {
                     SysUiIslandSource.HOOK_COUNT
                 } else {
@@ -418,7 +418,7 @@ class GyModule : XposedModule() {
             SysUiPresentationRuntime.resetRuntimeState()
             SysUiKeyguardHostResolver.resetRuntimeState()
             SysUiPresentationOwner.resetRuntimeState("hotReload")
-            NativeNetworkSuppressor.resetRuntimeState("hotReload")
+            NativeStatusObserver.resetRuntimeState()
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
@@ -739,7 +739,7 @@ class GyModule : XposedModule() {
         source: String,
     ) {
         val failure =
-            NativeNetworkSuppressor.install(
+            NativeStatusObserver.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = ::logRuntimeEvent,
@@ -764,7 +764,7 @@ class GyModule : XposedModule() {
                 component = "nativeNetworkSuppression",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeNetworkSuppressor.installedHookCount,
+                "hooks" to NativeStatusObserver.installedHookCount,
             )
         } else {
             logDiagnostic(
@@ -1905,7 +1905,7 @@ class GyModule : XposedModule() {
     }
 
     private fun refreshStatusIconObservation(source: String) {
-        NativeNetworkSuppressor.refreshObservation(source)
+        NativeStatusObserver.refreshObservation(source)
     }
 
     private fun onStatusPresentationChanged(
@@ -1951,7 +1951,7 @@ class GyModule : XposedModule() {
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
-            NativeNetworkSuppressor.currentAppliedStatusIconTint()
+            NativeStatusObserver.currentAppliedStatusIconTint()
         val resolvedState =
             TintAuthority.resolveBatteryEvent(
                 batteryState = update.state,
@@ -3738,7 +3738,7 @@ class GyModule : XposedModule() {
         release {
             restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
         }
-        release { NativeNetworkSuppressor.deactivate("hotReload-oldGeneration") }
+        release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
         release { NativeStatusInventory.detach() }
         release { SysUiCoreRuntime.detach() }
@@ -3896,12 +3896,12 @@ class GyModule : XposedModule() {
 
         when (
             val observation =
-                NativeNetworkSuppressor.attachObserver(
+                NativeStatusObserver.attachObserver(
                     host = host,
                     source = source,
                 )
         ) {
-            is NativeNetworkSuppressor.Result.Active -> {
+            is NativeStatusObserver.Result.Active -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3911,7 +3911,7 @@ class GyModule : XposedModule() {
                     "mode" to "observation-only",
                 )
             }
-            is NativeNetworkSuppressor.Result.Pending -> {
+            is NativeStatusObserver.Result.Pending -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3922,7 +3922,7 @@ class GyModule : XposedModule() {
                     "trigger" to "home-dark-icon-manager-registration",
                 )
             }
-            is NativeNetworkSuppressor.Result.Failure -> {
+            is NativeStatusObserver.Result.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "source.attach",
@@ -3933,7 +3933,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is NativeNetworkSuppressor.Result.Inactive -> Unit
+            is NativeStatusObserver.Result.Inactive -> Unit
         }
 
         val rendererInitialTintState =
@@ -3941,7 +3941,7 @@ class GyModule : XposedModule() {
                 TintAuthority.rebaseTransferred(
                     transferred = transferred,
                     liveStatusIconTint =
-                        NativeNetworkSuppressor
+                        NativeStatusObserver
                             .currentAppliedStatusIconTint(),
                 )
             }
@@ -4294,7 +4294,7 @@ class GyModule : XposedModule() {
         SysUiPresentationOwner.deactivateAod(source)
         SysUiPresentationOwner.deactivateKeyguard(source)
         SysUiPresentationOwner.deactivate(source)
-        NativeNetworkSuppressor.deactivate(source)
+        NativeStatusObserver.deactivate()
         HomeRenderSession.setNativeHandoffActive(true)
     }
 

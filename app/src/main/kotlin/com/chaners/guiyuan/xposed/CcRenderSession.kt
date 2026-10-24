@@ -8,7 +8,7 @@ import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
-import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import java.lang.ref.WeakReference
 import java.util.ArrayDeque
@@ -790,7 +790,7 @@ internal object CcRenderSession {
         ) {
             val peerTint =
                 statusIcons.get()?.let(
-                    NativeNetworkSuppressor::currentStatusIconTint,
+                    NativeStatusObserver::currentStatusIconTint,
                 )
             val resolved =
                 TintAuthority.resolveBatteryEvent(

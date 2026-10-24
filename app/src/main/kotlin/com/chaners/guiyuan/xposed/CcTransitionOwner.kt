@@ -17,7 +17,7 @@ import android.widget.TextView
 import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
-import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
@@ -2070,7 +2070,7 @@ internal object CcTransitionOwner {
 
         private fun refreshNativePeerTint() {
             val peerTint =
-                NativeNetworkSuppressor
+                NativeStatusObserver
                     .currentStatusIconTint(fakeStatusIcons)
             val resolved =
                 CcTransitionPolicy.selectNativeTransitionTint(
