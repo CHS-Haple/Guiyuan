@@ -280,9 +280,7 @@ internal object NativeStatusObserver {
     fun deactivate(): Result {
         pendingObservationHost = null
         pendingObservationSource = null
-        val group = activeGroup?.get()
         clearSessionLocked()
-        group?.requestLayout()
         return Result.Inactive
     }
 
