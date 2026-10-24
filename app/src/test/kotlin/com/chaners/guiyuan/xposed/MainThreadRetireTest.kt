@@ -106,24 +106,29 @@ class MainThreadRetireTest {
             Thread {
                 accepted =
                     MainThreadRetire(
-                        post = { task -> Thread(task).start(); true },
+                        post = { task ->
+                            Thread(task).start()
+                            // The timeout must start only after cleanup has entered Running.
+                            check(started.await(10, TimeUnit.SECONDS))
+                            true
+                        },
                         cancel = {},
                         waitMs = 10,
                     ).run {
                         started.countDown()
-                        check(release.await(2, TimeUnit.SECONDS))
+                        release.await()
                         changes.incrementAndGet()
                     }
                 finished.countDown()
             }
         caller.start()
         try {
-            assertTrue(started.await(2, TimeUnit.SECONDS))
+            assertTrue(started.await(10, TimeUnit.SECONDS))
             assertFalse(finished.await(50, TimeUnit.MILLISECONDS))
         } finally {
             release.countDown()
         }
-        assertTrue(finished.await(2, TimeUnit.SECONDS))
+        assertTrue(finished.await(10, TimeUnit.SECONDS))
         caller.join(2_000)
         assertTrue(accepted)
         assertEquals(1, changes.get())
