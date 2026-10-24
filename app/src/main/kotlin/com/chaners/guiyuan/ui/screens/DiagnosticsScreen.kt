@@ -1219,6 +1219,7 @@ private fun stateLabel(
     state: String,
 ): String =
     when (state.lowercase(Locale.ROOT)) {
+        "unknown" -> context.getString(R.string.diagnostics_log_state_unknown)
         "ready" -> context.getString(R.string.diagnostics_log_state_ready)
         "observed" -> context.getString(R.string.diagnostics_log_state_observed)
         "enabled" -> context.getString(R.string.diagnostics_log_state_enabled)
