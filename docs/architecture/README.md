@@ -15,7 +15,7 @@ Current boundaries:
 - Control Center remains native at the fully expanded endpoint; a bounded QS_FAKE bridge may project Guiyuan during the native transition.
 - SystemUI remains authoritative for native scene state, layout, appearance, alpha, visibility, translation and motion timing.
 - Guiyuan owns only its renderer plus bounded represented-slot suppression/masking, verified reservation state and transition-only projection geometry.
-- In the current Home path, `NativeNetworkSuppressor.attachObserver` observes native status icons; `SysUiPresentationOwner` owns represented-slot masking and reservation. The suppressor's older `activate`/`updatePolicy` APIs are not invoked by current production call sites.
+- In the current Home path, `NativeStatusObserver.attachObserver` observes native status icons through three hooks (Home manager registration, icon addition and static-icon visibility); `SysUiPresentationOwner` owns represented-slot masking and reservation. Native network icon suppression is not performed by the observer.
 - Any ambiguity in host, lifecycle, writer ownership, or compatibility triggers fail-native behavior for the smallest affected surface.
 
 The steady Home hierarchy is:

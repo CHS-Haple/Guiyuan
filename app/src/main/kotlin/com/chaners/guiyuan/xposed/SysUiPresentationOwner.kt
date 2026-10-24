@@ -5,7 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
-import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -2686,7 +2686,7 @@ internal object SysUiPresentationOwner {
                         val slot = NativeParticipantAccess.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
-                            NativeNetworkSuppressor
+                            NativeStatusObserver
                                 .readIslandVisibilityState(group, child)
                                 ?: continue
                         if (
