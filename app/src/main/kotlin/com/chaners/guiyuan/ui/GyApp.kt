@@ -172,7 +172,8 @@ internal fun GyApp(
                     ],
             )
 
-        LaunchedEffect(previewState, sandboxActive) {
+        // Only a changed preview updates an active lease; start() owns its first snapshot.
+        LaunchedEffect(previewState) {
             if (sandboxActive) onSandboxUpdate(previewState)
         }
 

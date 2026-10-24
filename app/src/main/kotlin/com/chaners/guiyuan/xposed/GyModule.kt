@@ -4313,9 +4313,13 @@ class GyModule : XposedModule() {
                     component = "sandbox",
                     state = if (received == null) "cleared" else "active",
                     "network" to received?.networkMode,
+                    "airplane" to received?.airplaneMode,
+                    "wifiState" to received?.wifiState,
                     "wifiBars" to received?.wifiSignalLevel,
                     "dualEnabled" to received?.dualMobile,
                     "dualEffective" to (received?.dualLevels != null),
+                    "sim1Bars" to received?.mobileSignalLevel,
+                    "sim2Bars" to received?.sim2SignalLevel,
                     "battery" to received?.batteryPercent,
                 )
             }
