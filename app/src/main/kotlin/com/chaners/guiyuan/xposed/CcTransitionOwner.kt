@@ -1109,7 +1109,7 @@ internal object CcTransitionOwner {
                         ) == true && (
                             model.centerIndicator.typeface == null ||
                                 witness?.textStyle?.typeface == null ||
-                                model.centerIndicator.typeface == witness.textStyle?.typeface
+                                model.centerIndicator.typeface == witness.textStyle.typeface
                         )
                     } else {
                         null
