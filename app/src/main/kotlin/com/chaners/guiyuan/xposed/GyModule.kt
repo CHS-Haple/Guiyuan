@@ -180,7 +180,7 @@ class GyModule : XposedModule() {
             classLoader = param.classLoader,
             source = "coldStart",
         )
-        installNetworkSuppression(
+        installStatusIconObserver(
             classLoader = param.classLoader,
             source = "coldStart",
         )
@@ -468,7 +468,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installNetworkSuppression(
+            installStatusIconObserver(
                 classLoader = classLoader,
                 source = "hotReload",
             )
@@ -734,7 +734,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installNetworkSuppression(
+    private fun installStatusIconObserver(
         classLoader: ClassLoader,
         source: String,
     ) {
@@ -818,9 +818,6 @@ class GyModule : XposedModule() {
                             trace = stateTrace,
                         )
                     }
-                },
-                onMobileSignalWillApply = { image ->
-                    NativeNetworkSuppressor.preMaskMobileSignal(image)
                 },
                 onPresentationChanged = {
                     CcTransitionOwner.onNativeMobileRefresh()

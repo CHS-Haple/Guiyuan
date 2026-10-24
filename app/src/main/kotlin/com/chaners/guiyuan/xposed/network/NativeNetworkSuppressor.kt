@@ -1188,66 +1188,6 @@ internal object NativeNetworkSuppressor {
         )
     }
 
-    @Synchronized
-    fun preMaskMobileSignal(image: ImageView) {
-        val homeGroup = activeGroup?.get()
-        if (
-            activeManager == null ||
-            !mobileSuppressionEnabled ||
-            homeGroup == null ||
-            !isDescendantOf(
-                view = image,
-                ancestor = homeGroup,
-            )
-        ) {
-            return
-        }
-
-        val container =
-            findAncestorByResourceEntry(
-                view = image,
-                entryName = MOBILE_SIGNAL_CONTAINER_RESOURCE_ENTRY,
-            ) ?: return
-
-        val existing =
-            mobileVisualMasks.firstOrNull { state ->
-                state.view.get() === container
-            }
-        if (existing == null && container.alpha == 0f) {
-            return
-        }
-
-        val state =
-            existing
-                ?: MobileVisualMaskState(
-                    view = WeakReference(container),
-                    nativeAlpha = container.alpha,
-                )
-                    .also { created ->
-                        mobileVisualMasks =
-                            (
-                                mobileVisualMasks.asList() +
-                                    created
-                            )
-                                .distinctByIdentity { mask -> mask.view.get() }
-                                .toTypedArray()
-                    }
-
-        val changed = container.alpha != 0f
-        if (changed) {
-            container.alpha = 0f
-        }
-        if (changed || existing == null) {
-            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
-                "nativeNetworkSuppression preMaskMobileSignal " +
-                    "view=" + image.javaClass.simpleName +
-                    " nativeAlpha=" + state.nativeAlpha +
-                    " appliedAlpha=" + container.alpha +
-                    " source=mobile-signal-beforeProceed ",
-            )
-        }
-    }
-
     private fun isDescendantOf(
         view: View,
         ancestor: ViewGroup,
@@ -1260,25 +1200,6 @@ internal object NativeNetworkSuppressor {
             current = current.parent as? View
         }
         return false
-    }
-
-    private fun findAncestorByResourceEntry(
-        view: View,
-        entryName: String,
-    ): View? {
-        var current: View? = view
-        while (current != null) {
-            if (
-                current.id != View.NO_ID &&
-                runCatching {
-                    current.resources.getResourceEntryName(current.id)
-                }.getOrNull() == entryName
-            ) {
-                return current
-            }
-            current = current.parent as? View
-        }
-        return null
     }
 
     private fun restoreMobileVisualMasksLocked(): Int {
