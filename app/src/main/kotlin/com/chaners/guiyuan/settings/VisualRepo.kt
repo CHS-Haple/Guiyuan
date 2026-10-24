@@ -278,9 +278,10 @@ internal class VisualRepo(context: Context) {
 
     fun setTopTextScale(scale: Float) {
         val uiScale =
-            scale.coerceIn(
+            scale.finiteIn(
                 BATTERY_TOP_TEXT_UI_SCALE_MIN,
                 BATTERY_TOP_TEXT_UI_SCALE_MAX,
+                topTextUiScaleDefault(preferences.readLayout()),
             )
         preferences
             .edit()
@@ -304,9 +305,10 @@ internal class VisualRepo(context: Context) {
 
     fun setTopOffsetY(offset: Float) {
         val uiOffset =
-            offset.coerceIn(
+            offset.finiteIn(
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                0f,
             )
         preferences
             .edit()
@@ -321,7 +323,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -329,7 +335,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -352,7 +362,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(COMBINED_SCALE_KEY),
-                scale.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX),
+                scale.finiteIn(
+                    COMBINED_SCALE_MIN,
+                    COMBINED_SCALE_MAX,
+                    COMBINED_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -361,7 +375,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(OUTER_WEIGHT_SCALE_KEY),
-                scale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
+                scale.finiteIn(
+                    OUTER_WEIGHT_SCALE_MIN,
+                    OUTER_WEIGHT_SCALE_MAX,
+                    OUTER_WEIGHT_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -376,7 +394,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
-                scale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    WIFI_SIZE_SCALE_MIN,
+                    WIFI_SIZE_SCALE_MAX,
+                    WIFI_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -391,7 +413,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
-                scale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    AIRPLANE_SIZE_SCALE_MIN,
+                    AIRPLANE_SIZE_SCALE_MAX,
+                    AIRPLANE_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -400,7 +426,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
-                scale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    NO_SIM_SIZE_SCALE_MIN,
+                    NO_SIM_SIZE_SCALE_MAX,
+                    NO_SIM_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -409,7 +439,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_SIZE_SCALE_KEY),
-                scale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    MOBILE_TYPE_SIZE_SCALE_MIN,
+                    MOBILE_TYPE_SIZE_SCALE_MAX,
+                    mobileTypeScaleDefault(preferences.readLayout()),
+                ),
             )
             .apply()
     }
@@ -513,9 +547,10 @@ internal class VisualRepo(context: Context) {
 
     fun setTopChargingIconScale(scale: Float) {
         val uiScale =
-            scale.coerceIn(
+            scale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+                topChargingIconUiScaleDefault(preferences.readLayout()),
             )
         preferences
             .edit()
