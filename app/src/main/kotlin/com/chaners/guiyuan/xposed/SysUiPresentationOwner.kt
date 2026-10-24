@@ -701,15 +701,18 @@ internal object SysUiPresentationOwner {
         val session = keyguardFamilyCurrent ?: return Result.Inactive(0)
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
-        val restored = session.stop(source)
-        keyguardFamilyEventSink?.invoke(
-            surface.eventPrefix + " inactive source=" + source +
-                " restoredViews=" + restored,
-        )
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
-        return Result.Inactive(restored)
+        return try {
+            val restored = session.stop(source)
+            keyguardFamilyEventSink?.invoke(
+                surface.eventPrefix + " inactive source=" + source +
+                    " restoredViews=" + restored,
+            )
+            Result.Inactive(restored)
+        } finally {
+            keyguardFamilyEventSink = null
+            keyguardFamilyFailNativeSink = null
+            keyguardFamilyReadySink = null
+        }
     }
 
     @Synchronized
@@ -906,15 +909,18 @@ internal object SysUiPresentationOwner {
             controlCenterCurrent
                 ?: return Result.Inactive(0)
         controlCenterCurrent = null
-        val restored = session.stop(source)
-        controlCenterEventSink?.invoke(
-            "controlCenterPresentation inactive source=" + source +
-                " restoredViews=" + restored,
-        )
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
-        return Result.Inactive(restored)
+        return try {
+            val restored = session.stop(source)
+            controlCenterEventSink?.invoke(
+                "controlCenterPresentation inactive source=" + source +
+                    " restoredViews=" + restored,
+            )
+            Result.Inactive(restored)
+        } finally {
+            controlCenterEventSink = null
+            controlCenterFailNativeSink = null
+            controlCenterReadySink = null
+        }
     }
 
     @Synchronized
@@ -961,31 +967,33 @@ internal object SysUiPresentationOwner {
     fun releaseGenerationForHotReload(
         requestLayout: Boolean = true,
     ): Int {
-        val controlCenterRestored =
-            controlCenterCurrent?.let { session ->
-                controlCenterCurrent = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
+        val failures = ArrayList<Throwable>(1)
+        fun stop(session: Session?): Int =
+            session?.let {
+                runCatching {
+                    it.stop(
+                        source = "hotReload-oldGeneration",
+                        requestLayout = requestLayout,
+                    )
+                }.getOrElse { error ->
+                    failures.add(error)
+                    0
+                }
             } ?: 0
-        val homeRestored =
-            current?.let { session ->
-                current = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
-            } ?: 0
-        val keyguardFamilyRestored =
-            keyguardFamilyCurrent?.let { session ->
-                keyguardFamilyCurrent = null
-                keyguardFamilySurface = null
-                session.stop(
-                    source = "hotReload-oldGeneration",
-                    requestLayout = requestLayout,
-                )
-            } ?: 0
+
+        val cc = controlCenterCurrent
+        controlCenterCurrent = null
+        val controlCenterRestored = stop(cc)
+
+        val home = current
+        current = null
+        val homeRestored = stop(home)
+
+        val keyguard = keyguardFamilyCurrent
+        keyguardFamilyCurrent = null
+        keyguardFamilySurface = null
+        val keyguardFamilyRestored = stop(keyguard)
+
         controlCenterEventSink = null
         controlCenterFailNativeSink = null
         controlCenterReadySink = null
@@ -997,20 +1005,35 @@ internal object SysUiPresentationOwner {
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
+
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("hotReload-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
     @Synchronized
     fun resetRuntimeState(source: String) {
-        deactivateCc(source)
-        deactivateAod(source)
-        deactivateKeyguard(source)
-        deactivate(source)
+        val failures = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            runCatching(action).onFailure(failures::add)
+        }
+        release { deactivateCc(source) }
+        release { deactivateAod(source) }
+        release { deactivateKeyguard(source) }
+        release { deactivate(source) }
         runCatching { measureHook?.unhook() }
         runCatching { layoutHook?.unhook() }
         runCatching { batteryHideHook?.unhook() }
         runCatching { islandShowingHook?.unhook() }
         clearInstallState()
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("presentation-reset-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 
     @Synchronized
@@ -1206,14 +1229,17 @@ internal object SysUiPresentationOwner {
         val surface = keyguardFamilySurface ?: return
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
-        session.stop("fail-native:" + reason)
-        keyguardFamilyEventSink?.invoke(
-            surface.eventPrefix + " failNative reason=" + reason,
-        )
-        keyguardFamilyFailNativeSink?.invoke(reason)
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
+        try {
+            session.stop("fail-native:" + reason)
+            keyguardFamilyEventSink?.invoke(
+                surface.eventPrefix + " failNative reason=" + reason,
+            )
+            keyguardFamilyFailNativeSink?.invoke(reason)
+        } finally {
+            keyguardFamilyEventSink = null
+            keyguardFamilyFailNativeSink = null
+            keyguardFamilyReadySink = null
+        }
     }
 
     @Synchronized
@@ -1284,14 +1310,17 @@ internal object SysUiPresentationOwner {
     private fun onCcSessionFailure(reason: String) {
         val session = controlCenterCurrent ?: return
         controlCenterCurrent = null
-        session.stop("fail-native:" + reason)
-        controlCenterEventSink?.invoke(
-            "controlCenterPresentation failNative reason=" + reason,
-        )
-        controlCenterFailNativeSink?.invoke(reason)
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
+        try {
+            session.stop("fail-native:" + reason)
+            controlCenterEventSink?.invoke(
+                "controlCenterPresentation failNative reason=" + reason,
+            )
+            controlCenterFailNativeSink?.invoke(reason)
+        } finally {
+            controlCenterEventSink = null
+            controlCenterFailNativeSink = null
+            controlCenterReadySink = null
+        }
     }
 
     private fun rollbackInstall(
