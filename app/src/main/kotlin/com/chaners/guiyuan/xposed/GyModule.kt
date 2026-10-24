@@ -4304,14 +4304,24 @@ class GyModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardCcLeaseActive = false
-        CcRenderSession.setSceneEligible(false)
-        CcTransitionOwner.setSceneEligible(false)
-        SysUiPresentationOwner.deactivateCc(source)
-        SysUiPresentationOwner.deactivateAod(source)
-        SysUiPresentationOwner.deactivateKeyguard(source)
-        SysUiPresentationOwner.deactivate(source)
-        NativeStatusObserver.deactivate()
-        HomeRenderSession.setNativeHandoffActive(true)
+        // A failing surface must not prevent sibling native representations from returning.
+        val failures = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            runCatching(action).onFailure(failures::add)
+        }
+        release { CcRenderSession.setSceneEligible(false) }
+        release { CcTransitionOwner.setSceneEligible(false) }
+        release { SysUiPresentationOwner.deactivateCc(source) }
+        release { SysUiPresentationOwner.deactivateAod(source) }
+        release { SysUiPresentationOwner.deactivateKeyguard(source) }
+        release { SysUiPresentationOwner.deactivate(source) }
+        release { NativeStatusObserver.deactivate() }
+        release { HomeRenderSession.setNativeHandoffActive(true) }
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("feature-ownership-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 
     private fun bindSandbox() {
