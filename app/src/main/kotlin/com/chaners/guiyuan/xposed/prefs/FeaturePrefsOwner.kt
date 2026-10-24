@@ -49,8 +49,9 @@ internal object FeaturePrefsOwner {
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
                     if (state.compareAndSet(latest, latest.copy(cfg = next))) {
-                        val receivedAtNs = SystemClock.elapsedRealtimeNanos()
                         val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
+                        val receivedAtNs =
+                            if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
                         onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
                         break
                     }
