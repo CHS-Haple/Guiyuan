@@ -143,7 +143,6 @@ internal object SysUiNetworkSource {
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -161,7 +160,6 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
-                onMobileSignalWillApply = onMobileSignalWillApply,
                 onPresentationChanged = onPresentationChanged,
                 onEvent = onEvent,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
@@ -309,7 +307,6 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -400,7 +397,6 @@ internal object SysUiNetworkSource {
                                 mobileImageField = mobileImageField,
                                 mobileClassIdField = mobileClassIdField,
                                 onMobileSignal = onMobileSignal,
-                                onMobileSignalWillApply = onMobileSignalWillApply,
                                 onPresentationChanged = onPresentationChanged,
                                 onEvent = onEvent,
                                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
@@ -1050,7 +1046,6 @@ internal object SysUiNetworkSource {
         mobileImageField: Field,
         mobileClassIdField: Field,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileSignalWillApply: ((ImageView) -> Unit)?,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -1064,19 +1059,6 @@ internal object SysUiNetworkSource {
             mobileClassIdField.getInt(emitter)
         }.getOrDefault(-1)
         val value = chain.getArg(0)
-
-        if (image != null && classId == 0) {
-            runCatching {
-                onMobileSignalWillApply?.invoke(image)
-            }.onFailure { error ->
-                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                    onEvent(
-                        "networkPipeline mobile preMask failed " +
-                            "error=" + error.javaClass.simpleName,
-                    )
-                }
-            }
-        }
 
         var eventLog: String? = null
         if (image != null) {
