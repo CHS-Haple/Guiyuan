@@ -28,9 +28,9 @@ internal class SandboxClient(
     val active = _active.asStateFlow()
 
     // Keep cancellation and renewal ordered; an interrupted write still expires in SystemUI.
-    private var sessionId = 0L
-    private var latestState: PreviewSandboxUiState? = null
-    private var renewalJob: Job? = null
+    private var id = 0L
+    private var latest: PreviewSandboxUiState? = null
+    private var heartbeat: Job? = null
 
     init {
         scope.launch {
@@ -43,7 +43,7 @@ internal class SandboxClient(
                         val editor = remote?.edit() ?: return@runCatching false
                         when (update) {
                             is Update.Show -> {
-                                if (synchronized(this@SandboxClient) { update.id != sessionId }) {
+                                if (synchronized(this@SandboxClient) { update.id != id }) {
                                     return@runCatching false
                                 }
                                 editor.putString(
@@ -63,7 +63,7 @@ internal class SandboxClient(
 
                 if (update is Update.Show) {
                     synchronized(this@SandboxClient) {
-                        if (update.id == sessionId) {
+                        if (update.id == id) {
                             _active.value = written
                             if (!written) stop()
                         }
@@ -75,21 +75,21 @@ internal class SandboxClient(
 
     @Synchronized
     fun start(state: PreviewSandboxUiState) {
-        if (sessionId != 0L) {
+        if (id != 0L) {
             update(state)
             return
         }
         val session = (SystemClock.elapsedRealtimeNanos() and Long.MAX_VALUE).coerceAtLeast(1L)
-        latestState = state
-        sessionId = session
+        latest = state
+        id = session
         updates.trySend(Update.Show(session, state))
-        renewalJob?.cancel()
-        renewalJob = scope.launch {
+        heartbeat?.cancel()
+        heartbeat = scope.launch {
             while (isActive) {
                 delay(SANDBOX_RENEW_MS)
                 val current = synchronized(this@SandboxClient) {
-                    if (sessionId == session) {
-                        latestState?.also { updates.trySend(Update.Show(session, it)) }
+                    if (id == session) {
+                        latest?.also { updates.trySend(Update.Show(session, it)) }
                     } else {
                         null
                     }
@@ -101,18 +101,18 @@ internal class SandboxClient(
 
     @Synchronized
     fun update(state: PreviewSandboxUiState) {
-        if (sessionId == 0L || latestState == state) return
-        latestState = state
-        updates.trySend(Update.Show(sessionId, state))
+        if (id == 0L || latest == state) return
+        latest = state
+        updates.trySend(Update.Show(id, state))
     }
 
     @Synchronized
     fun stop() {
-        if (sessionId == 0L && !_active.value) return
-        sessionId = 0L
-        latestState = null
-        renewalJob?.cancel()
-        renewalJob = null
+        if (id == 0L && !_active.value) return
+        id = 0L
+        latest = null
+        heartbeat?.cancel()
+        heartbeat = null
         _active.value = false
         updates.trySend(Update.Clear)
     }
