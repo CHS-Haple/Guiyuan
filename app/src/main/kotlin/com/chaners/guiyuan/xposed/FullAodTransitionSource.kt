@@ -1,8 +1,10 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object FullAodTransitionSource {
     const val HOOK_COUNT = 1
@@ -38,6 +40,7 @@ internal object FullAodTransitionSource {
                         if (candidates.isEmpty()) "missing" else "ambiguous",
                 )
 
+        val warned = AtomicBoolean(false)
         val handle =
             module
                 .hook(method)
@@ -54,14 +57,21 @@ internal object FullAodTransitionSource {
                         // Direction is read from mToLockScreen only after native
                         // code returns. Raw arguments remain diagnostics only.
                         onTransitionCommitted()
-                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            val rawArg0 = chain.getArg(0) as? Boolean
-                            val rawArg1 = chain.getArg(1) as? Boolean
-                            onEvent(
-                                "keyguardFullAod source=animateFullAod" +
-                                    " arg0=" + (rawArg0 ?: "unavailable") +
-                                    " arg1=" + (rawArg1 ?: "unavailable"),
-                            )
+                        try {
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                val rawArg0 = chain.getArg(0) as? Boolean
+                                val rawArg1 = chain.getArg(1) as? Boolean
+                                onEvent(
+                                    "keyguardFullAod source=animateFullAod" +
+                                        " arg0=" + (rawArg0 ?: "unavailable") +
+                                        " arg1=" + (rawArg1 ?: "unavailable"),
+                                )
+                            }
+                        } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            if (warned.compareAndSet(false, true)) {
+                                runCatching { Log.w("Guiyuan[FullAod]", "Diagnostic failed", error) }
+                            }
                         }
                         result
                     },

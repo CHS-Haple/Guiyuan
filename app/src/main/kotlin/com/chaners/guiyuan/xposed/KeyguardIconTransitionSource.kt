@@ -1,8 +1,10 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object KeyguardIconTransitionSource {
     const val HOOK_COUNT = 1
@@ -37,6 +39,7 @@ internal object KeyguardIconTransitionSource {
                         if (candidates.isEmpty()) "missing" else "ambiguous",
                 )
 
+        val warned = AtomicBoolean(false)
         return listOf(
             module
                 .hook(method)
@@ -45,12 +48,19 @@ internal object KeyguardIconTransitionSource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         onTransition()
-                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            val rawArg0 = chain.getArg(0) as? Boolean
-                            onEvent(
-                                "keyguardStatusIconTransition source=animateIconContainer" +
-                                    " arg0=" + (rawArg0 ?: "unavailable"),
-                            )
+                        try {
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                val rawArg0 = chain.getArg(0) as? Boolean
+                                onEvent(
+                                    "keyguardStatusIconTransition source=animateIconContainer" +
+                                        " arg0=" + (rawArg0 ?: "unavailable"),
+                                )
+                            }
+                        } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            if (warned.compareAndSet(false, true)) {
+                                runCatching { Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error) }
+                            }
                         }
                         result
                     },
