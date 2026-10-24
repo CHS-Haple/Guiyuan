@@ -62,7 +62,9 @@ internal object FeaturePrefsOwner {
         state.set(State(source, token, initial))
         this.listener = listener
         onChanged(initial, null)
-        return initial
+        // A write between the first read and registration has no listener notification.
+        listener.onSharedPreferenceChanged(source, null)
+        return current()
     }
 
     @Synchronized

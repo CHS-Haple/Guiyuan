@@ -64,8 +64,11 @@ class RemotePrefsLockOrderTest {
         val prefs = LockedPrefs().apply {
             onRegister = { featureEnabled = false }
         }
-        FeaturePrefsOwner.bind(prefs) { _, _ -> }
+        val delivered = mutableListOf<Boolean>()
+        val bound = FeaturePrefsOwner.bind(prefs) { cfg, _ -> delivered += cfg.enabled }
+        assertFalse(bound.enabled)
         assertFalse(FeaturePrefsOwner.current().enabled)
+        assertEquals(false, delivered.last())
     }
 
     @Test
@@ -73,8 +76,11 @@ class RemotePrefsLockOrderTest {
         val prefs = LockedPrefs().apply {
             onRegister = { dual = true }
         }
-        VisualPrefsOwner.bind(prefs) { }
+        val delivered = mutableListOf<Boolean>()
+        val bound = VisualPrefsOwner.bind(prefs) { cfg -> delivered += cfg.dualSignal }
+        assertTrue(bound.dualSignal)
         assertTrue(VisualPrefsOwner.current().dualSignal)
+        assertEquals(true, delivered.last())
     }
 
     private fun testStaleRead(
