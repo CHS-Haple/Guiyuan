@@ -23,6 +23,15 @@ The steady Home hierarchy is:
 
 The logical viewport is independent from transparent drawing overflow. Enlarging Guiyuan's drawing surface must not change native slot geometry or peer motion.
 
+## Preview sandbox
+
+The Sandbox is a temporary **Home-only display lease**, not a source of real radio or battery state.
+
+- `GyApp` owns the editable `PreviewSandboxUiState`. The switch starts the lease with the currently displayed state; only later control changes trigger `update`. Enabling the lease must not replay another snapshot.
+- `SandboxClient` is the sole remote writer. It serializes writes, renews the three-second lease and stops on page exit or Xposed service loss. Simulation values are not saved as module settings.
+- `SandboxHost` reads and validates the lease in SystemUI. Only eligible Home rendering uses its model; expiry, unbind and invalid input fall back to the latest real model.
+- Keyguard, AOD, Control Center, native network and battery remain SystemUI-owned. Diagnostics only observe lease transitions.
+
 ## Documents
 
 - [layout-policy.md](layout-policy.md) — geometry, occupancy, masking, reservation, motion and drawing-surface ownership.

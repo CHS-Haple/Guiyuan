@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -8,18 +7,16 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.input.ImeAction
+import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Search
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,11 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -128,11 +128,13 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
+    visible: Boolean,
     snackbarState: SnackbarHostState,
     onNavigate: (AppRoute) -> Unit,
 ) {
@@ -247,12 +249,15 @@ internal fun FeaturesScreen(
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
     val search = rememberPageSearch()
-    val searching = search.active && search.query.isNotBlank()
-    val displayMatches = search.any(R.string.keyguard_combined_status_title, R.string.aod_combined_status_title, R.string.control_center_tint_transition, R.string.battery_fill_follow_retract)
-    val layoutMatches = search.any(R.string.content_layout_title, R.string.dual_signal_title, R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset, R.string.combined_size, R.string.outer_weight, R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset, R.string.top_info_vertical_offset)
-    val networkMatches = search.any(R.string.wifi_size, R.string.wifi_weight, R.string.airplane_size, R.string.airplane_weight, R.string.no_sim_size, R.string.mobile_type_size, R.string.mobile_type_weight, R.string.mobile_follow_battery_color, R.string.center_follow_battery_color)
-    val batteryMatches = search.any(R.string.battery_colors, R.string.low_battery_threshold, R.string.battery_top_readout, R.string.battery_top_text_size, R.string.battery_top_text_weight, R.string.battery_text_follow_battery_color, R.string.battery_charging_icon, R.string.battery_top_charging_icon_size, R.string.charging_icon_follow_battery_color)
-    val managementMatches = search.any(R.string.config_backup_title, R.string.config_restore_title, R.string.restore_feature_defaults)
+    LaunchedEffect(visible) {
+        if (!visible) search.close()
+    }
+    val searching = search.filtering
+    val displayMatches = search.any(*FeatureSearchIds.display)
+    val layoutMatches = search.any(*FeatureSearchIds.layout)
+    val networkMatches = search.any(*FeatureSearchIds.network)
+    val batteryMatches = search.any(*FeatureSearchIds.battery)
+    val managementMatches = search.any(*FeatureSearchIds.management)
 
     HubPage(
         title = stringResource(R.string.features_title),
@@ -986,11 +991,22 @@ internal fun FeaturesScreen(
                 }
             }
         }
-        if (search.active && search.query.isNotBlank() &&
+        if (search.filtering &&
             !displayMatches && !layoutMatches && !networkMatches &&
             !batteryMatches && !managementMatches
         ) {
-            item { SmallTitle(stringResource(R.string.feature_search_empty)) }
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.feature_search_empty),
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+            }
         }
     }
 }
@@ -1267,21 +1283,17 @@ private fun HubPage(
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
-    val listState = rememberLazyListState()
+    // Browsing and filtered results must not overwrite each other's scroll position.
+    val browsingState = rememberLazyListState()
+    val resultsState = rememberLazyListState()
+    val filtering = search?.filtering == true
+    val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
-    val restorePosition = remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    BackHandler(enabled = search?.active == true) { search?.close() }
-    LaunchedEffect(search?.active, search?.query) {
-        if (search?.active == true) {
-            listState.scrollToItem(0)
-        } else {
-            restorePosition.value?.let { (index, offset) ->
-                listState.scrollToItem(index, offset)
-                restorePosition.value = null
-            }
-        }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(filtering, search?.query) {
+        if (filtering) resultsState.scrollToItem(0)
     }
 
     Scaffold(
@@ -1298,41 +1310,53 @@ private fun HubPage(
                         color = barColor,
                         scrollBehavior = scrollBehavior,
                         actions = {
-                            val label = stringResource(
-                                if (search.active) R.string.feature_search_close else R.string.feature_search,
-                            )
-                            TooltipBox(text = label) {
-                                IconButton(onClick = {
-                                    if (search.active) {
-                                        search.close()
-                                    } else {
-                                        restorePosition.value =
-                                            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-                                        search.open()
+                            if (!search.active) {
+                                val label = stringResource(R.string.feature_search)
+                                TooltipBox(text = label) {
+                                    IconButton(onClick = search::open) {
+                                        Icon(MiuixIcons.Search, contentDescription = label)
                                     }
-                                }) {
-                                    Icon(
-                                        if (search.active) MiuixIcons.Back else MiuixIcons.Search,
-                                        contentDescription = label,
-                                    )
                                 }
                             }
                         },
                         bottomContent = {
-                            if (search.active) {
-                                val requester = remember { FocusRequester() }
-                                TextField(
-                                    value = search.query,
-                                    onValueChange = search::update,
-                                    label = stringResource(R.string.feature_search),
-                                    useLabelAsPlaceholder = true,
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                    modifier = Modifier.fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .focusRequester(requester),
+                            AnimatedVisibility(
+                                visible = search.active,
+                                modifier = Modifier.fillMaxWidth(),
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                SearchBar(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    inputField = {
+                                        InputField(
+                                            query = search.query,
+                                            onQueryChange = search::update,
+                                            onSearch = { keyboardController?.hide() },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            expanded = search.active,
+                                            onExpandedChange = { if (!it) search.close() },
+                                            label = stringResource(R.string.feature_search),
+                                        )
+                                    },
+                                    expanded = search.active,
+                                    onExpandedChange = { if (!it) search.close() },
+                                    outsideEndAction = {
+                                        Text(
+                                            modifier = Modifier
+                                                .padding(start = 4.dp, end = 16.dp)
+                                                .clickable(
+                                                    interactionSource = null,
+                                                    indication = null,
+                                                    onClick = search::close,
+                                                ),
+                                            text = stringResource(R.string.cancel),
+                                            fontWeight = FontWeight.Bold,
+                                            color = MiuixTheme.colorScheme.primary,
+                                        )
+                                    },
+                                    content = {},
                                 )
-                                LaunchedEffect(requester) { requester.requestFocus() }
                             }
                         },
                     )

@@ -1,9 +1,21 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,12 +23,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -24,21 +39,29 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualRepo
+import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
-import com.chaners.guiyuan.ui.components.PreviewSummary
-import com.chaners.guiyuan.ui.components.signalValueText
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
+import com.chaners.guiyuan.xposed.RenderModel
+import com.chaners.guiyuan.ui.components.PreviewSummary
+import com.chaners.guiyuan.ui.components.signalValueText
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -48,6 +71,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -62,7 +86,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
     parasiteActive: Boolean,
-    onParasiteChange: (Boolean) -> Unit,
+    onParasiteChange: (Boolean, PreviewSandboxUiState) -> Unit,
     onSimPresentChange: (Boolean) -> Unit,
     onAirplaneModeChange: (Boolean) -> Unit,
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
@@ -164,10 +188,28 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
+    // Keep the list's scroll geometry anchored to the native title row, not the optional dock.
+    val topInset = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
+    val pinnedTop = topInset + TopAppBarDefaults.CollapsedHeight
+    val pinnedTopPx = with(LocalDensity.current) { pinnedTop.roundToPx() }
     val listState = rememberLazyListState()
+    val showDock by remember(listState, pinnedTopPx) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val preview = info.visibleItemsInfo.firstOrNull { it.key == "fullPreview" }
+            when {
+                info.totalItemsCount == 0 -> false
+                preview != null -> preview.offset + preview.size <= pinnedTopPx
+                else -> listState.firstVisibleItemIndex > 0
+            }
+        }
+    }
+    val scope = rememberCoroutineScope()
+
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
@@ -208,15 +250,64 @@ internal fun PreviewSandboxScreen(
                             }
                         }
                     },
+                    bottomContent = {
+                        AnimatedVisibility(
+                            visible = showDock,
+                            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = TopAppBarDefaults.TitlePadding),
+                                    contentAlignment = Alignment.CenterStart,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.home_preview_live_title),
+                                        style = MiuixTheme.textStyles.title4,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                SandboxDockIcon(renderModel, visual)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = TopAppBarDefaults.ActionIconPadding),
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) {
+                                    val backTop = stringResource(R.string.diagnostics_scroll_top)
+                                    TooltipBox(text = backTop) {
+                                        IconButton(
+                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                                contentDescription = backTop,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                 )
             }
         },
     ) { paddingValues ->
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .topBarBackdropSource(topBarBackdrop),
+            modifier = Modifier
+                .fillMaxSize()
+                .topBarBackdropSource(topBarBackdrop),
         ) {
             LazyColumn(
                 state = listState,
@@ -227,11 +318,16 @@ internal fun PreviewSandboxScreen(
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
-                        innerPadding = paddingValues,
+                        innerPadding = PaddingValues(
+                            start = paddingValues.calculateStartPadding(layoutDirection),
+                            top = pinnedTop,
+                            end = paddingValues.calculateEndPadding(layoutDirection),
+                            bottom = paddingValues.calculateBottomPadding(),
+                        ),
                         extraBottom = 12.dp,
                     ),
             ) {
-                item {
+                item(key = "fullPreview") {
                     SmallTitle(stringResource(R.string.home_preview_section_preview))
                     Card(
                         modifier =
@@ -245,30 +341,7 @@ internal fun PreviewSandboxScreen(
                             style = MiuixTheme.textStyles.body1,
                             color = MiuixTheme.colorScheme.onSurfaceContainer,
                         )
-                        Text(
-                            text = stringResource(R.string.home_preview_sandbox_summary),
-                            modifier = Modifier.padding(top = 2.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        )
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                                    .height(192.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            StatusPreview(
-                                model = renderModel,
-                                visual = visual,
-                                modifier =
-                                    Modifier
-                                        .width(120.dp)
-                                        .height(184.dp),
-                            )
-                        }
-                        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+                        SandboxFullPreview(state, renderModel, visual)
                     }
                 }
 
@@ -280,7 +353,9 @@ internal fun PreviewSandboxScreen(
                     ) {
                         SwitchPreference(
                             checked = parasiteActive,
-                            onCheckedChange = onParasiteChange,
+                            onCheckedChange = { enabled ->
+                                onParasiteChange(enabled, state)
+                            },
                             title = stringResource(R.string.home_preview_parasite_title),
                             summary = stringResource(R.string.home_preview_parasite_summary),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
@@ -291,6 +366,9 @@ internal fun PreviewSandboxScreen(
 
                 item {
                     SmallTitle(stringResource(R.string.home_preview_section_network))
+                }
+
+                item {
                     Card(
                         modifier =
                             Modifier
@@ -301,7 +379,9 @@ internal fun PreviewSandboxScreen(
                             tabs = networkModeOptions,
                             selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
                             onTabSelected = { index ->
-                                previewNetworkTabs.getOrNull(index)?.let(onNetworkModeChange)
+                                previewNetworkTabs.getOrNull(index)?.let { mode ->
+                                    onNetworkModeChange(mode)
+                                }
                             },
                             modifier =
                                 Modifier
@@ -316,7 +396,9 @@ internal fun PreviewSandboxScreen(
                             title = stringResource(R.string.home_preview_dual_mobile_title),
                             summary = stringResource(R.string.home_preview_dual_mobile_summary),
                             checked = state.dualMobile,
-                            onCheckedChange = onDualMobileChange,
+                            onCheckedChange = { enabled ->
+                                onDualMobileChange(enabled)
+                            },
                             startAction = {
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
                             },
@@ -350,7 +432,9 @@ internal fun PreviewSandboxScreen(
                                 items = dataSimOptions,
                                 selectedIndex = state.dataSim.ordinal,
                                 onSelectedIndexChange = { index ->
-                                    PreviewDataSim.entries.getOrNull(index)?.let(onDataSimChange)
+                                    PreviewDataSim.entries.getOrNull(index)?.let { selected ->
+                                        onDataSimChange(selected)
+                                    }
                                 },
                                 insideMargin = SandboxPreferenceInsideMargin,
                                 maxHeight = 240.dp,
@@ -408,7 +492,9 @@ internal fun PreviewSandboxScreen(
                                         onSelectedIndexChange = { index ->
                                             mobileNetworkChoices.getOrNull(index)
                                                 ?.first
-                                                ?.let(onMobileNetworkChange)
+                                                ?.let { network ->
+                                                    onMobileNetworkChange(network)
+                                                }
                                         },
                                         insideMargin = SandboxPreferenceInsideMargin,
                                         maxHeight = 360.dp,
@@ -452,7 +538,9 @@ internal fun PreviewSandboxScreen(
                                         onSelectedIndexChange = { index ->
                                             mobileNetworkChoices.getOrNull(index)
                                                 ?.first
-                                                ?.let(onSim2NetworkChange)
+                                                ?.let { network ->
+                                                    onSim2NetworkChange(network)
+                                                }
                                         },
                                         insideMargin = SandboxPreferenceInsideMargin,
                                         maxHeight = 360.dp,
@@ -489,7 +577,9 @@ internal fun PreviewSandboxScreen(
                         }
                         SwitchPreference(
                             checked = state.airplaneMode,
-                            onCheckedChange = onAirplaneModeChange,
+                            onCheckedChange = { enabled ->
+                                onAirplaneModeChange(enabled)
+                            },
                             title = stringResource(R.string.home_preview_airplane_title),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active) },
                             summary = stringResource(R.string.home_preview_airplane_summary),
@@ -546,8 +636,58 @@ internal fun PreviewSandboxScreen(
                     }
                 }
             }
+
         }
     }
+}
+
+@Composable
+private fun SandboxFullPreview(
+    state: PreviewSandboxUiState,
+    model: RenderModel,
+    visual: VisualCfg,
+    showDescription: Boolean = true,
+) {
+    if (showDescription) {
+        Text(
+            text = stringResource(R.string.home_preview_sandbox_summary),
+            modifier = Modifier.padding(top = 2.dp),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+        )
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = if (showDescription) 8.dp else 0.dp)
+            .height(192.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        StatusPreview(
+            model = model,
+            visual = visual,
+            modifier = Modifier
+                .width(SandboxPreviewWidth)
+                .height(SandboxPreviewHeight),
+        )
+    }
+    PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+}
+
+// Draw into the actual compact View rather than resampling a full-sized GPU layer.
+@Composable
+private fun SandboxDockIcon(
+    model: RenderModel,
+    visual: VisualCfg,
+) {
+    val compactHeight = TopAppBarDefaults.SmallTopAppBarCenterHeight
+    val compactWidth = compactHeight * (SandboxPreviewWidth.value / SandboxPreviewHeight.value)
+    StatusPreview(
+        model = model,
+        visual = visual,
+        modifier = Modifier.size(compactWidth, compactHeight),
+        referenceSize = DpSize(SandboxPreviewWidth, SandboxPreviewHeight),
+    )
 }
 
 @Composable
@@ -584,6 +724,9 @@ private fun SandboxSegmentedField(
         },
     )
 }
+
+private val SandboxPreviewWidth = 120.dp
+private val SandboxPreviewHeight = 184.dp
 
 private val SandboxPreferenceInsideMargin =
     PaddingValues(

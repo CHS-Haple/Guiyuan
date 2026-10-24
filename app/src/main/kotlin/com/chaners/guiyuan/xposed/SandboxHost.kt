@@ -8,6 +8,7 @@ import android.os.SystemClock
 import com.chaners.guiyuan.sandbox.SANDBOX_DATA_KEY
 import com.chaners.guiyuan.sandbox.SANDBOX_LEASE_MS
 import com.chaners.guiyuan.sandbox.SandboxLease
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -18,14 +19,14 @@ internal object SandboxHost {
     private val handler = Handler(Looper.getMainLooper())
     private var source: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
-    private var onChanged: (() -> Unit)? = null
+    private var onChanged: ((PreviewSandboxUiState?) -> Unit)? = null
     @Volatile private var current: SandboxLease? = null
     private var resources: PreviewSysUiResources? = null
     private var staticMobileFaceChecked = false
     private var staticMobileFace: android.graphics.Typeface? = null
     private val expiry = Runnable { refresh() }
 
-    fun bind(prefs: SharedPreferences, changed: () -> Unit) {
+    fun bind(prefs: SharedPreferences, changed: (PreviewSandboxUiState?) -> Unit) {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             handler.post { bind(prefs, changed) }
             return
@@ -68,7 +69,7 @@ internal object SandboxHost {
                 prefs.unregisterOnSharedPreferenceChangeListener(observer)
             }
         } finally {
-            notify?.invoke()
+            notify?.invoke(null)
         }
     }
 
@@ -131,7 +132,7 @@ internal object SandboxHost {
             handler.postDelayed(expiry, remaining + 1L)
         }
         if ((previous?.state != next?.state) || (previous == null) != (next == null)) {
-            onChanged?.invoke()
+            onChanged?.invoke(next?.state)
         }
     }
 }
