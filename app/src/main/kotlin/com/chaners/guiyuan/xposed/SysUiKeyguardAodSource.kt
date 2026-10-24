@@ -1,11 +1,13 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import android.view.View
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiKeyguardAodSource {
     const val HOOK_COUNT = 2
@@ -89,16 +91,41 @@ internal object SysUiKeyguardAodSource {
         animToAodField = resolvedAnimToAod
         storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
 
+        val warned = AtomicBoolean(false)
+        val onDiagnostic: ((AodUpdate) -> Unit)? =
+            onEvent?.let { sink ->
+                { update ->
+                    try {
+                        if (isDetailedDiagnosticsEnabled()) {
+                            sink(
+                                "keyguardAod source=" + update.source +
+                                    " toAod=" + update.toAod +
+                                    " isAodAnimate=" + update.isAodAnimate +
+                                    " animToAod=" + (update.animToAod ?: "unavailable") +
+                                    " blocked=" + update.blocksProjection,
+                            )
+                        }
+                    } catch (error: Throwable) {
+                        if (error is VirtualMachineError || error is ThreadDeath) throw error
+                        if (warned.compareAndSet(false, true)) {
+                            runCatching {
+                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
+                            }
+                        }
+                    }
+                }
+            }
+
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
                 module.hook(setAnimateMethod)
                     .setId(SET_AOD_ANIMATE_HOOK_ID)
-                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onEvent, isDetailedDiagnosticsEnabled))
+                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onDiagnostic))
             handles +=
                 module.hook(toggleMethod)
                     .setId(TOGGLE_AOD_HOOK_ID)
-                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onEvent, isDetailedDiagnosticsEnabled))
+                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onDiagnostic))
             hooksReady = true
             return handles
         } catch (error: Throwable) {
@@ -120,15 +147,14 @@ internal object SysUiKeyguardAodSource {
     private fun aodHooker(
         source: String,
         onAodState: (AodUpdate) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        onDiagnostic: ((AodUpdate) -> Unit)?,
     ): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
             if (!hooksReady) return@Hooker result
             val sourceView = chain.thisObject as? View
             if (sourceView != null) {
-                publish(sourceView, source, onAodState, onEvent, isDetailedDiagnosticsEnabled)
+                publish(sourceView, source, onAodState, onDiagnostic)
             }
             result
         }
@@ -180,8 +206,7 @@ internal object SysUiKeyguardAodSource {
         sourceView: View,
         source: String,
         onAodState: (AodUpdate) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        onDiagnostic: ((AodUpdate) -> Unit)?,
     ) {
         val state = readState(sourceView) ?: return
         synchronized(this) {
@@ -197,15 +222,7 @@ internal object SysUiKeyguardAodSource {
                 source = source,
             )
         onAodState(update)
-        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-            onEvent(
-                "keyguardAod source=" + source +
-                    " toAod=" + update.toAod +
-                    " isAodAnimate=" + update.isAodAnimate +
-                    " animToAod=" + (update.animToAod ?: "unavailable") +
-                    " blocked=" + update.blocksProjection,
-            )
-        }
+        onDiagnostic?.invoke(update)
     }
 
     private fun readState(sourceView: View): AodState? {
