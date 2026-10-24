@@ -17,7 +17,12 @@ import com.chaners.guiyuan.R
 import java.util.Locale
 
 // Index terms, not configuration values. The native ICU table supplies Han pronunciations.
-internal class SearchTerm(text: String, romanized: String) {
+internal class SearchTerm(
+    text: String,
+    romanized: String,
+    foreign: Boolean = false,
+) {
+    private val allowInitials = !foreign || text.any { it.isLetter() && it.code > 127 }
     private val plain = fold(text)
     private val tokens = romanized.lowercase(Locale.ROOT)
         .split(Regex("[^a-z0-9]+"))
@@ -25,10 +30,15 @@ internal class SearchTerm(text: String, romanized: String) {
     private val full = tokens.joinToString("")
     private val initials = tokens.joinToString("") { it.take(1) }
 
-    fun matches(input: String): Boolean {
+    fun matches(input: String, includeInitials: Boolean = true): Boolean {
         val term = fold(input)
         return term.isNotEmpty() &&
-            (term in plain || term in full || term in initials)
+            (term in plain || term in full || (includeInitials && allowInitials && term in initials))
+    }
+
+    fun matchesInitials(input: String): Boolean {
+        val term = fold(input)
+        return term.isNotEmpty() && allowInitials && term in initials
     }
 
     private fun fold(text: String) =
@@ -92,18 +102,20 @@ internal object FeatureSearchIds {
     val all = display + layout + network + battery + management
 }
 
-// Resolve a search against the whole page before admitting translated titles.
-// Per-item fallback would leak unrelated English initials into Chinese pinyin results.
+// Official translated names always participate; foreign pinyin initials are
+// only a fallback when no title in either language matches more explicitly.
 internal class SearchMatches(
     ids: IntArray,
     private val current: (Int) -> Boolean,
     private val aliases: (Int) -> Boolean,
     private val translated: (Int) -> Boolean,
+    private val translatedInitials: (Int) -> Boolean,
 ) {
-    private val useTranslations = ids.none(current)
+    private val useForeignInitials = ids.none { current(it) || translated(it) }
 
     fun matches(id: Int): Boolean =
-        current(id) || aliases(id) || (useTranslations && translated(id))
+        current(id) || aliases(id) || translated(id) ||
+            (useForeignInitials && translatedInitials(id))
 }
 
 internal class PageSearch(private val context: Context) {
@@ -157,7 +169,8 @@ internal class PageSearch(private val context: Context) {
     private val matchSet by derivedStateOf {
         if (filtering) {
             SearchMatches(
-                FeatureSearchIds.all, ::currentMatches, ::aliasMatches, ::translatedMatches,
+                FeatureSearchIds.all, ::currentMatches, ::aliasMatches,
+                ::translatedMatches, ::translatedInitialMatches,
             )
         } else {
             null
@@ -183,20 +196,30 @@ internal class PageSearch(private val context: Context) {
         terms(id).current.matches(query)
 
     private fun aliasMatches(@StringRes id: Int): Boolean =
-        aliasCache.getOrPut(id) { searchAliases(id).map(::makeTerm) }
+        aliasCache.getOrPut(id) { searchAliases(id).map { makeTerm(it) } }
             .any { it.matches(query) }
 
     private fun translatedMatches(@StringRes id: Int): Boolean =
-        terms(id).other.any { it.matches(query) }
+        terms(id).other.any { it.matches(query, includeInitials = false) }
+
+    private fun translatedInitialMatches(@StringRes id: Int): Boolean =
+        terms(id).other.any { it.matchesInitials(query) }
 
     private fun terms(@StringRes id: Int): LocalizedTerms =
         cache.getOrPut(id) {
-            val names = localizedContexts.map { it.getString(id) }.distinct().map(::makeTerm)
-            LocalizedTerms(names.first(), names.drop(1))
+            val names = localizedContexts.map { it.getString(id) }.distinct()
+            LocalizedTerms(
+                makeTerm(names.first()),
+                names.drop(1).map { makeTerm(it, foreign = true) },
+            )
         }
 
-    private fun makeTerm(text: String): SearchTerm =
-        SearchTerm(text, runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text)
+    private fun makeTerm(text: String, foreign: Boolean = false): SearchTerm =
+        SearchTerm(
+            text,
+            runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text,
+            foreign,
+        )
 
 }
 
