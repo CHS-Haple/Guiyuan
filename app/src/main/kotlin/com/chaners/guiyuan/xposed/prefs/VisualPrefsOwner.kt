@@ -70,7 +70,9 @@ internal object VisualPrefsOwner {
         this.listener = listener
         onChanged(initial)
         deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
-        return initial
+        // Recheck writes that arrived before the listener was registered.
+        listener.onSharedPreferenceChanged(source, null)
+        return current()
     }
 
     @Synchronized

@@ -59,6 +59,41 @@ class RemotePrefsLockOrderTest {
         assertTrue(FeaturePrefsOwner.current().enabled)
     }
 
+    @Test
+    fun featureChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { featureEnabled = false }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = FeaturePrefsOwner.bind(prefs) { cfg, _ -> delivered += cfg.enabled }
+        assertFalse(bound.enabled)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+        assertEquals(false, delivered.last())
+    }
+
+    @Test
+    fun visualChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { dual = true }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = VisualPrefsOwner.bind(prefs) { cfg -> delivered += cfg.dualSignal }
+        assertTrue(bound.dualSignal)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+        assertEquals(true, delivered.last())
+    }
+
+    @Test
+    fun diagnosticsChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { detailed = true }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = DiagPrefsOwner.bind(prefs, forceDetailed = false) { delivered += it }
+        assertTrue(bound.detailed)
+        assertEquals(true, delivered.last())
+    }
+
     private fun testStaleRead(
         old: LockedPrefs,
         key: String,
@@ -123,6 +158,8 @@ class RemotePrefsLockOrderTest {
         private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
         @Volatile var dual = false
         @Volatile var featureEnabled = true
+        @Volatile var detailed = false
+        @Volatile var onRegister: (() -> Unit)? = null
         @Volatile var beforeUnregister: (() -> Unit)? = null
         @Volatile private var pause: Pause? = null
 
@@ -159,6 +196,7 @@ class RemotePrefsLockOrderTest {
         override fun registerOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            onRegister?.invoke()
             if (listener != null) synchronized(lock) { listeners.add(listener) }
         }
 
@@ -179,7 +217,12 @@ class RemotePrefsLockOrderTest {
         }
 
         override fun getAll(): MutableMap<String, *> = mutableMapOf<String, Any>()
-        override fun getString(key: String?, defValue: String?): String? = defValue
+        override fun getString(key: String?, defValue: String?): String? =
+            if (key == DIAG_LEVEL_KEY) {
+                if (detailed) "Detailed" else "General"
+            } else {
+                defValue
+            }
         override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? =
             defValues
         override fun getInt(key: String?, defValue: Int): Int = defValue
