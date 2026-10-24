@@ -4111,11 +4111,20 @@ class GyModule : XposedModule() {
             "identity" to capture.identity,
             "replacement" to capture.replacement,
         )
-        attachHostRuntime(
-            host = capture.host,
-            source = if (capture.replacement) "hostReplacement" else "hostCapture",
-        )
-
+        try {
+            attachHostRuntime(
+                host = capture.host,
+                source = if (capture.replacement) "hostReplacement" else "hostCapture",
+            )
+        } catch (error: Throwable) {
+            // The host Hook keeps native onFinishInflate intact. Release any
+            // presentation ownership acquired before this attach failed.
+            if (SysUiHostRegistry.current() === capture.host) {
+                runCatching { releaseFeatureOwnership("host-attach-failed") }
+                    .onFailure(error::addSuppressed)
+            }
+            throw error
+        }
     }
 
     private fun bindRuntimeDiagnostics() {
