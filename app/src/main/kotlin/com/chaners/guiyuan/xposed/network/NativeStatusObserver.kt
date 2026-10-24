@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed.network
 
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -38,6 +39,7 @@ internal object NativeStatusObserver {
 
     private val installedHandles = mutableListOf<HookHandle>()
     private var installIncomplete = false
+    private val failedObservations = mutableSetOf<String>()
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var pendingObservationHost: WeakReference<View>? = null
@@ -306,100 +308,120 @@ internal object NativeStatusObserver {
             PresentationStore.StatusIconPresentation()
     }
 
+    // The native method has already run. Observation cannot replace its return
+    // or make a diagnostic/renderer callback fail the SystemUI caller.
+    internal inline fun <T> observeAfterNative(
+        result: T,
+        onFailure: (Throwable) -> Unit,
+        observe: () -> Unit,
+    ): T {
+        try {
+            observe()
+        } catch (error: Throwable) {
+            runCatching { onFailure(error) }
+        }
+        return result
+    }
+
+    private fun reportObservationFailure(source: String, error: Throwable) {
+        if (!synchronized(this) { failedObservations.add(source) }) return
+        Log.w("Guiyuan[NativeObserver]", "Home observation failed: $source", error)
+    }
+
     private fun statusIconVisibilityHooker(): Hooker =
         Hooker { chain ->
-            val view = chain.thisObject as? View
-            val slot =
-                runCatching {
-                    airplaneSlotAccessor?.invoke(chain.thisObject) as? String
-                }.getOrNull()
-            val homeGroup = activeGroup?.get()
-            if (
-                slot == NO_SIM_SLOT &&
-                view != null &&
-                homeGroup != null &&
-                isDescendantOf(view, homeGroup)
-            ) {
-                val nativeVisible = chain.proceed() as? Boolean ?: false
-                synchronized(this) {
-                    if (homeGroup === activeGroup?.get()) {
-                        refreshStatusPresentationLocked(
-                            source = "visibility:no_sim",
-                            observedNoSimView = view,
-                            observedNoSimVisible = nativeVisible,
-                        )
+            val result = chain.proceed()
+            observeAfterNative(result, { reportObservationFailure("noSimVisibility", it) }) {
+                val view = chain.thisObject as? View
+                val slot =
+                    runCatching {
+                        airplaneSlotAccessor?.invoke(chain.thisObject) as? String
+                    }.getOrNull()
+                val homeGroup = activeGroup?.get()
+                if (
+                    slot == NO_SIM_SLOT &&
+                    result is Boolean &&
+                    view != null &&
+                    homeGroup != null &&
+                    isDescendantOf(view, homeGroup)
+                ) {
+                    synchronized(this) {
+                        if (homeGroup === activeGroup?.get()) {
+                            refreshStatusPresentationLocked(
+                                source = "visibility:no_sim",
+                                observedNoSimView = view,
+                                observedNoSimVisible = result,
+                            )
+                        }
                     }
                 }
-                nativeVisible
-            } else {
-                chain.proceed()
             }
         }
 
     private fun homeManagerRegisteredHooker(): Hooker =
         Hooker { chain ->
-            val manager = chain.getArg(0)
             val result = chain.proceed()
-
-            if (manager?.javaClass?.name == HOME_MANAGER_CLASS) {
-                synchronized(this) {
-                    val pendingHost = pendingObservationHost?.get()
-                    val pendingSource = pendingObservationSource
-                    if (
-                        pendingHost != null &&
-                        NativeParticipantAccess.managerFor(pendingHost) === manager
-                    ) {
-                        when (
-                            val state =
-                                attachObserver(
-                                    host = pendingHost,
-                                    source = pendingSource ?: "homeManagerRegistered",
-                                )
+            observeAfterNative(result, { reportObservationFailure("managerRegistered", it) }) {
+                val manager = chain.getArg(0)
+                if (manager?.javaClass?.name == HOME_MANAGER_CLASS) {
+                    synchronized(this) {
+                        val pendingHost = pendingObservationHost?.get()
+                        val pendingSource = pendingObservationSource
+                        if (
+                            pendingHost != null &&
+                            NativeParticipantAccess.managerFor(pendingHost) === manager
                         ) {
-                            is Result.Active -> {
-                                observationAttachedSink?.invoke(
-                                    pendingSource ?: "homeManagerRegistered",
-                                )
-                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
-                                    "statusIconObservation ready source=" +
-                                        (pendingSource ?: "homeManagerRegistered") +
-                                        " trigger=homeManagerRegistered",
-                                )
+                            when (
+                                val state =
+                                    attachObserver(
+                                        host = pendingHost,
+                                        source = pendingSource ?: "homeManagerRegistered",
+                                    )
+                            ) {
+                                is Result.Active -> {
+                                    observationAttachedSink?.invoke(
+                                        pendingSource ?: "homeManagerRegistered",
+                                    )
+                                    eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+                                        "statusIconObservation ready source=" +
+                                            (pendingSource ?: "homeManagerRegistered") +
+                                            " trigger=homeManagerRegistered",
+                                    )
+                                }
+                                is Result.Failure ->
+                                    eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+                                        "statusIconObservation unavailable " +
+                                            "source=" + (pendingSource ?: "homeManagerRegistered") +
+                                            " reason=" + state.reason,
+                                    )
+                                is Result.Pending,
+                                is Result.Inactive,
+                                -> Unit
                             }
-                            is Result.Failure ->
-                                eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
-                                    "statusIconObservation unavailable " +
-                                        "source=" + (pendingSource ?: "homeManagerRegistered") +
-                                        " reason=" + state.reason,
-                                )
-                            is Result.Pending,
-                            is Result.Inactive,
-                            -> Unit
                         }
                     }
                 }
             }
-
-            result
         }
 
     private fun homeIconAddedHooker(): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
-            val manager = chain.thisObject
-            val slot = chain.getArg(1) as? String
-            if (
-                manager === activeManager &&
-                slot != null &&
-                slot in observableTargetSlots
-            ) {
-                synchronized(this) {
-                    if (manager === activeManager) {
-                        refreshStatusPresentationLocked("iconAdded:" + slot)
+            observeAfterNative(result, { reportObservationFailure("iconAdded", it) }) {
+                val manager = chain.thisObject
+                val slot = chain.getArg(1) as? String
+                if (
+                    manager === activeManager &&
+                    slot != null &&
+                    slot in observableTargetSlots
+                ) {
+                    synchronized(this) {
+                        if (manager === activeManager) {
+                            refreshStatusPresentationLocked("iconAdded:" + slot)
+                        }
                     }
                 }
             }
-            result
         }
 
     internal fun readIslandVisibilityState(
@@ -835,6 +857,7 @@ internal object NativeStatusObserver {
     }
 
     private fun clearSessionLocked() {
+        failedObservations.clear()
         activeManager = null
         activeGroup = null
         lastStatusPresentation =

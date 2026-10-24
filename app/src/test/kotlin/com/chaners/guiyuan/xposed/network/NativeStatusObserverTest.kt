@@ -1,9 +1,28 @@
 package com.chaners.guiyuan.xposed.network
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class NativeStatusObserverTest {
+    @Test
+    fun observationOrReportingFailureKeepsNativeResult() {
+        val nativeResult = Any()
+        val observationError = IllegalStateException("observer failed")
+        var reported: Throwable? = null
+        val observed = NativeStatusObserver.observeAfterNative(nativeResult, { reported = it }) {
+            throw observationError
+        }
+        assertSame(nativeResult, observed)
+        assertSame(observationError, reported)
+
+        val value = NativeStatusObserver.observeAfterNative(false, { throw IllegalStateException("logging failed") }) {
+            throw observationError
+        }
+        assertEquals(false, value)
+        assertEquals(7, NativeStatusObserver.observeAfterNative(7, { throw it }) { })
+    }
+
     @Test
     fun representedSlotsAreNotEligibleVisibleTintAuthorities() {
         listOf("combined_status", "wifi", "mobile", "stacked_mobile", "airplane", "no_sim").forEach { slot ->
