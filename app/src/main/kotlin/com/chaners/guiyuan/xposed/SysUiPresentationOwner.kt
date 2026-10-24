@@ -2326,7 +2326,8 @@ internal object SysUiPresentationOwner {
                 carrier.exceptionOrNull()?.let(paddingFailure::addSuppressed)
                 throw paddingFailure
             }
-            return paddingRestored && carrier.getOrThrow()
+            val carrierRestored = carrier.getOrThrow()
+            return paddingRestored && carrierRestored
         }
 
         private fun ensureFakeCarrierCapacityLease(hostView: ViewGroup): Int? {
