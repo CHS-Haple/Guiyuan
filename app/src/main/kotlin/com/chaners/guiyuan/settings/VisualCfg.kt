@@ -230,7 +230,7 @@ internal data class VisualCfg(
         get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 }
 
-private fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
+internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
     takeIf(Float::isFinite)?.coerceIn(min, max) ?: fallback
 
 internal fun VisualCfg.normalized(): VisualCfg =

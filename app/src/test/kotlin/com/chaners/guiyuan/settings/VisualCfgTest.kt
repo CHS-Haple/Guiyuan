@@ -5,6 +5,36 @@ import org.junit.Test
 
 class VisualCfgTest {
     @Test
+    fun finiteBoundPreservesValidInputsAndRejectsNonFinite() {
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            assertEquals(1f, invalid.finiteIn(0.4f, 1.25f, 1f), 0f)
+        }
+        assertEquals(0.4f, (-2f).finiteIn(0.4f, 1.25f, 1f), 0f)
+        assertEquals(1.25f, 2f.finiteIn(0.4f, 1.25f, 1f), 0f)
+        assertEquals(0.8f, 0.8f.finiteIn(0.4f, 1.25f, 1f), 0f)
+        for (layout in ContentLayout.entries) {
+            assertEquals(
+                topTextUiScaleDefault(layout),
+                Float.NaN.finiteIn(
+                    BATTERY_TOP_TEXT_UI_SCALE_MIN,
+                    BATTERY_TOP_TEXT_UI_SCALE_MAX,
+                    topTextUiScaleDefault(layout),
+                ),
+                0f,
+            )
+            assertEquals(
+                topChargingIconUiScaleDefault(layout),
+                Float.NaN.finiteIn(
+                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
+                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+                    topChargingIconUiScaleDefault(layout),
+                ),
+                0f,
+            )
+        }
+    }
+
+    @Test
     fun newGeometryControlsUseBoundedDefaults() {
         val settings = VisualCfg()
         assertEquals(1f, settings.combinedScale, 0.0001f)
