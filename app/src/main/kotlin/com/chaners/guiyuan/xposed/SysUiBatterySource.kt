@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.Paint
+import android.util.Log
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
@@ -12,6 +13,7 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiBatterySource {
     const val BATTERY_ICON_VIEW_CLASS_NAME =
@@ -166,6 +168,19 @@ internal object SysUiBatterySource {
             )
         }
 
+        val warned = AtomicBoolean(false)
+        fun report(message: () -> String) {
+            val sink = onEvent ?: return
+            try {
+                sink(message())
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                if (warned.compareAndSet(false, true)) {
+                    runCatching { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
+                }
+            }
+        }
+
         fun publish(
             iconView: View,
             sourceMethod: String,
@@ -187,7 +202,7 @@ internal object SysUiBatterySource {
                 }
             if (!changed) return
             onBatteryState(state)
-            onEvent?.invoke(
+            report {
                 "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
                     " percent=" + state.percent +
                     " charging=" + state.charging +
@@ -195,8 +210,8 @@ internal object SysUiBatterySource {
                     " systemColor=" +
                     (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
                     " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
-                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
-            )
+                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()"
+            }
         }
 
         fun publishChargingGlyph(
@@ -218,11 +233,11 @@ internal object SysUiBatterySource {
             // Repeated samples still reconcile the state store after Hot Reload.
             onChargingIconResource(iconId)
             if (changed) {
-                onEvent?.invoke(
+                report {
                     "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
                         " resourceId=" + iconId +
-                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
-                )
+                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()"
+                }
             }
         }
 
