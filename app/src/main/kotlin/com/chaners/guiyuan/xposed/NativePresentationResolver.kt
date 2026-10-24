@@ -195,7 +195,7 @@ internal object NativePresentationResolver {
                     // Keep only immutable Typeface; never retain a SystemUI Paint/View.
                     val face =
                         drawable
-                            ?.takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
+                            .takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
                             ?.let { native ->
                                 runCatching {
                                     (drawableFields[native.javaClass]?.textPaint?.get(native) as? Paint)
@@ -205,7 +205,7 @@ internal object NativePresentationResolver {
                     return networkType.copy(
                         typeface = face,
                         fontPath =
-                            drawable?.takeIf { face != null }
+                            drawable.takeIf { face != null }
                                 ?.let { nativeFontPath(it, face!!) },
                     )
                 }

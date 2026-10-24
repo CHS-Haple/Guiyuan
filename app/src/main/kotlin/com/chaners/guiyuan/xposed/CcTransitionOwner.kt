@@ -896,13 +896,11 @@ internal object CcTransitionOwner {
             }
             val centerWitness =
                 if (centerSource != null) {
-                    centerSpec?.let { spec ->
-                        resolveSpecTarget(
-                            spec = spec,
-                            model = model,
-                            preferredMobileSubId = preferredMobileSubId,
-                        )
-                    }
+                    resolveSpecTarget(
+                        spec = centerSpec,
+                        model = model,
+                        preferredMobileSubId = preferredMobileSubId,
+                    )
                 } else null
             val centerTargetGeometry =
                 if (centerSource != null) {
@@ -911,7 +909,7 @@ internal object CcTransitionOwner {
                             witness = witness,
                             root = rootView,
                             sourceGeometry = centerSource,
-                            targetOpticalBounds = centerSpec?.targetOpticalBounds,
+                            targetOpticalBounds = centerSpec.targetOpticalBounds,
                         )
                     }
                 } else null
@@ -1111,7 +1109,7 @@ internal object CcTransitionOwner {
                         ) == true && (
                             model.centerIndicator.typeface == null ||
                                 witness?.textStyle?.typeface == null ||
-                                model.centerIndicator.typeface == witness?.textStyle?.typeface
+                                model.centerIndicator.typeface == witness.textStyle?.typeface
                         )
                     } else {
                         null
@@ -2533,7 +2531,7 @@ internal object CcTransitionOwner {
                 !CcTransitionPolicy.matchesDualMobileTypeTarget(
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
-                    source = centerType ?: return null,
+                    source = centerType,
                     target = NativePresentationResolver.nativeTargetType(witness.opticalView),
                     verifiedAggregateRoot = aggregateRootVerified,
                 )
