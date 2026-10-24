@@ -127,18 +127,18 @@ class RemotePrefsLockOrderTest {
         old.beforeUnregister = { unregister.countDown() }
         val error = AtomicReference<Throwable?>(null)
         val callback = worker(error) { old.notifyHoldingLock(key, held, proceed) }
-        var rebind: Thread? = null
-        try {
+        val rebind = try {
             assertTrue("listener lock held", held.await(3, TimeUnit.SECONDS))
-            rebind = worker(error) { bind(next) }
-            assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
+            worker(error) { bind(next) }.also {
+                assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
+            }
         } finally {
             proceed.countDown()
         }
         callback.join(3_000)
-        rebind?.join(3_000)
+        rebind.join(3_000)
         assertFalse("callback finished", callback.isAlive)
-        assertFalse("rebind finished", rebind?.isAlive == true)
+        assertFalse("rebind finished", rebind.isAlive)
         assertNull(error.get())
         assertEquals(0, old.listenerCount)
         assertEquals(1, next.listenerCount)

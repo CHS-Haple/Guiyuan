@@ -2195,10 +2195,10 @@ internal class StatusPainter(
             lerp(0f, targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f, styleProgress)
         batteryTextPaint.textSize = textSize
         val native = progress >= 1f && targetStyle?.typeface != null
-        batteryTextPaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
-        batteryTextPaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        batteryTextPaint.style = if (native) targetStyle.paintStyle else Paint.Style.FILL
+        batteryTextPaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
-            batteryTextPaint.typeface = targetStyle!!.typeface
+            batteryTextPaint.typeface = targetStyle.typeface
             batteryTextPaint.setFontVariationSettings(null)
         }
     }
@@ -3201,10 +3201,10 @@ internal class StatusPainter(
         mobileTypePaint.letterSpacing =
             (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
         val native = progress >= 1f && targetStyle?.typeface != null
-        mobileTypePaint.style = if (native) targetStyle!!.paintStyle else Paint.Style.FILL
-        mobileTypePaint.strokeWidth = if (native) targetStyle!!.strokeWidth else 0f
+        mobileTypePaint.style = if (native) targetStyle.paintStyle else Paint.Style.FILL
+        mobileTypePaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
-            mobileTypePaint.typeface = targetStyle!!.typeface
+            mobileTypePaint.typeface = targetStyle.typeface
             mobileTypePaint.setFontVariationSettings(null)
         }
         mobileTypePaint.textSize = textSize

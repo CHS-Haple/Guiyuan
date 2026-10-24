@@ -632,7 +632,7 @@ internal object NativeStatusObserver {
         }
         val packageName =
             icon.resPackage
-                ?.takeIf(String::isNotBlank)
+                .takeIf(String::isNotBlank)
                 ?: view.context.packageName
         val resourceId = icon.resId
         if (resourceId == 0) {
